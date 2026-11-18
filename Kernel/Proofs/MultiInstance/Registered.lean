@@ -132,7 +132,7 @@ theorem completeBody_framed {ctx : Ctx} {header : Header} {envelope : Envelope} 
 /-- `Hooks.instanceCompleted` keeps the invariant for an instance in a scope occurrence that stands: it records the
 instance's slot, leaving its scope occurrence (`leftWith_framed`), writes the body's counters or not, then completes the
 body or begins its next instances (`beginInstances_framed`). -/
-theorem instanceCompleted_framed {ctx : Ctx} {body : Nat} {occurrence : Occurrence} {writes : List (String × Value)}
+theorem instanceCompleted_framed {ctx : Ctx} {body : OccurrenceId} {occurrence : Occurrence} {writes : List (String × Value)}
     {state after : State} (formed : WellFormed ctx.program state) (framed : RunsFramed ctx.program state)
     (stands : occurrence.scope ∈ scopeIds state)
     (ran : Feature.MultiInstance.instanceCompleted ctx body occurrence writes state = .ok after) :
@@ -330,14 +330,14 @@ theorem framedNumbered_frameAlongside (program : Program) :
   signalBegin s request formed fits anchored kept := ⟨(runsFramed_frameAlongside program).signalBegin s
     request formed fits (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1,
     fun apart => (kept.2 apart).signalBegin kept.1.owns fits.1 fits.2⟩
-  issue s kept := ⟨(runsFramed_frameAlongside program).issue s kept.1, fun apart => (kept.2 apart).issue⟩
+  takePosition s kept := ⟨(runsFramed_frameAlongside program).takePosition s kept.1, fun apart => (kept.2 apart).takePosition⟩
   enterScope s element parent locals owner formed stands anchored kept :=
     ⟨(runsFramed_frameAlongside program).enterScope s element parent locals owner formed stands
       (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1,
       fun apart => (kept.2 apart).enterScope formed kept.1.owns element parent locals owner stands⟩
-  reserve s element scope formed _ pending _ kept :=
+  reserve s element scope formed stands pending _ kept :=
     ⟨reserve_runsFramed s element scope kept.1, fun apart =>
-      (kept.2 apart).reserve formed (PendingIn.unlooped (fun _ kept => (kept.2 apart).2.occurs) pending)⟩
+      (kept.2 apart).reserve formed (PendingIn.unlooped (fun _ kept => (kept.2 apart).2.occurs) pending) stands.mem⟩
   leaveScope s scope formed present leaves kept :=
     ⟨(runsFramed_frameAlongside program).leaveScope s scope formed present leaves kept.1,
       fun apart => (kept.2 apart).leaveScope formed kept.1.owns present⟩
@@ -367,7 +367,7 @@ theorem framedNumbered_occursAlongside (program : Program) : OccursAlongside pro
   reserve s element scope formed stands reservable anchored kept :=
     ⟨(runsFramed_occursAlongside program).reserve s element scope formed stands reservable (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1,
       fun apart =>
-      (kept.2 apart).reserve formed (reservable_unlooped apart reservable)⟩
+      (kept.2 apart).reserve formed (reservable_unlooped apart reservable) stands.mem⟩
   occur s element scope leave writes rule formed source anchored kept :=
     ⟨(runsFramed_occursAlongside program).occur s element scope leave writes rule formed
       (source.imp_right fun ⟨held, kept, queued⟩ => ⟨held, kept.1, queued⟩) (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1, fun apart =>
@@ -397,7 +397,7 @@ theorem framedNumbered_occursAlongside (program : Program) : OccursAlongside pro
         (formed.owned.occurrenceScopes call member)⟩
 
 /-- Dropping a record that owns no scope occurrence keeps the numbering beside the slot invariant. -/
-theorem framedNumbered_withoutRecord {program : Program} (t : State) (id : Nat)
+theorem framedNumbered_withoutRecord {program : Program} (t : State) (id : OccurrenceId)
     (unowned : ∀ entry ∈ t.scopes, entry.occurrence ≠ some id) (kept : FramedNumbered program t) :
     FramedNumbered program (Laws.State.withoutRecord t id) :=
   ⟨withoutRecord_carries unowned kept.1, fun apart => (kept.2 apart).withoutRecord id⟩
@@ -428,7 +428,7 @@ theorem numbered_begin {program : Program} {s : State} {request : BeginRequest} 
   rcases origin with ⟨flows, fresh, _⟩ | ⟨queue, held, dequeued⟩
   · have other : ∀ body, request.continuation ≠ .multiInstance body := fun body same =>
       Laws.Step.flow_ne_multiInstance body (flows ▸ same)
-    exact (kept.2 apart).beginOther formed admitted (fun looping => assigned.trans (roleOf_other other looping)) other
+    exact (kept.2 apart).beginOther formed stands.mem admitted (fun looping => assigned.trans (roleOf_other other looping)) other
       (fun _ _ named => by rw [fresh] at named; cases named)
   · by_cases instance_ : ∃ body, request.continuation = .multiInstance body
     · obtain ⟨body, on⟩ := instance_
@@ -436,7 +436,7 @@ theorem numbered_begin {program : Program} {s : State} {request : BeginRequest} 
       exact Numbered.beginInstance formed kept.1.owns (List.mem_map.mpr ⟨entry, inside, named⟩)
         (assigned.trans (roleOf_instance on)) on (held.2.2 apart) dequeued
     · have other : ∀ body, request.continuation ≠ .multiInstance body := fun body same => instance_ ⟨body, same⟩
-      exact (kept.2 apart).beginOther formed admitted (fun looping => assigned.trans (roleOf_other other looping))
+      exact (kept.2 apart).beginOther formed stands.mem admitted (fun looping => assigned.trans (roleOf_other other looping))
         other (reservedApart_of_dequeued (held.2.2 apart) dequeued)
 
 /-- `Step`'s phases keep `Composed`: those that read `WellFormed` alone read its first part, and the others keep the
@@ -758,7 +758,7 @@ theorem completeBody_snapshots {ctx : Ctx} {header : Header} {envelope : Envelop
 /-- `Hooks.instanceCompleted` keeps `Snapshots` for an instance in a scope occurrence that stands: it records the
 instance's output in its body's record, leaving its scope occurrence, then completes the body or enters its next
 instances. -/
-theorem instanceCompleted_snapshots {ctx : Ctx} {body : Nat} {occurrence : Occurrence} {writes : List (String × Value)}
+theorem instanceCompleted_snapshots {ctx : Ctx} {body : OccurrenceId} {occurrence : Occurrence} {writes : List (String × Value)}
     {b state after : State} (formed : WellFormed ctx.program state) (kept : Snapshots b state)
     (stands : occurrence.scope ∈ scopeIds state)
     (ran : Feature.MultiInstance.instanceCompleted ctx body occurrence writes state = .ok after) :

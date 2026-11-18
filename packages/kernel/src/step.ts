@@ -35,7 +35,7 @@ import {
   type Result, type ScopeOccurrence, type ScopeOccurrenceId, type Signal, type StartInput, type StartTrigger, type State,
   type Token,
   SemanticCause, semanticFailure,
-  itemAt, iterationHolds,
+  itemAt, iterationHolds, type OccurrenceId,
 } from "./state.js";
 import {
   ScopeRole, admitThen, cancelOccurrence, chooseStart, clearInside, itemDetailOf, itemOf, removeOccurrence, type Ctx, type Hooks, type ScopeEntry,
@@ -111,7 +111,7 @@ function roleOf(program: Program, request: BeginRequest): ActivationRole {
 }
 
 /** Lean's `Step.writeStart`: an Event Sub-Process start's values, written outward from the scope occurrence it entered. */
-function writeStart(hooks: Hooks, ctx: Ctx, occurrence: number, writes: readonly Binding[], state: State): Outcome {
+function writeStart(hooks: Hooks, ctx: Ctx, occurrence: OccurrenceId, writes: readonly Binding[], state: State): Outcome {
   if (writes.length === 0) return committed(state);
   const scope = localScope(state, occurrence);
   return scope === null ? semanticFailure(SemanticCause.Invariant, "start-writes-without-scope") : hooks.writeOutputs(ctx, scope, writes, WriteRule.Outward, state);
@@ -161,7 +161,7 @@ function continueAfter(hooks: Hooks, ctx: Ctx, occurrence: Occurrence, leave: Le
  * the order matters only once a per-activity end state is observed.
  */
 function complete(
-  hooks: Hooks, ctx: Ctx, id: number, requested: Leave, writes: readonly Binding[], rule: WriteRule, before: State,
+  hooks: Hooks, ctx: Ctx, id: OccurrenceId, requested: Leave, writes: readonly Binding[], rule: WriteRule, before: State,
 ): Outcome {
   const found = occurrenceOf(before, id);
   if (found === null) return semanticFailure(SemanticCause.Invariant, "queued-work-occurrence-gone");
@@ -209,8 +209,8 @@ function endInstance(status: InstanceStatus, failure: InstanceFailure | null, st
 }
 
 const other = (
-  run: (state: State) => Outcome, scopes: readonly ScopeOccurrenceId[] = [], occurrences: readonly number[] = [],
-  requires: readonly ScopeOccurrenceId[] = [], acts: readonly number[] = [],
+  run: (state: State) => Outcome, scopes: readonly ScopeOccurrenceId[] = [], occurrences: readonly OccurrenceId[] = [],
+  requires: readonly ScopeOccurrenceId[] = [], acts: readonly OccurrenceId[] = [],
 ): SignalRun => ({ completion: false, run, scopes, occurrences, requires, acts });
 
 /** `Kernel.Step.signalWork`: what a queued signal does and the targets it names (`step/stale.ts`). */

@@ -53,7 +53,7 @@ def itemName (ctx : Ctx) (loop : MultiInstance) : Option String :=
   | .dataAssociations => loop.inputDataItem
   | .loopReferences => loop.inputDataItemName <|> loop.elementVariable
 
-def runOf? (state : State) (body : Nat) : Option MultiInstanceRun :=
+def runOf? (state : State) (body : OccurrenceId) : Option MultiInstanceRun :=
   state.slots.multiInstances.find? (·.occurrence == body)
 
 def setRun (state : State) (run : MultiInstanceRun) : State :=
@@ -359,7 +359,7 @@ def nextItems (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) (next 
 
 /-- `Hooks.instanceCompleted`: fill the instance's slot, evaluate the completion condition in the instance's scope
 occurrence, leave it, then finish, close early or continue, updating the body's counter locals first. -/
-def instanceCompleted (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes : List (String × Value))
+def instanceCompleted (ctx : Ctx) (body : OccurrenceId) (occurrence : Occurrence) (writes : List (String × Value))
     (state : State) : Outcome := do
   let some run := runOf? state body | .error (.semanticFailure .invariant "instance-without-multi-instance")
   let some loop := loopOf? ctx run | .error (.semanticFailure .invariant "instance-without-loop")

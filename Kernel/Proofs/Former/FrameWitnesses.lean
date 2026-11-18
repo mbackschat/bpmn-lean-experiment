@@ -107,14 +107,18 @@ theorem rootOnly_misplaced {s : State} {element : ElementId} {scope : ScopeOccur
   rw [called] at this
   cases this
 
-/-- The process root only, a reservation of `E` queued there, and a stale completion of `5` by the flow `f`. -/
+/-- The key of the removed occurrence of `E`, the first in the process root. -/
+def staleKey : OccurrenceId := { scope := State.root, element := ⟨"E"⟩, ordinal := 0 }
+
+/-- The process root only, a reservation of `E` queued there, and a stale completion of `staleKey` by the flow `f`. -/
 def staleComplete (f : FlowId) : State :=
-  { instanceId := "I", nextIssue := 6, scopes := [{ id := State.root, element := none }]
-    signals := [.occur ⟨"E"⟩ State.root .outgoing [] .outward, .complete 5 (.flows [f]) [] .outward]
+  { instanceId := "I", scopes := [{ id := State.root, element := none }]
+    occurrenceOrdinals := (∅ : TreeMap ScopeSlot Nat compare).insert { parent := State.root, element := ⟨"E"⟩ } 1
+    signals := [.occur ⟨"E"⟩ State.root .outgoing [] .outward, .complete staleKey (.flows [f]) [] .outward]
     slots := { instances := [{ root := State.root }] } }
 
 /-- The removed occurrence's number, the reservation's element and scope occurrence. -/
-def staleOccurrence : Occurrence := { id := 5, element := ⟨"E"⟩, scope := State.root, activation := 1 }
+def staleOccurrence : Occurrence := { id := staleKey, element := ⟨"E"⟩, scope := State.root, activation := 1 }
 
 /-- Read independently, as `Laws.Flow.LeavesFrom` read them before it paired them, the queued reservation justifies the
 occurrence and the stale completion the flow `f` to `T`, and the token queued breaks `PlacedLane.tokens`. -/
@@ -137,15 +141,16 @@ abbrev freshKey : ScopeOccurrenceId := State.root.child ⟨"Y"⟩ 0
 /-- The process root holding an occurrence of `Y`, and a reservation of `T` queued for the key a scope occurrence of
 `Y` entered there takes next. -/
 def pendingFresh : State :=
-  { instanceId := "I", nextIssue := 1, scopes := [{ id := State.root, element := none }]
-    occurrences := [{ id := 0, element := ⟨"Y"⟩, scope := State.root, activation := 1 }]
+  { instanceId := "I", scopes := [{ id := State.root, element := none }]
+    occurrenceOrdinals := (∅ : TreeMap ScopeSlot Nat compare).insert { parent := State.root, element := ⟨"Y"⟩ } 1
+    occurrences := [{ id := ⟨State.root, ⟨"Y"⟩, 0⟩, element := ⟨"Y"⟩, scope := State.root, activation := 1 }]
     signals := [.occur ⟨"T"⟩ freshKey .outgoing [] .outward]
     slots := { instances := [{ root := State.root }] } }
 
 /-- `Y` is anchored at the process root by its occurrence there. -/
 theorem pendingFresh_anchored (inv : State → Prop) :
     Laws.Flow.Anchored inv (topCalled program definition) pendingFresh ⟨"Y"⟩ State.root :=
-  Laws.Flow.Anchored.occurrence (occurrence := { id := 0, element := ⟨"Y"⟩, scope := State.root, activation := 1 })
+  Laws.Flow.Anchored.occurrence (occurrence := { id := ⟨State.root, ⟨"Y"⟩, 0⟩, element := ⟨"Y"⟩, scope := State.root, activation := 1 })
     (by simp [pendingFresh])
 
 /-- The scope occurrence `pendingFresh` enters for `Y`. -/
@@ -275,7 +280,7 @@ theorem leftKey_issued {s : State} (scopes : s.scopes = [{ id := State.root, ele
 
 /-- The process root and a reservation of `T` queued for `leftKey`, issued and left. -/
 def leftReservation : State :=
-  { instanceId := "I", nextIssue := 6, scopes := [{ id := State.root, element := none }]
+  { instanceId := "I", scopes := [{ id := State.root, element := none }]
     scopeOrdinals := leftOrdinals
     signals := [.occur ⟨"T"⟩ leftKey .outgoing [] .outward]
     slots := { instances := [{ root := State.root }] } }
@@ -307,11 +312,11 @@ theorem unstood_reserve_rejected :
 
 /-- A Multi-Instance run of `T`'s boundary held in `leftKey`. -/
 def leftRunRecord : MultiInstanceRun :=
-  { scope := leftKey, element := sharedX.id, occurrence := 0, collection := .null, instances := [] }
+  { scope := leftKey, element := sharedX.id, occurrence := ⟨leftKey, sharedX.id, 0⟩, collection := .null, instances := [] }
 
 /-- The process root and `leftRunRecord`, whose `leftKey` was issued and left. -/
 def leftRun : State :=
-  { instanceId := "I", nextIssue := 6, scopes := [{ id := State.root, element := none }], scopeOrdinals := leftOrdinals
+  { instanceId := "I", scopes := [{ id := State.root, element := none }], scopeOrdinals := leftOrdinals
     slots := { instances := [{ root := State.root }], multiInstances := [leftRunRecord] } }
 
 /-- A subscription of `T`'s boundary anchored by the run in the left `leftKey` reserves under the process root, although

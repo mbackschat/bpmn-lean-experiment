@@ -33,13 +33,13 @@ theorem counted_grow {s t : State} (grow : CountsGrow s t) {k : OccurrenceKey} (
 /-- What a state operation from `s` to `t` does to the end facts, sparing `spare`'s removal from being journalled: every
 occurrence `t` holds is one of `s` under the same key, unchanged if begun, or a fresh one whose key `s`'s counters have
 not issued; the end facts `t` adds are the keys in `s` of begun occurrences of `s` it no longer holds, each once, among
-them every such occurrence but `spare`; the instance, the counters and the issue counter stay or grow. -/
-structure EndsStep (s t : State) (spare : Option Nat) : Prop where
+them every such occurrence but `spare`; the instance stays, and the counters and the keys issued stay or grow. -/
+structure EndsStep (s t : State) (spare : Option OccurrenceId) : Prop where
   instanceId : t.instanceId = s.instanceId
-  issued : s.nextIssue ≤ t.nextIssue
+  issued : Laws.State.OccurrenceGrows s t
   grow : CountsGrow s t
   held : ∀ o' ∈ t.occurrences, (∃ o ∈ s.occurrences, o'.id = o.id ∧ key t o' = key s o ∧ (o.begun = true → o' = o)) ∨
-    (s.nextIssue ≤ o'.id ∧ ¬ Counted s (key t o'))
+    (¬ Laws.State.OccurrenceIssued s o'.id ∧ ¬ Counted s (key t o'))
   ends : ∃ gone : List Occurrence, (endKeys t).Perm (endKeys s ++ gone.map (key s)) ∧ (gone.map (·.id)).Nodup ∧
     (∀ o ∈ gone, o ∈ s.occurrences ∧ spare ≠ some o.id ∧ o.id ∉ occurrenceIds t) ∧
     ∀ o ∈ s.occurrences, o.begun = true → o.id ∉ occurrenceIds t → spare ≠ some o.id → o ∈ gone
@@ -67,10 +67,10 @@ theorem countsGrow_activated {inst : String} {element : ElementId} {role : Activ
     exact Bool.eq_false_iff.mpr raised
 
 /-- An operation that removes no begun occurrence and adds no end fact frames the end facts, sparing nothing. -/
-theorem EndsStep.quiet (instanceId : t.instanceId = s.instanceId) (issued : s.nextIssue ≤ t.nextIssue)
+theorem EndsStep.quiet (instanceId : t.instanceId = s.instanceId) (issued : Laws.State.OccurrenceGrows s t)
     (grow : CountsGrow s t) (ends : endKeys t = endKeys s)
     (held : ∀ o' ∈ t.occurrences, (∃ o ∈ s.occurrences, o'.id = o.id ∧ key t o' = key s o ∧ (o.begun = true → o' = o)) ∨
-      (s.nextIssue ≤ o'.id ∧ ¬ Counted s (key t o')))
+      (¬ Laws.State.OccurrenceIssued s o'.id ∧ ¬ Counted s (key t o')))
     (stays : ∀ o ∈ s.occurrences, o.begun = true → o.id ∈ occurrenceIds t) : EndsStep s t none where
   instanceId := instanceId
   issued := issued
@@ -79,17 +79,17 @@ theorem EndsStep.quiet (instanceId : t.instanceId = s.instanceId) (issued : s.ne
   ends := ⟨[], by rw [ends]; simp, .nil, by simp, fun o member begun absent _ => absurd (stays o member begun) absent⟩
 
 /-- An operation that changes nothing `EndsStep` reads but drops unbegun occurrences frames the end facts. -/
-theorem EndsStep.prune (tree : t.scopes = s.scopes ∧ t.instanceId = s.instanceId) (issued : t.nextIssue = s.nextIssue)
+theorem EndsStep.prune (tree : t.scopes = s.scopes ∧ t.instanceId = s.instanceId) (issued : Laws.State.OccurrenceGrows s t)
     (counters : t.activations = s.activations) (ends : endKeys t = endKeys s)
     (within : ∀ o ∈ t.occurrences, o ∈ s.occurrences) (stays : ∀ o ∈ s.occurrences, o.begun = true → o ∈ t.occurrences) :
     EndsStep s t none :=
-  .quiet tree.2 (Nat.le_of_eq issued.symm) (countsGrow_same counters) ends
+  .quiet tree.2 issued (countsGrow_same counters) ends
     (fun o' inside => .inl ⟨o', within o' inside, rfl,
       Laws.State.key_congr (Laws.State.instanceOf_congr tree.1 tree.2 _), fun _ => rfl⟩)
     fun o member begun => List.mem_map.mpr ⟨o, stays o member begun, rfl⟩
 
 theorem EndsStep.refl : EndsStep s s none :=
-  .prune ⟨rfl, rfl⟩ rfl rfl rfl (fun _ => id) fun _ member _ => member
+  .prune ⟨rfl, rfl⟩ (.refl _) rfl rfl (fun _ => id) fun _ member _ => member
 
 /-- An occurrence `t` holds of a well-formed `s`'s occurrences, which `s`'s frame to `t` kept, has the same key. -/
 private theorem kept_key (formed : WellFormed program s) (step : EndsStep s t none) {o : Occurrence}
@@ -97,11 +97,10 @@ private theorem kept_key (formed : WellFormed program s) (step : EndsStep s t no
   rcases step.held o inT with ⟨o', held, same, ⟨keyed, _⟩⟩ | ⟨fresh, _⟩
   · obtain rfl := Laws.State.nodup_map_eq formed.distinct.occurrences inS held same
     exact keyed
-  · have := formed.issued.occurrences o inS
-    omega
+  · exact absurd (formed.issued.occurrences o inS) fresh
 
 /-- Two frames compose when the first adds no occurrence and the second spares only an occurrence the first leaves. -/
-theorem EndsStep.trans {spare : Option Nat} (formed : WellFormed program s)
+theorem EndsStep.trans {spare : Option OccurrenceId} (formed : WellFormed program s)
     (sub : ∀ o ∈ u.occurrences, o ∈ s.occurrences) (first : EndsStep s u none) (second : EndsStep u t spare)
     (spared : ∀ id, spare = some id → id ∈ occurrenceIds u) : EndsStep s t spare := by
   have keyed : ∀ o ∈ u.occurrences, key u o = key s o := fun o inU => kept_key formed first (sub o inU) inU
@@ -111,17 +110,15 @@ theorem EndsStep.trans {spare : Option Nat} (formed : WellFormed program s)
     obtain ⟨o', inT, same⟩ := List.mem_map.mp held
     rcases second.held o' inT with ⟨o'', inU, named, _⟩ | ⟨fresh, _⟩
     · exact (within o inGone).2.2 (List.mem_map.mpr ⟨o'', inU, named.symm.trans same⟩)
-    · have := formed.issued.occurrences o (within o inGone).1
-      have := first.issued
-      omega
-  refine ⟨second.instanceId.trans first.instanceId, Nat.le_trans first.issued second.issued, fun count member => ?_,
+    · exact fresh (by rw [same]; exact first.issued _ (formed.issued.occurrences o (within o inGone).1))
+  refine ⟨second.instanceId.trans first.instanceId, first.issued.trans second.issued, fun count member => ?_,
     fun o' inT => ?_, gone ++ gone', ?_, ?_, fun o inGone => ?_, fun o member begun absent other => ?_⟩
   · obtain ⟨grown, inside, named, ⟨element, role, below⟩⟩ := first.grow count member
     obtain ⟨grown', inside', named', ⟨element', role', below'⟩⟩ := second.grow grown inside
     exact ⟨grown', inside', named'.trans named, element'.trans element, role'.trans role, Nat.le_trans below below'⟩
   · rcases second.held o' inT with ⟨o, inU, same, ⟨keyedT, unchanged⟩⟩ | ⟨fresh, uncounted⟩
     · exact .inl ⟨o, sub o inU, same, keyedT.trans (keyed o inU), unchanged⟩
-    · exact .inr ⟨Nat.le_trans first.issued fresh, fun counted => uncounted (counted_grow first.grow counted)⟩
+    · exact .inr ⟨fun issued => fresh (first.issued _ issued), fun counted => uncounted (counted_grow first.grow counted)⟩
   · refine perm'.trans ?_
     rw [List.map_append, ← List.append_assoc, List.map_congr_left fun o inGone => keyed o (within' o inGone).1]
     exact perm.append_right _
@@ -139,14 +136,12 @@ theorem EndsStep.trans {spare : Option Nat} (formed : WellFormed program s)
       · obtain rfl := Laws.State.nodup_map_eq formed.distinct.occurrences inS member (same.symm.trans named)
         obtain rfl := unchanged begun
         exact List.mem_append_right _ (complete' _ held begun absent other)
-      · have := formed.issued.occurrences o member
-        have := first.issued
-        omega
+      · exact absurd (by rw [named]; exact formed.issued.occurrences o member) fresh
     · exact List.mem_append_left _ (complete o member begun inU (by simp))
 
 /-- Removing occurrences of `s` and journalling, once each, the keys of the begun ones among them frames the end facts. -/
 theorem EndsStep.remove (formed : WellFormed program s) (instanceId : t.instanceId = s.instanceId)
-    (issued : t.nextIssue = s.nextIssue) (counters : t.activations = s.activations) (journal : t.journal = s.journal)
+    (issued : Laws.State.OccurrenceGrows s t) (counters : t.activations = s.activations) (journal : t.journal = s.journal)
     (within : ∀ o ∈ t.occurrences, o ∈ s.occurrences) (keyed : ∀ o ∈ t.occurrences, key t o = key s o)
     {gone : List Occurrence} (ended : t.draft.ended = s.draft.ended ++ gone.map (fun o => (key s o, Terminal.cancelled)))
     (ids : (gone.map (·.id)).Nodup)
@@ -154,7 +149,7 @@ theorem EndsStep.remove (formed : WellFormed program s) (instanceId : t.instance
   have absent : ∀ o ∈ s.occurrences, o ∉ t.occurrences → o.id ∉ occurrenceIds t := fun o member out held => by
     obtain ⟨o', inT, same⟩ := List.mem_map.mp held
     exact out (Laws.State.nodup_map_eq formed.distinct.occurrences (within o' inT) member same ▸ inT)
-  refine ⟨instanceId, Nat.le_of_eq issued.symm, countsGrow_same counters,
+  refine ⟨instanceId, issued, countsGrow_same counters,
     fun o' inside => .inl ⟨o', within o' inside, rfl, keyed o' inside, fun _ => rfl⟩, gone, ?_, ids, fun o inGone => ?_,
     fun o member begun out _ => (exactly o).mpr ⟨member, begun, fun inT => out (List.mem_map.mpr ⟨o, inT, rfl⟩)⟩⟩
   · have same : endKeys t = endKeys s ++ gone.map (key s) := by
@@ -175,7 +170,7 @@ variable {program : Program} {s t : State}
 key. -/
 theorem enters_frame (formed : WellFormed program s) {entry : ScopeOccurrence} {locals : List (String × Value)}
     (enters : Laws.State.ScopeAppended s t entry locals) (apart : ∀ old ∈ s.scopes, old.id ≠ entry.id)
-    (parented : entry.parent ≠ none) : EndsStep s t none := by
+    (parented : entry.parent ≠ none) (issued : Laws.State.OccurrenceGrows s t) : EndsStep s t none := by
   have nodup : (scopeIds t).Nodup := by
     rw [scopeIds, enters.scopes, List.map_append]
     refine List.nodup_append.mpr ⟨formed.distinct.scopes, by simp, fun x old y new same => ?_⟩
@@ -190,43 +185,47 @@ theorem enters_frame (formed : WellFormed program s) {entry : ScopeOccurrence} {
         · exact absurd (List.mem_singleton.mp new ▸ orphan) parented)
       enters.instanceId (formed.owned.occurrenceScopes o member)
       fun e inside _ => enters.scopes ▸ List.mem_append_left _ inside)
-  refine .quiet enters.instanceId (Nat.le_of_eq enters.nextIssue.symm) (countsGrow_same enters.activations)
+  refine .quiet enters.instanceId issued (countsGrow_same enters.activations)
     (by simp [endKeys, enters.journal, enters.draft]) (fun o' inside => ?_) fun o member _ => ?_
   · rw [enters.occurrences] at inside
     exact .inl ⟨o', inside, rfl, keyed o' inside, fun _ => rfl⟩
   · rw [occurrenceIds, enters.occurrences]
     exact List.mem_map.mpr ⟨o, member, rfl⟩
 
-theorem enterScope_frame (formed : WellFormed program s) (element : ElementId) (parent : ScopeOccurrenceId)
-    (locals : List (String × Value)) (owner : Option Nat) : EndsStep s (s.enterScope element parent locals owner).1 none := by
-  rw [Laws.State.enterScope_eq]
+theorem enterScope_frame (formed : WellFormed program s) (element : ElementId) {parent : ScopeOccurrenceId}
+    (stands : parent ∈ scopeIds s) (locals : List (String × Value)) (owner : Option OccurrenceId) :
+    EndsStep s (s.enterScope element parent locals owner).1 none := by
+  have issued := Laws.State.enterScope_occurrenceGrows formed.historic element stands locals owner
+  rw [Laws.State.enterScope_eq] at issued ⊢
   exact enters_frame formed {
-      nextIssue := rfl, scopes := rfl, variables := rfl, occurrences := rfl, itemMap := ⟨rfl, rfl⟩,
+      occurrenceOrdinals := rfl, scopes := rfl, variables := rfl, occurrences := rfl, itemMap := ⟨rfl, rfl⟩,
       tokens := rfl, signals := rfl, activations := rfl, journal := rfl, draft := rfl, status := rfl, failure := rfl,
-      instanceId := rfl, slots := .same rfl } (Laws.State.scopes_fresh formed) (by simp)
+      instanceId := rfl, slots := .same rfl } (Laws.State.scopes_fresh formed) (by simp) issued
 
-theorem enterCalled_frame (formed : WellFormed program s) (called : Program) (call : Occurrence)
-    (variables : List (String × Value)) (definition : DefinitionRef) :
+theorem enterCalled_frame (formed : WellFormed program s) (called : Program) {call : Occurrence}
+    (stands : call.scope ∈ scopeIds s) (variables : List (String × Value)) (definition : DefinitionRef) :
     EndsStep s (s.enterCalled called call variables definition).1 none := by
-  rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]
+  have issued := Laws.State.enterCalled_occurrenceGrows formed called stands variables definition
+  rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)] at issued ⊢
   exact enters_frame formed {
-      nextIssue := rfl, scopes := rfl, variables := rfl, occurrences := rfl, itemMap := ⟨rfl, rfl⟩,
+      occurrenceOrdinals := rfl, scopes := rfl, variables := rfl, occurrences := rfl, itemMap := ⟨rfl, rfl⟩,
       tokens := rfl, signals := rfl, activations := rfl, journal := rfl, draft := rfl, status := rfl, failure := rfl,
       instanceId := rfl, slots := ⟨fun _ inside => inside, fun _ inside => inside, fun _ inside => inside⟩ }
-    (Laws.State.scopes_fresh formed) (by simp)
+    (Laws.State.scopes_fresh formed) (by simp) issued
 
-/-- A reservation is a fresh occurrence whose key the counters had not issued. -/
+/-- A reservation in a scope occurrence that stands is a fresh occurrence under a key never issued, whose public key
+the counters had not issued. -/
 theorem reserve_frame (formed : WellFormed program s) (element : ElementId)
-    (scope : ScopeOccurrenceId) : EndsStep s (s.reserve element scope).1 none := by
+    {scope : ScopeOccurrenceId} (stands : scope ∈ scopeIds s) : EndsStep s (s.reserve element scope).1 none := by
   have reserves := Laws.State.reserve_reserves s element scope
   have activated := reserves.activated formed.activations
-  refine .quiet reserves.instanceId (by rw [reserves.nextIssue]; exact Nat.le_succ _) (countsGrow_activated activated)
+  refine .quiet reserves.instanceId reserves.occurrenceGrows (countsGrow_activated activated)
     (by simp [endKeys, reserves.journal, reserves.draft]) (fun o' inside => ?_) fun o member _ => ?_
   · rw [reserves.occurrences] at inside
     rcases List.mem_append.mp inside with old | new
     · exact .inl ⟨o', old, rfl, Laws.State.key_congr (reserves.instances _), fun _ => rfl⟩
     · obtain rfl := List.mem_singleton.mp new
-      refine .inr ⟨Nat.le_of_eq reserves.id.symm, fun counted => activated.fresh counted ?_⟩
+      refine .inr ⟨reserves.fresh (by rw [reserves.placed]; exact stands), fun counted => activated.fresh counted ?_⟩
       simp [key, reserves.instances, reserves.placed, reserves.kind, reserves.role]
   · rw [occurrenceIds, reserves.occurrences]
     exact List.mem_map.mpr ⟨o, List.mem_append_left _ member, rfl⟩
@@ -234,12 +233,12 @@ theorem reserve_frame (formed : WellFormed program s) (element : ElementId)
 /-- Clearing a present scope occurrence, keeping occurrences that lie in no scope occurrence strictly within it,
 journals the begun occurrences it removes. -/
 theorem clearInside_frame (formed : WellFormed program s) {scope : ScopeOccurrenceId}
-    (present : scope ∈ scopeIds s) {keep : List Nat}
+    (present : scope ∈ scopeIds s) {keep : List OccurrenceId}
     (kept : ∀ o ∈ s.occurrences, o.id ∈ keep → ¬ StrictlyWithin s o.scope scope) :
     EndsStep s (s.clearInside scope keep) none := by
   have cleared := Laws.State.clearInside_cleared formed present keep
   obtain ⟨gone, ended, ids, exactly⟩ := Laws.State.clearInside_ends formed present keep
-  refine .remove formed (Laws.State.clearInside_instanceId s scope keep) cleared.nextIssue cleared.activations
+  refine .remove formed (Laws.State.clearInside_instanceId s scope keep) cleared.occurrenceGrows cleared.activations
     cleared.journal cleared.occurrencesSublist.subset (fun o inside => ?_) ended ids fun o => (exactly o).trans ?_
   · obtain ⟨member, stays⟩ := (cleared.occurrences o).mp inside
     obtain ⟨entry, inScope, named⟩ := List.mem_map.mp (formed.owned.occurrenceScopes o member)
@@ -262,7 +261,7 @@ theorem leaveScope_frame (formed : WellFormed program s) {scope : ScopeOccurrenc
   obtain ⟨gone, ended, ids, exactly⟩ := Laws.State.clearInside_ends formed present []
   have drafted : (s.leaveScope scope).draft = (s.clearInside scope).draft :=
     (congrArg State.draft (Laws.State.leaveScope_eq s scope).1).trans rfl
-  refine .remove formed (Laws.State.leaveScope_eq s scope).2 left.nextIssue left.activations left.journal
+  refine .remove formed (Laws.State.leaveScope_eq s scope).2 left.occurrenceGrows left.activations left.journal
     left.occurrencesSublist.subset (fun o inside => ?_) (drafted ▸ ended) ids fun o => (exactly o).trans ?_
   · obtain ⟨member, outside⟩ := (left.occurrences o).mp inside
     obtain ⟨entry, inScope, named⟩ := List.mem_map.mp (formed.owned.occurrenceScopes o member)
@@ -276,22 +275,24 @@ theorem leaveScope_frame (formed : WellFormed program s) {scope : ScopeOccurrenc
         List.not_mem_nil⟩
 
 /-- Disarming drops reservations only. -/
-theorem disarm_frame (s : State) (host : Nat) : EndsStep s (s.disarm host) none := by
+theorem disarm_frame (s : State) (host : OccurrenceId) : EndsStep s (s.disarm host) none := by
   rw [Laws.State.disarm_eq]
-  exact .prune ⟨rfl, rfl⟩ rfl rfl rfl (fun _ inside => (List.mem_filter.mp inside).1)
+  exact .prune ⟨rfl, rfl⟩ (.refl _) rfl rfl (fun _ inside => (List.mem_filter.mp inside).1)
     fun _ member begun => List.mem_filter.mpr ⟨member, by simp [begun]⟩
 
 theorem setVariable_frame (s : State) (target : ScopeOccurrenceId) (name : String)
     (value : Value) : EndsStep s (s.setVariable target name value) none :=
   have same := Laws.State.setVariable_same s target name value
-  .prune ⟨same.scopes, same.instanceId⟩ same.nextIssue same.activations
+  .prune ⟨same.scopes, same.instanceId⟩
+    (.of_same (congrArg (List.map ScopeOccurrence.id) same.scopes) same.scopeOrdinals same.occurrenceOrdinals) same.activations
     (by simp [endKeys, same.journal, same.draft]) (fun _ inside => same.occurrences ▸ inside)
     fun _ member _ => same.occurrences ▸ member
 
 theorem removeVariable_frame (s : State) (target : ScopeOccurrenceId) (name : String) :
     EndsStep s (s.removeVariable target name) none :=
   have same := Laws.State.removeVariable_same s target name
-  .prune ⟨same.scopes, same.instanceId⟩ same.nextIssue same.activations
+  .prune ⟨same.scopes, same.instanceId⟩
+    (.of_same (congrArg (List.map ScopeOccurrence.id) same.scopes) same.scopeOrdinals same.occurrenceOrdinals) same.activations
     (by simp [endKeys, same.journal, same.draft]) (fun _ inside => same.occurrences ▸ inside)
     fun _ member _ => same.occurrences ▸ member
 
@@ -316,10 +317,11 @@ theorem beginOccurrence_frame (formed : WellFormed program s) {request : BeginRe
   obtain ⟨t, begun⟩ := pair
   dsimp only at begins
   have keyed : ∀ o, key t o = key s o := fun o => Laws.State.key_congr (begins.instances _)
-  have issued : s.nextIssue ≤ t.nextIssue ∧ CountsGrow s t := by
+  have issued : Laws.State.OccurrenceGrows s t ∧ CountsGrow s t := by
     rcases begins.source with ⟨_, reserved⟩ | fresh
-    · exact ⟨Nat.le_of_eq reserved.nextIssue.symm, countsGrow_same reserved.activations⟩
-    · exact ⟨by rw [fresh.nextIssue]; exact Nat.le_succ _, countsGrow_activated fresh.activated⟩
+    · exact ⟨.of_same (congrArg (List.map ScopeOccurrence.id) begins.scopes) begins.scopeOrdinals
+        reserved.occurrenceOrdinals, countsGrow_same reserved.activations⟩
+    · exact ⟨fresh.occurrenceGrows, countsGrow_activated fresh.activated⟩
   refine .quiet begins.instanceId issued.1 issued.2 (by simp [endKeys, begins.journal, begins.ended])
     (fun o' inside => ?_) fun o member _ => ?_
   · rw [begins.occurrences] at inside
@@ -333,7 +335,7 @@ theorem beginOccurrence_frame (formed : WellFormed program s) {request : BeginRe
         refine .inl ⟨reserved, facts.member, facts.id, ?_, fun begun => by simp [unbegun] at begun⟩
         simp [key, begins.instances, begins.scope, sameInstance present, facts.element, facts.activation,
           facts.role]
-      · refine .inr ⟨Nat.le_of_eq fresh.id.symm, fun counted => fresh.activated.fresh counted ?_⟩
+      · refine .inr ⟨fresh.fresh present, fun counted => fresh.activated.fresh counted ?_⟩
         simp [key, begins.instances, begins.scope, fresh.element, fresh.roled]
   · rw [occurrenceIds, begins.occurrences, List.map_append, List.mem_append]
     by_cases same : o.id = begun.id
@@ -346,7 +348,8 @@ theorem startReserved_frame (formed : WellFormed program s) {occurrence : Occurr
     EndsStep s (s.startReserved occurrence sourceType).1 none := by
   cases flag : occurrence.begun
   · have starts := Laws.State.startReserved_starts s sourceType flag
-    refine .quiet starts.instanceId (Nat.le_of_eq starts.nextIssue.symm) (countsGrow_same starts.activations)
+    refine .quiet starts.instanceId (.of_same (congrArg (List.map ScopeOccurrence.id) starts.scopes) starts.scopeOrdinals
+      starts.occurrenceOrdinals) (countsGrow_same starts.activations)
       (by simp [endKeys, starts.journal, starts.ended]) (fun o' inside => ?_) fun o inS _ => ?_
     · rw [starts.occurrences] at inside
       obtain ⟨other, inS, rfl⟩ := List.mem_map.mp inside
@@ -373,7 +376,7 @@ section Removal
 
 variable {program : Program} {s u : State}
 
-private theorem withoutRecord_instanceOf (u : State) (id : Nat) (x : ScopeOccurrenceId) :
+private theorem withoutRecord_instanceOf (u : State) (id : OccurrenceId) (x : ScopeOccurrenceId) :
     (Laws.State.withoutRecord u id).instanceOf x = u.instanceOf x :=
   Laws.State.instanceOf_congr (s := u) (t := Laws.State.withoutRecord u id) rfl rfl x
 
@@ -381,9 +384,9 @@ private theorem draft_key (r : State) (draft : Draft) (o : Occurrence) : key { r
   Laws.State.key_congr (Laws.State.instanceOf_congr (s := r) (t := { r with draft }) rfl rfl _)
 
 /-- Removing a record without journalling it spares it. -/
-theorem withoutRecord_frame (u : State) (id : Nat) : EndsStep u (Laws.State.withoutRecord u id) (some id) where
+theorem withoutRecord_frame (u : State) (id : OccurrenceId) : EndsStep u (Laws.State.withoutRecord u id) (some id) where
   instanceId := rfl
-  issued := Nat.le_refl _
+  issued := .refl _
   grow := countsGrow_same rfl
   held o' inside := .inl ⟨o', (List.mem_filter.mp inside).1, rfl,
     Laws.State.key_congr (withoutRecord_instanceOf u id _), fun _ => rfl⟩
@@ -463,7 +466,7 @@ theorem removeOccurrence_frame (formed : WellFormed program s) {record : Occurre
     simp [Laws.State.withoutRecord, same] at inside
 
 /-- Removing the record `id` of a well-formed state that holds none removes nothing. -/
-private theorem removeOccurrence_absent (formed : WellFormed program s) {id : Nat} (absent : id ∉ occurrenceIds s) :
+private theorem removeOccurrence_absent (formed : WellFormed program s) {id : OccurrenceId} (absent : id ∉ occurrenceIds s) :
     s.removeOccurrence id = Laws.State.withoutRecord s id := by
   have unowned : s.scopes.filter (·.occurrence == some id) = [] := List.filter_eq_nil_iff.mpr fun entry inside owns => by
     obtain ⟨owner, held, named, _⟩ := formed.owned.scopeOwners entry inside id (by simpa using owns)
@@ -525,7 +528,7 @@ private theorem withdrawn_shape : ∀ (scopes : List ScopeOccurrence) (t : State
       rw [same, Laws.State.withdrawInside_eq]
 
 /-- Cancelling an occurrence of a well-formed state journals each begun occurrence it removes, itself included, once. -/
-theorem cancelOccurrence_frame (formed : WellFormed program s) (id : Nat) :
+theorem cancelOccurrence_frame (formed : WellFormed program s) (id : OccurrenceId) :
     EndsStep s (s.cancelOccurrence id) none := by
   cases found : s.occurrence? id with
   | none =>
@@ -543,7 +546,7 @@ theorem cancelOccurrence_frame (formed : WellFormed program s) (id : Nat) :
     have uFormed : WellFormed program (s.withdrawOccurrence occurrence.id) := by
       rw [withdrawn]
       exact disarmed.narrow {
-          scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, nextIssue := rfl,
+          scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
           instances := Laws.State.instanceOf_congr rfl rfl, recorded := id, items := ⟨fewer, fun _ => Nat.le_refl _⟩,
           tokens := .refl _, signals := .refl _, starts := fun _ => id, slots := .same rfl } rfl disarmed.startedOnce
     have within : ∀ o ∈ (s.withdrawOccurrence occurrence.id).occurrences, o ∈ s.occurrences := fun o inside => by
@@ -554,7 +557,7 @@ theorem cancelOccurrence_frame (formed : WellFormed program s) (id : Nat) :
       exact List.mem_filter.mpr ⟨member, by simp [flag]⟩
     have pruned : EndsStep s (s.withdrawOccurrence occurrence.id) none := by
       rw [withdrawn, Laws.State.disarm_eq, Laws.State.closeOwnItems_eq]
-      exact .prune ⟨rfl, rfl⟩ rfl rfl rfl (fun _ inside => (List.mem_filter.mp inside).1)
+      exact .prune ⟨rfl, rfl⟩ (.refl _) rfl rfl (fun _ inside => (List.mem_filter.mp inside).1)
         fun _ inside flag => List.mem_filter.mpr ⟨inside, by simp [flag]⟩
     have only : ∀ o ∈ (s.withdrawOccurrence occurrence.id).occurrences, o.id = occurrence.id → o = occurrence :=
       fun o inside same => Laws.State.nodup_map_eq formed.distinct.occurrences (within o inside) member same

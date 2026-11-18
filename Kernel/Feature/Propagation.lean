@@ -42,8 +42,7 @@ the scope that holds it: CIB starts the catcher's handler and only then leaves t
 does not interrupt (`ThrowEscalationEventActivityBehavior.java:44-48`). Only an Escalation's search calls this;
 `arriveThrow` leaves an Error or a Cancel throw before raising it. -/
 def throwerLeaves (ctx : Ctx) (origin : Origin) (state : State) : State :=
-  let standing := state.occurrences.find? fun occurrence =>
-    occurrence.element == origin.element && occurrence.scope == origin.scope && occurrence.activation == origin.activation
+  let standing := state.occurrences.find? (·.id == origin.thrower)
   match standing, (ctx.program.element? origin.element).bind (·.event?) with
   | some occurrence, some (_, payload) => state.signal (.complete occurrence.id (throwLeave payload) [] .outward)
   | _, _ => state
@@ -238,9 +237,7 @@ still stand and are no other path. -/
 def busyCalledRoot (ctx : Ctx) (origin : Origin) (occurrence : ScopeOccurrence) (state : State) : Bool :=
   let mapsOutputs := (((occurrence.element.bind ctx.program.element?).bind (·.activity?)).bind (·.2.work.call?)).any
     fun work => !work.outputs.isEmpty || work.propagateAllOutputs
-  let thrower (standing : Occurrence) : Bool :=
-    standing.element == origin.element && standing.activation == origin.activation
-  let otherPath := state.occurrences.any (fun standing => standing.scope == occurrence.id && !thrower standing) ||
+  let otherPath := state.occurrences.any (fun standing => standing.scope == occurrence.id && standing.id != origin.thrower) ||
     state.tokens.any (·.busyScope == occurrence.id)
   origin.scope == occurrence.id && mapsOutputs && otherPath
 

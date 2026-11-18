@@ -70,7 +70,7 @@ theorem keyed_of_nodup : ∀ {bindings : List (String × Value)}, (bindings.map 
 
 /-- The variable set a new scope occurrence installs binds each name at most once, whatever locals it was given (#147). -/
 theorem enterScope_names (state : State) (element : ElementId) (parent : ScopeOccurrenceId)
-    (locals : List (String × Value)) (occurrence : Option Nat)
+    (locals : List (String × Value)) (occurrence : Option OccurrenceId)
     (names : ∀ vars ∈ state.variables, (vars.entries.map (·.1)).Nodup) :
     ∀ vars ∈ (state.enterScope element parent locals occurrence).1.variables, (vars.entries.map (·.1)).Nodup := by
   intro vars member
@@ -91,34 +91,34 @@ theorem busyScopes_parent (state : State) (child : ScopeOccurrence) (member : ch
 /-! ## Clearing and leaving -/
 
 /-- Clearing a scope occurrence keeps the instance identity. -/
-theorem clearInside_instanceId (s : State) (scope : ScopeOccurrenceId) (keep : List Nat) :
+theorem clearInside_instanceId (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
     (s.clearInside scope keep).instanceId = s.instanceId := by
   obtain ⟨_, made⟩ := clearInside_eq s scope keep
   rw [made]
 
 /-- Clearing a scope occurrence queues and drops no signal, whatever it clears. -/
-theorem clearInside_signals (s : State) (scope : ScopeOccurrenceId) (keep : List Nat) :
+theorem clearInside_signals (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
     (s.clearInside scope keep).signals = s.signals := by
   obtain ⟨_, made⟩ := clearInside_eq s scope keep
   rw [made]
 
 /-- Clearing a scope occurrence only drops tokens, whatever it clears. -/
-theorem clearInside_tokens (s : State) (scope : ScopeOccurrenceId) (keep : List Nat) :
+theorem clearInside_tokens (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
     (s.clearInside scope keep).tokens.Sublist s.tokens := by
   obtain ⟨_, made⟩ := clearInside_eq s scope keep
   rw [made]
   exact List.filter_sublist
 
-/-- Clearing drops scope occurrences and issues no identity, whatever it clears. -/
-theorem clearInside_shrinks (s : State) (scope : ScopeOccurrenceId) (keep : List Nat) :
-    (s.clearInside scope keep).scopes.Sublist s.scopes ∧ (s.clearInside scope keep).nextIssue = s.nextIssue := by
+/-- Clearing drops scope occurrences and takes no position, whatever it clears. -/
+theorem clearInside_shrinks (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
+    (s.clearInside scope keep).scopes.Sublist s.scopes ∧ (s.clearInside scope keep).nextPosition = s.nextPosition := by
   obtain ⟨_, made⟩ := clearInside_eq s scope keep
   rw [made]
   exact ⟨List.filter_sublist, rfl⟩
 
 /-- Clearing a scope occurrence drops the compensation records retained strictly inside it and the runs inside it, its
 own included, and keeps the others in order. -/
-theorem clearInside_compensation (s : State) (scope : ScopeOccurrenceId) (keep : List Nat) :
+theorem clearInside_compensation (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
     (s.clearInside scope keep).slots.compensation =
       { retained := s.slots.compensation.retained.filter (!((s.subtree scope).filter (· != scope)).contains ·.scope)
         runs := s.slots.compensation.runs.filter (!(s.subtree scope).contains ·.scope) } := by
@@ -154,7 +154,7 @@ theorem leaveScope_compensation (s : State) (scope : ScopeOccurrenceId) :
     (s.leaveScope scope).slots.compensation.runs = s.slots.compensation.runs.filter (!(s.subtree scope).contains ·.scope) ∧
     (s.leaveScope scope).scopes = (s.scopes.filter fun entry =>
       !((s.subtree scope).filter (· != scope)).contains entry.id).filter (·.id != scope) ∧
-    (s.leaveScope scope).activations = s.activations ∧ (s.leaveScope scope).nextIssue = s.nextIssue := by
+    (s.leaveScope scope).activations = s.activations ∧ (s.leaveScope scope).nextPosition = s.nextPosition := by
   obtain ⟨_, made⟩ := clearInside_eq s scope []
   rw [leaveScope_slots_eq, (leaveScope_eq s scope).1, made]
   exact ⟨rfl, rfl, rfl, rfl, rfl⟩

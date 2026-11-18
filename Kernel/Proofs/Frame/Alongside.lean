@@ -60,7 +60,7 @@ structure OccursAlongside (program : Program) (rel : State → Prop) : Prop wher
   raise : ∀ s raised occurrence, WellFormed program s →
     Laws.State.RaisesFrom (fun t => WellFormed program t ∧ rel t) occurrence s → rel s →
     rel (s.signal (.raise raised { element := occurrence.element, scope := occurrence.scope,
-                                   activation := occurrence.activation }))
+                                   activation := occurrence.activation, thrower := occurrence.id }))
   enterCalled : ∀ s call variables definition, WellFormed program s → call ∈ s.occurrences → call.begun = true →
     call.role = .element → ((program.element? call.element).bind (·.activity?)).isSome →
     (∀ root ∈ s.scopes, root.calledInstance.isSome → root.occurrence ≠ some call.id) → rel s →
@@ -82,7 +82,8 @@ structure Unmoved (s t : State) : Prop where
   scopes : t.scopes = s.scopes
   scopeOrdinals : t.scopeOrdinals = s.scopeOrdinals
   occurrences : t.occurrences = s.occurrences
-  nextIssue : t.nextIssue = s.nextIssue
+  occurrenceOrdinals : t.occurrenceOrdinals = s.occurrenceOrdinals
+  nextPosition : t.nextPosition = s.nextPosition
   activations : t.activations = s.activations
   journal : t.journal = s.journal
   draft : t.draft = s.draft
@@ -103,7 +104,9 @@ structure Unmoved (s t : State) : Prop where
 `Unmoved` is one edit here. -/
 theorem Unmoved.same {s t : State} (scopes : t.scopes = s.scopes := by exact rfl)
     (scopeOrdinals : t.scopeOrdinals = s.scopeOrdinals := by exact rfl)
-    (occurrences : t.occurrences = s.occurrences := by exact rfl) (nextIssue : t.nextIssue = s.nextIssue := by exact rfl)
+    (occurrences : t.occurrences = s.occurrences := by exact rfl)
+    (occurrenceOrdinals : t.occurrenceOrdinals = s.occurrenceOrdinals := by exact rfl)
+    (nextPosition : t.nextPosition = s.nextPosition := by exact rfl)
     (activations : t.activations = s.activations := by exact rfl) (journal : t.journal = s.journal := by exact rfl)
     (draft : t.draft = s.draft := by exact rfl) (instanceId : t.instanceId = s.instanceId := by exact rfl)
     (multiInstances : t.slots.multiInstances = s.slots.multiInstances := by exact rfl)
@@ -118,7 +121,7 @@ theorem Unmoved.same {s t : State} (scopes : t.scopes = s.scopes := by exact rfl
     (parked : ∀ waiting ∈ t.slots.parked, waiting ∈ s.slots.parked := by exact fun _ held => held)
     (placings : ∀ signal ∈ t.signals, Laws.Step.placing signal = true → signal ∈ s.signals :=
       by exact fun _ held _ => held) : Unmoved s t :=
-  ⟨scopes, scopeOrdinals, occurrences, nextIssue, activations, journal, draft, instanceId, multiInstances, compensation, begins,
+  ⟨scopes, scopeOrdinals, occurrences, occurrenceOrdinals, nextPosition, activations, journal, draft, instanceId, multiInstances, compensation, begins,
     triggers, resumes, deferred, pending, instances, flows, parked, placings⟩
 
 /-- `scope` is the context of a handler or group a compensation run of `s` holds running. -/
@@ -144,7 +147,7 @@ def StoresHeldOrFresh (s : State) (compensation : Compensations) : Prop :=
 /-- A scope occurrence `State.removeOccurrence` leaves (one owned by the removed occurrence, of the state it removes
 from) is, while it stands in a state whose scope occurrences are some of those, still owned: leaving keeps each
 record it does not drop. -/
-theorem removeOccurrence_leavesOwned {s t : State} {id : Nat} (distinct : (s.scopes.map (·.id)).Nodup)
+theorem removeOccurrence_leavesOwned {s t : State} {id : OccurrenceId} (distinct : (s.scopes.map (·.id)).Nodup)
     (fewer : t.scopes.Sublist s.scopes) {entry : ScopeOccurrence}
     (member : entry ∈ s.scopes.filter (·.occurrence == some id)) (stands : entry.id ∈ scopeIds t) :
     LeavesOwned t entry.id := by
@@ -180,20 +183,20 @@ theorem BeginFits.handler {s : State} {request : BeginRequest} {run : ScopeOccur
 
 /-- Where a completion of the occurrence `id` by `leave` queued in `s` comes from: flows offered where the occurrence
 lies (`Laws.Flow.LeaveOffered`), or the resume of a compensation run a state that kept `rel` held. -/
-def CompletesFrom (rel : State → Prop) (program : Program) (s : State) (id : Nat) (leave : Leave) : Prop :=
+def CompletesFrom (rel : State → Prop) (program : Program) (s : State) (id : OccurrenceId) (leave : Leave) : Prop :=
   Laws.Flow.LeaveOffered (fun held => WellFormed program held ∧ rel held) program s id leave ∨
     ∃ held, WellFormed program held ∧ rel held ∧
       ∃ run ∈ held.slots.compensation.runs, run.resume = some (.complete id leave)
 
 /-- A completion that comes from states that kept `rel` comes from states that kept anything `rel` implies. -/
-theorem CompletesFrom.mono {rel weaker : State → Prop} {program : Program} {s : State} {id : Nat} {leave : Leave}
+theorem CompletesFrom.mono {rel weaker : State → Prop} {program : Program} {s : State} {id : OccurrenceId} {leave : Leave}
     (source : CompletesFrom rel program s id leave) (implies : ∀ s, rel s → weaker s) :
     CompletesFrom weaker program s id leave :=
   source.imp (fun offered => offered.mono fun _ held => ⟨held.1, implies _ held.2⟩)
     fun ⟨held, formed, kept, resumed⟩ => ⟨held, formed, implies held kept, resumed⟩
 
 /-- A completion that names no flow comes from anywhere. -/
-theorem CompletesFrom.unnamed {rel : State → Prop} {program : Program} {s : State} {id : Nat} {leave : Leave}
+theorem CompletesFrom.unnamed {rel : State → Prop} {program : Program} {s : State} {id : OccurrenceId} {leave : Leave}
     (unnamed : ∀ selected, leave = .flows selected → selected = []) : CompletesFrom rel program s id leave :=
   .inl fun selected same _ inside => by cases unnamed selected same; cases inside
 
@@ -241,7 +244,7 @@ structure FrameAlongside (program : Program) (rel : State → Prop) (srel : Stat
   signalBegin : ∀ s request, WellFormed program s → BeginFits s request →
     Laws.Flow.BeginAnchored (fun t => WellFormed program t ∧ rel t) program s request → rel s →
     rel (s.signal (.begin request))
-  issue : ∀ s, rel s → rel s.issue.1
+  takePosition : ∀ s, rel s → rel s.takePosition.1
   /-- Entering, below a scope occurrence that stands, a scope occurrence of an element anchored where it is entered
   (`Laws.Flow.Anchored`). -/
   enterScope : ∀ s element parent locals owner, WellFormed program s → parent ∈ Laws.State.scopeIds s →
@@ -318,7 +321,7 @@ which ends where leaving them first, each owned and from a well-formed state, an
 the record lies outside each of them (`Laws.State.leaveScope_withoutRecord`); with no record, nothing owns one. -/
 theorem FrameAlongside.removeOccurrence {rel : State → Prop} {program : Program} (side : FrameAlongside program rel)
     (without : ∀ t id, (∀ entry ∈ t.scopes, entry.occurrence ≠ some id) → rel t → rel (Laws.State.withoutRecord t id))
-    {s : State} {id : Nat} (formed : WellFormed program s) (kept : rel s) :
+    {s : State} {id : OccurrenceId} (formed : WellFormed program s) (kept : rel s) :
     rel (s.removeOccurrence id) := by
   by_cases absent : id ∉ occurrenceIds s
   · have unowned : ∀ entry ∈ s.scopes, entry.occurrence ≠ some id := fun entry inside owns => by
@@ -387,7 +390,7 @@ theorem FrameAlongside.removeOccurrence {rel : State → Prop} {program : Progra
 /-- Withdrawing an occurrence's items closes its own, disarms it and withdraws the items inside the scope occurrences
 it owns, which only the disarming may move anything `rel` reads of. -/
 theorem FrameAlongside.withdrawOccurrence {rel : State → Prop} {program : Program} (side : FrameAlongside program rel) {s : State}
-    (formed : WellFormed program s) (kept : rel s) (id : Nat) : rel (s.withdrawOccurrence id) := by
+    (formed : WellFormed program s) (kept : rel s) (id : OccurrenceId) : rel (s.withdrawOccurrence id) := by
   obtain ⟨items, frame⟩ := Laws.State.withdrawAll_frame
     (((s.closeOwnItems id).disarm id).scopes.filter (·.occurrence == some id)) ((s.closeOwnItems id).disarm id)
   rw [Laws.State.withdrawOccurrence_eq, frame]
@@ -402,7 +405,7 @@ its end and cancellation, which `ends` keeps. -/
 theorem FrameAlongside.cancelOccurrence {rel : State → Prop} {program : Program} (side : FrameAlongside program rel)
     (without : ∀ t id, (∀ entry ∈ t.scopes, entry.occurrence ≠ some id) → rel t → rel (Laws.State.withoutRecord t id))
     (ends : ∀ t ended cancelled, rel t → rel { t with draft := { t.draft with ended, cancelled } })
-    {s : State} {id : Nat} (formed : WellFormed program s) (kept : rel s) :
+    {s : State} {id : OccurrenceId} (formed : WellFormed program s) (kept : rel s) :
     rel (s.cancelOccurrence id) := by
   cases found : s.occurrence? id with
   | none =>
@@ -451,20 +454,20 @@ theorem FrameAlongside.hold {program : Program} (side : FrameAlongside program r
 /-- An open item is an issue and an added item. -/
 theorem FrameAlongside.openItem {program : Program} (side : FrameAlongside program rel) {s : State} (kept : rel s) (kind : OpenKind)
     (occurrence : Occurrence) : rel (s.openItem kind occurrence) := by
-  refine side.frame s.issue.1 _ ?_ (side.issue s kept)
-  rw [Laws.State.openItem_eq, Laws.State.issue_eq]
+  refine side.frame s.takePosition.1 _ ?_ (side.takePosition s kept)
+  rw [Laws.State.openItem_eq, Laws.State.takePosition_eq]
   exact .same
 
 /-- A subscription is a reservation of a reservable element, an issue and an added item. -/
 theorem FrameAlongside.openSubscription {program : Program} (side : FrameAlongside program rel)
     (occurs : OccursAlongside program rel) {s : State} (formed : WellFormed program s) (kept : rel s)
-    (kind : OpenKind) (element : ElementId) (scope : ScopeOccurrenceId) (host : Option Nat) (passive : Bool)
+    (kind : OpenKind) (element : ElementId) (scope : ScopeOccurrenceId) (host : Option OccurrenceId) (passive : Bool)
     (stands : Laws.Step.ScopeStands s scope) (reservable : Laws.IL.Reservable program element)
     (anchored : Laws.Flow.Anchored (fun t => WellFormed program t ∧ rel t) program s element scope) :
     rel (s.openSubscription kind element scope host passive).1 := by
-  refine side.frame (s.reserve element scope).1.issue.1 _ ?_
-    (side.issue _ (occurs.reserve s element scope formed stands reservable anchored kept))
-  rw [Laws.State.openSubscription_eq, Laws.State.issue_eq]
+  refine side.frame (s.reserve element scope).1.takePosition.1 _ ?_
+    (side.takePosition _ (occurs.reserve s element scope formed stands reservable anchored kept))
+  rw [Laws.State.openSubscription_eq, Laws.State.takePosition_eq]
   exact .same
 
 /-- Closing an item moves nothing `rel` reads. -/

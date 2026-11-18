@@ -88,7 +88,7 @@ import {
   type WriteEvent,
   SemanticCause,
   semanticFailure,
-  itemsByPosition,
+  itemsByPosition, type OccurrenceId,
 } from "./state.js";
 // Lean's `Kernel.Hooks` re-exports `Kernel.State.Removal` to the features and `Kernel.Step`; so does this module, which
 // keeps the removal module's direct importers to this hub (guard 15).
@@ -554,8 +554,8 @@ export function subscriptionOf(ctx: Ctx, id: ElementId): Subscription | null {
  */
 export function boundaryFire(
   boundary: Boundary,
-  host: number | null,
-  reserved: number | null,
+  host: OccurrenceId | null,
+  reserved: OccurrenceId | null,
   scope: ScopeOccurrenceId,
   writes: readonly Binding[],
   state: State,
@@ -574,7 +574,7 @@ export function boundaryFire(
  * Event, when a subscription triggered it.
  */
 export interface ScopeEntry {
-  readonly inner: number | null;
+  readonly inner: OccurrenceId | null;
 }
 
 /** The default of every lifecycle hook: the mechanism is not registered, a wiring defect `registry.ts#hooks` excludes. */
@@ -629,11 +629,11 @@ export interface Hooks {
   /** Subscriptions: any other message or timer subscription fired. */
   readonly trigger: (ctx: Ctx, item: OpenItem, fired: Fired, state: State) => Outcome;
   /** Subscriptions: `Signal.arm`. */
-  readonly arm: (ctx: Ctx, host: number, element: ElementId, scope: ScopeOccurrenceId, state: State) => Outcome;
+  readonly arm: (ctx: Ctx, host: OccurrenceId, element: ElementId, scope: ScopeOccurrenceId, state: State) => Outcome;
   /** Subscriptions: `Signal.armScope`. */
   readonly armScope: (ctx: Ctx, scope: ScopeOccurrenceId, state: State) => Outcome;
   /** Subscriptions: `Signal.armGateway`. */
-  readonly armGateway: (ctx: Ctx, occurrence: number, gateway: ElementId, scope: ScopeOccurrenceId, state: State) => Outcome;
+  readonly armGateway: (ctx: Ctx, occurrence: OccurrenceId, gateway: ElementId, scope: ScopeOccurrenceId, state: State) => Outcome;
   /** Propagation: `Signal.raise`. */
   readonly raise: (ctx: Ctx, raised: Raised, origin: Origin, state: State) => Outcome;
   /** Compensation: `Signal.compensate`. */
@@ -642,7 +642,7 @@ export interface Hooks {
     scope: ScopeOccurrenceId,
     activity: ElementId | null,
     trigger: OccurrenceRef,
-    leave: number | null,
+    leave: OccurrenceId | null,
     resume: Resume | null,
     state: State,
   ) => Outcome;
@@ -666,7 +666,7 @@ export interface Hooks {
   /** Flow: leave through flows. */
   readonly outflow: (ctx: Ctx, occurrence: Occurrence, leave: Leave, state: State) => Outcome;
   /** MultiInstance: one instance of the body occurrence completed. */
-  readonly instanceCompleted: (ctx: Ctx, body: number, occurrence: Occurrence, writes: readonly Binding[], state: State) => Outcome;
+  readonly instanceCompleted: (ctx: Ctx, body: OccurrenceId, occurrence: Occurrence, writes: readonly Binding[], state: State) => Outcome;
   /** Compensation: a handler of the run in that scope occurrence completed. */
   readonly handlerCompleted: (ctx: Ctx, run: ScopeOccurrenceId, occurrence: Occurrence, state: State) => Outcome;
   /** Compensation: a handler of the run in that scope occurrence left without completing, raised by an event. */

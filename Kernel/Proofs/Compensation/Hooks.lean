@@ -683,8 +683,8 @@ theorem failCompensation_formed (hooks : Hooks) {ctx : Ctx} {handler : ScopeOccu
   exact formed.signal _
 
 /-- Retaining other records in place of `s`'s, the counter stepped by `issued`, moves nothing else. -/
-theorem moves_retained (s : State) (retained : List Compensable) {next : Nat} (issued : s.nextIssue ≤ next) :
-    Moves s (stored { s with nextIssue := next } { s.slots.compensation with retained }) :=
+theorem moves_retained (s : State) (retained : List Compensable) {next : Nat} (issued : s.nextPosition ≤ next) :
+    Moves s (stored { s with nextPosition := next } { s.slots.compensation with retained }) :=
   ⟨issued, .of_same rfl rfl, fun _ inside => .inl inside, rfl, rfl, ⟨[], by simp [stored], by simp⟩, fun _ => Nat.le_refl _,
     fun run inside => ⟨run, inside, rfl⟩, fun _ inside => inside⟩
 
@@ -721,9 +721,9 @@ theorem completed_formed (hooks : Hooks) {ctx : Ctx} {occurrence : Occurrence} {
       omega
   · obtain ⟨_, placedAt, numbered, rest⟩ := rest
     obtain ⟨children, rfl⟩ := rest
-    rw [store_stored, Laws.State.issue_eq] at after ⊢
-    rw [Laws.State.issue_eq] at numbered
-    have moves := moves_retained s (outer ++ [record]) (Nat.le_succ s.nextIssue)
+    rw [store_stored, Laws.State.takePosition_eq] at after ⊢
+    rw [Laws.State.takePosition_eq] at numbered
+    have moves := moves_retained s (outer ++ [record]) (Nat.le_succ s.nextPosition)
     refine formed_of formed (fun record' inside => ?_) formed.keyed
       (fun run inside => formed.runsIssued run inside)
       (apart_of_fresh (fun n => ?_) formed.completions formed.issued rfl) (fun _ inside => .inl inside)
@@ -756,7 +756,7 @@ theorem compensationsFresh : CompensationsFresh := by
   · exact formed.triggers.grouped run inside grouped (by rw [same]; exact head)
 
 theorem compensate_formed (hooks : Hooks) {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : Option ElementId}
-    {trigger : OccurrenceRef} {leave : Option Nat} {resume : Option Resume} {s t : State}
+    {trigger : OccurrenceRef} {leave : Option OccurrenceId} {resume : Option Resume} {s t : State}
     (before : WellFormed ctx.program s) (formed : Formed (DependsIn hooks footprintReads footprintWrites ctx.program) s)
     (stands : Laws.Step.ScopeStands s scope)
     (popped : Laws.State.Popped (fun queue => WellFormed ctx.program queue ∧

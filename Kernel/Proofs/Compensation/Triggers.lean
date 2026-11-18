@@ -61,7 +61,7 @@ theorem instanceOf_moved {program : Program} {base t : State} (before : WellForm
 structure Twin (base s : State) : Prop where
   scopes : s.scopes = base.scopes
   named : s.instanceId = base.instanceId
-  next : s.nextIssue = base.nextIssue
+  next : s.nextPosition = base.nextPosition
   ordinals : s.scopeOrdinals = base.scopeOrdinals
   occurrences : s.occurrences = base.occurrences
 
@@ -164,24 +164,24 @@ theorem triggers_moved {program : Program} {base s t : State} (before : WellForm
 next, issuing once more. -/
 theorem apart_of_fresh {s t : State}
     (counted : ∀ n, (completions t.slots.compensation).count n ≤
-      (completions s.slots.compensation).count n + [s.nextIssue].count n)
-    (apart : CompletionsApart s.slots.compensation) (issued : CompletionsIssued s) (next : t.nextIssue = s.nextIssue + 1) :
+      (completions s.slots.compensation).count n + [s.nextPosition].count n)
+    (apart : CompletionsApart s.slots.compensation) (issued : CompletionsIssued s) (next : t.nextPosition = s.nextPosition + 1) :
     CompletionsApart t.slots.compensation ∧ CompletionsIssued t := by
-  have none : (completions s.slots.compensation).count s.nextIssue = 0 :=
+  have none : (completions s.slots.compensation).count s.nextPosition = 0 :=
     List.count_eq_zero.mpr fun inside => Nat.lt_irrefl _ (issued _ inside)
   refine ⟨List.nodup_iff_count.mpr fun n => ?_, fun n inside => ?_⟩
   · have bound := counted n
     have once := List.nodup_iff_count.mp apart n
-    by_cases fresh : n = s.nextIssue
+    by_cases fresh : n = s.nextPosition
     · subst fresh
       rw [none, List.count_singleton_self] at bound
       exact bound
-    · have other : [s.nextIssue].count n = 0 := List.count_eq_zero.mpr (by simpa using fresh)
+    · have other : [s.nextPosition].count n = 0 := List.count_eq_zero.mpr (by simpa using fresh)
       omega
   · rw [next]
-    by_cases fresh : n = s.nextIssue
+    by_cases fresh : n = s.nextPosition
     · rw [fresh]; exact Nat.lt_succ_self _
-    · have other : [s.nextIssue].count n = 0 := List.count_eq_zero.mpr (by simpa using fresh)
+    · have other : [s.nextPosition].count n = 0 := List.count_eq_zero.mpr (by simpa using fresh)
       have bound := counted n
       have positive := List.count_pos_iff.mpr inside
       exact Nat.lt_succ_of_lt (issued n (List.count_pos_iff.mp (by omega)))
@@ -190,7 +190,7 @@ theorem apart_of_fresh {s t : State}
 
 /-- The queued triggers of a queue whose head is a compensation: its trigger, then those the rest names. -/
 theorem queuedTriggers_cons {s : State} {scope : ScopeOccurrenceId} {activity : Option ElementId}
-    {trigger : OccurrenceRef} {leave : Option Nat} {resume : Option Resume} {rest : List Signal}
+    {trigger : OccurrenceRef} {leave : Option OccurrenceId} {resume : Option Resume} {rest : List Signal}
     (queued : s.signals = .compensate scope activity trigger leave resume :: rest) :
     queuedTriggers s = trigger :: (Laws.Step.triggersOf rest).filterMap (queuedTrigger s) := by
   unfold queuedTriggers
@@ -248,7 +248,7 @@ theorem count_opened {s : State} {taken others : List Compensable} (perm : (take
 /-- A new run of the trigger of the compensation taken off a queue's head, no group's, keeps the queue's held triggers
 apart: the trigger moves from the queued ones to the runs'. -/
 theorem triggers_opened {queue s : State} {scope : ScopeOccurrenceId} {activity : Option ElementId}
-    {trigger : OccurrenceRef} {leave : Option Nat} {resume : Option Resume} {others : List Compensable}
+    {trigger : OccurrenceRef} {leave : Option OccurrenceId} {resume : Option Resume} {others : List Compensable}
     {run : CompensationRun} (apart : TriggersApart queue) (ungrouped : QueuedUngrouped queue)
     (queued : queue.signals = .compensate scope activity trigger leave resume :: s.signals)
     (shape : s = { queue with signals := s.signals }) (named : run.trigger = trigger) (free : resumesGroup run.resume = false) :
@@ -256,7 +256,7 @@ theorem triggers_opened {queue s : State} {scope : ScopeOccurrenceId} {activity 
   have slots : s.slots = queue.slots := by rw [shape]
   have scopes : s.scopes = queue.scopes := by rw [shape]
   have instance_ : s.instanceId = queue.instanceId := by rw [shape]
-  have next : s.nextIssue = queue.nextIssue := by rw [shape]
+  have next : s.nextPosition = queue.nextPosition := by rw [shape]
   have activations : s.activations = queue.activations := by rw [shape]
   have queuedEq : queuedTriggers queue = trigger :: queuedTriggers (opened s others run) := by
     rw [queuedTriggers_cons queued, queuedTriggers, queuedTrigger_congr (t := opened s others run) (s := queue) scopes

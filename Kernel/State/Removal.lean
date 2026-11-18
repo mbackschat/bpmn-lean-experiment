@@ -22,9 +22,10 @@ private def recordCancelled (state : State) (occurrences : List Occurrence) : St
       ended := state.draft.ended ++ ended, cancelled := state.draft.cancelled ++ begun } }
 
 /-- Remove every token, item, occurrence, slot entry, variable set and child scope occurrence inside `scope`, with the
-ordinal counters of the removed scope occurrences, keeping `scope` itself and the occurrences `keep` names. Each begun occurrence is journalled cancelled, deepest scope first,
-then by id; `Hooks.cancelled` tells the owning features afterwards. -/
-def clearInside (state : State) (scope : ScopeOccurrenceId) (keep : List Nat := []) : State :=
+ordinal counters of the removed scope occurrences and occurrences, keeping `scope` itself and the occurrences `keep`
+names. Each begun occurrence is journalled cancelled, deepest scope first, then in the order the state holds them;
+`Hooks.cancelled` tells the owning features afterwards. -/
+def clearInside (state : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId := []) : State :=
   let inside := state.subtree scope
   let nested := inside.filter (· != scope)
   let removed := inside.reverse.flatMap fun current =>
@@ -37,6 +38,7 @@ def clearInside (state : State) (scope : ScopeOccurrenceId) (keep : List Nat := 
       occurrences := journalled.occurrences.filter fun occurrence => !inside.contains occurrence.scope || keep.contains occurrence.id
       scopes := journalled.scopes.filter (!nested.contains ·.id)
       scopeOrdinals := journalled.scopeOrdinals.filter fun slot _ => !nested.contains slot.parent
+      occurrenceOrdinals := journalled.occurrenceOrdinals.filter fun slot _ => !nested.contains slot.parent
       variables := journalled.variables.filter (!nested.contains ·.scope)
       slots := journalled.slots.clear inside nested }
 
@@ -48,13 +50,14 @@ def leaveScope (state : State) (scope : ScopeOccurrenceId) : State :=
   { cleared with
       scopes := cleared.scopes.filter (·.id != scope)
       scopeOrdinals := cleared.scopeOrdinals.filter fun slot _ => slot.parent != scope
+      occurrenceOrdinals := cleared.occurrenceOrdinals.filter fun slot _ => slot.parent != scope
       variables := cleared.variables.filter (·.scope != scope)
       slots := { cleared.slots with compensation := { cleared.slots.compensation with
         retained := cleared.slots.compensation.retained.filter (·.scope != scope) } } }
 
 /-- Remove the occurrence record `id` and the scope occurrences it owns, if any. The record goes first, so that
 leaving a scope does not cancel the occurrence that owns it. -/
-def removeOccurrence (state : State) (id : Nat) : State :=
+def removeOccurrence (state : State) (id : OccurrenceId) : State :=
   let removed := { state with
     occurrences := state.occurrences.filter (·.id != id), itemOrdinals := state.itemOrdinals.erase id }
   (removed.scopes.filter (·.occurrence == some id)).foldl (fun state scope => state.leaveScope scope.id) removed
@@ -68,20 +71,20 @@ def withdrawInside (state : State) (scope : ScopeOccurrenceId) : State :=
 /-- Close the open items `cancelOccurrence` removes with the occurrence `id`: its own, those attached to it with
 their reservations, and those inside the scope occurrences it owns. A firing that interrupts withdraws them at once,
 while the cancellation itself is still queued, so that no firing queued before it finds them open. -/
-def withdrawOccurrence (state : State) (id : Nat) : State :=
+def withdrawOccurrence (state : State) (id : OccurrenceId) : State :=
   let closed := (state.closeOwnItems id).disarm id
   (closed.scopes.filter (·.occurrence == some id)).foldl (fun state scope => state.withdrawInside scope.id) closed
 
 /-- Cancel the occurrence `id` wherever it stands: its items and subscriptions go, the scope occurrence it owns is
 left, and it is journalled cancelled. -/
-def cancelOccurrence (state : State) (id : Nat) : State :=
+def cancelOccurrence (state : State) (id : OccurrenceId) : State :=
   match state.occurrence? id with
   | none => state
   | some occurrence => recordCancelled ((state.withdrawOccurrence id).removeOccurrence id) [occurrence]
 
 /-- Whether `scope` would be idle once the occurrence `id`, its items, what is attached to it and the scope occurrence
 it owns were gone: nothing else remains there. -/
-def idleWithout (state : State) (scope : ScopeOccurrenceId) (id : Nat) : Bool :=
+def idleWithout (state : State) (scope : ScopeOccurrenceId) (id : OccurrenceId) : Bool :=
   (((state.closeOwnItems id).disarm id).removeOccurrence id).idle scope
 
 end State

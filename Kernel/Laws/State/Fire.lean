@@ -21,7 +21,7 @@ open Kernel
 names it and no start Event's item waits on it, so it may be completed; an Event Sub-Process start's reservation may
 begin in the item's scope occurrence, where it lies, as `Admitted` asks. -/
 def Fired (program : Program) (s : State) (item : OpenItem) : Prop :=
-  item.scope ∈ scopeIds s ∧ item.id.occurrence < s.nextIssue ∧ (∀ request, Queued s request → item.id.occurrence ∉ names request) ∧
+  item.scope ∈ scopeIds s ∧ OccurrenceIssued s item.id.occurrence ∧ (∀ request, Queued s request → item.id.occurrence ∉ names request) ∧
     (∀ other ∈ itemList s.openItems, ((program.element? other.element).bind (·.start?)).isSome = true →
       other.id.occurrence ≠ item.id.occurrence) ∧
     (((program.element? item.element).bind (·.start?)).isSome = true →
@@ -35,7 +35,7 @@ theorem closeItem_fired {s : State} (formed : WellFormed program s) {item : Open
     WellFormed program (s.closeItem item.id) ∧ Fired program (s.closeItem item.id) item := by
   rw [closeItem_eq]
   refine ⟨formed.narrow {
-      scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, nextIssue := rfl,
+      scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := fun _ => by apply instanceOf_congr <;> rfl, recorded := id, items := .erase _, tokens := .refl _,
       signals := .refl _, starts := fun _ => id, slots := .same rfl } rfl formed.startedOnce, ?_⟩
   obtain ⟨waited, present, named, ⟨_, placed⟩⟩ := formed.owned.itemOccurrences item member
@@ -72,10 +72,10 @@ theorem closeItem_fired {s : State} (formed : WellFormed program s) {item : Open
 /-- What a fired item leaves holds through a change that issues nothing back, keeps the scope occurrences and their
 process instances, adds only occurrences and items it issues, each new item hanging, if at all, on a begun occurrence,
 queues no begin, no completion of the item's occurrence, no compensation and no raise, and keeps the slots. -/
-theorem Fired.transport {s t : State} {item : OpenItem} (fired : Fired program s item) (issued : s.nextIssue ≤ t.nextIssue)
+theorem Fired.transport {s t : State} {item : OpenItem} (fired : Fired program s item) (issued : OccurrenceGrows s t)
     (scopes : t.scopes = s.scopes) (instances : ∀ x, t.instanceOf x = s.instanceOf x)
-    (occurrences : ∀ found ∈ t.occurrences, found ∈ s.occurrences ∨ s.nextIssue ≤ found.id)
-    (items : ∀ other ∈ itemList t.openItems, other ∈ itemList s.openItems ∨ s.nextIssue ≤ other.id.occurrence ∧
+    (occurrences : ∀ found ∈ t.occurrences, found ∈ s.occurrences ∨ ¬ OccurrenceIssued s found.id)
+    (items : ∀ other ∈ itemList t.openItems, other ∈ itemList s.openItems ∨ ¬ OccurrenceIssued s other.id.occurrence ∧
       ∀ host, other.attachedTo = some host → ∃ found ∈ s.occurrences, found.id = host ∧ found.begun = true)
     (queued : ∀ request, Queued t request → Queued s request)
     (completes : ∀ leave writes rule, Signal.complete item.id.occurrence leave writes rule ∈ t.signals →
@@ -88,21 +88,21 @@ theorem Fired.transport {s t : State} {item : OpenItem} (fired : Fired program s
     Fired program t item := by
   obtain ⟨stands, below, unnamed, ⟨unstarted, start⟩⟩ := fired
   have old : ∀ found ∈ t.occurrences, found.id = item.id.occurrence → found ∈ s.occurrences := fun found inside same =>
-    (occurrences found inside).resolve_right (by omega)
-  refine ⟨by simpa [scopeIds, scopes] using stands, by omega, fun request named => unnamed request (queued request named),
+    (occurrences found inside).resolve_right fun fresh => fresh (by rw [same]; exact below)
+  refine ⟨by simpa [scopeIds, scopes] using stands, issued _ below, fun request named => unnamed request (queued request named),
     fun other inside started same => ?_, fun started => ?_⟩
   · rcases items other inside with kept | ⟨fresh, _⟩
     · exact unstarted other kept started same
-    · omega
+    · exact fresh (by rw [same]; exact below)
   obtain ⟨⟨_, facts⟩, ⟨_, uncompleted, unslotted⟩, placed⟩ := start started
-  refine ⟨⟨by omega, fun found inside same => ?_⟩, ⟨fun request named => unnamed request (queued request named),
+  refine ⟨⟨issued _ below, fun found inside same => ?_⟩, ⟨fun request named => unnamed request (queued request named),
     fun leave writes rule queued => uncompleted leave writes rule (completes leave writes rule queued), fun slotted => ?_⟩,
     fun found inside same => placed found (old found inside same) same⟩
   · obtain ⟨unbegun, free, instance_⟩ := facts found (old found inside same) same
     refine ⟨unbegun, fun other held => ?_, fun present => ?_⟩
     · rcases items other held with kept | ⟨fresh, hangs⟩
       · exact free other kept
-      · refine ⟨by omega, fun hung => ?_⟩
+      · refine ⟨fun same => fresh (by rw [same]; exact below), fun hung => ?_⟩
         obtain ⟨host, hostIn, hostNamed, hostBegun⟩ := hangs _ hung
         have := (facts host hostIn hostNamed).1
         simp [hostBegun] at this
@@ -123,9 +123,9 @@ theorem Fired.transport {s t : State} {item : OpenItem} (fired : Fired program s
 /-- A change that only drops open items and occurrences keeps what a fired item leaves. -/
 theorem Fired.shrink {s t : State} {item : OpenItem} (fired : Fired program s item) (scopes : t.scopes = s.scopes)
     (named : t.instanceId = s.instanceId) (signals : t.signals = s.signals) (tokens : t.tokens = s.tokens)
-    (issued : t.nextIssue = s.nextIssue) (slots : t.slots = s.slots) (items : ∀ other ∈ itemList t.openItems, other ∈ itemList s.openItems)
+    (issued : OccurrenceGrows s t) (slots : t.slots = s.slots) (items : ∀ other ∈ itemList t.openItems, other ∈ itemList s.openItems)
     (occurrences : ∀ found ∈ t.occurrences, found ∈ s.occurrences) : Fired program t item :=
-  fired.transport (Nat.le_of_eq issued.symm) scopes (instanceOf_congr scopes named)
+  fired.transport issued scopes (instanceOf_congr scopes named)
     (fun found inside => .inl (occurrences found inside)) (fun other inside => .inl (items other inside))
     (fun _ queued => by simpa [Queued, signals, tokens] using queued) (fun _ _ _ queued => signals ▸ queued)
     (.same slots) (fun _ _ _ _ _ _ queued => signals ▸ queued) fun _ _ queued => signals ▸ queued
@@ -141,12 +141,13 @@ theorem withdrawAll_frame : ∀ (scopes : List ScopeOccurrence) (t : State),
 
 /-- Withdrawing an occurrence's items keeps a state well-formed and what a fired item leaves. -/
 theorem withdrawOccurrence_fired {s : State} (formed : WellFormed program s) {item : OpenItem} (fired : Fired program s item)
-    (id : Nat) : WellFormed program (s.withdrawOccurrence id) ∧ Fired program (s.withdrawOccurrence id) item := by
+    (id : OccurrenceId) : WellFormed program (s.withdrawOccurrence id) ∧ Fired program (s.withdrawOccurrence id) item := by
   obtain ⟨withdrawn, fewer, same⟩ := withdrawAll _ _ (disarm_wellFormed (closeOwnItems_wellFormed formed id) id)
   obtain ⟨items, frame⟩ := withdrawAll_frame (((s.closeOwnItems id).disarm id).scopes.filter (·.occurrence == some id))
     ((s.closeOwnItems id).disarm id)
   rw [← withdrawOccurrence_eq] at withdrawn fewer same frame
-  refine ⟨withdrawn, fired.shrink ?_ ?_ ?_ ?_ ?_ ?_ (fun other inside => ?_) fun found inside => ?_⟩
+  refine ⟨withdrawn, fired.shrink ?_ ?_ ?_ ?_ (by rw [frame, disarm_eq, closeOwnItems_eq]; exact .refl _) ?_
+    (fun other inside => ?_) fun found inside => ?_⟩
   all_goals try (rw [frame, disarm_eq, closeOwnItems_eq]; done)
   · have := fewer.items inside
     rw [disarm_eq, closeOwnItems_eq] at this
@@ -159,16 +160,17 @@ theorem withdrawInside_fired {s : State} (formed : WellFormed program s) {item :
     (scope : ScopeOccurrenceId) : WellFormed program (s.withdrawInside scope) ∧ Fired program (s.withdrawInside scope) item := by
   rw [withdrawInside_eq]
   exact ⟨formed.narrow {
-      scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, nextIssue := rfl, instances := instanceOf_congr rfl rfl,
+      scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
+      instances := instanceOf_congr rfl rfl,
       recorded := id, items := .filter _, tokens := .refl _, signals := .refl _, starts := fun _ => id,
       slots := .same rfl } rfl formed.startedOnce,
-    fired.shrink rfl rfl rfl rfl rfl rfl (fun _ inside => (mem_itemList_filter_val.mp (inside)).1) fun _ => id⟩
+    fired.shrink rfl rfl rfl rfl (.refl _) rfl (fun _ inside => (mem_itemList_filter_val.mp (inside)).1) fun _ => id⟩
 
 /-- Disarming a host keeps what a fired item leaves. -/
-theorem disarm_fired {s : State} {item : OpenItem} (fired : Fired program s item) (host : Nat) :
+theorem disarm_fired {s : State} {item : OpenItem} (fired : Fired program s item) (host : OccurrenceId) :
     Fired program (s.disarm host) item := by
   rw [disarm_eq]
-  exact fired.shrink rfl rfl rfl rfl rfl rfl (fun _ inside => (mem_itemList_filter_val.mp (inside)).1)
+  exact fired.shrink rfl rfl rfl rfl (.refl _) rfl (fun _ inside => (mem_itemList_filter_val.mp (inside)).1)
     fun _ inside => (List.mem_filter.mp inside).1
 
 /-- Queuing a signal that begins nothing, completes no item's occurrence and compensates nothing keeps what a fired
@@ -180,7 +182,7 @@ theorem Fired.signal {s : State} {item : OpenItem} (fired : Fired program s item
     (notRaise : ∀ raised origin, signal ≠ .raise raised origin) :
     Fired program (s.signal signal) item := by
   rw [signal_eq]
-  refine fired.transport (Nat.le_refl _) rfl (instanceOf_congr rfl rfl) (fun found inside => .inl inside)
+  refine fired.transport (.refl _) rfl (instanceOf_congr rfl rfl) (fun found inside => .inl inside)
     (fun other inside => .inl (items_same inside rfl)) (fun request queued => ?_) (fun leave writes rule queued => ?_)
     (.same rfl)
     (fun scope activity trigger leave occurrence resume queued => ?_) fun raised origin queued => ?_
@@ -202,7 +204,7 @@ theorem Fired.signal {s : State} {item : OpenItem} (fired : Fired program s item
 /-- Reopening a cycle Timer's subscription, in a scope occurrence that stands and hanging, if at all, on a begun
 occurrence there, keeps a state well-formed and what a fired item leaves: its reservation and item are fresh. -/
 theorem openSubscription_fired {s : State} (formed : WellFormed program s) {item : OpenItem} (fired : Fired program s item)
-    (kind : OpenKind) (element : ElementId) {scope : ScopeOccurrenceId} (stands : scope ∈ scopeIds s) {host : Option Nat}
+    (kind : OpenKind) (element : ElementId) {scope : ScopeOccurrenceId} (stands : scope ∈ scopeIds s) {host : Option OccurrenceId}
     (hangs : ∀ id, host = some id → ∃ occurrence ∈ s.occurrences, occurrence.id = id ∧ occurrence.begun = true ∧
       occurrence.scope = scope) (passive : Bool)
     (waits : AwaitsTrigger kind) : WellFormed program (s.openSubscription kind element scope host passive).1 ∧
@@ -213,7 +215,8 @@ theorem openSubscription_fired {s : State} (formed : WellFormed program s) {item
   generalize s.reserve element scope = pair at reserves
   obtain ⟨t, reservation⟩ := pair
   dsimp only at reserves ⊢
-  refine fired.transport (by show s.nextIssue ≤ t.nextIssue + 1; rw [reserves.nextIssue]; omega) reserves.scopes
+  have fresh : ¬ OccurrenceIssued s reservation.id := reserves.fresh (reserves.placed ▸ stands)
+  refine fired.transport reserves.occurrenceGrows reserves.scopes
     (fun x => by rw [← reserves.instances x]; apply instanceOf_congr <;> rfl) (fun found inside => ?_)
     (fun other inside => ?_) (fun _ queued => by simpa [Queued, reserves.signals, reserves.tokens] using queued)
     (fun _ _ _ queued => reserves.signals ▸ queued) (.same reserves.slots)
@@ -221,15 +224,15 @@ theorem openSubscription_fired {s : State} (formed : WellFormed program s) {item
   · rw [reserves.occurrences] at inside
     rcases List.mem_append.mp inside with old | new
     · exact .inl old
-    · rw [List.mem_singleton.mp new, reserves.id]
-      exact .inr (Nat.le_refl _)
+    · rw [List.mem_singleton.mp new]
+      exact .inr fresh
   · have keyedT : KeyedBy t.openItems := by rw [reserves.itemMap.1]; exact formed.distinct.items
     rcases (mem_itemList_insert keyedT (item := other) (new :=
-        { id := ⟨reservation.id, .subscription, t.itemOrdinals.getD reservation.id 0⟩, position := t.nextIssue, kind,
+        { id := ⟨reservation.id, .subscription, t.itemOrdinals.getD reservation.id 0⟩, position := t.nextPosition, kind,
           element, scope, attachedTo := host, passive })).mp
       (inside) with new | ⟨old, _⟩
     · subst new
-      refine .inr ⟨by simp only [reserves.id]; exact Nat.le_refl _, fun id hung => ?_⟩
+      refine .inr ⟨fresh, fun id hung => ?_⟩
       obtain ⟨occurrence, present, named, ⟨begun, _⟩⟩ := hangs id hung
       exact ⟨occurrence, present, named, begun⟩
     · exact .inl (reserves.items ▸ old)

@@ -57,6 +57,7 @@ function compareSegment(left: ScopeSegment, right: ScopeSegment): number {
 
 /** The order of Lean's `Ord ScopeOccurrenceId`: the segments innermost first, lexicographically. */
 export function compareScopeOccurrenceId(left: ScopeOccurrenceId, right: ScopeOccurrenceId): number {
+  if (left === right) return 0;
   const a = scopeSegments(left);
   const b = scopeSegments(right);
   for (let index = 0; index < Math.min(a.length, b.length); index += 1) {
@@ -72,4 +73,37 @@ export interface ScopeSlot { readonly parent: ScopeOccurrenceId; readonly elemen
 /** The order of Lean's `Ord ScopeSlot`: the parent's key, then the element. */
 export function compareScopeSlot(left: ScopeSlot, right: ScopeSlot): number {
   return compareScopeOccurrenceId(left.parent, right.parent) || compareStrings(left.element, right.element);
+}
+
+declare const occurrenceKeyBrand: unique symbol;
+
+/**
+ * Lean's `OccurrenceId` as canonical text: an occurrence's structural key (KD1), the scope occurrence it was issued in,
+ * its element and an ordinal counted per (scope occurrence, element) by `State.occurrenceOrdinals`, written
+ * `<length>:<element>#<ordinal>@<scope>`, the element's length in UTF-16 code units and `<scope>` the scope key's text.
+ * Keys compare by value, never by object reference. The text never leaves the kernel.
+ */
+export type OccurrenceId = string & { readonly [occurrenceKeyBrand]: true };
+
+/** The key of the `ordinal`th occurrence of `element` issued in `scope`. */
+export function occurrenceId(scope: ScopeOccurrenceId, element: ElementId, ordinal: number): OccurrenceId {
+  return `${element.length}:${element}#${ordinal}@${scope}` as OccurrenceId;
+}
+
+/** The scope occurrence, element and ordinal of `id`. */
+export function occurrenceIdParts(id: OccurrenceId): Readonly<{ scope: ScopeOccurrenceId; element: ElementId; ordinal: number }> {
+  const colon = id.indexOf(":");
+  const start = colon + 1;
+  const length = Number(id.slice(0, colon));
+  const element = id.slice(start, start + length);
+  const at = id.indexOf("@", start + length);
+  return { scope: id.slice(at + 1) as ScopeOccurrenceId, element, ordinal: Number(id.slice(start + length + 1, at)) };
+}
+
+/** The order of Lean's `Ord OccurrenceId`: the scope occurrence's key, then the element, then the ordinal. */
+export function compareOccurrenceId(left: OccurrenceId, right: OccurrenceId): number {
+  if (left === right) return 0;
+  const a = occurrenceIdParts(left);
+  const b = occurrenceIdParts(right);
+  return compareScopeOccurrenceId(a.scope, b.scope) || compareStrings(a.element, b.element) || a.ordinal - b.ordinal;
 }

@@ -82,21 +82,22 @@ structure Reserved (before after : State) (request : BeginRequest) (begun reserv
   activation : begun.activation = reserved.activation
   role : begun.role = reserved.role
   activations : after.activations = before.activations
-  nextIssue : after.nextIssue = before.nextIssue
+  occurrenceOrdinals : after.occurrenceOrdinals = before.occurrenceOrdinals
 
-/-- `begun` is fresh: no reservation the request names stands, and it is issued at the counter, of the requested
-element, and numbered under `role`. -/
+/-- `begun` is fresh: no reservation the request names stands, its key was never issued before and is issued after,
+it is of the requested element, and it is numbered under `role`. -/
 structure Issued (before after : State) (request : BeginRequest) (role : ActivationRole) (begun : Occurrence) : Prop where
   unreserved : ∀ id, request.reserved = some id → ∀ occurrence ∈ before.occurrences, occurrence.id ≠ id
-  id : begun.id = before.nextIssue
-  nextIssue : after.nextIssue = before.nextIssue + 1
+  fresh : request.scope ∈ standingKeys before → ¬ OccurrenceIssued before begun.id
+  issued : ScopeIssued before request.scope → OccurrenceIssued after begun.id
+  occurrenceGrows : OccurrenceGrows before after
   element : begun.element = request.element
   roled : begun.role = role
   activated : Activated before after (before.instanceOf request.scope) request.element role begun.activation
 
 /-- What `State.beginOccurrence` makes of `before`: the occurrence `begun` replaces the record of its identity, begun in
 the request's scope occurrence and continuing as the request says, and its start is journalled under its key; it is the
-reservation the request names, if that stands, or a fresh occurrence issued at the counter and numbered under `role`.
+reservation the request names, if that stands, or a fresh occurrence under a key never issued, numbered under `role`.
 Nothing else changes. -/
 structure Begins (before after : State) (request : BeginRequest) (role : ActivationRole) (sourceType : String)
     (begun : Occurrence) : Prop where
@@ -155,36 +156,30 @@ private theorem Begins.keyNew {before after : State} {request : BeginRequest} {r
     exact ⟨_, fresh.activated.activations ▸ List.mem_cons_self .., rfl, rfl, rfl, Nat.le_refl _⟩
 
 /-- The begun occurrence's identity is no other standing occurrence's, item's or claim's: a reservation's is claimed by
-nothing else, a fresh one is above every identity issued. -/
+nothing else, a fresh one was never issued. -/
 private theorem Begins.idNew {before after : State} {request : BeginRequest} {role : ActivationRole}
     {sourceType : String} {begun : Occurrence} (formed : WellFormed program before)
-    (begins : Begins before after request role sourceType begun)
+    (begins : Begins before after request role sourceType begun) (stands : request.scope ∈ scopeIds before)
     (admitted : ∀ id ∈ names request, Beginnable before request.scope id ∧ Unclaimed before id) :
     (∀ item ∈ itemList before.openItems, item.id.occurrence ≠ begun.id ∧ item.attachedTo ≠ some begun.id) ∧
       (∀ occurrence ∈ before.occurrences, occurrence.id = begun.id → occurrence.begun = false) ∧
-      (∀ other, Queued before other → begun.id ∉ names other) ∧ before.nextIssue ≤ after.nextIssue := by
+      (∀ other, Queued before other → begun.id ∉ names other) ∧ OccurrenceGrows before after := by
   rcases begins.source with ⟨reserved, reservation⟩ | issuedFresh
   · obtain ⟨⟨_, facts⟩, unclaimed⟩ := admitted reserved.id (by simp [names, reservation.named])
     obtain ⟨_, free, _⟩ := facts reserved reservation.member rfl
     refine ⟨reservation.id ▸ free, fun occurrence inside equal => ?_, reservation.id ▸ unclaimed.1,
-      Nat.le_of_eq reservation.nextIssue.symm⟩
+      .of_same (congrArg (List.map ScopeOccurrence.id) begins.scopes) begins.scopeOrdinals reservation.occurrenceOrdinals⟩
     have := nodup_map_eq formed.distinct.occurrences inside reservation.member (equal.trans reservation.id)
     exact this ▸ (facts reserved reservation.member rfl).1
-  · have fresh := issuedFresh.id
-    have issued := issuedFresh.nextIssue
-    refine ⟨fun item inside => ?_, fun occurrence inside equal => ?_, fun other queued named => ?_, by omega⟩
-    · have := formed.issued.items item inside
-      obtain ⟨occurrence, held, same, _⟩ := formed.owned.itemOccurrences item inside
+  · refine ⟨fun item inside => ?_, fun occurrence inside equal => ?_, fun other queued named => ?_,
+      issuedFresh.occurrenceGrows⟩
+    · obtain ⟨occurrence, held, same, _⟩ := formed.owned.itemOccurrences item inside
       refine ⟨fun equal => ?_, fun attached => ?_⟩
-      · have := formed.issued.occurrences occurrence held
-        omega
+      · exact issuedFresh.fresh stands (equal ▸ same ▸ formed.issued.occurrences occurrence held)
       · obtain ⟨host, hosted, same, _⟩ := formed.owned.attachments item inside _ attached
-        have := formed.issued.occurrences host hosted
-        omega
-    · have := formed.issued.occurrences occurrence inside
-      omega
-    · have := ((formed.claimed.named other queued).2 _ named).1
-      omega
+        exact issuedFresh.fresh stands (same ▸ formed.issued.occurrences host hosted)
+    · exact (issuedFresh.fresh stands (equal ▸ formed.issued.occurrences occurrence inside)).elim
+    · exact issuedFresh.fresh stands ((formed.claimed.named other queued).2 _ named).1
 
 /-- The begin of an admitted request in a scope occurrence that stands keeps a state well-formed, when a fresh
 occurrence of an Event numbers under the element role and a fresh body is of an element with a Multi-Instance
@@ -201,29 +196,26 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
   have grows : ScopeGrows before after :=
     .of_same (congrArg (List.map ScopeOccurrence.id) begins.scopes) begins.scopeOrdinals
   obtain ⟨keyNew, factNew, keyCounted⟩ := begins.keyNew formed stands admitted
-  obtain ⟨itemsFree, unbegunOnly, unclaimed, issued⟩ := begins.idNew formed admitted
+  obtain ⟨itemsFree, unbegunOnly, unclaimed, issued⟩ := begins.idNew formed stands admitted
   have counters : ∀ k, Counted before k → Counted after k := fun k counted => by
     rcases begins.source with ⟨_, reservation⟩ | fresh
     · exact counted.congr reservation.activations
     · exact fresh.activated.counted counted
-  -- The begun identity was issued: a standing reservation's, or the counter's.
-  have begunBelow : begun.id < after.nextIssue := by
+  -- The begun identity was issued: a standing reservation's, or a fresh key.
+  have begunBelow : OccurrenceIssued after begun.id := by
     rcases begins.source with ⟨reserved, reservation⟩ | fresh
-    · have := formed.issued.occurrences reserved reservation.member
-      have := reservation.id
-      have := reservation.nextIssue
-      omega
-    · have := fresh.id
-      have := fresh.nextIssue
-      omega
+    · exact reservation.id ▸ issued _ (formed.issued.occurrences reserved reservation.member)
+    · exact fresh.issued <| by
+        obtain ⟨standing, member, named⟩ := List.mem_map.mp stands
+        exact named ▸ formed.issued.scopes standing member
   -- No queued arming hangs on the begun occurrence: a reservation is unbegun, a fresh identity was never issued.
-  have unarmed : ∀ host < before.nextIssue, (∀ found ∈ before.occurrences, found.id = host → found.begun = true) →
-      begun.id ≠ host := fun host below armed same => by
+  have unarmed : ∀ host, OccurrenceIssued before host →
+      (∀ found ∈ before.occurrences, found.id = host → found.begun = true) → begun.id ≠ host :=
+    fun host below armed same => by
     rcases begins.source with ⟨reserved, reservation⟩ | fresh
     · have := armed reserved reservation.member (reservation.id ▸ same)
       simp [unbegunOnly reserved reservation.member reservation.id.symm] at this
-    · have := fresh.id
-      omega
+    · exact fresh.fresh stands (same ▸ below)
   have kept : ∀ occurrence ∈ after.occurrences, occurrence ≠ begun → occurrence ∈ before.occurrences ∧
       occurrence.id ≠ begun.id := fun occurrence member other => by
     rw [begins.occurrences] at member
@@ -256,8 +248,7 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
     exact ⟨fun occurrence member => by
         rcases members occurrence member with rfl | ⟨old, _⟩
         · exact begunBelow
-        · have := formed.issued.occurrences occurrence old
-          omega,
+        · exact issued _ (formed.issued.occurrences occurrence old),
       fun item member _ => begins.itemMap.2 ▸ formed.itemBelow (begins.items ▸ member),
       fun entry member => grows.issued (formed.issued.scopes entry (begins.scopes ▸ member))⟩
   case distinct =>
@@ -340,18 +331,17 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
     refine ⟨fun host element scope queued => ?_, fun scope queued => ?_, fun occurrence gateway scope queued => ?_,
       fun status failure queued => queue.ends status failure (begins.signals ▸ queued), fun id leave writes rule queued => ?_⟩
     · obtain ⟨hostBelow, scopeBelow, facts⟩ := queue.arm host element scope (begins.signals ▸ queued)
-      refine ⟨by omega, grows.issued scopeBelow, fun found member named => ?_⟩
+      refine ⟨issued _ hostBelow, grows.issued scopeBelow, fun found member named => ?_⟩
       rcases members found member with rfl | ⟨old, _⟩
       · exact absurd named (unarmed host hostBelow fun found inside same => (facts found inside same).1)
       · exact facts found old named
     · exact grows.issued (queue.armScope scope (begins.signals ▸ queued))
     · obtain ⟨occurrenceBelow, scopeBelow, facts⟩ := queue.armGateway occurrence gateway scope (begins.signals ▸ queued)
-      refine ⟨by omega, grows.issued scopeBelow, fun found member named => ?_⟩
+      refine ⟨issued _ occurrenceBelow, grows.issued scopeBelow, fun found member named => ?_⟩
       rcases members found member with rfl | ⟨old, _⟩
       · exact absurd named (unarmed occurrence occurrenceBelow fun found inside same => (facts found inside same).1)
       · exact facts found old named
-    · have := queue.completes id leave writes rule (begins.signals ▸ queued)
-      omega
+    · exact issued _ (queue.completes id leave writes rule (begins.signals ▸ queued))
   case counted =>
     exact fun fact started => by
       rw [startsAfter] at started
@@ -386,7 +376,7 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
         obtain ⟨nodup, beginnable⟩ := formed.claimed.named other queuedBefore
         refine ⟨nodup, fun id named => ?_⟩
         obtain ⟨below, facts⟩ := beginnable id named
-        refine ⟨by omega, fun occurrence member same => ?_⟩
+        refine ⟨issued _ below, fun occurrence member same => ?_⟩
         rcases members occurrence member with rfl | ⟨old, _⟩
         · exact absurd (same ▸ named) (unclaimed other queuedBefore)
         · obtain ⟨unbegun, free, instance_⟩ := facts occurrence old same
@@ -405,12 +395,7 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
         · exact absurd (same ▸ (List.mem_append_right _ named : id ∈ names other)) (unclaimed other queuedBefore)
         · exact formed.claimed.innerPlaced other queuedBefore id named found old same }
   case settled =>
-    have later : before.nextIssue ≤ after.nextIssue := by
-      rcases begins.source with ⟨_, reservation⟩ | fresh
-      · exact Nat.le_of_eq reservation.nextIssue.symm
-      · have := fresh.nextIssue
-        omega
-    exact formed.settled.transport (.same begins.slots) later grows
+    exact formed.settled.transport (.same begins.slots) issued grows
       (fun found inside unbegun => by
         rcases members found inside with rfl | ⟨old, _⟩
         · simp [begins.isBegun] at unbegun
@@ -454,8 +439,7 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
     · exact absurd named.symm (itemsFree item (begins.items ▸ member)).1
     · exact formed.itemRoles item (begins.items ▸ member) found old named
   case raises =>
-    refine formed.raises.transport (fun _ _ queued => begins.signals ▸ queued) grows
-      (fun x present _ => ⟨by simpa [scopeIds, begins.scopes] using present, begins.instances x⟩) counters
+    refine formed.raises.transport (fun _ _ queued => begins.signals ▸ queued) grows issued
       fun found inside unbegun => ?_
     rcases members found inside with rfl | ⟨old, _⟩
     · simp [begins.isBegun] at unbegun

@@ -54,7 +54,7 @@ def CompletionsApart (compensation : Compensations) : Prop :=
 
 /-- Every completion number held was issued, so the next completion's is held by no record. -/
 def CompletionsIssued (s : State) : Prop :=
-  ∀ completion ∈ completions s.slots.compensation, completion < s.nextIssue
+  ∀ completion ∈ completions s.slots.compensation, completion < s.nextPosition
 
 /-- No run holds a pending record that may start under `precedes` (`Laws.Compensation.Ready`): every advance starts the
 ones that may (`Laws.Compensation.Advances`), and every other change to a run leaves it settled or drops it. -/
@@ -164,13 +164,16 @@ def rootScope : ScopeOccurrenceId := ⟨[]⟩
 /-- A key below the root that no history of `holdingState` holds: the root's counter of `T` has issued none. -/
 def unissuedScope : ScopeOccurrenceId := rootScope.child thrower 0
 
+/-- The first occurrence of `T` in a scope occurrence. -/
+def throwerIn (scope : ScopeOccurrenceId) : OccurrenceId := { scope, element := thrower, ordinal := 0 }
+
 def recordA : Compensable := { subject := subjectA, handler := some ⟨"UndoA"⟩, scope := rootScope, completion := 1 }
 def thrownBy : OccurrenceRef := { processInstanceId := "p", element := thrower, activation := 1 }
 def pendingRun : CompensationRun := { trigger := thrownBy, scope := rootScope, pending := [recordA], leave := none, resume := none }
 
 /-- A state holding `compensation` and queuing `signals`, its root scope occurrence and the counter of `T` at 1. -/
 def holdingState (compensation : Compensations) (signals : List Signal) : State :=
-  { instanceId := "p", scopes := [{ id := rootScope, element := none }], nextIssue := 8, signals,
+  { instanceId := "p", scopes := [{ id := rootScope, element := none }], nextPosition := 8, signals,
     activations := [{ processInstance := "p", element := thrower, role := .element, count := 1 }],
     slots := { compensation } }
 
@@ -181,7 +184,7 @@ theorem shared_completion_rejected :
 
 /-- A completion number not yet issued breaks `CompletionsIssued`. -/
 theorem unissued_completion_rejected :
-    ¬ CompletionsIssued { holdingState { retained := [recordA] } [] with nextIssue := 1 } := by
+    ¬ CompletionsIssued { holdingState { retained := [recordA] } [] with nextPosition := 1 } := by
   simp [CompletionsIssued, completions, completionsIn, completionsOf, Laws.Compensation.heldCompletions, holdingState, recordA]
 
 /-- A run whose pending record may start breaks `RunsSettled`. -/
@@ -234,17 +237,17 @@ theorem uncounted_group_rejected :
 
 /-- A queued Cancel raise from a scope occurrence not yet issued breaks `TriggersApart`. -/
 theorem unissued_raise_rejected :
-    ¬ TriggersApart (holdingState {} [.raise .cancel { element := thrower, scope := unissuedScope, activation := 1 }]) :=
+    ¬ TriggersApart (holdingState {} [.raise .cancel { element := thrower, scope := unissuedScope, activation := 1, thrower := throwerIn unissuedScope }]) :=
   fun apart => Laws.State.unissued_of_count (parent := rootScope) (element := thrower) (ordinal := 0)
     (by simp [holdingState]) (by simp [Laws.State.slotCount, holdingState])
-    (apart.issued { element := thrower, scope := unissuedScope, activation := 1 }
+    (apart.issued { element := thrower, scope := unissuedScope, activation := 1, thrower := throwerIn unissuedScope }
       (by simp [holdingState, Laws.Step.triggersOf_raise, Laws.State.isCancel_cancel]))
 
-/-- An unbegun reservation of occurrence 7 of `T` in the root scope occurrence, with a Cancel raise queued from that
-occurrence. -/
+/-- An unbegun reservation of the first occurrence of `T` in the root scope occurrence, with a Cancel raise queued from
+that occurrence. -/
 def reservedRaise : State :=
-  { holdingState {} [.raise .cancel { element := thrower, scope := rootScope, activation := 1 }] with
-    occurrences := [{ id := 7, element := thrower, scope := rootScope, activation := 1, begun := false }] }
+  { holdingState {} [.raise .cancel { element := thrower, scope := rootScope, activation := 1, thrower := throwerIn rootScope }] with
+    occurrences := [{ id := throwerIn rootScope, element := thrower, scope := rootScope, activation := 1, begun := false }] }
 
 /-- A queued trigger that names an unbegun reservation breaks `TriggersApart`: beginning the reservation would throw
 from a key the trigger already holds. -/

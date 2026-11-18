@@ -90,8 +90,7 @@ export { arriveThrow } from "./propagation/throws.js";
  * `arriveThrow` leaves an Error or a Cancel throw before raising it.
  */
 function throwerLeaves(ctx: Ctx, origin: Origin, state: State): State {
-  const standing = state.occurrences.find((occurrence) =>
-    occurrence.element === origin.element && occurrence.scope === origin.scope && occurrence.activation === origin.activation);
+  const standing = state.occurrences.find((occurrence) => occurrence.id === origin.thrower);
   const element = programElement(ctx.program, origin.element);
   const event = element === null ? null : elementEvent(element);
   return standing === undefined || event === null
@@ -370,8 +369,7 @@ function busyCalledRoot(ctx: Ctx, origin: Origin, occurrence: ScopeOccurrence, s
   const activity = element === null ? null : elementActivity(element);
   const work = activity === null ? null : workCall(activity[1].work);
   const mapsOutputs = work !== null && (work.outputs.length > 0 || work.propagateAllOutputs);
-  const otherPath = state.occurrences.some((standing) => standing.scope === occurrence.id &&
-    !(standing.element === origin.element && standing.activation === origin.activation)) ||
+  const otherPath = state.occurrences.some((standing) => standing.scope === occurrence.id && standing.id !== origin.thrower) ||
     state.tokens.some((token) => token.scope === occurrence.id);
   return origin.scope === occurrence.id && mapsOutputs && otherPath;
 }

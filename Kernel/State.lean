@@ -2,6 +2,7 @@ module
 
 public import Kernel.State.Items
 public import Kernel.State.Journal
+public import Kernel.State.Failure
 
 /-! # Kernel runtime state
 
@@ -25,7 +26,7 @@ inductive Continuation where
   /-- Leave through the outgoing flows. -/
   | flow
   /-- One instance of the Multi-Instance body occurrence `body`. -/
-  | multiInstance (body : Nat)
+  | multiInstance (body : OccurrenceId)
   /-- A compensation handler of the run in that scope occurrence. -/
   | compensation (run : ScopeOccurrenceId)
   deriving Repr
@@ -39,7 +40,7 @@ published identity from the moment it is armed, but its flow node runs only when
 the subscription on the event scope and starts the activity instance on receipt, `BpmnParse:3288-3298`). A reservation
 keeps nothing alive and never appears in the journal until it begins. -/
 structure Occurrence where
-  id : Nat
+  id : OccurrenceId
   element : ElementId
   scope : ScopeOccurrenceId
   activation : Nat
@@ -59,7 +60,7 @@ to, `none` for the process root, a Multi-Instance instance and a handler's conte
 structure ScopeOccurrence where
   id : ScopeOccurrenceId
   element : Option ElementId
-  occurrence : Option Nat := none
+  occurrence : Option OccurrenceId := none
   calledInstance : Option String := none
   deriving Repr
 
@@ -112,9 +113,9 @@ structure BeginRequest where
   scope : ScopeOccurrenceId
   continuation : Continuation := .flow
   incoming : Option FlowId := none
-  reserved : Option Nat := none
+  reserved : Option OccurrenceId := none
   writes : List (String × Value) := []
-  inner : Option Nat := none
+  inner : Option OccurrenceId := none
   trigger : StartTrigger := .none
   deriving Repr
 
@@ -140,16 +141,16 @@ def Token.arrivalFlow? : Token → Option FlowId
 feature's mechanism enqueues a signal, and `Step` hands it to the owning hook before any token moves. -/
 inductive Signal where
   /-- Arm the boundaries of `element`, attached to the occurrence `host`, in `scope`. -/
-  | arm (host : Nat) (element : ElementId) (scope : ScopeOccurrenceId)
+  | arm (host : OccurrenceId) (element : ElementId) (scope : ScopeOccurrenceId)
   /-- Arm the Event Sub-Process starts of the scope occurrence `scope` (the process root included). -/
   | armScope (scope : ScopeOccurrenceId)
   /-- Arm the arms of the Event-Based Gateway occurrence `occurrence`, of `gateway`, reached in `scope`. -/
-  | armGateway (occurrence : Nat) (gateway : ElementId) (scope : ScopeOccurrenceId)
+  | armGateway (occurrence : OccurrenceId) (gateway : ElementId) (scope : ScopeOccurrenceId)
   | raise (event : Raised) (origin : Origin)
   /-- Begin a flow-node occurrence without a token. -/
   | begin (request : BeginRequest)
   /-- The occurrence is done: `Step`'s one completion pipeline runs. -/
-  | complete (occurrence : Nat) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule)
+  | complete (occurrence : OccurrenceId) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule)
   /-- Write without ending an occurrence: outputs passed by a non-interrupting Escalation, an external variable
   command (`EscalationHandler:60`, PC-SCOPE-06). -/
   | write (scope : ScopeOccurrenceId) (writes : List (String × Value)) (rule : WriteRule)
@@ -160,7 +161,7 @@ inductive Signal where
   | occur (element : ElementId) (scope : ScopeOccurrenceId) (leave : Leave) (writes : List (String × Value))
       (rule : WriteRule)
   /-- Cancel the occurrence wherever it stands. -/
-  | cancel (occurrence : Nat)
+  | cancel (occurrence : OccurrenceId)
   /-- Fire the open item, before anything queued behind this signal: a Signal's receivers run before its thrower leaves
   (`ThrowSignalEventActivityBehavior#execute`). -/
   | fire (item : ItemKey) (fired : Fired)
@@ -168,7 +169,7 @@ inductive Signal where
   | endInstance (status : InstanceStatus) (failure : Option InstanceFailure)
   /-- Run the compensation handlers retained in `scope` for `trigger`, those of `activity` when one is named; once all
   have completed, cancel the occurrence `leave` if any and go on as `resume` says. -/
-  | compensate (scope : ScopeOccurrenceId) (activity : Option ElementId) (trigger : OccurrenceRef) (leave : Option Nat)
+  | compensate (scope : ScopeOccurrenceId) (activity : Option ElementId) (trigger : OccurrenceRef) (leave : Option OccurrenceId)
       (resume : Option Resume)
   /-- An Error left the compensation handler context `handler` uncaught. -/
   | compensationFailed (handler : ScopeOccurrenceId) (code : String) (message : Option String) (origin : Origin)
@@ -210,12 +211,17 @@ structure State where
   variables : List ScopeVariables := []
   openItems : OpenItems := ∅
   /-- The next item ordinal of each occurrence that opened an item, pruned with the occurrence (KD1). -/
-  itemOrdinals : TreeMap Nat Nat compare := ∅
+  itemOrdinals : TreeMap OccurrenceId Nat compare := ∅
   /-- The next ordinal of each element in each scope occurrence that entered one, pruned with the scope occurrence
   (KD1). -/
   scopeOrdinals : TreeMap ScopeSlot Nat compare := ∅
+  /-- The next ordinal of each element in each scope occurrence that issued an occurrence of it, pruned with the scope
+  occurrence (KD1). -/
+  occurrenceOrdinals : TreeMap ScopeSlot Nat compare := ∅
   activations : List ActivationCount := []
-  nextIssue : Nat := 1
+  /-- The next order position: an open item's `position` and a compensation record's `completion`, which only the sites
+  that order them read. It names no identity; the issue log replaces it (K0.8). -/
+  nextPosition : Nat := 1
   logicalTimeMs : Nat := 0
   signals : List Signal := []
   /-- Every variable write since the last drain, same-value writes included: `Step` hands them to `Hooks.written`. -/
@@ -237,38 +243,6 @@ def crossed (program : Program) (state : State) : Bool :=
   facts.any fun (started, ended) =>
     started.any (fun fact => (marks program fact.occurrence).1) ||
       ended.any fun (key, terminal) => terminal == .completed && (marks program key).2
-
-/-- Why a semantic failure happened, which its producer states. `model`: the model's data reaches it, so CIB's job fails
-alike (CIB-EXT-0027). `invariant`: admission or the kernel's own construction excludes it, so reaching it is a kernel
-defect, which `Step.deferred` passes through every boundary unchanged. -/
-inductive SemanticCause where
-  | model
-  | invariant
-  deriving Repr
-
-/-- Why a step does not commit, a semantic failure carrying `σ` beside its code. Harness failures never appear here.
-`rolledBack` is a command whose closure could not continue (no outgoing flow to take): it ends the run with the state
-before the command. -/
-inductive FailureOf (σ : Type) where
-  | rejected (code : String)
-  | rolledBack (code : String)
-  | semanticFailure (cause : σ) (code : String)
-  | unsupported (code : String)
-  deriving DecidableEq, Repr
-
-/-- A step's failure: a semantic failure carries its `SemanticCause`, which only the step reads. -/
-abbrev Failure := FailureOf SemanticCause
-
-/-- A failure as a contract records it (`Failure.recorded`): without a cause, so no decoder invents one and no equality
-of records compares one. The wire never carries a cause. -/
-abbrev RecordedFailure := FailureOf Unit
-
-/-- `failure` without its cause. -/
-def Failure.recorded : Failure → RecordedFailure
-  | .rejected code => .rejected code
-  | .rolledBack code => .rolledBack code
-  | .semanticFailure _ code => .semanticFailure () code
-  | .unsupported code => .unsupported code
 
 abbrev Outcome := Except Failure State
 
@@ -297,8 +271,16 @@ def emit (state : State) (flows : List FlowId) (scope : ScopeOccurrenceId) : Sta
 def deferBegins (state : State) (requests : List BeginRequest) : State :=
   { state with tokens := state.tokens ++ (requests.map Token.begin).reverse }
 
-def issue (state : State) : State × Nat :=
-  ({ state with nextIssue := state.nextIssue + 1 }, state.nextIssue)
+/-- The next order position (`nextPosition`), counted up. -/
+def takePosition (state : State) : State × Nat :=
+  ({ state with nextPosition := state.nextPosition + 1 }, state.nextPosition)
+
+/-- A fresh key for an occurrence of `element` issued in `scope`: the next ordinal of its counter, counted up. The one
+issuer of occurrence keys (KD1). -/
+def issueOccurrence (state : State) (scope : ScopeOccurrenceId) (element : ElementId) : State × OccurrenceId :=
+  let slot : ScopeSlot := { parent := scope, element }
+  let ordinal := state.occurrenceOrdinals.getD slot 0
+  ({ state with occurrenceOrdinals := state.occurrenceOrdinals.insert slot (ordinal + 1) }, { scope, element, ordinal })
 
 def signal (state : State) (signal : Signal) : State :=
   { state with signals := state.signals ++ [signal] }
@@ -309,12 +291,12 @@ def calledRoot (state : State) (scope : ScopeOccurrenceId) : Bool :=
 
 /-- The local or child scope occurrence an occurrence `host` owns, when its inputs or its Scope gave it one. A called
 instance's root belongs to the callee and is never the host's own. -/
-def localScope? (state : State) (host : Nat) : Option ScopeOccurrenceId :=
+def localScope? (state : State) (host : OccurrenceId) : Option ScopeOccurrenceId :=
   (state.scopes.find? fun own => own.occurrence == some host && own.calledInstance.isNone).map (·.id)
 
 /-- The scope occurrence an occurrence `host` reads from and writes outward from: its own scope (`localScope?`), so its
 input-mapped locals are visible (`PvmExecutionImpl.java:1304-1318`), otherwise `scope`, the enclosing one. -/
-def ownScope (state : State) (host : Nat) (scope : ScopeOccurrenceId) : ScopeOccurrenceId :=
+def ownScope (state : State) (host : OccurrenceId) (scope : ScopeOccurrenceId) : ScopeOccurrenceId :=
   (state.localScope? host).getD scope
 
 /-- Whether the scope occurrence `scope` stands. -/
@@ -362,11 +344,11 @@ def activate (state : State) (processInstance : String) (element : ElementId) (r
 /-- A reservation for `element` in `scope`: issued and numbered now, begun only when its trigger arrives. -/
 def reserve (state : State) (element : ElementId) (scope : ScopeOccurrenceId) : State × Occurrence :=
   let (state, activation) := state.activate (state.instanceOf scope) element .element
-  let (state, id) := state.issue
+  let (state, id) := state.issueOccurrence scope element
   let occurrence : Occurrence := { id, element, scope, activation, begun := false }
   ({ state with occurrences := state.occurrences ++ [occurrence] }, occurrence)
 
-def occurrence? (state : State) (id : Nat) : Option Occurrence :=
+def occurrence? (state : State) (id : OccurrenceId) : Option Occurrence :=
   state.occurrences.find? (·.id == id)
 
 /-- The public key of an occurrence. -/
@@ -393,7 +375,7 @@ def beginOccurrence (state : State) (request : BeginRequest) (role : ActivationR
     | some reserved => (state, reserved)
     | none =>
       let (state, activation) := state.activate (state.instanceOf request.scope) request.element role
-      let (state, id) := state.issue
+      let (state, id) := state.issueOccurrence request.scope request.element
       (state, ({ id, element := request.element, scope := request.scope, activation, role } : Occurrence))
   let begun : Occurrence := { occurrence with
     scope := request.scope, continuation := request.continuation, incoming := request.incoming, begun := true }
@@ -409,7 +391,7 @@ def startReserved (state : State) (occurrence : Occurrence) (sourceType : String
       if other.id == begun.id then begun else other } begun sourceType, begun)
 
 /-- A fresh key for an item of `occurrence` in `role`: the occurrence's next ordinal, counted up. -/
-def issueItem (state : State) (occurrence : Nat) (role : ItemRole) : State × ItemKey :=
+def issueItem (state : State) (occurrence : OccurrenceId) (role : ItemRole) : State × ItemKey :=
   let ordinal := state.itemOrdinals.getD occurrence 0
   ({ state with itemOrdinals := state.itemOrdinals.insert occurrence (ordinal + 1) }, { occurrence, role, ordinal })
 
@@ -419,15 +401,15 @@ def putItem (state : State) (item : OpenItem) : State :=
 
 /-- An item waiting for the begun `occurrence`. -/
 def openItem (state : State) (kind : OpenKind) (occurrence : Occurrence) : State :=
-  let (state, position) := state.issue
+  let (state, position) := state.takePosition
   let (state, id) := state.issueItem occurrence.id .wait
   state.putItem { id, position, kind, element := occurrence.element, scope := occurrence.scope }
 
 /-- A subscription item for `element`, with a fresh reservation; `host` is the occurrence it hangs on. -/
 def openSubscription (state : State) (kind : OpenKind) (element : ElementId) (scope : ScopeOccurrenceId)
-    (host : Option Nat) (passive : Bool) : State × OpenItem :=
+    (host : Option OccurrenceId) (passive : Bool) : State × OpenItem :=
   let (state, occurrence) := state.reserve element scope
-  let (state, position) := state.issue
+  let (state, position) := state.takePosition
   let (state, id) := state.issueItem occurrence.id .subscription
   let item : OpenItem := { id, position, kind, element, scope, attachedTo := host, passive }
   (state.putItem item, item)
@@ -436,13 +418,13 @@ def closeItem (state : State) (id : ItemKey) : State :=
   { state with openItems := state.openItems.erase id }
 
 /-- Remove the items waiting for the occurrence `id`. -/
-def closeOwnItems (state : State) (id : Nat) : State :=
+def closeOwnItems (state : State) (id : OccurrenceId) : State :=
   { state with openItems := state.openItems.filter fun _ item => item.id.occurrence != id }
 
 /-- Remove the items attached to the occurrence `host`, with the reservations they hold. The dropped reservations are
 listed once, since a scan of the occurrences for every ordinal counter, run at every completion, made a closure that
 leaves a wait at every pass take 49 s (`closure-work-bound.test.ts` through `kernelRun --batch`, measured 2026-11-17). -/
-def disarm (state : State) (host : Nat) : State :=
+def disarm (state : State) (host : OccurrenceId) : State :=
   let attached := (itemList state.openItems).filter (·.attachedTo == some host)
   let dropped := (state.occurrences.filter fun occurrence =>
     !occurrence.begun && attached.any (·.id.occurrence == occurrence.id)).map (·.id)
@@ -455,7 +437,7 @@ def disarm (state : State) (host : Nat) : State :=
 /-- Enter a new scope occurrence of `element` inside `parent`, with the given local variables, `keyed`. The scope
 belongs to `occurrence`, when it has one. -/
 def enterScope (state : State) (element : ElementId) (parent : ScopeOccurrenceId)
-    (locals : List (String × Value)) (occurrence : Option Nat) : State × ScopeOccurrenceId :=
+    (locals : List (String × Value)) (occurrence : Option OccurrenceId) : State × ScopeOccurrenceId :=
   let slot : ScopeSlot := { parent, element }
   let ordinal := state.scopeOrdinals.getD slot 0
   let id := parent.child element ordinal

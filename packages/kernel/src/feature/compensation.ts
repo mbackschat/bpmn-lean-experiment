@@ -60,7 +60,7 @@ import {
   enterScope,
   failed,
   instanceOf,
-  issue,
+  takePosition,
   signal,
   type Compensable,
   type CompensationRun,
@@ -76,7 +76,7 @@ import {
   type ScopeOccurrenceId,
   type State,
   SemanticCause,
-  semanticFailure,
+  semanticFailure, type OccurrenceId,
 } from "../state.js";
 import { ScopeRole, ctxRunsAsInstance, leaveScope, subtree, type Ctx } from "../hooks.js";
 import { begunChildren, keptRecords } from "./compensation/kept.js";
@@ -148,7 +148,7 @@ export function completed(ctx: Ctx, occurrence: Occurrence, state: State): Outco
   if (handler === null && !grouped) {
     return committed(store(state, { ...compensation, retained: [...outer, ...inner.map((record) => ({ ...record, scope: target }))] }));
   }
-  const [issued, completion] = issue(state);
+  const [issued, completion] = takePosition(state);
   const handlerElement = handler === null ? null : programElement(ctx.program, handler);
   const inside = handler === null || (handlerElement !== null && elementHeader(handlerElement).parent === occurrence.element);
   const locals = (scope: ScopeOccurrenceId): Compensable["snapshot"] =>
@@ -384,7 +384,7 @@ export function compensate(
   scope: ScopeOccurrenceId,
   activity: ElementId | null,
   trigger: OccurrenceRef,
-  leave: number | null,
+  leave: OccurrenceId | null,
   resume: Resume | null,
   state: State,
 ): Outcome {

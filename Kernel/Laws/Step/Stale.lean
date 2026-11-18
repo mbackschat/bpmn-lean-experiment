@@ -23,7 +23,7 @@ open Kernel Kernel.Step
 /-- `Step.stale` restated. -/
 theorem stale_eq {state : State} {work : SignalWork} : stale state work =
     (work.scopes.any (fun scope => scopeIssued state scope && !state.scopes.any (·.id == scope)) ||
-      work.occurrences.any fun id => id < state.nextIssue && (state.occurrence? id).isNone) := by
+      work.occurrences.any fun id => occurrenceIssued state id && (state.occurrence? id).isNone) := by
   unfold stale; rfl
 
 /-- What the counters that remain read of a key some history holds: issued (`scopeIssued`), as `stale` reads it of a
@@ -42,6 +42,18 @@ theorem scopeIssued_of_issued {state : State} {scope : ScopeOccurrenceId} (issue
       exact history.below segment rest held (by simpa using stands)
     · simp only [stands, Bool.false_eq_true, ite_false]
       exact ih (history.closed segment rest held)
+
+/-- What the counters that remain read of an occurrence key issued (`Laws.State.OccurrenceIssued`): issued
+(`occurrenceIssued`), as `stale` reads it. -/
+theorem occurrenceIssued_of_issued {state : State} {id : OccurrenceId} (issued : Laws.State.OccurrenceIssued state id) :
+    occurrenceIssued state id = true := by
+  obtain ⟨scopeIs, below⟩ := issued
+  simp only [occurrenceIssued, scopeIssued_of_issued scopeIs, Bool.true_and]
+  cases standing : state.scopes.any (·.id == id.scope) with
+  | false => rfl
+  | true =>
+    simp only [Bool.not_true, Bool.false_or, decide_eq_true_eq]
+    exact below (by simpa [Laws.State.standingKeys] using standing)
 
 /-- The designated KD1 change: a key below a removed scope occurrence `segment` entered in `⟨outer⟩`, which stands and
 counted it, reads as issued whether or not some history holds it, since the counters that would tell went with the
@@ -142,15 +154,15 @@ theorem scope_of_fresh {state : State} {work : SignalWork} {scope : ScopeOccurre
       exact .inl ⟨scope, named, by simp [scopeIssued_of_issued issued, present]⟩
     simp [refused] at fresh
 
-theorem occurrence_of_fresh {state : State} {work : SignalWork} {id : Nat}
-    (fresh : stale state work = false) (named : id ∈ work.occurrences) (issued : id < state.nextIssue) :
+theorem occurrence_of_fresh {state : State} {work : SignalWork} {id : OccurrenceId}
+    (fresh : stale state work = false) (named : id ∈ work.occurrences) (issued : Laws.State.OccurrenceIssued state id) :
     ∃ occurrence, state.occurrence? id = some occurrence := by
   cases found : state.occurrence? id with
   | none =>
     have refused : stale state work = true := by
       unfold stale
       simp only [Bool.or_eq_true, List.any_eq_true]
-      exact .inr ⟨id, named, by simp [issued, found]⟩
+      exact .inr ⟨id, named, by simp [occurrenceIssued_of_issued issued, found]⟩
     simp [refused] at fresh
   | some occurrence => exact ⟨occurrence, rfl⟩
 

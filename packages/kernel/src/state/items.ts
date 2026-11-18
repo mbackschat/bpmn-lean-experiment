@@ -4,7 +4,7 @@
  * which re-exports it.
  */
 import { type ElementId } from "../il/types.js";
-import { type ScopeOccurrenceId } from "./slots.js";
+import { compareOccurrenceId, type OccurrenceId, type ScopeOccurrenceId } from "./slots.js";
 import { type OpenKind } from "./wait.js";
 
 /** The role an open item plays for its occurrence (KD1's item role). */
@@ -18,17 +18,17 @@ export enum ItemRole {
 const itemRoleIndex: Readonly<Record<ItemRole, number>> = { [ItemRole.Wait]: 0, [ItemRole.Subscription]: 1 };
 
 /** An open item's structural key (KD1): its occurrence, its role and a per-occurrence ordinal (`itemOrdinals`). */
-export interface ItemKey { readonly occurrence: number; readonly role: ItemRole; readonly ordinal: number; }
+export interface ItemKey { readonly occurrence: OccurrenceId; readonly role: ItemRole; readonly ordinal: number; }
 
 /** The lexicographic key order of `Kernel.ItemKey`'s `Ord`. */
 export function compareItemKey(left: ItemKey, right: ItemKey): number {
-  return left.occurrence - right.occurrence || itemRoleIndex[left.role] - itemRoleIndex[right.role] ||
+  return compareOccurrenceId(left.occurrence, right.occurrence) || itemRoleIndex[left.role] - itemRoleIndex[right.role] ||
     left.ordinal - right.ordinal;
 }
 
 /** A key as text, for sets and maps keyed by value. */
 export function itemKeyText(key: ItemKey): string {
-  return `${key.occurrence}/${key.role}/${key.ordinal}`;
+  return `${key.role}/${key.ordinal}/${key.occurrence}`;
 }
 
 /** Two keys are one when their text forms are: keys never compare by object reference. */
@@ -45,14 +45,14 @@ export function sameItemKey(left: ItemKey, right: ItemKey): boolean {
 export interface OpenItem {
   readonly id: ItemKey;
   /**
-   * The issue number the item took when it opened (`issue`): the order of opening, which every site that reads the items
+   * The order position the item took when it opened (`takePosition`): the order of opening, which every site that reads the items
    * in order reads (`itemsByPosition`), never the key order of `openItems` (KD1).
    */
   readonly position: number;
   readonly kind: OpenKind;
   readonly element: ElementId;
   readonly scope: ScopeOccurrenceId;
-  readonly attachedTo: number | null;
+  readonly attachedTo: OccurrenceId | null;
   readonly passive: boolean;
 }
 

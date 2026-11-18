@@ -84,7 +84,7 @@ import {
   type UserTaskDetail,
   SemanticCause,
   semanticFailure,
-  sameItemKey, type ItemKey,
+  sameItemKey, type ItemKey, type OccurrenceId,
 } from "../state.js";
 import {
   ScopeRole, admitValues, ctxEvaluateMappings, ctxEvaluateMappingsWith, ctxOutputReads, deliveryTriggerChannel, evalContext, hold,
@@ -406,7 +406,7 @@ function outputScope(ctx: Ctx, state: State, item: OpenItem): readonly [readonly
  * under the standards reading; under `OutputContext.ActivityScope` (CIB-EXT-0031) its own locals, the captured inputs,
  * and the chain from `scope`, into which the outputs are written, which `ctxOutputReads` orders.
  */
-function activityScope(ctx: Ctx, state: State, occurrence: number, scope: ScopeOccurrenceId): readonly [readonly Binding[], readonly Binding[]] {
+function activityScope(ctx: Ctx, state: State, occurrence: OccurrenceId, scope: ScopeOccurrenceId): readonly [readonly Binding[], readonly Binding[]] {
   switch (ctx.program.options.outputContext) {
     case OutputContext.Submission:
       return [[], []];
@@ -443,7 +443,7 @@ function unconsumed(ctx: Ctx, envelope: Envelope | null): ResultValues {
  * reads them (CIB-EXT-0015; EXPRESSION-SEMANTICS-SPEC "Multi-Instance level", result locals); every other completion
  * writes its outputs outward.
  */
-function effectCompletion(envelope: Envelope | null, rule: ResultValues, occurrence: number, written: readonly Binding[],
+function effectCompletion(envelope: Envelope | null, rule: ResultValues, occurrence: OccurrenceId, written: readonly Binding[],
   patch: readonly Binding[]): Signal {
   return envelope?.multiInstance !== undefined && envelope.multiInstance !== null && rule === ResultValues.ActivityLocals
     ? completeSignal(occurrence, leaveOutgoing, patch, WriteRule.Own)
@@ -487,7 +487,10 @@ export function effectResult(ctx: Ctx, item: OpenItem, outcome: EffectOutcome, s
       return committed(signal(state, {
         tag: SignalTag.Raise,
         event: { tag: RaisedTag.Error, code: outcome.code, message: outcome.message },
-        origin: { element: item.element, scope: item.scope, activation, host: item.id.occurrence, patch: outcome.outputs },
+        origin: {
+          element: item.element, scope: item.scope, activation, thrower: item.id.occurrence, host: item.id.occurrence,
+          patch: outcome.outputs,
+        },
       }));
     }
     case EffectOutcomeTag.TechnicalFailure:
@@ -511,7 +514,7 @@ function errorPatchAccepted(ctx: Ctx, patch: readonly Binding[]): Result<null> {
 }
 
 /** The outputs the raising Activity `host` writes as it leaves (`mappedErrorOutputs`). */
-function errorExitOutputs(ctx: Ctx, state: State, host: number, origin: Origin, envelope: Envelope | null,
+function errorExitOutputs(ctx: Ctx, state: State, host: OccurrenceId, origin: Origin, envelope: Envelope | null,
   installed: readonly Binding[]): Result<readonly Binding[]> {
   switch (ctx.program.options.errorPathOutputs) {
     case ErrorPathOutputs.Mapped:

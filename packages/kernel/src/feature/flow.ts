@@ -71,11 +71,11 @@ import {
   type ScopeOccurrenceId,
   type State,
   SemanticCause,
-  semanticFailure,
+  semanticFailure, type OccurrenceId,
 } from "../state.js";
 import { EvaluationTag, evalContext, type Ctx } from "../hooks.js";
 
-function signalComplete(state: State, id: number, leave: Leave): State {
+function signalComplete(state: State, id: OccurrenceId, leave: Leave): State {
   return signal(state, completeSignal(id, leave, [], WriteRule.Outward));
 }
 

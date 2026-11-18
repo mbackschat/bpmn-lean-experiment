@@ -125,7 +125,7 @@ before any arming or begin the entry queued runs; a queued write would run after
 fail as `gone` where the arming fails as `stale` (`Kernel.Step.Stale`). The entered scope occurrence exists because
 admission refuses a looping Event Sub-Process (`scope.multiInstance`), whose begin would enter a Multi-Instance body
 instead; admitting one makes `start-writes-without-scope` reachable. -/
-def writeStart (hooks : Hooks) (ctx : Ctx) (occurrence : Nat) (writes : List (String × Value)) (state : State) : Outcome :=
+def writeStart (hooks : Hooks) (ctx : Ctx) (occurrence : OccurrenceId) (writes : List (String × Value)) (state : State) : Outcome :=
   if writes.isEmpty then .ok state
   else match state.localScope? occurrence with
     | some scope => hooks.writeOutputs ctx scope writes .outward state
@@ -164,7 +164,7 @@ task inside it did not): signals run first in, first out, and an interrupting fi
 so a thrower's completion runs before any cancellation its receivers queue. The kernel thus completes a thrower its receiver then
 removes, where CIB leaves it only after its receivers ran (`ThrowSignalEventActivityBehavior#execute`); the order
 matters only once a per-activity end state is observed. -/
-def complete (hooks : Hooks) (ctx : Ctx) (id : Nat) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule)
+def complete (hooks : Hooks) (ctx : Ctx) (id : OccurrenceId) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule)
     (state : State) : Outcome := do
   let some occurrence := state.occurrence? id | .error (.semanticFailure .invariant "queued-work-occurrence-gone")
   let some sourceType := ctx.program.sourceType? occurrence.element | .error (.semanticFailure .invariant "complete-without-element")

@@ -109,17 +109,16 @@ theorem throwerLeaves_keeps {inv : State → Prop} {ctx : Ctx} (ops : Propagatio
     inv (Feature.Propagation.throwerLeaves ctx origin state) := by
   unfold Feature.Propagation.throwerLeaves
   dsimp only
-  cases found : state.occurrences.find? fun occurrence => occurrence.element == origin.element &&
-      occurrence.scope == origin.scope && occurrence.activation == origin.activation with
+  cases found : state.occurrences.find? (·.id == origin.thrower) with
   | none => exact holds
   | some occurrence =>
     cases event : (ctx.program.element? origin.element).bind (·.event?) with
     | none => exact holds
     | some pair =>
       have same := List.find?_some found
-      simp only [Bool.and_eq_true, beq_iff_eq] at same
+      simp only [beq_iff_eq] at same
       exact ops.complete _ _ _ _ _ holds (List.mem_of_find?_eq_some found)
-        (thrown (by rw [event]; rfl) occurrence (List.mem_of_find?_eq_some found) same.1.1 same.1.2 same.2) (throwLeave_unnamed _)
+        (thrown (by rw [event]; rfl) occurrence (List.mem_of_find?_eq_some found) same) (throwLeave_unnamed _)
 
 theorem hostLeaves_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks}
     (search : SearchHooks ctx inv hooks) {origin : Origin} {state after : State} (holds : inv state)
@@ -420,7 +419,9 @@ changes nothing else. -/
 theorem arriveThrow_cancel (ctx : Ctx) (header : Header) (payload : EventPayload) (occurrence : Occurrence)
     (state : State) : Feature.Propagation.arriveThrow ctx header payload .cancel occurrence state =
       .ok ((state.signal (.complete occurrence.id (Feature.Propagation.throwLeave payload) [] .outward)).signal
-        (.raise .cancel { element := header.id, scope := occurrence.scope, activation := occurrence.activation })) := by
+        (.raise .cancel {
+          element := header.id, scope := occurrence.scope, activation := occurrence.activation,
+          thrower := occurrence.id })) := by
   unfold Feature.Propagation.arriveThrow
   rfl
 
@@ -622,7 +623,7 @@ theorem throwerLeaves_quiet (origin : Origin) (state : State) :
   · exact .refl _
 
 include facts steps in
-theorem fire_quiet (boundary : Boundary) (host : Option Nat) (scope : ScopeOccurrenceId)
+theorem fire_quiet (boundary : Boundary) (host : Option OccurrenceId) (scope : ScopeOccurrenceId)
     (writes : List (String × Value)) (state : State) : Appends quiet state (boundary.fire host none scope writes state) := by
   rw [Laws.Hooks.fire_eq]
   have interrupted : Appends quiet state

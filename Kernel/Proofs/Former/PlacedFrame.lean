@@ -117,7 +117,7 @@ theorem PlacedLane.reserved (formed : WellFormed program s) (lane : PlacedLane p
   rcases List.mem_append.mp member with old | new
   · exact .inl old
   obtain rfl := List.mem_singleton.mp new
-  refine .inr ⟨?_, by rw [reserves.placed]; exact stands, fun _ _ named => ?_, .inr (.inr (Nat.le_of_eq reserves.id.symm))⟩
+  refine .inr ⟨?_, by rw [reserves.placed]; exact stands, fun _ _ named => ?_, .inr (.inr (reserves.fresh (by rw [reserves.placed]; exact stands)))⟩
   · rw [reserves.kind, reserves.placed]
     exact placed.same reserves.scopes fun _ inside => instances ▸ inside
   · rw [Laws.State.reserve_incoming] at named
@@ -125,7 +125,7 @@ theorem PlacedLane.reserved (formed : WellFormed program s) (lane : PlacedLane p
 
 /-- A clearing keeps the instance entries rooted outside the scope occurrence it clears, and only entries it held. -/
 theorem clearInside_entries (formed : WellFormed program s) {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s)
-    (keep : List Nat) : (s.clearInside scope keep).slots.instances.Sublist s.slots.instances ∧
+    (keep : List OccurrenceId) : (s.clearInside scope keep).slots.instances.Sublist s.slots.instances ∧
       ∀ entry ∈ s.slots.instances, ¬ StrictlyWithin s entry.root scope →
         entry ∈ (s.clearInside scope keep).slots.instances := by
   obtain ⟨draft, cleared⟩ := Laws.State.clearInside_eq s scope keep
@@ -157,7 +157,7 @@ theorem PlacedLane.left (formed : WellFormed program s) (lane : PlacedLane progr
 /-- Clearing a standing scope occurrence, keeping only occurrences outside the scope occurrences strictly within it,
 keeps the lane. -/
 theorem PlacedLane.cleared (formed : WellFormed program s) (lane : PlacedLane program s) {scope : ScopeOccurrenceId}
-    {keep : List Nat} (present : scope ∈ scopeIds s)
+    {keep : List OccurrenceId} (present : scope ∈ scopeIds s)
     (kept : ∀ o ∈ s.occurrences, o.id ∈ keep → ¬ StrictlyWithin s o.scope scope) :
     PlacedLane program (s.clearInside scope keep) := by
   have cleared := Laws.State.clearInside_cleared formed present keep
@@ -178,7 +178,7 @@ theorem PlacedLane.cleared (formed : WellFormed program s) (lane : PlacedLane pr
 
 /-- Entering a scope occurrence of an element anchored where it is entered keeps the lane (`Laws.Flow.Anchored`). -/
 theorem PlacedLane.entered (refs : ReferencesPlaced program) (formed : WellFormed program s) (lane : PlacedLane program s)
-    {element : ElementId} {parent : ScopeOccurrenceId} {locals : List (String × Value)} {owner : Option Nat}
+    {element : ElementId} {parent : ScopeOccurrenceId} {locals : List (String × Value)} {owner : Option OccurrenceId}
     (stands : parent ∈ scopeIds s)
     (anchored : Laws.Flow.Anchored (fun t => WellFormed program t ∧ Placing program t) program s element parent) :
     PlacedLane program (s.enterScope element parent locals owner).1 := by
@@ -350,7 +350,7 @@ theorem PlacedLane.begun (refs : ReferencesPlaced program) (formed : WellFormed 
       rw [reservation.element, placed.incoming flow target (incoming.symm.trans named) ends]
       exact PlacedIn.unique formed lane present placed.element here
     · refine ⟨by rw [begins.scope, issued.element]; exact move placed.element, begins.scope ▸ present,
-        fun flow target named ends => ?_, .inr (.inr (Nat.le_of_eq issued.id.symm))⟩
+        fun flow target named ends => ?_, .inr (.inr (issued.fresh present))⟩
       rw [issued.element]
       exact placed.incoming flow target (incoming.symm.trans named) ends
   refine lane.within formed begins.scopes instances ?_ (fun o member => ?_)
@@ -411,7 +411,7 @@ theorem placedAlongside (program : Program) : Alongside program (Placing program
     exact ⟨fun _ => occurrence_placed (held refs) member, present_issued formed (formed.owned.occurrenceScopes o member)⟩))
   signalBegin _ _ formed _ anchored held refs :=
     (held refs).signalled (.ofBegin (beginAnchored_placed refs formed (held refs) anchored))
-  issue _ held refs := (held refs).issue
+  takePosition _ held refs := (held refs).takePosition
   enterScope _ _ _ _ _ formed stands anchored held refs := (held refs).entered refs formed stands anchored
   reserve _ _ _ formed stands _ popped held refs :=
     (held refs).reserved formed (stands_present stands) (popped_placed refs popped (stands_present stands))

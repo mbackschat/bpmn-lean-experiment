@@ -69,7 +69,7 @@ import {
   type ScopeOccurrenceId,
   type State,
   SemanticCause,
-  semanticFailure,
+  semanticFailure, type OccurrenceId,
 } from "../state.js";
 import {
   EvaluationTag, collectionItems, evalContext, hold, leaveScope, multiInstanceRunItems, ownVariables, type Ctx,
@@ -135,7 +135,7 @@ function itemName(ctx: Ctx, loop: MultiInstance): string | null {
   return assertNever(ctx.program.options.multiInstanceBinding);
 }
 
-function runOf(state: State, body: number): MultiInstanceRun | null {
+function runOf(state: State, body: OccurrenceId): MultiInstanceRun | null {
   return state.slots.multiInstances.find((run) => run.occurrence === body) ?? null;
 }
 
@@ -652,7 +652,7 @@ function nextItems(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, next: n
   return assertNever(evaluation);
 }
 
-export function instanceCompleted(ctx: Ctx, body: number, occurrence: Occurrence, writes: readonly Binding[], state: State): Outcome {
+export function instanceCompleted(ctx: Ctx, body: OccurrenceId, occurrence: Occurrence, writes: readonly Binding[], state: State): Outcome {
   const found = runOf(state, body);
   if (found === null) return semanticFailure(SemanticCause.Invariant, "instance-without-multi-instance");
   const loop = loopOf(ctx, found);

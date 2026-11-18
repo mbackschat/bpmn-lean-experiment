@@ -80,7 +80,7 @@ Multi-Instance lane's, is kept by them alone and holds wherever a hook's other o
 
 /-- What the Multi-Instance hooks need of the state operations they apply, for an invariant `inv` of states running
 `program` and what the occurrence a body completes keeps, `settled`. -/
-structure MultiInstanceOps (program : Program) (inv : State → Prop) (settled : State → Nat → Prop) : Prop where
+structure MultiInstanceOps (program : Program) (inv : State → Prop) (settled : State → OccurrenceId → Prop) : Prop where
   bodies : ∀ state run, inv state → run ∈ state.slots.multiInstances → settled state run.occurrence
   placed : ∀ state run, inv state → run ∈ state.slots.multiInstances → Laws.State.Placed state run
   complete : ∀ state id leave writes rule, inv state → settled state id →
@@ -132,7 +132,7 @@ structure MultiInstanceOps (program : Program) (inv : State → Prop) (settled :
   write : ∀ state scope writes rule, inv state → inv (state.signal (.write scope writes rule)) ∧
     ∀ id, settled state id → settled (state.signal (.write scope writes rule)) id
 
-variable {program : Program} {inv : State → Prop} {settled : State → Nat → Prop}
+variable {program : Program} {inv : State → Prop} {settled : State → OccurrenceId → Prop}
 
 /-- A committed `Hooks.completeBody` finished the slot record `MultiInstance.runOf?` finds for its occurrence. -/
 theorem completeBody_spec {ctx : Ctx} {header : Header} {envelope : Envelope} {loop : MultiInstance}
@@ -165,7 +165,7 @@ theorem queueInstances_frame (ctx : Ctx) (mode : MultiInstanceMode) (requests : 
       obtain ⟨keeps, signals, tokens⟩ := held (current.signal (.begin request))
       have same := Laws.State.signal_eq current (.begin request)
       exact ⟨⟨keeps.scopes.trans (by rw [same]), keeps.occurrences.trans (by rw [same]),
-        keeps.variables.trans (by rw [same]), keeps.slots.trans (by rw [same]), keeps.nextIssue.trans (by rw [same])⟩,
+        keeps.variables.trans (by rw [same]), keeps.slots.trans (by rw [same]), keeps.occurrenceOrdinals.trans (by rw [same])⟩,
         by rw [signals, same]; simp, tokens.trans (by rw [same])⟩
   unfold Feature.MultiInstance.queueInstances
   split
@@ -213,15 +213,15 @@ def CounterIn (ctx : Ctx) (loop : MultiInstance) (s : State) (index : Nat) (scop
     ∃ locals ∈ s.variables, locals.scope = scope ∧ ("loopCounter", Value.int index) ∈ locals.entries
 
 /-- What entering the instances `done`, the first of those `MultiInstance.opening` names, keeps and records from the
-state `start` the entering began in: `Entering`, an issue counter that only grows, the feature slots, the occurrences,
+state `start` the entering began in: `Entering`, the occurrence counters, the feature slots, the occurrences,
 the queued signals and tokens, each scope occurrence of `start` and new since `start` issued afresh below the body's and
 owned by no occurrence, the other slots as `run` had them, each entered slot active in a scope occurrence of its own
 issued since `start`, holding its counter, and the begins of the entered slots in the order entered. -/
-structure Opening (inv : State → Prop) (settled : State → Nat → Prop) (ctx : Ctx) (loop : MultiInstance)
+structure Opening (inv : State → Prop) (settled : State → OccurrenceId → Prop) (ctx : Ctx) (loop : MultiInstance)
     (start : State) (run : MultiInstanceRun) (acc : State × List Iteration × List BeginRequest) (done : List Nat) :
     Prop where
   entering : Entering inv settled run acc.1 acc.2.1 acc.2.2
-  issue : start.nextIssue ≤ acc.1.nextIssue
+  counters : acc.1.occurrenceOrdinals = start.occurrenceOrdinals
   grows : Laws.State.ScopeGrows start acc.1
   slots : acc.1.slots = start.slots
   occurrences : acc.1.occurrences = start.occurrences
@@ -308,14 +308,14 @@ theorem enterInstance_opening (ops : MultiInstanceOps program inv settled) {ctx 
     exact (List.getElem?_eq_some_iff.mp waiting).1
   have unissuedStart := fun issued => unissued (opening.grows.issued issued)
   rw [Laws.State.enterScope_eq] at entering unissued issuedAfter grows unissuedStart ⊢
-  have issue := opening.issue
+  have counters := opening.counters
   have untouched := opening.untouched
   have entered := opening.entered
   have apart := opening.apart
-  dsimp only at issue untouched entered apart
+  dsimp only at counters untouched entered apart
   have requested := opening.requested
   dsimp only at requested
-  refine ⟨entering, issue, opening.grows.trans grows, opening.slots, opening.occurrences, opening.signals, opening.tokens,
+  refine ⟨entering, counters, opening.grows.trans grows, opening.slots, opening.occurrences, opening.signals, opening.tokens,
     fun entry member => List.mem_append_left _ (opening.kept entry member), fun entry member => ?_,
     by simp [opening.length], fun other outside => ?_, fun other inside => ?_, fun first inside second scope one two => ?_,
     ?_⟩
@@ -400,11 +400,11 @@ theorem instanceLocals_counted (ctx : Ctx) (loop : MultiInstance) (index : Nat) 
 
 /-- What beginning a body's instances, from `state`, leaves in the state `queued` it sets the body's slot record in, to
 `run` with the slots `instances`: what the body keeps while it enters, slots that open `run` by the loop's mode, the
-feature slots and occurrences of `state`, its scope occurrences and others issued since, an issue counter that only
-grew, each slot active anew in a scope occurrence issued since `state` that, under `cibLocals`, holds its counter, the
+feature slots and occurrences of `state`, its scope occurrences and others issued since, its occurrence
+counters, each slot active anew in a scope occurrence issued since `state` that, under `cibLocals`, holds its counter, the
 begins of the opened slots, in index order, queued as the loop's mode and the branch schedule say, and scope
 occurrences new since `state` of no called instance, so that an instance shares its body's activation counter. -/
-structure Begun (inv : State → Prop) (settled : State → Nat → Prop) (ctx : Ctx) (loop : MultiInstance) (state : State)
+structure Begun (inv : State → Prop) (settled : State → OccurrenceId → Prop) (ctx : Ctx) (loop : MultiInstance) (state : State)
     (run : MultiInstanceRun) (queued : State) (instances : List Iteration) : Prop where
   entering : Entering inv settled run queued instances []
   opens : Opens queued run { run with instances } loop
@@ -412,7 +412,7 @@ structure Begun (inv : State → Prop) (settled : State → Nat → Prop) (ctx :
   occurrences : queued.occurrences = state.occurrences
   kept : ∀ entry ∈ state.scopes, entry ∈ queued.scopes
   scopes : ∀ entry ∈ queued.scopes, entry ∈ state.scopes ∨ ¬ Laws.State.ScopeIssued state entry.id
-  issue : state.nextIssue ≤ queued.nextIssue
+  counters : queued.occurrenceOrdinals = state.occurrenceOrdinals
   queues : ∃ requests, Requested run (Feature.MultiInstance.opening loop.mode run.instances) instances requests ∧
     QueuedAs ctx.program loop.mode state queued requests
   counted : ∀ index scope, instances[index]? = some (.active scope) → run.instances[index]? = some (.active scope) ∨
@@ -437,7 +437,7 @@ theorem beginInstances_spec (ops : MultiInstanceOps program inv settled) {ctx : 
     rw [← folded]
     refine foldl_prefix (fun pre acc => Opening inv settled ctx loop state run acc pre) _ _ _ [] _ (by simp)
       (fun pre index post acc whole held => ?_)
-      ⟨entering, Nat.le_refl _, .refl _, rfl, rfl, rfl, rfl, fun _ member => member, fun entry member => .inl member, rfl,
+      ⟨entering, rfl, .refl _, rfl, rfl, rfl, rfl, fun _ member => member, fun entry member => .inl member, rfl,
         fun _ _ => rfl, fun _ none => (by cases none), fun _ none => (by cases none),
         ⟨[], rfl, rfl, fun _ none => by cases none⟩⟩
     obtain ⟨s, held_instances, held_requests⟩ := acc
@@ -464,7 +464,7 @@ theorem beginInstances_spec (ops : MultiInstanceOps program inv settled) {ctx : 
     opened.untouched index outside, fun index inside => ?_, fun first second scope inside one two =>
     opened.apart first inside second scope one two⟩, slots.trans opened.slots,
     keeps.occurrences.trans opened.occurrences, fun entry member => scopes ▸ opened.kept entry member,
-    fun entry member => ?_, keeps.nextIssue ▸ opened.issue, ⟨requests, opened.requested, ?_⟩, ?_,
+    fun entry member => ?_, keeps.occurrenceOrdinals.trans opened.counters, ⟨requests, opened.requested, ?_⟩, ?_,
     fun entry member outside => (opened.scopes entry (scopes ▸ member)).elim (fun old => absurd old outside)
       fun fresh => fresh.2.2.2⟩
   · obtain ⟨scope, slot, bounds, rest⟩ := opened.entered index inside
@@ -552,7 +552,7 @@ theorem submitted_fits {ctx : Ctx} {run : MultiInstanceRun} {loop : MultiInstanc
 its loop, the slot `index` active in `scope`, an output that fits and the counters held (its `intact` check), recorded
 the slot (`recorded`), leaving `scope`, wrote the body's counters or not, and completed the body or began the next
 instances, completing it whenever the slot it recorded was the body's last unfilled one (`exhausts`). -/
-structure Completes (ctx : Ctx) (body : Nat) (scope : ScopeOccurrenceId) (state after : State) (run : MultiInstanceRun)
+structure Completes (ctx : Ctx) (body : OccurrenceId) (scope : ScopeOccurrenceId) (state after : State) (run : MultiInstanceRun)
     (loop : MultiInstance) (index : Nat) (output : Option Value) : Prop where
   found : Feature.MultiInstance.runOf? state body = some run
   looped : LoopOf ctx.program run.element loop
@@ -588,20 +588,20 @@ theorem itemName_ne {ctx : Ctx} {loop : MultiInstance} {name : String} (data : l
     | some other => rw [found] at same; exact named (found.trans same)
 
 /-- The record `MultiInstance.runOf?` finds is one of the state's. -/
-theorem found_mem {state : State} {body : Nat} {run : MultiInstanceRun}
+theorem found_mem {state : State} {body : OccurrenceId} {run : MultiInstanceRun}
     (found : Feature.MultiInstance.runOf? state body = some run) : run ∈ state.slots.multiInstances := by
   unfold Feature.MultiInstance.runOf? at found
   exact List.mem_of_find?_eq_some found
 
 /-- The record `MultiInstance.runOf?` finds for a body occurrence is that occurrence's. -/
-theorem found_occurrence {state : State} {body : Nat} {run : MultiInstanceRun}
+theorem found_occurrence {state : State} {body : OccurrenceId} {run : MultiInstanceRun}
     (found : Feature.MultiInstance.runOf? state body = some run) : run.occurrence = body := by
   unfold Feature.MultiInstance.runOf? at found
   have same := List.find?_some found
   exact beq_iff_eq.mp same
 
 /-- A committed `Hooks.instanceCompleted` did what `Completes` says. -/
-theorem instanceCompleted_spec {ctx : Ctx} {body : Nat} {occurrence : Occurrence} {writes : List (String × Value)}
+theorem instanceCompleted_spec {ctx : Ctx} {body : OccurrenceId} {occurrence : Occurrence} {writes : List (String × Value)}
     {state after : State} (ran : Feature.MultiInstance.instanceCompleted ctx body occurrence writes state = .ok after) :
     ∃ run loop index output, Completes ctx body occurrence.scope state after run loop index output := by
   unfold Feature.MultiInstance.instanceCompleted at ran
@@ -742,7 +742,7 @@ theorem beginInstances_signals (ctx : Ctx) (loop : MultiInstance) (items : List 
 What `Hooks.instanceCompleted` reads of CIB's counter locals (CIB-INT-0018). -/
 
 /-- The run `MultiInstance.runOf?` finds for a body occurrence is the one record of it. -/
-theorem runOf?_keyed {state : State} {body : Nat} {found run : MultiInstanceRun} (keyed : RunsKeyed state)
+theorem runOf?_keyed {state : State} {body : OccurrenceId} {found run : MultiInstanceRun} (keyed : RunsKeyed state)
     (located : Feature.MultiInstance.runOf? state body = some found) (member : run ∈ state.slots.multiInstances)
     (owns : run.occurrence = body) : found = run := by
   unfold Feature.MultiInstance.runOf? at located

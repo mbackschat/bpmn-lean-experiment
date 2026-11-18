@@ -70,7 +70,7 @@ theorem registered_removeVariables (ops : Operations inv) (facts : StateFacts) :
   exact Laws.Data.removeVariables_keeps (dataOps ops facts ctx.program) holds ran
 
 /-- Disarming a host keeps the completion pipeline's frame and leaves nothing attached to the host. -/
-theorem disarm_frame (state : State) (host : Nat) : Laws.Step.PipelineFrame state (state.disarm host) ∧
+theorem disarm_frame (state : State) (host : OccurrenceId) : Laws.Step.PipelineFrame state (state.disarm host) ∧
     ∀ item ∈ itemList (state.disarm host).openItems, item.attachedTo ≠ some host := by
   rw [Laws.State.disarm_eq]
   refine ⟨⟨rfl, fun found member begun => ?_,
@@ -80,7 +80,7 @@ theorem disarm_frame (state : State) (host : Nat) : Laws.Step.PipelineFrame stat
   exact List.mem_filter.mpr ⟨member, by simp [begun]⟩
 
 /-- The host facts an arming's premises give, as Subscriptions states them. -/
-theorem hosted_of {state : State} {host : Nat} {scope : ScopeOccurrenceId} (stands : Laws.Step.OccurrenceStands state host)
+theorem hosted_of {state : State} {host : OccurrenceId} {scope : ScopeOccurrenceId} (stands : Laws.Step.OccurrenceStands state host)
     (placed : Laws.Step.ScopeStands state scope)
     (hosted : ∀ occurrence ∈ state.occurrences, occurrence.id = host → occurrence.begun = true ∧ occurrence.scope = scope) :
     Laws.Subscriptions.Hosted scope (some host) state := by
@@ -236,9 +236,9 @@ theorem completed_keeps {inv : State → Prop} {ctx : Ctx} (ops : Laws.Compensat
       exact .narrow (moved source held) (fun _ named => by
         rw [← Laws.Compensation.keptRecords_elements]; exact List.mem_flatMap.mpr ⟨child, kept, named⟩) (.refl _)
   rw [Laws.Compensation.store_eq]
-  exact ⟨ops.store _ _ (ops.issue state holds) (fun _ member => slots ▸ member)
+  exact ⟨ops.store _ _ (ops.takePosition state holds) (fun _ member => slots ▸ member)
       (stored.congr scopes occurrences (congrArg (·.compensation) slots)), scopes, occurrences, items,
-    show state.issue.1.slots.instances = _ by rw [slots]⟩
+    show state.takePosition.1.slots.instances = _ by rw [slots]⟩
 
 /-- Dropping the runs inside a scope occurrence an interrupting catcher decided on (`Feature.Compensation.dropWithin`)
 keeps `inv` and changes only the compensation slot. -/
@@ -251,7 +251,7 @@ theorem dropWithin_keeps {inv : State → Prop} {program : Program} (ops : Laws.
        fun run member => ⟨run, (List.mem_filter.mp member).1, rfl, rfl, fun _ => id⟩), _, rfl⟩
 
 /-- `Hooks.handlerCompleted` keeps `inv` for a handler whose context stands. -/
-theorem handlerCompleted_keeps {inv : State → Prop} {settled : State → Nat → Prop} {program : Program}
+theorem handlerCompleted_keeps {inv : State → Prop} {settled : State → OccurrenceId → Prop} {program : Program}
     (ops : Laws.Compensation.RunsOps program inv settled)
     {ctx : Ctx} {run : ScopeOccurrenceId} {occurrence : Occurrence} {state after : State} (holds : inv state)
     (stands : occurrence.scope ∈ state.scopes.map (·.id))
@@ -268,11 +268,11 @@ theorem dropWithin_steady {inv : State → Prop} {program : Program} (ops : Laws
   obtain ⟨kept, _, same⟩ := dropWithin_keeps
     (inv := fun t => ∀ run ∈ t.slots.compensation.runs, run ∈ state.slots.compensation.runs) (program := program)
     { store := fun _ _ kept within _ run inside => kept run (within run inside)
-      issue := fun t kept => by rw [(ops.issued t).2.2.2]; exact kept
+      takePosition := fun t kept => by rw [(ops.issued t).2.2.2]; exact kept
       issued := ops.issued
       fail := fun t _ kept => by rw [Laws.State.signal_eq]; exact kept } ctx scope (state := state) (fun _ => id)
   rw [same] at kept ⊢
-  exact ⟨rfl, rfl, Nat.le_refl _, rfl, fun _ queued => queued, Laws.State.instanceOf_congr rfl rfl, rfl, kept, [],
+  exact ⟨rfl, rfl, .refl _, rfl, fun _ queued => queued, Laws.State.instanceOf_congr rfl rfl, rfl, kept, [],
     by simp, by simp⟩
 
 /-- `Hooks.failCompensation` keeps `inv`. -/
@@ -286,7 +286,7 @@ theorem failCompensation_keeps {inv : State → Prop} {program : Program} (ops :
   exact ops.fail _ _ holds
 
 /-- `Hooks.handlerEnded` keeps `inv` for a handler whose context stands. -/
-theorem handlerEnded_keeps {inv : State → Prop} {settled : State → Nat → Prop} {program : Program}
+theorem handlerEnded_keeps {inv : State → Prop} {settled : State → OccurrenceId → Prop} {program : Program}
     (ops : Laws.Compensation.RunsOps program inv settled)
     {ctx : Ctx} {run : ScopeOccurrenceId} {occurrence : Occurrence} {state after : State} (holds : inv state)
     (stands : occurrence.scope ∈ state.scopes.map (·.id))
@@ -298,9 +298,9 @@ theorem handlerEnded_keeps {inv : State → Prop} {settled : State → Nat → P
 
 /-- `Hooks.compensate` keeps `inv` in a scope occurrence that stands, for a run that may end as it asks: the records it
 takes lie in scope occurrences the throw sees, all of its process instance (`Laws.Compensation.visibleScopes_linked`). -/
-theorem compensate_keeps {inv : State → Prop} {settled : State → Nat → Prop} {ctx : Ctx}
+theorem compensate_keeps {inv : State → Prop} {settled : State → OccurrenceId → Prop} {ctx : Ctx}
     (ops : Laws.Compensation.RunsOps ctx.program inv settled) {scope : ScopeOccurrenceId} {activity : Option ElementId}
-    {trigger : OccurrenceRef} {leave : Option Nat} {resume : Option Resume} {state after : State} (holds : inv state)
+    {trigger : OccurrenceRef} {leave : Option OccurrenceId} {resume : Option Resume} {state after : State} (holds : inv state)
     (stands : scope ∈ state.scopes.map (·.id))
     (resumable : ∀ next, resume = some next → (∀ occurrence leave, next = .complete occurrence leave →
       settled state occurrence) ∧ ∀ outer context, next = .group outer context → context = scope)
@@ -356,14 +356,16 @@ theorem compensationKeeps_of (compensation : ∀ program, Laws.Compensation.Comp
     exact handlerEnded_keeps (runs _) holds (List.mem_map.mpr ⟨entry, inside, named⟩) ran
 
 /-- An Error-path completion carries no trigger. -/
-theorem untriggered_complete (id : Nat) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule) :
+theorem untriggered_complete (id : OccurrenceId) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule) :
     Laws.State.Untriggered (.complete id leave writes rule) :=
   ⟨fun _ _ _ _ _ => nofun, fun _ _ => nofun⟩
 
 /-- What a variable write changes, it changes alone, so a raise's search reads the same. -/
 theorem steady_of_same {before after : State} (same : Laws.State.SameButVariables before after) :
     Laws.State.Steady before after :=
-  ⟨same.occurrences, same.scopes, Nat.le_of_eq same.nextIssue.symm, same.scopeOrdinals, fun _ named => by
+  ⟨same.occurrences, same.scopes,
+    .of_same (congrArg (List.map ScopeOccurrence.id) same.scopes) same.scopeOrdinals same.occurrenceOrdinals,
+    same.scopeOrdinals, fun _ named => by
     unfold Laws.State.Queued at named ⊢
     rwa [same.signals, same.tokens] at named, same.instances, same.activations, fun _ inside => same.slots ▸ inside, [],
     by simp [same.signals], by simp⟩
@@ -403,7 +405,7 @@ theorem registeredSearch (ops : FeatureOps inv) (compensation : CompensationKeep
       · refine ⟨(ops.join _).complete _ _ _ _ _ kept ((settled.steady steady) host named)
           (fun _ same => by cases same), steady.trans ?_, by rw [Laws.State.signal_eq]; exact instances⟩
         rw [Laws.State.signal_eq]
-        exact ⟨rfl, rfl, Nat.le_refl _, rfl, fun request named => named.elim (fun named =>
+        exact ⟨rfl, rfl, .refl _, rfl, fun request named => named.elim (fun named =>
           .inl ((List.mem_append.mp named).resolve_right (by simp))) .inr, Laws.State.instanceOf_congr rfl rfl, rfl,
           fun _ => id, [_], rfl, fun signal inside => List.mem_singleton.mp inside ▸ untriggered_complete _ _ _ _⟩
     writeCaught := fun _ _ _ _ holds ran => outward _ _ _ _ holds (caught _ _ _ ▸ ran)

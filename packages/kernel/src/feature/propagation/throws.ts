@@ -93,7 +93,9 @@ export function throwerRef(state: State, origin: Origin): OccurrenceRef {
  */
 function throwCompensation(header: Header, payload: EventPayload, thrown: CompensationThrow, occurrence: Occurrence, state: State): Outcome {
   if (!thrown.waitForCompletion) return failed(FailureTag.Unsupported, "throw-compensation-asynchronous");
-  const triggered = throwerRef(state, { element: header.id, scope: occurrence.scope, activation: occurrence.activation, host: null, patch: [] });
+  const triggered = throwerRef(state, {
+    element: header.id, scope: occurrence.scope, activation: occurrence.activation, thrower: occurrence.id, host: null, patch: [],
+  });
   return committed(signal(state, {
     tag: SignalTag.Compensate,
     scope: occurrence.scope,
@@ -279,7 +281,9 @@ function throwMessage(record: MessageThrow, occurrence: Occurrence, leave: (curr
 }
 
 export function arriveThrow(ctx: Ctx, header: Header, payload: EventPayload, thrown: Throw, occurrence: Occurrence, state: State): Outcome {
-  const origin: Origin = { element: header.id, scope: occurrence.scope, activation: occurrence.activation, host: null, patch: [] };
+  const origin: Origin = {
+    element: header.id, scope: occurrence.scope, activation: occurrence.activation, thrower: occurrence.id, host: null, patch: [],
+  };
   const leave = (current: State): State => signal(current, completeSignal(occurrence.id, throwLeave(payload), [], WriteRule.Outward));
   const raiseEvent = (event: Raised): Outcome => committed(signal(leave(state), { tag: SignalTag.Raise, event, origin }));
   switch (thrown.tag) {

@@ -65,7 +65,7 @@ def ConditionalReceivers (s : State) (owner : ScopeOccurrenceId) (receivers : Li
 /-- The first firing arm of the Event-Based Gateway occurrence `gateway` wins: it was armed on the gateway; afterwards
 no arm of the gateway is open, every losing arm's reservation is gone, so a late stimulus for it finds nothing, and the
 gateway's occurrence has completed (§13.4.4, Table 13.4 Deferred Choice). -/
-structure ArmWins (before after : State) (gateway : Nat) (winner : OpenItem) : Prop where
+structure ArmWins (before after : State) (gateway : OccurrenceId) (winner : OpenItem) : Prop where
   armed : winner ∈ itemList before.openItems ∧ winner.attachedTo = some gateway
   disarmed : ∀ item ∈ itemList after.openItems, item.attachedTo ≠ some gateway
   losersGone : ∀ loser ∈ itemList before.openItems, loser.attachedTo = some gateway → loser.id ≠ winner.id →
@@ -74,23 +74,33 @@ structure ArmWins (before after : State) (gateway : Nat) (winner : OpenItem) : P
 
 /-! ## Non-vacuity
 
-A root scope with a Sub-Process scope occurrence below it; an Event-Based Gateway occurrence 2 in the root with arms 3 and 4
-(items 5 and 6); a task occurrence 7 in the Sub-Process with its item 8. The open-item kinds are parameters. -/
+A root scope with a Sub-Process scope occurrence below it; an Event-Based Gateway occurrence `Choice` in the root with
+arms `Paid` and `Late` (items at positions 5 and 6); a task occurrence `Work` in the Sub-Process with its item at position
+8. The open-item kinds are parameters. -/
 
 def root : ScopeOccurrenceId := ⟨[]⟩
 def sub : ScopeOccurrenceId := ⟨[{ element := ⟨"Sub"⟩, ordinal := 0 }]⟩
 
-def gatewayOccurrence : Occurrence := { id := 2, element := ⟨"Choice"⟩, scope := root, activation := 1 }
-def armMessage : Occurrence := { id := 3, element := ⟨"Paid"⟩, scope := root, activation := 1, begun := false }
-def armTimer : Occurrence := { id := 4, element := ⟨"Late"⟩, scope := root, activation := 1, begun := false }
-def task : Occurrence := { id := 7, element := ⟨"Work"⟩, scope := sub, activation := 1 }
+def choiceId : OccurrenceId := { scope := root, element := ⟨"Choice"⟩, ordinal := 0 }
+def paidId : OccurrenceId := { scope := root, element := ⟨"Paid"⟩, ordinal := 0 }
+def lateId : OccurrenceId := { scope := root, element := ⟨"Late"⟩, ordinal := 0 }
+def workId : OccurrenceId := { scope := sub, element := ⟨"Work"⟩, ordinal := 0 }
+
+attribute [local simp] root sub choiceId paidId lateId workId
+
+def gatewayOccurrence : Occurrence := { id := choiceId, element := ⟨"Choice"⟩, scope := root, activation := 1 }
+def armMessage : Occurrence := { id := paidId, element := ⟨"Paid"⟩, scope := root, activation := 1, begun := false }
+def armTimer : Occurrence := { id := lateId, element := ⟨"Late"⟩, scope := root, activation := 1, begun := false }
+def task : Occurrence := { id := workId, element := ⟨"Work"⟩, scope := sub, activation := 1 }
 
 def paidItem (kind : OpenKind) : OpenItem :=
-  { id := ⟨3, .subscription, 0⟩, position := 5, kind, element := ⟨"Paid"⟩, scope := root, attachedTo := some 2 }
+  { id := ⟨paidId, .subscription, 0⟩, position := 5, kind, element := ⟨"Paid"⟩, scope := root,
+    attachedTo := some choiceId }
 def lateItem (kind : OpenKind) : OpenItem :=
-  { id := ⟨4, .subscription, 0⟩, position := 6, kind, element := ⟨"Late"⟩, scope := root, attachedTo := some 2 }
+  { id := ⟨lateId, .subscription, 0⟩, position := 6, kind, element := ⟨"Late"⟩, scope := root,
+    attachedTo := some choiceId }
 def workItem (kind : OpenKind) : OpenItem :=
-  { id := ⟨7, .wait, 0⟩, position := 8, kind, element := ⟨"Work"⟩, scope := sub }
+  { id := ⟨workId, .wait, 0⟩, position := 8, kind, element := ⟨"Work"⟩, scope := sub }
 
 def rootScope : ScopeOccurrence := { id := root, element := none }
 def subScope : ScopeOccurrence := { id := sub, element := some ⟨"Sub"⟩ }
@@ -186,7 +196,7 @@ theorem conditional_outside_rejected (kind : OpenKind) :
   have := Within.parentless (by simp [choosing, rootScope, subScope, root, sub]) within
   simp [root, sub] at this
 
-theorem first_arm_wins (kind : OpenKind) : ArmWins (choosing kind) (chosen kind) 2 (paidItem kind) where
+theorem first_arm_wins (kind : OpenKind) : ArmWins (choosing kind) (chosen kind) choiceId (paidItem kind) where
   armed := ⟨(mem_choosing (item := paidItem kind)).mpr (by simp), rfl⟩
   disarmed := fun item member => by rw [mem_chosen.mp member]; simp [workItem]
   losersGone := fun loser member attached differ => by
@@ -200,7 +210,7 @@ theorem first_arm_wins (kind : OpenKind) : ArmWins (choosing kind) (chosen kind)
 theorem loser_armed_rejected (kind : OpenKind) :
     ¬ ArmWins (choosing kind)
       { chosen kind with occurrences := [task, armTimer], openItems := ofItems [lateItem kind, workItem kind] }
-      2 (paidItem kind) := fun wins => by
+      choiceId (paidItem kind) := fun wins => by
   have := wins.disarmed (lateItem kind) (by rw [mem_ofItems (by simp [lateItem, workItem])]; simp)
   simp [lateItem] at this
 
@@ -255,23 +265,25 @@ def OrderFree {κ : Type} (element : OpenItem → κ) (resolve : List OpenItem �
     (members : List OpenItem) : Prop :=
   ∀ evaluated, evaluated.Perm members → (resolve evaluated).map (·.map element) = (resolve members).map (·.map element)
 
-/-- A contest member: a Conditional item reserving the occurrence `id` on the element `name`. The witnesses below read
-an item's occurrence as its public element (`key`), which keeps them decidable by evaluation; distinct members carry
-distinct elements. -/
-def member (id : Nat) (name : String) : OpenItem :=
-  { id := ⟨id, .subscription, 0⟩, position := id, kind := .conditional {}, element := ⟨name⟩, scope := ⟨[]⟩ }
+/-- A contest member: a Conditional item at position `n` reserving the `n`th occurrence of the element `name` in the
+root. The witnesses below read the ordinal of an item's occurrence as its public element (`key`), which keeps them
+decidable by evaluation and a function of the item's identity, as `Commits` requires; distinct members carry distinct
+ordinals and elements. -/
+def member (n : Nat) (name : String) : OpenItem :=
+  { id := ⟨{ scope := ⟨[]⟩, element := ⟨name⟩, ordinal := n }, .subscription, 0⟩, position := n,
+    kind := .conditional {}, element := ⟨name⟩, scope := ⟨[]⟩ }
 
-def key (item : OpenItem) : Nat := item.id.occurrence
+def key (item : OpenItem) : Nat := item.id.occurrence.ordinal
 
 /-- `level-both-eligible`'s pair: the non-interrupting `Warn_Level` and the interrupting `Stop_Level`, which withdraws it. -/
 def warn : OpenItem := member 1 "Warn_Level"
 def stop : OpenItem := member 2 "Stop_Level"
-def mixed (a b : OpenItem) : Bool := a.id.occurrence == 2 && b.id.occurrence == 1
+def mixed (a b : OpenItem) : Bool := a.id.occurrence.ordinal == 2 && b.id.occurrence.ordinal == 1
 
 /-- Nested regions: the outer interrupting boundary `BO` withdraws the inner `BI` inside its host, not the reverse. -/
 def outer : OpenItem := member 3 "BO"
 def inner : OpenItem := member 4 "BI"
-def nested (a b : OpenItem) : Bool := a.id.occurrence == 3 && b.id.occurrence == 4
+def nested (a b : OpenItem) : Bool := a.id.occurrence.ordinal == 3 && b.id.occurrence.ordinal == 4
 
 /-- `pending-pair-*`: the pending `Pair_A`, which the later write does not offer, withdraws `Pair_B` and `Pair_C`,
 which withdraw each other. They are no contest of the later write, so a contest of them is rejected whatever its
@@ -280,14 +292,14 @@ def pairA : OpenItem := member 7 "Pair_A"
 def pairB : OpenItem := member 8 "Pair_B"
 def pairC : OpenItem := member 9 "Pair_C"
 def pair (a b : OpenItem) : Bool :=
-  (a.id.occurrence == 7 && (b.id.occurrence == 8 || b.id.occurrence == 9)) ||
-    (a.id.occurrence == 8 && b.id.occurrence == 9) || (a.id.occurrence == 9 && b.id.occurrence == 8)
+  (a.id.occurrence.ordinal == 7 && (b.id.occurrence.ordinal == 8 || b.id.occurrence.ordinal == 9)) ||
+    (a.id.occurrence.ordinal == 8 && b.id.occurrence.ordinal == 9) || (a.id.occurrence.ordinal == 9 && b.id.occurrence.ordinal == 8)
 
 /-- Enabled by one activation: a Sub-Process host's interrupting boundary `BO` withdraws the start `SN` of an Event
 Sub-Process in the scope the host opened, and the scope's arming evaluates both (`Feature.Subscriptions.enabledWith`). -/
 def hostBoundary : OpenItem := member 5 "BO"
 def innerStart : OpenItem := member 6 "SN"
-def enabledTogether (a b : OpenItem) : Bool := a.id.occurrence == 5 && b.id.occurrence == 6
+def enabledTogether (a b : OpenItem) : Bool := a.id.occurrence.ordinal == 5 && b.id.occurrence.ordinal == 6
 
 /-- Evaluates a contest witness. An item's key equality is not exposed to evaluation, so the items are unfolded and
 their keys compared by `simp` first; what is left is closed by evaluation. -/

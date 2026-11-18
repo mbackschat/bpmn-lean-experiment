@@ -224,4 +224,111 @@ theorem ScopeGrows.insert {s t : State} {parent : ScopeOccurrenceId} {element : 
           rw [parents, elements])
       simp only [slotCount, ordinals, Std.ExtTreeMap.getD_insert, apart, ite_false]
 
+/-! ## Occurrence keys
+
+An occurrence key is issued in a scope occurrence, whose counter in `State.occurrenceOrdinals` goes with it (KD1). Its
+issue is read through the scope history: a key is issued when its scope occurrence key was and, while that scope
+occurrence stands, its counter has passed the key's ordinal. A key issued in a removed scope occurrence reads as issued
+whatever its ordinal, and never recurs, since that scope occurrence key is never entered again (`ScopeFresh`). So
+freshness holds without the issuing scope occurrence standing while its occurrence lives. -/
+
+/-- What the counter of the occurrences of `element` issued in `scope` reads. -/
+abbrev occurrenceCount (s : State) (scope : ScopeOccurrenceId) (element : ElementId) : Nat :=
+  s.occurrenceOrdinals.getD { parent := scope, element } 0
+
+/-- The occurrence key `x` was issued in `s`. -/
+def OccurrenceIssued (s : State) (x : OccurrenceId) : Prop :=
+  ScopeIssued s x.scope ∧ (x.scope ∈ standingKeys s → x.ordinal < occurrenceCount s x.scope x.element)
+
+/-- `t` issued no fewer occurrence keys than `s`. -/
+def OccurrenceGrows (s t : State) : Prop := ∀ x, OccurrenceIssued s x → OccurrenceIssued t x
+
+theorem OccurrenceGrows.refl (s : State) : OccurrenceGrows s s := fun _ issued => issued
+
+theorem OccurrenceGrows.trans {s t u : State} (first : OccurrenceGrows s t) (second : OccurrenceGrows t u) :
+    OccurrenceGrows s u := fun x issued => second x (first x issued)
+
+theorem OccurrenceIssued.scope {s : State} {x : OccurrenceId} (issued : OccurrenceIssued s x) : ScopeIssued s x.scope :=
+  issued.1
+
+/-- A change that issues no fewer scope occurrence keys, whose standing scope occurrences issued before stood before,
+and which lowers no counter of a standing one, issues no fewer occurrence keys: an entry, a removal, an issue. -/
+theorem OccurrenceGrows.of_scopes {s t : State} (grows : ScopeGrows s t)
+    (stood : ∀ x ∈ standingKeys t, ScopeIssued s x → x ∈ standingKeys s)
+    (counts : ∀ scope ∈ standingKeys t, ∀ element, occurrenceCount s scope element ≤ occurrenceCount t scope element) :
+    OccurrenceGrows s t := fun x ⟨issued, below⟩ =>
+  ⟨grows.issued issued, fun standing =>
+    Nat.lt_of_lt_of_le (below (stood _ standing issued)) (counts _ standing x.element)⟩
+
+/-- A change that keeps the standing keys and every counter issues the same keys. -/
+theorem OccurrenceGrows.of_same {s t : State} (keys : standingKeys t = standingKeys s)
+    (ordinals : t.scopeOrdinals = s.scopeOrdinals) (counters : t.occurrenceOrdinals = s.occurrenceOrdinals) :
+    OccurrenceGrows s t :=
+  .of_scopes (.of_same keys ordinals) (fun _ standing _ => keys ▸ standing)
+    (fun _ _ _ => by simp only [occurrenceCount, counters]; exact Nat.le_refl _)
+
+/-- A removal, whose standing keys stood before and which keeps the counters of what stands after it. -/
+theorem OccurrenceGrows.shrink {s t : State} (keys : ∀ x ∈ standingKeys t, x ∈ standingKeys s)
+    (ordinals : ∀ parent ∈ standingKeys t, ∀ element, slotCount t parent element = slotCount s parent element)
+    (counters : ∀ scope ∈ standingKeys t, ∀ element, occurrenceCount t scope element = occurrenceCount s scope element) :
+    OccurrenceGrows s t :=
+  .of_scopes (.shrink keys ordinals) (fun x standing _ => keys x standing)
+    (fun scope standing element => Nat.le_of_eq (counters scope standing element).symm)
+
+/-- The key an issue takes next in a standing scope occurrence was not issued. -/
+theorem occurrence_unissued {s : State} {scope : ScopeOccurrenceId} (standing : scope ∈ standingKeys s)
+    (element : ElementId) : ¬ OccurrenceIssued s { scope, element, ordinal := occurrenceCount s scope element } :=
+  fun ⟨_, below⟩ => Nat.lt_irrefl _ (below standing)
+
+/-- A removed occurrence's key never recurs: a key issued once stays issued through every change that issues no
+fewer keys, whatever was removed meanwhile, so the key a later issue takes in a standing scope occurrence differs from
+it: the counterpart, for occurrence keys, of `entered_unissued`. -/
+theorem occurrence_removed_never_recurs {s t : State} {x : OccurrenceId} (issued : OccurrenceIssued s x)
+    (grows : OccurrenceGrows s t) {scope : ScopeOccurrenceId} (standing : scope ∈ standingKeys t) (element : ElementId) :
+    x ≠ { scope, element, ordinal := occurrenceCount t scope element } :=
+  fun same => occurrence_unissued standing element (same ▸ grows x issued)
+
+/-- An issue in a standing, issued scope occurrence: the counter of `element` there counts one more, the scope
+occurrences and their counters stay. It issues no fewer keys, and the key it took is issued after it. -/
+theorem OccurrenceGrows.count {s t : State} {scope : ScopeOccurrenceId} {element : ElementId}
+    (keys : standingKeys t = standingKeys s) (ordinals : t.scopeOrdinals = s.scopeOrdinals)
+    (counters : t.occurrenceOrdinals =
+      s.occurrenceOrdinals.insert { parent := scope, element } (occurrenceCount s scope element + 1)) :
+    OccurrenceGrows s t ∧ (ScopeIssued s scope →
+      OccurrenceIssued t { scope, element, ordinal := occurrenceCount s scope element }) := by
+  have count : ∀ scope' element', occurrenceCount s scope' element' ≤ occurrenceCount t scope' element' := by
+    intro scope' element'
+    simp only [occurrenceCount, counters, Std.ExtTreeMap.getD_insert]
+    split
+    · rename_i same
+      have equal := Std.LawfulEqOrd.eq_of_compare same
+      injection equal with scopes elements
+      subst scopes elements
+      exact Nat.le_succ _
+    · exact Nat.le_refl _
+  refine ⟨.of_scopes (.of_same keys ordinals) (fun _ standing _ => keys ▸ standing) (fun _ _ _ => count _ _),
+    fun issued => ⟨(ScopeGrows.of_same keys ordinals).issued issued, fun _ => ?_⟩⟩
+  simp only [occurrenceCount, counters, Std.ExtTreeMap.getD_insert_self]
+  exact Nat.lt_succ_self _
+
+/-- An issue takes the key its counter reads: never issued while its scope occurrence stands, issued after it when its
+scope occurrence key was. -/
+theorem occurrence_next {before after : State} {scope : ScopeOccurrenceId} {element : ElementId} {id : OccurrenceId}
+    (named : id = { scope, element, ordinal := occurrenceCount before scope element })
+    (keys : standingKeys after = standingKeys before) (ordinals : after.scopeOrdinals = before.scopeOrdinals)
+    (counters : after.occurrenceOrdinals =
+      before.occurrenceOrdinals.insert { parent := scope, element } (occurrenceCount before scope element + 1)) :
+    (scope ∈ standingKeys before → ¬ OccurrenceIssued before id) ∧ (ScopeIssued before scope → OccurrenceIssued after id) ∧
+      OccurrenceGrows before after := by
+  subst named
+  obtain ⟨grows, issues⟩ := OccurrenceGrows.count keys ordinals counters
+  exact ⟨fun standing => occurrence_unissued standing element, issues, grows⟩
+
+/-- An entry of a fresh scope occurrence key, which issues no occurrence key: the occurrence counters stay. -/
+theorem OccurrenceGrows.enter {s t : State} (grows : ScopeGrows s t)
+    (keys : ∀ x ∈ standingKeys t, x ∈ standingKeys s ∨ ¬ ScopeIssued s x)
+    (counters : t.occurrenceOrdinals = s.occurrenceOrdinals) : OccurrenceGrows s t :=
+  .of_scopes grows (fun x standing issued => (keys x standing).resolve_right fun fresh => fresh issued)
+    (fun _ _ _ => by simp only [occurrenceCount, counters]; exact Nat.le_refl _)
+
 end Kernel.Laws.State

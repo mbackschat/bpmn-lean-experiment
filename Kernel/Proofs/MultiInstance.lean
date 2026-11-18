@@ -165,7 +165,7 @@ def CountersEntered (hooks : Hooks) : Prop :=
       WellFormed ctx.program state → occurrence ∈ state.occurrences → occurrence.begun = true →
       ctx.program.options.multiInstanceCounters = .cibLocals → ItemApart loop →
       hooks.arriveMultiInstance ctx header envelope loop occurrence state = .ok after → SlotsCounted state after) ∧
-    ∀ (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes : List (String × Value)) (state after : State),
+    ∀ (ctx : Ctx) (body : OccurrenceId) (occurrence : Occurrence) (writes : List (String × Value)) (state after : State),
       WellFormed ctx.program state → occurrence.scope ∈ scopeIds state →
       ctx.program.options.multiInstanceCounters = .cibLocals →
       (∀ element loop, LoopOf ctx.program element loop → ItemApart loop) →
@@ -175,7 +175,7 @@ def CountersEntered (hooks : Hooks) : Prop :=
 `loopCounter` and its body's counts (`CountersHeld`), which `Hooks.instanceCompleted` checks before it reads them, failing
 as `unsupported` (`multiInstance.resultShadowsInstance`) when a write admission cannot see reached one (CIB-INT-0018). -/
 def CountersRead (hooks : Hooks) : Prop :=
-  ∀ (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes : List (String × Value)) (state after : State)
+  ∀ (ctx : Ctx) (body : OccurrenceId) (occurrence : Occurrence) (writes : List (String × Value)) (state after : State)
     (run : MultiInstanceRun) (loop : MultiInstance) (index : Nat),
     RunsFormed ctx.program state → ctx.program.options.multiInstanceCounters = .cibLocals →
     hooks.instanceCompleted ctx body occurrence writes state = .ok after → run ∈ state.slots.multiInstances →
@@ -196,7 +196,7 @@ def CollectsOnCompletion (hooks : Hooks) : Prop :=
       ∃ new, Queues state after new ∧ ∀ queued ∈ new, ∀ writes value, (name, value) ∈ writes →
         ((∃ id leave rule, queued = .complete id leave writes rule) ∨ ∃ scope rule, queued = .write scope writes rule) →
         ∃ outputs, collectionItems value = some outputs ∧ Collects run (some outputs)) ∧
-    ∀ (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes : List (String × Value)) (state after : State)
+    ∀ (ctx : Ctx) (body : OccurrenceId) (occurrence : Occurrence) (writes : List (String × Value)) (state after : State)
       (run : MultiInstanceRun) (loop : MultiInstance) (name : String),
       RunsFormed ctx.program state → OutputsNamed ctx.program loop → LoopOf ctx.program run.element loop →
       run ∈ after.slots.multiInstances → run.occurrence = body → loop.outputCollection = some name →
@@ -218,7 +218,7 @@ def CollectionWritten (hooks : Hooks) : Prop :=
       hooks.completeBody ctx header envelope loop occurrence state = .ok after →
       ∃ new, Queues state after new ∧
         ∃ written value, Signal.complete occurrence.id .outgoing written .outward ∈ new ∧ (name, value) ∈ written) ∧
-    ∀ (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes : List (String × Value)) (state after : State)
+    ∀ (ctx : Ctx) (body : OccurrenceId) (occurrence : Occurrence) (writes : List (String × Value)) (state after : State)
       (run : MultiInstanceRun) (loop : MultiInstance) (index : Nat) (name : String),
       RunsFormed ctx.program state → LoopOf ctx.program run.element loop → run ∈ state.slots.multiInstances →
       run.occurrence = body → run.instances[index]? = some (.active occurrence.scope) →
@@ -234,7 +234,7 @@ collection (`PMI-EARLY-01`; BPMN 2.0.2 §13.3.7, whose output collection is comp
 completed). Stated of `Hooks.instanceCompleted` and the body's slot record as its after-state leaves it; it replaces a
 state clause that a value another write left under the collection's name falsifies. -/
 def StopsUncollected (hooks : Hooks) : Prop :=
-  ∀ (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes : List (String × Value)) (state after : State)
+  ∀ (ctx : Ctx) (body : OccurrenceId) (occurrence : Occurrence) (writes : List (String × Value)) (state after : State)
     (run : MultiInstanceRun) (loop : MultiInstance) (name : String),
     hooks.instanceCompleted ctx body occurrence writes state = .ok after → run ∈ after.slots.multiInstances →
     run.occurrence = body → (∃ slot ∈ run.instances, ∀ output, slot ≠ .completed output) →

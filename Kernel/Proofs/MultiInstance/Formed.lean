@@ -81,7 +81,7 @@ theorem issued_fresh {program : Program} {s : State} (formed : WellFormed progra
 
 /-- Entering and queuing a body's instances keeps the invariant: they add only fresh scope occurrences and keep every
 occurrence, scope occurrence and slot. -/
-theorem begun_framed {program : Program} {inv : State → Prop} {settled : State → Nat → Prop} {ctx : Ctx}
+theorem begun_framed {program : Program} {inv : State → Prop} {settled : State → OccurrenceId → Prop} {ctx : Ctx}
     {loop : MultiInstance} {state queued : State} {run : MultiInstanceRun} {instances : List Iteration}
     (formed : WellFormed program state) (framed : RunsFramed program state)
     (begun : Laws.MultiInstance.Begun inv settled ctx loop state run queued instances) : RunsFramed program queued :=
@@ -90,7 +90,7 @@ theorem begun_framed {program : Program} {inv : State → Prop} {settled : State
     fun _ present => begun.occurrences ▸ present)
 
 /-- The slot record entering and queuing a body's instances sets keeps what `RunPlaced` asks of the one it opens. -/
-theorem begun_placed {program : Program} {inv : State → Prop} {settled : State → Nat → Prop} {ctx : Ctx}
+theorem begun_placed {program : Program} {inv : State → Prop} {settled : State → OccurrenceId → Prop} {ctx : Ctx}
     {loop : MultiInstance} {state queued : State} {run : MultiInstanceRun} {instances : List Iteration}
     (formed : WellFormed program state) (begun : Laws.MultiInstance.Begun inv settled ctx loop state run queued instances)
     (placed : RunPlaced state run) : RunPlaced queued { run with instances } := by

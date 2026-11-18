@@ -530,7 +530,7 @@ theorem visible_spec (formed : WellFormed program s) {scope root : ScopeOccurren
 
 /-- Entering a scope occurrence changes nothing a present scope occurrence sees: the new one lies below it. -/
 theorem visible_enterScope (formed : WellFormed program s) {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s)
-    (element : ElementId) (parent : ScopeOccurrenceId) (locals : List (String × Value)) (occurrence : Option Nat)
+    (element : ElementId) (parent : ScopeOccurrenceId) (locals : List (String × Value)) (occurrence : Option OccurrenceId)
     (reading : Program) : (s.enterScope element parent locals occurrence).1.visible reading scope = s.visible reading scope := by
   obtain ⟨t, entered⟩ : ∃ t : State, (s.enterScope element parent locals occurrence).1 = t := ⟨_, rfl⟩
   rw [entered]

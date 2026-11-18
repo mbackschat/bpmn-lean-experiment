@@ -7,8 +7,10 @@ import { type OccurrenceRef } from "./input.js";
 import { type Binding } from "./wait.js";
 /** Re-exported for `raise.ts`, as Lean's `Kernel.State.Raise` sees `Kernel.State.Wait` only through this module. */
 export { type Binding };
-import { type ScopeOccurrenceId } from "./key.js";
-export { type ScopeOccurrenceId };
+import { compareOccurrenceId, type OccurrenceId, type ScopeOccurrenceId } from "./key.js";
+/** Re-exported for `items.ts` and `raise.ts`, as Lean's `Kernel.State.Items` and `Kernel.State.Raise` see `Kernel.State.Key`
+ * only through this module. */
+export { compareOccurrenceId, type OccurrenceId, type ScopeOccurrenceId };
 
 /**
  * How an occurrence leaves: its element's own outgoing selection, the flows given (`flows []` consumes the token), or
@@ -33,7 +35,7 @@ export function leaveFlows(selected: readonly FlowId[]): Leave { return { tag: L
 export enum ResumeTag { Complete = "complete", Occur = "occur", Group = "group" }
 
 export type Resume =
-  | { readonly tag: ResumeTag.Complete; readonly occurrence: number; readonly leave: Leave }
+  | { readonly tag: ResumeTag.Complete; readonly occurrence: OccurrenceId; readonly leave: Leave }
   | { readonly tag: ResumeTag.Occur; readonly element: ElementId; readonly scope: ScopeOccurrenceId; readonly leave: Leave }
   | { readonly tag: ResumeTag.Group; readonly outer: ScopeOccurrenceId; readonly context: ScopeOccurrenceId };
 
@@ -67,7 +69,7 @@ export function iterationHolds(iteration: Iteration, scope: ScopeOccurrenceId): 
 export interface MultiInstanceRun {
   readonly scope: ScopeOccurrenceId;
   readonly element: ElementId;
-  readonly occurrence: number;
+  readonly occurrence: OccurrenceId;
   readonly collection: Value;
   readonly instances: readonly Iteration[];
   /**
@@ -118,7 +120,7 @@ export interface CompensationRun {
   readonly scope: ScopeOccurrenceId;
   readonly pending: readonly Compensable[];
   readonly running: readonly (readonly [ScopeOccurrenceId, Compensable])[];
-  readonly leave: number | null;
+  readonly leave: OccurrenceId | null;
   readonly resume: Resume | null;
 }
 
@@ -126,13 +128,13 @@ export interface CompensationRun {
 export interface Compensations { readonly retained: readonly Compensable[]; readonly runs: readonly CompensationRun[]; }
 
 /** An occurrence waiting at a join, with the flow its token arrived on. */
-export interface Parked { readonly occurrence: number; readonly flow: FlowId; readonly scope: ScopeOccurrenceId; }
+export interface Parked { readonly occurrence: OccurrenceId; readonly flow: FlowId; readonly scope: ScopeOccurrenceId; }
 
 /**
  * An occurrence waiting for an unavailable InputSet in its scope occurrence. It records no flow: it waits whether or not
  * a token began it, and only its scope occurrence's clearing ends the wait.
  */
-export interface Held { readonly occurrence: number; readonly scope: ScopeOccurrenceId; }
+export interface Held { readonly occurrence: OccurrenceId; readonly scope: ScopeOccurrenceId; }
 
 export function parkedEquals(left: Parked, right: Parked): boolean {
   return left.occurrence === right.occurrence && left.flow === right.flow && left.scope === right.scope;

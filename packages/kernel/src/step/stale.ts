@@ -6,7 +6,7 @@
 import {
   FailureTag, SemanticCause, failed, semanticFailure, stands, type Outcome, type ScopeOccurrenceId, type State,
 } from "../state.js";
-import { compareScopeSlot, scopeHead } from "../state/key.js";
+import { compareScopeSlot, occurrenceIdParts, type OccurrenceId, scopeHead } from "../state/key.js";
 import { treeMapGetD } from "../state/map.js";
 
 /**
@@ -34,27 +34,37 @@ function scopeIssued(state: State, scope: ScopeOccurrenceId): boolean {
 }
 
 /**
+ * Whether the occurrence key `id` was issued, as far as the counters that remain can tell: its scope occurrence key was
+ * issued (`scopeIssued`) and, while that scope occurrence stands, its ordinal is below the scope occurrence's counter for
+ * its element. A counter goes with its scope occurrence, so of a key issued in a removed one only that is known (KD1).
+ */
+function occurrenceIssued(state: State, id: OccurrenceId): boolean {
+  const { scope, element, ordinal } = occurrenceIdParts(id);
+  return scopeIssued(state, scope) &&
+    (!stands(state, scope) || ordinal < treeMapGetD(state.occurrenceOrdinals, { parent: scope, element }, compareScopeSlot, 0));
+}
+
+/**
  * A signal's transition, whether it is a completion, the one kind `absorb` runs inside the micro-step, the scope
  * occurrences and occurrences it works in or on (`stale`), and the scope occurrences it acts from and the occurrences it
  * acts on (`gone`): Lean's `SignalWork`.
  */
 export type SignalRun = Readonly<{
-  completion: boolean; run: (state: State) => Outcome; scopes: readonly ScopeOccurrenceId[]; occurrences: readonly number[];
-  requires: readonly ScopeOccurrenceId[]; acts: readonly number[];
+  completion: boolean; run: (state: State) => Outcome; scopes: readonly ScopeOccurrenceId[]; occurrences: readonly OccurrenceId[];
+  requires: readonly ScopeOccurrenceId[]; acts: readonly OccurrenceId[];
 }>;
 
 /**
  * `Kernel.Step.stale`: whether a queued signal names a scope occurrence or an occurrence issued and since removed, which
  * an interruption's queued cancellation or interrupting begin removed after a micro-step enqueued the signal. Only a
- * begin, an arming and an `occur` name targets. `nextIssue` counts every occurrence identity of whatever kind, so a
- * target below it is only known to have been issued: one of the wrong kind reads as removed, and only one at or above it
- * fails as never issued (`requireScope`). A scope occurrence key reads as issued by the counter of its deepest standing
- * ancestor (`scopeIssued`), so a key below a removed subtree is only known to lie below an issued one, and reads as
- * removed (KD1).
+ * begin, an arming and an `occur` name targets. A scope occurrence key reads as issued by the counter of its deepest
+ * standing ancestor (`scopeIssued`), and an occurrence key by its scope occurrence's (`occurrenceIssued`), so a key below
+ * a removed subtree is only known to lie below an issued one, and reads as removed (KD1); only a key its standing counter
+ * has not reached fails as never issued (`gone`, `requireScope`).
  */
 function stale(state: State, work: SignalRun): boolean {
   return work.scopes.some((scope) => scopeIssued(state, scope) && !state.scopes.some((entry) => entry.id === scope)) ||
-    work.occurrences.some((id) => id < state.nextIssue && !state.occurrences.some((occurrence) => occurrence.id === id));
+    work.occurrences.some((id) => occurrenceIssued(state, id) && !state.occurrences.some((occurrence) => occurrence.id === id));
 }
 
 /**

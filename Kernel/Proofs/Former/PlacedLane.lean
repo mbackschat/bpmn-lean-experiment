@@ -238,16 +238,21 @@ def calledKey : ScopeOccurrenceId := ⟨[{ element := ⟨"Call"⟩, ordinal := 0
 /-- A key below the process root that `placedState` never issued: its root's counter of `A` issued none. -/
 def strayKey : ScopeOccurrenceId := ⟨[{ element := ⟨"A"⟩, ordinal := 0 }]⟩
 
-attribute [local simp] Laws.State.root_eq calledKey strayKey
+/-- The occurrence of `Call` that owns the called root, and an occurrence of `A` in a scope occurrence. -/
+def callOccurrence : OccurrenceId := { scope := State.root, element := ⟨"Call"⟩, ordinal := 0 }
+def aIn (scope : ScopeOccurrenceId) : OccurrenceId := { scope, element := ⟨"A"⟩, ordinal := 0 }
+
+attribute [local simp] Laws.State.root_eq calledKey strayKey callOccurrence aIn
 
 /-- The called root of the witnesses. -/
 def placedCalled : ScopeOccurrence :=
-  { id := calledKey, element := some ⟨"Call"⟩, occurrence := some 0, calledInstance := some "I-call" }
+  { id := calledKey, element := some ⟨"Call"⟩, occurrence := some callOccurrence, calledInstance := some "I-call" }
 
 /-- A process instance holding one called instance, which runs `definition`. -/
 def placedState : State :=
-  { instanceId := "I", nextIssue := 2, scopes := [{ id := State.root, element := none }, placedCalled]
+  { instanceId := "I", scopes := [{ id := State.root, element := none }, placedCalled]
     scopeOrdinals := (∅ : TreeMap ScopeSlot Nat compare).insert { parent := State.root, element := ⟨"Call"⟩ } 1
+    occurrenceOrdinals := (∅ : TreeMap ScopeSlot Nat compare).insert { parent := State.root, element := ⟨"Call"⟩ } 1
     slots := { instances := [{ root := State.root }, { root := calledKey, definition := some definition }] } }
 
 /-- A program without elements finds no element. -/
@@ -314,7 +319,7 @@ theorem placed_present : calledKey ∈ scopeIds (placedState definition) := by
 /-- An occurrence of the root process inside a called instance breaks `Placed`. -/
 theorem misplaced_occurrence_rejected :
     ¬ PlacedLane { program with elements := [] } { placedState definition with
-        occurrences := [{ id := 3, element := ⟨"A"⟩, scope := calledKey, activation := 1 }] } := fun lane =>
+        occurrences := [{ id := aIn calledKey, element := ⟨"A"⟩, scope := calledKey, activation := 1 }] } := fun lane =>
   placed_misplaced (definition := definition) (lane.placed.occurrences _ (List.mem_singleton_self _))
     (placed_calledRoot (definition := definition) rfl) (by simp [placedState])
 
@@ -378,8 +383,8 @@ theorem misplaced_begin_rejected :
 (`PlacedLane.begins`). -/
 theorem misplaced_reserved_rejected :
     ¬ PlacedLane { program with elements := [] } { placedState definition with
-        occurrences := [{ id := 3, element := ⟨"A"⟩, scope := State.root, activation := 1 }]
-        signals := [.begin { element := ⟨"A"⟩, scope := calledKey, reserved := some 3 }] } := fun lane =>
+        occurrences := [{ id := aIn State.root, element := ⟨"A"⟩, scope := State.root, activation := 1 }]
+        signals := [.begin { element := ⟨"A"⟩, scope := calledKey, reserved := some (aIn State.root) }] } := fun lane =>
   placed_misplaced (definition := definition)
     ((lane.begins _ (.inl (List.mem_singleton_self _)) (placed_present definition)).reserved _
       (List.mem_singleton_self _) rfl)
@@ -390,8 +395,8 @@ theorem misplaced_reserved_rejected :
 theorem misplaced_parked_rejected (flow : FlowId) (target : ElementId)
     (ends : ({ program with elements := [] } : Program).target? flow = some target) :
     ¬ PlacedLane { program with elements := [] } { placedState definition with
-        occurrences := [{ id := 3, element := ⟨"A"⟩, scope := calledKey, activation := 1 }]
-        slots := { (placedState definition).slots with parked := [{ occurrence := 3, flow, scope := calledKey }] } } :=
+        occurrences := [{ id := aIn calledKey, element := ⟨"A"⟩, scope := calledKey, activation := 1 }]
+        slots := { (placedState definition).slots with parked := [{ occurrence := aIn calledKey, flow, scope := calledKey }] } } :=
   fun lane => placed_misplaced (definition := definition)
     (lane.parked _ (List.mem_singleton_self _) _ (List.mem_singleton_self _) rfl target ends)
     (placed_calledRoot (definition := definition) rfl) (by simp [placedState])
@@ -413,14 +418,14 @@ theorem unlisted_occur_rejected (flow : FlowId) :
 
 /-- A queued arming of the root process inside a called instance breaks `PlacedLane.arms`. -/
 theorem misplaced_arm_rejected :
-    ¬ PlacedLane { program with elements := [] } { placedState definition with signals := [.arm 3 ⟨"A"⟩ calledKey] } :=
+    ¬ PlacedLane { program with elements := [] } { placedState definition with signals := [.arm (aIn calledKey) ⟨"A"⟩ calledKey] } :=
   fun lane => placed_misplaced (definition := definition)
     (lane.arms _ _ _ (List.mem_singleton_self _) (placed_present definition)) (placed_calledRoot (definition := definition) rfl)
     (by simp [placedState])
 
 /-- A queued gateway arming of the root process inside a called instance breaks `PlacedLane.gateways`. -/
 theorem misplaced_gateway_rejected :
-    ¬ PlacedLane { program with elements := [] } { placedState definition with signals := [.armGateway 3 ⟨"G"⟩ calledKey] } :=
+    ¬ PlacedLane { program with elements := [] } { placedState definition with signals := [.armGateway ⟨calledKey, ⟨"G"⟩, 0⟩ ⟨"G"⟩ calledKey] } :=
   fun lane => placed_misplaced (definition := definition)
     (lane.gateways _ _ _ (List.mem_singleton_self _) (placed_present definition)) (placed_calledRoot (definition := definition) rfl)
     (by simp [placedState])
@@ -430,10 +435,10 @@ theorem misplaced_gateway_rejected :
 theorem misplaced_complete_rejected (flow : FlowId) (target : ElementId)
     (ends : ({ program with elements := [] } : Program).target? flow = some target) :
     ¬ PlacedLane { program with elements := [] } { placedState definition with
-        occurrences := [{ id := 3, element := ⟨"A"⟩, scope := calledKey, activation := 1 }]
-        signals := [.complete 3 (.flows [flow]) [] .outward] } := fun lane =>
+        occurrences := [{ id := aIn calledKey, element := ⟨"A"⟩, scope := calledKey, activation := 1 }]
+        signals := [.complete (aIn calledKey) (.flows [flow]) [] .outward] } := fun lane =>
   placed_misplaced (definition := definition)
-    (lane.completes 3 [flow] [] .outward (List.mem_singleton_self _) _ (List.mem_singleton_self _) rfl flow
+    (lane.completes (aIn calledKey) [flow] [] .outward (List.mem_singleton_self _) _ (List.mem_singleton_self _) rfl flow
       (List.mem_singleton_self _) target ends)
     (placed_calledRoot (definition := definition) rfl) (by simp [placedState])
 
@@ -449,8 +454,8 @@ theorem unissued_occur_rejected :
 wait lies, here in the called root, would name flows of another process than the occurrence's, here the root's. -/
 theorem split_wait_rejected :
     ¬ PlacedLane program { placedState definition with
-        occurrences := [{ id := 3, element := ⟨"A"⟩, scope := State.root, activation := 1 }]
-        slots := { (placedState definition).slots with parked := [{ occurrence := 3, flow := ⟨"F"⟩, scope := calledKey }] } } :=
+        occurrences := [{ id := aIn State.root, element := ⟨"A"⟩, scope := State.root, activation := 1 }]
+        slots := { (placedState definition).slots with parked := [{ occurrence := aIn State.root, flow := ⟨"F"⟩, scope := calledKey }] } } :=
   fun lane => by
     have := lane.waits _ (List.mem_singleton_self _) _ (List.mem_singleton_self _) rfl
     simp [Laws.State.root_eq] at this
@@ -458,8 +463,8 @@ theorem split_wait_rejected :
 /-- A queued compensation resuming a completion by a named flow breaks `PlacedLane.compensates`. -/
 theorem named_compensate_rejected (flow : FlowId) (thrown : OccurrenceRef) :
     ¬ PlacedLane program { placedState definition with
-        signals := [.compensate State.root none thrown none (some (.complete 3 (.flows [flow])))] } := fun lane => by
-  cases lane.compensates 3 (.flows [flow]) (Laws.Step.mem_resumesOf.mpr ⟨_, _, _, _, List.mem_singleton_self _⟩) _ rfl
+        signals := [.compensate State.root none thrown none (some (.complete (aIn calledKey) (.flows [flow])))] } := fun lane => by
+  cases lane.compensates (aIn calledKey) (.flows [flow]) (Laws.Step.mem_resumesOf.mpr ⟨_, _, _, _, List.mem_singleton_self _⟩) _ rfl
 
 /-- The witnesses' compensation slot holding `compensation`. -/
 def placedCompensating (compensation : Compensations) : State :=
@@ -473,8 +478,8 @@ def placedRun (thrown : OccurrenceRef) (scope : ScopeOccurrenceId) (pending : Li
 /-- A compensation run resuming a completion by a named flow breaks `PlacedLane.resumes`. -/
 theorem named_resume_rejected (flow : FlowId) (thrown : OccurrenceRef) :
     ¬ PlacedLane program (placedCompensating definition
-        { runs := [placedRun thrown State.root [] (some (.complete 3 (.flows [flow])))] }) := fun lane => by
-  cases lane.resumes _ (List.mem_singleton_self _) 3 (.flows [flow]) rfl _ rfl
+        { runs := [placedRun thrown State.root [] (some (.complete (aIn calledKey) (.flows [flow])))] }) := fun lane => by
+  cases lane.resumes _ (List.mem_singleton_self _) (aIn calledKey) (.flows [flow]) rfl _ rfl
 
 /-- A retained compensation record of the root process inside a called instance breaks `PlacedLane.records`. -/
 theorem misplaced_record_rejected :
@@ -633,14 +638,14 @@ theorem elemented_root_rejected :
 theorem misplaced_run_rejected :
     ¬ PlacedLane { program with elements := [] } { placedState definition with
         slots := { (placedState definition).slots with
-          multiInstances := [{ scope := calledKey, element := ⟨"A"⟩, occurrence := 0, collection := .null, instances := [] }] } } :=
+          multiInstances := [{ scope := calledKey, element := ⟨"A"⟩, occurrence := aIn calledKey, collection := .null, instances := [] }] } } :=
   fun lane => placed_misplaced (definition := definition) (lane.runs _ (List.mem_singleton_self _) (placed_present definition))
     (placed_calledRoot (definition := definition) rfl) (by simp [placedState])
 
 /-- A raise from the root process inside a called instance breaks `PlacedLane.raises`. -/
 theorem misplaced_raise_rejected :
     ¬ PlacedLane { program with elements := [] } { placedState definition with
-        signals := [.raise .cancel { element := ⟨"A"⟩, scope := calledKey, activation := 1 }] } := fun lane =>
+        signals := [.raise .cancel { element := ⟨"A"⟩, scope := calledKey, activation := 1, thrower := aIn calledKey }] } := fun lane =>
   placed_misplaced (definition := definition) (lane.raises _ _ (List.mem_singleton_self _) (placed_present definition))
     (placed_calledRoot (definition := definition) rfl) (by simp [placedState])
 

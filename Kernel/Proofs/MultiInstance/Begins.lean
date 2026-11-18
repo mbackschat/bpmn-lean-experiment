@@ -104,12 +104,12 @@ theorem BeginsKept.signalBegin {program : Program} {s : State} (held : BeginsKep
     BeginsKept program (s.signal (.begin request)) :=
   held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
 
-theorem BeginsKept.issue {program : Program} {s : State} (held : BeginsKept program s) : BeginsKept program s.issue.1 := by
-  rw [Laws.State.issue_eq]
+theorem BeginsKept.takePosition {program : Program} {s : State} (held : BeginsKept program s) : BeginsKept program s.takePosition.1 := by
+  rw [Laws.State.takePosition_eq]
   exact held.frame (fun _ inside => inside) (fun _ named => named) rfl rfl
 
 theorem BeginsKept.enterScope {program : Program} {s : State} (held : BeginsKept program s) (element : ElementId)
-    (parent : ScopeOccurrenceId) (locals : List (String × Value)) (owner : Option Nat) :
+    (parent : ScopeOccurrenceId) (locals : List (String × Value)) (owner : Option OccurrenceId) :
     BeginsKept program (s.enterScope element parent locals owner).1 := by
   rw [Laws.State.enterScope_eq]
   exact held.frame (fun _ inside => inside) (fun _ named => named) rfl rfl
@@ -145,14 +145,14 @@ theorem BeginsKept.leaveScope {program other : Program} {s : State} (formed : We
 
 /-- Clearing a scope occurrence that stands keeps `BeginsKept`: it only takes away. -/
 theorem BeginsKept.clearInside {program other : Program} {s : State} (formed : WellFormed other s)
-    {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s) (keep : List Nat) (held : BeginsKept program s) :
+    {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s) (keep : List OccurrenceId) (held : BeginsKept program s) :
     BeginsKept program (s.clearInside scope keep) :=
   have cleared := Laws.State.clearInside_cleared formed present keep
   held.frame (fun o inside => ((cleared.occurrences o).mp inside).1)
     (fun _ named => Laws.Step.occurPending_of (fun _ inside => cleared.signals ▸ inside) cleared.slots.runs named)
     cleared.journal cleared.started
 
-theorem BeginsKept.disarm {program : Program} {s : State} (host : Nat) (held : BeginsKept program s) :
+theorem BeginsKept.disarm {program : Program} {s : State} (host : OccurrenceId) (held : BeginsKept program s) :
     BeginsKept program (s.disarm host) := by
   rw [Laws.State.disarm_eq]
   exact held.frame (fun _ inside => (List.mem_filter.mp inside).1) (fun _ named => named) rfl rfl
@@ -196,7 +196,7 @@ theorem BeginsKept.runs {program : Program} {s : State} (runs : List MultiInstan
   held.frame (fun _ inside => inside) (fun _ named => named) rfl rfl
 
 /-- Dropping an occurrence's record keeps `BeginsKept`. -/
-theorem BeginsKept.withoutRecord {program : Program} {s : State} (id : Nat) (held : BeginsKept program s) :
+theorem BeginsKept.withoutRecord {program : Program} {s : State} (id : OccurrenceId) (held : BeginsKept program s) :
     BeginsKept program (Laws.State.withoutRecord s id) :=
   held.frame (fun _ inside => (List.mem_filter.mp inside).1) (fun _ named => named) rfl rfl
 
@@ -472,7 +472,7 @@ theorem beginsKept_alongside (program : Program) : Alongside program (BeginsKept
   armGateway _ _ _ _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
   raise _ _ _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
   signalBegin _ request _ _ _ held := held.signalBegin request
-  issue _ held := held.issue
+  takePosition _ held := held.takePosition
   enterScope _ element parent locals owner _ _ _ held := held.enterScope element parent locals owner
   reserve _ _ scope _ _ pending _ held :=
     held.reserve (fun apart => PendingIn.unlooped (fun _ kept => (kept apart).occurs) pending) scope

@@ -24,15 +24,20 @@ def bodyScope : ScopeOccurrenceId := ⟨[{ element := review, ordinal := 0 }]⟩
 def firstScope : ScopeOccurrenceId := ⟨[{ element := review, ordinal := 0 }, { element := review, ordinal := 0 }]⟩
 def secondScope : ScopeOccurrenceId := ⟨[{ element := review, ordinal := 1 }, { element := review, ordinal := 0 }]⟩
 
+/-- The witnesses' occurrence keys: the body's in the root and each instance's in its own scope occurrence. -/
+@[simp] def bodyKey : OccurrenceId := { scope := root, element := review, ordinal := 0 }
+@[simp] def firstKey : OccurrenceId := { scope := firstScope, element := review, ordinal := 0 }
+@[simp] def secondKey : OccurrenceId := { scope := secondScope, element := review, ordinal := 0 }
+
 def running : MultiInstanceRun :=
-  { scope := bodyScope, element := review, occurrence := 1, collection := .stringList ["x", "x"]
+  { scope := bodyScope, element := review, occurrence := bodyKey, collection := .stringList ["x", "x"]
     instances := [.active firstScope, .active secondScope] }
 
-def bodyOccurrence : Occurrence := { id := 1, element := review, scope := root, activation := 1, role := .multiInstanceBody }
+def bodyOccurrence : Occurrence := { id := bodyKey, element := review, scope := root, activation := 1, role := .multiInstanceBody }
 def firstInstance : Occurrence :=
-  { id := 5, element := review, scope := firstScope, activation := 1, continuation := .multiInstance 1 }
+  { id := firstKey, element := review, scope := firstScope, activation := 1, continuation := .multiInstance bodyKey }
 def secondInstance : Occurrence :=
-  { id := 6, element := review, scope := secondScope, activation := 2, continuation := .multiInstance 1 }
+  { id := secondKey, element := review, scope := secondScope, activation := 2, continuation := .multiInstance bodyKey }
 
 def firstOwned : ScopeOccurrence := { id := firstScope, element := some review }
 def secondOwned : ScopeOccurrence := { id := secondScope, element := some review }
@@ -42,7 +47,7 @@ def secondLocals : ScopeVariables := { scope := secondScope, entries := [("item"
 def entered : State :=
   { instanceId := "p"
     scopes := [{ id := root, element := none },
-      { id := bodyScope, element := some review, occurrence := some 1 }, firstOwned, secondOwned]
+      { id := bodyScope, element := some review, occurrence := some bodyKey }, firstOwned, secondOwned]
     occurrences := [bodyOccurrence, firstInstance, secondInstance]
     variables := [firstLocals, secondLocals]
     slots := { multiInstances := [running] } }
@@ -94,9 +99,9 @@ theorem instances_unowned : InstancesUnowned entered running := by
 
 /-- An instance scope occurrence an occurrence owns breaks `InstancesUnowned`. -/
 theorem owned_instance_rejected :
-    ¬ InstancesUnowned { entered with scopes := [{ firstOwned with occurrence := some 5 }] } running :=
+    ¬ InstancesUnowned { entered with scopes := [{ firstOwned with occurrence := some firstKey }] } running :=
   fun unowned => by
-    simpa [firstOwned] using unowned firstScope (by simp [running]) { firstOwned with occurrence := some 5 } (by simp) rfl
+    simpa [firstOwned] using unowned firstScope (by simp [running]) { firstOwned with occurrence := some firstKey } (by simp) rfl
 
 theorem instances_unheld : InstancesUnheld entered running := fun _ _ _ member => by simp [entered] at member
 
@@ -170,7 +175,9 @@ theorem instances_placed : InstancesPlaced entered running := by
 instance's scope occurrence. -/
 theorem other_element_placed :
     InstancesPlaced
-      { entered with occurrences := [{ id := 7, element := ⟨"Other"⟩, scope := firstScope, activation := 1 }] } running := by
+      { entered with occurrences := [{
+          id := { scope := firstScope, element := ⟨"Other"⟩, ordinal := 0 }, element := ⟨"Other"⟩, scope := firstScope,
+          activation := 1 }] } running := by
   intro scope _ o member _ element _
   simp only [List.mem_singleton] at member
   subst member
@@ -181,7 +188,9 @@ body breaks `InstancesPlaced`. -/
 theorem stray_occurrence_rejected :
     ¬ InstancesPlaced
       { entered with occurrences :=
-        [{ id := 7, element := review, scope := firstScope, activation := 3, continuation := .multiInstance 2 }] }
+        [{
+          id := { scope := firstScope, element := review, ordinal := 1 }, element := review, scope := firstScope,
+          activation := 3, continuation := .multiInstance { scope := root, element := review, ordinal := 1 } }] }
       running := fun placed => by
   have := Continuation.multiInstance.inj
     (placed firstScope (by simp [running]) _ (List.mem_singleton_self _) rfl rfl rfl)
@@ -320,7 +329,7 @@ theorem shortened_rejected : ∀ item, ¬ RereadItem running [.string "a"] 1 ite
 /-! ## Queued instance begins -/
 
 /-- The begin of the second instance, queued. -/
-def secondBegin : BeginRequest := { element := review, scope := secondScope, continuation := .multiInstance 1 }
+def secondBegin : BeginRequest := { element := review, scope := secondScope, continuation := .multiInstance bodyKey }
 
 /-- The first instance begun, the second's begin queued. -/
 def queuing : State :=

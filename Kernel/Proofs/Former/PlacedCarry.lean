@@ -87,7 +87,7 @@ structure OccurrenceFits (program : Program) (s t : State) (occurrence : Occurre
     definitionAt program target = definitionAt program occurrence.element
   source : (∃ old ∈ s.occurrences, old.id = occurrence.id ∧ old.element = occurrence.element ∧
     old.scope = occurrence.scope) ∨ (Laws.State.Unclaimed s occurrence.id ∧
-      ∀ old ∈ s.occurrences, old.id = occurrence.id → old.begun = false) ∨ s.nextIssue ≤ occurrence.id
+      ∀ old ∈ s.occurrences, old.id = occurrence.id → old.begun = false) ∨ ¬ Laws.State.OccurrenceIssued s occurrence.id
 
 /-- What the lane says of the scope occurrences and instance entries alone. -/
 structure Standing (program : Program) (s : State) : Prop where
@@ -152,7 +152,7 @@ theorem occurAt_carry (signals : ∀ signal ∈ t.signals, signal ∈ s.signals 
 
 /-- A completion resume queued in `t` names no flow, when `s`'s and the ones `t` adds do not. -/
 theorem compensates_carry (lane : PlacedLane program s)
-    (signals : ∀ signal ∈ t.signals, signal ∈ s.signals ∨ SignalPlaced program t signal) {id : Nat} {leave : Leave}
+    (signals : ∀ signal ∈ t.signals, signal ∈ s.signals ∨ SignalPlaced program t signal) {id : OccurrenceId} {leave : Leave}
     (resumed : some (Resume.complete id leave) ∈ Laws.Step.resumesOf t.signals) : Unnamed leave := by
   obtain ⟨scope, rest⟩ := Laws.Step.mem_resumesOf.mp resumed
   obtain ⟨activity, trigger, leave', queued⟩ := rest
@@ -190,14 +190,14 @@ theorem PlacedLane.carry (formed : WellFormed program s) (lane : PlacedLane prog
     rcases present _ stands with old | fresh
     · exact move stands old (placed old)
     · exact absurd below fresh
-  have keyed : ∀ {id}, id < s.nextIssue → (Laws.State.Unclaimed s id → False) → ∀ o ∈ t.occurrences, o.id = id →
+  have keyed : ∀ {id}, Laws.State.OccurrenceIssued s id → (Laws.State.Unclaimed s id → False) → ∀ o ∈ t.occurrences, o.id = id →
       ∃ old ∈ s.occurrences, old.id = id ∧ old.scope = o.scope := fun below claimed o member named => by
     rcases occurrences o member with old | fits
     · exact ⟨o, old, named, rfl⟩
     rcases fits.source with ⟨twin, inside, same, kept⟩ | ⟨unclaimed, -⟩ | fresh
     · exact ⟨twin, inside, same.trans named, kept.2⟩
     · exact absurd (named ▸ unclaimed) claimed
-    · exact absurd fresh (by omega)
+    · exact absurd (named ▸ below) fresh
   have waitKeyed : ∀ waiting ∈ s.slots.parked, ∀ o ∈ t.occurrences, o.id = waiting.occurrence →
       ∃ old ∈ s.occurrences, old.id = waiting.occurrence ∧ old.scope = o.scope := fun waiting old =>
     keyed (formed.settled.parked waiting old).1 fun unclaimed => unclaimed.2.2 (.inl ⟨waiting, old, rfl⟩)
@@ -213,7 +213,7 @@ theorem PlacedLane.carry (formed : WellFormed program s) (lane : PlacedLane prog
         rcases fits.source with ⟨twin, inside, same', kept⟩ | ⟨unclaimed, -⟩ | fresh
         · exact move stands old (kept.1 ▸ placed.reserved twin inside (same' ▸ same))
         · exact absurd named (unclaimed.1 request queued)
-        · exact absurd ((formed.claimed.named request queued).2 o.id named).1 (Nat.not_lt.mpr fresh)
+        · exact absurd ((formed.claimed.named request queued).2 o.id named).1 fresh
       · exact absurd below fresh
   refine ⟨⟨⟨standing.rooted, standing.entered, fun o member => ?_⟩, standing.rootsApart, standing.rootsIssued,
     standing.rootDefinition, standing.scopes, fun o member => ?_, fun waiting member => ?_, fun run member => ?_⟩,
@@ -336,7 +336,7 @@ theorem PlacedLane.within (formed : WellFormed program s) (lane : PlacedLane pro
     rcases fits.source with ⟨twin, kept, same, alike⟩ | ⟨-, unbegun⟩ | fresh
     · exact ⟨twin, kept, same, alike.1⟩
     · rw [unbegun owner present named] at begun; cases begun
-    · exact absurd (named ▸ formed.issued.occurrences owner present) (Nat.not_lt.mpr fresh)
+    · exact absurd (named ▸ formed.issued.occurrences owner present) fresh
   refine lane.carry formed ⟨?_, ?_, ?_, fun entry member => grows.issued (lane.rootsIssued entry
     (instances ▸ member)), ?_, fun entry member element parent named link stands =>
     (lane.scopes entry (scopes ▸ member) element parent named link (ids ▸ stands)).same scopes
@@ -513,7 +513,7 @@ theorem PlacedLane.grown (formed : WellFormed program s) (lane : PlacedLane prog
 /-! ## Builders and operations that read no `WellFormed` -/
 
 /-- A queued arming placed where it arms. -/
-theorem SignalPlaced.ofArm {host : Nat} {element : ElementId} {scope : ScopeOccurrenceId}
+theorem SignalPlaced.ofArm {host : OccurrenceId} {element : ElementId} {scope : ScopeOccurrenceId}
     (placed : scope ∈ scopeIds s → PlacedIn program s element scope) : SignalPlaced program s (.arm host element scope) :=
   ⟨fun _ same => Signal.noConfusion same, fun _ _ _ _ _ same => Signal.noConfusion same,
     fun _ _ _ _ _ same => Signal.noConfusion same,
@@ -522,7 +522,7 @@ theorem SignalPlaced.ofArm {host : Nat} {element : ElementId} {scope : ScopeOccu
     fun _ _ same => Signal.noConfusion same⟩
 
 /-- A queued gateway arming placed where it arms. -/
-theorem SignalPlaced.ofArmGateway {occurrence : Nat} {gateway : ElementId} {scope : ScopeOccurrenceId}
+theorem SignalPlaced.ofArmGateway {occurrence : OccurrenceId} {gateway : ElementId} {scope : ScopeOccurrenceId}
     (placed : scope ∈ scopeIds s → PlacedIn program s gateway scope) :
     SignalPlaced program s (.armGateway occurrence gateway scope) :=
   ⟨fun _ same => Signal.noConfusion same, fun _ _ _ _ _ same => Signal.noConfusion same,
@@ -559,7 +559,7 @@ theorem SignalPlaced.ofOccur {element : ElementId} {scope : ScopeOccurrenceId} {
 
 /-- A queued compensation whose resume is placed. -/
 theorem SignalPlaced.ofCompensate {scope : ScopeOccurrenceId} {activity : Option ElementId} {trigger : OccurrenceRef}
-    {leave : Option Nat} {resume : Option Resume} (placed : ResumePlaced program s resume) :
+    {leave : Option OccurrenceId} {resume : Option Resume} (placed : ResumePlaced program s resume) :
     SignalPlaced program s (.compensate scope activity trigger leave resume) :=
   ⟨fun _ same => Signal.noConfusion same, fun _ _ _ _ _ same => Signal.noConfusion same,
     fun _ _ _ _ _ same => by
@@ -570,7 +570,7 @@ theorem SignalPlaced.ofCompensate {scope : ScopeOccurrenceId} {activity : Option
     fun _ _ _ _ same => Signal.noConfusion same, fun _ _ same => Signal.noConfusion same⟩
 
 /-- A queued completion whose named flows end where every occurrence of its number lies. -/
-theorem SignalPlaced.ofComplete {id : Nat} {leave : Leave} {writes : List (String × Value)} {rule : WriteRule}
+theorem SignalPlaced.ofComplete {id : OccurrenceId} {leave : Leave} {writes : List (String × Value)} {rule : WriteRule}
     (placed : ∀ selected, leave = .flows selected → ∀ occurrence ∈ s.occurrences, occurrence.id = id →
       ∀ flow ∈ selected, ∀ target, program.target? flow = some target → PlacedIn program s target occurrence.scope) :
     SignalPlaced program s (.complete id leave writes rule) :=
@@ -683,12 +683,12 @@ theorem PlacedLane.signalled {signal : Signal} (lane : PlacedLane program s) (pl
     (listExtended fun x member => by rw [List.mem_singleton.mp member]; exact placed.same rfl rfl rfl rfl)
 
 /-- Issuing an identifier keeps the lane. -/
-theorem PlacedLane.issue (lane : PlacedLane program s) : PlacedLane program s.issue.1 := by
-  rw [Laws.State.issue_eq]
+theorem PlacedLane.takePosition (lane : PlacedLane program s) : PlacedLane program s.takePosition.1 := by
+  rw [Laws.State.takePosition_eq]
   exact lane.queue rfl rfl rfl (fun _ member => member) rfl rfl listKept
 
 /-- Dropping an occurrence's record keeps the lane. -/
-theorem PlacedLane.withoutRecord (lane : PlacedLane program s) (id : Nat) :
+theorem PlacedLane.withoutRecord (lane : PlacedLane program s) (id : OccurrenceId) :
     PlacedLane program (Laws.State.withoutRecord s id) :=
   lane.queue rfl rfl rfl (fun _ member => (List.mem_filter.mp member).1) rfl rfl listKept
 

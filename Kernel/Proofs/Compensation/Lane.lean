@@ -105,7 +105,7 @@ theorem heldTriggers_eq (s : State) : heldTriggers s = ungroupedTriggers s ++ qu
 issued since, its counters, instance and queued signals but untriggered ones are `s`'s, it holds no trigger of a run
 that is no group's more often, every run's trigger is one of a run of `s`, and every occurrence is one of `s`'s. -/
 structure Moves (s t : State) : Prop where
-  issued : s.nextIssue ≤ t.nextIssue
+  issued : s.nextPosition ≤ t.nextPosition
   grows : Laws.State.ScopeGrows s t
   scopes : ∀ entry ∈ t.scopes, entry ∈ s.scopes ∨ ¬ Laws.State.ScopeIssued s entry.id
   activations : t.activations = s.activations
@@ -180,7 +180,7 @@ hook reads. -/
 theorem entered_eq (s : State) (element : ElementId) (parent : ScopeOccurrenceId) (locals : List (String × Value)) :
     (s.enterScope element parent locals none).2 = parent.child element (Laws.State.slotCount s parent element) ∧
       (s.enterScope element parent locals none).1.slots = s.slots ∧
-      (s.enterScope element parent locals none).1.nextIssue = s.nextIssue ∧
+      (s.enterScope element parent locals none).1.nextPosition = s.nextPosition ∧
       (s.enterScope element parent locals none).1.scopes =
         s.scopes ++ [{ id := parent.child element (Laws.State.slotCount s parent element), element := some element
                        occurrence := none }] ∧
@@ -619,7 +619,7 @@ theorem claims_of_apart {compensation : Compensations} (apart : CompletionsApart
 /-- No completion number held more often than in a state whose numbers are apart and issued, and issuing on. -/
 theorem apart_of_counts {s t : State}
     (counted : ∀ n, (completions t.slots.compensation).count n ≤ (completions s.slots.compensation).count n)
-    (apart : CompletionsApart s.slots.compensation) (issued : CompletionsIssued s) (later : s.nextIssue ≤ t.nextIssue) :
+    (apart : CompletionsApart s.slots.compensation) (issued : CompletionsIssued s) (later : s.nextPosition ≤ t.nextPosition) :
     CompletionsApart t.slots.compensation ∧ CompletionsIssued t :=
   ⟨List.nodup_iff_count.mpr fun n => Nat.le_trans (counted n) (List.nodup_iff_count.mp apart n),
     fun n inside => Nat.lt_of_lt_of_le (issued n (List.count_pos_iff.mp

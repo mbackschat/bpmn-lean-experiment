@@ -20,7 +20,7 @@ namespace Kernel.Laws.State
 open Kernel
 
 /-- The reservations `inner` names are beginnable in `scope` and nothing claims them. -/
-def Claimable (s : State) (scope : ScopeOccurrenceId) (inner : Option Nat) : Prop :=
+def Claimable (s : State) (scope : ScopeOccurrenceId) (inner : Option OccurrenceId) : Prop :=
   ∀ id ∈ inner.toList, Beginnable s scope id ∧ Unclaimed s id
 
 /-- The first of a pair in a list with one entry appended stood before it. -/
@@ -39,7 +39,7 @@ theorem head_of_append {α : Type} {a b c : α} {l : List α} (pair : [a, b].Sub
 
 /-- What slots that only shrink complete, with fewer queued signals, they completed before. -/
 theorem SlotCompletes.within {before after : State} (slots : SlotsWithin before after)
-    (signals : ∀ signal ∈ after.signals, signal ∈ before.signals) {id : Nat} (completes : SlotCompletes after id) :
+    (signals : ∀ signal ∈ after.signals, signal ∈ before.signals) {id : OccurrenceId} (completes : SlotCompletes after id) :
     SlotCompletes before id := by
   rcases completes with ⟨waiting, member, named⟩ | ⟨run, member, named⟩ | ⟨run, member, rest⟩ |
     ⟨scope, activity, trigger, rest⟩ | ⟨raised, origin, member, host⟩
@@ -93,9 +93,9 @@ theorem signal_claimed_named {s : State} {request : BeginRequest} (formed : Well
     fun other queuedOther id inside => ?_⟩
   · rcases queued other queuedOther with old | rfl
     · exact (formed.claimed.named other old).imp id fun beginnable id inside =>
-        (beginnable id inside).congr rfl rfl (Laws.State.items_congr rfl) rfl fun _ => by apply instanceOf_congr <;> rfl
+        (beginnable id inside).congr (.refl _) rfl (Laws.State.items_congr rfl) rfl fun _ => by apply instanceOf_congr <;> rfl
     · exact ⟨nodup, fun id inside =>
-        (admitted id inside).1.congr rfl rfl (Laws.State.items_congr rfl) rfl fun _ => by apply instanceOf_congr <;> rfl⟩
+        (admitted id inside).1.congr (.refl _) rfl (Laws.State.items_congr rfl) rfl fun _ => by apply instanceOf_congr <;> rfl⟩
   · by_cases same : second = request
     · subst same
       exact apart first (.inl (head_of_append pair)) id inside
@@ -179,7 +179,7 @@ theorem signal_named_wellFormed {s : State} {request : BeginRequest} (formed : W
 /-! ## An Event Sub-Process's start Event reservation through its entry -/
 
 /-- Queuing a signal that neither begins, completes nor compensates leaves reservations claimable. -/
-theorem Claimable.signal {s : State} {scope : ScopeOccurrenceId} {inner : Option Nat} (claimable : Claimable s scope inner)
+theorem Claimable.signal {s : State} {scope : ScopeOccurrenceId} {inner : Option OccurrenceId} (claimable : Claimable s scope inner)
     {signal : Signal} (notBegin : ∀ request, signal ≠ .begin request)
     (notComplete : ∀ id leave writes rule, signal ≠ .complete id leave writes rule)
     (notCompensate : ∀ scope activity trigger leave occurrence resume,
@@ -189,7 +189,7 @@ theorem Claimable.signal {s : State} {scope : ScopeOccurrenceId} {inner : Option
   rw [signal_eq]
   intro id inside
   obtain ⟨beginnable, unnamed, uncompleted, unslotted⟩ := claimable id inside
-  refine ⟨beginnable.congr rfl rfl (Laws.State.items_congr rfl) rfl fun _ => by apply instanceOf_congr <;> rfl, fun request queued => ?_,
+  refine ⟨beginnable.congr (.refl _) rfl (Laws.State.items_congr rfl) rfl fun _ => by apply instanceOf_congr <;> rfl, fun request queued => ?_,
     fun leave writes rule completed => ?_, fun completes => unslotted ?_⟩
   · rcases queued with signal_ | token
     · rcases List.mem_append.mp signal_ with old | new
@@ -216,7 +216,7 @@ occurrence and its start Event's reservation, which lies there, keeps a state we
 the reservation claimable there: nothing attached waits on the begun occurrence (`AttachedReserved`), and no item on
 the reservation (`Beginnable`). -/
 theorem clearInside_inner {s : State} (formed : WellFormed program s) {occurrence : Occurrence}
-    (member : occurrence ∈ s.occurrences) (begun : occurrence.begun = true) {inner : Option Nat}
+    (member : occurrence ∈ s.occurrences) (begun : occurrence.begun = true) {inner : Option OccurrenceId}
     (ready : ∀ id ∈ inner.toList, Beginnable s occurrence.scope id ∧ Unclaimed s id ∧
       ∀ found ∈ s.occurrences, found.id = id → found.scope = occurrence.scope) :
     WellFormed program (s.clearInside occurrence.scope (occurrence.id :: inner.toList)) ∧
@@ -255,7 +255,7 @@ theorem clearInside_inner {s : State} (formed : WellFormed program s) {occurrenc
   refine ⟨formedAfter, (cleared.occurrences occurrence).mpr ⟨member, .inr (List.mem_cons_self ..)⟩,
     fun id innerId => ?_⟩
   obtain ⟨⟨below, facts⟩, ⟨unnamed, uncompleted, unslotted⟩, _⟩ := ready id innerId
-  refine ⟨⟨cleared.nextIssue ▸ below, fun found inside same => ?_⟩, fun request queued => ?_,
+  refine ⟨⟨cleared.occurrenceGrows _ below, fun found inside same => ?_⟩, fun request queued => ?_,
     fun leave writes rule completed => ?_, fun completes => unslotted ?_⟩
   · obtain ⟨unbegun, free, instance_⟩ := facts found ((cleared.occurrences found).mp inside).1 same
     refine ⟨unbegun, fun item held => free item ((cleared.items item).mp held).1, fun stands => ?_⟩
@@ -270,7 +270,7 @@ occurrences unchanged and the entered scope occurrence standing, and leaves a re
 claimable in the parent: the entered one calls no instance, so it lies in its parent's process instance. -/
 theorem enterScope_inner {s : State} (formed : WellFormed program s) (element : ElementId)
     (locals : List (String × Value)) {occurrence : Occurrence} (member : occurrence ∈ s.occurrences)
-    (begun : occurrence.begun = true) {inner : Option Nat} (claimable : Claimable s occurrence.scope inner) :
+    (begun : occurrence.begun = true) {inner : Option OccurrenceId} (claimable : Claimable s occurrence.scope inner) :
     WellFormed program (s.enterScope element occurrence.scope locals (some occurrence.id)).1 ∧
       (s.enterScope element occurrence.scope locals (some occurrence.id)).1.occurrences = s.occurrences ∧
       (s.enterScope element occurrence.scope locals (some occurrence.id)).2 ∈
@@ -280,15 +280,16 @@ theorem enterScope_inner {s : State} (formed : WellFormed program s) (element : 
   have present := formed.owned.occurrenceScopes occurrence member
   have formedAfter := enterScope_wellFormed formed element present locals
     fun id named => ⟨occurrence, member, Option.some.inj named, begun, rfl⟩
-  rw [enterScope_eq] at formedAfter ⊢
-  dsimp only at formedAfter ⊢
-  generalize keyIs : occurrence.scope.child element (slotCount s occurrence.scope element) = key at formedAfter ⊢
-  generalize entryIs : ScopeOccurrence.mk key (some element) (some occurrence.id) none = entry at formedAfter ⊢
+  have issued := enterScope_occurrenceGrows formed.historic element present locals (some occurrence.id)
+  rw [enterScope_eq] at formedAfter issued ⊢
+  dsimp only at formedAfter issued ⊢
+  generalize keyIs : occurrence.scope.child element (slotCount s occurrence.scope element) = key at formedAfter issued ⊢
+  generalize entryIs : ScopeOccurrence.mk key (some element) (some occurrence.id) none = entry at formedAfter issued ⊢
   generalize afterIs : ({ s with
       scopeOrdinals := s.scopeOrdinals.insert { parent := occurrence.scope, element }
         (slotCount s occurrence.scope element + 1)
       scopes := s.scopes ++ [entry]
-      variables := s.variables ++ [ScopeVariables.mk key (keyed locals)] } : State) = t at formedAfter ⊢
+      variables := s.variables ++ [ScopeVariables.mk key (keyed locals)] } : State) = t at formedAfter issued ⊢
   have scopes : t.scopes = s.scopes ++ [entry] := by rw [← afterIs]
   have entryMember : entry ∈ t.scopes := scopes ▸ List.mem_append_right _ (List.mem_singleton_self _)
   have kept : ∀ x ∈ scopeIds s, t.instanceOf x = s.instanceOf x := fun x stands =>
@@ -302,10 +303,9 @@ theorem enterScope_inner {s : State} (formed : WellFormed program s) (element : 
   have entryId : entry.id = key := by rw [← entryIs]
   have occurrences : t.occurrences = s.occurrences := by rw [← afterIs]
   have items : itemList t.openItems = itemList s.openItems := by rw [← afterIs]
-  have issued : t.nextIssue = s.nextIssue := by rw [← afterIs]
   refine ⟨formedAfter, rfl, List.mem_map.mpr ⟨_, entryMember, entryId⟩, fun id innerId => ?_⟩
   obtain ⟨⟨below, facts⟩, unnamed, uncompleted, unslotted⟩ := claimable id innerId
-  refine ⟨⟨issued ▸ below, fun found inside same => ?_⟩, ?_⟩
+  refine ⟨⟨issued _ below, fun found inside same => ?_⟩, ?_⟩
   · obtain ⟨unbegun, free, instance_⟩ := facts found (occurrences ▸ inside) same
     refine ⟨unbegun, items ▸ free, fun _ => ?_⟩
     rw [← entryId, child, kept _ present, kept _ (formed.owned.occurrenceScopes found (occurrences ▸ inside))]

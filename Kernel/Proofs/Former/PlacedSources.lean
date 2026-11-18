@@ -89,7 +89,7 @@ theorem offered_placed (refs : ReferencesPlaced program) (lane : PlacedLane prog
       ends
 
 /-- A queued completion's named flows end where every occurrence of its number lies (`Proofs.Frame.CompletesFrom`). -/
-theorem completesFrom_placed (refs : ReferencesPlaced program) (lane : PlacedLane program s) {id : Nat} {leave : Leave}
+theorem completesFrom_placed (refs : ReferencesPlaced program) (lane : PlacedLane program s) {id : OccurrenceId} {leave : Leave}
     (source : Proofs.Frame.CompletesFrom (Placing program) program s id leave) :
     ∀ selected, leave = .flows selected → ∀ o ∈ s.occurrences, o.id = id → ∀ flow ∈ selected, ∀ target,
       program.target? flow = some target → PlacedIn program s target o.scope := by

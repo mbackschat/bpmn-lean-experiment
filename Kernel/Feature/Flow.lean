@@ -31,7 +31,7 @@ public section
 
 namespace Kernel.Feature.Flow
 
-def signalComplete (state : State) (id : Nat) (leave : Leave) : State :=
+def signalComplete (state : State) (id : OccurrenceId) (leave : Leave) : State :=
   state.signal (.complete id leave [] .outward)
 
 /-- A candidate's condition, read from its Sequence Flow; an unconditioned candidate holds. A failing or non-Boolean

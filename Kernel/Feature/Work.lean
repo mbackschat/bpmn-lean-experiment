@@ -108,7 +108,7 @@ def enterLocal (header : Header) (inputs : List (String × Value)) (occurrence :
 /-- The frame the outputs of the Activity occurrence `occurrence` in `scope` read besides the submitted values: nothing
 under the standards reading; under `OutputContext.activityScope` (CIB-EXT-0031) its own locals, the captured inputs,
 and the chain from `scope`, into which the outputs are written, which `Ctx.outputReads` orders. -/
-def activityScope (ctx : Ctx) (state : State) (occurrence : Nat) (scope : ScopeOccurrenceId) :
+def activityScope (ctx : Ctx) (state : State) (occurrence : OccurrenceId) (scope : ScopeOccurrenceId) :
     List (String × Value) × List (String × Value) :=
   match ctx.program.options.outputContext with
   | .submission => ([], [])
@@ -255,7 +255,7 @@ def unconsumed (ctx : Ctx) : Option Envelope → ResultValues
 values as locals of its own scope occurrence, which stays until its completion condition has run, so the condition
 reads them (CIB-EXT-0015; EXPRESSION-SEMANTICS-SPEC "Multi-Instance level", result locals); every other completion
 writes its outputs outward. -/
-def effectCompletion (envelope : Option Envelope) (rule : ResultValues) (occurrence : Nat)
+def effectCompletion (envelope : Option Envelope) (rule : ResultValues) (occurrence : OccurrenceId)
     (written patch : List (String × Value)) : Signal :=
   if (envelope.bind (·.multiInstance)).isSome && rule == .activityLocals then .complete occurrence .outgoing patch .own
   else .complete occurrence .outgoing written .outward
@@ -314,7 +314,8 @@ def effectResult (ctx : Ctx) (item : OpenItem) (outcome : EffectOutcome) (state 
     | .none => if !patch.isEmpty then .error (.rejected "error-path-outputs-not-accepted")
     let activation := ((state.occurrence? item.id.occurrence).map (·.activation)).getD 0
     .ok (state.signal (.raise (.error code message)
-      { element := item.element, scope := item.scope, activation, host := some item.id.occurrence, patch }))
+      { element := item.element, scope := item.scope, activation, thrower := item.id.occurrence, host := some item.id.occurrence
+        patch }))
   | .technicalFailure =>
     match ctx.program.options.technicalFailure, item.kind.view.effect with
     -- Dynamic-only: a host failure is an input; no admission can tell whether it will arrive.

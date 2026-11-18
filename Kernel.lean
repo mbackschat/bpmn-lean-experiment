@@ -102,8 +102,11 @@ public import Kernel.Laws.State.Removal
 public import Kernel.Laws.State.RemovalKeeps
 public import Kernel.Laws.State.Reserve
 public import Kernel.Laws.State.Sample
+public import Kernel.Laws.State.Slots
 public import Kernel.Laws.State.Transitions
+public import Kernel.Laws.State.Tree
 public import Kernel.Laws.State.Variables
+public import Kernel.Laws.State.Witnesses
 public import Kernel.Laws.Step
 public import Kernel.Laws.Step.Commit
 public import Kernel.Laws.Step.Contract
@@ -172,6 +175,7 @@ public import Kernel.Run.Population
 public import Kernel.Run.Wire
 public import Kernel.State
 public import Kernel.State.Criteria
+public import Kernel.State.Failure
 public import Kernel.State.Input
 public import Kernel.State.Items
 public import Kernel.State.Journal

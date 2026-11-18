@@ -25,7 +25,7 @@ inductive Leave where
 a fresh one (a caught Cancel's boundary, which `Step` numbers when the run ends), or, for a group's nested run, leave
 the group's `context` and advance the run in `outer` as a completed handler does. -/
 inductive Resume where
-  | complete (occurrence : Nat) (leave : Leave)
+  | complete (occurrence : OccurrenceId) (leave : Leave)
   | occur (element : ElementId) (scope : ScopeOccurrenceId) (leave : Leave)
   | group (outer context : ScopeOccurrenceId)
   deriving Repr
@@ -51,7 +51,7 @@ collection order. -/
 structure MultiInstanceRun where
   scope : ScopeOccurrenceId
   element : ElementId
-  occurrence : Nat
+  occurrence : OccurrenceId
   collection : Value
   instances : List Iteration
   /-- The effect-result names earlier sequential instances left, which CIB keeps on the body until it ends
@@ -96,7 +96,7 @@ structure CompensationRun where
   scope : ScopeOccurrenceId
   pending : List Compensable
   running : List (ScopeOccurrenceId × Compensable) := []
-  leave : Option Nat
+  leave : Option OccurrenceId
   resume : Option Resume
   deriving Repr
 
@@ -108,7 +108,7 @@ structure Compensations where
 
 /-- An occurrence waiting at a join, with the flow its token arrived on. -/
 structure Parked where
-  occurrence : Nat
+  occurrence : OccurrenceId
   flow : FlowId
   scope : ScopeOccurrenceId
   deriving DecidableEq, Repr
@@ -116,7 +116,7 @@ structure Parked where
 /-- An occurrence waiting for an unavailable InputSet in its scope occurrence. It records no flow: it waits whether or
 not a token began it, and only its scope occurrence's clearing ends the wait. -/
 structure Held where
-  occurrence : Nat
+  occurrence : OccurrenceId
   scope : ScopeOccurrenceId
   deriving Repr
 

@@ -95,7 +95,7 @@ def RunsTransition (hooks : Hooks) (ctx : Ctx) (transition : State → Outcome) 
 /-- How the completion pipeline goes on once the occurrence's writes are made: raised away, its record goes, it is
 journalled cancelled and only a compensation run hears of it; otherwise `Hooks.completed` retains it, its record goes,
 its continuation runs and it is journalled completed. Its key is read once its writes are made. -/
-inductive Finishes (hooks : Hooks) (ctx : Ctx) (id : Nat) (occurrence : Occurrence) (writes : List (String × Value)) :
+inductive Finishes (hooks : Hooks) (ctx : Ctx) (id : OccurrenceId) (occurrence : Occurrence) (writes : List (String × Value)) :
     Leave → State → State → Prop where
   | raised {state after : State} :
       continueAfter hooks ctx occurrence .raised writes
@@ -146,15 +146,15 @@ inductive Arrives (hooks : Hooks) (ctx : Ctx) (occurrence : Occurrence) (entry :
 /-- What a committed queued signal ran (`Step.signalWork`), with what `Step.stale` and `Step.gone` let it find standing:
 an issued scope occurrence or occurrence it names, and the scope occurrence it acts from. -/
 inductive Performed (hooks : Hooks) (ctx : Ctx) : Signal → State → State → Prop where
-  | onArm {host : Nat} {element : ElementId} {scope : ScopeOccurrenceId} {state after : State} :
-      (host < state.nextIssue → ∃ occurrence, state.occurrence? host = some occurrence) →
+  | onArm {host : OccurrenceId} {element : ElementId} {scope : ScopeOccurrenceId} {state after : State} :
+      (Laws.State.OccurrenceIssued state host → ∃ occurrence, state.occurrence? host = some occurrence) →
       (Laws.State.ScopeIssued state scope → ScopeStands state scope) →
       hooks.arm ctx host element scope state = .ok after → Performed hooks ctx (.arm host element scope) state after
   | onArmScope {scope : ScopeOccurrenceId} {state after : State} :
       (Laws.State.ScopeIssued state scope → ScopeStands state scope) →
       hooks.armScope ctx scope state = .ok after → Performed hooks ctx (.armScope scope) state after
-  | onArmGateway {occurrence : Nat} {gateway : ElementId} {scope : ScopeOccurrenceId} {state after : State} :
-      (occurrence < state.nextIssue → ∃ found, state.occurrence? occurrence = some found) →
+  | onArmGateway {occurrence : OccurrenceId} {gateway : ElementId} {scope : ScopeOccurrenceId} {state after : State} :
+      (Laws.State.OccurrenceIssued state occurrence → ∃ found, state.occurrence? occurrence = some found) →
       (Laws.State.ScopeIssued state scope → ScopeStands state scope) →
       hooks.armGateway ctx occurrence gateway scope state = .ok after →
       Performed hooks ctx (.armGateway occurrence gateway scope) state after
@@ -162,7 +162,7 @@ inductive Performed (hooks : Hooks) (ctx : Ctx) : Signal → State → State →
       hooks.raise ctx event origin state = .ok after → Performed hooks ctx (.raise event origin) state after
   | onBegin {request : BeginRequest} {state after : State} :
       begin hooks ctx request state = .ok after → Performed hooks ctx (.begin request) state after
-  | onComplete {occurrence : Nat} {leave : Leave} {writes : List (String × Value)} {rule : WriteRule} {state after : State} :
+  | onComplete {occurrence : OccurrenceId} {leave : Leave} {writes : List (String × Value)} {rule : WriteRule} {state after : State} :
       complete hooks ctx occurrence leave writes rule state = .ok after →
       Performed hooks ctx (.complete occurrence leave writes rule) state after
   | onWrite {scope : ScopeOccurrenceId} {writes : List (String × Value)} {rule : WriteRule} {state after : State} :
@@ -175,14 +175,14 @@ inductive Performed (hooks : Hooks) (ctx : Ctx) : Signal → State → State →
       {rule : WriteRule} {state after : State} : ScopeStands state scope →
       complete hooks ctx (state.reserve element scope).2.id leave writes rule (state.reserve element scope).1 = .ok after →
       Performed hooks ctx (.occur element scope leave writes rule) state after
-  | onCancel {occurrence : Nat} {state : State} :
+  | onCancel {occurrence : OccurrenceId} {state : State} :
       Performed hooks ctx (.cancel occurrence) state (state.cancelOccurrence occurrence)
   | onFire {item : ItemKey} {fired : Fired} {state after : State} :
       ((∃ open_ ∈ itemList state.openItems, fireItem hooks ctx open_ fired state = .ok after) ∨ after = state) →
       Performed hooks ctx (.fire item fired) state after
   | onEndInstance {status : InstanceStatus} {failure : Option InstanceFailure} {state : State} :
       Performed hooks ctx (.endInstance status failure) state (endInstance status failure state)
-  | onCompensate {scope : ScopeOccurrenceId} {activity : Option ElementId} {trigger : OccurrenceRef} {leave : Option Nat}
+  | onCompensate {scope : ScopeOccurrenceId} {activity : Option ElementId} {trigger : OccurrenceRef} {leave : Option OccurrenceId}
       {resume : Option Resume} {state after : State} : ScopeStands state scope →
       hooks.compensate ctx scope activity trigger leave resume state = .ok after →
       Performed hooks ctx (.compensate scope activity trigger leave resume) state after

@@ -65,7 +65,10 @@ export {
   type ScopeOccurrenceId,
 };
 
-import { childScope, compareScopeSlot, rootScope, scopeParent, type ScopeSlot } from "./state/key.js";
+import {
+  childScope, compareOccurrenceId, compareScopeSlot, occurrenceId, type OccurrenceId, rootScope, scopeParent, type ScopeSlot,
+} from "./state/key.js";
+export { type OccurrenceId };
 import {
   compareItemKey, insertItem, type ItemKey, itemAt, itemKeyText, ItemRole, itemsByPosition, type OpenItem, type OpenItems, sameItemKey,
 } from "./state/items.js";
@@ -74,6 +77,12 @@ export {
 };
 import { type TreeMap, treeMapGetD, treeMapInsert } from "./state/map.js";
 export { type TreeMap };
+import {
+  committed, type Failure, failed, failedWith, FailureTag, type RecordedFailure, recorded, type Result, SemanticCause, semanticFailure,
+} from "./state/failure.js";
+export {
+  committed, type Failure, failed, failedWith, FailureTag, type RecordedFailure, recorded, type Result, SemanticCause, semanticFailure,
+};
 
 /** Guarded type: `step.ts` owns matching on it. Whom `Step` tells when an occurrence completes. */
 export enum ContinuationTag {
@@ -87,7 +96,7 @@ export enum ContinuationTag {
 
 export type Continuation =
   | { readonly tag: ContinuationTag.Flow }
-  | { readonly tag: ContinuationTag.MultiInstance; readonly body: number }
+  | { readonly tag: ContinuationTag.MultiInstance; readonly body: OccurrenceId }
   | { readonly tag: ContinuationTag.Compensation; readonly run: ScopeOccurrenceId };
 
 export const flowContinuation: Continuation = { tag: ContinuationTag.Flow };
@@ -103,7 +112,7 @@ export const flowContinuation: Continuation = { tag: ContinuationTag.Flow };
  * reservation keeps nothing alive and never appears in the journal until it begins.
  */
 export interface Occurrence {
-  readonly id: number;
+  readonly id: OccurrenceId;
   readonly element: ElementId;
   readonly scope: ScopeOccurrenceId;
   readonly activation: number;
@@ -124,7 +133,7 @@ export interface Occurrence {
 export interface ScopeOccurrence {
   readonly id: ScopeOccurrenceId;
   readonly element: ElementId | null;
-  readonly occurrence: number | null;
+  readonly occurrence: OccurrenceId | null;
   readonly calledInstance: string | null;
 }
 
@@ -172,9 +181,9 @@ export interface BeginRequest {
   readonly scope: ScopeOccurrenceId;
   readonly continuation: Continuation;
   readonly incoming: FlowId | null;
-  readonly reserved: number | null;
+  readonly reserved: OccurrenceId | null;
   readonly writes: readonly Binding[];
-  readonly inner: number | null;
+  readonly inner: OccurrenceId | null;
   readonly trigger: StartTrigger;
 }
 
@@ -249,14 +258,14 @@ export enum SignalTag {
 }
 
 export type Signal =
-  | { readonly tag: SignalTag.Arm; readonly host: number; readonly element: ElementId; readonly scope: ScopeOccurrenceId }
+  | { readonly tag: SignalTag.Arm; readonly host: OccurrenceId; readonly element: ElementId; readonly scope: ScopeOccurrenceId }
   | { readonly tag: SignalTag.ArmScope; readonly scope: ScopeOccurrenceId }
-  | { readonly tag: SignalTag.ArmGateway; readonly occurrence: number; readonly gateway: ElementId; readonly scope: ScopeOccurrenceId }
+  | { readonly tag: SignalTag.ArmGateway; readonly occurrence: OccurrenceId; readonly gateway: ElementId; readonly scope: ScopeOccurrenceId }
   | { readonly tag: SignalTag.Raise; readonly event: Raised; readonly origin: Origin }
   | { readonly tag: SignalTag.Begin; readonly request: BeginRequest }
   | {
       readonly tag: SignalTag.Complete;
-      readonly occurrence: number;
+      readonly occurrence: OccurrenceId;
       readonly leave: Leave;
       readonly writes: readonly Binding[];
       readonly rule: WriteRule;
@@ -271,7 +280,7 @@ export type Signal =
       readonly writes: readonly Binding[];
       readonly rule: WriteRule;
     }
-  | { readonly tag: SignalTag.Cancel; readonly occurrence: number }
+  | { readonly tag: SignalTag.Cancel; readonly occurrence: OccurrenceId }
   | { readonly tag: SignalTag.Fire; readonly item: ItemKey; readonly fired: Fired }
   | { readonly tag: SignalTag.EndInstance; readonly status: InstanceStatus; readonly failure: InstanceFailure | null }
   | {
@@ -279,7 +288,7 @@ export type Signal =
       readonly scope: ScopeOccurrenceId;
       readonly activity: ElementId | null;
       readonly trigger: OccurrenceRef;
-      readonly leave: number | null;
+      readonly leave: OccurrenceId | null;
       readonly resume: Resume | null;
     }
   | {
@@ -291,7 +300,7 @@ export type Signal =
     };
 
 /** `Signal.complete`. */
-export function completeSignal(occurrence: number, leave: Leave, writes: readonly Binding[], rule: WriteRule): Signal {
+export function completeSignal(occurrence: OccurrenceId, leave: Leave, writes: readonly Binding[], rule: WriteRule): Signal {
   return { tag: SignalTag.Complete, occurrence, leave, writes, rule };
 }
 
@@ -334,12 +343,15 @@ export interface State {
   readonly tokens: readonly Token[];
   readonly variables: readonly ScopeVariables[];
   readonly openItems: OpenItems;
-  /** The next item ordinal of each occurrence that opened an item, in occurrence order, pruned with the occurrence. */
-  readonly itemOrdinals: TreeMap<number, number>;
+  /** The next item ordinal of each occurrence that opened an item, in occurrence key order, pruned with the occurrence. */
+  readonly itemOrdinals: TreeMap<OccurrenceId, number>;
   /** The next ordinal of each element in each scope occurrence that entered one, pruned with the scope occurrence. */
   readonly scopeOrdinals: TreeMap<ScopeSlot, number>;
+  /** The next ordinal of each element in each scope occurrence that issued an occurrence of it, pruned with it. */
+  readonly occurrenceOrdinals: TreeMap<ScopeSlot, number>;
   readonly activations: readonly ActivationCount[];
-  readonly nextIssue: number;
+  /** The next order position of an open item or a compensation record, read only by the sites that order them (K0.8). */
+  readonly nextPosition: number;
   readonly logicalTimeMs: number;
   readonly signals: readonly Signal[];
   /** Every variable write since the last drain, same-value writes included: `Step` hands them to `Hooks.written`. */
@@ -366,60 +378,7 @@ export function crossed(program: Program, state: State): boolean {
       ended.some(([key, terminal]) => terminal === Terminal.Completed && marks(program, key)[1]));
 }
 
-/**
- * Why a step does not commit. Harness failures never appear here. `rolledBack` is a command whose closure could not
- * continue (no outgoing flow to take): it ends the run with the state before the command.
- */
-export enum FailureTag {
-  Rejected = "rejected",
-  RolledBack = "rolledBack",
-  SemanticFailure = "semanticFailure",
-  Unsupported = "unsupported",
-}
-
-/**
- * Why a semantic failure happened, which its producer states. `Model`: the model's data reaches it, so CIB's job fails
- * alike (CIB-EXT-0027). `Invariant`: admission or the kernel's own construction excludes it, so reaching it is a kernel
- * defect, which `step/jobs.ts#deferred` passes through every boundary unchanged.
- */
-export enum SemanticCause {
-  Model = "model",
-  Invariant = "invariant",
-}
-
-/** A step's failure (Lean's `Failure`): a semantic failure carries its `SemanticCause`, which only the step reads. */
-export type Failure =
-  | { readonly tag: Exclude<FailureTag, FailureTag.SemanticFailure>; readonly code: string }
-  | { readonly tag: FailureTag.SemanticFailure; readonly code: string; readonly cause: SemanticCause };
-
-/**
- * A failure as a contract records it (`recorded`): without a cause, so no decoder invents one and no equality of records
- * compares one. The wire never carries a cause; `cause?: never` makes passing a step's `Failure` here a type error.
- */
-export interface RecordedFailure { readonly tag: FailureTag; readonly code: string; readonly cause?: never }
-
-/** `failure` without its cause. */
-export function recorded(failure: Failure): RecordedFailure { return { tag: failure.tag, code: failure.code }; }
-
-/** Lean's `Except Failure α`. */
-export type Result<T> =
-  | { readonly ok: true; readonly value: T }
-  | { readonly ok: false; readonly failure: Failure };
-
 export type Outcome = Result<State>;
-
-export function committed<T>(value: T): Result<T> { return { ok: true, value }; }
-
-export function failed<T>(tag: Exclude<FailureTag, FailureTag.SemanticFailure>, code: string): Result<T> {
-  return { ok: false, failure: { tag, code } };
-}
-
-export function semanticFailure<T>(cause: SemanticCause, code: string): Result<T> {
-  return { ok: false, failure: { tag: FailureTag.SemanticFailure, code, cause } };
-}
-
-/** An `Except` failure carried to another result type. */
-export function failedWith<T>(failure: Failure): Result<T> { return { ok: false, failure }; }
 
 // State operations
 
@@ -451,8 +410,9 @@ export function initial(instanceId: string, variables: readonly Binding[], busin
     openItems: [],
     itemOrdinals: [],
     scopeOrdinals: [],
+    occurrenceOrdinals: [],
     activations: [],
-    nextIssue: 1,
+    nextPosition: 1,
     logicalTimeMs: 0,
     signals: [],
     writes: [],
@@ -483,8 +443,17 @@ export function deferBegins(state: State, requests: readonly BeginRequest[]): St
   return { ...state, tokens: [...state.tokens, ...deferred.reverse()] };
 }
 
-export function issue(state: State): readonly [State, number] {
-  return [{ ...state, nextIssue: state.nextIssue + 1 }, state.nextIssue];
+/** The next order position (`nextPosition`), counted up. */
+export function takePosition(state: State): readonly [State, number] {
+  return [{ ...state, nextPosition: state.nextPosition + 1 }, state.nextPosition];
+}
+
+/** A fresh key for an occurrence of `element` issued in `scope`, the one issuer of occurrence keys (KD1). */
+export function issueOccurrence(state: State, scope: ScopeOccurrenceId, element: ElementId): readonly [State, OccurrenceId] {
+  const slot: ScopeSlot = { parent: scope, element };
+  const ordinal = treeMapGetD(state.occurrenceOrdinals, slot, compareScopeSlot, 0);
+  const occurrenceOrdinals = treeMapInsert(state.occurrenceOrdinals, slot, ordinal + 1, compareScopeSlot);
+  return [{ ...state, occurrenceOrdinals }, occurrenceId(scope, element, ordinal)];
 }
 
 export function signal(state: State, next: Signal): State { return { ...state, signals: [...state.signals, next] }; }
@@ -502,7 +471,7 @@ export function calledRoot(state: State, scope: ScopeOccurrenceId): boolean {
  * The local or child scope occurrence an occurrence `host` owns, when its inputs or its Scope gave it one. A called
  * instance's root belongs to the callee and is never the host's own.
  */
-export function localScope(state: State, host: number): ScopeOccurrenceId | null {
+export function localScope(state: State, host: OccurrenceId): ScopeOccurrenceId | null {
   return state.scopes.find((entry) => entry.occurrence === host && entry.calledInstance === null)?.id ?? null;
 }
 
@@ -510,7 +479,7 @@ export function localScope(state: State, host: number): ScopeOccurrenceId | null
  * The scope occurrence an occurrence `host` reads from and writes outward from: its own scope (`localScope`), so its
  * input-mapped locals are visible (`PvmExecutionImpl.java:1304-1318`), otherwise `scope`, the enclosing one.
  */
-export function ownScope(state: State, host: number, scope: ScopeOccurrenceId): ScopeOccurrenceId {
+export function ownScope(state: State, host: OccurrenceId, scope: ScopeOccurrenceId): ScopeOccurrenceId {
   return localScope(state, host) ?? scope;
 }
 
@@ -583,7 +552,7 @@ export function activate(
 /** A reservation for `element` in `scope`: issued and numbered now, begun only when its trigger arrives. */
 export function reserve(state: State, element: ElementId, scope: ScopeOccurrenceId): readonly [State, Occurrence] {
   const [activated, activation] = activate(state, instanceOf(state, scope), element, ActivationRole.Element);
-  const [issued, id] = issue(activated);
+  const [issued, id] = issueOccurrence(activated, scope, element);
   const occurrence: Occurrence = {
     id,
     element,
@@ -597,7 +566,7 @@ export function reserve(state: State, element: ElementId, scope: ScopeOccurrence
   return [{ ...issued, occurrences: [...issued.occurrences, occurrence] }, occurrence];
 }
 
-export function occurrenceOf(state: State, id: number): Occurrence | null {
+export function occurrenceOf(state: State, id: OccurrenceId): Occurrence | null {
   return state.occurrences.find((occurrence) => occurrence.id === id) ?? null;
 }
 
@@ -637,7 +606,7 @@ export function beginOccurrence(
   let occurrence: Occurrence;
   if (reserved !== null) { occurrence = reserved; } else {
     const [activated, activation] = activate(state, instanceOf(state, request.scope), request.element, role);
-    const [issued, id] = issue(activated);
+    const [issued, id] = issueOccurrence(activated, request.scope, request.element);
     current = issued;
     occurrence = {
       id,
@@ -670,9 +639,9 @@ export function startReserved(state: State, occurrence: Occurrence, sourceType: 
 }
 
 /** A fresh key for an item of `occurrence` in `role`: the occurrence's next ordinal, counted up. */
-export function issueItem(state: State, occurrence: number, role: ItemRole): readonly [State, ItemKey] {
-  const ordinal = treeMapGetD(state.itemOrdinals, occurrence, (left, right) => left - right, 0);
-  const itemOrdinals = treeMapInsert(state.itemOrdinals, occurrence, ordinal + 1, (left, right) => left - right);
+export function issueItem(state: State, occurrence: OccurrenceId, role: ItemRole): readonly [State, ItemKey] {
+  const ordinal = treeMapGetD(state.itemOrdinals, occurrence, compareOccurrenceId, 0);
+  const itemOrdinals = treeMapInsert(state.itemOrdinals, occurrence, ordinal + 1, compareOccurrenceId);
   return [{ ...state, itemOrdinals }, { occurrence, role, ordinal }];
 }
 
@@ -683,7 +652,7 @@ export function putItem(state: State, item: OpenItem): State {
 
 /** An item waiting for the begun `occurrence`. */
 export function openItem(state: State, kind: OpenKind, occurrence: Occurrence): State {
-  const [positioned, position] = issue(state);
+  const [positioned, position] = takePosition(state);
   const [issued, id] = issueItem(positioned, occurrence.id, ItemRole.Wait);
   return putItem(issued, {
     id, position, kind, element: occurrence.element, scope: occurrence.scope, attachedTo: null, passive: false,
@@ -696,11 +665,11 @@ export function openSubscription(
   kind: OpenKind,
   element: ElementId,
   scope: ScopeOccurrenceId,
-  host: number | null,
+  host: OccurrenceId | null,
   passive: boolean,
 ): readonly [State, OpenItem] {
   const [reserved, occurrence] = reserve(state, element, scope);
-  const [positioned, position] = issue(reserved);
+  const [positioned, position] = takePosition(reserved);
   const [issued, id] = issueItem(positioned, occurrence.id, ItemRole.Subscription);
   const item: OpenItem = { id, position, kind, element, scope, attachedTo: host, passive };
   return [putItem(issued, item), item];
@@ -711,12 +680,12 @@ export function closeItem(state: State, id: ItemKey): State {
 }
 
 /** Remove the items waiting for the occurrence `id`. */
-export function closeOwnItems(state: State, id: number): State {
+export function closeOwnItems(state: State, id: OccurrenceId): State {
   return { ...state, openItems: state.openItems.filter((item) => item.id.occurrence !== id) };
 }
 
 /** Remove the items attached to the occurrence `host`, with the reservations they hold, listed once (`State.disarm`). */
-export function disarm(state: State, host: number): State {
+export function disarm(state: State, host: OccurrenceId): State {
   const attached = new Set(state.openItems.flatMap((item) => item.attachedTo === host ? [item.id.occurrence] : []));
   const dropped = new Set(state.occurrences.flatMap((occurrence) =>
     !occurrence.begun && attached.has(occurrence.id) ? [occurrence.id] : []));
@@ -737,7 +706,7 @@ export function enterScope(
   element: ElementId,
   parent: ScopeOccurrenceId,
   locals: readonly Binding[],
-  occurrence: number | null,
+  occurrence: OccurrenceId | null,
 ): readonly [State, ScopeOccurrenceId] {
   const slot: ScopeSlot = { parent, element };
   const ordinal = treeMapGetD(state.scopeOrdinals, slot, compareScopeSlot, 0);

@@ -78,8 +78,8 @@ def ActsIn (signal : Signal) (scope : ScopeOccurrenceId) : Prop :=
     scope ∈ (Step.signalWork hooks ctx signal).scopes ∨ scope ∈ (Step.signalWork hooks ctx signal).requires
 
 /-- Nothing a later micro-step or the observation boundary reads changed but the journal: the scope tree, occurrences,
-open items, tokens, variables, queued signals, feature slots, issue counter, activation counters, status, failure and
-outbox are as they were. -/
+open items, tokens, variables, queued signals, feature slots, occurrence and position counters, activation counters,
+status, failure and outbox are as they were. -/
 structure Inert (before after : State) : Prop where
   scopes : after.scopes = before.scopes
   occurrences : after.occurrences = before.occurrences
@@ -88,7 +88,8 @@ structure Inert (before after : State) : Prop where
   variables : after.variables = before.variables
   signals : after.signals = before.signals
   slots : after.slots = before.slots
-  nextIssue : after.nextIssue = before.nextIssue
+  occurrenceOrdinals : after.occurrenceOrdinals = before.occurrenceOrdinals
+  nextPosition : after.nextPosition = before.nextPosition
   activations : after.activations = before.activations
   status : after.status = before.status
   failure : after.failure = before.failure
@@ -326,8 +327,8 @@ theorem scopesKept_alongside (before : State) (program : Program) : Alongside pr
   signalBegin s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept
-  issue s kept := by
-    rw [Laws.State.issue_eq]
+  takePosition s kept := by
+    rw [Laws.State.takePosition_eq]
     exact kept.shrink (.refl _) (.refl _)
   enterScope s element parent locals owner formed stands _ kept := by
     have fresh := Laws.State.enterScope_fresh formed.historic element stands locals owner
@@ -374,7 +375,7 @@ theorem scopesKept_stepAlongside (before : State) (program : Program) : StepAlon
   runOrder _ _ kept := kept
   dequeue _ _ _ _ kept := kept
   untoken _ _ _ _ kept := kept
-  begin s request role sourceType formed _ _ _ _ kept :=
+  begin _ request role sourceType formed _ _ _ _ kept :=
     have begins := Laws.State.beginOccurrence_begins formed.activations request role sourceType
     kept.same begins.scopes begins.scopeOrdinals
   cancel s id _ kept :=

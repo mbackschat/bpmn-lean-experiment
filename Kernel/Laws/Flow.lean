@@ -97,7 +97,7 @@ structure Consumes (incoming : List FlowId) (scope : ScopeOccurrenceId) (before 
 
 /-- The joined occurrences leave once: exactly one of them leaves on the join's outgoing selection `taken`, every other
 ends with no flow, as one activity instance ends per joined execution. -/
-def LeavesOnce (consumed : List Parked) (taken : List FlowId) (leaving : List (Nat × List FlowId)) : Prop :=
+def LeavesOnce (consumed : List Parked) (taken : List FlowId) (leaving : List (OccurrenceId × List FlowId)) : Prop :=
   ∃ winner others, (winner :: others).Perm (consumed.map (·.occurrence)) ∧
     leaving.Perm ((winner, taken) :: others.map (·, []))
 
@@ -285,9 +285,16 @@ def edgeOut : Flow := { id := flowOut, source := joinGateway, target := ⟨"D"�
 def diagram : List Flow := [edgeA, edgeB, edgeC, edgeOut]
 
 def root : ScopeOccurrenceId := ⟨[]⟩
-def arrivedA : Parked := { occurrence := 1, flow := flowA, scope := root }
-def arrivedB : Parked := { occurrence := 2, flow := flowB, scope := root }
-def againA : Parked := { occurrence := 3, flow := flowA, scope := root }
+
+/-- The occurrence keys of the witnesses: three of `J` and one of `C`, all in the root. -/
+@[simp] def joinedFirst : OccurrenceId := { scope := root, element := joinGateway, ordinal := 0 }
+@[simp] def joinedSecond : OccurrenceId := { scope := root, element := joinGateway, ordinal := 1 }
+@[simp] def joinedThird : OccurrenceId := { scope := root, element := joinGateway, ordinal := 2 }
+@[simp] def keyC : OccurrenceId := { scope := root, element := ⟨"C"⟩, ordinal := 0 }
+
+def arrivedA : Parked := { occurrence := joinedFirst, flow := flowA, scope := root }
+def arrivedB : Parked := { occurrence := joinedSecond, flow := flowB, scope := root }
+def againA : Parked := { occurrence := joinedThird, flow := flowA, scope := root }
 
 /-- `true` for `a` only. -/
 def onlyA (flow : FlowId) : Bool := flow == flowA
@@ -362,19 +369,21 @@ theorem excess_consumed_rejected :
   have := consumes.oneEach
   simp [arrivedA, againA, arrivedB] at this
 
-theorem leaves_once : LeavesOnce [arrivedA, arrivedB] [flowOut] [(2, []), (1, [flowOut])] :=
-  ⟨1, [2], List.Perm.refl _, List.Perm.swap _ _ []⟩
+theorem leaves_once : LeavesOnce [arrivedA, arrivedB] [flowOut] [(joinedSecond, []), (joinedFirst, [flowOut])] :=
+  ⟨joinedFirst, [joinedSecond], List.Perm.refl _, List.Perm.swap _ _ []⟩
 
 /-- Both joined occurrences leaving on the outgoing flow is two leavings, not one. -/
-theorem both_leave_rejected : ¬ LeavesOnce [arrivedA, arrivedB] [flowOut] [(1, [flowOut]), (2, [flowOut])] := by
+theorem both_leave_rejected :
+    ¬ LeavesOnce [arrivedA, arrivedB] [flowOut] [(joinedFirst, [flowOut]), (joinedSecond, [flowOut])] := by
   rintro ⟨winner, others, _, leaving⟩
-  have first := leaving.mem_iff.mp (List.mem_cons_self (a := ((1 : Nat), [flowOut])))
-  have second := leaving.mem_iff.mp (List.mem_cons_of_mem _ (List.mem_singleton_self ((2 : Nat), [flowOut])))
+  have first := leaving.mem_iff.mp (List.mem_cons_self (a := (joinedFirst, [flowOut])))
+  have second := leaving.mem_iff.mp (List.mem_cons_of_mem _ (List.mem_singleton_self (joinedSecond, [flowOut])))
   simp at first second
-  omega
+  cases first
+  simp at second
 
-def atJoin : Occurrence := { id := 1, element := joinGateway, scope := root, activation := 1 }
-def atC : Occurrence := { id := 4, element := ⟨"C"⟩, scope := root, activation := 1 }
+def atJoin : Occurrence := { id := joinedFirst, element := joinGateway, scope := root, activation := 1 }
+def atC : Occurrence := { id := keyC, element := ⟨"C"⟩, scope := root, activation := 1 }
 
 /-- `A` arrived; `C` still works upstream of `b`, so the Inclusive join waits. -/
 def waitingAtC : State :=
@@ -608,7 +617,7 @@ occurrence keeps as `settled`, which `Kernel.Proofs.Step` fills with `Laws.State
 
 /-- What Flow's gateway arrival needs of the state operations it applies, for an invariant `inv` over `program` and
 what an occurrence a join may complete keeps, `settled`. -/
-structure JoinOps (program : Program) (inv : State → Prop) (settled : State → Nat → Prop) : Prop where
+structure JoinOps (program : Program) (inv : State → Prop) (settled : State → OccurrenceId → Prop) : Prop where
   /-- A begun occurrence that stands parked at a join in its own scope occurrence, on the flow it arrived by. -/
   park : ∀ state waiting, inv state → (∃ occurrence ∈ state.occurrences, occurrence.id = waiting.occurrence ∧
     occurrence.begun = true ∧ occurrence.scope = waiting.scope ∧ occurrence.incoming = some waiting.flow) →
@@ -632,12 +641,12 @@ structure JoinOps (program : Program) (inv : State → Prop) (settled : State �
     inv (state.signal (.armGateway occurrence.id header.id occurrence.scope))
 
 /-- A completion by no flow is offered everywhere. -/
-theorem leaveOffered_none {inv : State → Prop} {program : Program} {state : State} {id : Nat} :
+theorem leaveOffered_none {inv : State → Prop} {program : Program} {state : State} {id : OccurrenceId} :
     LeaveOffered inv program state id (.flows []) :=
   fun _ same _ inside => by cases same; cases inside
 
 /-- Completing occurrences by no flow queues their completions and moves nothing else. -/
-theorem completeAll_eq (ids : List Nat) (state : State) :
+theorem completeAll_eq (ids : List OccurrenceId) (state : State) :
     ids.foldl (Feature.Flow.signalComplete · · (.flows [])) state =
       { state with signals := state.signals ++ ids.map fun id => .complete id (.flows []) [] .outward } := by
   induction ids generalizing state with
@@ -647,8 +656,8 @@ theorem completeAll_eq (ids : List Nat) (state : State) :
     simp [Feature.Flow.signalComplete, Laws.State.signal_eq]
 
 /-- Completing occurrences that have settled, by no flow, keeps `inv` and what has settled. -/
-theorem completeAll_keeps {program : Program} {inv : State → Prop} {settled : State → Nat → Prop}
-    (ops : JoinOps program inv settled) : ∀ (ids : List Nat) (state : State), inv state → (∀ id ∈ ids, settled state id) →
+theorem completeAll_keeps {program : Program} {inv : State → Prop} {settled : State → OccurrenceId → Prop}
+    (ops : JoinOps program inv settled) : ∀ (ids : List OccurrenceId) (state : State), inv state → (∀ id ∈ ids, settled state id) →
       inv (ids.foldl (Feature.Flow.signalComplete · · (.flows [])) state) ∧
         ∀ id, settled state id → settled (ids.foldl (Feature.Flow.signalComplete · · (.flows [])) state) id
   | [], _, holds, _ => ⟨holds, fun _ kept => kept⟩
@@ -684,7 +693,7 @@ theorem gateway_offered {program : Program} {state held : State} {occurrence : O
 
 /-- A join keeps `inv` for a begun occurrence that stands: it parks it, and a firing completes occurrences parked,
 the one that leaves by flows the gateway `element` lists. -/
-theorem join_keeps {program : Program} {inv : State → Prop} {settled : State → Nat → Prop}
+theorem join_keeps {program : Program} {inv : State → Prop} {settled : State → OccurrenceId → Prop}
     (ops : JoinOps program inv settled) {occurrence : Occurrence} {incoming : List FlowId} {state after : State}
     {ready : State → Bool} {flows : State → Except Failure (List FlowId)} {element : Element} (holds : inv state)
     (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
@@ -775,7 +784,7 @@ theorem inclusiveFlows_mem {ctx : Ctx} {candidates : List FlowId} {default : Opt
   inclusiveChoice_mem chosen
 
 /-- `Hooks.arriveGateway` keeps `inv` for a begun occurrence that stands, of the gateway it runs. -/
-theorem arriveGateway_keeps {inv : State → Prop} {settled : State → Nat → Prop} {ctx : Ctx}
+theorem arriveGateway_keeps {inv : State → Prop} {settled : State → OccurrenceId → Prop} {ctx : Ctx}
     (ops : JoinOps ctx.program inv settled) {header : Header} {payload : GatewayPayload} {occurrence : Occurrence}
     {state after : State} (holds : inv state) (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
     (named : GatewayOf ctx.program state occurrence header payload)

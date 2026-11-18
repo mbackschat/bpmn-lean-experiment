@@ -288,14 +288,12 @@ theorem Numbered.addOne {program : Program} {s t : State} {o : Occurrence} (held
 /-- A reservation of an element that does not loop keeps `Numbered`: it is issued at the counter, above every name a
 queued begin holds. -/
 theorem Numbered.reserve {program other : Program} {s : State} {element : ElementId} {scope : ScopeOccurrenceId}
-    (formed : WellFormed other s) (unlooped : ∀ loop, ¬ LoopOf program element loop)
+    (formed : WellFormed other s) (unlooped : ∀ loop, ¬ LoopOf program element loop) (stands : scope ∈ scopeIds s)
     (held : Numbered program s) : Numbered program (s.reserve element scope).1 := by
   have reserves := Laws.State.reserve_reserves s element scope
   have unnamed : ∀ request, Laws.State.Queued s request → (s.reserve element scope).2.id ∉ Laws.State.names request :=
     fun request queued named => by
-      have below := ((formed.claimed.named request queued).2 _ named).1
-      rw [reserves.id] at below
-      exact Nat.lt_irrefl _ below
+      exact reserves.fresh (by rw [reserves.placed]; exact stands) ((formed.claimed.named request queued).2 _ named).1
   refine held.addOne (o := (s.reserve element scope).2) ⟨fun x inside => ?_, reserves.scopes,
     congrArg (·.multiInstances) reserves.slots, reserves.signals, reserves.tokens,
     congrArg (·.compensation.runs) reserves.slots, fun body same => ?_, fun run member _ named _ => ?_,
@@ -376,7 +374,7 @@ theorem slot_instance {program : Program} {s : State} (formed : WellFormed progr
   rwa [eNamed] at this
 
 /-- An instance begun from a queue: its role is the element role. -/
-theorem roleOf_instance {program : Program} {request : BeginRequest} {body : Nat}
+theorem roleOf_instance {program : Program} {request : BeginRequest} {body : OccurrenceId}
     (on : request.continuation = .multiInstance body) : Step.roleOf program request = .element :=
   role_element _ fun roled => absurd on ((Laws.Step.roleOf_body.mp roled).2 body)
 
@@ -396,8 +394,8 @@ def ReservedApart (s : State) (request : BeginRequest) : Prop :=
 /-- A begin that begins no instance keeps `Numbered`: a fresh one of a body's element is a body, numbered apart, and a
 reserved one is `ReservedApart` and claimed by nothing else queued. -/
 theorem Numbered.beginOther {program : Program} {s : State} {request : BeginRequest} {role : ActivationRole}
-    {sourceType : String} (formed : WellFormed program s) (admitted : Laws.Step.Admitted s request)
-    (bodied : (((program.element? request.element).bind (·.envelope?)).bind (·.multiInstance)).isSome = true →
+    {sourceType : String} (formed : WellFormed program s) (stands : request.scope ∈ scopeIds s)
+    (admitted : Laws.Step.Admitted s request) (bodied : (((program.element? request.element).bind (·.envelope?)).bind (·.multiInstance)).isSome = true →
       role = .multiInstanceBody) (other : ∀ body, request.continuation ≠ .multiInstance body)
     (apart : ReservedApart s request) (held : Numbered program s) :
     Numbered program (s.beginOccurrence request role sourceType).1 := by
@@ -423,8 +421,7 @@ theorem Numbered.beginOther {program : Program} {s : State} {request : BeginRequ
         (by simp [Laws.State.names, named, source.id])
     · have below := ((formed.claimed.named request' inQueue).2 (s.beginOccurrence request role sourceType).2.id
         (by simp [Laws.State.names, named])).1
-      rw [fresh.id] at below
-      exact Nat.lt_irrefl _ below
+      exact fresh.fresh stands below
 
 
 /-- The begin of an instance taken off a queue that kept `Numbered` keeps it: the begin targets an active slot of its
@@ -432,7 +429,7 @@ body, its occurrence is fresh and numbered above every counted activation of its
 shares, every instance begun before it lies in a lower slot, and every begin still queued after it in a higher one, as
 the closure takes begin signals first in, first out and deferred begins last in, first out. -/
 theorem Numbered.beginInstance {program : Program} {queue s : State} {request : BeginRequest} {role : ActivationRole}
-    {sourceType : String} {body : Nat} (formed : WellFormed program s) (owns : SlotsOwned s)
+    {sourceType : String} {body : OccurrenceId} (formed : WellFormed program s) (owns : SlotsOwned s)
     (stands : request.scope ∈ scopeIds s) (roled : role = .element)
     (on : request.continuation = .multiInstance body) (held : Numbered program queue)
     (dequeued : Laws.Step.Dequeued program queue request s) :
@@ -559,8 +556,8 @@ theorem Numbered.beginInstance {program : Program} {queue s : State} {request : 
           xelement xrole
       · have below := ((formed.claimed.named request' (queuedAfter request' inQueue)).2 id
           (by simp [Laws.State.names, named])).1
-        rw [← xid, fresh.id] at below
-        exact Nat.lt_irrefl _ below
+        rw [← xid] at below
+        exact fresh.fresh stands below
     reservations := fun x inside unbegun => by
       rcases occIn x inside with old | rfl
       · exact qs.reservations x old unbegun
@@ -612,7 +609,7 @@ theorem slot_strictly {program : Program} {s : State} (formed : WellFormed progr
 /-- Clearing a scope occurrence that stands keeps `Numbered`: a body that goes lies within it, so its instances' scope
 occurrences go too. -/
 theorem Numbered.clearInside {program other : Program} {s : State} (formed : WellFormed other s) (owns : SlotsOwned s)
-    {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s) (keep : List Nat) (held : Numbered program s) :
+    {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s) (keep : List OccurrenceId) (held : Numbered program s) :
     Numbered program (s.clearInside scope keep) := by
   have cleared := Laws.State.clearInside_cleared formed present keep
   refine held.shrink ⟨by rw [cleared.bodies]; exact List.filter_sublist,
@@ -649,14 +646,14 @@ theorem Numbered.leaveScope {program other : Program} {s : State} (formed : Well
   exact notWithin (eNamed ▸ (slot_strictly formed owns member within active).1)
 
 /-- Disarming a host keeps `Numbered`: it drops only reservations. -/
-theorem Numbered.disarm {program : Program} {s : State} (host : Nat) (held : Numbered program s) :
+theorem Numbered.disarm {program : Program} {s : State} (host : OccurrenceId) (held : Numbered program s) :
     Numbered program (s.disarm host) := by
   rw [Laws.State.disarm_eq]
   exact held.shrink ⟨.refl _, fun _ inside => (List.mem_filter.mp inside).1, fun _ inside => .inl inside,
     fun _ _ outside => absurd ‹_› outside, .refl _, .refl _, fun _ pending => .inl pending⟩
 
 /-- Dropping an occurrence's record keeps `Numbered`. -/
-theorem Numbered.withoutRecord {program : Program} {s : State} (id : Nat) (held : Numbered program s) :
+theorem Numbered.withoutRecord {program : Program} {s : State} (id : OccurrenceId) (held : Numbered program s) :
     Numbered program (Laws.State.withoutRecord s id) :=
   held.shrink ⟨.refl _, fun _ inside => (List.mem_filter.mp inside).1, fun _ inside => .inl inside,
     fun _ _ outside => absurd ‹_› outside, .refl _, .refl _, fun _ pending => .inl pending⟩
@@ -678,8 +675,8 @@ theorem Numbered.removeVariable {program : Program} {s : State} (target : ScopeO
       (congrArg (·.compensation.runs) same.slots)).mp pending))
 
 /-- Issuing an identity keeps `Numbered`. -/
-theorem Numbered.issue {program : Program} {s : State} (held : Numbered program s) : Numbered program s.issue.1 := by
-  rw [Laws.State.issue_eq]
+theorem Numbered.takePosition {program : Program} {s : State} (held : Numbered program s) : Numbered program s.takePosition.1 := by
+  rw [Laws.State.takePosition_eq]
   exact held.shrink (.same (.refl _) (fun _ inside => inside) (.refl _) (.refl _) (.refl _)
     fun _ pending => .inl pending)
 
@@ -717,7 +714,7 @@ theorem Numbered.enter {program other : Program} {s t : State} (formed : WellFor
 
 /-- Entering a scope occurrence keeps `Numbered`. -/
 theorem Numbered.enterScope {program other : Program} {s : State} (formed : WellFormed other s) (owns : SlotsOwned s)
-    (element : ElementId) (parent : ScopeOccurrenceId) (locals : List (String × Value)) (owner : Option Nat)
+    (element : ElementId) (parent : ScopeOccurrenceId) (locals : List (String × Value)) (owner : Option OccurrenceId)
     (stands : parent ∈ Laws.State.scopeIds s) (held : Numbered program s) :
     Numbered program (s.enterScope element parent locals owner).1 := by
   have fresh := (Laws.State.enterScope_fresh formed.historic element stands locals owner).1

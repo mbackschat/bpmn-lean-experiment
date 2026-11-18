@@ -109,7 +109,7 @@ theorem withInstances_fields (base : MultiInstanceRun) (instances : List Iterati
 slots active, it opens a slot only while none of its slots is active, and its element loops: an occurrence lies in a
 scope occurrence issued before, so in none of the slots it opens, and every begin queued before targets a slot it does
 not open, so the begins it queues, of the slots it opens in increasing order, follow every other of their body's. -/
-theorem Numbered.beginInstances {inv : State → Prop} {settled : State → Nat → Prop} {ctx : Ctx} {loop : MultiInstance}
+theorem Numbered.beginInstances {inv : State → Prop} {settled : State → OccurrenceId → Prop} {ctx : Ctx} {loop : MultiInstance}
     {state queued : State} {base : MultiInstanceRun} {instances : List Iteration}
     (formed : WellFormed ctx.program state) (owns : SlotsOwned state) (held : Numbered ctx.program state)
     (begun : Begun inv settled ctx loop state base queued instances)
@@ -601,7 +601,7 @@ theorem numbered_arrive {ctx : Ctx} {header : Header} {envelope : Envelope} {loo
 /-- `Hooks.instanceCompleted` keeps `Numbered` for an instance in a scope occurrence that stands: it records the
 instance's slot, leaving its scope occurrence, which takes nothing else of the numbering, writes the body's counters or
 not, then completes the body or begins its next instances. -/
-theorem numbered_instanceCompleted {ctx : Ctx} {body : Nat} {occurrence : Occurrence} {writes : List (String × Value)}
+theorem numbered_instanceCompleted {ctx : Ctx} {body : OccurrenceId} {occurrence : Occurrence} {writes : List (String × Value)}
     {state after : State} (ops : Laws.MultiInstance.MultiInstanceOps ctx.program (WellFormed ctx.program) Laws.State.Settled)
     (formed : WellFormed ctx.program state) (owns : SlotsOwned state) (held : Numbered ctx.program state)
     (stands : occurrence.scope ∈ scopeIds state)

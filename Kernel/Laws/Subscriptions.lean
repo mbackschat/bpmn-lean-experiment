@@ -241,12 +241,12 @@ theorem armed_frame {ctx : Ctx} {subscription : Subscription} {item : OpenItem} 
 
 /-- What an arming keeps beside `inv` while it opens subscriptions: its scope occurrence stands, and its host, if any,
 is begun there. -/
-def Hosted (scope : ScopeOccurrenceId) (host : Option Nat) (state : State) : Prop :=
+def Hosted (scope : ScopeOccurrenceId) (host : Option OccurrenceId) (state : State) : Prop :=
   (∃ entry ∈ state.scopes, entry.id = scope) ∧
     ∀ id, host = some id → ∃ occurrence ∈ state.occurrences, occurrence.id = id ∧ occurrence.begun = true ∧
       occurrence.scope = scope
 
-theorem Hosted.congr {scope : ScopeOccurrenceId} {host : Option Nat} {state after : State}
+theorem Hosted.congr {scope : ScopeOccurrenceId} {host : Option OccurrenceId} {state after : State}
     (hosted : Hosted scope host state) (scopes : after.scopes = state.scopes)
     (occurrences : ∀ occurrence ∈ state.occurrences, occurrence ∈ after.occurrences) : Hosted scope host after :=
   ⟨scopes ▸ hosted.1, fun id named =>
@@ -332,7 +332,7 @@ theorem startEvent_reservable {ctx : Ctx} {eventSubProcess start : ElementId}
 scope occurrences and the instance entries. -/
 theorem subscribe_keeps {inv : State → Prop} (ops : SubscriptionsOps program inv) {ctx : Ctx} {arming : Feature.Subscriptions.Arming}
     {state after : State} {subscription : Subscription} {element : ElementId} {scope : ScopeOccurrenceId}
-    {host : Option Nat} {passive evaluate : Bool} {fired : Option OpenItem} (holds : inv state)
+    {host : Option OccurrenceId} {passive evaluate : Bool} {fired : Option OpenItem} (holds : inv state)
     (hosted : Hosted scope host state) (reservable : Laws.IL.Reservable program element)
     (anchored : Laws.Flow.Anchored inv program state element scope)
     (ran : Feature.Subscriptions.subscribe ctx arming state subscription element scope host passive evaluate =
@@ -360,7 +360,7 @@ theorem subscribe_keeps {inv : State → Prop} (ops : SubscriptionsOps program i
 /-- A subscription keeps every scope-key history: its reservation and item, and an evaluation, enter no scope
 occurrence. -/
 theorem subscribe_grows {ctx : Ctx} {arming : Feature.Subscriptions.Arming} {state after : State}
-    {subscription : Subscription} {element : ElementId} {scope : ScopeOccurrenceId} {host : Option Nat}
+    {subscription : Subscription} {element : ElementId} {scope : ScopeOccurrenceId} {host : Option OccurrenceId}
     {passive evaluate : Bool} {fired : Option OpenItem}
     (ran : Feature.Subscriptions.subscribe ctx arming state subscription element scope host passive evaluate =
       .ok (after, fired)) : Laws.State.ScopeGrows state after := by
@@ -386,7 +386,7 @@ theorem subscribe_grows {ctx : Ctx} {arming : Feature.Subscriptions.Arming} {sta
 of the state `start` the arming began from. -/
 theorem subscribe_covers {inv : State → Prop} (ops : SubscriptionsOps program inv) {ctx : Ctx}
     {arming : Feature.Subscriptions.Arming} {start state after : State} {subscription : Subscription}
-    {element : ElementId} {scope : ScopeOccurrenceId} {host : Option Nat} {passive evaluate : Bool}
+    {element : ElementId} {scope : ScopeOccurrenceId} {host : Option OccurrenceId} {passive evaluate : Bool}
     {fired : Option OpenItem}
     (kept : inv state ∧ Hosted scope host state ∧ state.scopes = start.scopes ∧
       state.slots.instances = start.slots.instances)
@@ -418,7 +418,7 @@ theorem subscribeAll_keeps {inv : State → Prop} (ops : SubscriptionsOps progra
 
 /-- `Hooks.arm` keeps `inv` for a host begun in a scope occurrence that stands, its arming taken off a queue that kept
 `inv`, which anchors the boundaries it opens. -/
-theorem arm_keeps {inv : State → Prop} {ctx : Ctx} (ops : SubscriptionsOps ctx.program inv) {host : Nat}
+theorem arm_keeps {inv : State → Prop} {ctx : Ctx} (ops : SubscriptionsOps ctx.program inv) {host : OccurrenceId}
     {element : ElementId} {scope : ScopeOccurrenceId} {state after : State} (holds : inv state)
     (hosted : Hosted scope (some host) state) (popped : Laws.State.Popped inv (.arm host element scope) state)
     (ran : Feature.Subscriptions.arm ctx host element scope state = .ok after) : inv after := by
@@ -442,7 +442,7 @@ theorem arm_keeps {inv : State → Prop} {ctx : Ctx} (ops : SubscriptionsOps ctx
 
 /-- `Hooks.armGateway` keeps `inv` for a gateway occurrence begun in a scope occurrence that stands, its arming taken
 off a queue that kept `inv`, which anchors the catch Events its flows reach. -/
-theorem armGateway_keeps {inv : State → Prop} {ctx : Ctx} (ops : SubscriptionsOps ctx.program inv) {occurrence : Nat}
+theorem armGateway_keeps {inv : State → Prop} {ctx : Ctx} (ops : SubscriptionsOps ctx.program inv) {occurrence : OccurrenceId}
     {gateway : ElementId} {scope : ScopeOccurrenceId} {state after : State} (holds : inv state)
     (hosted : Hosted scope (some occurrence) state)
     (popped : Laws.State.Popped inv (.armGateway occurrence gateway scope) state)

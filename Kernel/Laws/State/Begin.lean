@@ -30,10 +30,11 @@ theorem begin_wellFormed {state : State} (formed : WellFormed program state) (re
     WellFormed program (state.beginOccurrence request role sourceType).1 :=
   (beginOccurrence_begins formed.activations request role sourceType).wellFormed formed stands admitted roled bodied
 
-/-- The occurrence a request whose reservations are beginnable begins owns no scope occurrence: a fresh one is issued
-at the counter, and a reservation is unbegun, while a scope occurrence's owner is begun (`Owned.scopeOwners`). -/
+/-- The occurrence a request whose reservations are beginnable begins in a scope occurrence that stands owns no scope
+occurrence: a fresh one is issued there under a key never issued, and a reservation is unbegun, while a scope
+occurrence's owner is begun (`Owned.scopeOwners`). -/
 theorem begin_unowned {state : State} (formed : WellFormed program state) (request : BeginRequest)
-    (role : ActivationRole) (sourceType : String)
+    (role : ActivationRole) (sourceType : String) (stands : request.scope ∈ scopeIds state)
     (admitted : ∀ id ∈ names request, Beginnable state request.scope id ∧ Unclaimed state id) :
     ∀ scope ∈ (state.beginOccurrence request role sourceType).1.scopes,
       scope.occurrence ≠ some (state.beginOccurrence request role sourceType).2.id := by
@@ -46,13 +47,14 @@ theorem begin_unowned {state : State} (formed : WellFormed program state) (reque
     rw [begun] at unbegun
     cases unbegun
   · have below := formed.issued.occurrences owner present
-    rw [named, fresh.id] at below
-    exact Nat.lt_irrefl _ below
+    rw [named] at below
+    exact fresh.fresh stands below
 
-/-- An admitted request's start Event reservation stays beginnable, unclaimed and placed after its begin, in the
-scope occurrence the begun occurrence runs in. -/
+/-- An admitted request's start Event reservation stays beginnable, unclaimed and placed after its begin in a scope
+occurrence that stands, in the scope occurrence the begun occurrence runs in. -/
 theorem Begins.entry {before after : State} {request : BeginRequest} {role : ActivationRole} {sourceType : String}
-    {begun : Occurrence} (begins : Begins before after request role sourceType begun) (nodup : (names request).Nodup)
+    {begun : Occurrence} (begins : Begins before after request role sourceType begun)
+    (stands : request.scope ∈ scopeIds before) (nodup : (names request).Nodup)
     (admitted : ∀ id ∈ names request, Beginnable before request.scope id ∧ Unclaimed before id)
     (placed : InnerPlaced before request) :
     ∀ id ∈ request.inner.toList, Beginnable after begun.scope id ∧ Unclaimed after id ∧
@@ -65,14 +67,14 @@ theorem Begins.entry {before after : State} {request : BeginRequest} {role : Act
     · intro equal
       have apart := (List.nodup_append.mp nodup).2.2
       exact apart reserved.id (by simp [reservation.named]) id inner (reservation.id ▸ equal)
-    · have := fresh.id
-      omega
-  have issued : before.nextIssue ≤ after.nextIssue := by
+    · intro equal
+      exact fresh.fresh stands (by rw [equal]; exact below)
+  have issued : OccurrenceGrows before after := by
     rcases begins.source with ⟨_, reservation⟩ | fresh
-    · exact Nat.le_of_eq reservation.nextIssue.symm
-    · have := fresh.nextIssue
-      omega
-  refine ⟨⟨by omega, fun occurrence member same => ?_⟩, ?_, fun occurrence member same => ?_⟩
+    · exact .of_same (congrArg (List.map ScopeOccurrence.id) begins.scopes) begins.scopeOrdinals
+        reservation.occurrenceOrdinals
+    · exact fresh.occurrenceGrows
+  refine ⟨⟨issued _ below, fun occurrence member same => ?_⟩, ?_, fun occurrence member same => ?_⟩
   · rw [begins.occurrences] at member
     rcases List.mem_append.mp member with old | new
     · obtain ⟨unbegun, free, instance_⟩ := facts occurrence (List.mem_filter.mp old).1 same
@@ -92,7 +94,7 @@ theorem Begins.entry {before after : State} {request : BeginRequest} {role : Act
 
 /-- Such a begin leaves the request's start Event reservation beginnable and unclaimed where its occurrence runs. -/
 theorem begin_entry {state : State} (formed : WellFormed program state) (request : BeginRequest) (role : ActivationRole)
-    (sourceType : String) (nodup : (names request).Nodup)
+    (sourceType : String) (stands : request.scope ∈ scopeIds state) (nodup : (names request).Nodup)
     (admitted : ∀ id ∈ names request, Beginnable state request.scope id ∧ Unclaimed state id)
     (placed : InnerPlaced state request) :
     ∀ id ∈ request.inner.toList, Beginnable (state.beginOccurrence request role sourceType).1
@@ -100,7 +102,7 @@ theorem begin_entry {state : State} (formed : WellFormed program state) (request
       Unclaimed (state.beginOccurrence request role sourceType).1 id ∧
       ∀ occurrence ∈ (state.beginOccurrence request role sourceType).1.occurrences, occurrence.id = id →
         occurrence.scope = (state.beginOccurrence request role sourceType).2.scope :=
-  (beginOccurrence_begins formed.activations request role sourceType).entry nodup admitted placed
+  (beginOccurrence_begins formed.activations request role sourceType).entry stands nodup admitted placed
 
 /-- A reservation in a scope occurrence that stands, which nothing queued names. -/
 theorem reserve_wellFormed {state : State} (formed : WellFormed program state) (element : ElementId)
@@ -143,7 +145,8 @@ theorem startReserved_closeOwnItems_wellFormed {state : State} (formed : WellFor
     refine StartsReserved.wellFormed (sourceType := sourceType) closed {
         occurrences := starts_.occurrences, started := ?_, scopes := starts_.scopes,
         scopeOrdinals := starts_.scopeOrdinals, instances := instances,
-        instanceId := starts_.instanceId, activations := starts_.activations, nextIssue := starts_.nextIssue,
+        instanceId := starts_.instanceId, activations := starts_.activations,
+        occurrenceOrdinals := starts_.occurrenceOrdinals,
         itemMap := ⟨by simp [starts_.itemMap.1], starts_.itemMap.2⟩, tokens := starts_.tokens,
         signals := starts_.signals, variables := starts_.variables, journal := starts_.journal, ended := starts_.ended,
         status := starts_.status, failure := starts_.failure, slots := starts_.slots } member begun (fun request queued => unnamed request queued)
@@ -164,7 +167,7 @@ theorem admitted_signal {state : State} (formed : WellFormed program state) {req
       InnerPlaced { state with signals := rest } request := by
   have queued : Queued state request := .inl (head ▸ List.mem_cons_self ..)
   obtain ⟨nodup, beginnable⟩ := formed.claimed.named request queued
-  refine ⟨nodup, fun id named => ⟨(beginnable id named).congr rfl rfl (Laws.State.items_congr rfl) rfl (instanceOf_congr rfl rfl), ?_, ?_,
+  refine ⟨nodup, fun id named => ⟨(beginnable id named).congr (.refl _) rfl (Laws.State.items_congr rfl) rfl (instanceOf_congr rfl rfl), ?_, ?_,
     fun completes => formed.settled.free queued named (SlotCompletes.shrink (before := state)
       (after := { state with signals := rest }) rfl
       (fun _ member => by rw [head]; exact List.mem_cons_of_mem _ member) completes)⟩,
@@ -189,7 +192,7 @@ theorem admitted_token {state : State} (formed : WellFormed program state) {requ
     · exact bottom ▸ List.mem_append_right _ (List.mem_singleton_self _)
   have queued : Queued state request := .inr member
   obtain ⟨nodup, beginnable⟩ := formed.claimed.named request queued
-  refine ⟨nodup, fun id named => ⟨(beginnable id named).congr rfl rfl (Laws.State.items_congr rfl) rfl (instanceOf_congr rfl rfl), ?_, ?_,
+  refine ⟨nodup, fun id named => ⟨(beginnable id named).congr (.refl _) rfl (Laws.State.items_congr rfl) rfl (instanceOf_congr rfl rfl), ?_, ?_,
     fun completes => formed.settled.free queued named
       (SlotCompletes.shrink (before := state) (after := { state with tokens := rest }) rfl (fun _ member => member)
         completes)⟩,
@@ -206,7 +209,7 @@ theorem admitted_token {state : State} (formed : WellFormed program state) {requ
     exact formed.claimed.uncompleted request id leave writes rule queued named completed
 
 /-- A queued completion completes nothing a queued begin names. -/
-theorem complete_unnamed {state : State} (formed : WellFormed program state) {id : Nat} {leave : Leave}
+theorem complete_unnamed {state : State} (formed : WellFormed program state) {id : OccurrenceId} {leave : Leave}
     {writes : List (String × Value)} {rule : WriteRule}
     (completed : Signal.complete id leave writes rule ∈ state.signals) :
     ∀ request, Queued state request → id ∉ names request :=
@@ -214,13 +217,13 @@ theorem complete_unnamed {state : State} (formed : WellFormed program state) {id
 
 /-- The closure's next signal, a compensation, may end as it asks once it leaves the queue. -/
 theorem resumable_signal {state : State} (formed : WellFormed program state) {scope : ScopeOccurrenceId}
-    {activity : Option ElementId} {trigger : OccurrenceRef} {leave : Option Nat} {resume : Resume} {rest : List Signal}
+    {activity : Option ElementId} {trigger : OccurrenceRef} {leave : Option OccurrenceId} {resume : Resume} {rest : List Signal}
     (head : state.signals = .compensate scope activity trigger leave (some resume) :: rest) :
     Resumable { state with signals := rest } scope resume :=
   ⟨fun occurrence _ same => by
     subst same
     exact (formed.settled.queued scope activity trigger leave occurrence _ (head ▸ List.mem_cons_self ..)).transport
-      (Nat.le_refl _) (fun _ member _ => .inl member) fun _ queued =>
+      (.refl _) (fun _ member _ => .inl member) fun _ queued =>
         queued.shrink (before := state) (after := { state with signals := rest })
           (by rw [head]; exact List.sublist_cons_self _ _) (.refl _),
     fun outer context same => formed.settled.grouped scope activity trigger leave outer context
@@ -236,9 +239,8 @@ theorem raisable_signal {state : State} (formed : WellFormed program state) {rai
     queued.shrink (before := state) (after := { state with signals := rest }) (by rw [head]; exact List.sublist_cons_self _ _)
       (.refl _)
   refine ⟨fun event => ?_, fun host named => (formed.settled.raised raised origin host member named).transport
-    (Nat.le_refl _) (fun _ present _ => .inl present) queued⟩
-  obtain ⟨below, counted, begun⟩ := formed.raises raised origin member event
-  exact ⟨below, fun present => by rw [instanceOf_congr (s := state) (t := { state with signals := rest }) rfl rfl origin.scope]; exact counted present, begun⟩
+    (.refl _) (fun _ present _ => .inl present) queued⟩
+  exact formed.raises raised origin member event
 
 /-- An occurrence's scope occurrence stands. -/
 theorem housed_wellFormed {s : State} (formed : WellFormed program s) {occurrence : Occurrence}
@@ -247,7 +249,7 @@ theorem housed_wellFormed {s : State} (formed : WellFormed program s) {occurrenc
 
 /-- Clearing a present scope occurrence keeps a state well-formed under `Cleared.wellFormed`'s conditions on what it
 keeps and what it leaves hanging. -/
-theorem clearInside_wellFormed {s : State} (formed : WellFormed program s) {scope : ScopeOccurrenceId} {keep : List Nat}
+theorem clearInside_wellFormed {s : State} (formed : WellFormed program s) {scope : ScopeOccurrenceId} {keep : List OccurrenceId}
     (present : scope ∈ scopeIds s)
     (kept : ∀ occurrence ∈ s.occurrences, occurrence.id ∈ keep → ¬ StrictlyWithin s occurrence.scope scope)
     (attached : ∀ item ∈ itemList s.openItems, (¬ Within s item.scope scope ∨ item.id.occurrence ∈ keep) → ∀ host,

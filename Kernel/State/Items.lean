@@ -30,7 +30,7 @@ def ItemRole.index : ItemRole → Nat
 /-- An open item's structural key (KD1): the occurrence it waits for or reserves, its role and a per-occurrence
 ordinal, issued by `State.itemOrdinals`. -/
 structure ItemKey where
-  occurrence : Nat
+  occurrence : OccurrenceId
   role : ItemRole
   ordinal : Nat
   deriving DecidableEq, Repr
@@ -61,13 +61,13 @@ boundary's host, the Event-Based Gateway of an arm). A `passive` item, such as a
 subscription, keeps no scope occurrence alive and is removed when its scope completes. -/
 structure OpenItem where
   id : ItemKey
-  /-- The issue number the item took when it opened (`State.issue`): the order of opening, which every site that reads
+  /-- The order position the item took when it opened (`State.takePosition`): the order of opening, which every site that reads
   the items in order reads (`itemsByPosition`), never the map's key order (KD1). -/
   position : Nat
   kind : OpenKind
   element : ElementId
   scope : ScopeOccurrenceId
-  attachedTo : Option Nat := none
+  attachedTo : Option OccurrenceId := none
   passive : Bool := false
   deriving Repr
 

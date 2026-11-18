@@ -22,7 +22,7 @@ open Kernel
 open Kernel.Laws.MultiInstance (MultiInstanceOps Entering Begun SlotsCounted Completes recorded leftWith setRun_eq
   beginInstances_spec arriveMultiInstance_spec instanceCompleted_spec finish_spec LoopOf)
 
-variable {program : Program} {inv : State → Prop} {settled : State → Nat → Prop}
+variable {program : Program} {inv : State → Prop} {settled : State → OccurrenceId → Prop}
 
 /-! ## The invariant -/
 
@@ -58,9 +58,9 @@ theorem finish_keeps (ops : MultiInstanceOps program inv settled)
   rw [same]
   exact ops.complete _ _ _ _ _ entering.1 entering.2.1 fun _ same => by cases same
 
-/-- A body's completion issues nothing. -/
+/-- A body's completion takes no position. -/
 theorem finish_issue (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) (state : State) :
-    (Feature.MultiInstance.finish ctx loop run state).nextIssue = state.nextIssue := by
+    (Feature.MultiInstance.finish ctx loop run state).nextPosition = state.nextPosition := by
   obtain ⟨_, same, _⟩ := finish_spec ctx loop run state
   rw [same, Laws.State.signal_eq]
 
@@ -89,7 +89,7 @@ theorem enterBody_enters (ops : MultiInstanceOps program inv settled) {occurrenc
 
 /-- Entering the body's scope occurrence below a begun occurrence's own, which it owns, and arming its boundaries or not,
 leaves a state where the body, every slot waiting, keeps what it keeps while it enters, with the feature slots of
-`state` and an issue counter that grew. -/
+`state` and a position counter that grew. -/
 theorem enterBody_entering (ops : MultiInstanceOps program inv settled) {occurrence : Occurrence} {state : State}
     (holds : inv state) (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true) (element : ElementId)
     (enters : ∀ locals, inv (state.enterScope element occurrence.scope locals (some occurrence.id)).1 ∧
@@ -108,9 +108,9 @@ theorem enterBody_entering (ops : MultiInstanceOps program inv settled) {occurre
       (if unarmed then (state.enterScope element occurrence.scope locals (some occurrence.id)).1
         else (state.enterScope element occurrence.scope locals (some occurrence.id)).1.signal
           (.arm occurrence.id element occurrence.scope)).slots = state.slots ∧
-      state.nextIssue ≤ (if unarmed then (state.enterScope element occurrence.scope locals (some occurrence.id)).1
+      state.nextPosition ≤ (if unarmed then (state.enterScope element occurrence.scope locals (some occurrence.id)).1
         else (state.enterScope element occurrence.scope locals (some occurrence.id)).1.signal
-          (.arm occurrence.id element occurrence.scope)).nextIssue := by
+          (.arm occurrence.id element occurrence.scope)).nextPosition := by
   obtain ⟨entered, carry⟩ := enters locals
   have carried := carry _ (ops.begun _ _ holds member begun)
   rw [Laws.State.enterScope_eq] at entered carried ⊢
@@ -162,27 +162,27 @@ theorem arriveMultiInstance_keeps (ops : MultiInstanceOps program inv settled) {
   · obtain ⟨collection, count, items, ⟨_, rfl⟩⟩ := entered
     exact enterBody_keeps ops holds member begun _ named _ _ _ _ fun _ inside => List.eq_of_mem_replicate inside
 
-/-- An instance's completion leaves the issue counter where it was. -/
-theorem leftWith_issue (state : State) (scope : ScopeOccurrenceId) (next : MultiInstanceRun) :
-    (leftWith state scope next).nextIssue = state.nextIssue := by
+/-- An instance's completion leaves the position counter where it was. -/
+theorem leftWith_position (state : State) (scope : ScopeOccurrenceId) (next : MultiInstanceRun) :
+    (leftWith state scope next).nextPosition = state.nextPosition := by
   rw [leftWith, setRun_eq]
-  show (state.leaveScope scope).nextIssue = state.nextIssue
+  show (state.leaveScope scope).nextPosition = state.nextPosition
   rw [(Laws.State.leaveScope_eq state scope).1]
   exact (Laws.State.clearInside_shrinks state scope []).2
 
-/-- A signal issues nothing. -/
-theorem signal_issue (state : State) (signal : Signal) : (state.signal signal).nextIssue = state.nextIssue := by
+/-- A signal takes no position. -/
+theorem signal_position (state : State) (signal : Signal) : (state.signal signal).nextPosition = state.nextPosition := by
   rw [Laws.State.signal_eq]
 
 /-- Recording an instance's slot in a scope occurrence that stands, and writing the body's counters or not (`counted`),
-leaves a state where the recorded body keeps what it keeps while it enters, recorded, issuing nothing. -/
-theorem counted_entering {ctx : Ctx} (ops : MultiInstanceOps ctx.program inv settled) {body : Nat}
+leaves a state where the recorded body keeps what it keeps while it enters, recorded, taking no position. -/
+theorem counted_entering {ctx : Ctx} (ops : MultiInstanceOps ctx.program inv settled) {body : OccurrenceId}
     {scope : ScopeOccurrenceId} {state after counted : State} {run : MultiInstanceRun} {loop : MultiInstance}
     {index : Nat} {output : Option Value} {results : List String} (holds : inv state)
     (stands : scope ∈ Laws.State.scopeIds state) (done : Completes ctx body scope state after run loop index output)
     (left : Laws.MultiInstance.Counted state scope (recorded run index output results) counted) :
     Entering inv settled (recorded run index output results) counted (recorded run index output results).instances [] ∧
-      counted.nextIssue = state.nextIssue ∧ recorded run index output results ∈ counted.slots.multiInstances := by
+      counted.nextPosition = state.nextPosition ∧ recorded run index output results ∈ counted.slots.multiInstances := by
   obtain ⟨kept, carried, standing, placed⟩ := ops.record state run index scope output results holds
     (Laws.MultiInstance.found_mem done.found) done.slot stands done.fits
   have base : Entering inv settled (recorded run index output results)
@@ -191,19 +191,19 @@ theorem counted_entering {ctx : Ctx} (ops : MultiInstanceOps ctx.program inv set
   refine ⟨?_, ?_, ?_⟩ <;> rcases left with rfl | ⟨target, written, rule, rfl⟩
   · exact base
   · exact written_entering ops base _ _ _
-  · exact leftWith_issue _ _ _
-  · exact (signal_issue _ _).trans (leftWith_issue _ _ _)
+  · exact leftWith_position _ _ _
+  · exact (signal_position _ _).trans (leftWith_position _ _ _)
   · exact setRun_mem _ _
   · rw [Laws.State.signal_eq]
     exact setRun_mem _ _
 
 /-- What `counted_entering` leaves, for the state a committed `Hooks.instanceCompleted` recorded its instance in. -/
-theorem instanceCompleted_entering {ctx : Ctx} (ops : MultiInstanceOps ctx.program inv settled) {body : Nat}
+theorem instanceCompleted_entering {ctx : Ctx} (ops : MultiInstanceOps ctx.program inv settled) {body : OccurrenceId}
     {scope : ScopeOccurrenceId} {state after : State} {run : MultiInstanceRun} {loop : MultiInstance} {index : Nat}
     {output : Option Value} (holds : inv state) (stands : scope ∈ Laws.State.scopeIds state)
     (done : Completes ctx body scope state after run loop index output) :
     ∃ results counted, Entering inv settled (recorded run index output results) counted
-        (recorded run index output results).instances [] ∧ counted.nextIssue = state.nextIssue ∧
+        (recorded run index output results).instances [] ∧ counted.nextPosition = state.nextPosition ∧
       recorded run index output results ∈ counted.slots.multiInstances ∧
       (after = Feature.MultiInstance.finish ctx loop (recorded run index output results) counted ∨
         ∃ items, after = Feature.MultiInstance.beginInstances ctx loop items (recorded run index output results)
@@ -214,7 +214,7 @@ theorem instanceCompleted_entering {ctx : Ctx} (ops : MultiInstanceOps ctx.progr
 
 /-- `Hooks.instanceCompleted` keeps `inv` for an instance in a scope occurrence that stands: it records its slot,
 leaving its scope occurrence, then completes the body or begins the next instances. -/
-theorem instanceCompleted_keeps {ctx : Ctx} (ops : MultiInstanceOps ctx.program inv settled) {body : Nat}
+theorem instanceCompleted_keeps {ctx : Ctx} (ops : MultiInstanceOps ctx.program inv settled) {body : OccurrenceId}
     {occurrence : Occurrence} {writes : List (String × Value)} {state after : State} (holds : inv state)
     (stands : occurrence.scope ∈ Laws.State.scopeIds state)
     (ran : Feature.MultiInstance.instanceCompleted ctx body occurrence writes state = .ok after) : inv after := by
@@ -334,7 +334,7 @@ theorem arriveMultiInstance_counted (ops : MultiInstanceOps program inv settled)
 
 /-- Under `cibLocals` and loops whose item locals are not named `loopCounter`, `Hooks.instanceCompleted` enters each
 next instance holding its counter. -/
-theorem instanceCompleted_counted {ctx : Ctx} (ops : MultiInstanceOps ctx.program inv settled) {body : Nat}
+theorem instanceCompleted_counted {ctx : Ctx} (ops : MultiInstanceOps ctx.program inv settled) {body : OccurrenceId}
     {occurrence : Occurrence} {writes : List (String × Value)} {state after : State} (holds : inv state)
     (stands : occurrence.scope ∈ Laws.State.scopeIds state)
     (cib : ctx.program.options.multiInstanceCounters = .cibLocals)
@@ -395,7 +395,7 @@ theorem counted_signals {state counted : State} {scope : ScopeOccurrenceId} {nex
 /-- What a committed `Hooks.instanceCompleted` newly queues: writes of its body's counters, begins of its next
 instances, or its body's completion, which writes what `Laws.MultiInstance.WritesCollection` allows of the slot record
 it recorded, the one record of the body the after-state holds. -/
-theorem instanceCompleted_queues {ctx : Ctx} {body : Nat} {occurrence : Occurrence} {writes : List (String × Value)}
+theorem instanceCompleted_queues {ctx : Ctx} {body : OccurrenceId} {occurrence : Occurrence} {writes : List (String × Value)}
     {state after : State} (ran : Feature.MultiInstance.instanceCompleted ctx body occurrence writes state = .ok after) :
     ∃ run loop index output, Completes ctx body occurrence.scope state after run loop index output ∧
       ∃ results new, after.signals = state.signals ++ new ∧ ∀ signal ∈ new,
@@ -435,7 +435,7 @@ theorem instanceCompleted_queues {ctx : Ctx} {body : Nat} {occurrence : Occurren
 /-- Under `MultiInstanceOutputs.aggregates` a committed instance completion that fills the last unfilled slot of its
 body, whose loop names an output collection, queues the body's completion writing that collection, given one record per
 body occurrence and an instance's scope occurrence in one slot. -/
-theorem instanceCompleted_collects {ctx : Ctx} {body : Nat} {occurrence : Occurrence} {writes : List (String × Value)}
+theorem instanceCompleted_collects {ctx : Ctx} {body : OccurrenceId} {occurrence : Occurrence} {writes : List (String × Value)}
     {state after : State} {run : MultiInstanceRun} {loop : MultiInstance} {index : Nat} {name : String}
     (keyed : Laws.MultiInstance.RunsKeyed state) (owned : Laws.MultiInstance.Owned state run)
     (ran : Feature.MultiInstance.instanceCompleted ctx body occurrence writes state = .ok after)
@@ -475,7 +475,7 @@ theorem instanceCompleted_collects {ctx : Ctx} {body : Nat} {occurrence : Occurr
 /-- Under `cibLocals`, a committed instance completion found the counters it reads held: its scope occurrence's
 `loopCounter` and its body's counts (`CountersHeld`), given one record per body occurrence and an instance's scope
 occurrence in one slot. -/
-theorem instanceCompleted_countersHeld {ctx : Ctx} {body : Nat} {occurrence : Occurrence}
+theorem instanceCompleted_countersHeld {ctx : Ctx} {body : OccurrenceId} {occurrence : Occurrence}
     {writes : List (String × Value)} {state after : State} {run : MultiInstanceRun} {loop : MultiInstance} {index : Nat}
     (keyed : Laws.MultiInstance.RunsKeyed state) (owned : Laws.MultiInstance.Owned state run)
     (cib : ctx.program.options.multiInstanceCounters = .cibLocals)

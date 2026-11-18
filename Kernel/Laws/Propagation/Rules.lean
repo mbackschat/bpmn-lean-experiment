@@ -129,11 +129,10 @@ the state operations a throw or raise applies (`PropagationOps`). -/
 def HostSettled (origin : Origin) (state : State) : Prop :=
   ∀ host, origin.host = some host → Laws.State.Settled state host
 
-/-- The occurrences a raise from an Event names have begun (`Laws.State.Raisable`). -/
+/-- The thrower a raise from an Event names has begun, if it stands (`Laws.State.Raisable`). -/
 def Thrown (program : Program) (origin : Origin) (state : State) : Prop :=
   ((program.element? origin.element).bind (·.event?)).isSome = true → ∀ occurrence ∈ state.occurrences,
-    occurrence.element = origin.element → occurrence.scope = origin.scope → occurrence.activation = origin.activation →
-      occurrence.begun = true
+    occurrence.id = origin.thrower → occurrence.begun = true
 
 theorem HostSettled.steady {origin : Origin} {before after : State} (settled : HostSettled origin before)
     (steady : Steady before after) : HostSettled origin after := fun host named =>
@@ -153,7 +152,8 @@ structure PropagationOps (program : Program) (inv : State → Prop) : Prop where
   state that kept `inv` began. -/
   raise : ∀ state raised occurrence, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
     RaisesFrom inv occurrence state → inv (state.signal (.raise raised
-      { element := occurrence.element, scope := occurrence.scope, activation := occurrence.activation }))
+      { element := occurrence.element, scope := occurrence.scope, activation := occurrence.activation,
+        thrower := occurrence.id }))
   /-- An item's firing. -/
   fire : ∀ state item fired, inv state → inv (state.signal (.fire item fired))
   /-- A Signal throw's broadcast intent. -/
@@ -307,7 +307,7 @@ structure QuietSteps (quiet : Signal → Prop) : Prop where
 /-- A caught boundary, anchored where it occurs and listing its outgoing flows, fires: it cancels its host if it
 interrupts one, and a fresh occurrence occurs. -/
 theorem boundaryFire_keeps {program : Program} {inv : State → Prop} (ops : PropagationOps program inv) (boundary : Boundary)
-    (host : Option Nat) (scope : ScopeOccurrenceId) (writes : List (String × Value)) {state : State} (holds : inv state)
+    (host : Option OccurrenceId) (scope : ScopeOccurrenceId) (writes : List (String × Value)) {state : State} (holds : inv state)
     (bounded : Laws.IL.BoundaryOf program boundary.id) (anchored : Laws.Flow.Anchored inv program state boundary.id scope)
     (listed : ∀ flow ∈ boundary.outgoing, Laws.Flow.Lists program boundary.id flow) :
     inv (boundary.fire host none scope writes state) ∧ (boundary.fire host none scope writes state).occurrences =

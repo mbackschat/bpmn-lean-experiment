@@ -29,8 +29,12 @@ open Kernel Kernel.Step
 /-- The scope occurrence `scope` stands in `state`. -/
 def ScopeStands (state : State) (scope : ScopeOccurrenceId) : Prop := ∃ entry ∈ state.scopes, entry.id = scope
 
+theorem ScopeStands.mem {state : State} {scope : ScopeOccurrenceId} (stands : ScopeStands state scope) :
+    scope ∈ Laws.State.standingKeys state :=
+  let ⟨entry, inside, named⟩ := stands; List.mem_map.mpr ⟨entry, inside, named⟩
+
 /-- The occurrence `id` stands in `state`. -/
-def OccurrenceStands (state : State) (id : Nat) : Prop := ∃ occurrence ∈ state.occurrences, occurrence.id = id
+def OccurrenceStands (state : State) (id : OccurrenceId) : Prop := ∃ occurrence ∈ state.occurrences, occurrence.id = id
 
 /-- A begin request `Step` may begin in `state`: the reservations it names are distinct, each beginnable in the
 request's scope occurrence and claimed by nothing queued or slotted (`Laws.State.ReservationsClaimed`), and its Event
@@ -225,7 +229,7 @@ def placing : Signal → Bool
   | .remove _ _ | .cancel _ | .fire _ _ | .endInstance _ _ | .compensate _ _ _ _ _ | .compensationFailed _ _ _ _ => false
 
 /-- A completion by no named flow places nothing. -/
-theorem placing_complete {occurrence : Nat} {leave : Leave} {writes : List (String × Value)} {rule : WriteRule}
+theorem placing_complete {occurrence : OccurrenceId} {leave : Leave} {writes : List (String × Value)} {rule : WriteRule}
     (unnamed : ∀ selected, leave = .flows selected → selected = []) :
     placing (.complete occurrence leave writes rule) = false := by
   cases leave with
@@ -233,7 +237,7 @@ theorem placing_complete {occurrence : Nat} {leave : Leave} {writes : List (Stri
   | outgoing | raised => rfl
 
 /-- A completion by named flows places work. -/
-theorem placing_named {occurrence : Nat} {selected : List FlowId} {writes : List (String × Value)} {rule : WriteRule}
+theorem placing_named {occurrence : OccurrenceId} {selected : List FlowId} {writes : List (String × Value)} {rule : WriteRule}
     (named : selected ≠ []) : placing (.complete occurrence (.flows selected) writes rule) = true := by
   simpa [placing] using named
 
@@ -283,7 +287,7 @@ theorem triggersOf_append (signals more : List Signal) :
 
 /-- A queued compensation carries its trigger. -/
 theorem triggersOf_compensate (scope : ScopeOccurrenceId) (activity : Option ElementId) (trigger : OccurrenceRef)
-    (leave : Option Nat) (resume : Option Resume) :
+    (leave : Option OccurrenceId) (resume : Option Resume) :
     triggersOf [.compensate scope activity trigger leave resume] = [.inl trigger] := rfl
 
 /-- A queued Cancel raise carries its origin, and any other raise nothing. -/
@@ -358,10 +362,10 @@ a cancellation, a completion and an occurrence. -/
 theorem untriggered_begin (request : BeginRequest) : Laws.State.Untriggered (.begin request) :=
   ⟨fun _ _ _ _ _ => nofun, fun _ _ => nofun⟩
 
-theorem untriggered_cancel (occurrence : Nat) : Laws.State.Untriggered (.cancel occurrence) :=
+theorem untriggered_cancel (occurrence : OccurrenceId) : Laws.State.Untriggered (.cancel occurrence) :=
   ⟨fun _ _ _ _ _ => nofun, fun _ _ => nofun⟩
 
-theorem untriggered_complete (occurrence : Nat) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule) :
+theorem untriggered_complete (occurrence : OccurrenceId) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule) :
     Laws.State.Untriggered (.complete occurrence leave writes rule) := ⟨fun _ _ _ _ _ => nofun, fun _ _ => nofun⟩
 
 theorem untriggered_occur (element : ElementId) (scope : ScopeOccurrenceId) (leave : Leave)
@@ -384,14 +388,14 @@ theorem start?_bare {element : Element} {header : Header} {payload : StartPayloa
     Laws.IL.start?_activity, Laws.IL.start?_event, Laws.IL.start?_scope, Laws.IL.start?_gateway]
 
 /-- An occurrence that continues by its flows is no Multi-Instance instance. -/
-theorem flow_ne_multiInstance (body : Nat) : Continuation.flow ≠ .multiInstance body := nofun
+theorem flow_ne_multiInstance (body : OccurrenceId) : Continuation.flow ≠ .multiInstance body := nofun
 
 /-- A compensation handler is no Multi-Instance instance. -/
-theorem compensation_ne_multiInstance (run : ScopeOccurrenceId) (body : Nat) :
+theorem compensation_ne_multiInstance (run : ScopeOccurrenceId) (body : OccurrenceId) :
     Continuation.compensation run ≠ .multiInstance body := nofun
 
 /-- An instance continues into one body. -/
-theorem multiInstance_inj {body other : Nat} (same : Continuation.multiInstance body = .multiInstance other) :
+theorem multiInstance_inj {body other : OccurrenceId} (same : Continuation.multiInstance body = .multiInstance other) :
     body = other := by
   injection same
 
@@ -617,13 +621,13 @@ structure ClosurePhases (inv : Program → State → Prop) : Prop where
     inv program (state.signal (.write scope writes rule))
   queueRemove : ∀ program state scope names, inv program state → inv program (state.signal (.remove scope names))
   armIssued : ∀ program state host element scope, inv program state → Signal.arm host element scope ∈ state.signals →
-    host < state.nextIssue ∧ Laws.State.ScopeIssued state scope ∧
+    Laws.State.OccurrenceIssued state host ∧ Laws.State.ScopeIssued state scope ∧
       ∀ occurrence ∈ state.occurrences, occurrence.id = host → occurrence.begun = true ∧ occurrence.scope = scope
   armScopeIssued : ∀ program state scope, inv program state → Signal.armScope scope ∈ state.signals →
     Laws.State.ScopeIssued state scope
   armGatewayIssued : ∀ program state occurrence gateway scope, inv program state →
     Signal.armGateway occurrence gateway scope ∈ state.signals →
-    occurrence < state.nextIssue ∧ Laws.State.ScopeIssued state scope ∧
+    Laws.State.OccurrenceIssued state occurrence ∧ Laws.State.ScopeIssued state scope ∧
       ∀ found ∈ state.occurrences, found.id = occurrence → found.begun = true ∧ found.scope = scope
   endRecorded : ∀ program state status failure, inv program state → Signal.endInstance status failure ∈ state.signals →
     (failure.isSome = true ↔ status = .failed)
@@ -647,9 +651,9 @@ structure ClosurePhases (inv : Program → State → Prop) : Prop where
   /-- An occurrence's scope occurrence stands. -/
   housed : ∀ program state occurrence, inv program state → occurrence ∈ state.occurrences →
     ScopeStands state occurrence.scope
-  /-- Every occurrence was issued, so a reservation's number names it alone. -/
+  /-- Every occurrence was issued, so a reservation's key names it alone. -/
   issued : ∀ program state occurrence, inv program state → occurrence ∈ state.occurrences →
-    occurrence.id < state.nextIssue
+    Laws.State.OccurrenceIssued state occurrence.id
   /-- An occurrence numbered as a Multi-Instance body is of an element with a Multi-Instance envelope, so a dispatch
   hands every other hook an occurrence of the element role (`Laws.Step.dispatch_unstarted`). -/
   bodied : ∀ program state occurrence, inv program state → occurrence ∈ state.occurrences →
@@ -660,15 +664,18 @@ structure ClosurePhases (inv : Program → State → Prop) : Prop where
   newest : ∀ program state request role sourceType, inv program state →
     (state.beginOccurrence request role sourceType).1.draft.started.getLast?.map (·.occurrence) =
       some (Laws.State.key (state.beginOccurrence request role sourceType).1 (state.beginOccurrence request role sourceType).2)
-  /-- `State.beginOccurrence` of an admitted request begins an occurrence no running Multi-Instance body is keyed by:
-  a fresh one is issued at the counter, above every body's, and a reservation is one no slot completes
-  (`Laws.State.Unclaimed`). -/
-  unrun : ∀ program state request role sourceType, inv program state → Admitted state request →
+  /-- `State.beginOccurrence` of an admitted request in a scope occurrence that stands begins an occurrence no running
+  Multi-Instance body is keyed by: a fresh one is issued there under a key never issued, and a reservation is one no
+  slot completes (`Laws.State.Unclaimed`). -/
+  unrun : ∀ program state request role sourceType, inv program state → ScopeStands state request.scope →
+    Admitted state request →
     ∀ run ∈ (state.beginOccurrence request role sourceType).1.slots.multiInstances,
       run.occurrence ≠ (state.beginOccurrence request role sourceType).2.id
-  /-- `State.beginOccurrence` of an admitted request begins an occurrence that owns no scope occurrence: a fresh one is
-  issued at the counter, and a reservation is unbegun, while only a begun occurrence owns one (`Laws.State.Owned`). -/
-  unowned : ∀ program state request role sourceType, inv program state → Admitted state request →
+  /-- `State.beginOccurrence` of an admitted request in a scope occurrence that stands begins an occurrence that owns no
+  scope occurrence: a fresh one is issued there under a key never issued, and a reservation is unbegun, while only a
+  begun occurrence owns one (`Laws.State.Owned`). -/
+  unowned : ∀ program state request role sourceType, inv program state → ScopeStands state request.scope →
+    Admitted state request →
     ∀ scope ∈ (state.beginOccurrence request role sourceType).1.scopes,
       scope.occurrence ≠ some (state.beginOccurrence request role sourceType).2.id
   /-- An occurrence parked at a join is begun while it stands, so a join offered again hands over a begun one. -/
@@ -729,7 +736,7 @@ which says where it comes from (`Laws.Flow.LeavesFrom`):
 `Laws.Step.complete_keeps` gives it from the hook contract, `Phases` and `PipelinePhases`, and the walk of
 `Laws.Step.Keeps` takes it as a premise. -/
 def PipelineKeeps (hooks : Hooks) (inv : Program → State → Prop) : Prop :=
-  ∀ (ctx : Ctx) (id : Nat) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule) (state after : State),
+  ∀ (ctx : Ctx) (id : OccurrenceId) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule) (state after : State),
     inv ctx.program state → (∀ request, Laws.State.Queued state request → id ∉ Laws.State.names request) →
     (∀ occurrence ∈ state.occurrences, occurrence.id = id →
       Laws.Flow.LeavesFrom (inv ctx.program) ctx.program state occurrence leave) →
@@ -754,11 +761,13 @@ structure StateFacts : Prop where
     PipelineFrame state (state.closeOwnItems id) ∧ ∀ item ∈ itemList (state.closeOwnItems id).openItems, item.id.occurrence ≠ id
   recordEnd : ∀ (state : State) key terminal, (state.recordEnd key terminal).scopes = state.scopes ∧
     (state.recordEnd key terminal).slots.instances = state.slots.instances
-  /-- A reservation adds one occurrence, of its element in its scope occurrence and numbered by the next issue. -/
+  /-- A reservation adds one occurrence, of its element in its scope occurrence, under a key not issued while that scope
+  occurrence stands. -/
   reserve : ∀ (state : State) element scope,
     (state.reserve element scope).1.occurrences = state.occurrences ++ [(state.reserve element scope).2] ∧
     (state.reserve element scope).2.element = element ∧ (state.reserve element scope).2.scope = scope ∧
-    (state.reserve element scope).2.id = state.nextIssue ∧ (state.reserve element scope).1.scopes = state.scopes ∧
+    (scope ∈ Laws.State.standingKeys state → ¬ Laws.State.OccurrenceIssued state (state.reserve element scope).2.id) ∧
+    (state.reserve element scope).1.scopes = state.scopes ∧
     (state.reserve element scope).1.slots.instances = state.slots.instances
   /-- Removing an occurrence keeps no scope occurrence and no instance entry it did not have. -/
   removeOccurrence : ∀ (state : State) id, (∀ entry ∈ (state.removeOccurrence id).scopes, entry ∈ state.scopes) ∧

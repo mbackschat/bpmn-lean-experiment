@@ -165,7 +165,7 @@ theorem begin_ok {hooks : Hooks} {ctx : Ctx} {request : BeginRequest} {state nex
   · simp at ran
 
 /-- A begin writes no start values, or writes them outward from the scope occurrence its occurrence owns. -/
-theorem writeStart_ok {hooks : Hooks} {ctx : Ctx} {occurrence : Nat} {writes : List (String × Value)} {state after : State}
+theorem writeStart_ok {hooks : Hooks} {ctx : Ctx} {occurrence : OccurrenceId} {writes : List (String × Value)} {state after : State}
     (ran : writeStart hooks ctx occurrence writes state = .ok after) : (writes = [] ∧ after = state) ∨ writes ≠ [] ∧
       ∃ scope, state.localScope? occurrence = some scope ∧ hooks.writeOutputs ctx scope writes .outward state = .ok after := by
   unfold writeStart at ran
@@ -379,7 +379,7 @@ theorem continueAfter_ok {hooks : Hooks} {ctx : Ctx} {occurrence : Occurrence} {
 /-- The completion pipeline (`Step.complete`): a committed completion found its occurrence; its reservation, if it
 is one, starts, its own items close, `Hooks.leave` disarms what hangs on it, `Hooks.select` resolves how it leaves,
 `Hooks.writeOutputs` makes its writes, and it finishes (`Finishes`). -/
-theorem complete_ok {hooks : Hooks} {ctx : Ctx} {id : Nat} {leave : Leave} {writes : List (String × Value)}
+theorem complete_ok {hooks : Hooks} {ctx : Ctx} {id : OccurrenceId} {leave : Leave} {writes : List (String × Value)}
     {rule : WriteRule} {state after : State} (ran : complete hooks ctx id leave writes rule state = .ok after) :
     ∃ occurrence sourceType begun left selected written,
         state.occurrence? id = some occurrence ∧ ctx.program.sourceType? occurrence.element = some sourceType ∧
@@ -425,18 +425,18 @@ occurrence is gone (#151), fail it as invariant failures (`perform_gone`, `compl
 `cancel_occurrence_gone`, `complete_absent`); a firing of an item that is gone changes nothing (`fire_absent`). The
 facts of `SignalWork.perform` itself are `Kernel.Laws.Step.Stale`'s. -/
 
-theorem complete_absent {hooks : Hooks} {ctx : Ctx} {id : Nat} {leave : Leave} {writes : List (String × Value)}
+theorem complete_absent {hooks : Hooks} {ctx : Ctx} {id : OccurrenceId} {leave : Leave} {writes : List (String × Value)}
     {rule : WriteRule} {state : State} (absent : state.occurrence? id = none) :
     complete hooks ctx id leave writes rule state = .error (.semanticFailure .invariant "queued-work-occurrence-gone") := by
   simp [complete, absent]
 
-theorem complete_occurrence_gone {hooks : Hooks} {ctx : Ctx} {id : Nat} {leave : Leave} {writes : List (String × Value)}
+theorem complete_occurrence_gone {hooks : Hooks} {ctx : Ctx} {id : OccurrenceId} {leave : Leave} {writes : List (String × Value)}
     {rule : WriteRule} {state : State} (absent : state.occurrence? id = none) : dispatchSignal hooks ctx
       (.complete id leave writes rule) state = .error (.semanticFailure .invariant "queued-work-occurrence-gone") := by
   rw [dispatchSignal_eq]
   exact perform_gone (by simp [stale_eq, signalWork]) (by simp [gone_eq, signalWork, absent])
 
-theorem cancel_occurrence_gone {hooks : Hooks} {ctx : Ctx} {id : Nat} {state : State} (absent : state.occurrence? id = none) :
+theorem cancel_occurrence_gone {hooks : Hooks} {ctx : Ctx} {id : OccurrenceId} {state : State} (absent : state.occurrence? id = none) :
     dispatchSignal hooks ctx (.cancel id) state = .error (.semanticFailure .invariant "queued-work-occurrence-gone") := by
   rw [dispatchSignal_eq]
   exact perform_gone (by simp [stale_eq, signalWork]) (by simp [gone_eq, signalWork, absent])

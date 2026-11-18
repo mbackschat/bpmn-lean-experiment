@@ -31,7 +31,7 @@ export const enumerations: ReadonlyArray<readonly [string, string, string]> = [
   ["effectOutcome", "Kernel/State/Input.lean", "EffectOutcome"],
   ["waitKind", "Kernel/State/Wait.lean", "OpenKind"],
   ["instanceStatus", "Kernel/State.lean", "InstanceStatus"],
-  ["failure", "Kernel/State.lean", "FailureOf"],
+  ["failure", "Kernel/State/Failure.lean", "FailureOf"],
   ["scopeRole", "Kernel/Publish.lean", "ScopeRole"],
 ];
 
@@ -82,7 +82,7 @@ const enumSchema = (values: readonly string[]) => ({ enum: [...values] });
 export function vocabularySchema(tree: KernelTree): unknown {
   const defs: Record<string, unknown> = {};
   for (const [name, file, inductive] of enumerations) defs[name] = enumSchema(constructors(tree, file, inductive));
-  defs["outcome"] = enumSchema(["committed", ...constructors(tree, "Kernel/State.lean", "FailureOf")]);
+  defs["outcome"] = enumSchema(["committed", ...constructors(tree, "Kernel/State/Failure.lean", "FailureOf")]);
   defs["profileOptions"] = {
     type: "object",
     additionalProperties: false,

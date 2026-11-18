@@ -43,7 +43,7 @@ import {
   type ScopeOccurrenceId,
   type State,
   type WriteEvent,
-  itemKeyText, itemsByPosition, sameItemKey,
+  itemKeyText, itemsByPosition, sameItemKey, type OccurrenceId,
 } from "../../state.js";
 import {
   EvaluationTag, evalContext, subscriptionOf, subtree, withdrawInside, withdrawOccurrence, type Ctx,
@@ -143,8 +143,8 @@ enum WithdrawalTag {
   Inside = "inside",
 }
 type Withdrawal =
-  | Readonly<{ tag: WithdrawalTag.Host; occurrence: number }>
-  | Readonly<{ tag: WithdrawalTag.Arms; gateway: number }>
+  | Readonly<{ tag: WithdrawalTag.Host; occurrence: OccurrenceId }>
+  | Readonly<{ tag: WithdrawalTag.Arms; gateway: OccurrenceId }>
   | Readonly<{ tag: WithdrawalTag.Inside; scope: ScopeOccurrenceId }>;
 
 /** `Withdrawal.withdrawFrom`: apply a withdrawal to `state`. */

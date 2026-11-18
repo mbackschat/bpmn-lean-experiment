@@ -166,7 +166,8 @@ structure WorkOps (program : Program) (inv : State → Prop) : Prop where
   occurrence's activation. -/
   raise : ∀ state item code message patch, inv state → item ∈ itemList state.openItems → item.kind.view.effect.isSome = true →
     inv (state.signal (.raise (.error code message)
-      { element := item.element, scope := item.scope, host := some item.id.occurrence, patch := patch,
+      { element := item.element, scope := item.scope, thrower := item.id.occurrence, host := some item.id.occurrence,
+        patch := patch,
         activation := ((state.occurrence? item.id.occurrence).map (·.activation)).getD 0 }))
   cancel : ∀ state, inv state → inv (state.signal (.endInstance .cancelled none))
   /-- What open items wait for replaced, each keeping everything else, only for an item that waits for an effect or an

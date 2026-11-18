@@ -36,7 +36,8 @@ def throwCompensation (header : Header) (payload : EventPayload) (thrown : Compe
     (state : State) : Outcome :=
   if !thrown.waitForCompletion then .error (.unsupported "throw-compensation-asynchronous")
   else
-    let triggered := throwerRef state { element := header.id, scope := occurrence.scope, activation := occurrence.activation }
+    let triggered := throwerRef state
+      { element := header.id, scope := occurrence.scope, activation := occurrence.activation, thrower := occurrence.id }
     .ok (state.signal (.compensate occurrence.scope thrown.activity triggered none
       (some (.complete occurrence.id (throwLeave payload)))))
 
@@ -129,7 +130,8 @@ def throwMessage (record : MessageThrow) (occurrence : Occurrence) (leave : Stat
 
 def arriveThrow (ctx : Ctx) (header : Header) (payload : EventPayload) (thrown : Throw) (occurrence : Occurrence)
     (state : State) : Outcome :=
-  let origin : Origin := { element := header.id, scope := occurrence.scope, activation := occurrence.activation }
+  let origin : Origin :=
+    { element := header.id, scope := occurrence.scope, activation := occurrence.activation, thrower := occurrence.id }
   let leave (state : State) : State := state.signal (.complete occurrence.id (throwLeave payload) [] .outward)
   match thrown with
   | .none => .ok (leave state)

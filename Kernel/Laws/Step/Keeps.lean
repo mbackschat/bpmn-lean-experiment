@@ -183,8 +183,9 @@ theorem begin_keeps (contract : HookContract hooks inv) (phases : ClosurePhases 
     roleOf_event (fun body => (roleOf_body.mp body).1) rfl origin
   have begunMember := facts.begun state request (roleOf ctx.program request) sourceType
   have newest := phases.newest _ state request (roleOf ctx.program request) sourceType holds
-  have unrun := phases.unrun _ state request (roleOf ctx.program request) sourceType holds admitted
-  have unowned := phases.unowned _ state request (roleOf ctx.program request) sourceType holds admitted
+  have unrun := phases.unrun _ state request (roleOf ctx.program request) sourceType holds (begin_scope ran) admitted
+  have unowned := phases.unowned _ state request (roleOf ctx.program request) sourceType holds (begin_scope ran)
+    admitted
   simp only [made] at begunHolds begunMember newest unrun unowned
   obtain ⟨entry, standing, named⟩ := begin_scope ran
   have throws : occurrence.role = .element → Laws.State.BeginsThrow state request occurrence := fun role =>
@@ -244,13 +245,13 @@ theorem signal_keeps (contract : HookContract hooks inv) (phases : ClosurePhases
     obtain ⟨reserved, free⟩ := phases.reserve _ _ _ _ popped stands ⟨queue, holds, .inl ⟨_, _, _, _, head⟩⟩
       ⟨_, _, _, queue, holds, heads, rfl⟩
     obtain ⟨occurrences, element, scope, placed⟩ := facts.reserve { queue with signals := rest } _ _
-    obtain ⟨issue, scopes, instances⟩ := placed
+    obtain ⟨fresh, scopes, instances⟩ := placed
     refine pipeline _ _ _ _ _ _ _ reserved free (fun occurrence member named => ?_) ran
     rw [occurrences] at member
     rcases List.mem_append.mp member with old | new
     · have := phases.issued _ _ _ popped old
-      rw [named, issue] at this
-      exact absurd this (Nat.lt_irrefl _)
+      rw [named] at this
+      exact (fresh stands.mem this).elim
     rw [List.mem_singleton.mp new]
     exact ⟨queue, holds, fun entry kept => instances ▸ kept, fun entry kept => scopes ▸ kept,
       .inr ⟨_, _, _, by rw [element, scope]; exact head, fun selected same flow inside =>

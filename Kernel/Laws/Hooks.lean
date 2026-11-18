@@ -94,7 +94,7 @@ theorem item?_view {α : Type} {ctx : Ctx} {state : State} {occurrence : Occurre
 
 /-- How a boundary fires (`Boundary.fire`): an interrupting one cancels its host first, if it names one; then the
 reservation completes, or a fresh occurrence occurs. -/
-theorem fire_eq (boundary : Boundary) (host reserved : Option Nat) (scope : ScopeOccurrenceId)
+theorem fire_eq (boundary : Boundary) (host reserved : Option OccurrenceId) (scope : ScopeOccurrenceId)
     (writes : List (String × Value)) (state : State) : boundary.fire host reserved scope writes state =
       (if boundary.interrupting then host.elim state (state.signal <| .cancel ·) else state).signal
         (reserved.elim (.occur boundary.id scope (.flows boundary.outgoing) writes .outward)

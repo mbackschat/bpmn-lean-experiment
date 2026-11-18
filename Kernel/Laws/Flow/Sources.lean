@@ -45,7 +45,7 @@ def Offered (program : Program) (state : State) (scope : ScopeOccurrenceId) (flo
 /-- A completion of the occurrence `id` by `leave`, queued in `state`, names only flows offered where the occurrence
 lies, as a state `held` that kept `inv` and whose occurrences of that identity, scope occurrences and instance entries
 include `state`'s records: in the occurrence's scope occurrence, or, for a join firing an occurrence it parked, in its join wait's. -/
-def LeaveOffered (inv : State → Prop) (program : Program) (state : State) (id : Nat) (leave : Leave) : Prop :=
+def LeaveOffered (inv : State → Prop) (program : Program) (state : State) (id : OccurrenceId) (leave : Leave) : Prop :=
   ∀ selected, leave = .flows selected → ∀ flow ∈ selected, ∃ held, inv held ∧
     (∀ occurrence ∈ state.occurrences, occurrence.id = id → occurrence ∈ held.occurrences) ∧
     (∀ entry ∈ state.scopes, entry ∈ held.scopes) ∧
@@ -270,7 +270,7 @@ theorem LeavesFrom.mono {inv weaker : State → Prop} {program : Program} {state
   exact ⟨held, implies held holds, kept⟩
 
 /-- A completion offered under `inv` is one offered under anything `inv` implies. -/
-theorem LeaveOffered.mono {inv weaker : State → Prop} {program : Program} {state : State} {id : Nat} {leave : Leave}
+theorem LeaveOffered.mono {inv weaker : State → Prop} {program : Program} {state : State} {id : OccurrenceId} {leave : Leave}
     (offered : LeaveOffered inv program state id leave) (implies : ∀ s, inv s → weaker s) :
     LeaveOffered weaker program state id leave := fun selected same flow inside => by
   obtain ⟨held, holds, kept⟩ := offered selected same flow inside

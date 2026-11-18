@@ -90,7 +90,7 @@ def completed (ctx : Ctx) (occurrence : Occurrence) (state : State) : Outcome :=
     if handler.isNone && !grouped then
       .ok (store state { compensation with retained := outer ++ inner.map fun record => { record with scope := target } })
     else
-      let (state, completion) := state.issue
+      let (state, completion) := state.takePosition
       let inside := handler.all fun handler =>
         ((ctx.program.element? handler).bind (·.header.parent)) == some occurrence.element
       let locals (scope : ScopeOccurrenceId) := ((state.variables.find? (·.scope == scope)).map (·.entries)).getD []
@@ -273,7 +273,7 @@ def visibleScopes (ctx : Ctx) (state : State) (scope : ScopeOccurrenceId) : List
 included, are Compensating from its trigger (BPMN 2.0.2 §13.5.5, Figure 13.2) and no longer retained, so the new run
 takes only what is left, an empty set included (COMPH-EXCLUSIVE-01, #103). -/
 def compensate (ctx : Ctx) (scope : ScopeOccurrenceId) (activity : Option ElementId) (trigger : OccurrenceRef)
-    (leave : Option Nat) (resume : Option Resume) (state : State) : Outcome :=
+    (leave : Option OccurrenceId) (resume : Option Resume) (state : State) : Outcome :=
   let compensation := state.slots.compensation
   let covered := visibleScopes ctx state scope
   let (selected, kept) := compensation.retained.partition fun record =>

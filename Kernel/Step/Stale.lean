@@ -31,15 +31,22 @@ def scopeIssued (state : State) (scope : ScopeOccurrenceId) : Bool :=
       else go rest
   go scope.segments
 
+/-- Whether the occurrence key `id` was issued, as far as the counters that remain can tell: its scope occurrence key was
+issued (`scopeIssued`) and, while that scope occurrence stands, its ordinal is below the scope occurrence's counter for
+its element. A counter goes with its scope occurrence, so of a key issued in a removed one only that is known (KD1). -/
+def occurrenceIssued (state : State) (id : OccurrenceId) : Bool :=
+  scopeIssued state id.scope && (!state.scopes.any (·.id == id.scope) ||
+    decide (id.ordinal < state.occurrenceOrdinals.getD { parent := id.scope, element := id.element } 0))
+
 /-- What a queued signal does, whether it is a completion, the one kind `absorb` runs inside the micro-step, the scope
 occurrences and occurrences it does it in or on (`stale`), and the scope occurrences it acts from and the occurrences it
 acts on (`gone`). -/
 structure SignalWork where
   completion : Bool := false
   scopes : List ScopeOccurrenceId := []
-  occurrences : List Nat := []
+  occurrences : List OccurrenceId := []
   requires : List ScopeOccurrenceId := []
-  acts : List Nat := []
+  acts : List OccurrenceId := []
   run : State → Outcome
 
 /-- Whether `work` names a scope occurrence or an occurrence that was issued and has since been removed. Signals run
@@ -47,17 +54,16 @@ first in, first out, and an interruption removes in two steps: its firing withdr
 cancellation or interrupting Event Sub-Process begin removes the occurrences and scope occurrences later. A signal a
 micro-step between the two enqueued runs after the removal: the begin of what an earlier firing or the entry of a scope
 occurrence queued, the arming of what such a begin started, or the arrival of a token it moved. Only a begin, an
-arming and an `occur` name targets. `nextIssue` counts every occurrence identity the state issues, of whatever kind,
-so a target below it is only known to have been issued: one of the wrong kind, a kernel defect, reads as removed, and
-only one at or above it fails as never issued (`requireScope`). A scope occurrence key reads as issued by the counter
-of its deepest standing ancestor (`scopeIssued`), so a key below a removed subtree is only known to lie below an
-issued one, and reads as removed (KD1). A completion and a cancellation name the occurrence they act on, a
+arming and an `occur` name targets. A scope occurrence key reads as issued by the counter of its deepest standing
+ancestor (`scopeIssued`), and an occurrence key by its scope occurrence's (`occurrenceIssued`), so a key below a removed
+subtree is only known to lie below an issued one, and reads as removed (KD1); only a key its standing counter has not
+reached fails as never issued (`gone`, `requireScope`). A completion and a cancellation name the occurrence they act on, a
 write, a removal, a compensation and a compensation's failure the scope occurrence they act from (`gone`); a firing finds
 no item (`Signal.fire`); a `raise` names its origin only as provenance and runs at the head of a queue a token emptied;
 `endInstance` names nothing. -/
 def stale (state : State) (work : SignalWork) : Bool :=
   work.scopes.any (fun scope => scopeIssued state scope && !state.scopes.any (·.id == scope)) ||
-    work.occurrences.any fun id => id < state.nextIssue && (state.occurrence? id).isNone
+    work.occurrences.any fun id => occurrenceIssued state id && (state.occurrence? id).isNone
 
 /-- The invariant failure's code when a target `work` acts from or on is absent: a scope occurrence it acts from
 (`queued-work-scope-gone`), else an occurrence it acts on (`queued-work-occurrence-gone`). A write, a removal, a

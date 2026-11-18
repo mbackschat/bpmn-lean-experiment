@@ -153,20 +153,20 @@ theorem items_same {s t : State} {item : OpenItem} (member : item ∈ itemList t
 
 /-- `after`'s items are some of `before`'s, each under the same key, and the item counters are unchanged: what an
 operation that only closes items does to the open-item map. -/
-structure ItemsNarrow (after before : OpenItems) (afterOrdinals beforeOrdinals : Std.ExtTreeMap Nat Nat compare) :
+structure ItemsNarrow (after before : OpenItems) (afterOrdinals beforeOrdinals : Std.ExtTreeMap OccurrenceId Nat compare) :
     Prop where
   sub : ∀ (k : ItemKey) (item : OpenItem), after[k]? = some item → before[k]? = some item
   ordinals : ∀ o, beforeOrdinals.getD o 0 ≤ afterOrdinals.getD o 0
 
-theorem ItemsNarrow.refl (m : OpenItems) {o : Std.ExtTreeMap Nat Nat compare} : ItemsNarrow m m o o :=
+theorem ItemsNarrow.refl (m : OpenItems) {o : Std.ExtTreeMap OccurrenceId Nat compare} : ItemsNarrow m m o o :=
   ⟨fun _ _ h => h, fun _ => Nat.le_refl _⟩
 
-theorem ItemsNarrow.filter (f : ItemKey → OpenItem → Bool) {m : OpenItems} {o : Std.ExtTreeMap Nat Nat compare} :
+theorem ItemsNarrow.filter (f : ItemKey → OpenItem → Bool) {m : OpenItems} {o : Std.ExtTreeMap OccurrenceId Nat compare} :
     ItemsNarrow (m.filter f) m o o :=
   ⟨fun k item h => by rw [Std.ExtTreeMap.getElem?_filter'] at h; exact Option.eq_some_of_filter_eq_some h,
     fun _ => Nat.le_refl _⟩
 
-theorem ItemsNarrow.erase (key : ItemKey) {m : OpenItems} {o : Std.ExtTreeMap Nat Nat compare} :
+theorem ItemsNarrow.erase (key : ItemKey) {m : OpenItems} {o : Std.ExtTreeMap OccurrenceId Nat compare} :
     ItemsNarrow (m.erase key) m o o :=
   ⟨fun k item h => by
     rw [Std.ExtTreeMap.getElem?_erase] at h
@@ -174,17 +174,17 @@ theorem ItemsNarrow.erase (key : ItemKey) {m : OpenItems} {o : Std.ExtTreeMap Na
     · cases h
     · exact h, fun _ => Nat.le_refl _⟩
 
-theorem ItemsNarrow.keyed {after before : OpenItems} {o o' : Std.ExtTreeMap Nat Nat compare}
+theorem ItemsNarrow.keyed {after before : OpenItems} {o o' : Std.ExtTreeMap OccurrenceId Nat compare}
     (narrow : ItemsNarrow after before o o') (keyed : KeyedBy before) : KeyedBy after :=
   fun k item h => keyed k item (narrow.sub k item h)
 
-theorem ItemsNarrow.subset {after before : OpenItems} {o o' : Std.ExtTreeMap Nat Nat compare}
+theorem ItemsNarrow.subset {after before : OpenItems} {o o' : Std.ExtTreeMap OccurrenceId Nat compare}
     (narrow : ItemsNarrow after before o o') : itemList after ⊆ itemList before := by
   intro item member
   obtain ⟨k, h⟩ := mem_itemList.mp member
   exact mem_itemList.mpr ⟨k, narrow.sub k item h⟩
 
-theorem ItemsNarrow.trans {a b c : OpenItems} {oa ob oc : Std.ExtTreeMap Nat Nat compare}
+theorem ItemsNarrow.trans {a b c : OpenItems} {oa ob oc : Std.ExtTreeMap OccurrenceId Nat compare}
     (one : ItemsNarrow b a ob oa) (two : ItemsNarrow c b oc ob) : ItemsNarrow c a oc oa :=
   ⟨fun k item h => one.sub k item (two.sub k item h), fun o => Nat.le_trans (one.ordinals o) (two.ordinals o)⟩
 
@@ -230,7 +230,7 @@ theorem getD_filter_keep {α : Type} [Ord α] [Std.TransOrd α] [Std.LawfulEqOrd
   rw [Std.ExtTreeMap.getD_filter', Std.ExtTreeMap.getD_eq_getD_getElem?]
   cases m[k]? <;> simp [Option.filter, keepK]
 
-theorem filter_erase_comm (m : Std.ExtTreeMap Nat Nat compare) (f : Nat → Nat → Bool) (id : Nat) :
+theorem filter_erase_comm (m : Std.ExtTreeMap OccurrenceId Nat compare) (f : OccurrenceId → Nat → Bool) (id : OccurrenceId) :
     (m.erase id).filter f = (m.filter f).erase id := by
   apply Std.ExtTreeMap.ext_getElem?
   intro k
@@ -259,18 +259,18 @@ theorem keyedBy_map {m : OpenItems} (keyed : KeyedBy m) {g : OpenItem → OpenIt
   obtain ⟨old, h, rfl⟩ := h
   rw [ids]; exact keyed k old h
 
-theorem getD_bump (m : Std.ExtTreeMap Nat Nat compare) (o k : Nat) :
+theorem getD_bump (m : Std.ExtTreeMap OccurrenceId Nat compare) (o k : OccurrenceId) :
     m.getD k 0 ≤ (m.insert o (m.getD o 0 + 1)).getD k 0 := by
   rw [Std.ExtTreeMap.getD_insert]
   split
   · rename_i e; have := Std.LawfulEqCmp.eq_of_compare e; subst this; omega
   · exact Nat.le_refl _
 
-theorem getD_bump_self (m : Std.ExtTreeMap Nat Nat compare) (o : Nat) :
+theorem getD_bump_self (m : Std.ExtTreeMap OccurrenceId Nat compare) (o : OccurrenceId) :
     (m.insert o (m.getD o 0 + 1)).getD o 0 = m.getD o 0 + 1 := by
   simp
 
-theorem getD_erase_ne {m : Std.ExtTreeMap Nat Nat compare} {id k d : Nat} (other : k ≠ id) :
+theorem getD_erase_ne {m : Std.ExtTreeMap OccurrenceId Nat compare} {id k : OccurrenceId} {d : Nat} (other : k ≠ id) :
     (m.erase id).getD k d = m.getD k d := by
   rw [Std.ExtTreeMap.getD_erase]
   split

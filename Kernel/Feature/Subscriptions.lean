@@ -144,7 +144,7 @@ def waitKind (ctx : Ctx) (arming : Arming) (subscription : Subscription) : Excep
 /-- Open a subscription's item and, when `evaluate`, evaluate it once if Conditional; the item comes back when that
 evaluation fired it. -/
 def subscribe (ctx : Ctx) (arming : Arming) (state : State) (subscription : Subscription) (element : ElementId)
-    (scope : ScopeOccurrenceId) (host : Option Nat) (passive : Bool) (evaluate : Bool := true) :
+    (scope : ScopeOccurrenceId) (host : Option OccurrenceId) (passive : Bool) (evaluate : Bool := true) :
     Except Failure (State × Option OpenItem) := do
   match ← waitKind ctx arming subscription with
   | none => pure (state, none)
@@ -167,14 +167,14 @@ activation arms: a Sub-Process's own scope (`Scopes.enter`) or a Call's called r
 boundaries and those starts are enabled together (BPMN 2.0.2 §13.5.3, §13.5.4), so `armScope` evaluates them as one
 evaluation, and their contests join (SUBSCRIPTIONS-SPEC "Conditions", CIB-LIM-0053). A Multi-Instance body opens no
 such scope: its instances' scopes are armed when the instances begin, in later micro-steps. -/
-def enabledWith (ctx : Ctx) (state : State) (host : Nat) : Option ScopeOccurrenceId :=
+def enabledWith (ctx : Ctx) (state : State) (host : OccurrenceId) : Option ScopeOccurrenceId :=
   (state.scopes.find? fun opened => opened.occurrence == some host &&
     (state.calledRoot opened.id || ((opened.element.bind ctx.program.element?).bind (·.scope?)).isSome)).map (·.id)
 
 /-- `Signal.arm`: open the boundaries of `element`, attached to `host`, in the host's scope `scope`. A host whose
 boundaries are enabled with the starts of a scope it opened leaves their Conditional evaluation to that scope's
 arming (`enabledWith`). -/
-def arm (ctx : Ctx) (host : Nat) (element : ElementId) (scope : ScopeOccurrenceId) (state : State) : Outcome :=
+def arm (ctx : Ctx) (host : OccurrenceId) (element : ElementId) (scope : ScopeOccurrenceId) (state : State) : Outcome :=
   match (ctx.program.element? element).bind (·.envelope?) with
   | none => .error (.semanticFailure .invariant "arm-without-envelope")
   | some envelope =>
@@ -203,7 +203,7 @@ def enabledBoundaries (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) : 
 /-- `Signal.armGateway`: open one subscription per arm, the catch Events the gateway's outgoing flows reach, attached
 to the gateway's occurrence. A Receive Task arm would need the work feature's wait and is refused
 (`gateway.eventBased.receiveArm` at admission). -/
-def armGateway (ctx : Ctx) (occurrence : Nat) (gateway : ElementId) (scope : ScopeOccurrenceId) (state : State) :
+def armGateway (ctx : Ctx) (occurrence : OccurrenceId) (gateway : ElementId) (scope : ScopeOccurrenceId) (state : State) :
     Outcome :=
   match (ctx.program.element? gateway).bind (·.gateway?) with
   | none => .error (.semanticFailure .invariant "arm-gateway-without-gateway")
@@ -326,7 +326,7 @@ identity, a cycle Timer opens its next occurrence (`Timer.successor`: one period
 deadline it fired at, never after the firing's own time) keeping its attachment, until its count is spent, and any
 other Timer closes. The result is the reservation the firing may begin, `none` when the item stays open, whose
 identity then remains the subscription's. -/
-def afterFiring (state : State) (item : OpenItem) : State × Option Nat :=
+def afterFiring (state : State) (item : OpenItem) : State × Option OccurrenceId :=
   let view := item.kind.view
   match view.deadlineMs, view.recurrence with
   | some deadlineMs, some recurrence =>

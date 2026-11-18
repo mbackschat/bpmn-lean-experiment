@@ -4,7 +4,7 @@
  * layer, above `state.ts`, whose callers import it directly.
  */
 import {
-  closeOwnItems, disarm, idle, keyOf, occurrenceOf, type Occurrence, type State,
+  closeOwnItems, disarm, idle, keyOf, type OccurrenceId, occurrenceOf, type Occurrence, type State,
 } from "../state.js";
 import { subtree } from "./tree.js";
 import { Terminal } from "./journal.js";
@@ -22,10 +22,11 @@ function recordCancelled(state: State, occurrences: readonly Occurrence[]): Stat
 
 /**
  * Remove every token, item, occurrence, slot entry, variable set and child scope occurrence inside `scope`, with the
- * ordinal counters of the removed scope occurrences, keeping `scope` itself and the occurrences `keep` names. Each begun occurrence is journalled cancelled, deepest scope first,
- * then by id; `Hooks.cancelled` tells the owning features afterwards.
+ * ordinal counters of the removed scope occurrences and occurrences, keeping `scope` itself and the occurrences `keep`
+ * names. Each begun occurrence is journalled cancelled, deepest scope first, then in the order the state holds them;
+ * `Hooks.cancelled` tells the owning features afterwards.
  */
-export function clearInside(state: State, scope: ScopeOccurrenceId, keep: readonly number[] = []): State {
+export function clearInside(state: State, scope: ScopeOccurrenceId, keep: readonly OccurrenceId[] = []): State {
   const inside = subtree(state, scope);
   const nested = inside.filter((id) => id !== scope);
   const removed = [...inside].reverse().flatMap((current) =>
@@ -40,6 +41,7 @@ export function clearInside(state: State, scope: ScopeOccurrenceId, keep: readon
       !inside.includes(occurrence.scope) || keep.includes(occurrence.id)),
     scopes: journalled.scopes.filter((candidate) => !nested.includes(candidate.id)),
     scopeOrdinals: journalled.scopeOrdinals.filter(([slot]) => !nested.includes(slot.parent)),
+    occurrenceOrdinals: journalled.occurrenceOrdinals.filter(([slot]) => !nested.includes(slot.parent)),
     variables: journalled.variables.filter((entry) => !nested.includes(entry.scope)),
     slots: featureSlotsClear(journalled.slots, inside, nested),
   };
@@ -56,6 +58,7 @@ export function leaveScope(state: State, scope: ScopeOccurrenceId): State {
     ...cleared,
     scopes: cleared.scopes.filter((candidate) => candidate.id !== scope),
     scopeOrdinals: cleared.scopeOrdinals.filter(([slot]) => slot.parent !== scope),
+    occurrenceOrdinals: cleared.occurrenceOrdinals.filter(([slot]) => slot.parent !== scope),
     variables: cleared.variables.filter((entry) => entry.scope !== scope),
     slots: {
       ...cleared.slots,
@@ -71,7 +74,7 @@ export function leaveScope(state: State, scope: ScopeOccurrenceId): State {
  * Remove the occurrence record `id` and the scope occurrences it owns, if any. The record goes first, so that leaving
  * a scope does not cancel the occurrence that owns it.
  */
-export function removeOccurrence(state: State, id: number): State {
+export function removeOccurrence(state: State, id: OccurrenceId): State {
   const removed: State = {
     ...state,
     occurrences: state.occurrences.filter((occurrence) => occurrence.id !== id),
@@ -85,7 +88,7 @@ export function removeOccurrence(state: State, id: number): State {
  * Cancel the occurrence `id` wherever it stands: its items and subscriptions go, the scope occurrence it owns is left,
  * and it is journalled cancelled.
  */
-export function cancelOccurrence(state: State, id: number): State {
+export function cancelOccurrence(state: State, id: OccurrenceId): State {
   const occurrence = occurrenceOf(state, id);
   if (occurrence === null) return state;
   return recordCancelled(removeOccurrence(withdrawOccurrence(state, id), id), [occurrence]);
@@ -102,7 +105,7 @@ export function withdrawInside(state: State, scope: ScopeOccurrenceId): State {
  * reservations, and those inside the scope occurrences it owns. A firing that interrupts withdraws them at once, while
  * the cancellation itself is still queued, so that no firing queued before it finds them open.
  */
-export function withdrawOccurrence(state: State, id: number): State {
+export function withdrawOccurrence(state: State, id: OccurrenceId): State {
   const closed = disarm(closeOwnItems(state, id), id);
   return closed.scopes.filter((scope) => scope.occurrence === id).reduce((current, scope) => withdrawInside(current, scope.id), closed);
 }
@@ -111,6 +114,6 @@ export function withdrawOccurrence(state: State, id: number): State {
  * Whether `scope` would be idle once the occurrence `id`, its items, what is attached to it and the scope occurrence it
  * owns were gone: nothing else remains there.
  */
-export function idleWithout(state: State, scope: ScopeOccurrenceId, id: number): boolean {
+export function idleWithout(state: State, scope: ScopeOccurrenceId, id: OccurrenceId): boolean {
   return idle(removeOccurrence(disarm(closeOwnItems(state, id), id), id), scope);
 }

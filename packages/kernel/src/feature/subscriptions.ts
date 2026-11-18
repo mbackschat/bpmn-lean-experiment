@@ -102,7 +102,7 @@ import {
   visible,
   SemanticCause,
   semanticFailure,
-  itemsByPosition,
+  itemsByPosition, type OccurrenceId,
 } from "../state.js";
 import {
   EvaluationTag, admitValues, boundaryFire, deliveryTriggerChannel, evalContext,
@@ -354,7 +354,7 @@ function subscribe(
   subscription: Subscription,
   element: ElementId,
   scope: ScopeOccurrenceId,
-  host: number | null,
+  host: OccurrenceId | null,
   passive: boolean,
   evaluate = true,
 ): Result<readonly [State, OpenItem | null]> {
@@ -393,7 +393,7 @@ function subscribeAll<T>(
  * activation arms, transcribed from `Kernel.Feature.Subscriptions.enabledWith`: a Sub-Process's own scope or a Call's
  * called root, whose arming evaluates the host's boundaries with those starts as one evaluation.
  */
-function enabledWith(ctx: Ctx, state: State, host: number): ScopeOccurrenceId | null {
+function enabledWith(ctx: Ctx, state: State, host: OccurrenceId): ScopeOccurrenceId | null {
   const opened = state.scopes.find((entry) => {
     if (entry.occurrence !== host) return false;
     const declared = entry.element === null ? null : programElement(ctx.program, entry.element);
@@ -407,7 +407,7 @@ function enabledWith(ctx: Ctx, state: State, host: number): ScopeOccurrenceId | 
  * boundaries are enabled with the starts of a scope it opened leaves their Conditional evaluation to that scope's
  * arming (`enabledWith`).
  */
-export function arm(ctx: Ctx, host: number, element: ElementId, scope: ScopeOccurrenceId, state: State): Outcome {
+export function arm(ctx: Ctx, host: OccurrenceId, element: ElementId, scope: ScopeOccurrenceId, state: State): Outcome {
   const found = programElement(ctx.program, element);
   const envelope = found === null ? null : elementEnvelope(found);
   if (envelope === null) return semanticFailure(SemanticCause.Invariant, "arm-without-envelope");
@@ -445,7 +445,7 @@ function enabledBoundaries(ctx: Ctx, scope: ScopeOccurrenceId, state: State): Re
  * the gateway's occurrence. A Receive Task arm would need the work feature's wait and is refused
  * (`gateway.eventBased.receiveArm` at admission).
  */
-export function armGateway(ctx: Ctx, occurrence: number, gateway: ElementId, scope: ScopeOccurrenceId, state: State): Outcome {
+export function armGateway(ctx: Ctx, occurrence: OccurrenceId, gateway: ElementId, scope: ScopeOccurrenceId, state: State): Outcome {
   const found = programElement(ctx.program, gateway);
   const payload = found === null ? null : elementGateway(found);
   if (payload === null) return semanticFailure(SemanticCause.Invariant, "arm-gateway-without-gateway");
@@ -627,7 +627,7 @@ function admitFiring(hooks: SubscriptionsHooks, ctx: Ctx, subscription: Subscrip
  * any other Timer closes. The result is the reservation the firing may begin, `null` when the item stays open, whose
  * identity then remains the subscription's.
  */
-function afterFiring(state: State, item: OpenItem): readonly [State, number | null] {
+function afterFiring(state: State, item: OpenItem): readonly [State, OccurrenceId | null] {
   const view = openKindView(item.kind);
   if (view.deadlineMs === null) return [state, null];
   const closed = closeItem(state, item.id);

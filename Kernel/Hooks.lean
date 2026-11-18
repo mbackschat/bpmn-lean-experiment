@@ -311,7 +311,7 @@ def subscription? (ctx : Ctx) (id : ElementId) : Option Subscription :=
 /-- The one way a boundary fires: an interrupting boundary first cancels the occurrence `host` it hangs on, if any; then
 the boundary's occurrence, the reservation `reserved` or a fresh one, begins and leaves on its flows in `scope`
 (BPMN 2.0.2 §13.5.3, §10.5.6). -/
-def Boundary.fire (boundary : Boundary) (host reserved : Option Nat) (scope : ScopeOccurrenceId)
+def Boundary.fire (boundary : Boundary) (host reserved : Option OccurrenceId) (scope : ScopeOccurrenceId)
     (writes : List (String × Value)) (state : State) : State :=
   let interrupted := match boundary.interrupting, host with
     | true, some owner => state.signal (.cancel owner)
@@ -325,7 +325,7 @@ def Boundary.fire (boundary : Boundary) (host reserved : Option Nat) (scope : Sc
 /-- What a Scope begins with besides its evaluated inputs. `inner` is the reservation of an Event Sub-Process's start
 Event, when a subscription triggered it. -/
 structure ScopeEntry where
-  inner : Option Nat := none
+  inner : Option OccurrenceId := none
   deriving Repr
 
 /-- The default of every lifecycle hook: the mechanism is not registered, a wiring defect `Registry.hooks` excludes. -/
@@ -381,15 +381,15 @@ structure Hooks where
   starts, Event-Based Gateway arms). -/
   trigger : Ctx → OpenItem → Fired → State → Outcome := fun _ _ _ => refuse "trigger"
   /-- Subscriptions: `Signal.arm`. -/
-  arm : Ctx → Nat → ElementId → ScopeOccurrenceId → State → Outcome := fun _ _ _ _ => refuse "arm"
+  arm : Ctx → OccurrenceId → ElementId → ScopeOccurrenceId → State → Outcome := fun _ _ _ _ => refuse "arm"
   /-- Subscriptions: `Signal.armScope`. -/
   armScope : Ctx → ScopeOccurrenceId → State → Outcome := fun _ _ => refuse "armScope"
   /-- Subscriptions: `Signal.armGateway`. -/
-  armGateway : Ctx → Nat → ElementId → ScopeOccurrenceId → State → Outcome := fun _ _ _ _ => refuse "armGateway"
+  armGateway : Ctx → OccurrenceId → ElementId → ScopeOccurrenceId → State → Outcome := fun _ _ _ _ => refuse "armGateway"
   /-- Propagation: `Signal.raise`. -/
   raise : Ctx → Raised → Origin → State → Outcome := fun _ _ _ => refuse "raise"
   /-- Compensation: `Signal.compensate`. -/
-  compensate : Ctx → ScopeOccurrenceId → Option ElementId → OccurrenceRef → Option Nat → Option Resume → State → Outcome :=
+  compensate : Ctx → ScopeOccurrenceId → Option ElementId → OccurrenceRef → Option OccurrenceId → Option Resume → State → Outcome :=
     fun _ _ _ _ _ _ => refuse "compensate"
   /-- Compensation: `Signal.compensationFailed`. -/
   failCompensation : Ctx → ScopeOccurrenceId → String → Option String → Origin → State → Outcome :=
@@ -411,7 +411,7 @@ structure Hooks where
   /-- Flow: leave through flows. -/
   outflow : Ctx → Occurrence → Leave → State → Outcome := fun _ _ _ => refuse "outflow"
   /-- MultiInstance: one instance of the body occurrence completed. -/
-  instanceCompleted : Ctx → Nat → Occurrence → List (String × Value) → State → Outcome :=
+  instanceCompleted : Ctx → OccurrenceId → Occurrence → List (String × Value) → State → Outcome :=
     fun _ _ _ _ => refuse "instanceCompleted"
   /-- Compensation: a handler of the run in that scope occurrence completed. -/
   handlerCompleted : Ctx → ScopeOccurrenceId → Occurrence → State → Outcome :=

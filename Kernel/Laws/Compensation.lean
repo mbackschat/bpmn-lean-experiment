@@ -73,7 +73,7 @@ theorem isRun_iff (scope : ScopeOccurrenceId) (trigger : OccurrenceRef) (run : C
 handler running (`TakesOut`, over the scope occurrences `visibleScopes` sees), kept every other record, added the run
 after the runs in progress and advanced it. -/
 theorem compensate_spec {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : Option ElementId}
-    {trigger : OccurrenceRef} {leave : Option Nat} {resume : Option Resume} {state after : State}
+    {trigger : OccurrenceRef} {leave : Option OccurrenceId} {resume : Option Resume} {state after : State}
     (ran : Feature.Compensation.compensate ctx scope activity trigger leave resume state = .ok after) :
     ∃ taken others,
       TakesOut (· ∈ Feature.Compensation.visibleScopes ctx state scope) activity state.slots.compensation
@@ -392,9 +392,9 @@ theorem completed_spec {ctx : Ctx} {occurrence : Occurrence} {state after : Stat
         ((Retains true handler grouped none ∧ after = Feature.Compensation.store state { state.slots.compensation with
             retained := outer ++ inner.map fun record => { record with scope := target } }) ∨
           ∃ record, Retains true handler grouped (some record) ∧ record.subject = occurrence.element ∧
-            record.scope = target ∧ record.completion = state.issue.2 ∧
+            record.scope = target ∧ record.completion = state.takePosition.2 ∧
             record.children = inner.flatMap Feature.Compensation.keptRecords ∧
-            after = Feature.Compensation.store state.issue.1 { state.slots.compensation with retained := outer ++ [record] }) := by
+            after = Feature.Compensation.store state.takePosition.1 { state.slots.compensation with retained := outer ++ [record] }) := by
   unfold Feature.Compensation.completed at ran
   split at ran
   · rename_i none
@@ -421,7 +421,7 @@ theorem completed_spec {ctx : Ctx} {occurrence : Occurrence} {state after : Stat
         cases ran
         exact .inl ⟨Retains.moved plain, rfl⟩
       · rename_i kept
-        rcases issued : state.issue with ⟨issuedState, completion⟩
+        rcases issued : state.takePosition with ⟨issuedState, completion⟩
         simp only [issued] at ran
         cases ran
         refine .inr ⟨?record, ?retains, ?subject, ?scope, ?completion, ?children, ?stored⟩
@@ -474,18 +474,18 @@ which were all issued before (`RunsOps.slotsIssued`); a nested group's run never
 stood, so the advancing run holds its earlier contexts still when it is stored. -/
 
 /-- What `Compensation.advance` keeps at `fuel` (`Advanced`). -/
-def AdvanceKeeps (inv : State → Prop) (settled : State → Nat → Prop) (ctx : Ctx) (fuel : Nat) : Prop :=
+def AdvanceKeeps (inv : State → Prop) (settled : State → OccurrenceId → Prop) (ctx : Ctx) (fuel : Nat) : Prop :=
   ∀ scope trigger state after, inv state → scope ∈ state.scopes.map (·.id) →
     Feature.Compensation.advance ctx scope trigger state fuel = .ok after → Advanced inv settled scope state after
 
 /-- What `Compensation.release` keeps at `fuel` of a context that stands. -/
-def ReleaseKeeps (inv : State → Prop) (settled : State → Nat → Prop) (ctx : Ctx) (fuel : Nat) : Prop :=
+def ReleaseKeeps (inv : State → Prop) (settled : State → OccurrenceId → Prop) (ctx : Ctx) (fuel : Nat) : Prop :=
   ∀ context state after, inv state → context ∈ state.scopes.map (·.id) →
     Feature.Compensation.release ctx context state fuel = .ok after → inv after ∧ Follows settled state after
 
 /-- What `Compensation.beginHandler` keeps at `fuel` in a scope occurrence that stands (`Begun`), of a record a run
 there holds pending. -/
-def BeginKeeps (inv : State → Prop) (settled : State → Nat → Prop) (ctx : Ctx) (fuel : Nat) : Prop :=
+def BeginKeeps (inv : State → Prop) (settled : State → OccurrenceId → Prop) (ctx : Ctx) (fuel : Nat) : Prop :=
   ∀ trigger scope state record after context, inv state → scope ∈ state.scopes.map (·.id) →
     (∃ run ∈ state.slots.compensation.runs, run.scope = scope ∧ record ∈ run.pending) →
     Feature.Compensation.beginHandler ctx trigger scope state record fuel = .ok (after, context) →
@@ -498,7 +498,7 @@ theorem filter_kept {scope : ScopeOccurrenceId} {trigger : OccurrenceRef} {runs 
   List.mem_filter.mpr ⟨member, by simp [Feature.Compensation.isRun, other]⟩
 
 /-- A group's nested run that ends releases its own context, which no run holds while the outer run's handlers begin. -/
-theorem Ended.group {inv : State → Prop} {settled : State → Nat → Prop} {ctx : Ctx} {fuel : Nat}
+theorem Ended.group {inv : State → Prop} {settled : State → OccurrenceId → Prop} {ctx : Ctx} {fuel : Nat}
     (releases : ReleaseKeeps inv settled ctx fuel) {state ended after : State} {scope : ScopeOccurrenceId}
     (done : Ended inv settled scope state ended) (stands : scope ∈ state.scopes.map (·.id))
     (ran : Feature.Compensation.release ctx scope ended fuel = .ok after) : Advanced inv settled scope state after := by
@@ -516,7 +516,7 @@ theorem Ended.group {inv : State → Prop} {settled : State → Nat → Prop} {c
       exact absurd (List.mem_map.mpr ⟨pair, running, beq_iff_eq.mp named⟩)
         (unheld owner (done.2.2.2.1 owner (List.mem_of_find?_eq_some found)))
 
-theorem runs_keep {inv : State → Prop} {settled : State → Nat → Prop} {program : Program} (ops : RunsOps program inv settled) (ctx : Ctx) :
+theorem runs_keep {inv : State → Prop} {settled : State → OccurrenceId → Prop} {program : Program} (ops : RunsOps program inv settled) (ctx : Ctx) :
     ∀ fuel, AdvanceKeeps inv settled ctx fuel ∧ ReleaseKeeps inv settled ctx fuel ∧ BeginKeeps inv settled ctx fuel
   | 0 => ⟨fun _ _ _ _ _ _ ran => by simp [Feature.Compensation.advance] at ran,
     fun _ _ _ _ _ ran => by simp [Feature.Compensation.release] at ran,
@@ -612,7 +612,7 @@ theorem runs_keep {inv : State → Prop} {settled : State → Nat → Prop} {pro
               obtain ⟨keptHolds, keptFollows, keptScopes, rest⟩ := kept
               obtain ⟨keptPlaced, keptRuns⟩ := rest
               refine ⟨(ops.store started.1 _ keptHolds ?fit ?contexts ?resumes ?stored).1, keptFollows.trans
-                (.same (ops.store started.1 _ keptHolds ?fit ?contexts ?resumes ?stored).2 rfl rfl rfl (.refl _)), fun _ =>
+                (.same (ops.store started.1 _ keptHolds ?fit ?contexts ?resumes ?stored).2 rfl (.refl _) rfl (.refl _)), fun _ =>
                 ⟨fun entry member =>
                 keptScopes entry member, fun other member stood differs =>
                   List.mem_append_left _ (filter_kept (keptRuns other member stood) differs)⟩⟩
@@ -702,7 +702,7 @@ theorem runs_keep {inv : State → Prop} {settled : State → Nat → Prop} {pro
             split <;> exact ⟨rfl, rfl, fun _ => id⟩)
         obtain ⟨kept', follows, -⟩ := advances owner.scope owner.trigger _ after stored.1 parentStands ran
         refine ⟨kept', Follows.trans ?_ follows⟩
-        exact ⟨Nat.le_of_eq issued.symm, fun entry member => .inl (kept entry member),
+        exact ⟨issued, fun entry member => .inl (kept entry member),
           fun id settled => stored.2 id (leftSettled id settled), leftBodies, leftGrows⟩
     · intro trigger scope state record after context holds stands provenance ran
       obtain ⟨owner, owned, own, pending⟩ := provenance
@@ -712,7 +712,7 @@ theorem runs_keep {inv : State → Prop} {settled : State → Nat → Prop} {pro
         fun element anchor => by
           obtain ⟨_, issuedNext, scopesEq, slotsEq⟩ := ops.entered state element scope record.snapshot
           obtain ⟨unissued, -, grows⟩ := ops.fresh state element scope record.snapshot holds stands
-          refine ⟨Nat.le_of_eq issuedNext.symm, fun entry member => ?_,
+          refine ⟨ops.enteredGrows holds stands record.snapshot, fun entry member => ?_,
             (ops.enter state element scope record.snapshot holds stands anchor).2,
             fun body member => by rw [slotsEq] at member; exact member, grows⟩
           rw [scopesEq] at member
@@ -776,7 +776,7 @@ theorem runs_keep {inv : State → Prop} {settled : State → Nat → Prop} {pro
             · rw [List.mem_singleton.mp new] at running
               simp at running
           obtain ⟨keepsScopes, keepsRuns⟩ := keeps (unheld _)
-          refine ⟨nestedHolds, entering.trans ((Follows.same (stored _ children).2 rfl rfl rfl (.refl _)).trans nestedFollows),
+          refine ⟨nestedHolds, entering.trans ((Follows.same (stored _ children).2 rfl (.refl _) rfl (.refl _)).trans nestedFollows),
             fun entry member => keepsScopes entry
               (by rw [Feature.Compensation.store, scopesEq]; exact List.mem_append_left _ member),
             ⟨unissued, nestedFollows.grows.issued issuedAfter⟩,

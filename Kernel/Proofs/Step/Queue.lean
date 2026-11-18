@@ -24,13 +24,13 @@ queued begin names and none a start Event's item of `program` waits on, an insta
 it fails, a compensation may end as it asks, and a raise names an origin it finds (`Laws.State.Raisable`) and a
 settled host. -/
 def Queueable (program : Program) (s : State) : Signal → Prop
-  | .arm host _ scope => host < s.nextIssue ∧ Laws.State.ScopeIssued s scope ∧
+  | .arm host _ scope => Laws.State.OccurrenceIssued s host ∧ Laws.State.ScopeIssued s scope ∧
     ∀ occurrence ∈ s.occurrences, occurrence.id = host → occurrence.begun = true ∧ occurrence.scope = scope
   | .armScope scope => Laws.State.ScopeIssued s scope
-  | .armGateway occurrence _ scope => occurrence < s.nextIssue ∧ Laws.State.ScopeIssued s scope ∧
+  | .armGateway occurrence _ scope => Laws.State.OccurrenceIssued s occurrence ∧ Laws.State.ScopeIssued s scope ∧
     ∀ found ∈ s.occurrences, found.id = occurrence → found.begun = true ∧ found.scope = scope
   | .begin request => Laws.State.names request = [] ∧ request.scope ∈ Laws.State.scopeIds s
-  | .complete id _ _ _ => (∀ request, Laws.State.Queued s request → id ∉ Laws.State.names request) ∧ id < s.nextIssue ∧
+  | .complete id _ _ _ => (∀ request, Laws.State.Queued s request → id ∉ Laws.State.names request) ∧ Laws.State.OccurrenceIssued s id ∧
     ∀ item ∈ itemList s.openItems, ((program.element? item.element).bind (·.start?)).isSome = true → item.id.occurrence ≠ id
   | .endInstance status failure => failure.isSome = true ↔ status = .failed
   | .compensate scope _ _ _ resume => ∀ next, resume = some next → Laws.State.Resumable s scope next
@@ -77,7 +77,7 @@ theorem queueRemove_wellFormed {state : State} (formed : Laws.State.WellFormed p
   queue_wellFormed formed trivial
 
 /-- No start Event's item waits on a settled occurrence: each holds an unbegun reservation, which stands. -/
-theorem settled_unstarted {state : State} (formed : Laws.State.WellFormed program state) {id : Nat}
+theorem settled_unstarted {state : State} (formed : Laws.State.WellFormed program state) {id : OccurrenceId}
     (settled : Laws.State.Settled state id) : ∀ item ∈ itemList state.openItems,
       ((program.element? item.element).bind (·.start?)).isSome = true → item.id.occurrence ≠ id := fun item inside start same => by
   obtain ⟨occurrence, present, named, _⟩ := formed.owned.itemOccurrences item inside
@@ -86,7 +86,7 @@ theorem settled_unstarted {state : State} (formed : Laws.State.WellFormed progra
   cases unbegun
 
 /-- A settled occurrence's completion, queued, keeps `WellFormed`. -/
-theorem settled_wellFormed {state : State} (formed : Laws.State.WellFormed program state) {id : Nat}
+theorem settled_wellFormed {state : State} (formed : Laws.State.WellFormed program state) {id : OccurrenceId}
     (settled : Laws.State.Settled state id) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule) :
     Laws.State.WellFormed program (state.signal (.complete id leave writes rule)) :=
   queue_wellFormed formed ⟨settled.2.2, settled.1, settled_unstarted formed settled⟩
@@ -133,27 +133,21 @@ theorem bareBegin_wellFormed {state : State} (formed : Laws.State.WellFormed pro
     Laws.State.WellFormed program (state.signal (.begin request)) :=
   queue_wellFormed formed ⟨bare, stands⟩
 
-/-- A raise from a begun occurrence that stands, at its element, scope occurrence and activation, hosted, if at all, by
-the occurrence itself, queued, keeps `WellFormed`: the occurrence is the settled host, and an Event's occurrences of one
-scope occurrence and activation share a key (`Laws.State.EventRoles`), so it is the only one the origin names. -/
+/-- A raise from a begun occurrence that stands, at its element, scope occurrence and activation, thrown by and hosted,
+if at all, by the occurrence itself, queued, keeps `WellFormed`: the occurrence is the settled host, and the origin names
+it by its key, which it issued and no other occurrence holds. -/
 theorem raiseFrom_wellFormed {state : State} (formed : Laws.State.WellFormed program state) {occurrence : Occurrence}
-    (present : occurrence ∈ state.occurrences) (begun : occurrence.begun = true) (event : Raised) {host : Option Nat}
+    (present : occurrence ∈ state.occurrences) (begun : occurrence.begun = true) (event : Raised) {host : Option OccurrenceId}
     (hosted : ∀ id, host = some id → id = occurrence.id) (patch : List (String × Value)) :
     Laws.State.WellFormed program (state.signal (.raise event
-      { element := occurrence.element, scope := occurrence.scope, activation := occurrence.activation, host, patch })) := by
-  refine queue_wellFormed formed ⟨fun isEvent => ?_, fun id same => ?_⟩
-  · have role := formed.roles occurrence present isEvent
-    obtain ⟨entry, inside, entryNamed⟩ := List.mem_map.mp (formed.owned.occurrenceScopes occurrence present)
-    refine ⟨entryNamed ▸ formed.issued.scopes entry inside, fun _ => ?_, fun other inside otherElement otherScope
-      otherActivation => ?_⟩
-    · have counted := formed.occurrencesCounted occurrence present
-      simp only [Laws.State.key, role] at counted
-      exact counted
-    · have otherRole := formed.roles other inside (by rw [otherElement]; exact isEvent)
-      have same : Laws.State.key state other = Laws.State.key state occurrence := by
-        simp only [Laws.State.key, otherElement, otherScope, otherActivation, otherRole, role]
-      rw [Laws.State.nodup_map_eq formed.distinct.keys inside present same]
-      exact begun
+      { element := occurrence.element, scope := occurrence.scope, activation := occurrence.activation,
+        thrower := occurrence.id, host, patch })) := by
+  refine queue_wellFormed formed ⟨fun _ => ?_, fun id same => ?_⟩
+  · obtain ⟨entry, inside, entryNamed⟩ := List.mem_map.mp (formed.owned.occurrenceScopes occurrence present)
+    refine ⟨entryNamed ▸ formed.issued.scopes entry inside, formed.issued.occurrences occurrence present,
+      fun other inside named => ?_⟩
+    rw [Laws.State.nodup_map_eq formed.distinct.occurrences inside present named]
+    exact begun
   · rw [hosted id same]
     exact Laws.State.begun_settled formed present begun
 
@@ -162,8 +156,8 @@ occurrence has begun (`Laws.State.Worked`), and the item lies in its occurrence'
 theorem effectRaise_wellFormed {state : State} (formed : Laws.State.WellFormed program state) {item : OpenItem}
     (member : item ∈ itemList state.openItems) (effect : item.kind.view.effect.isSome = true) (event : Raised)
     (patch : List (String × Value)) : Laws.State.WellFormed program (state.signal (.raise event
-      { element := item.element, scope := item.scope, host := some item.id.occurrence, patch := patch,
-        activation := ((state.occurrence? item.id.occurrence).map (·.activation)).getD 0 })) := by
+      { element := item.element, scope := item.scope, thrower := item.id.occurrence, host := some item.id.occurrence,
+        patch := patch, activation := ((state.occurrence? item.id.occurrence).map (·.activation)).getD 0 })) := by
   obtain ⟨occurrence, present, named, placed⟩ := formed.owned.itemOccurrences item member
   have begun := formed.worked item member (fun waits => by rw [waits.1] at effect; cases effect) occurrence present named
   have activation : ((state.occurrence? item.id.occurrence).map (·.activation)).getD 0 = occurrence.activation := by
@@ -173,8 +167,8 @@ theorem effectRaise_wellFormed {state : State} (formed : Laws.State.WellFormed p
       obtain ⟨inside, same⟩ := Laws.State.occurrence?_some found
       rw [Laws.State.nodup_map_eq formed.distinct.occurrences inside present (same.trans named.symm)]
       rfl
-  rw [activation, ← placed.1, ← placed.2]
-  exact raiseFrom_wellFormed formed present begun event (fun _ same => by cases same; exact named.symm) patch
+  rw [activation, ← placed.1, ← placed.2, ← named]
+  exact raiseFrom_wellFormed formed present begun event (fun _ same => (Option.some.inj same).symm) patch
 
 /-- Holding an occurrence keeps `WellFormed`: no clause reads the held occurrences. -/
 theorem hold_wellFormed {state : State} (formed : Laws.State.WellFormed program state) (held : Held) :

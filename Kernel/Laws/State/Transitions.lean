@@ -20,12 +20,12 @@ namespace Kernel.Laws.State
 
 open Kernel
 
-/-- Identities are never reused: the counter never decreases, and an identifier present after a transition but not
-before was issued at or above the counter's value before it
+/-- Identities are never reused: every key issued stays issued, and an identifier present after a transition but not
+before was never issued before it
 ([scopes, SRE-FRESH-01](../../../docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md#concurrent-activations-and-re-entry)). -/
 structure IssuesFresh (before after : State) : Prop where
-  monotone : before.nextIssue ≤ after.nextIssue
-  occurrences : ∀ id ∈ occurrenceIds after, id ∉ occurrenceIds before → before.nextIssue ≤ id
+  monotone : OccurrenceGrows before after
+  occurrences : ∀ id ∈ occurrenceIds after, id ∉ occurrenceIds before → ¬ OccurrenceIssued before id
   /-- A new item's ordinal is at or above its occurrence's counter before (KD1). -/
   items : ∀ item ∈ itemList after.openItems, item.id ∉ (itemList before.openItems).map (·.id) →
     before.itemOrdinals.getD item.id.occurrence 0 ≤ item.id.ordinal
@@ -47,7 +47,7 @@ it with its contents is a rejected account, a terminated scope completes through
 interrupted parent's context is preserved for the handler. Everything outside stays unchanged, a sibling Call and the
 caller's committed variables included; nothing is created and no identifier is issued. Feature slot entries are each
 feature's own laws. -/
-structure ClearsInside (before after : State) (scope : ScopeOccurrenceId) (keep : List Nat) : Prop where
+structure ClearsInside (before after : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) : Prop where
   scopeStays : ∀ cleared ∈ before.scopes, cleared.id = scope → cleared ∈ after.scopes
   scopesOutside : ∀ other ∈ before.scopes, ¬ StrictlyWithin before other.id scope → other ∈ after.scopes
   occurrencesOutside : ∀ occurrence ∈ before.occurrences, ¬ Within before occurrence.scope scope →
@@ -68,7 +68,7 @@ structure ClearsInside (before after : State) (scope : ScopeOccurrenceId) (keep 
   noNewOccurrences : ∀ occurrence ∈ after.occurrences, occurrence ∈ before.occurrences
   noNewItems : ∀ item ∈ itemList after.openItems, item ∈ itemList before.openItems
   noNewVariables : ∀ variables ∈ after.variables, variables ∈ before.variables
-  noIssue : after.nextIssue = before.nextIssue
+  noIssue : ∀ x ∈ scopeIds after, ∀ element, occurrenceCount after x element = occurrenceCount before x element
   instanceKept : after.instanceId = before.instanceId
 
 /-- A transition queued exactly the signals `new` after those already queued, and removed none: what a hook statement
@@ -149,7 +149,7 @@ theorem sample_clears (kind : OpenKind) : ClearsInside (sample kind) (cleared ki
   noNewOccurrences := by simp [cleared, sample]
   noNewItems := by simp [cleared, sample]
   noNewVariables := fun variables member => by simpa [cleared] using member
-  noIssue := rfl
+  noIssue := fun _ _ _ => rfl
   instanceKept := rfl
 
 /-- Keeping the cleared scope's waiting occurrence breaks `ClearsInside`, so the law demands the removal. -/
@@ -157,16 +157,20 @@ theorem survivor_rejected (kind : OpenKind) : ¬ ClearsInside (sample kind) (sam
   have := clears.occurrencesInside innerTask (by simp [sample]) (.refl _)
   simp at this
 
-/-- A Terminate End occurrence 8 in scope 2 clears it keeping itself, as `Propagation.arriveThrow` does. -/
-def terminateEnd : Occurrence := { id := 8, element := ⟨"End"⟩, scope := subScope, activation := 1 }
+/-- A Terminate End occurrence `endKey` in `Sub#0` clears it keeping itself, as `Propagation.arriveThrow` does. -/
+@[simp] def endKey : OccurrenceId := { scope := subScope, element := ⟨"End"⟩, ordinal := 0 }
+
+def terminateEnd : Occurrence := { id := endKey, element := ⟨"End"⟩, scope := subScope, activation := 1 }
 
 def terminating (kind : OpenKind) : State :=
-  { sample kind with occurrences := [subProcess, innerTask, outerTask, terminateEnd], nextIssue := 9 }
+  { sample kind with
+    occurrences := [subProcess, innerTask, outerTask, terminateEnd]
+    occurrenceOrdinals := sampleCounters.insert { parent := subScope, element := ⟨"End"⟩ } 1 }
 
 def terminated (kind : OpenKind) : State :=
   { terminating kind with occurrences := [subProcess, outerTask, terminateEnd], openItems := ofItems [outerItem kind] }
 
-theorem terminate_clears (kind : OpenKind) : ClearsInside (terminating kind) (terminated kind) subScope [8] where
+theorem terminate_clears (kind : OpenKind) : ClearsInside (terminating kind) (terminated kind) subScope [endKey] where
   scopeStays := by simp [terminating, terminated, sample]
   scopesOutside := by simp [terminating, terminated, sample]
   occurrencesOutside := by
@@ -209,20 +213,21 @@ theorem terminate_clears (kind : OpenKind) : ClearsInside (terminating kind) (te
   noNewOccurrences := by simp [terminated, terminating]
   noNewItems := by simp [terminated, terminating, sample]
   noNewVariables := fun variables member => by simpa [terminated, terminating] using member
-  noIssue := rfl
+  noIssue := fun _ _ _ => rfl
   instanceKept := rfl
 
 theorem sample_issues_fresh (kind : OpenKind) : IssuesFresh (sample kind) (cleared kind) where
-  monotone := Nat.le_refl _
+  monotone := .refl _
   occurrences := by simp [occurrenceIds, cleared, sample, subProcess, innerTask, outerTask]
   items := by simp [cleared, sample, innerItem, outerItem]
   scopes := by simp [scopeIds, cleared, sample]
 
-/-- An identifier reappearing below the counter breaks `IssuesFresh`: occurrence 3 returns after scope 2 was cleared. -/
+/-- An identifier issued before reappearing breaks `IssuesFresh`: `innerKey` returns after `Sub#0` was cleared. -/
 theorem reuse_rejected (kind : OpenKind) : ¬ IssuesFresh (cleared kind) (sample kind) := fun fresh => by
-  have := fresh.occurrences 3 (by simp [occurrenceIds, sample, subProcess, innerTask, outerTask])
-    (by simp [occurrenceIds, cleared, subProcess, outerTask])
-  simp [cleared, sample] at this
+  refine fresh.occurrences innerKey (by simp [occurrenceIds, sample, subProcess, innerTask, outerTask])
+    (by simp [occurrenceIds, cleared, subProcess, outerTask]) ⟨?_, fun _ => ?_⟩
+  · exact (sample_historic kind : Historic (cleared kind)).issued_key (by simp [sample, childScope])
+  · simp [occurrenceCount, cleared, sample, sampleCounters]
 
 theorem counts_grow (kind : OpenKind) : CountsGrow (sample kind) (sample kind) := by
   intro count member
@@ -242,7 +247,7 @@ theorem dropped_signal_rejected (kind : OpenKind) :
     ¬ Queues { sample kind with signals := [.armScope processRoot] } (sample kind) [] := by
   simp [Queues, sample]
 
-/-- Cancelling the begun occurrence 3 with its end fact is a `CancelsWithEnds` transition; a cancelled fact without
+/-- Cancelling the begun occurrence `innerKey` with its end fact is a `CancelsWithEnds` transition; a cancelled fact without
 its end is not. -/
 theorem cancels_with_end (kind : OpenKind) :
     CancelsWithEnds (sample kind)

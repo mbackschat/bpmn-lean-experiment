@@ -297,14 +297,17 @@ theorem ownersPlaced_of {program : Program} {s : State} (formed : WellFormed pro
 
 /-! ### The clauses reject
 
-A Call `CallIt`'s occurrence 1 in the process root and called roots of ordinals 2 and 3 below it: each clause rejects
+A Call `CallIt`'s first occurrence in the process root and called roots of ordinals 2 and 3 below it: each clause rejects
 a state the others accept. -/
 
 /-- The process root of the witnesses. -/
 def witnessRoot : ScopeOccurrence := { id := ⟨[]⟩, element := none }
 
+/-- The key of `CallIt`'s first occurrence in the process root. -/
+def callItKey : OccurrenceId := { scope := ⟨[]⟩, element := ⟨"CallIt"⟩, ordinal := 0 }
+
 /-- A called root of the witnesses, the `ordinal`th of `CallIt` in the process root, owned by `owner`. -/
-def witnessCalled (ordinal : Nat) (owner : Option Nat) : ScopeOccurrence :=
+def witnessCalled (ordinal : Nat) (owner : Option OccurrenceId) : ScopeOccurrence :=
   { id := ⟨[{ element := ⟨"CallIt"⟩, ordinal }]⟩, element := some ⟨"CallIt"⟩, occurrence := owner
     calledInstance := some "I1-call" }
 
@@ -316,27 +319,27 @@ theorem unowned_root_rejected (program : Program) :
 /-- A called root owned by a Multi-Instance body breaks `Roled`: the body and its first instance share their element
 and activation, so the instance's invocation would name its root alike. -/
 theorem body_owner_rejected :
-    ¬ Roled { instanceId := "I1", scopes := [witnessRoot, witnessCalled 2 (some 1)]
-              occurrences := [{ id := 1, element := ⟨"CallIt"⟩, scope := ⟨[]⟩, activation := 1
+    ¬ Roled { instanceId := "I1", scopes := [witnessRoot, witnessCalled 2 (some callItKey)]
+              occurrences := [{ id := callItKey, element := ⟨"CallIt"⟩, scope := ⟨[]⟩, activation := 1
                                 role := .multiInstanceBody }] } := fun roled => by
-  have := roled (witnessCalled 2 (some 1)) (by simp) rfl _ (List.mem_singleton_self _) rfl
+  have := roled (witnessCalled 2 (some callItKey)) (by simp) rfl _ (List.mem_singleton_self _) rfl
   cases this
 
 /-- A called root owned by an occurrence of no Activity breaks `ActivityOwners`: the program holds no element. -/
 theorem nonActivity_owner_rejected (program : Program) :
     ¬ ActivityOwners { program with elements := [] }
-      { instanceId := "I1", scopes := [witnessRoot, witnessCalled 2 (some 1)]
-        occurrences := [{ id := 1, element := ⟨"CallIt"⟩, scope := ⟨[]⟩, activation := 1 }] } := fun owners => by
-  have activity := owners (witnessCalled 2 (some 1)) (by simp) rfl _ (List.mem_singleton_self _) rfl
+      { instanceId := "I1", scopes := [witnessRoot, witnessCalled 2 (some callItKey)]
+        occurrences := [{ id := callItKey, element := ⟨"CallIt"⟩, scope := ⟨[]⟩, activation := 1 }] } := fun owners => by
+  have activity := owners (witnessCalled 2 (some callItKey)) (by simp) rfl _ (List.mem_singleton_self _) rfl
   cases found : ({ program with elements := [] } : Program).element? ⟨"CallIt"⟩ with
   | none => simp [found] at activity
   | some element => simpa using Laws.IL.element?_mem found
 
 /-- One occurrence owning two called roots breaks `OwnersApart`. -/
 theorem twice_owned_rejected :
-    ¬ OwnersApart { instanceId := "I1", scopes := [witnessRoot, witnessCalled 2 (some 1), witnessCalled 3 (some 1)] } :=
+    ¬ OwnersApart { instanceId := "I1", scopes := [witnessRoot, witnessCalled 2 (some callItKey), witnessCalled 3 (some callItKey)] } :=
   fun apart => by
-    simpa [witnessCalled] using apart (witnessCalled 2 (some 1)) (by simp) (witnessCalled 3 (some 1)) (by simp) rfl rfl rfl
+    simpa [witnessCalled] using apart (witnessCalled 2 (some callItKey)) (by simp) (witnessCalled 3 (some callItKey)) (by simp) rfl rfl rfl
 
 /-- A committed start keeps the lane invariant. -/
 def CallsFormedAtStart (hooks : Hooks) : Prop :=
@@ -531,7 +534,7 @@ theorem CallsFormed.signal (kept : CallsFormed program s) (signal : Signal) : Ca
     (by rw [Laws.State.signal_eq])
 
 /-- Dropping an occurrence record keeps the lane invariant. -/
-theorem CallsFormed.withoutRecord (kept : CallsFormed program s) (id : Nat) :
+theorem CallsFormed.withoutRecord (kept : CallsFormed program s) (id : OccurrenceId) :
     CallsFormed program (Laws.State.withoutRecord s id) :=
   kept.same rfl (fun _ member => (List.mem_filter.mp member).1) rfl
 
@@ -547,7 +550,7 @@ theorem CallsFormed.left {scope : ScopeOccurrenceId} (formed : WellFormed under 
 
 /-- A clearing that keeps only occurrences lying in no scope occurrence strictly within the cleared one keeps the lane
 invariant. -/
-theorem CallsFormed.cleared {scope : ScopeOccurrenceId} {keep : List Nat} (formed : WellFormed under s)
+theorem CallsFormed.cleared {scope : ScopeOccurrenceId} {keep : List OccurrenceId} (formed : WellFormed under s)
     (cleared : Laws.State.Cleared s t scope keep)
     (kept : ∀ occurrence ∈ s.occurrences, occurrence.id ∈ keep → ¬ Laws.State.StrictlyWithin s occurrence.scope scope)
     (holds : CallsFormed program s) : CallsFormed program t :=
@@ -582,7 +585,7 @@ theorem instanceOf_grown {entry : ScopeOccurrence} (formed : WellFormed under s)
 
 /-- Entering a scope occurrence, which calls no instance, keeps the lane invariant. -/
 theorem CallsFormed.entered (formed : WellFormed under s) (holds : CallsFormed program s) (element : ElementId)
-    (parent : ScopeOccurrenceId) (locals : List (String × Value)) (owner : Option Nat) :
+    (parent : ScopeOccurrenceId) (locals : List (String × Value)) (owner : Option OccurrenceId) :
     CallsFormed program (s.enterScope element parent locals owner).1 := by
   have scopes := (Laws.State.enterScope_eq s element parent locals owner ▸ rfl :
     (s.enterScope element parent locals owner).1.scopes =
@@ -603,27 +606,27 @@ theorem CallsFormed.entered (formed : WellFormed under s) (holds : CallsFormed p
 
 /-- Reserving an occurrence keeps the lane invariant: the reservation's identity is fresh, so it owns no called root. -/
 theorem CallsFormed.reserved (formed : WellFormed under s) (holds : CallsFormed program s) (element : ElementId)
-    (scope : ScopeOccurrenceId) : CallsFormed program (s.reserve element scope).1 := by
+    {scope : ScopeOccurrenceId} (stands : scope ∈ Laws.State.scopeIds s) : CallsFormed program (s.reserve element scope).1 := by
   have reserves := Laws.State.reserve_reserves s element scope
   refine holds.carry (fun _ member _ => reserves.scopes ▸ member) fun root member _ call inside owned => ?_
   rw [reserves.occurrences] at inside
   rcases List.mem_append.mp inside with old | new
   · exact .same old (reserves.instances _)
-  · rw [List.mem_singleton.mp new, reserves.id] at owned
+  · rw [List.mem_singleton.mp new] at owned
     rw [reserves.scopes] at member
     obtain ⟨owner, present, named, _⟩ := formed.owned.scopeOwners root member _ owned
     have below := formed.issued.occurrences owner present
     rw [named] at below
-    exact absurd below (Nat.lt_irrefl _)
+    exact (reserves.fresh (by rw [reserves.placed]; exact stands) below).elim
 
 /-- Beginning an admitted request keeps the lane invariant: the begun occurrence owns no scope occurrence
 (`Laws.State.begin_unowned`). -/
 theorem CallsFormed.begun (formed : WellFormed under s) (holds : CallsFormed program s) (request : BeginRequest)
-    (role : ActivationRole) (sourceType : String)
+    (role : ActivationRole) (sourceType : String) (stands : request.scope ∈ Laws.State.scopeIds s)
     (admitted : ∀ id ∈ Laws.State.names request, Laws.State.Beginnable s request.scope id ∧ Laws.State.Unclaimed s id) :
     CallsFormed program (s.beginOccurrence request role sourceType).1 := by
   have begins := Laws.State.beginOccurrence_begins formed.activations request role sourceType
-  have unowned := Laws.State.begin_unowned formed request role sourceType admitted
+  have unowned := Laws.State.begin_unowned formed request role sourceType stands admitted
   refine holds.carry (fun _ member _ => begins.scopes ▸ member) fun root member _ call inside owned => ?_
   rw [begins.occurrences] at inside
   rcases List.mem_append.mp inside with old | new
@@ -717,10 +720,10 @@ theorem callsFormed_alongside (program : Program) : Alongside program (CallsForm
   armGateway _ occurrence header _ _ _ _ held := held.signal (.armGateway occurrence.id header.id occurrence.scope)
   raise _ raised origin _ _ _ held := held.signal (.raise raised origin)
   signalBegin _ request _ _ _ held := held.signal (.begin request)
-  issue _ held := held.same (by rw [Laws.State.issue_eq]) (by rw [Laws.State.issue_eq]; exact fun _ member => member)
-    (by rw [Laws.State.issue_eq])
+  takePosition _ held := held.same (by rw [Laws.State.takePosition_eq]) (by rw [Laws.State.takePosition_eq]; exact fun _ member => member)
+    (by rw [Laws.State.takePosition_eq])
   enterScope _ element parent locals owner formed _ _ held := held.entered formed element parent locals owner
-  reserve _ element scope formed _ _ _ held := held.reserved formed element scope
+  reserve _ element _ formed stands _ _ held := held.reserved formed element stands.mem
   leaveScope _ _ formed present _ held := held.left formed (Laws.State.leaveScope_left formed present)
   clearInside _ _ keep formed present kept held :=
     held.cleared formed (Laws.State.clearInside_cleared formed present keep) kept
@@ -745,7 +748,7 @@ theorem callsFormed_stores (program : Program) : StoresAlongside program (CallsF
 
 /-- The features' reservations, queued triggers and a Call's entry of its called root keep the lane invariant. -/
 theorem callsFormed_occursAlongside (program : Program) : OccursAlongside program (CallsFormed program) where
-  reserve _ element scope formed _ _ _ held := held.reserved formed element scope
+  reserve _ element _ formed stands _ _ held := held.reserved formed element stands.mem
   occur _ element scope leave writes rule _ _ _ held := held.signal (.occur element scope leave writes rule)
   compensate _ _ _ _ _ _ _ _ _ _ _ held := held.signal _
   throwCompensate _ _ _ _ _ _ _ _ _ _ held := held.signal _
@@ -759,7 +762,8 @@ theorem callsFormed_stepAlongside (program : Program) : StepAlongside program (C
   journal _ _ _ held _ _ := held.same rfl (fun _ member => member) rfl
   dequeue _ _ _ _ held := held.same rfl (fun _ member => member) rfl
   untoken _ _ _ _ held := held.same rfl (fun _ member => member) rfl
-  begin _ request role sourceType formed _ admitted _ _ held := held.begun formed request role sourceType admitted.2.1
+  begin _ request role sourceType formed stands admitted _ _ held :=
+    held.begun formed request role sourceType stands.mem admitted.2.1
   cancel _ _ formed held := (callsFormed_alongside program).toFrameAlongside.cancelOccurrence
     (fun _ id _ kept => kept.withoutRecord id) (fun _ _ _ kept => kept.same rfl (fun _ member => member) rfl) formed held
   runOrder _ _ held := held.same rfl (fun _ member => member) rfl

@@ -155,7 +155,8 @@ theorem cancelCompensatesFirst_of {hooks : Hooks} {propagation : Feature.Propaga
   · rw [registered.arriveThrow, Laws.Propagation.arriveThrow_cancel] at ran
     cases ran
     refine ⟨by simp only [Laws.State.signal_eq], Feature.Propagation.throwLeave payload,
-      { element := header.id, scope := occurrence.scope, activation := occurrence.activation }, ?_, rfl, rfl, rfl, rfl⟩
+      { element := header.id, scope := occurrence.scope, activation := occurrence.activation, thrower := occurrence.id }, ?_,
+      rfl, rfl, rfl, rfl⟩
     simp only [Queues, Laws.State.signal_eq, List.append_assoc]
   · rw [registered.raise] at ran
     obtain ⟨passed, steady, kept, taken⟩ := raise_cancel

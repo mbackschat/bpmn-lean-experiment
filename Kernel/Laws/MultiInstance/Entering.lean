@@ -18,7 +18,7 @@ namespace Kernel.Laws.MultiInstance
 
 open Kernel
 
-variable {inv : State → Prop} {settled : State → Nat → Prop}
+variable {inv : State → Prop} {settled : State → OccurrenceId → Prop}
 
 /-- A property of the members folded so far, which each step of a left fold over `whole` extends by its member, holds
 of the fold with all of `whole`. -/
@@ -36,7 +36,7 @@ theorem foldl_prefix {α β : Type} (P : List β → α → Prop) (f : α → β
 occurrence has settled, its scope occurrence, its instances' placement, the scope occurrences the queued begins name,
 each entered for the begin's element and calling no instance, and where its element lies: it is held, or its scope
 occurrence was entered for its element and calls no instance. -/
-def Entering (inv : State → Prop) (settled : State → Nat → Prop) (run : MultiInstanceRun) (state : State)
+def Entering (inv : State → Prop) (settled : State → OccurrenceId → Prop) (run : MultiInstanceRun) (state : State)
     (instances : List Iteration) (requests : List BeginRequest) : Prop :=
   inv state ∧ settled state run.occurrence ∧ run.scope ∈ Laws.State.scopeIds state ∧
     Laws.State.Placed state { run with instances } ∧
@@ -128,7 +128,7 @@ structure QueueKeeps (state queued : State) : Prop where
   occurrences : queued.occurrences = state.occurrences
   variables : queued.variables = state.variables
   slots : queued.slots = state.slots
-  nextIssue : queued.nextIssue = state.nextIssue
+  occurrenceOrdinals : queued.occurrenceOrdinals = state.occurrenceOrdinals
 
 /-- `value` lists `outputs` as an output collection does: as a List, or as a String List of their texts. -/
 def ListsOutputs (value : Value) (outputs : List Value) : Prop :=

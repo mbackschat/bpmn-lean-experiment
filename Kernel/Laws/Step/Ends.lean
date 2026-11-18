@@ -30,10 +30,10 @@ open Kernel.Laws.State (WellFormed key Counted CountsGrow occurrenceIds)
 while its completion's continuation runs: `b`'s begun occurrences keep their records and keys while held; the end
 facts are distinct and name no held occurrence and only issued activations; each begun occurrence of `b` no longer held
 has ended under its key in `b`, but `x`, which has not ended, under a key no held occurrence has. -/
-structure EndsKept (b : State) (x : Option (Nat × OccurrenceKey)) (s : State) : Prop where
-  below : ∀ o ∈ b.occurrences, o.id < b.nextIssue
+structure EndsKept (b : State) (x : Option (OccurrenceId × OccurrenceKey)) (s : State) : Prop where
+  below : ∀ o ∈ b.occurrences, Laws.State.OccurrenceIssued b o.id
   instanceId : s.instanceId = b.instanceId
-  issued : b.nextIssue ≤ s.nextIssue
+  issued : Laws.State.OccurrenceGrows b s
   records : ∀ o ∈ b.occurrences, o.begun = true → ∀ o' ∈ s.occurrences, o'.id = o.id → o' = o
   keys : ∀ o ∈ b.occurrences, o.begun = true → o ∈ s.occurrences → key s o = key b o
   nodup : (endKeys s).Nodup
@@ -41,11 +41,11 @@ structure EndsKept (b : State) (x : Option (Nat × OccurrenceKey)) (s : State) :
   counted : ∀ k ∈ endKeys s, Counted s k
   removed : ∀ o ∈ b.occurrences, o.begun = true → o.id ∉ occurrenceIds s → (∀ y, x = some y → y.1 ≠ o.id) →
     key b o ∈ endKeys s
-  pending : ∀ y, x = some y → y.1 < s.nextIssue ∧ y.1 ∉ occurrenceIds s ∧ y.2 ∉ endKeys s ∧
+  pending : ∀ y, x = some y → Laws.State.OccurrenceIssued s y.1 ∧ y.1 ∉ occurrenceIds s ∧ y.2 ∉ endKeys s ∧
     (∀ o ∈ s.occurrences, key s o ≠ y.2) ∧ Counted s y.2 ∧ ∀ o ∈ b.occurrences, o.begun = true → o.id = y.1 → key b o = y.2
 
 /-- An input's invariant of its end facts beside `WellFormed`. -/
-def EndsInv (b : State) (x : Option (Nat × OccurrenceKey)) (program : Program) (s : State) : Prop :=
+def EndsInv (b : State) (x : Option (OccurrenceId × OccurrenceKey)) (program : Program) (s : State) : Prop :=
   WellFormed program s ∧ EndsKept b x s
 
 /-- A well-formed state that has ended nothing keeps its own end facts. -/
@@ -53,7 +53,7 @@ theorem EndsKept.start {program : Program} {b : State} (formed : WellFormed prog
     EndsKept b none b where
   below := formed.issued.occurrences
   instanceId := rfl
-  issued := Nat.le_refl _
+  issued := .refl _
   records _ member _ _ inside same := Laws.State.nodup_map_eq formed.distinct.occurrences inside member same
   keys _ _ _ _ := rfl
   nodup := by rw [empty]; exact .nil
@@ -66,7 +66,7 @@ theorem EndsKept.start {program : Program} {b : State} (formed : WellFormed prog
 
 section Step
 
-variable {program : Program} {b s t : State} {x : Option (Nat × OccurrenceKey)} {spare : Option Nat}
+variable {program : Program} {b s t : State} {x : Option (OccurrenceId × OccurrenceKey)} {spare : Option OccurrenceId}
 
 /-- The keys in `s` of distinct occurrences of a well-formed `s` are distinct. -/
 private theorem keys_nodup (formed : WellFormed program s) {gone : List Occurrence} (ids : (gone.map (·.id)).Nodup)
@@ -83,9 +83,7 @@ private theorem held_record (kept : EndsKept b x s) (step : EndsStep s t spare) 
   · obtain rfl := kept.records o member begun old held (named.symm.trans same)
     obtain rfl := unchanged begun
     exact ⟨rfl, held, keyed⟩
-  · have := kept.below o member
-    have := kept.issued
-    omega
+  · exact absurd (by rw [same]; exact kept.issued _ (kept.below o member)) fresh
 
 /-- The parts of `EndsKept` that no exemption reads pass through an operation that frames the end facts. -/
 private theorem advance_common (formed : WellFormed program s) (kept : EndsKept b x s) (step : EndsStep s t spare)
@@ -141,16 +139,16 @@ theorem EndsKept.step (formed : WellFormed program s) (kept : EndsKept b x s) (s
     EndsKept b x t := by
   obtain ⟨gone, perm, ids, ⟨within, complete⟩⟩ := step.ends
   obtain ⟨records, keys, nodup, ⟨present, counted⟩⟩ := advance_common formed kept step perm ids within
-  refine ⟨kept.below, step.instanceId.trans kept.instanceId, Nat.le_trans kept.issued step.issued, records, keys, nodup,
+  refine ⟨kept.below, step.instanceId.trans kept.instanceId, kept.issued.trans step.issued, records, keys, nodup,
     present, counted, fun o member begun absent exempt =>
       removed_advance kept perm complete member begun absent (by simp) exempt, fun y named => ?_⟩
   obtain ⟨issued, absent, unended, ⟨unheld, countedY, keyed⟩⟩ := kept.pending y named
-  refine ⟨Nat.lt_of_lt_of_le issued step.issued, fun held => ?_, fun ended => ?_, fun o' inside same => ?_,
+  refine ⟨step.issued _ issued, fun held => ?_, fun ended => ?_, fun o' inside same => ?_,
     counted_grow step.grow countedY, keyed⟩
   · obtain ⟨o', inside, same⟩ := List.mem_map.mp held
     rcases step.held o' inside with ⟨o, old, named, ⟨_, _⟩⟩ | ⟨fresh, _⟩
     · exact absent (List.mem_map.mpr ⟨o, old, named.symm.trans same⟩)
-    · omega
+    · exact fresh (by rw [same]; exact issued)
   · rcases List.mem_append.mp (perm.mem_iff.mp ended) with old | new
     · exact unended old
     · obtain ⟨g, inGone, keyed⟩ := List.mem_map.mp new
@@ -166,12 +164,12 @@ theorem EndsKept.remove (formed : WellFormed program s) (kept : EndsKept b none 
     (gone : occurrence.id ∉ occurrenceIds t) : EndsKept b (some (occurrence.id, key s occurrence)) t := by
   obtain ⟨removedList, perm, ids, ⟨within, complete⟩⟩ := step.ends
   obtain ⟨records, keys, nodup, ⟨present, counted⟩⟩ := advance_common formed kept step perm ids within
-  refine ⟨kept.below, step.instanceId.trans kept.instanceId, Nat.le_trans kept.issued step.issued, records, keys, nodup,
+  refine ⟨kept.below, step.instanceId.trans kept.instanceId, kept.issued.trans step.issued, records, keys, nodup,
     present, counted, fun o inB begun absent exempt =>
       removed_advance kept perm complete inB begun absent (fun same => exempt _ rfl (Option.some.inj same))
         (by simp), fun y named => ?_⟩
   obtain rfl := Option.some.inj named
-  refine ⟨Nat.lt_of_lt_of_le (formed.issued.occurrences occurrence member) step.issued, gone, fun ended => ?_,
+  refine ⟨step.issued _ (formed.issued.occurrences occurrence member), gone, fun ended => ?_,
     fun o' inside same => ?_, counted_grow step.grow (formed.occurrencesCounted occurrence member),
     fun o inB begun named => ?_⟩
   · rcases List.mem_append.mp (perm.mem_iff.mp ended) with old | new
@@ -189,7 +187,7 @@ theorem EndsKept.remove (formed : WellFormed program s) (kept : EndsKept b none 
 end Step
 
 /-- Journalling the exempt occurrence's end lifts the exemption. -/
-theorem EndsKept.record {b s : State} {id : Nat} {k : OccurrenceKey} (kept : EndsKept b (some (id, k)) s)
+theorem EndsKept.record {b s : State} {id : OccurrenceId} {k : OccurrenceKey} (kept : EndsKept b (some (id, k)) s)
     (terminal : Terminal) : EndsKept b none (s.recordEnd k terminal) := by
   obtain ⟨issued, absent, unended, ⟨unheld, countedK, keyed⟩⟩ := kept.pending _ rfl
   have ends : endKeys (s.recordEnd k terminal) = endKeys s ++ [k] := by
@@ -227,17 +225,17 @@ theorem EndsKept.record {b s : State} {id : Nat} {k : OccurrenceKey} (kept : End
         obtain rfl := Option.some.inj same
         exact fun equal => named equal.symm)
 
-/-- An operation that moves nothing `EndsKept` reads but the issue counter, which it may raise, and the order of the
-end facts keeps it: journalling the draft (`Step.conclude`) and ordering the journal (`Step.orderJournal`) only
+/-- An operation that moves nothing `EndsKept` reads but the keys it issues and the order of the end facts keeps
+it: journalling the draft (`Step.conclude`) and ordering the journal (`Step.orderJournal`) only
 permute them. -/
-theorem EndsKept.unmoved {b s t : State} {x : Option (Nat × OccurrenceKey)} (kept : EndsKept b x s)
+theorem EndsKept.unmoved {b s t : State} {x : Option (OccurrenceId × OccurrenceKey)} (kept : EndsKept b x s)
     (occurrences : t.occurrences = s.occurrences) (counters : t.activations = s.activations)
-    (tree : t.scopes = s.scopes ∧ t.instanceId = s.instanceId) (issued : s.nextIssue ≤ t.nextIssue)
+    (tree : t.scopes = s.scopes ∧ t.instanceId = s.instanceId) (issued : Laws.State.OccurrenceGrows s t)
     (ends : (endKeys t).Perm (endKeys s)) : EndsKept b x t := by
   have same : ∀ o, key t o = key s o := fun o =>
     Laws.State.key_congr (Laws.State.instanceOf_congr tree.1 tree.2 o.scope)
   have ids : occurrenceIds t = occurrenceIds s := by rw [occurrenceIds, occurrences]; rfl
-  refine ⟨kept.below, tree.2.trans kept.instanceId, Nat.le_trans kept.issued issued, occurrences ▸ kept.records,
+  refine ⟨kept.below, tree.2.trans kept.instanceId, kept.issued.trans issued, occurrences ▸ kept.records,
     fun o member begun inside => (same o).trans (kept.keys o member begun (occurrences ▸ inside)),
     ends.nodup_iff.mpr kept.nodup, fun o inside => ?_,
     fun k ended => Laws.State.Counted.congr counters (kept.counted k (ends.mem_iff.mp ended)), ?_, fun y named => ?_⟩
@@ -246,7 +244,7 @@ theorem EndsKept.unmoved {b s t : State} {x : Option (Nat × OccurrenceKey)} (ke
   · intro o member begun absent exempt
     exact ends.mem_iff.mpr (kept.removed o member begun (ids ▸ absent) exempt)
   · obtain ⟨below, absent, unended, ⟨unheld, countedY, keyed⟩⟩ := kept.pending y named
-    exact ⟨Nat.lt_of_lt_of_le below issued, ids ▸ absent, fun ended => unended (ends.mem_iff.mp ended),
+    exact ⟨issued _ below, ids ▸ absent, fun ended => unended (ends.mem_iff.mp ended),
       fun o inside => (same o) ▸ unheld o (occurrences ▸ inside), Laws.State.Counted.congr counters countedY, keyed⟩
 
 /-! ### The completion pipeline -/
@@ -273,7 +271,7 @@ theorem complete_ends {hooks : Hooks} {b : State} {src : Program → State → P
   have startedKept := holds.2.step holds.1 (startReserved_frame holds.1 member sourceType)
   have closedKept : EndsKept b none ((state.startReserved occurrence sourceType).1.closeOwnItems id) := by
     rw [Laws.State.closeOwnItems_eq]
-    exact startedKept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
+    exact startedKept.unmoved rfl rfl ⟨rfl, rfl⟩ (.refl _) (.refl _)
   obtain ⟨closedFrame, closedFree⟩ := facts.closeOwnItems (state.startReserved occurrence sourceType).1 id
   subst made
   have inClosed := closedFrame.begun _ begunMember begunFlag

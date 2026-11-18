@@ -108,7 +108,7 @@ queued compensation's trigger is held apart from every run's and every other que
 resumes no group (`QueuedUngrouped`). -/
 def CompensationsFresh : Prop :=
   ∀ (precedes : Compensable → Compensable → Prop) (program : Program) (queue : State) (scope : ScopeOccurrenceId)
-    (activity : Option ElementId) (trigger : OccurrenceRef) (leave : Option Nat) (resume : Option Resume)
+    (activity : Option ElementId) (trigger : OccurrenceRef) (leave : Option OccurrenceId) (resume : Option Resume)
     (rest : List Signal), WellFormed program queue → Formed precedes queue →
     queue.signals = .compensate scope activity trigger leave resume :: rest →
     FreshCall { queue with signals := rest } scope trigger resume
@@ -130,7 +130,7 @@ taken and every other one kept, of the run as taken: every record retained in a 
 stays retained exactly when it was kept (§13.5.5, the #103 account). -/
 def TakesOutOnce (hooks : Hooks) (reads writes : Ctx → ElementId → List String) : Prop :=
   ∀ (ctx : Ctx) (scope : ScopeOccurrenceId) (activity : Option ElementId) (trigger : OccurrenceRef)
-    (leave : Option Nat) (resume : Option Resume) (state after : State), WellFormed ctx.program state →
+    (leave : Option OccurrenceId) (resume : Option Resume) (state after : State), WellFormed ctx.program state →
     Formed (Depends ctx.program (reads ctx) (writes ctx)) state → FreshCall state scope trigger resume →
     hooks.compensate ctx scope activity trigger leave resume state = .ok after →
     ∃ covered taken kept, taken.trigger = trigger ∧ taken.scope = scope ∧ taken.running = [] ∧

@@ -65,9 +65,9 @@ def fireAll (write : Option WriteEvent) (items : List OpenItem) (state : State) 
 inductive Withdrawal where
   /-- An interrupting boundary: whatever its host occurrence's cancellation removes, the host's other boundaries and
   everything inside the host. -/
-  | host (occurrence : Nat)
+  | host (occurrence : OccurrenceId)
   /-- An Event-Based Gateway arm: its gateway's arms. -/
-  | arms (gateway : Nat)
+  | arms (gateway : OccurrenceId)
   /-- An interrupting Event Sub-Process start: everything inside its scope occurrence. -/
   | inside (scope : ScopeOccurrenceId)
 
