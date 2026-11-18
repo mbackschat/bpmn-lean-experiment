@@ -31,9 +31,11 @@ def scopeIssued (state : State) (scope : ScopeOccurrenceId) : Bool :=
       else go rest
   go scope.segments
 
-/-- What a queued signal does, the scope occurrences and occurrences it does it in or on (`stale`), and the scope
-occurrences it acts from and the occurrences it acts on (`gone`). -/
+/-- What a queued signal does, whether it is a completion, the one kind `absorb` runs inside the micro-step, the scope
+occurrences and occurrences it does it in or on (`stale`), and the scope occurrences it acts from and the occurrences it
+acts on (`gone`). -/
 structure SignalWork where
+  completion : Bool := false
   scopes : List ScopeOccurrenceId := []
   occurrences : List Nat := []
   requires : List ScopeOccurrenceId := []

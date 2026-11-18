@@ -200,7 +200,8 @@ def signalWork (hooks : Hooks) (ctx : Ctx) : Signal → SignalWork
     { scopes := [scope], occurrences := [occurrence], run := hooks.armGateway ctx occurrence gateway scope }
   | .raise event origin => { run := hooks.raise ctx event origin }
   | .begin request => { scopes := [request.scope], run := begin hooks ctx request }
-  | .complete occurrence leave writes rule => { acts := [occurrence], run := complete hooks ctx occurrence leave writes rule }
+  | .complete occurrence leave writes rule =>
+    { completion := true, acts := [occurrence], run := complete hooks ctx occurrence leave writes rule }
   | .write scope writes rule => { requires := [scope], run := hooks.writeOutputs ctx scope writes rule }
   | .remove scope names => { requires := [scope], run := hooks.removeVariables ctx scope names }
   | .occur element scope leave writes rule => { scopes := [scope], run := fun state => do
@@ -227,12 +228,8 @@ it (`SignalWork.perform`). -/
 def absorb (hooks : Hooks) (ctx : Ctx) (before : Nat) (state : State) : Outcome :=
   match state.signals.drop before with
   | [sole] =>
-    match sole with
-    | .complete occurrence leave writes rule =>
-      (signalWork hooks ctx (.complete occurrence leave writes rule)).perform
-        { state with signals := state.signals.take before }
-    | .arm .. | .armScope .. | .armGateway .. | .raise .. | .begin .. | .write .. | .remove .. | .occur .. | .cancel ..
-    | .fire .. | .endInstance .. | .compensate .. | .compensationFailed .. => .ok state
+    let work := signalWork hooks ctx sole
+    if work.completion then work.perform { state with signals := state.signals.take before } else .ok state
   | _ => .ok state
 
 /-- Turn the draft into one `Transition` (`journalDraft`) and tell the features what the micro-step removed and wrote. -/

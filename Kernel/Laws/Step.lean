@@ -336,9 +336,13 @@ theorem absorb_ok {hooks : Hooks} {ctx : Ctx} {before : Nat} {state after : Stat
       complete hooks ctx occurrence leave writes rule { state with signals := state.signals.take before } = .ok after := by
   unfold absorb at ran
   split at ran
-  · split at ran
-    · exact .inr ⟨_, _, _, _, by assumption, by simpa [signalWork] using (perform_ok ran).2.2⟩
-    all_goals exact .inl (Except.ok.inj ran).symm
+  · rename_i sole queued
+    dsimp only at ran
+    split at ran
+    · rename_i completion
+      cases sole <;> simp only [signalWork, Bool.false_eq_true] at completion
+      exact .inr ⟨_, _, _, _, queued, by simpa [signalWork] using (perform_ok ran).2.2⟩
+    · exact .inl (Except.ok.inj ran).symm
   · exact .inl (Except.ok.inj ran).symm
 
 /-- A committed transition journalled the draft, emptied it and the write log, told `Hooks.cancelled` of each cancelled

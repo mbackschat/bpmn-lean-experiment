@@ -232,7 +232,7 @@ theorem rootOnly_lane {s : State} (scopes : s.scopes = [{ id := State.root, elem
     have resumes := (occur_apart same).1
     change [_] = [] at resumes
     cases resumes
-  · intro entry member; simp [scopes] at member; subst member; simp [Laws.State.root_eq]
+  · intro entry member; simp [scopes] at member; subst member; simp
   · intro entry member; simp [scopes] at member; subst member; simp [Laws.State.root_eq]
   · intro raised origin queued; obtain ⟨_, _, same, _⟩ := signals _ queued
     have reserves := (occur_apart same).2
