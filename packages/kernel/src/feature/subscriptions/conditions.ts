@@ -60,10 +60,22 @@ function homeScope(state: State, item: OpenItem): ScopeOccurrenceId {
 export function predicateHolds(ctx: Ctx, state: State, scope: ScopeOccurrenceId, condition: Expression): Result<boolean> {
   const evaluation = ctx.evaluate(evalContext(state, ctx.program, scope), condition);
   switch (evaluation.tag) {
-    case EvaluationTag.Value:
-      return evaluation.result.tag === ValueTag.Bool
-        ? committed(evaluation.result.value)
-        : failed(FailureTag.RolledBack, "condition-not-boolean");
+    case EvaluationTag.Value: {
+      const result = evaluation.result;
+      switch (result.tag) {
+        case ValueTag.Bool:
+          return committed(result.value);
+        case ValueTag.Null:
+        case ValueTag.Int:
+        case ValueTag.Decimal:
+        case ValueTag.String:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return failed(FailureTag.RolledBack, "condition-not-boolean");
+      }
+      return assertNever(result);
+    }
     case EvaluationTag.Failure:
       return evaluation.code === "unknown-variable" || evaluation.code === "juel.propertyNotFound"
         ? committed(false)

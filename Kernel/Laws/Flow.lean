@@ -171,7 +171,10 @@ def candidateHolds (ctx : Ctx) (context : EvalContext) (candidate : FlowId) : Bo
     | none => true
     | some condition =>
       match ctx.evaluate context condition with
-      | .value (.bool value) => value
+      | .value result =>
+        match result with
+        | .bool value => value
+        | .null | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => false
       | _ => false
 
 /-- A condition `Kernel.Feature.Flow` reads without failing has the value `candidateHolds` gives it. -/
@@ -189,7 +192,11 @@ private theorem condition_holds {ctx : Ctx} {context : EvalContext} {candidate :
       simpa using ran
     · rename_i condition some_
       simp only [some_]
-      split at ran <;> rename_i evaluated <;> simp_all
+      split at ran
+      · rename_i result evaluated
+        simp only [evaluated]
+        cases result <;> simp_all
+      all_goals (rename_i evaluated; simp_all)
 
 private theorem firstTrue_spec {ctx : Ctx} {context : EvalContext} :
     ∀ {candidates : List FlowId} {chosen : Option FlowId},

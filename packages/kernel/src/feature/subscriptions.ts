@@ -144,14 +144,13 @@ function resolveName(ctx: Ctx, context: EvalContext, name: ValueSource | null): 
     case ValueSourceTag.Expression: {
       const evaluation = ctx.evaluate(context, name.body);
       switch (evaluation.tag) {
-        case EvaluationTag.Value: {
-          const result = evaluation.result;
-          if (result.tag === ValueTag.Null || (result.tag === ValueTag.String && result.value === "")) {
-            // dynamic-only: the resolved name is the run's data.
-            return failed(FailureTag.Unsupported, "message-name-empty");
+        case EvaluationTag.Value:
+          switch (evaluation.result.tag) {
+            case ValueTag.Null: return failed(FailureTag.Unsupported, "message-name-empty"); // dynamic-only: the resolved name is the run's data.
+            case ValueTag.String: return evaluation.result.value === "" ? failed(FailureTag.Unsupported, "message-name-empty") : committed(evaluation.result.value);
+            case ValueTag.Bool: case ValueTag.Int: case ValueTag.Decimal: case ValueTag.StringList: case ValueTag.List: case ValueTag.Map: return failed(FailureTag.RolledBack, "message-name-type");
           }
-          return result.tag === ValueTag.String ? committed(result.value) : failed(FailureTag.RolledBack, "message-name-type");
-        }
+          return assertNever(evaluation.result);
         case EvaluationTag.Failure:
           return failed(FailureTag.RolledBack, evaluation.code);
         case EvaluationTag.Unsupported:
@@ -186,16 +185,13 @@ function signalAddress(ctx: Ctx, context: EvalContext, trigger: SignalTrigger): 
         case ValueSourceTag.Expression: {
           const evaluation = ctx.evaluate(context, name.body);
           switch (evaluation.tag) {
-            case EvaluationTag.Value: {
-              const result = evaluation.result;
-              if (result.tag === ValueTag.Null || (result.tag === ValueTag.String && result.value === "")) {
-                // dynamic-only: the resolved name is the run's data.
-                return failed(FailureTag.Unsupported, "signal-name-empty");
+            case EvaluationTag.Value:
+              switch (evaluation.result.tag) {
+                case ValueTag.Null: return failed(FailureTag.Unsupported, "signal-name-empty"); // dynamic-only: the resolved name is the run's data.
+                case ValueTag.String: return evaluation.result.value === "" ? failed(FailureTag.Unsupported, "signal-name-empty") : committed({ tag: SignalAddressTag.Named, name: evaluation.result.value });
+                case ValueTag.Bool: case ValueTag.Int: case ValueTag.Decimal: case ValueTag.StringList: case ValueTag.List: case ValueTag.Map: return failed(FailureTag.RolledBack, "signal-name-type");
               }
-              return result.tag === ValueTag.String
-                ? committed({ tag: SignalAddressTag.Named, name: result.value })
-                : failed(FailureTag.RolledBack, "signal-name-type");
-            }
+              return assertNever(evaluation.result);
             case EvaluationTag.Failure:
               return failed(FailureTag.RolledBack, evaluation.code);
             case EvaluationTag.Unsupported:
@@ -232,10 +228,11 @@ function timerText(ctx: Ctx, context: EvalContext, value: ValueSource): Result<r
       const evaluation = ctx.evaluate(context, value.body);
       switch (evaluation.tag) {
         case EvaluationTag.Value:
-          // dynamic-only: a value's type is the run's data.
-          return evaluation.result.tag === ValueTag.String
-            ? committed([evaluation.result.value, true])
-            : failed(FailureTag.RolledBack, "timer-value-type");
+          switch (evaluation.result.tag) {
+            case ValueTag.String: return committed([evaluation.result.value, true]);
+            case ValueTag.Null: case ValueTag.Bool: case ValueTag.Int: case ValueTag.Decimal: case ValueTag.StringList: case ValueTag.List: case ValueTag.Map: return failed(FailureTag.RolledBack, "timer-value-type"); // dynamic-only: a value's type is the run's data.
+          }
+          return assertNever(evaluation.result);
         case EvaluationTag.Failure:
           return failed(FailureTag.RolledBack, evaluation.code);
         case EvaluationTag.Unsupported:

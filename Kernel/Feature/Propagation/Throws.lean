@@ -53,10 +53,13 @@ def signalBusinessKey (ctx : Ctx) (context : EvalContext) : Option Expression â†
   | none => .ok none
   | some expression =>
     match ctx.evaluate context expression with
-    | .value (.string key) => .ok (some key)
-    | .value .null => .ok none
-    -- dynamic-only: a key's value type is the run's data.
-    | .value _ => .error (.rolledBack "signal-business-key-type")
+    | .value value =>
+      match value with
+      | .string key => .ok (some key)
+      | .null => .ok none
+      -- dynamic-only: a key's value type is the run's data.
+      | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ =>
+        .error (.rolledBack "signal-business-key-type")
     | .failure code => .error (.rolledBack code)
     | .unsupported code => .error (.unsupported code)
 
@@ -78,10 +81,12 @@ def thrownAddress (ctx : Ctx) (context : EvalContext) (record : SignalThrow) : E
   | .addresses, _, some (.literal text) => .ok (.named text)
   | .addresses, _, some (.expression body) =>
     match ctx.evaluate context body with
-    | .value (.string text) => .ok (.named text)
-    -- dynamic-only: the evaluated name is the run's data.
-    | .value .null => .error (.unsupported "signal-name-null")
-    | .value _ => .error (.rolledBack "signal-name-type")
+    | .value value =>
+      match value with
+      | .string text => .ok (.named text)
+      -- dynamic-only: the evaluated name is the run's data.
+      | .null => .error (.unsupported "signal-name-null")
+      | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ => .error (.rolledBack "signal-name-type")
     | .failure code => .error (.rolledBack code)
     | .unsupported code => .error (.unsupported code)
   -- Admission refuses both (`signal.unspecified`, `signal.unnamed`).

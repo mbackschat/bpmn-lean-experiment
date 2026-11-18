@@ -119,10 +119,21 @@ function signalBusinessKey(ctx: Ctx, context: EvalContext, expression: Expressio
   switch (evaluation.tag) {
     case EvaluationTag.Value: {
       const result = evaluation.result;
-      if (result.tag === ValueTag.String) return committed(result.value);
-      if (result.tag === ValueTag.Null) return committed(null);
-      // dynamic-only: a key's value type is the run's data.
-      return failed(FailureTag.RolledBack, "signal-business-key-type");
+      switch (result.tag) {
+        case ValueTag.String:
+          return committed(result.value);
+        case ValueTag.Null:
+          return committed(null);
+        case ValueTag.Bool:
+        case ValueTag.Int:
+        case ValueTag.Decimal:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          // dynamic-only: a key's value type is the run's data.
+          return failed(FailureTag.RolledBack, "signal-business-key-type");
+      }
+      return assertNever(result);
     }
     case EvaluationTag.Failure:
       return failed(FailureTag.RolledBack, evaluation.code);
@@ -169,10 +180,21 @@ function thrownAddress(ctx: Ctx, context: EvalContext, record: SignalThrow): Res
           switch (evaluation.tag) {
             case EvaluationTag.Value: {
               const result = evaluation.result;
-              if (result.tag === ValueTag.String) return committed({ tag: SignalAddressTag.Named, name: result.value });
-              // dynamic-only: the evaluated name is the run's data.
-              if (result.tag === ValueTag.Null) return failed(FailureTag.Unsupported, "signal-name-null");
-              return failed(FailureTag.RolledBack, "signal-name-type");
+              switch (result.tag) {
+                case ValueTag.String:
+                  return committed({ tag: SignalAddressTag.Named, name: result.value });
+                case ValueTag.Null:
+                  // dynamic-only: the evaluated name is the run's data.
+                  return failed(FailureTag.Unsupported, "signal-name-null");
+                case ValueTag.Bool:
+                case ValueTag.Int:
+                case ValueTag.Decimal:
+                case ValueTag.StringList:
+                case ValueTag.List:
+                case ValueTag.Map:
+                  return failed(FailureTag.RolledBack, "signal-name-type");
+              }
+              return assertNever(result);
             }
             case EvaluationTag.Failure:
               return failed(FailureTag.RolledBack, evaluation.code);

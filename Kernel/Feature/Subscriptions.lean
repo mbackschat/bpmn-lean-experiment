@@ -51,10 +51,12 @@ def resolveName (ctx : Ctx) (context : EvalContext) : Option ValueSource → Exc
   | some (.literal text) => .ok (some text)
   | some (.expression body) =>
     match ctx.evaluate context body with
-    -- dynamic-only: the resolved name is the run's data.
-    | .value (.string "") | .value .null => .error (.unsupported "message-name-empty")
-    | .value (.string text) => .ok (some text)
-    | .value _ => .error (.rolledBack "message-name-type")
+    | .value value =>
+      match value with
+      -- dynamic-only: the resolved name is the run's data.
+      | .string "" | .null => .error (.unsupported "message-name-empty")
+      | .string text => .ok (some text)
+      | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ => .error (.rolledBack "message-name-type")
     | .failure code => .error (.rolledBack code)
     | .unsupported code => .error (.unsupported code)
 
@@ -68,10 +70,12 @@ def signalAddress (ctx : Ctx) (context : EvalContext) (trigger : SignalTrigger) 
   | .addresses, _, some (.literal text) => .ok (.named text)
   | .addresses, _, some (.expression body) =>
     match ctx.evaluate context body with
-    -- dynamic-only: the resolved name is the run's data.
-    | .value (.string "") | .value .null => .error (.unsupported "signal-name-empty")
-    | .value (.string text) => .ok (.named text)
-    | .value _ => .error (.rolledBack "signal-name-type")
+    | .value value =>
+      match value with
+      -- dynamic-only: the resolved name is the run's data.
+      | .string "" | .null => .error (.unsupported "signal-name-empty")
+      | .string text => .ok (.named text)
+      | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ => .error (.rolledBack "signal-name-type")
     | .failure code => .error (.rolledBack code)
     | .unsupported code => .error (.unsupported code)
   -- Admission refuses both (`signal.unspecified`, `signal.unnamed`).
@@ -85,9 +89,12 @@ def timerText (ctx : Ctx) (context : EvalContext) : ValueSource → Except Failu
   | .literal text => .ok (text, false)
   | .expression body =>
     match ctx.evaluate context body with
-    | .value (.string text) => .ok (text, true)
-    -- dynamic-only: a value's type is the run's data.
-    | .value _ => .error (.rolledBack "timer-value-type")
+    | .value value =>
+      match value with
+      | .string text => .ok (text, true)
+      -- dynamic-only: a value's type is the run's data.
+      | .null | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ =>
+        .error (.rolledBack "timer-value-type")
     | .failure code => .error (.rolledBack code)
     | .unsupported code => .error (.unsupported code)
 

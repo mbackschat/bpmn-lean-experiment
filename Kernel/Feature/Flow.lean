@@ -44,8 +44,11 @@ def condition (ctx : Ctx) (context : EvalContext) (candidate : FlowId) : Except 
     | none => .ok true
     | some condition =>
       match ctx.evaluate context condition with
-      | .value (.bool value) => .ok value
-      | .value _ => .error (.rolledBack "condition-not-boolean")
+      | .value result =>
+        match result with
+        | .bool value => .ok value
+        | .null | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ =>
+          .error (.rolledBack "condition-not-boolean")
       | .failure code => .error (.rolledBack code)
       | .unsupported code => .error (.unsupported code)
 

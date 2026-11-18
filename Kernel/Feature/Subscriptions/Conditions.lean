@@ -25,8 +25,11 @@ def homeScope (state : State) (item : OpenItem) : ScopeOccurrenceId :=
 included (`:51`), and any other failure roll the input back. -/
 def predicateHolds (ctx : Ctx) (state : State) (scope : ScopeOccurrenceId) (condition : Expression) : Except Failure Bool :=
   match ctx.evaluate (state.evalContext ctx.program scope) condition with
-  | .value (.bool value) => .ok value
-  | .value _ => .error (.rolledBack "condition-not-boolean")
+  | .value result =>
+    match result with
+    | .bool value => .ok value
+    | .null | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ =>
+      .error (.rolledBack "condition-not-boolean")
   | .failure code =>
     if code == "unknown-variable" || code == "juel.propertyNotFound" then .ok false else .error (.rolledBack code)
   | .unsupported code => .error (.unsupported code)
