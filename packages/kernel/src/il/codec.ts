@@ -105,6 +105,7 @@ import {
   type StructuredParameter,
   type DataOutputDecl,
   type MultiInstance,
+  type Bounds,
   type ProfileOptions,
   type Program,
   type QName,
@@ -497,6 +498,9 @@ const profileOptions = struct<ProfileOptions>("ProfileOptions", {
   evaluator: members("Evaluator", Evaluator),
   submission: members("SubmissionRule", SubmissionRule),
   scopeChainSubmissionBytes: option(nat),
+  bounds: struct<Bounds>("Bounds", {
+    containerLevels: nat, containerMembers: nat, valueNodes: nat, canonicalBytes: nat, textBytes: nat,
+  }),
   undeclaredWrite: members("UndeclaredWrite", UndeclaredWrite),
   errorPathOutputs: members("ErrorPathOutputs", ErrorPathOutputs),
   raisedCallOutputs: members("RaisedCallOutputs", RaisedCallOutputs),

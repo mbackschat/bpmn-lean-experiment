@@ -172,6 +172,8 @@ inductive Input where
 structure EvalContext where
   variables : List (String × Value)
   nowMs : Nat
+  /-- The program's value bounds (`ProfileOptions.bounds`), which a JUEL result's portable-domain check reads. -/
+  bounds : Bounds
   /-- Whether a JUEL result passes the portable-domain check before the site sees it; the Multi-Instance count and
   collection sites read it first (EXPRESSION-SEMANTICS-SPEC "Multi-Instance level", Results). -/
   domainChecked : Bool := true

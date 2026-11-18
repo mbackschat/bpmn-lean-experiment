@@ -508,7 +508,7 @@ def ungatedRun (program : Program) (stimuli : List RunStimulus) : Json :=
 def evaluationAnswer (case : Json) : Except String Json := do
   let expression ← Codec.strictly (Lean.fromJson? (α := Expression)) toJson (← case.getObjVal? "expression")
   let variables ← Codec.bindingsFromJson (← case.getObjVal? "variables")
-  let context : EvalContext := { variables, nowMs := ← case.getObjValAs? Nat "nowMs" }
+  let context : EvalContext := { variables, nowMs := ← case.getObjValAs? Nat "nowMs", bounds := {} }
   pure <| match Registry.hooks.evaluate context expression with
     | .value result => Json.mkObj [("value", Codec.valueToJson result)]
     | .failure code => Json.mkObj [("failure", Json.str code)]

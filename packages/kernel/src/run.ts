@@ -28,7 +28,7 @@
  * admission refusal, the published entry (`index.ts`) leaves it out: the package's test-only `./testing` export, this
  * module, offers it to the unit tests' pairing helper (`packages/kernel/test/lean-paired.ts`).
  */
-import { assertNever, compareStrings, mergeSort, type DefinitionRef, type Program } from "./il/types.js";
+import { assertNever, compareStrings, defaultBounds, mergeSort, type DefinitionRef, type Program } from "./il/types.js";
 import {
   bindingsFromJson, bindingsToJson, decodeExpression, decodeProgram, encodeExpression, encodeProgram, parseStrict, valueCodec,
   type JsonValue,
@@ -700,7 +700,7 @@ function evaluationAnswer(batchCase: unknown): JsonValue {
   if (!expression.ok) throw new Error(`batch: ${expression.refusal}`);
   const variables = bindingsFromJson(field(batchCase, "variables", "batch"));
   if (!variables.ok) throw new Error(`batch: ${variables.refusal}`);
-  const evaluation = hooks.evaluate({ variables: variables.value, nowMs: natField(batchCase, "nowMs") }, expression.value);
+  const evaluation = hooks.evaluate({ variables: variables.value, nowMs: natField(batchCase, "nowMs"), bounds: defaultBounds }, expression.value);
   switch (evaluation.tag) {
     case EvaluationTag.Value:
       return { value: valueCodec.encode(evaluation.result) };

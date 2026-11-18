@@ -14,6 +14,13 @@
     "evaluator": "simpleBoolean",
     "submission": "outputSet",
     "scopeChainSubmissionBytes": null,
+    "bounds": {
+      "containerLevels": 4,
+      "containerMembers": 32,
+      "valueNodes": 256,
+      "canonicalBytes": 16384,
+      "textBytes": 1024
+    },
     "undeclaredWrite": "refused",
     "errorPathOutputs": "none",
     "raisedCallOutputs": "none",

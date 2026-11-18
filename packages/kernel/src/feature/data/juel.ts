@@ -28,7 +28,7 @@ export function evaluateJuel(context: EvalContext, nodes: readonly JuelNode[]): 
       ? { tag: EvaluationTag.Unsupported, code: result.stop.code }
       : { tag: EvaluationTag.Failure, code: result.stop.code };
   }
-  const value = context.domainChecked === false ? siteValue(result.value) : portable(result.value);
+  const value = context.domainChecked === false ? siteValue(result.value) : portable(context.bounds, result.value);
   return value === null
     // dynamic-only: whether a result is portable depends on the run's data.
     ? { tag: EvaluationTag.Unsupported, code: "juel.resultOutsideDomain" }

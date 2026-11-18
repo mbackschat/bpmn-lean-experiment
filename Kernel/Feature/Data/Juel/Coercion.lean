@@ -185,13 +185,13 @@ def siteValue : JVal → Option Value
   | .map entries => some (.map entries)
 
 /-- The portable value of a result, or `none` outside the domain (DATA-SEMANTICS-SPEC "Values"). -/
-def portable : JVal → Option Value
+def portable (bounds : Bounds) : JVal → Option Value
   | .null => some .null
   | .bool value => some (.bool value)
   | .int value _ => if 0 ≤ value && value ≤ integerBound then some (.int value) else none
   | .decimal coefficient scale =>
     if canonicalDecimal coefficient scale then some (.decimal coefficient scale.toNat) else none
-  | .string value => if value.utf8ByteSize ≤ textBytes then some (.string value) else none
+  | .string value => if value.utf8ByteSize ≤ bounds.textBytes then some (.string value) else none
   | .list items => some (.list items)
   | .map entries => some (.map entries)
 

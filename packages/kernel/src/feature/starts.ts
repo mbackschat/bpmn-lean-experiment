@@ -87,7 +87,7 @@ export function startsFired(hooks: StartsHooks, ctx: Ctx, input: StartInput): Re
  * one without accepts none (`SUBSCRIPTIONS-SEMANTICS-SPEC.md` Messages, Payload).
  */
 function startPayload(hooks: StartsHooks, ctx: Ctx, nowMs: number, subscription: Subscription, delivered: Value | null): Result<readonly Binding[]> {
-  const admitted = admitValues(delivered === null ? [] : [delivered]);
+  const admitted = admitValues(ctx.program.options.bounds, delivered === null ? [] : [delivered]);
   if (!admitted.ok) return failedWith(admitted.failure);
   if (subscription.outputs.length === 0) {
     return delivered === null ? committed([]) : failed(FailureTag.Rejected, "message-payload-not-accepted");
@@ -120,7 +120,7 @@ function startValues(hooks: StartsHooks, ctx: Ctx, payload: StartPayload, trigge
       if (ctx.program.options.signalPayload === SignalPayload.None && trigger.variables.length > 0) {
         return failed(FailureTag.Rejected, "signal-variables-not-admitted");
       }
-      const admitted = admitValues(trigger.variables.map(([, value]) => value));
+      const admitted = admitValues(ctx.program.options.bounds, trigger.variables.map(([, value]) => value));
       return admitted.ok ? committed([state, trigger.variables]) : failedWith(admitted.failure);
     }
     case StartTriggerTag.None:

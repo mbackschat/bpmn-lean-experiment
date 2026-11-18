@@ -438,6 +438,27 @@ export enum MessageThrowForms {
   CibForms = "cibForms",
 }
 
+/**
+ * The value domain's bounds (HD7, `docs/REWRITE-2-PROPOSAL.md`), Lean's `Bounds`: project policy, not CIB limits (the
+ * portable-values contract's "Finite limits"). A program carries them with its options, so an instance keeps the bounds
+ * it started with; `defaultBounds` are the ratified rows.
+ */
+export interface Bounds {
+  /** Container levels a value nests at most. */
+  readonly containerLevels: number;
+  /** Members of a List or a Map, and Strings of a String List, at most. */
+  readonly containerMembers: number;
+  /** Tagged value nodes of a value, the root included, at most. */
+  readonly valueNodes: number;
+  /** UTF-8 bytes of a value's canonical JSON at most. */
+  readonly canonicalBytes: number;
+  /** UTF-8 bytes of a String or a Map key at most. */
+  readonly textBytes: number;
+}
+
+/** Lean's `Bounds` defaults, the one place TypeScript writes their figures. */
+export const defaultBounds: Bounds = { containerLevels: 4, containerMembers: 32, valueNodes: 256, canonicalBytes: 16384, textBytes: 1024 };
+
 export interface ProfileOptions {
   readonly relations: readonly string[];
   readonly evaluator: Evaluator;
@@ -447,6 +468,7 @@ export interface ProfileOptions {
    * once, and its canonical JSON may take at most this many UTF-8 bytes (CIB-EXT-0020, `NSD-TASK-01`).
    */
   readonly scopeChainSubmissionBytes: number | null;
+  readonly bounds: Bounds;
   readonly undeclaredWrite: UndeclaredWrite;
   readonly errorPathOutputs: ErrorPathOutputs;
   readonly raisedCallOutputs: RaisedCallOutputs;

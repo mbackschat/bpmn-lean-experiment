@@ -51,6 +51,7 @@ export type KernelProfileOptions = Readonly<{
   evaluator: "simpleBoolean" | "juel";
   submission: "outputSet" | "installsVariables";
   scopeChainSubmissionBytes: number | null;
+  bounds: KernelBounds;
   undeclaredWrite: "refused" | "atInstanceRoot";
   errorPathOutputs: "none" | "mapped";
   raisedCallOutputs: "none" | "atCalledRoot";
@@ -98,8 +99,21 @@ export type KernelProfileOptions = Readonly<{
   messageThrowForms: "refused" | "cibForms";
 }>;
 
-/** One portable value's allowance, which bounds a scope-chain submission (`NSD-TASK-01`). */
-const portableValueAllowanceBytes = 16_384;
+/** The kernel IL's `Bounds` in its wire form. */
+export type KernelBounds = Readonly<{
+  containerLevels: number;
+  containerMembers: number;
+  valueNodes: number;
+  canonicalBytes: number;
+  textBytes: number;
+}>;
+
+/**
+ * The value bounds every profile carries: the kernel's `Bounds` defaults, which this package may not import, so the
+ * bound-agreement guard (`scripts/kernel-guards-bounds.ts`) fails when the two disagree. One portable value's
+ * canonical bytes also bound a scope-chain submission (`NSD-TASK-01`).
+ */
+const valueBounds: KernelBounds = { containerLevels: 4, containerMembers: 32, valueNodes: 256, canonicalBytes: 16384, textBytes: 1024 };
 
 /**
  * The kernel options a profile selects, derived from its CIB relation identifiers
@@ -113,7 +127,8 @@ export function kernelProfileOptions(relations: readonly string[]): KernelProfil
     relations: [...relations],
     evaluator: selects("CIB-CFG-0011") ? "juel" : "simpleBoolean",
     submission: selects("CIB-EXT-0005", "CIB-EXT-0010") ? "installsVariables" : "outputSet",
-    scopeChainSubmissionBytes: selects("CIB-EXT-0020") ? portableValueAllowanceBytes : null,
+    scopeChainSubmissionBytes: selects("CIB-EXT-0020") ? valueBounds.canonicalBytes : null,
+    bounds: { ...valueBounds },
     undeclaredWrite: selects("CIB-EXT-0005", "CIB-EXT-0007", "CIB-EXT-0009", "CIB-EXT-0020") ? "atInstanceRoot" : "refused",
     errorPathOutputs: selects("CIB-EXT-0004", "CIB-EXT-0009", "CIB-EXT-0016") ? "mapped" : "none",
     raisedCallOutputs: selects("CIB-EXT-0034") ? "atCalledRoot" : "none",

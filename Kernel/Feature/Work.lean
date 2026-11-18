@@ -212,7 +212,7 @@ outputs admits only the empty submission. A Multi-Instance instance submits its 
 the task's own locals are names it may submit (UTL-TASK-01; `Submission`). -/
 def completeUserTask (ctx : Ctx) (_ : Header) (payload : ActivityPayload) (item : OpenItem)
     (values : List (String × Value)) (state : State) : Outcome := do
-  admitValues (values.map (·.2))
+  admitValues ctx.program.options.bounds (values.map (·.2))
   if let some limit := ctx.program.options.scopeChainSubmissionBytes then
     Submission.check ctx state (state.ownScope item.id.occurrence item.scope) limit values
   match submittedItem ctx.program.options.submission payload.envelope with
@@ -299,7 +299,7 @@ def effectResult (ctx : Ctx) (item : OpenItem) (outcome : EffectOutcome) (state 
   let mappings := (envelope.map (·.outputs)).getD []
   match outcome with
   | .success patch => do
-    admitValues (patch.map (·.2))
+    admitValues ctx.program.options.bounds (patch.map (·.2))
     let results := (((ctx.program.element? item.element).bind (·.activity?)).map (·.2.work.results)).getD []
     let (own, rest) := patch.partition fun (name, _) => results.contains name
     let written ←
@@ -308,7 +308,7 @@ def effectResult (ctx : Ctx) (item : OpenItem) (outcome : EffectOutcome) (state 
       else state.signal (.write (state.ownScope item.id.occurrence item.scope) own .outward)
     .ok (installed.signal (effectCompletion envelope (unconsumed ctx envelope) item.id.occurrence written rest))
   | .businessFailure code message patch => do
-    admitValues (patch.map (·.2))
+    admitValues ctx.program.options.bounds (patch.map (·.2))
     match ctx.program.options.errorPathOutputs with
     | .mapped => .ok ()
     | .none => if !patch.isEmpty then .error (.rejected "error-path-outputs-not-accepted")
@@ -372,7 +372,7 @@ def triggerActivity (hooks : WorkHooks) (ctx : Ctx) (_ : Header) (payload : Acti
     match item.kind.view.channel with
     | none => .error (.semanticFailure .invariant "activity-message-without-message")
     | some channel =>
-      if delivery.payload.any (!inValueDomain ·) then .error (.rejected "value-outside-domain")
+      if delivery.payload.any (!inValueDomain ctx.program.options.bounds ·) then .error (.rejected "value-outside-domain")
       else if delivery.trigger.channel? != some channel then .error (.rejected "message-channel-mismatch")
       else do
         let accepted ← match ctx.program.options.messageCorrelation with
@@ -386,7 +386,7 @@ def triggerActivity (hooks : WorkHooks) (ctx : Ctx) (_ : Header) (payload : Acti
             | true, none => .error (.rejected "message-payload-required")
             | false, some _ => .error (.rejected "message-payload-not-accepted")
             | false, none => .ok []
-          admitValues (delivery.variables.map (·.2))
+          admitValues ctx.program.options.bounds (delivery.variables.map (·.2))
           .ok (state.signal (.complete item.id.occurrence .outgoing (mapped ++ delivery.variables) .outward))
 
 /-- `Hooks.completeCall`: only a Call Activity starts a called instance. -/

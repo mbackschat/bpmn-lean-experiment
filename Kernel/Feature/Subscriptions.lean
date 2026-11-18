@@ -219,7 +219,8 @@ def armGateway (ctx : Ctx) (occurrence : Nat) (gateway : ElementId) (scope : Sco
 whose start or call variables CIB sets after it subscribes (`PvmExecutionImpl.java:278-286`). -/
 def enclosingContext (program : Program) (state : State) (scope : ScopeOccurrenceId) : EvalContext :=
   let parent := if state.calledRoot scope then none else (state.scopes.find? (·.id == scope)).bind (·.parent)
-  { variables := (parent.map (state.visible program)).getD [], nowMs := state.logicalTimeMs }
+  { variables := (parent.map (state.visible program)).getD [], nowMs := state.logicalTimeMs,
+    bounds := program.options.bounds }
 
 /-- The start Event of an Event Sub-Process. -/
 def startEvent? (ctx : Ctx) (eventSubProcess : ElementId) : Option ElementId :=
@@ -285,7 +286,7 @@ def payloadBindings (ctx : Ctx) (nowMs : Nat) (outputs : List Mapping) (payload 
     | .simpleBoolean _ => none
     | .juel _ => none
     | .foreign _ _ => none
-  ctx.requireMappings { variables := outputsRead, nowMs } outputs
+  ctx.requireMappings { variables := outputsRead, nowMs, bounds := ctx.program.options.bounds } outputs
 
 /-- The address a delivery names, when it delivers a Signal. -/
 def signalDelivered : DeliveryTrigger → Option SignalAddress
@@ -297,7 +298,7 @@ def signalDelivered : DeliveryTrigger → Option SignalAddress
 carries no data (BPMN 2.0.2 §10.5.1), so a delivery that brings variables is rejected rather than dropped. -/
 def signalVariables (ctx : Ctx) (variables : List (String × Value)) : Except Failure (List (String × Value)) :=
   match ctx.program.options.signalPayload with
-  | .variables => do admitValues (variables.map (·.2)); pure variables
+  | .variables => do admitValues ctx.program.options.bounds (variables.map (·.2)); pure variables
   | .none => if variables.isEmpty then .ok [] else .error (.rejected "signal-variables-not-admitted")
 
 /-- Check that `fired` may fire `item` and return the state at the firing's logical time with the values the
@@ -316,7 +317,7 @@ def admitFiring (hooks : SubscriptionsHooks) (ctx : Ctx) (subscription : Subscri
       else .error (.rejected "timer-not-due")
     | none => .error (.rejected "not-a-timer")
   | .message delivery => do
-    admitValues delivery.payload.toList
+    admitValues ctx.program.options.bounds delivery.payload.toList
     match view.channel with
     | none => .error (.rejected "not-a-message-subscription")
     | some channel =>
@@ -330,7 +331,7 @@ def admitFiring (hooks : SubscriptionsHooks) (ctx : Ctx) (subscription : Subscri
             | true, none => .error (.rejected "message-payload-required")
             | false, some _ => .error (.rejected "message-payload-not-accepted")
             | false, none => .ok []
-          admitValues (delivery.variables.map (·.2))
+          admitValues ctx.program.options.bounds (delivery.variables.map (·.2))
           .ok (state, mapped ++ delivery.variables)
   | .signal delivery =>
     match view.signal, signalDelivered delivery.trigger with

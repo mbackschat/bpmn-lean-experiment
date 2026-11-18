@@ -212,7 +212,7 @@ function signalAddress(ctx: Ctx, context: EvalContext, trigger: SignalTrigger): 
  */
 function enclosingContext(program: Program, state: State, scope: ScopeOccurrenceId): EvalContext {
   const parent = calledRoot(state, scope) ? null : state.scopes.find((entry) => entry.id === scope)?.parent ?? null;
-  return { variables: parent === null ? [] : visible(state, program, parent), nowMs: state.logicalTimeMs };
+  return { variables: parent === null ? [] : visible(state, program, parent), nowMs: state.logicalTimeMs, bounds: program.options.bounds };
 }
 
 /**
@@ -541,7 +541,7 @@ export function payloadBindings(ctx: Ctx, nowMs: number, outputs: readonly Mappi
     }
     return assertNever(source);
   });
-  return ctxRequireMappings(ctx, { variables: outputsRead, nowMs }, outputs);
+  return ctxRequireMappings(ctx, { variables: outputsRead, nowMs, bounds: ctx.program.options.bounds }, outputs);
 }
 
 /** The address a delivery names, when it delivers a Signal. */
@@ -563,7 +563,7 @@ function signalDelivered(trigger: DeliveryTrigger): SignalAddress | null {
 function signalVariables(ctx: Ctx, variables: readonly Binding[]): Result<readonly Binding[]> {
   switch (ctx.program.options.signalPayload) {
     case SignalPayload.Variables: {
-      const admitted = admitValues(variables.map(([, value]) => value));
+      const admitted = admitValues(ctx.program.options.bounds, variables.map(([, value]) => value));
       return admitted.ok ? committed(variables) : failedWith(admitted.failure);
     }
     case SignalPayload.None:
@@ -600,7 +600,7 @@ function admitFiring(hooks: SubscriptionsHooks, ctx: Ctx, subscription: Subscrip
         : failed(FailureTag.Rejected, "timer-not-due");
     case FiredTag.Message: {
       const delivery = fired.delivery;
-      const admitted = admitValues(delivery.payload === null ? [] : [delivery.payload]);
+      const admitted = admitValues(ctx.program.options.bounds, delivery.payload === null ? [] : [delivery.payload]);
       if (!admitted.ok) return failedWith(admitted.failure);
       if (view.channel === null) return failed(FailureTag.Rejected, "not-a-message-subscription");
       if (!optionalChannelEquals(deliveryTriggerChannel(delivery.trigger), view.channel)) {
@@ -619,7 +619,7 @@ function admitFiring(hooks: SubscriptionsHooks, ctx: Ctx, subscription: Subscrip
       } else if (delivery.payload !== null) {
         return failed(FailureTag.Rejected, "message-payload-not-accepted");
       }
-      const installed = admitValues(delivery.variables.map(([, value]) => value));
+      const installed = admitValues(ctx.program.options.bounds, delivery.variables.map(([, value]) => value));
       return installed.ok ? committed([state, [...mapped, ...delivery.variables]]) : failedWith(installed.failure);
     }
     case FiredTag.Signal: {

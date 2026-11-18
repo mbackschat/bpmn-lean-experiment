@@ -6,7 +6,7 @@
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { after, test } from "node:test";
@@ -23,6 +23,7 @@ import {
   noCatchAllFindings,
   tsMatchSiteCounts,
 } from "./kernel-guards-dispatch.ts";
+import { boundAgreementFindings, boundCopies, strayBoundLiteralFindings } from "./kernel-guards-bounds.ts";
 import { effectWriterFindings, fieldLivenessFindings, hookDefaultFindings } from "./kernel-guards-effects.ts";
 import {
   boundedNumberFindings,
@@ -716,10 +717,32 @@ for (const [name, guard] of [
   ["guard 23 (structural inputs)", structureInputFindings],
   ["guard 11 (bounded wire numbers)", boundedNumberFindings],
   ["guard 24", justifiedRuleFindings],
+  ["the bound-agreement guard (HD7)", boundAgreementFindings],
+  ["the stray-bound-literal guard (HD7)", strayBoundLiteralFindings],
   ["guard 16 (unit cases through the Lean-paired helper)", unitPairingFindings],
 ] as const) {
   test(`the tree passes ${name}`, () => assert.deepEqual(guard(tree), []));
 }
+
+test("the bound guards fail a copy that disagrees with Lean's Bounds defaults and a bound's figure written in the kernel", () => {
+  const real = (file: string): string => readFileSync(path.join(tree.root, file), "utf8");
+  const owners = ["Kernel/IL/Types/Options.lean", "packages/kernel/src/il/types/options.ts", ...boundCopies.map((copy) => copy.file)];
+  const copies: Record<string, string> = Object.fromEntries(owners.map((file) => [file, real(file)]));
+  assert.deepEqual(boundAgreementFindings(fixture(copies)), []);
+  const decoder = "platform/contracts/src/work-task-form-decoders.ts";
+  seeded(boundAgreementFindings, { ...copies, [decoder]: (copies[decoder] ?? "").replace(/maximumTaggedValueBytes = [\d_]+/u, "maximumTaggedValueBytes = 20_000") },
+    /work-task-form-decoders\.ts: canonicalBytes is 20000, Lean's Bounds default is 16384/u);
+  const lean = "Kernel/IL/Types/Options.lean";
+  seeded(boundAgreementFindings, { ...copies, [lean]: (copies[lean] ?? "").replace("textBytes : Nat := 1024", "textBytes : Nat := 2048") },
+    /options\.ts: textBytes is 1024, Lean's Bounds default is 2048/u);
+  assert.notDeepEqual(boundAgreementFindings(emptyFixture()), [], "an empty tree must fail");
+  const owner = { [lean]: copies[lean] ?? "" };
+  assert.deepEqual(strayBoundLiteralFindings(fixture(owner)), []);
+  seeded(strayBoundLiteralFindings, { ...owner, "packages/kernel/src/feature/data.ts": "export const limit = 16_384;\n",
+    "Kernel/Feature/Flow.lean": "module\ndef limit : Nat := 1024 -- 256 in a comment is no literal\n" },
+    /G8 Kernel\/Feature\/Flow\.lean:2: literal 1024 restates the textBytes bound[\s\S]*G8 packages\/kernel\/src\/feature\/data\.ts:1: literal 16_384 restates the canonicalBytes bound/u);
+  assert.notDeepEqual(strayBoundLiteralFindings(emptyFixture()), [], "an empty tree must fail");
+});
 
 test("the tree stays within the guard 18 site budgets and the commit-scope rule", () => {
   assert.deepEqual([...fanOutFindings(tsMatchSiteCounts(tree)), ...commitScopeFindings(branchCommits())], []);

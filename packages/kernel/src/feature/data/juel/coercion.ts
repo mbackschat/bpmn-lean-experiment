@@ -2,8 +2,8 @@
  * Data: Java's carriers for portable values and the EL coercions between them (`TypeConverterImpl`, EL §1.18), for
  * the Core JUEL evaluator; transcribed from `Kernel/Feature/Data/Juel/Coercion.lean`.
  */
-import { ValueTag, assertNever, isAscii, parseJavaLong, utf8ByteSize, type Value } from "../../../il/types.js";
-import { canonicalDecimal, integerBound, textBytes } from "../../../hooks.js";
+import { ValueTag, assertNever, isAscii, parseJavaLong, utf8ByteSize, type Bounds, type Value } from "../../../il/types.js";
+import { canonicalDecimal, integerBound } from "../../../hooks.js";
 
 /** Which Java class carries an Integer during one evaluation; only Java `equals` observes it. */
 export enum Carrier {
@@ -53,7 +53,7 @@ const scaleBound = 4096n;
 const maxSafe = BigInt(integerBound);
 
 /** The portable value of a result, or `null` outside the domain (DATA-SEMANTICS-SPEC "Values"). */
-export function portable(value: JVal): Value | null {
+export function portable(bounds: Bounds, value: JVal): Value | null {
   switch (value.tag) {
     case JValTag.Null:
       return { tag: ValueTag.Null };
@@ -66,7 +66,7 @@ export function portable(value: JVal): Value | null {
         ? { tag: ValueTag.Decimal, coefficient: value.coefficient, scale: Number(value.scale) }
         : null;
     case JValTag.String:
-      return utf8ByteSize(value.value) <= textBytes ? { tag: ValueTag.String, value: value.value } : null;
+      return utf8ByteSize(value.value) <= bounds.textBytes ? { tag: ValueTag.String, value: value.value } : null;
     case JValTag.List:
       return { tag: ValueTag.List, items: value.items };
     case JValTag.Map:

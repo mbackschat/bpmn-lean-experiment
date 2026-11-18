@@ -469,7 +469,8 @@ theorem step_settles (contract : HookContract hooks inv) (phases : ClosurePhases
       obtain ⟨fired, admittedFired, picked⟩ := chosen
       rw [admittedStartsFired_eq] at admittedFired
       have firedRoot : hooks.startsFired (inputCtx hooks program (.start payload)) payload = .ok fired := by
-        cases admitting : admitValues (payload.variables.map (·.2)) <;>
+        cases admitting : admitValues (inputCtx hooks program (.start payload)).program.options.bounds
+            (payload.variables.map (·.2)) <;>
           simp_all [SeqRight.seqRight, Except.bind]
       have rooted := contract.startsFired _ _ _ firedRoot _ (Laws.Hooks.chooseStart_mem picked)
       have moved := microStep_keeps contract phases pipeline

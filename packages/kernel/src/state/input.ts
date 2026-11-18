@@ -2,7 +2,7 @@
  * Kernel inputs, transcribed from `Kernel/State/Input.lean`: the inputs a host submits, the occurrence identities they
  * name and the start triggers and deliveries they carry. Part of `state.ts`, which re-exports it.
  */
-import { type ElementId, type Value } from "../il/types.js";
+import { type Bounds, type ElementId, type Value } from "../il/types.js";
 import { type Binding, InputTag, type MessageChannel, type SignalAddress } from "./wait.js";
 
 /** The public identity of an occurrence: its process instance, the element and its activation number. */
@@ -198,6 +198,8 @@ export type Input =
 export interface EvalContext {
   readonly variables: readonly Binding[];
   readonly nowMs: number;
+  /** The program's value bounds (`ProfileOptions.bounds`), which a JUEL result's portable-domain check reads. */
+  readonly bounds: Bounds;
   /**
    * Whether a JUEL result passes the portable-domain check before the site sees it, `true` when absent; the
    * Multi-Instance count and collection sites read it first (EXPRESSION-SEMANTICS-SPEC "Multi-Instance level", Results).

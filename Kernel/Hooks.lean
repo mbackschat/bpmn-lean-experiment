@@ -111,57 +111,58 @@ def canonicalDecimal (coefficient scale : Int) : Bool :=
   else 0 ≤ scale && scale ≤ 6 && -9223372036854775808 ≤ coefficient && coefficient ≤ 9223372036854775807 &&
     (scale == 0 || coefficient % 10 != 0)
 
-/-- The UTF-8 bytes of a portable String or Map key, the one owner of that bound. -/
-def textBytes : Nat := 1024
-
 /-- The largest portable Integer, 2^53 − 1, the one owner of that bound. -/
 def integerBound : Int := 9007199254740991
 
-/-- Map keys of at most `textBytes` UTF-8 bytes, in strictly increasing Unicode-scalar order. -/
-def keysInDomain (entries : List (String × Value)) : Bool :=
-  entries.all (·.1.utf8ByteSize ≤ textBytes) && (entries.zip entries.tail).all fun (left, right) => decide (left.1 < right.1)
+/-- Map keys of at most `bounds.textBytes` UTF-8 bytes, in strictly increasing Unicode-scalar order. -/
+def keysInDomain (bounds : Bounds) (entries : List (String × Value)) : Bool :=
+  entries.all (·.1.utf8ByteSize ≤ bounds.textBytes) &&
+    (entries.zip entries.tail).all fun (left, right) => decide (left.1 < right.1)
 
-/- The bounds below are project policy, not CIB limits (the portable-values contract's "Finite limits"): four
-container levels, 32 members per container, 256 value nodes, 16,384 canonical bytes, 1,024-byte Strings and keys,
-Integers up to 2^53 − 1. -/
 mutual
-/-- The value nodes of `value`, the root included, when every node lies in the portable domain and no container is
-nested deeper than four levels counting from `depth` containers above it; `none` otherwise. A String List is
-outside the portable arms at every depth. -/
-def domainNodes (depth : Nat) : Value → Option Nat
+/-- The value nodes of `value`, the root included, when every node lies in the portable domain under `bounds` and no
+container is nested deeper than `bounds.containerLevels` counting from `depth` containers above it; `none` otherwise.
+Integers stay within 2^53 − 1. A String List is outside the portable arms at every depth. -/
+def domainNodes (bounds : Bounds) (depth : Nat) : Value → Option Nat
   | .null => some 1
   | .bool _ => some 1
   | .int value => if 0 ≤ value && value ≤ integerBound then some 1 else none
   | .decimal coefficient scale => if canonicalDecimal coefficient scale then some 1 else none
-  | .string value => if value.utf8ByteSize ≤ textBytes then some 1 else none
+  | .string value => if value.utf8ByteSize ≤ bounds.textBytes then some 1 else none
   | .stringList _ => none
-  | .list items => if depth < 4 && items.length ≤ 32 then (memberNodes (depth + 1) items).map (· + 1) else none
+  | .list items =>
+    if depth < bounds.containerLevels && items.length ≤ bounds.containerMembers then
+      (memberNodes bounds (depth + 1) items).map (· + 1)
+    else none
   | .map entries =>
-    if depth < 4 && entries.length ≤ 32 && keysInDomain entries then (entryNodes (depth + 1) entries).map (· + 1)
+    if depth < bounds.containerLevels && entries.length ≤ bounds.containerMembers && keysInDomain bounds entries then
+      (entryNodes bounds (depth + 1) entries).map (· + 1)
     else none
 
-def memberNodes (depth : Nat) : List Value → Option Nat
+def memberNodes (bounds : Bounds) (depth : Nat) : List Value → Option Nat
   | [] => some 0
-  | item :: items => do some ((← domainNodes depth item) + (← memberNodes depth items))
+  | item :: items => do some ((← domainNodes bounds depth item) + (← memberNodes bounds depth items))
 
-def entryNodes (depth : Nat) : List (String × Value) → Option Nat
+def entryNodes (bounds : Bounds) (depth : Nat) : List (String × Value) → Option Nat
   | [] => some 0
-  | (_, value) :: entries => do some ((← domainNodes depth value) + (← entryNodes depth entries))
+  | (_, value) :: entries => do some ((← domainNodes bounds depth value) + (← entryNodes bounds depth entries))
 end
 
-/-- Whether `value` may be a variable's value: a portable value within every bound, or a `stringList` as a whole
-variable value with at most 32 Strings of at most 1,024 bytes, the bounds its wire form has (DATA-SEMANTICS-SPEC
-"Values"). -/
-def inValueDomain : Value → Bool
-  | .stringList items => items.length ≤ 32 && items.all (·.utf8ByteSize ≤ textBytes)
-  | value =>
-    match domainNodes 0 value, valueBytes value with
-    | some nodes, some bytes => nodes ≤ 256 && bytes ≤ 16384
+/-- Whether `value` may be a variable's value under `bounds`: a portable value within every bound, or a `stringList` as
+a whole variable value with at most `containerMembers` Strings of at most `textBytes` bytes, the bounds its wire form
+has (DATA-SEMANTICS-SPEC "Values"). -/
+def inValueDomain (bounds : Bounds) (value : Value) : Bool :=
+  match value with
+  | .stringList items => items.length ≤ bounds.containerMembers && items.all (·.utf8ByteSize ≤ bounds.textBytes)
+  | .null | .bool _ | .int _ | .decimal _ _ | .string _ | .list _ | .map _ =>
+    match domainNodes bounds 0 value, valueBytes value with
+    | some nodes, some bytes => nodes ≤ bounds.valueNodes && bytes ≤ bounds.canonicalBytes
     | _, _ => false
 
-/-- Refuse an input whose values leave the domain, before its transition: rejected whole, never truncated. -/
-def admitValues (values : List Value) : Except Failure Unit :=
-  if values.all inValueDomain then .ok () else .error (.rejected "value-outside-domain")
+/-- Refuse an input whose values leave the domain `bounds` sets, before its transition: rejected whole, never
+truncated. -/
+def admitValues (bounds : Bounds) (values : List Value) : Except Failure Unit :=
+  if values.all (inValueDomain bounds) then .ok () else .error (.rejected "value-outside-domain")
 
 /-- The start Event a start input starts among the starts its trigger fired (`Hooks.startsFired`): the one it names,
 else the only one; several unnamed are `start-ambiguous`, since one input starts one instance at one start. -/
@@ -178,7 +179,7 @@ def State.hold (state : State) (held : Held) : State :=
 
 /-- What an expression evaluated from `scope` reads. -/
 def State.evalContext (state : State) (program : Program) (scope : ScopeOccurrenceId) : EvalContext :=
-  { variables := state.visible program scope, nowMs := state.logicalTimeMs }
+  { variables := state.visible program scope, nowMs := state.logicalTimeMs, bounds := program.options.bounds }
 
 /-- The variables `scope` itself holds, without the chain behind it. -/
 def State.ownVariables (state : State) (scope : ScopeOccurrenceId) : List (String × Value) :=
@@ -262,10 +263,10 @@ later write of the same name replaces it, so it stands behind the written output
 def Ctx.outputReads (ctx : Ctx) (nowMs : Nat) (own installed outer : List (String × Value))
     (written : List (String × Value)) : EvalContext :=
   match ctx.program.options.outputContext with
-  | .submission => { variables := installed ++ own ++ outer, nowMs }
+  | .submission => { variables := installed ++ own ++ outer, nowMs, bounds := ctx.program.options.bounds }
   | .activityScope =>
     let (held, outward) := installed.partition fun (name, _) => own.any (·.1 == name)
-    { variables := held ++ own ++ written.reverse ++ outward ++ outer, nowMs }
+    { variables := held ++ own ++ written.reverse ++ outward ++ outer, nowMs, bounds := ctx.program.options.bounds }
 
 /-- The bindings of `mappings` where an unavailable source has no state to wait in, a semantic failure. -/
 def Ctx.requireMappingsWith (ctx : Ctx) (reads : List (String × Value) → EvalContext) (mappings : List Mapping) :

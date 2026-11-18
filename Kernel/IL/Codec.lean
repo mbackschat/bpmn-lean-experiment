@@ -50,7 +50,7 @@ deriving instance FromJson, ToJson for JuelFunctionNode, JuelCallNode, JuelCompu
   CompensationReferenceScope, AbnormalScopeEnd, UnhandledError, ErrorCatchVariables, CallBindingTime, Evaluator, ConditionOrder,
   MultiInstanceBinding, ResultValues, OutputContext, MultiInstanceCounters, MultiInstanceInputFailure, MultiInstanceCount, CollectionRead,
   BusinessRuleTask, ScriptTask, ConfiguredTask, InclusiveJoinReach, BranchSchedule, ConditionalRetrigger, MalformedTimer, MessageNames, ScopeStart,
-  SignalNames, SignalPayload, SignalDelivery, ConditionalStart, CalledElementResolution, MessageThrowForms, ProfileOptions,
+  SignalNames, SignalPayload, SignalDelivery, ConditionalStart, CalledElementResolution, MessageThrowForms, Bounds, ProfileOptions,
   CalledProcess, Program
 
 /-- `[{name, value}]`, the scenario contract's variable bindings. -/

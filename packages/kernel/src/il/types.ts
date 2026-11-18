@@ -36,7 +36,7 @@ export {
   UnhandledError, ErrorCatchVariables,
   MultiInstanceBinding, ResultValues, OutputContext, MultiInstanceCounters, MultiInstanceInputFailure, MultiInstanceCount,
   CollectionRead, multiInstanceCounterNames, BusinessRuleTask, ScriptTask, ConfiguredTask, InclusiveJoinReach, BranchSchedule, ConditionalRetrigger, MalformedTimer, MessageNames,
-  ScopeStart, SignalNames, SignalPayload, SignalDelivery, ConditionalStart, CalledElementResolution, MessageThrowForms,
+  ScopeStart, SignalNames, SignalPayload, SignalDelivery, ConditionalStart, CalledElementResolution, MessageThrowForms, defaultBounds, type Bounds,
 } from "./types/options.js";
 export {
   ExpressionTag, MappingDialect, ParameterNodeTag, SimpleBooleanTag, ValueSourceTag, ValueTag, type Expression, type Mapping,

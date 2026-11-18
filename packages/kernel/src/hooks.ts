@@ -10,6 +10,7 @@
 import {
   MappingDialect,
   OutputContext,
+  type Bounds,
   ValueTag,
   assertNever,
   compareStrings,
@@ -244,28 +245,21 @@ export function canonicalDecimal(coefficient: bigint, scale: bigint): boolean {
   return scale >= 0n && scale <= 6n && BigInt.asIntN(64, coefficient) === coefficient && (scale === 0n || coefficient % 10n !== 0n);
 }
 
-/** Map keys of at most `textBytes` UTF-8 bytes, in strictly increasing Unicode-scalar order. */
-function keysInDomain(entries: readonly Binding[]): boolean {
-  return entries.every(([key], index) => utf8ByteSize(key) <= textBytes &&
+/** Map keys of at most `bounds.textBytes` UTF-8 bytes, in strictly increasing Unicode-scalar order. */
+function keysInDomain(bounds: Bounds, entries: readonly Binding[]): boolean {
+  return entries.every(([key], index) => utf8ByteSize(key) <= bounds.textBytes &&
     (index === 0 || compareStrings(entries[index - 1]?.[0] ?? "", key) < 0));
 }
 
-/** The portable domain's bounds: project policy, not CIB limits (the portable-values contract's "Finite limits"). */
-const containerLevels = 4;
-const containerMembers = 32;
-const valueNodes = 256;
-const valueJsonBytes = 16384;
-/** The UTF-8 bytes of a portable String or Map key, the one owner of that bound. */
-export const textBytes = 1024;
 /** The largest portable Integer, 2^53 − 1, the one owner of that bound. */
 export const integerBound = 9007199254740991;
 
 /**
- * The value nodes of `value`, the root included, when every node lies in the portable domain and no container is
- * nested deeper than `containerLevels` counting from `depth` containers above it; `null` otherwise. A String List is
- * outside the portable arms at every depth.
+ * The value nodes of `value`, the root included, when every node lies in the portable domain under `bounds` and no
+ * container is nested deeper than `bounds.containerLevels` counting from `depth` containers above it; `null` otherwise.
+ * A String List is outside the portable arms at every depth.
  */
-function domainNodes(value: Value, depth: number): number | null {
+function domainNodes(bounds: Bounds, value: Value, depth: number): number | null {
   switch (value.tag) {
     case ValueTag.Null:
     case ValueTag.Bool:
@@ -275,23 +269,25 @@ function domainNodes(value: Value, depth: number): number | null {
     case ValueTag.Decimal:
       return canonicalDecimal(value.coefficient, BigInt(value.scale)) ? 1 : null;
     case ValueTag.String:
-      return utf8ByteSize(value.value) <= textBytes ? 1 : null;
+      return utf8ByteSize(value.value) <= bounds.textBytes ? 1 : null;
     case ValueTag.StringList:
       return null;
     case ValueTag.List:
-      return depth < containerLevels && value.items.length <= containerMembers ? memberNodes(value.items, depth + 1) : null;
+      return depth < bounds.containerLevels && value.items.length <= bounds.containerMembers
+        ? memberNodes(bounds, value.items, depth + 1)
+        : null;
     case ValueTag.Map:
-      return depth < containerLevels && value.entries.length <= containerMembers && keysInDomain(value.entries)
-        ? memberNodes(value.entries.map(([, member]) => member), depth + 1)
+      return depth < bounds.containerLevels && value.entries.length <= bounds.containerMembers && keysInDomain(bounds, value.entries)
+        ? memberNodes(bounds, value.entries.map(([, member]) => member), depth + 1)
         : null;
   }
   return assertNever(value);
 }
 
-function memberNodes(members: readonly Value[], depth: number): number | null {
+function memberNodes(bounds: Bounds, members: readonly Value[], depth: number): number | null {
   let total = 1;
   for (const member of members) {
-    const nodes = domainNodes(member, depth);
+    const nodes = domainNodes(bounds, member, depth);
     if (nodes === null) return null;
     total += nodes;
   }
@@ -299,27 +295,37 @@ function memberNodes(members: readonly Value[], depth: number): number | null {
 }
 
 /**
- * Whether `value` may be a variable's value: a portable value within every bound, or a `stringList` as a whole variable
- * value with at most `containerMembers` Strings of at most `textBytes` bytes, the bounds its wire form has
- * (DATA-SEMANTICS-SPEC "Values").
+ * Whether `value` may be a variable's value under `bounds`: a portable value within every bound, or a `stringList` as a
+ * whole variable value with at most `containerMembers` Strings of at most `textBytes` bytes, the bounds its wire form
+ * has (DATA-SEMANTICS-SPEC "Values").
  */
-export function inValueDomain(value: Value): boolean {
-  if (value.tag === ValueTag.StringList) {
-    return value.items.length <= containerMembers && value.items.every((item) => utf8ByteSize(item) <= textBytes);
+export function inValueDomain(bounds: Bounds, value: Value): boolean {
+  switch (value.tag) {
+    case ValueTag.StringList:
+      return value.items.length <= bounds.containerMembers && value.items.every((item) => utf8ByteSize(item) <= bounds.textBytes);
+    case ValueTag.Null:
+    case ValueTag.Bool:
+    case ValueTag.Int:
+    case ValueTag.Decimal:
+    case ValueTag.String:
+    case ValueTag.List:
+    case ValueTag.Map: {
+      const nodes = domainNodes(bounds, value, 0);
+      const bytes = valueBytes(value);
+      return nodes !== null && nodes <= bounds.valueNodes && bytes !== null && bytes <= bounds.canonicalBytes;
+    }
   }
-  const nodes = domainNodes(value, 0);
-  const bytes = valueBytes(value);
-  return nodes !== null && nodes <= valueNodes && bytes !== null && bytes <= valueJsonBytes;
+  return assertNever(value);
 }
 
-/** Refuse an input whose values leave the domain, before its transition: rejected whole, never truncated. */
-export function admitValues(values: readonly Value[]): Result<null> {
-  return values.every(inValueDomain) ? committed(null) : failed(FailureTag.Rejected, "value-outside-domain");
+/** Refuse an input whose values leave the domain `bounds` sets, before its transition: rejected whole, never truncated. */
+export function admitValues(bounds: Bounds, values: readonly Value[]): Result<null> {
+  return values.every((value) => inValueDomain(bounds, value)) ? committed(null) : failed(FailureTag.Rejected, "value-outside-domain");
 }
 
-/** Lean's `admitValues values *> next`, as `Kernel.Step` writes it: `next` runs only on values inside the domain. */
-export function admitThen<T>(values: readonly Value[], next: () => Result<T>): Result<T> {
-  const admitted = admitValues(values);
+/** Lean's `admitValues bounds values *> next`, as `Kernel.Step` writes it: `next` runs only on values inside the domain. */
+export function admitThen<T>(bounds: Bounds, values: readonly Value[], next: () => Result<T>): Result<T> {
+  const admitted = admitValues(bounds, values);
   return admitted.ok ? next() : failedWith(admitted.failure);
 }
 
@@ -341,7 +347,7 @@ export function hold(state: State, held: Held): State {
 
 /** What an expression evaluated from `scope` reads. */
 export function evalContext(state: State, program: Program, scope: ScopeOccurrenceId): EvalContext {
-  return { variables: visible(state, program, scope), nowMs: state.logicalTimeMs };
+  return { variables: visible(state, program, scope), nowMs: state.logicalTimeMs, bounds: program.options.bounds };
 }
 
 /** The variables `scope` itself holds, without the chain behind it. */
@@ -473,12 +479,14 @@ export function ctxOutputReads(
 ): (written: readonly Binding[]) => EvalContext {
   switch (ctx.program.options.outputContext) {
     case OutputContext.Submission:
-      return () => ({ variables: [...installed, ...own, ...outer], nowMs });
+      return () => ({ variables: [...installed, ...own, ...outer], nowMs, bounds: ctx.program.options.bounds });
     case OutputContext.ActivityScope: {
       const owned = (name: string): boolean => own.some(([other]) => other === name);
       const held = installed.filter(([name]) => owned(name));
       const outward = installed.filter(([name]) => !owned(name));
-      return (written) => ({ variables: [...held, ...own, ...[...written].reverse(), ...outward, ...outer], nowMs });
+      return (written) => ({
+        variables: [...held, ...own, ...[...written].reverse(), ...outward, ...outer], nowMs, bounds: ctx.program.options.bounds,
+      });
     }
   }
   return assertNever(ctx.program.options.outputContext);

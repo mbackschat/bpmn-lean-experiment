@@ -405,7 +405,7 @@ def command (hooks : Hooks) (ctx : Ctx) (input : CommandInput) (state : State) :
   | .retryIncident generation => incident fun item detail => hooks.retryIncident ctx item detail generation state
   | .cancelIncidentProcess generation => incident fun _ detail => hooks.cancelIncidentProcess ctx detail generation state
   | .setVariables values =>
-    admitValues (values.map (·.2)) *> variables fun scope => .write scope values .outward
+    admitValues ctx.program.options.bounds (values.map (·.2)) *> variables fun scope => .write scope values .outward
   | .removeVariables names => variables fun scope => .remove scope names
 
 def deliverEffectResult (hooks : Hooks) (ctx : Ctx) (input : EffectInput) (state : State) : Outcome :=
@@ -452,7 +452,7 @@ before any transition reads them, and a Conditional start's predicate reads the 
 start step and a population's Conditional start evaluation (`Population.conditionalStartVerdict`) both fire starts
 through it. -/
 def admittedStartsFired (hooks : Hooks) (ctx : Ctx) (input : StartInput) : Except Failure (List ElementId) :=
-  admitValues (input.variables.map (·.2)) *> hooks.startsFired ctx input
+  admitValues ctx.program.options.bounds (input.variables.map (·.2)) *> hooks.startsFired ctx input
 
 /-- One input. `none` is the state before the instance starts; only a start applies to it. The root's Event
 Sub-Process starts are armed before the start Event's tokens move. Every hook of the input's closure reads its

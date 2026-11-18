@@ -497,7 +497,7 @@ function command(hooks: Hooks, ctx: Ctx, input: CommandInput, state: State): Out
     case CommandActionTag.CancelIncidentProcess:
       return incident((_item, detail) => hooks.cancelIncidentProcess(ctx, detail, action.generation, state));
     case CommandActionTag.SetVariables:
-      return admitThen(action.values.map(([, value]) => value), () => variables((scope) => ({ tag: SignalTag.Write, scope, writes: action.values, rule: WriteRule.Outward })));
+      return admitThen(ctx.program.options.bounds, action.values.map(([, value]) => value), () => variables((scope) => ({ tag: SignalTag.Write, scope, writes: action.values, rule: WriteRule.Outward })));
     case CommandActionTag.RemoveVariables:
       return variables((scope) => ({ tag: SignalTag.Remove, scope, names: action.names }));
   }
@@ -579,7 +579,7 @@ export function context(hooks: Hooks, program: Program): Ctx {
  * population's Conditional start evaluation (`conditionalStartVerdict`) both fire starts through it.
  */
 export function admittedStartsFired(hooks: Hooks, ctx: Ctx, input: StartInput): Result<readonly ElementId[]> {
-  return admitThen(input.variables.map(([, value]) => value), () => hooks.startsFired(ctx, input));
+  return admitThen(ctx.program.options.bounds, input.variables.map(([, value]) => value), () => hooks.startsFired(ctx, input));
 }
 
 /**

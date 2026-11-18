@@ -35,7 +35,8 @@ export {
 export { admit, admitLocated, closureReach, type AdmissionRefusal } from "./admission-registry.js";
 export { VisitTag, conditionalCatches, type Closure, type Visit } from "./admission/flow/closure.js";
 export { hooks } from "./registry.js";
-export { integerBound, textBytes } from "./hooks.js";
+export { integerBound } from "./hooks.js";
+export { defaultBounds, type Bounds } from "./il/types/options.js";
 export { isJavascriptFormat } from "./admission/work.js";
 export { step } from "./step.js";
 export { definitionCapabilities, hostRequirements, hostView, refusesSignalVariables, rootStarts } from "./host.js";

@@ -450,7 +450,7 @@ def evaluateJuel (context : EvalContext) (nodes : List JuelNode) : Evaluation :=
     | .error (.failure code) => .failure code
     | .error (.unsupported code) => .unsupported code
     | .ok result =>
-      match (if context.domainChecked then portable else siteValue) result with
+      match (if context.domainChecked then portable context.bounds else siteValue) result with
       | some value => .value value
       -- dynamic-only: whether a result is portable depends on the run's data.
       | none => .unsupported "juel.resultOutsideDomain"

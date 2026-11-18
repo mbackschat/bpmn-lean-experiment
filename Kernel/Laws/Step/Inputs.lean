@@ -181,7 +181,7 @@ theorem step_refusesValues {hooks : Hooks} {program : Program} {before : Option 
     {values : List (String × Value)} {failure : Failure}
     (submits : (∃ payload : StartInput, input = .start payload ∧ payload.variables = values) ∨
       ∃ payload : CommandInput, input = .command payload ∧ payload.action = .setVariables values)
-    (refused : admitValues (values.map (·.2)) = .error failure) :
+    (refused : admitValues program.options.bounds (values.map (·.2)) = .error failure) :
     ∃ code, step hooks program before input = .error (.rejected code) := by
   have rejected := Laws.Hooks.admitValues_error refused
   subst rejected
@@ -189,15 +189,15 @@ theorem step_refusesValues {hooks : Hooks} {program : Program} {before : Option 
   · rw [step_eq]
     cases before with
     | some _ => exact ⟨_, rfl⟩
-    | none => exact ⟨"value-outside-domain", by simp [admittedStartsFired_eq, refused, SeqRight.seqRight, bind,
-        Except.bind]⟩
+    | none => exact ⟨"value-outside-domain", by simp [admittedStartsFired_eq, context_program, refused,
+        SeqRight.seqRight, bind, Except.bind]⟩
   · rw [step_eq]
     cases before with
     | none => exact ⟨_, by dsimp only; rw [onRunning_eq]⟩
     | some state =>
       refine onRunning_rejects fun s _ => ⟨"value-outside-domain", ?_⟩
       rw [command_eq]
-      simp [action, refused, SeqRight.seqRight, Except.bind]
+      simp [action, context_program, refused, SeqRight.seqRight, Except.bind]
 
 theorem command_ok {hooks : Hooks} {ctx : Ctx} {data : CommandInput} {state after : State}
     (ran : command hooks ctx data state = .ok after) : Commands hooks ctx state after := by

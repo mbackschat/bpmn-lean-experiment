@@ -399,6 +399,22 @@ inductive MessageThrowForms where
   | cibForms
   deriving DecidableEq, Repr
 
+/-- The value domain's bounds (HD7, `docs/REWRITE-2-PROPOSAL.md`): project policy, not CIB limits (the portable-values
+contract's "Finite limits"). A program carries them with its options, so an instance keeps the bounds it started with;
+the defaults are the ratified rows, the one place their figures are written, and changing one is an owner decision. -/
+structure Bounds where
+  /-- Container levels a value nests at most. -/
+  containerLevels : Nat := 4
+  /-- Members of a List or a Map, and Strings of a String List, at most. -/
+  containerMembers : Nat := 32
+  /-- Tagged value nodes of a value, the root included, at most. -/
+  valueNodes : Nat := 256
+  /-- UTF-8 bytes of a value's canonical JSON at most. -/
+  canonicalBytes : Nat := 16384
+  /-- UTF-8 bytes of a String or a Map key at most. -/
+  textBytes : Nat := 1024
+  deriving Repr
+
 structure ProfileOptions where
   relations : List String := []
   evaluator : Evaluator := .simpleBoolean
@@ -406,6 +422,7 @@ structure ProfileOptions where
   /-- When set, a User Task submission may name only variables a scope occurrence on the task's chain declares, each
   once, and its canonical JSON may take at most this many UTF-8 bytes (CIB-EXT-0020, `NSD-TASK-01`). -/
   scopeChainSubmissionBytes : Option Nat := none
+  bounds : Bounds := {}
   undeclaredWrite : UndeclaredWrite := .refused
   errorPathOutputs : ErrorPathOutputs := .none
   raisedCallOutputs : RaisedCallOutputs := .none

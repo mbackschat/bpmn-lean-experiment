@@ -147,6 +147,13 @@
     "evaluator": "juel",
     "submission": "installsVariables",
     "scopeChainSubmissionBytes": 16384,
+    "bounds": {
+      "containerLevels": 4,
+      "containerMembers": 32,
+      "valueNodes": 256,
+      "canonicalBytes": 16384,
+      "textBytes": 1024
+    },
     "undeclaredWrite": "atInstanceRoot",
     "errorPathOutputs": "mapped",
     "raisedCallOutputs": "atCalledRoot",

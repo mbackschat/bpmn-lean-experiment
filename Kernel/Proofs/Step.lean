@@ -55,7 +55,8 @@ def ExclusiveArrival : Prop :=
       occurrence.element = gateway ∧ occurrence.scope = scope ∧ occurrence.incoming = some flow ∧
       next = begun.signal (.complete occurrence.id (.flows taken) [] .outward) ∧
       Laws.Flow.ExclusiveTakes candidates default
-        (Laws.Flow.candidateHolds ctx { variables := state.visible ctx.program scope, nowMs := state.logicalTimeMs })
+        (Laws.Flow.candidateHolds ctx
+          { variables := state.visible ctx.program scope, nowMs := state.logicalTimeMs, bounds := ctx.program.options.bounds })
         evaluated (some taken)
 
 /-- The representative theorem of P0: `Step`'s token routing and dispatch (`Laws.Step`), the registered Gateway hook

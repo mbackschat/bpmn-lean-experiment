@@ -356,7 +356,7 @@ export function completeUserTask(
   values: readonly Binding[],
   state: State,
 ): Outcome {
-  const admitted = admitValues(values.map(([, value]) => value));
+  const admitted = admitValues(ctx.program.options.bounds, values.map(([, value]) => value));
   if (!admitted.ok) return failedWith(admitted.failure);
   const limit = ctx.program.options.scopeChainSubmissionBytes;
   if (limit !== null) {
@@ -466,7 +466,7 @@ export function effectResult(ctx: Ctx, item: OpenItem, outcome: EffectOutcome, s
   const mappings = envelope?.outputs ?? [];
   switch (outcome.tag) {
     case EffectOutcomeTag.Success: {
-      const admitted = admitValues(outcome.outputs.map(([, value]) => value));
+      const admitted = admitValues(ctx.program.options.bounds, outcome.outputs.map(([, value]) => value));
       if (!admitted.ok) return failedWith(admitted.failure);
       const activity = element === null ? null : elementActivity(element);
       const results = activity === null ? [] : workResults(activity[1].work);
@@ -479,7 +479,7 @@ export function effectResult(ctx: Ctx, item: OpenItem, outcome: EffectOutcome, s
       return committed(signal(installed, effectCompletion(envelope, unconsumed(ctx, envelope), item.id.occurrence, written.value, rest)));
     }
     case EffectOutcomeTag.BusinessFailure: {
-      const admitted = admitValues(outcome.outputs.map(([, value]) => value));
+      const admitted = admitValues(ctx.program.options.bounds, outcome.outputs.map(([, value]) => value));
       if (!admitted.ok) return failedWith(admitted.failure);
       const accepted = errorPatchAccepted(ctx, outcome.outputs);
       if (!accepted.ok) return failedWith(accepted.failure);
@@ -640,7 +640,7 @@ export function triggerActivity(
     case FiredTag.Message: {
       const channel = openKindView(item.kind).channel;
       if (channel === null) return semanticFailure(SemanticCause.Invariant, "activity-message-without-message");
-      if (fired.delivery.payload !== null && !inValueDomain(fired.delivery.payload)) return failed(FailureTag.Rejected, "value-outside-domain");
+      if (fired.delivery.payload !== null && !inValueDomain(ctx.program.options.bounds, fired.delivery.payload)) return failed(FailureTag.Rejected, "value-outside-domain");
       if (!optionalChannelEquals(deliveryTriggerChannel(fired.delivery.trigger), channel)) {
         return failed(FailureTag.Rejected, "message-channel-mismatch");
       }
@@ -662,7 +662,7 @@ export function triggerActivity(
       } else if (delivery.payload !== null) {
         return failed(FailureTag.Rejected, "message-payload-not-accepted");
       }
-      const installed = admitValues(delivery.variables.map(([, value]) => value));
+      const installed = admitValues(ctx.program.options.bounds, delivery.variables.map(([, value]) => value));
       if (!installed.ok) return failedWith(installed.failure);
       return committed(signal(state, completeSignal(item.id.occurrence, leaveOutgoing, [...mapped, ...delivery.variables], WriteRule.Outward)));
     }

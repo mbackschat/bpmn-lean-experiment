@@ -248,7 +248,8 @@ theorem step_eq {hooks : Hooks} {program : Program} {before : Option State} {inp
 
 /-- `Step.admittedStartsFired` restated: a start's submitted values are admitted before its starts are fired. -/
 theorem admittedStartsFired_eq {hooks : Hooks} {ctx : Ctx} {input : StartInput} :
-    admittedStartsFired hooks ctx input = (admitValues (input.variables.map (·.2)) *> hooks.startsFired ctx input) := by
+    admittedStartsFired hooks ctx input =
+      (admitValues ctx.program.options.bounds (input.variables.map (·.2)) *> hooks.startsFired ctx input) := by
   unfold admittedStartsFired; rfl
 
 theorem onRunning_eq {hooks : Hooks} {ctx : Ctx} {input : Input} {before : Option State}
@@ -288,7 +289,7 @@ theorem command_eq {hooks : Hooks} {ctx : Ctx} {data : CommandInput} {state : St
       | .retryIncident generation => incident fun item detail => hooks.retryIncident ctx item detail generation state
       | .cancelIncidentProcess generation => incident fun _ detail => hooks.cancelIncidentProcess ctx detail generation state
       | .setVariables values =>
-        admitValues (values.map (·.2)) *> variables fun scope => .write scope values .outward
+        admitValues ctx.program.options.bounds (values.map (·.2)) *> variables fun scope => .write scope values .outward
       | .removeVariables names => variables fun scope => .remove scope names := by
   unfold command atActivity; rfl
 

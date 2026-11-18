@@ -76,6 +76,7 @@ One enumerated field per decision point the kernel branches on, each defaulting 
 | `evaluator` | `simpleBoolean`, `juel` |
 | `submission` | `outputSet`, `installsVariables` |
 | `scopeChainSubmissionBytes` | `null` or a byte limit |
+| `bounds` | the value domain's bounds (`containerLevels` 4, `containerMembers` 32, `valueNodes` 256, `canonicalBytes` 16,384, `textBytes` 1,024 by default), carried with the program so an instance keeps the bounds it started with (HD7 of the [rewrite proposal](../REWRITE-2-PROPOSAL.md)); the Lean `Bounds` defaults are their one owner, and a guard fails a copy elsewhere that disagrees |
 | `undeclaredWrite` | `refused`, `atInstanceRoot` |
 | `errorPathOutputs` | `none`, `mapped` |
 | `technicalFailure` | `hostFailure`, `incident` |

@@ -15,7 +15,7 @@
 import vm from "node:vm";
 
 import type { ScriptRequest } from "./host-machine.js";
-import { isJavascriptFormat, textBytes } from "./kernel-port.js";
+import { defaultBounds, isJavascriptFormat } from "./kernel-port.js";
 import { EffectResultKind, type EffectResult, type JsonValue } from "./port.js";
 
 export interface ScriptOptions {
@@ -79,7 +79,7 @@ function resultValue(value: unknown): JsonValue | null | undefined {
     case "number":
       return Number.isInteger(value) && value >= 0 && value <= maxResultInteger ? { kind: "integer", value: value + 0 } : undefined;
     case "string":
-      return value.isWellFormed() && Buffer.byteLength(value, "utf8") <= textBytes ? { kind: "string", value } : undefined;
+      return value.isWellFormed() && Buffer.byteLength(value, "utf8") <= defaultBounds.textBytes ? { kind: "string", value } : undefined;
     case "object": return value === null ? null : undefined;
     case "bigint": case "function": case "symbol": return undefined;
   }
