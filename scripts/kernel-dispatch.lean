@@ -6,11 +6,12 @@ closed dispatch and no catch-all, read from the built environment because only t
 type a `match`, `if let` or `matches` discriminates and which alternatives cover which constructors; and guard 9's
 nested-inductive rule, read from the same environment because only the elaborated inductive shows its nesting.
 
-- Closed dispatch: a guarded type is matched (`match`, `casesOn`, `rec`, `ctorIdx`) only in its owner module, the
-  module that defines it, `Kernel.IL.Codec` and its submodules, the owner's own `Admission` and `Laws` modules, and
-  `Kernel.Proofs.Step`; `Element` and `EventRole` also in `Kernel.AdmissionRegistry`. A `Laws` module's compiler-generated lemmas about a
-  body it sees (`generatedFromSeen`) are not its matches. Nothing compares one with `==` or
-  `decide`: no guarded type has a `DecidableEq` or `BEq` instance outside its defining module.
+- Closed dispatch: a guarded type is matched (`match`, `casesOn`, `rec`, `ctorIdx`), as a discriminant or by a
+  constructor named at any depth of a pattern, only in its owner module, the module that defines it,
+  `Kernel.IL.Codec` and its submodules, the owner's own `Admission` and `Laws` modules, and `Kernel.Proofs.Step`;
+  `Element` and `EventRole` also in `Kernel.AdmissionRegistry`. A `Laws` module's compiler-generated lemmas about a
+  body it sees (`generatedFromSeen`) are not its matches. Nothing compares one with `==` or `decide`: no guarded type
+  has a `DecidableEq` or `BEq` instance outside its defining module.
 - No catch-all: no match alternative binds a guarded-type discriminant to a variable, so every alternative names
   the constructors it covers and a new constructor fails to compile at every dispatch site. The same holds at any
   depth of a pattern, for the guarded types and for the types in `unowned`, which have no dispatch owner: where one
@@ -156,9 +157,10 @@ partial def positions (env : Environment) (path : List PatternStep) (pattern : E
     variables := variables ++ covered
   return (named, variables)
 
-/-- The guarded and `unowned` types some alternative of a matcher covers with a variable at or above a position where
-another alternative names one of their constructors. -/
-def nestedCatchAll (matcher : Name) (info : Match.MatcherInfo) : MetaM (List Name) := do
+/-- The guarded types whose constructors some alternative of a matcher names at any depth, and the guarded and
+`unowned` types some alternative covers with a variable at or above a position where another alternative names one of
+their constructors. -/
+def nestedAnalysis (matcher : Name) (info : Match.MatcherInfo) : MetaM (List Name × List Name) := do
   let constant ← getConstInfo matcher
   let env ← getEnv
   forallTelescope constant.type fun xs _ => do
@@ -174,19 +176,23 @@ def nestedCatchAll (matcher : Name) (info : Match.MatcherInfo) : MetaM (List Nam
           variables := variables ++ covered
         pure (named, variables)
       perAlternative := perAlternative ++ [found]
+    let mut matched : List Name := []
+    for (named, _) in perAlternative do
+      for (_, type) in named do
+        if guarded type && !matched.contains type then matched := matched ++ [type]
     let mut types : List Name := []
     for ((_, variables), index) in perAlternative.zipIdx do
       for ((named, _), other) in perAlternative.zipIdx do
         if other == index then continue
         for (path, type) in named do
           if variables.any (·.isPrefixOf path) && !types.contains type then types := types ++ [type]
-    pure types
+    pure (matched, types)
 
 def scan (env : Environment) : MetaM (List Finding × Bool) := do
   let mut findings : List Finding := []
   let mut stepMatchesElement := false
   let mut analyzed : Std.HashMap Name (List (Nat × Name) × List Name) := {}
-  let mut nestedAnalyzed : Std.HashMap Name (List Name) := {}
+  let mut nestedAnalyzed : Std.HashMap Name (List Name × List Name) := {}
   for (declaration, info) in env.constants.map₁.toList do
     let some idx := env.getModuleIdxFor? declaration | continue
     let some module := env.header.moduleNames[idx.toNat]? | continue
@@ -212,12 +218,15 @@ def scan (env : Environment) : MetaM (List Finding × Bool) := do
             findings := findings ++ [{ module, declaration, message := s!"matches guarded {type} outside its owner" }]
         for type in catchAll do
           findings := findings ++ [{ module, declaration, message := s!"catch-all alternative over guarded {type}" }]
-        let nestedCatchAlls ← match nestedAnalyzed.get? used with
+        let (nestedMatches, nestedCatchAlls) ← match nestedAnalyzed.get? used with
           | some result => pure result
           | none => do
-            let result ← nestedCatchAll used matcherInfo
+            let result ← nestedAnalysis used matcherInfo
             nestedAnalyzed := nestedAnalyzed.insert used result
             pure result
+        for type in nestedMatches do
+          unless allowed env type module do
+            findings := findings ++ [{ module, declaration, message := s!"matches guarded {type} outside its owner" }]
         for type in nestedCatchAlls do
           -- A codec decodes `Value` from the wire and decides no meaning; no module may cover a guarded type.
           if guarded type then
