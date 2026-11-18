@@ -114,7 +114,10 @@ function cleanBuild(lean: Lean, label: string): string[] {
 
 /** Guard 23: the dispatch scan rejects a match on a guarded type in a module that does not own it, a `Laws` module
  * matching another family's type included, and a hand-written match in the `Laws` module of the type's defining
- * module, whose exemption covers only the lemmas the compiler generates there; it accepts one in a codec submodule. */
+ * module, whose exemption covers only the lemmas the compiler generates there; it accepts one in a codec submodule.
+ * Its guard 9 part rejects a nested and a mutual inductive in an IL module, the OD2 (4) mark on a type other than
+ * `Value` with a field nesting outside the admitted arms, and `Value` once its mark is gone, which it reads from the
+ * source, so that seed needs no rebuild. */
 function proveDispatchScan(lean: Lean, directory: string): string[] {
   const file = path.join(directory, "Kernel", "Feature", "Data.lean");
   // Fully qualified: the seed lands outside the module's namespace, where an unqualified `Element` auto-binds.
@@ -128,8 +131,16 @@ function proveDispatchScan(lean: Lean, directory: string): string[] {
   // Every codec module may match a guarded type, `Kernel.IL.Codec`'s submodules included.
   const codecFile = path.join(directory, "Kernel", "IL", "Codec", "Decision.lean");
   const seededCodec = "def seededCodecSubmoduleMatch : Kernel.ScopeKind → Nat\n  | .embedded => 1\n  | .transaction _ => 2\n  | .eventSubProcess _ _ => 3";
+  // Guard 9's nesting rule covers every IL module, a codec's included: a nested, a marked non-`Value` and a mutual type.
+  const seededNesting = [
+    "inductive SeededNestedTree where\n  | leaf\n  | node (children : List SeededNestedTree)",
+    "-- guard-exception(9): OD2 (4) seeded on a type the owner did not admit",
+    "inductive SeededMarkedValue where\n  | list (items : List SeededMarkedValue)\n  | wrapped (inner : Option SeededMarkedValue)",
+    "mutual\ninductive SeededEven where\n  | zero\n  | next (odd : SeededOdd)\ninductive SeededOdd where\n  | next (even : SeededEven)\nend",
+  ].join("\n");
+  const valueFile = path.join(directory, "Kernel", "IL", "Types", "Expression.lean");
   let findings: string[] = [];
-  edited(file, seeded, () => edited(lawsFile, seededLaws, () => edited(ilLawsFile, seededIlLaws, () => edited(codecFile, seededCodec, () => {
+  edited(file, seeded, () => edited(lawsFile, seededLaws, () => edited(ilLawsFile, seededIlLaws, () => edited(codecFile, `${seededCodec}\n${seededNesting}`, () => {
     const build = lean(kernelTargets);
     if (build.status !== 0) {
       findings = [`G23: the seeded dispatch violation did not compile\n${build.output}`];
@@ -145,6 +156,24 @@ function proveDispatchScan(lean: Lean, directory: string): string[] {
     }
     if (scan.output.includes("seededCodecSubmoduleMatch")) {
       findings.push(`G23: kernel-dispatch.lean rejected a match in a codec submodule\n${scan.output}`);
+    }
+    for (const expected of [/SeededNestedTree: is a nested inductive/u, /SeededMarkedValue: carries the guard-exception\(9\): OD2 \(4\) mark/u,
+      /SeededMarkedValue: SeededMarkedValue\.wrapped nests it through Option/u, /SeededEven: is a mutual inductive/u]) {
+      if (!expected.test(scan.output)) findings.push(`G23: kernel-dispatch.lean did not report ${expected.source}\n${scan.output}`);
+    }
+    if (scan.output.includes("SeededMarkedValue.list")) {
+      findings.push(`G23: kernel-dispatch.lean rejected a marked type's admitted list arm\n${scan.output}`);
+    }
+    // The mark is read from the source at scan time, so editing it needs no rebuild.
+    const valueSource = readFileSync(valueFile, "utf8");
+    try {
+      writeFileSync(valueFile, valueSource.replace("guard-exception(9): OD2 (4)", "guard-exception(9): seeded removal"));
+      const unmarked = lean(["run", "scripts/kernel-dispatch.lean"]);
+      if (!/Kernel\.Value: is a nested inductive/u.test(unmarked.output)) {
+        findings.push(`G23: kernel-dispatch.lean admitted Value without its OD2 (4) mark\n${unmarked.output}`);
+      }
+    } finally {
+      writeFileSync(valueFile, valueSource);
     }
   }))));
   return findings;

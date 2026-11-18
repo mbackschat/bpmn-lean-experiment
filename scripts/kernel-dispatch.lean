@@ -3,7 +3,8 @@ import Lean
 /-!
 Guards 1 and 2 of the [kernel architecture](../docs/kernel/ARCHITECTURE-SPEC.md#guardrails-against-degradation):
 closed dispatch and no catch-all, read from the built environment because only the elaborated matchers show which
-type a `match`, `if let` or `matches` discriminates and which alternatives cover which constructors.
+type a `match`, `if let` or `matches` discriminates and which alternatives cover which constructors; and guard 9's
+nested-inductive rule, read from the same environment because only the elaborated inductive shows its nesting.
 
 - Closed dispatch: a guarded type is matched (`match`, `casesOn`, `rec`, `ctorIdx`) only in its owner module, the
   module that defines it, `Kernel.IL.Codec` and its submodules, the owner's own `Admission` and `Laws` modules, and
@@ -13,7 +14,14 @@ type a `match`, `if let` or `matches` discriminates and which alternatives cover
 - No catch-all: no match alternative binds a guarded-type discriminant to a variable, so every alternative names
   the constructors it covers and a new constructor fails to compile at every dispatch site.
 
-The scan must see `Kernel.Step` match `Element`, so a scan that reads nothing fails too.
+- No nested inductive: no inductive type of an IL or state module (`Kernel.IL`, `Kernel.State` and their submodules)
+  is nested or mutual, but `Kernel.Value`, the bounded value tree the owner admitted (OD2 (4), 2026-11-17), which
+  carries the mark `guard-exception(9): OD2 (4)` at its definition and nests only through its `list` constructor's
+  `List` of itself and its `map` constructor's `List` of `String` pairs. The mark is read from the source, so a
+  removed mark fails without a rebuild; a mark on another type fails, and so does a field of a marked type that nests
+  any other way.
+
+The scan must see `Kernel.Step` match `Element` and `Kernel.Value` nest, so a scan that reads nothing fails too.
 
 Usage, after `./scripts/lake.sh build Kernel kernelRun`: `./scripts/lake.sh run scripts/kernel-dispatch.lean`.
 Prints one line per violation and exits 1 when it prints any.
@@ -151,14 +159,95 @@ def scan (env : Environment) : MetaM (List Finding × Bool) := do
           findings := findings ++ [{ module, declaration, message := s!"catch-all alternative over guarded {type}" }]
   pure (findings, stepMatchesElement)
 
+/-- The modules whose inductive types are IL or state types, none of which may be nested or mutual. -/
+def shapeModules : List Name := [`Kernel.IL, `Kernel.State]
+
+/-- The one nested inductive type the owner admitted (OD2 (4), 2026-11-17), the bounded value tree. -/
+def admittedNested : Name := `Kernel.Value
+
+/-- The exception mark the admitted type carries at its definition, from the line above it to the line naming it. -/
+def nestingMark : String := "guard-exception(9): OD2 (4)"
+
+/-- Whether `field`, of `constructor` of the marked `type`, is a nesting the mark admits: a `list` constructor's `List`
+of `type`, or a `map` constructor's `List` of pairs of a `String` and `type`. -/
+def admittedField (constructor type : Name) (field : Expr) : Bool :=
+  field.isAppOfArity ``List 1 &&
+    match constructor, field.appArg! with
+    | .str _ "list", element => element.isConstOf type
+    | .str _ "map", element =>
+      element.isAppOfArity ``Prod 2 && element.appArg!.isConstOf type && element.appFn!.appArg!.isConstOf ``String
+    | _, _ => false
+
+/-- A nested or mutual inductive type of an IL or state module: where its exception mark may lie, from the line above
+its declaration to the line naming it, and the constructor fields that nest it outside the admitted ones. -/
+structure Nesting where
+  module : Name
+  type : Name
+  isMutual : Bool
+  firstLine : Nat
+  nameLine : Nat
+  fields : List String
+
+/-- The constructor fields of `type` that mention it and that the mark does not admit. -/
+def unadmittedFields (type : Name) (info : InductiveVal) : MetaM (List String) := do
+  let mut found : List String := []
+  for constructor in info.ctors do
+    let constant ← getConstInfo constructor
+    let here ← forallTelescope constant.type fun fields _ => do
+      let mut here : List String := []
+      for field in fields.toList.drop info.numParams do
+        let fieldType ← inferType field
+        if (fieldType.find? (·.isConstOf type)).isSome && !admittedField constructor type fieldType then
+          here := here ++ [s!"{constructor} nests it through {← ppExpr fieldType}"]
+      pure here
+    found := found ++ here
+  pure found
+
+def nestings (env : Environment) : MetaM (List Nesting) := do
+  let mut found : List Nesting := []
+  for (type, info) in env.constants.map₁.toList do
+    let .inductInfo induct := info | continue
+    let some idx := env.getModuleIdxFor? type | continue
+    let some module := env.header.moduleNames[idx.toNat]? | continue
+    unless shapeModules.any (·.isPrefixOf module) do continue
+    unless induct.numNested > 0 || induct.all.length > 1 do continue
+    let (firstLine, nameLine) := match ← findDeclarationRanges? type with
+      | some ranges => (ranges.range.pos.line, ranges.selectionRange.pos.line)
+      | none => (0, 0)
+    let fields ← unadmittedFields type induct
+    let isMutual := induct.all.length > 1
+    found := found ++ [{ module := module, type := type, isMutual, firstLine, nameLine, fields : Nesting }]
+  pure found
+
+/-- What one nesting violates: a nested type is admitted only when it is `admittedNested`, carries the mark and nests
+only through the fields the mark admits; a mutual one never is. -/
+def nestingFindings (nesting : Nesting) : IO (List Finding) := do
+  let finding (message : String) : Finding := { module := nesting.module, declaration := nesting.type, message }
+  if nesting.isMutual then return [finding "is a mutual inductive IL or state type"]
+  let path := (System.FilePath.mk ("/".intercalate (nesting.module.components.map (·.toString)))).addExtension "lean"
+  let lines := (← IO.FS.readFile path).splitOn "\n"
+  let window := (lines.drop (nesting.firstLine - 2)).take (nesting.nameLine + 2 - nesting.firstLine)
+  unless nesting.nameLine > 0 && window.any (fun line => (line.splitOn nestingMark).length > 1) do
+    return [finding "is a nested inductive IL or state type"]
+  let other := if nesting.type == admittedNested then [] else
+    [finding s!"carries the {nestingMark} mark, which admits only {admittedNested}"]
+  return other ++ nesting.fields.map finding
+
 unsafe def main (_ : List String) : IO UInt32 := do
   initSearchPath (← findSysroot)
   -- Matcher information lives in an environment extension, which only loads with initializers enabled.
   enableInitializersExecution
   let env ← importModules #[{ module := `Kernel, importAll := true }, { module := `Kernel.Run, importAll := true }]
     {} (loadExts := true)
-  let ((findings, sawStep), _) ← (scan env).run'.toIO { fileName := "kernel-dispatch", fileMap := default } { env }
-  let lines := (findings.map fun finding => s!"{finding.module} {finding.declaration}: {finding.message}").eraseDups
+  let context : Core.Context := { fileName := "kernel-dispatch", fileMap := default }
+  let ((findings, sawStep), _) ← (scan env).run'.toIO context { env }
+  let (nested, _) ← (nestings env).run'.toIO context { env }
+  let mut nestingFound : List Finding := []
+  for nesting in nested do nestingFound := nestingFound ++ (← nestingFindings nesting)
+  let sawValue := nested.any (·.type == admittedNested)
+  let lines := ((findings ++ nestingFound).map fun finding =>
+    s!"{finding.module} {finding.declaration}: {finding.message}").eraseDups
   for line in lines.toArray.qsort (· < ·) do IO.println line
   unless sawStep do IO.println "the scan saw no match on Kernel.Element in Kernel.Step, so it read nothing"
-  return if lines.isEmpty && sawStep then 0 else 1
+  unless sawValue do IO.println s!"the scan saw no nested {admittedNested}, so it read no IL or state inductive"
+  return if lines.isEmpty && sawStep && sawValue then 0 else 1

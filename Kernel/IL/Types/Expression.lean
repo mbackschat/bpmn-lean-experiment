@@ -14,6 +14,7 @@ public section
 namespace Kernel
 
 /-- A typed data value, as the scenario contract's `variableValue` carries it. -/
+-- guard-exception(9): OD2 (4), owner-approved 2026-11-17: the bounded value tree, nesting through `list` and `map` only.
 inductive Value where -- guard-exception(3): the portable value vocabulary JUEL's `JVal` is built on (its List and Map carry these values), not a copy of it.
   | null
   | bool (value : Bool)
