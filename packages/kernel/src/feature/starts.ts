@@ -41,7 +41,7 @@ import { admitValues, type Ctx } from "../hooks.js";
 
 /**
  * The Subscriptions rules a start shares, which `registry.ts` fills, since features never import each other: `fires` is
- * `feature/subscriptions.ts#fires`, `payloadBindings` `feature/subscriptions.ts#payloadBindings`.
+ * `feature/subscriptions.ts#fires`, `payloadBindings` `feature/subscriptions/delivery.ts#payloadBindings`.
  */
 export interface StartsHooks {
   readonly fires: (ctx: Ctx, input: StartInput, subscription: Subscription | null) => Result<boolean>;

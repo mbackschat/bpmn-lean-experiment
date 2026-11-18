@@ -3,6 +3,7 @@ module
 public import Kernel.Hooks
 public import Kernel.IL.Timer
 public import Kernel.Feature.Subscriptions.Conditions
+public import Kernel.Feature.Subscriptions.Delivery
 
 /-! # Subscriptions: catch Events, boundaries, Event Sub-Process starts and Event-Based Gateway arms
 
@@ -275,31 +276,6 @@ def fires (ctx : Ctx) (input : StartInput) (subscription : Option Subscription) 
   | _, some (.escalation _) | _, some .compensation | _, some .cancel => .ok false
 
 /-! ## Firing -/
-
-/-- Bind the delivered payload to every data output an output mapping reads, then evaluate the mappings. -/
-def payloadBindings (ctx : Ctx) (nowMs : Nat) (outputs : List Mapping) (payload : Value) :
-    Except Failure (List (String × Value)) :=
-  let outputsRead := outputs.filterMap fun mapping =>
-    match mapping.source with
-    | .variable name => some (name, payload)
-    | .literal _ => none
-    | .simpleBoolean _ => none
-    | .juel _ => none
-    | .foreign _ _ => none
-  ctx.requireMappings { variables := outputsRead, nowMs, bounds := ctx.program.options.bounds } outputs
-
-/-- The address a delivery names, when it delivers a Signal. -/
-def signalDelivered : DeliveryTrigger → Option SignalAddress
-  | .signal address _ => some address
-  | .message _ => none
-
-/-- What a Signal's variables install in the receiving scope: under `SignalPayload.variables` all of them, as CIB's
-`setVariables` on the receiving execution does (CIB-EXT-0043, `EventHandlerImpl.java:56-58`); under `none` a Signal
-carries no data (BPMN 2.0.2 §10.5.1), so a delivery that brings variables is rejected rather than dropped. -/
-def signalVariables (ctx : Ctx) (variables : List (String × Value)) : Except Failure (List (String × Value)) :=
-  match ctx.program.options.signalPayload with
-  | .variables => do admitValues ctx.program.options.bounds (variables.map (·.2)); pure variables
-  | .none => if variables.isEmpty then .ok [] else .error (.rejected "signal-variables-not-admitted")
 
 /-- Check that `fired` may fire `item` and return the state at the firing's logical time with the values the
 subscription writes. A Message delivery's correlation must be accepted (`SubscriptionsHooks.correlationAccepts`); the

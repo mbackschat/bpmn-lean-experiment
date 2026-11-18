@@ -18,10 +18,10 @@ import { FailureTag, WriteRule, failed, type Outcome } from "./state.js";
 /** What Work reaches of its sub-features: Decision's tables, Correlation's API criteria and a Message payload's bindings. */
 const workHooks: Work.WorkHooks = {
   ...Work.defaultWorkHooks, runDecision: Decision.runDecision, criteriaHold: Correlation.criteriaHold,
-  payloadBindings: Subscriptions.payloadBindings,
+  payloadBindings: Delivery.payloadBindings,
 };
 /** What Starts reaches of Subscriptions: whether a trigger fires a start, and a Message payload's bindings. */
-const startsHooks: Starts.StartsHooks = { ...Starts.defaultStartsHooks, fires: Subscriptions.fires, payloadBindings: Subscriptions.payloadBindings };
+const startsHooks: Starts.StartsHooks = { ...Starts.defaultStartsHooks, fires: Subscriptions.fires, payloadBindings: Delivery.payloadBindings };
 /** What Subscriptions reaches of Correlation: the recheck of a Message firing's correlation. */
 const subscriptionsHooks: Subscriptions.SubscriptionsHooks = {
   ...Subscriptions.defaultSubscriptionsHooks, correlationAccepts: Correlation.correlationAccepts,

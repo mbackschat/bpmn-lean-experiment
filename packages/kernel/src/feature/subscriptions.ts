@@ -18,11 +18,9 @@
  * closed (BPMN 2.0.2 §10.5.6: a gateway takes only its first event).
  */
 import {
-  ExpressionTag,
   MalformedTimer,
   MessageNames,
   SignalNames,
-  SignalPayload,
   TimerScheduleTag,
   TriggerTag,
   ValueSourceTag,
@@ -44,7 +42,6 @@ import {
   type EventPayload,
   type Header,
   type ConditionTrigger,
-  type Mapping,
   type ProfileOptions,
   type Program,
   type SignalTrigger,
@@ -59,7 +56,6 @@ import {
   FiredTag,
   StartTriggerTag,
   OpenKindTag,
-  DeliveryTriggerTag,
   RaisedTag,
   SignalAddressTag,
   SignalTag,
@@ -87,7 +83,6 @@ import {
   signalAddressMatches,
   type Binding,
   type CorrelationMatch,
-  type DeliveryTrigger,
   type EvalContext,
   type Fired,
   type Occurrence,
@@ -109,11 +104,12 @@ import {
   itemsByPosition,
 } from "../state.js";
 import {
-  EvaluationTag, admitValues, boundaryFire, ctxRequireMappings, deliveryTriggerChannel, evalContext,
+  EvaluationTag, admitValues, boundaryFire, deliveryTriggerChannel, evalContext,
   messageTriggerChannel, withdrawInside, withdrawOccurrence, type Catch, type Ctx,
 } from "../hooks.js";
 import { ClassifiedTag, TimerKind, armAt as armTimer, classify, dynamicCode, successor } from "../il/timer.js";
 import { armed, conditionOf, evaluateItem, fireAll, predicateHolds, resolveContests } from "./subscriptions/conditions.js";
+import { payloadBindings, signalDelivered, signalVariables } from "./subscriptions/delivery.js";
 
 export { competes, offerWrites } from "./subscriptions/conditions.js";
 
@@ -146,9 +142,20 @@ function resolveName(ctx: Ctx, context: EvalContext, name: ValueSource | null): 
       switch (evaluation.tag) {
         case EvaluationTag.Value:
           switch (evaluation.result.tag) {
-            case ValueTag.Null: return failed(FailureTag.Unsupported, "message-name-empty"); // dynamic-only: the resolved name is the run's data.
-            case ValueTag.String: return evaluation.result.value === "" ? failed(FailureTag.Unsupported, "message-name-empty") : committed(evaluation.result.value);
-            case ValueTag.Bool: case ValueTag.Int: case ValueTag.Decimal: case ValueTag.StringList: case ValueTag.List: case ValueTag.Map: return failed(FailureTag.RolledBack, "message-name-type");
+            case ValueTag.Null:
+              // dynamic-only: the resolved name is the run's data.
+              return failed(FailureTag.Unsupported, "message-name-empty");
+            case ValueTag.String:
+              if (evaluation.result.value !== "") return committed(evaluation.result.value);
+              // dynamic-only: the resolved name is the run's data.
+              return failed(FailureTag.Unsupported, "message-name-empty");
+            case ValueTag.Bool:
+            case ValueTag.Int:
+            case ValueTag.Decimal:
+            case ValueTag.StringList:
+            case ValueTag.List:
+            case ValueTag.Map:
+              return failed(FailureTag.RolledBack, "message-name-type");
           }
           return assertNever(evaluation.result);
         case EvaluationTag.Failure:
@@ -187,9 +194,20 @@ function signalAddress(ctx: Ctx, context: EvalContext, trigger: SignalTrigger): 
           switch (evaluation.tag) {
             case EvaluationTag.Value:
               switch (evaluation.result.tag) {
-                case ValueTag.Null: return failed(FailureTag.Unsupported, "signal-name-empty"); // dynamic-only: the resolved name is the run's data.
-                case ValueTag.String: return evaluation.result.value === "" ? failed(FailureTag.Unsupported, "signal-name-empty") : committed({ tag: SignalAddressTag.Named, name: evaluation.result.value });
-                case ValueTag.Bool: case ValueTag.Int: case ValueTag.Decimal: case ValueTag.StringList: case ValueTag.List: case ValueTag.Map: return failed(FailureTag.RolledBack, "signal-name-type");
+                case ValueTag.Null:
+                  // dynamic-only: the resolved name is the run's data.
+                  return failed(FailureTag.Unsupported, "signal-name-empty");
+                case ValueTag.String:
+                  if (evaluation.result.value !== "") return committed({ tag: SignalAddressTag.Named, name: evaluation.result.value });
+                  // dynamic-only: the resolved name is the run's data.
+                  return failed(FailureTag.Unsupported, "signal-name-empty");
+                case ValueTag.Bool:
+                case ValueTag.Int:
+                case ValueTag.Decimal:
+                case ValueTag.StringList:
+                case ValueTag.List:
+                case ValueTag.Map:
+                  return failed(FailureTag.RolledBack, "signal-name-type");
               }
               return assertNever(evaluation.result);
             case EvaluationTag.Failure:
@@ -229,8 +247,17 @@ function timerText(ctx: Ctx, context: EvalContext, value: ValueSource): Result<r
       switch (evaluation.tag) {
         case EvaluationTag.Value:
           switch (evaluation.result.tag) {
-            case ValueTag.String: return committed([evaluation.result.value, true]);
-            case ValueTag.Null: case ValueTag.Bool: case ValueTag.Int: case ValueTag.Decimal: case ValueTag.StringList: case ValueTag.List: case ValueTag.Map: return failed(FailureTag.RolledBack, "timer-value-type"); // dynamic-only: a value's type is the run's data.
+            case ValueTag.String:
+              return committed([evaluation.result.value, true]);
+            case ValueTag.Null:
+            case ValueTag.Bool:
+            case ValueTag.Int:
+            case ValueTag.Decimal:
+            case ValueTag.StringList:
+            case ValueTag.List:
+            case ValueTag.Map:
+              // dynamic-only: a value's type is the run's data.
+              return failed(FailureTag.RolledBack, "timer-value-type");
           }
           return assertNever(evaluation.result);
         case EvaluationTag.Failure:
@@ -525,52 +552,6 @@ export function fires(ctx: Ctx, input: StartInput, subscription: Subscription | 
 }
 
 // Firing
-
-/** Bind the delivered payload to every data output an output mapping reads, then evaluate the mappings. */
-export function payloadBindings(ctx: Ctx, nowMs: number, outputs: readonly Mapping[], payload: Value): Result<readonly Binding[]> {
-  const outputsRead = outputs.flatMap((mapping): Binding[] => {
-    const source = mapping.source;
-    switch (source.tag) {
-      case ExpressionTag.Variable:
-        return [[source.name, payload]];
-      case ExpressionTag.Literal:
-      case ExpressionTag.SimpleBoolean:
-      case ExpressionTag.Juel:
-      case ExpressionTag.Foreign:
-        return [];
-    }
-    return assertNever(source);
-  });
-  return ctxRequireMappings(ctx, { variables: outputsRead, nowMs, bounds: ctx.program.options.bounds }, outputs);
-}
-
-/** The address a delivery names, when it delivers a Signal. */
-function signalDelivered(trigger: DeliveryTrigger): SignalAddress | null {
-  switch (trigger.tag) {
-    case DeliveryTriggerTag.Signal:
-      return trigger.address;
-    case DeliveryTriggerTag.Message:
-      return null;
-  }
-  return assertNever(trigger);
-}
-
-/**
- * What a Signal's variables install in the receiving scope: under `SignalPayload.Variables` all of them, as CIB's
- * `setVariables` on the receiving execution does (CIB-EXT-0043, `EventHandlerImpl.java:56-58`); under `None` a Signal
- * carries no data (BPMN 2.0.2 §10.5.1), so a delivery that brings variables is rejected rather than dropped.
- */
-function signalVariables(ctx: Ctx, variables: readonly Binding[]): Result<readonly Binding[]> {
-  switch (ctx.program.options.signalPayload) {
-    case SignalPayload.Variables: {
-      const admitted = admitValues(ctx.program.options.bounds, variables.map(([, value]) => value));
-      return admitted.ok ? committed(variables) : failedWith(admitted.failure);
-    }
-    case SignalPayload.None:
-      return variables.length === 0 ? committed([]) : failed(FailureTag.Rejected, "signal-variables-not-admitted");
-  }
-  return assertNever(ctx.program.options.signalPayload);
-}
 
 /**
  * The Correlation rule a Message firing rechecks, which `registry.ts` fills with `feature/correlation.ts#correlationAccepts`,

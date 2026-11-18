@@ -211,7 +211,7 @@ function enterLocal(header: Header, inputs: readonly Binding[], occurrence: Occu
 export interface WorkHooks {
   readonly runDecision: (program: Program, work: RuleWork, variables: readonly Binding[]) => Result<readonly Binding[]>;
   readonly criteriaHold: (state: State, scope: ScopeOccurrenceId, criteria: readonly CorrelationMatch[]) => Result<boolean>;
-  /** `feature/subscriptions.ts#payloadBindings`: what a Message payload writes through the outputs that read it. */
+  /** `feature/subscriptions/delivery.ts#payloadBindings`: what a Message payload writes through the outputs that read it. */
   readonly payloadBindings: (ctx: Ctx, nowMs: number, outputs: readonly Mapping[], payload: Value) => Result<readonly Binding[]>;
 }
 
