@@ -47,6 +47,7 @@ import {
 import { catchWrites, footprint, joined, meets, noNames, union, writes, type Footprint } from "../il/footprint.js";
 import { flowReaches } from "../il/paths.js";
 import {
+  scopeOccurrenceParent,
   ContinuationTag,
   FailureTag,
   InstanceStatus,
@@ -61,7 +62,6 @@ import {
   instanceOf,
   issue,
   signal,
-  subtree,
   type Compensable,
   type CompensationRun,
   type Compensations,
@@ -78,7 +78,7 @@ import {
   SemanticCause,
   semanticFailure,
 } from "../state.js";
-import { ScopeRole, ctxRunsAsInstance, leaveScope, type Ctx } from "../hooks.js";
+import { ScopeRole, ctxRunsAsInstance, leaveScope, subtree, type Ctx } from "../hooks.js";
 import { begunChildren, keptRecords } from "./compensation/kept.js";
 
 function store(state: State, compensation: Compensations): State {
@@ -117,7 +117,7 @@ function placement(ctx: Ctx, occurrence: Occurrence, state: State): readonly [El
   const isScope = element !== null && elementScope(element) !== null;
   if (isInstance(ctx, occurrence, state)) {
     if (!isScope) return null;
-    return [handler, state.scopes.find((scope) => scope.id === occurrence.scope)?.parent ?? occurrence.scope];
+    return [handler, scopeOccurrenceParent(state.scopes.find((scope) => scope.id === occurrence.scope)) ?? occurrence.scope];
   }
   if (looping && isScope) return [null, occurrence.scope];
   return [handler, occurrence.scope];
@@ -366,7 +366,7 @@ function visibleScopes(ctx: Ctx, state: State, scope: ScopeOccurrenceId): ScopeO
     const element = entry?.element == null ? null : programElement(ctx.program, entry.element);
     const payload = element === null ? null : elementScope(element);
     const eventSubProcess = payload !== null && ctx.eventStart(payload[1]) !== null;
-    const parent = entry?.parent ?? null;
+    const parent = scopeOccurrenceParent(entry);
     if (parent === null) return [id];
     return ctx.scopeRole(state, id) !== ScopeRole.CompensationHandler && eventSubProcess ? [id, ...go(fuel - 1, parent)] : [id];
   };

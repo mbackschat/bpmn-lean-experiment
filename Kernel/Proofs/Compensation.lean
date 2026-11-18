@@ -137,7 +137,7 @@ def TakesOutOnce (hooks : Hooks) (reads writes : Ctx → ElementId → List Stri
       taken.leave = leave ∧ taken.resume = resume ∧
       TakesOut covered activity state.slots.compensation
         { retained := kept, runs := state.slots.compensation.runs ++ [taken] } taken ∧
-      (∀ record, record.scope.value < state.nextIssue →
+      (∀ record, Laws.State.ScopeIssued state record.scope →
         (record ∈ after.slots.compensation.retained ↔ record ∈ kept)) ∧
       ((taken.pending = [] ∧ ∀ next ∈ after.slots.compensation.runs, next.scope = scope → next.trigger ≠ trigger) ∨
         ∃ next ∈ after.slots.compensation.runs, next.scope = scope ∧ next.trigger = trigger ∧
@@ -154,6 +154,9 @@ P0 stated it with no premise on the hook's state. That was false: over an arbitr
 may hold a ready pending handler, and two runs may share one scope occurrence and trigger, where `release` and
 `advance` pick the other run (P5 design report); `FreshCall` is taken for the reason `TakesOutOnce` takes it (P5
 report F2). The conclusion is P0's, unchanged.
+`Hooks.handlerCompleted` is taken where the completed handler's context stands, as `Step` calls it
+(`Laws.Step.HookContract.handlerCompleted`): the next handler is entered below its run's scope occurrence, whose standing
+the context's gives, and a key below one that does not stand may be stale (KD1).
 `reads` and `writes` name what each subject's run reads and writes; the lane binds them to the kernel's footprint
 `NameSet`s through `Laws.IL.listed` (`Laws.IL.NameSet.meets_iff_listed`, root decision D3, 2026-11-15). -/
 def HandlersInOrder (hooks : Hooks) (reads writes : Ctx → ElementId → List String) : Prop :=
@@ -161,7 +164,8 @@ def HandlersInOrder (hooks : Hooks) (reads writes : Ctx → ElementId → List S
     Formed (Depends ctx.program (reads ctx) (writes ctx)) state →
     ((∃ scope activity trigger leave resume, FreshCall state scope trigger resume ∧
         hooks.compensate ctx scope activity trigger leave resume state = .ok after) ∨
-      ∃ context occurrence, hooks.handlerCompleted ctx context occurrence state = .ok after) →
+      ∃ context occurrence, Laws.Step.ScopeStands state occurrence.scope ∧
+        hooks.handlerCompleted ctx context occurrence state = .ok after) →
     run ∈ state.slots.compensation.runs → next ∈ after.slots.compensation.runs → next.trigger = run.trigger →
     next.scope = run.scope → ∃ released started, Advances (Depends ctx.program (reads ctx) (writes ctx)) released next started ∧
       released.pending = run.pending ∧ released.trigger = run.trigger

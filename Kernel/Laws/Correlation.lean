@@ -140,14 +140,14 @@ def KeyVerdict (evaluation : Evaluation) (verdict : Except Failure String) : Pro
 
 /-! ## Non-vacuity
 
-A root scope 0 whose instance has business key `k` and variable `order = 7`, and a waiting item's scope 1 below it
-holding `step = "a"`. -/
+A root scope occurrence whose instance has business key `k` and variable `order = 7`, and a waiting item's scope
+occurrence of `Sub` below it holding `step = "a"`. -/
 
-def root : ScopeOccurrenceId := ⟨0⟩
-def inner : ScopeOccurrenceId := ⟨1⟩
+def root : ScopeOccurrenceId := ⟨[]⟩
+def inner : ScopeOccurrenceId := ⟨[{ element := ⟨"Sub"⟩, ordinal := 0 }]⟩
 
-def rootScope : ScopeOccurrence := { id := root, element := none, parent := none }
-def innerScope : ScopeOccurrence := { id := inner, element := some ⟨"Sub"⟩, parent := some root }
+def rootScope : ScopeOccurrence := { id := root, element := none }
+def innerScope : ScopeOccurrence := { id := inner, element := some ⟨"Sub"⟩ }
 def rootLocals : ScopeVariables := { scope := root, entries := [("order", .int 7)] }
 def innerLocals : ScopeVariables := { scope := inner, entries := [("step", .string "a")] }
 def rootData : InstanceData := { root, businessKey := some "k" }
@@ -166,7 +166,7 @@ theorem root_of_inner : RootOf waiting inner root := by
   simp only [waiting, List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl
   · exact same.symm
-  · simp [innerScope] at kind
+  · simp [innerScope, inner] at kind
 
 theorem conjunction_accepts : Accepts waiting inner root "p" [orderIs (.int 7), stepIs (.string "a"), keyIs "k"] true := by
   simp only [Accepts, true_iff, List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq]

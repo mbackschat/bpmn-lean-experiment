@@ -224,7 +224,8 @@ theorem issuedItems_transport {before after : State} (sub : ItemsSub after.openI
   rw [← same, ordinals occurrence present, same]
   exact issued item (sub.subset member) ⟨occurrence, occurrences occurrence present, same⟩
 
-theorem getD_filter_keep {m : Std.ExtTreeMap Nat Nat compare} {f : Nat → Nat → Bool} {k d : Nat}
+theorem getD_filter_keep {α : Type} [Ord α] [Std.TransOrd α] [Std.LawfulEqOrd α] {m : Std.ExtTreeMap α Nat compare}
+    {f : α → Nat → Bool} {k : α} {d : Nat}
     (keepK : ∀ v, f k v = true) : (m.filter f).getD k d = m.getD k d := by
   rw [Std.ExtTreeMap.getD_filter', Std.ExtTreeMap.getD_eq_getD_getElem?]
   cases m[k]? <;> simp [Option.filter, keepK]

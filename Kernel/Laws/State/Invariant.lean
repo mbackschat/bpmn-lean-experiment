@@ -1,7 +1,8 @@
 module
 
-public import Kernel.State
+public import Kernel.State.Tree
 public import Kernel.Laws.State.Items
+public import Kernel.Laws.State.History
 
 /-! # Laws of the kernel state: the invariant
 
@@ -88,7 +89,7 @@ structure IssuedBelow (s : State) : Prop where
   counter goes with it, and its identity never recurs (`occurrences`). -/
   items : ∀ item ∈ itemList s.openItems, (∃ occurrence ∈ s.occurrences, occurrence.id = item.id.occurrence) →
     item.id.ordinal < s.itemOrdinals.getD item.id.occurrence 0
-  scopes : ∀ scope ∈ s.scopes, scope.id.value < s.nextIssue
+  scopes : ∀ scope ∈ s.scopes, ScopeIssued s scope.id
 
 /-- No two occurrences, open items or scope occurrences share an identifier, and no two occurrences a key: each
 activation numbers one occurrence. -/
@@ -171,11 +172,11 @@ what it names itself (`Step.requireScope`, `Step.gone`) or does nothing to what 
 issued identity, so a reservation made later is never one it completes (`Typed`). Queued work naming a scope
 occurrence an interruption removed (`Kernel/Step/Stale.lean`) keeps this clause: what it names was issued. -/
 structure QueueSound (s : State) : Prop where
-  arm : ∀ host element scope, Signal.arm host element scope ∈ s.signals → host < s.nextIssue ∧ scope.value < s.nextIssue ∧
+  arm : ∀ host element scope, Signal.arm host element scope ∈ s.signals → host < s.nextIssue ∧ ScopeIssued s scope ∧
     ∀ occurrence ∈ s.occurrences, occurrence.id = host → occurrence.begun = true ∧ occurrence.scope = scope
-  armScope : ∀ scope, Signal.armScope scope ∈ s.signals → scope.value < s.nextIssue
+  armScope : ∀ scope, Signal.armScope scope ∈ s.signals → ScopeIssued s scope
   armGateway : ∀ occurrence gateway scope, Signal.armGateway occurrence gateway scope ∈ s.signals →
-    occurrence < s.nextIssue ∧ scope.value < s.nextIssue ∧
+    occurrence < s.nextIssue ∧ ScopeIssued s scope ∧
       ∀ found ∈ s.occurrences, found.id = occurrence → found.begun = true ∧ found.scope = scope
   ends : ∀ status failure, Signal.endInstance status failure ∈ s.signals → (failure.isSome = true ↔ status = .failed)
   completes : ∀ id leave writes rule, Signal.complete id leave writes rule ∈ s.signals → id < s.nextIssue
@@ -279,7 +280,7 @@ structure ReservationsClaimed (s : State) : Prop where
     Signal.complete id leave writes rule ∉ s.signals
   /-- A queued begin names an issued scope occurrence, so a scope occurrence entered later is never the one it
   begins in. -/
-  scopesIssued : ∀ request, Queued s request → request.scope.value < s.nextIssue
+  scopesIssued : ∀ request, Queued s request → ScopeIssued s request.scope
   /-- A queued begin's Event Sub-Process start reservation lies in the scope occurrence it begins in, as the firing
   that queues the begin reads both off the item that held it (`Subscriptions.fireEventStart`), so the interrupting
   entry's clearing of that scope occurrence keeps it housed (`Scopes.arriveScope`). -/
@@ -297,7 +298,7 @@ def Settled (s : State) (id : Nat) : Prop :=
 it stands its parent is the body's (`MultiInstance.beginInstances`), so the instance a completion leaves is never the
 root and leaving it keeps the body's scope occurrence standing. -/
 def Placed (s : State) (run : MultiInstanceRun) : Prop :=
-  ∀ scope, Iteration.active scope ∈ run.instances → scope.value < s.nextIssue ∧
+  ∀ scope, Iteration.active scope ∈ run.instances → ScopeIssued s scope ∧
     ∀ entry ∈ s.scopes, entry.id = scope → entry.parent = some run.scope
 
 /-- A compensation run's handlers run in context scope occurrences entered below its scope occurrence: each was issued,
@@ -306,7 +307,7 @@ the run in a scope occurrence that stands (`Compensation.release`); a group's ne
 the one it runs in. -/
 def RunPlaced (s : State) (run : CompensationRun) : Prop :=
   (∀ outer context, run.resume = some (.group outer context) → context = run.scope) ∧
-    ∀ context ∈ run.running.map (·.1), context.value < s.nextIssue ∧
+    ∀ context ∈ run.running.map (·.1), ScopeIssued s context ∧
       ∀ entry ∈ s.scopes, entry.id = context → entry.parent = some run.scope
 
 /-- A compensation run in `scope` may end with `resume`: the occurrence it completes has begun, and the group context it
@@ -397,7 +398,7 @@ activation: the origin was issued in an issued scope occurrence, and while that 
 reached the origin's activation (`Counted`), so a fresh reservation is numbered above it. -/
 def Raisable (program : Program) (s : State) (origin : Origin) : Prop :=
   ((program.element? origin.element).bind (·.event?)).isSome = true →
-    origin.scope.value < s.nextIssue ∧
+    ScopeIssued s origin.scope ∧
     (origin.scope ∈ scopeIds s → Counted s
       { processInstanceId := s.instanceOf origin.scope, element := origin.element, activation := origin.activation }) ∧
     ∀ occurrence ∈ s.occurrences, occurrence.element = origin.element → occurrence.scope = origin.scope →
@@ -574,19 +575,19 @@ theorem Within.antisymm {s : State} (formed : WellFormed program s) {first secon
 
 /-! ## Non-vacuity
 
-A process instance (scope 0) with a Sub-Process occurrence 1 whose scope occurrence 2 holds a waiting occurrence 3 and
-its item 4, beside a waiting occurrence 5 of the root and its item 6. The open-item kind is a parameter, so no witness
+A process instance (the root scope occurrence) with a Sub-Process occurrence 1 whose scope occurrence `Sub#0` holds a
+waiting occurrence 3 and its item 4, beside a waiting occurrence 5 of the root and its item 6. The open-item kind is a parameter, so no witness
 depends on what an item waits for. -/
 
-def processRoot : ScopeOccurrenceId := ⟨0⟩
-def subScope : ScopeOccurrenceId := ⟨2⟩
+def processRoot : ScopeOccurrenceId := ⟨[]⟩
+def subScope : ScopeOccurrenceId := ⟨[{ element := ⟨"Sub"⟩, ordinal := 0 }]⟩
 
 def subProcess : Occurrence := { id := 1, element := ⟨"Sub"⟩, scope := processRoot, activation := 1 }
 def innerTask : Occurrence := { id := 3, element := ⟨"Inner"⟩, scope := subScope, activation := 1 }
 def outerTask : Occurrence := { id := 5, element := ⟨"Outer"⟩, scope := processRoot, activation := 1 }
 
-def rootScope : ScopeOccurrence := { id := processRoot, element := none, parent := none }
-def childScope : ScopeOccurrence := { id := subScope, element := some ⟨"Sub"⟩, parent := some processRoot, occurrence := some 1 }
+def rootScope : ScopeOccurrence := { id := processRoot, element := none }
+def childScope : ScopeOccurrence := { id := subScope, element := some ⟨"Sub"⟩, occurrence := some 1 }
 
 def innerItem (kind : OpenKind) : OpenItem := { id := ⟨3, .wait, 0⟩, position := 4, kind, element := ⟨"Inner"⟩, scope := subScope }
 def outerItem (kind : OpenKind) : OpenItem := { id := ⟨5, .wait, 0⟩, position := 6, kind, element := ⟨"Outer"⟩, scope := processRoot }
@@ -596,9 +597,27 @@ def sample (kind : OpenKind) : State :=
     variables := [{ scope := processRoot, entries := [("a", .int 1)] }, { scope := subScope, entries := [] }]
     openItems := ofItems [innerItem kind, outerItem kind], nextIssue := 7
     itemOrdinals := ((∅ : Std.ExtTreeMap Nat Nat compare).insert 3 1).insert 5 1
+    scopeOrdinals := (∅ : Std.ExtTreeMap ScopeSlot Nat compare).insert { parent := processRoot, element := ⟨"Sub"⟩ } 1
     activations := [{ processInstance := "p", element := ⟨"Sub"⟩, role := .element, count := 1 },
       { processInstance := "p", element := ⟨"Inner"⟩, role := .element, count := 1 },
       { processInstance := "p", element := ⟨"Outer"⟩, role := .element, count := 1 }] }
+
+/-- The sample's standing keys are its history. -/
+theorem sample_historic (kind : OpenKind) : Historic (sample kind) :=
+  historic_of_standing
+    (fun segment rest member => by
+      simp [sample, rootScope, childScope, processRoot, subScope] at member ⊢
+      exact .inl member.2)
+    (fun segment rest member => by
+      simp [sample, rootScope, childScope, processRoot, subScope] at member
+      obtain ⟨rfl, rfl⟩ := member
+      simp [slotCount, sample, processRoot, Std.ExtTreeMap.getD_insert_self])
+
+/-- The sample's key `Sub#9` lies beyond its root's counter of `Sub`, so it was never issued. -/
+theorem sample_unissued {kind : OpenKind} {s : State} (issued : ScopeIssued s ⟨[{ element := ⟨"Sub"⟩, ordinal := 9 }]⟩)
+    (scopes : s.scopes = (sample kind).scopes) (ordinals : s.scopeOrdinals = (sample kind).scopeOrdinals) : False :=
+  unissued_of_count (parent := processRoot) (by simp [scopes, sample, rootScope])
+    (by simp [slotCount, ordinals, sample, processRoot, Std.ExtTreeMap.getD_insert_self]) issued
 
 @[simp] theorem mem_sample_itemList {kind : OpenKind} {item : OpenItem} :
     item ∈ itemList (ofItems [innerItem kind, outerItem kind]) ↔ item = innerItem kind ∨ item = outerItem kind := by
@@ -682,13 +701,12 @@ theorem misplaced_owner_rejected (kind : OpenKind) :
     ¬ OwnedBelow { sample kind with occurrences := [{ subProcess with scope := subScope }, innerTask, outerTask] } :=
   fun owned => by
     have := owned childScope (by simp [sample]) { subProcess with scope := subScope } (by simp) (by simp [childScope, subProcess])
-    simp [childScope, subScope, processRoot] at this
+    simp [childScope, subScope] at this
 
 /-- An arming of a scope occurrence never issued breaks `QueueSound`, and so `WellFormed`: queued work may name a scope
 occurrence that is gone, never one that was never issued. -/
-theorem unissued_arming (kind : OpenKind) : ¬ WellFormed program { sample kind with signals := [.armScope ⟨9⟩] } := fun formed => by
-  have := formed.queue.armScope ⟨9⟩ (by simp)
-  simp [sample] at this
+theorem unissued_arming (kind : OpenKind) : ¬ WellFormed program { sample kind with signals := [.armScope ⟨[{ element := ⟨"Sub"⟩, ordinal := 9 }]⟩] } := fun formed => by
+  exact sample_unissued (kind := kind) (formed.queue.armScope _ (by simp)) rfl rfl
 
 /-- So does a completion of an identity never issued: a reservation made later would be completed. -/
 theorem unissued_completion (kind : OpenKind) :
@@ -800,10 +818,9 @@ theorem completed_reservation_rejected (kind : OpenKind) :
 /-- A begin queued in the scope occurrence 9, never issued, breaks `ReservationsClaimed`: a scope occurrence entered
 later would be the one it begins in. -/
 theorem unissued_begin_scope_rejected (kind : OpenKind) :
-    ¬ ReservationsClaimed { sample kind with signals := [.begin { element := ⟨"Outer"⟩, scope := ⟨9⟩ }] } :=
+    ¬ ReservationsClaimed { sample kind with signals := [.begin { element := ⟨"Outer"⟩, scope := ⟨[{ element := ⟨"Sub"⟩, ordinal := 9 }]⟩ }] } :=
   fun claimed => by
-    have := claimed.scopesIssued _ (.inl (List.mem_singleton.mpr rfl))
-    simp [sample] at this
+    exact sample_unissued (kind := kind) (claimed.scopesIssued _ (.inl (List.mem_singleton.mpr rfl))) rfl rfl
 
 /-- An unbegun reservation parked at a join breaks `SlotsSettled`: the join's firing would complete it. -/
 theorem parked_reservation_rejected (kind : OpenKind) :
@@ -839,14 +856,14 @@ theorem nested_instance_placed (kind : OpenKind) : Placed (sample kind) (instanc
   intro scope active
   simp only [instanceRun, List.mem_singleton, Iteration.active.injEq] at active
   subst active
-  refine ⟨by simp [sample, subScope], fun entry member named => ?_⟩
+  refine ⟨(sample_historic kind).issued_key (by simp [sample, rootScope, childScope]), fun entry member named => ?_⟩
   simp only [sample, List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl <;> simp_all [rootScope, childScope, processRoot, subScope, instanceRun]
 
 /-- An instance standing below another scope occurrence than the body's breaks `Placed`. -/
 theorem misplaced_instance_rejected (kind : OpenKind) : ¬ Placed (sample kind) (instanceRun subScope) := fun placed => by
   have := (placed subScope (by simp [instanceRun])).2 childScope (by simp [sample]) rfl
-  simp [childScope, processRoot, subScope, instanceRun] at this
+  simp [childScope, subScope, instanceRun] at this
 
 /-- The Sub-Process occurrence's public identity, a compensation's trigger. -/
 def subTrigger : OccurrenceRef := { processInstanceId := "p", element := ⟨"Sub"⟩, activation := 1 }
@@ -859,7 +876,7 @@ def handlerRun (scope : ScopeOccurrenceId) : CompensationRun :=
 /-- A handler context standing below another scope occurrence than its run's breaks `RunPlaced`. -/
 theorem misplaced_handler_rejected (kind : OpenKind) : ¬ RunPlaced (sample kind) (handlerRun subScope) := fun placed => by
   have := (placed.2 subScope (by simp [handlerRun])).2 childScope (by simp [sample]) rfl
-  simp [childScope, processRoot, subScope, handlerRun] at this
+  simp [childScope, subScope, handlerRun] at this
 
 /-- A compensation that ends by completing the unbegun reservation 7 breaks `Resumable`. -/
 theorem unsettled_resume_rejected (kind : OpenKind) :

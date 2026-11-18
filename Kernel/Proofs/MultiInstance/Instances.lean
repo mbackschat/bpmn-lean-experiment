@@ -148,20 +148,20 @@ theorem Numbered.beginInstances {inv : State → Prop} {settled : State → Nat 
   generalize ({ base with instances } : MultiInstanceRun) = next
   intro fields opens aRuns aNext
   -- What lies below the counter of `state`.
-  have occBelow : ∀ o ∈ state.occurrences, o.scope.value < state.nextIssue := fun o member => by
+  have occBelow : ∀ o ∈ state.occurrences, Laws.State.ScopeIssued state o.scope := fun o member => by
     obtain ⟨entry, inside, named⟩ := List.mem_map.mp (formed.owned.occurrenceScopes o member)
     exact named ▸ formed.issued.scopes entry inside
-  have queuedBelow : ∀ request, Laws.State.Queued state request → request.scope.value < state.nextIssue :=
+  have queuedBelow : ∀ request, Laws.State.Queued state request → Laws.State.ScopeIssued state request.scope :=
     formed.claimed.scopesIssued
-  have oldSlot : ∀ (i : Nat) (scope : ScopeOccurrenceId), next.instances[i]? = some (.active scope) → scope.value < state.nextIssue →
+  have oldSlot : ∀ (i : Nat) (scope : ScopeOccurrenceId), next.instances[i]? = some (.active scope) → Laws.State.ScopeIssued state scope →
       base.instances[i]? = some (.active scope) := fun i scope slot below => by
     rcases begun.counted i scope (fields.2.2 ▸ slot) with old | fresh
     · exact old
-    · exact absurd below (Nat.not_lt.mpr fresh.1)
+    · exact absurd below fresh.1
   have baseIn : ∀ (i : Nat) (scope : ScopeOccurrenceId), base.instances[i]? = some (.active scope) → base ∈ state.slots.multiInstances :=
     fun i scope slot => based.elim id fun apart => absurd (List.mem_of_getElem? slot) (apart.2 scope)
-  have oldEntry : ∀ entry ∈ queued.scopes, entry.id.value < state.nextIssue → entry ∈ state.scopes :=
-    fun entry inside below => (begun.scopes entry inside).resolve_right (Nat.not_le.mpr below)
+  have oldEntry : ∀ entry ∈ queued.scopes, Laws.State.ScopeIssued state entry.id → entry ∈ state.scopes :=
+    fun entry inside below => (begun.scopes entry inside).resolve_right fun fresh => fresh below
   have newReq : ∀ request ∈ requests, request.continuation = .multiInstance base.occurrence ∧
       request.element = base.element ∧ request.reserved = none ∧
       (∃ i ∈ Feature.MultiInstance.opening loop.mode base.instances,
@@ -265,7 +265,7 @@ theorem Numbered.beginInstances {inv : State → Prop} {settled : State → Nat 
         exact ⟨loop, fields.2.1 ▸ looped⟩
   · exact fun r member scope active entry inside named => by
       rw [aScopes] at inside
-      by_cases below : scope.value < state.nextIssue
+      by_cases below : Laws.State.ScopeIssued state scope
       · have old := oldEntry entry inside (named ▸ below)
         rcases aRuns r member with mine | same
         · exact qs.uncalled r mine.1 scope active entry old named
@@ -587,7 +587,7 @@ theorem numbered_arrive {ctx : Ctx} {header : Header} {envelope : Envelope} {loo
         else (state.enterScope header.id occurrence.scope locals (some occurrence.id)).1.signal
           (.arm occurrence.id header.id occurrence.scope)) := by
       have base := held.enterScope formed owns header.id occurrence.scope locals
-        (some occurrence.id)
+        (some occurrence.id) (formed.owned.occurrenceScopes occurrence member)
       cases unarmed <;> simp only [Bool.false_eq_true, ↓reduceIte]
       · exact base.signalOther Laws.Step.arm_apart
       · exact base

@@ -24,10 +24,10 @@ queued begin names and none a start Event's item of `program` waits on, an insta
 it fails, a compensation may end as it asks, and a raise names an origin it finds (`Laws.State.Raisable`) and a
 settled host. -/
 def Queueable (program : Program) (s : State) : Signal → Prop
-  | .arm host _ scope => host < s.nextIssue ∧ scope.value < s.nextIssue ∧
+  | .arm host _ scope => host < s.nextIssue ∧ Laws.State.ScopeIssued s scope ∧
     ∀ occurrence ∈ s.occurrences, occurrence.id = host → occurrence.begun = true ∧ occurrence.scope = scope
-  | .armScope scope => scope.value < s.nextIssue
-  | .armGateway occurrence _ scope => occurrence < s.nextIssue ∧ scope.value < s.nextIssue ∧
+  | .armScope scope => Laws.State.ScopeIssued s scope
+  | .armGateway occurrence _ scope => occurrence < s.nextIssue ∧ Laws.State.ScopeIssued s scope ∧
     ∀ found ∈ s.occurrences, found.id = occurrence → found.begun = true ∧ found.scope = scope
   | .begin request => Laws.State.names request = [] ∧ request.scope ∈ Laws.State.scopeIds s
   | .complete id _ _ _ => (∀ request, Laws.State.Queued s request → id ∉ Laws.State.names request) ∧ id < s.nextIssue ∧
@@ -114,7 +114,7 @@ theorem waited_wellFormed {state : State} (formed : Laws.State.WellFormed progra
 theorem queueArm_wellFormed {state : State} (formed : Laws.State.WellFormed program state) {occurrence : Occurrence}
     (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true) (element : ElementId) :
     Laws.State.WellFormed program (state.signal (.arm occurrence.id element occurrence.scope)) :=
-  have scopeBelow : occurrence.scope.value < state.nextIssue := by
+  have scopeBelow : Laws.State.ScopeIssued state occurrence.scope := by
     obtain ⟨entry, inside, named⟩ := List.mem_map.mp (formed.owned.occurrenceScopes occurrence member)
     exact named ▸ formed.issued.scopes entry inside
   queue_wellFormed formed ⟨formed.issued.occurrences occurrence member, scopeBelow, fun found inside named => by

@@ -74,11 +74,11 @@ structure ArmWins (before after : State) (gateway : Nat) (winner : OpenItem) : P
 
 /-! ## Non-vacuity
 
-A root scope 0 with a Sub-Process scope occurrence 1; an Event-Based Gateway occurrence 2 in the root with arms 3 and 4
-(items 5 and 6); a task occurrence 7 in scope 1 with its item 8. The open-item kinds are parameters. -/
+A root scope with a Sub-Process scope occurrence below it; an Event-Based Gateway occurrence 2 in the root with arms 3 and 4
+(items 5 and 6); a task occurrence 7 in the Sub-Process with its item 8. The open-item kinds are parameters. -/
 
-def root : ScopeOccurrenceId := ⟨0⟩
-def sub : ScopeOccurrenceId := ⟨1⟩
+def root : ScopeOccurrenceId := ⟨[]⟩
+def sub : ScopeOccurrenceId := ⟨[{ element := ⟨"Sub"⟩, ordinal := 0 }]⟩
 
 def gatewayOccurrence : Occurrence := { id := 2, element := ⟨"Choice"⟩, scope := root, activation := 1 }
 def armMessage : Occurrence := { id := 3, element := ⟨"Paid"⟩, scope := root, activation := 1, begun := false }
@@ -92,8 +92,8 @@ def lateItem (kind : OpenKind) : OpenItem :=
 def workItem (kind : OpenKind) : OpenItem :=
   { id := ⟨7, .wait, 0⟩, position := 8, kind, element := ⟨"Work"⟩, scope := sub }
 
-def rootScope : ScopeOccurrence := { id := root, element := none, parent := none }
-def subScope : ScopeOccurrence := { id := sub, element := some ⟨"Sub"⟩, parent := some root }
+def rootScope : ScopeOccurrence := { id := root, element := none }
+def subScope : ScopeOccurrence := { id := sub, element := some ⟨"Sub"⟩ }
 
 def choosing (kind : OpenKind) : State :=
   { instanceId := "p", scopes := [rootScope, subScope], occurrences := [gatewayOccurrence, armMessage, armTimer, task]
@@ -140,7 +140,7 @@ theorem choice_withdraws (kind : OpenKind) : Withdraws (choosing kind) (chosen k
     rw [mem_chosen.mp member]
     simp [workItem]
 
-/-- Clearing scope 1 but keeping its task's item leaves an item without its scope. -/
+/-- Clearing the Sub-Process scope occurrence but keeping its task's item leaves an item without its scope. -/
 theorem kept_item_rejected (kind : OpenKind) :
     ¬ Withdraws (choosing kind) { choosing kind with scopes := [rootScope] } := fun withdraws => by
   have := withdraws.withScope sub (by simp [scopeIds, choosing, rootScope, subScope]) (by simp [scopeIds, rootScope, root, sub])
@@ -179,7 +179,7 @@ theorem conditional_in_subtree (kind : OpenKind) (view : kind.view.conditional.i
   exact ⟨(mem_choosing (item := workItem kind)).mpr (by simp), by simpa [workItem] using view,
     .parent subScope root root (by simp [choosing]) rfl (.refl _)⟩
 
-/-- A write in scope 1 is never offered to an item of its parent. -/
+/-- A write in the Sub-Process scope occurrence is never offered to an item of its parent. -/
 theorem conditional_outside_rejected (kind : OpenKind) :
     ¬ ConditionalReceivers (choosing kind) sub [paidItem kind] := fun receivers => by
   have within : Within (choosing kind) root sub := (receivers (paidItem kind) (by simp)).2.2
@@ -259,7 +259,7 @@ def OrderFree {κ : Type} (element : OpenItem → κ) (resolve : List OpenItem �
 an item's occurrence as its public element (`key`), which keeps them decidable by evaluation; distinct members carry
 distinct elements. -/
 def member (id : Nat) (name : String) : OpenItem :=
-  { id := ⟨id, .subscription, 0⟩, position := id, kind := .conditional {}, element := ⟨name⟩, scope := ⟨0⟩ }
+  { id := ⟨id, .subscription, 0⟩, position := id, kind := .conditional {}, element := ⟨name⟩, scope := ⟨[]⟩ }
 
 def key (item : OpenItem) : Nat := item.id.occurrence
 

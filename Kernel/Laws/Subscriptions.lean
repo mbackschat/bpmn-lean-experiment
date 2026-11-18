@@ -218,15 +218,15 @@ theorem evaluateItem_frame {ctx : Ctx} {item : OpenItem} {trigger : ConditionTri
   all_goals cases ran
   all_goals exact ⟨rfl, rfl, rfl⟩
 
-/-- An item's evaluation issues nothing. -/
-theorem evaluateItem_issues {ctx : Ctx} {item : OpenItem} {trigger : ConditionTrigger} {state after : State}
+/-- An item's evaluation keeps every scope-key history. -/
+theorem evaluateItem_grows {ctx : Ctx} {item : OpenItem} {trigger : ConditionTrigger} {state after : State}
     {fires : Bool} (ran : Feature.Subscriptions.evaluateItem ctx item trigger state = .ok (after, fires)) :
-    after.nextIssue = state.nextIssue := by
+    Laws.State.ScopeGrows state after := by
   unfold Feature.Subscriptions.evaluateItem at ran
   simp only [bind, Except.bind] at ran
   repeat' split at ran
   all_goals cases ran
-  all_goals rfl
+  all_goals exact .of_same rfl rfl
 
 /-- An item's evaluation at arming keeps the scope occurrences, the occurrences and the instance entries. -/
 theorem armed_frame {ctx : Ctx} {subscription : Subscription} {item : OpenItem} {state after : State} {fires : Bool}
@@ -357,25 +357,26 @@ theorem subscribe_keeps {inv : State → Prop} (ops : SubscriptionsOps program i
     · cases ran
       exact ⟨opened, kept, scopes, instances⟩
 
-/-- A subscription issues no fewer identities: its reservation and item, and an evaluation issuing none. -/
-theorem subscribe_issues {ctx : Ctx} {arming : Feature.Subscriptions.Arming} {state after : State}
+/-- A subscription keeps every scope-key history: its reservation and item, and an evaluation, enter no scope
+occurrence. -/
+theorem subscribe_grows {ctx : Ctx} {arming : Feature.Subscriptions.Arming} {state after : State}
     {subscription : Subscription} {element : ElementId} {scope : ScopeOccurrenceId} {host : Option Nat}
     {passive evaluate : Bool} {fired : Option OpenItem}
     (ran : Feature.Subscriptions.subscribe ctx arming state subscription element scope host passive evaluate =
-      .ok (after, fired)) : state.nextIssue ≤ after.nextIssue := by
+      .ok (after, fired)) : Laws.State.ScopeGrows state after := by
   unfold Feature.Subscriptions.subscribe at ran
   obtain ⟨kind?, _, ran⟩ := ok_bind ran
   split at ran
   · cases ran
-    exact Nat.le_refl _
-  · have opened := Laws.State.openSubscription_issues state ‹_› element scope host passive
+    exact .refl _
+  · have opened := Laws.State.openSubscription_grows state ‹_› element scope host passive
     dsimp only at ran
     split at ran
     · obtain ⟨⟨evaluated, fires⟩, evaluation, ran⟩ := ok_bind ran
       cases ran
       unfold Feature.Subscriptions.armed at evaluation
       split at evaluation
-      · exact (evaluateItem_issues evaluation).symm ▸ opened
+      · exact opened.trans (evaluateItem_grows evaluation)
       · cases evaluation
         exact opened
     · cases ran
@@ -428,8 +429,8 @@ theorem arm_keeps {inv : State → Prop} {ctx : Ctx} (ops : SubscriptionsOps ctx
   · rename_i envelope found
     obtain ⟨located, locatedIs, has⟩ := Option.bind_eq_some_iff.mp found
     refine subscribeAll_keeps ops (fun current => (Hosted scope (some host) current ∧ current.scopes = queue.scopes ∧
-        current.slots.instances = queue.slots.instances) ∧ queue.nextIssue ≤ current.nextIssue)
-      ⟨holds, ⟨hosted, by rw [shape], by rw [shape]⟩, Nat.le_of_eq (by rw [shape])⟩
+        current.slots.instances = queue.slots.instances) ∧ Laws.State.ScopeGrows queue current)
+      ⟨holds, ⟨hosted, by rw [shape], by rw [shape]⟩, by rw [shape]; exact .of_same rfl rfl⟩
       (fun _ boundary _ _ inside kept subscribing =>
         have next := subscribe_covers ops ⟨kept.1, kept.2.1⟩
           (.inl (Laws.IL.boundaryOf_envelope found inside))
@@ -437,7 +438,7 @@ theorem arm_keeps {inv : State → Prop} {ctx : Ctx} (ops : SubscriptionsOps ctx
             (fun _ held => kept.2.1.2.2 ▸ held)
             (.inr (.inr (.inr (.inl ⟨located, envelope, locatedIs, has, boundary, inside, rfl⟩))))
             (.inr (.inl ⟨host, by rw [heads]; exact List.mem_cons_self ..⟩))) subscribing
-        ⟨next.1, next.2, Nat.le_trans kept.2.2 (subscribe_issues subscribing)⟩) ran
+        ⟨next.1, next.2, kept.2.2.trans (subscribe_grows subscribing)⟩) ran
 
 /-- `Hooks.armGateway` keeps `inv` for a gateway occurrence begun in a scope occurrence that stands, its arming taken
 off a queue that kept `inv`, which anchors the catch Events its flows reach. -/
@@ -454,13 +455,13 @@ theorem armGateway_keeps {inv : State → Prop} {ctx : Ctx} (ops : Subscriptions
     obtain ⟨located, locatedIs, typed⟩ := Option.bind_eq_some_iff.mp found
     refine subscribeAll_keeps ops (fun current => (Hosted scope (some occurrence) current ∧
         current.scopes = queue.scopes ∧ current.slots.instances = queue.slots.instances) ∧
-        queue.nextIssue ≤ current.nextIssue)
-      ⟨holds, ⟨hosted, by rw [shape], by rw [shape]⟩, Nat.le_of_eq (by rw [shape])⟩
+        Laws.State.ScopeGrows queue current)
+      ⟨holds, ⟨hosted, by rw [shape], by rw [shape]⟩, by rw [shape]; exact .of_same rfl rfl⟩
       (fun _ flow _ _ inside kept subscribing => ?_) ran
     dsimp only at subscribing
     split at subscribing
     · rename_i element subscription arm
-      refine (fun next => ⟨next.1, next.2, Nat.le_trans kept.2.2 (subscribe_issues subscribing)⟩)
+      refine (fun next => ⟨next.1, next.2, kept.2.2.trans (subscribe_grows subscribing)⟩)
         (subscribe_covers ops ⟨kept.1, kept.2.1⟩ (gatewayArm_reservable arm) ?_ subscribing)
       exact Laws.Flow.Anchored.held queued kept.2.2 (fun _ held => kept.2.1.2.1 ▸ held)
           (fun _ held => kept.2.1.2.2 ▸ held)
@@ -501,8 +502,8 @@ theorem armScope_keeps {inv : State → Prop} {ctx : Ctx} (ops : SubscriptionsOp
   obtain ⟨⟨evaluated, boundaries⟩, evaluation, ran⟩ := ok_bind ran
   obtain ⟨kept, scopes, _⟩ := enabledBoundaries_keeps ops holds evaluation
   refine subscribeAll_keeps ops (fun current => (Hosted scope none current ∧ current.scopes = evaluated.scopes ∧
-      current.slots.instances = evaluated.slots.instances) ∧ evaluated.nextIssue ≤ current.nextIssue)
-    ⟨kept, ⟨⟨scopes ▸ stands, nofun⟩, rfl, rfl⟩, Nat.le_refl _⟩
+      current.slots.instances = evaluated.slots.instances) ∧ Laws.State.ScopeGrows evaluated current)
+    ⟨kept, ⟨⟨scopes ▸ stands, nofun⟩, rfl, rfl⟩, .refl _⟩
     (fun _ child _ _ inside held subscribing => ?_) ran
   dsimp only at subscribing
   split at subscribing
@@ -521,7 +522,7 @@ theorem armScope_keeps {inv : State → Prop} {ctx : Ctx} (ops : SubscriptionsOp
         (Laws.Flow.Anchored.held kept held.2.2 (fun _ inside => held.2.1.2.1 ▸ inside)
           (fun _ inside => held.2.1.2.2 ▸ inside) (startEvent_child found)
           (.inl (.inr (.inr (.inl ⟨scopes ▸ stands, child, inside, named⟩))))) subscribing
-      exact ⟨next.1, next.2, Nat.le_trans held.2.2 (subscribe_issues subscribing)⟩
+      exact ⟨next.1, next.2, held.2.2.trans (subscribe_grows subscribing)⟩
     · cases subscribing
       exact held
     · cases subscribing

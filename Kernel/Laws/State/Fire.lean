@@ -35,7 +35,7 @@ theorem closeItem_fired {s : State} (formed : WellFormed program s) {item : Open
     WellFormed program (s.closeItem item.id) ∧ Fired program (s.closeItem item.id) item := by
   rw [closeItem_eq]
   refine ⟨formed.narrow {
-      scopes := rfl, occurrences := rfl, activations := rfl, nextIssue := rfl,
+      scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, nextIssue := rfl,
       instances := fun _ => by apply instanceOf_congr <;> rfl, recorded := id, items := .erase _, tokens := .refl _,
       signals := .refl _, starts := fun _ => id, slots := .same rfl } rfl formed.startedOnce, ?_⟩
   obtain ⟨waited, present, named, ⟨_, placed⟩⟩ := formed.owned.itemOccurrences item member
@@ -159,7 +159,7 @@ theorem withdrawInside_fired {s : State} (formed : WellFormed program s) {item :
     (scope : ScopeOccurrenceId) : WellFormed program (s.withdrawInside scope) ∧ Fired program (s.withdrawInside scope) item := by
   rw [withdrawInside_eq]
   exact ⟨formed.narrow {
-      scopes := rfl, occurrences := rfl, activations := rfl, nextIssue := rfl, instances := instanceOf_congr rfl rfl,
+      scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, nextIssue := rfl, instances := instanceOf_congr rfl rfl,
       recorded := id, items := .filter _, tokens := .refl _, signals := .refl _, starts := fun _ => id,
       slots := .same rfl } rfl formed.startedOnce,
     fired.shrink rfl rfl rfl rfl rfl rfl (fun _ inside => (mem_itemList_filter_val.mp (inside)).1) fun _ => id⟩

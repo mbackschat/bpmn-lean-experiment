@@ -21,8 +21,9 @@ Two records: `A` completed first and a Sequence Flow leads from `A` to `B`, so `
 
 def subjectA : ElementId := ⟨"A"⟩
 def subjectB : ElementId := ⟨"B"⟩
-def outer : ScopeOccurrenceId := ⟨0⟩
-def inner : ScopeOccurrenceId := ⟨1⟩
+def outer : ScopeOccurrenceId := ⟨[]⟩
+/-- The context entered in `outer` for `B`'s handler. -/
+def inner : ScopeOccurrenceId := ⟨[{ element := ⟨"UndoB"⟩, ordinal := 0 }]⟩
 
 def recordA : Compensable := { subject := subjectA, handler := some ⟨"UndoA"⟩, scope := outer, completion := 1 }
 def recordB : Compensable := { subject := subjectB, handler := some ⟨"UndoB"⟩, scope := outer, completion := 2 }
@@ -123,7 +124,8 @@ def subjectC : ElementId := ⟨"C"⟩
 def recordC : Compensable := { subject := subjectC, handler := some ⟨"UndoC"⟩, scope := outer, completion := 3 }
 def secondTrigger : OccurrenceRef := { trigger with activation := 2 }
 def second : CompensationRun := { trigger := secondTrigger, scope := outer, pending := [recordC], leave := none, resume := none }
-def secondBegun : CompensationRun := { second with pending := [], running := [(⟨2⟩, recordC)] }
+def secondBegun : CompensationRun :=
+  { second with pending := [], running := [(⟨[{ element := ⟨"UndoC"⟩, ordinal := 0 }]⟩, recordC)] }
 def inProgress : Compensations := { retained := [recordC], runs := [afterFirst] }
 
 theorem in_progress_apart : ClaimsApart inProgress := by
@@ -204,7 +206,7 @@ theorem drop_begins_nothing : DropBeginsNothing true (· = outer) begun { begun 
 
 /-- Beginning a handler's context while dropping the run is rejected. -/
 theorem drop_begins_rejected :
-    ¬ DropBeginsNothing true (· = outer) begun { begun with slots := {}, scopes := [{ id := inner, element := none, parent := some outer }] } :=
+    ¬ DropBeginsNothing true (· = outer) begun { begun with slots := {}, scopes := [{ id := inner, element := none }] } :=
   fun law => by
     have := (law rfl).2.1
     simp [begun] at this

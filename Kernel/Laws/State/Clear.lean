@@ -41,6 +41,8 @@ structure Cleared (before after : State) (scope : ScopeOccurrenceId) (keep : Lis
   instances : ∀ x ∈ scopeIds after, after.instanceOf x = before.instanceOf x
   activations : after.activations = before.activations
   nextIssue : after.nextIssue = before.nextIssue
+  /-- Only the counters of the scope occurrences removed go. -/
+  scopeGrows : ScopeGrows before after
   signals : after.signals = before.signals
   status : after.status = before.status
   failure : after.failure = before.failure
@@ -97,7 +99,7 @@ theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {k
   · exact ⟨fun occurrence member => cleared.nextIssue ▸ formed.issued.occurrences occurrence
         (cleared.occurrencesSublist.subset member),
       issuedItems_transport cleared.openItemsSub (fun _ member => cleared.occurrencesSublist.subset member) cleared.ordinals formed.issued.items,
-      fun entry member => cleared.nextIssue ▸ formed.issued.scopes entry (cleared.scopesSublist.subset member)⟩
+      fun entry member => cleared.scopeGrows.issued (formed.issued.scopes entry (cleared.scopesSublist.subset member))⟩
   · refine ⟨formed.distinct.occurrences.sublist (cleared.occurrencesSublist.map _),
       cleared.openItemsSub.keyed formed.distinct.items,
       formed.distinct.scopes.sublist (cleared.scopesSublist.map _), ?_⟩
@@ -164,14 +166,15 @@ theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {k
       fun variables member => formed.variables.names variables (cleared.variablesSublist.subset member)⟩
   · simpa [FailureRecorded, cleared.status, cleared.failure] using formed.failure
   · have queue := formed.queue
-    refine ⟨fun host element scope queued => ?_, by simpa [cleared.signals, cleared.nextIssue] using queue.armScope,
+    refine ⟨fun host element scope queued => ?_,
+      fun scope queued => cleared.scopeGrows.issued (queue.armScope scope (cleared.signals ▸ queued)),
       fun occurrence gateway scope queued => ?_, by simpa [cleared.signals] using queue.ends,
       by simpa [cleared.signals, cleared.nextIssue] using queue.completes⟩
     · obtain ⟨host_, scope_, facts⟩ := queue.arm host element scope (cleared.signals ▸ queued)
-      exact ⟨cleared.nextIssue ▸ host_, cleared.nextIssue ▸ scope_,
+      exact ⟨cleared.nextIssue ▸ host_, cleared.scopeGrows.issued scope_,
         fun found member => facts found (cleared.occurrencesSublist.subset member)⟩
     · obtain ⟨occurrence_, scope_, facts⟩ := queue.armGateway occurrence gateway scope (cleared.signals ▸ queued)
-      exact ⟨cleared.nextIssue ▸ occurrence_, cleared.nextIssue ▸ scope_,
+      exact ⟨cleared.nextIssue ▸ occurrence_, cleared.scopeGrows.issued scope_,
         fun found member => facts found (cleared.occurrencesSublist.subset member)⟩
   · intro fact started
     exact (formed.counted fact (show fact ∈ starts before from sameStarts ▸ started)).congr cleared.activations
@@ -186,8 +189,9 @@ theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {k
       (fun x member => by
         obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
         exact List.mem_map.mpr ⟨entry, cleared.scopesSublist.subset inside, named⟩)
-      cleared.instances (Nat.le_of_eq cleared.nextIssue.symm) (by rw [cleared.signals]; exact .refl _) cleared.tokensSublist
-  · exact formed.settled.transport cleared.slots (Nat.le_of_eq cleared.nextIssue.symm)
+      cleared.instances (Nat.le_of_eq cleared.nextIssue.symm) cleared.scopeGrows (by rw [cleared.signals]; exact .refl _)
+      cleared.tokensSublist
+  · exact formed.settled.transport cleared.slots (Nat.le_of_eq cleared.nextIssue.symm) cleared.scopeGrows
       (fun _ member _ => .inl (cleared.occurrencesSublist.subset member))
       (fun _ queued => queued.shrink (by rw [cleared.signals]; exact .refl _) cleared.tokensSublist)
       (fun _ member => cleared.signals ▸ member) (fun _ member => .inl (cleared.scopesSublist.subset member))
@@ -198,7 +202,7 @@ theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {k
   · exact formed.worked.shrink (fun _ member => cleared.openItemsSub.items member)
       fun _ member _ => cleared.occurrencesSublist.subset member
   · exact formed.roles.shrink fun _ member => cleared.occurrencesSublist.subset member
-  · exact formed.raises.transport (fun _ _ queued => cleared.signals ▸ queued) (Nat.le_of_eq cleared.nextIssue.symm)
+  · exact formed.raises.transport (fun _ _ queued => cleared.signals ▸ queued) cleared.scopeGrows
       (fun x present _ => ⟨by
         obtain ⟨entry, inside, named⟩ := List.mem_map.mp present
         exact List.mem_map.mpr ⟨entry, cleared.scopesSublist.subset inside, named⟩, cleared.instances x present⟩)
@@ -214,6 +218,7 @@ and every item that stays waits for and hangs on occurrences that stay, as every
 `State.disarm`, and the removal of an occurrence record nothing refers to. -/
 structure Prunes (before after : State) : Prop where
   scopes : after.scopes = before.scopes
+  scopeOrdinals : after.scopeOrdinals = before.scopeOrdinals
   instances : ∀ x, after.instanceOf x = before.instanceOf x
   occurrences : after.occurrences.Sublist before.occurrences
   items : ItemsSub after.openItems before.openItems
@@ -237,6 +242,8 @@ structure Prunes (before after : State) : Prop where
 theorem Prunes.wellFormed {before after : State} (formed : WellFormed program before) (prunes : Prunes before after) :
     WellFormed program after := by
   have keys : ∀ occurrence, key after occurrence = key before occurrence := fun _ => key_congr (prunes.instances _)
+  have grows : ScopeGrows before after :=
+    .of_same (congrArg (List.map ScopeOccurrence.id) prunes.scopes) prunes.scopeOrdinals
   have sameStarts : starts after = starts before := by simp [starts, prunes.journal, prunes.started]
   have kept := prunes.occurrences.subset
   have items : itemList after.openItems ⊆ itemList before.openItems := by exact prunes.items.subset
@@ -248,7 +255,7 @@ theorem Prunes.wellFormed {before after : State} (formed : WellFormed program be
   case issued =>
     exact ⟨fun occurrence member => prunes.nextIssue ▸ formed.issued.occurrences occurrence (kept member),
       issuedItems_transport prunes.items (fun _ member => prunes.occurrences.subset member) prunes.ordinals formed.issued.items,
-      by simpa [prunes.scopes, prunes.nextIssue] using formed.issued.scopes⟩
+      fun scope member => grows.issued (formed.issued.scopes scope (prunes.scopes ▸ member))⟩
   case distinct =>
     refine ⟨formed.distinct.occurrences.sublist (prunes.occurrences.map _),
       prunes.items.keyed formed.distinct.items, by simpa [scopeIds, prunes.scopes] using formed.distinct.scopes,
@@ -285,13 +292,14 @@ theorem Prunes.wellFormed {before after : State} (formed : WellFormed program be
   case failure => simpa [FailureRecorded, prunes.failure, prunes.status] using formed.failure
   case queue =>
     have queue := formed.queue
-    refine ⟨fun host element scope queued => ?_, by simpa [prunes.signals, prunes.nextIssue] using queue.armScope,
+    refine ⟨fun host element scope queued => ?_,
+      fun scope queued => grows.issued (queue.armScope scope (prunes.signals ▸ queued)),
       fun occurrence gateway scope queued => ?_, by simpa [prunes.signals] using queue.ends,
       by simpa [prunes.signals, prunes.nextIssue] using queue.completes⟩
     · obtain ⟨hostBelow, scopeBelow, facts⟩ := queue.arm host element scope (prunes.signals ▸ queued)
-      exact ⟨prunes.nextIssue ▸ hostBelow, prunes.nextIssue ▸ scopeBelow, fun found member => facts found (kept member)⟩
+      exact ⟨prunes.nextIssue ▸ hostBelow, grows.issued scopeBelow, fun found member => facts found (kept member)⟩
     · obtain ⟨below, scopeBelow, facts⟩ := queue.armGateway occurrence gateway scope (prunes.signals ▸ queued)
-      exact ⟨prunes.nextIssue ▸ below, prunes.nextIssue ▸ scopeBelow, fun found member => facts found (kept member)⟩
+      exact ⟨prunes.nextIssue ▸ below, grows.issued scopeBelow, fun found member => facts found (kept member)⟩
   case counted =>
     exact fun fact started => (formed.counted fact (sameStarts ▸ started)).congr prunes.activations
   case occurrencesCounted =>
@@ -303,10 +311,10 @@ theorem Prunes.wellFormed {before after : State} (formed : WellFormed program be
       formed.ownedBelow entry (prunes.scopes ▸ member) occurrence (kept inside) owned
   case claimed =>
     exact formed.claimed.shrink (fun _ member => items member) (fun _ member => kept member) housed
-      (by simp [scopeIds, prunes.scopes]) (fun x _ => prunes.instances x) (Nat.le_of_eq prunes.nextIssue.symm)
+      (by simp [scopeIds, prunes.scopes]) (fun x _ => prunes.instances x) (Nat.le_of_eq prunes.nextIssue.symm) grows
       (by rw [prunes.signals]; exact .refl _) (by rw [prunes.tokens]; exact .refl _)
   case settled =>
-    exact formed.settled.transport (.same prunes.slots) (Nat.le_of_eq prunes.nextIssue.symm)
+    exact formed.settled.transport (.same prunes.slots) (Nat.le_of_eq prunes.nextIssue.symm) grows
       (fun _ member _ => .inl (kept member))
       (fun _ queued => queued.shrink (by rw [prunes.signals]; exact .refl _) (by rw [prunes.tokens]; exact .refl _))
       (fun _ member => prunes.signals ▸ member) (fun _ member => .inl (prunes.scopes ▸ member))
@@ -318,7 +326,7 @@ theorem Prunes.wellFormed {before after : State} (formed : WellFormed program be
   case bodyRoles => exact formed.bodyRoles.shrink fun _ member => kept member
   case itemRoles => exact formed.itemRoles.shrink (fun _ member => items member) fun _ member => kept member
   case raises =>
-    exact formed.raises.transport (fun _ _ queued => prunes.signals ▸ queued) (Nat.le_of_eq prunes.nextIssue.symm)
+    exact formed.raises.transport (fun _ _ queued => prunes.signals ▸ queued) grows
       (fun x present _ => ⟨by simpa [scopeIds, prunes.scopes] using present, prunes.instances x⟩)
       (fun _ counted => counted.congr prunes.activations) fun _ member _ => kept member
 
@@ -350,6 +358,8 @@ structure Left (before after : State) (scope : ScopeOccurrenceId) : Prop where
   instances : ∀ x ∈ scopeIds after, after.instanceOf x = before.instanceOf x
   activations : after.activations = before.activations
   nextIssue : after.nextIssue = before.nextIssue
+  /-- Only the counters of the scope occurrences removed go. -/
+  scopeGrows : ScopeGrows before after
   signals : after.signals = before.signals
   status : after.status = before.status
   failure : after.failure = before.failure
@@ -376,6 +386,7 @@ theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (form
     (left : Left before after scope) (present : scope ∈ scopeIds before) (notRoot : scope ≠ State.root) :
     WellFormed program after := by
   have sameStarts : starts after = starts before := by simp [starts, left.journal, left.started]
+  have grows := left.scopeGrows
   have stays : ∀ id, id ∈ scopeIds before → ¬ Within before id scope → id ∈ scopeIds after := fun id member outside => by
     obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
     exact List.mem_map.mpr ⟨entry, (left.scopes entry).mpr ⟨inside, named ▸ outside⟩, named⟩
@@ -391,7 +402,7 @@ theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (form
   case issued =>
     exact ⟨fun occurrence member => left.nextIssue ▸ formed.issued.occurrences occurrence (kept member),
       issuedItems_transport left.openItemsSub (fun _ member => left.occurrencesSublist.subset member) left.ordinals formed.issued.items,
-      fun entry member => left.nextIssue ▸ formed.issued.scopes entry (left.scopesSublist.subset member)⟩
+      fun entry member => grows.issued (formed.issued.scopes entry (left.scopesSublist.subset member))⟩
   case distinct =>
     refine ⟨formed.distinct.occurrences.sublist (left.occurrencesSublist.map _),
       left.openItemsSub.keyed formed.distinct.items,
@@ -437,13 +448,14 @@ theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (form
   case failure => simpa [FailureRecorded, left.status, left.failure] using formed.failure
   case queue =>
     have queue := formed.queue
-    refine ⟨fun host element scope queued => ?_, by simpa [left.signals, left.nextIssue] using queue.armScope,
+    refine ⟨fun host element scope queued => ?_,
+      fun scope queued => grows.issued (queue.armScope scope (left.signals ▸ queued)),
       fun occurrence gateway scope queued => ?_, by simpa [left.signals] using queue.ends,
       by simpa [left.signals, left.nextIssue] using queue.completes⟩
     · obtain ⟨hostBelow, scopeBelow, facts⟩ := queue.arm host element scope (left.signals ▸ queued)
-      exact ⟨left.nextIssue ▸ hostBelow, left.nextIssue ▸ scopeBelow, fun found member => facts found (kept member)⟩
+      exact ⟨left.nextIssue ▸ hostBelow, grows.issued scopeBelow, fun found member => facts found (kept member)⟩
     · obtain ⟨below, scopeBelow, facts⟩ := queue.armGateway occurrence gateway scope (left.signals ▸ queued)
-      exact ⟨left.nextIssue ▸ below, left.nextIssue ▸ scopeBelow, fun found member => facts found (kept member)⟩
+      exact ⟨left.nextIssue ▸ below, grows.issued scopeBelow, fun found member => facts found (kept member)⟩
   case counted =>
     exact fun fact started => (formed.counted fact (sameStarts ▸ started)).congr left.activations
   case occurrencesCounted =>
@@ -458,9 +470,9 @@ theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (form
       housed (fun x member => by
         obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
         exact List.mem_map.mpr ⟨entry, left.scopesSublist.subset inside, named⟩)
-      left.instances (Nat.le_of_eq left.nextIssue.symm) (by rw [left.signals]; exact .refl _) left.tokensSublist
+      left.instances (Nat.le_of_eq left.nextIssue.symm) grows (by rw [left.signals]; exact .refl _) left.tokensSublist
   case settled =>
-    exact formed.settled.transport left.slots (Nat.le_of_eq left.nextIssue.symm) (fun _ member _ => .inl (kept member))
+    exact formed.settled.transport left.slots (Nat.le_of_eq left.nextIssue.symm) grows (fun _ member _ => .inl (kept member))
       (fun _ queued => queued.shrink (by rw [left.signals]; exact .refl _) left.tokensSublist)
       (fun _ member => left.signals ▸ member) (fun _ member => .inl (left.scopesSublist.subset member))
   case attachedReserved =>
@@ -474,7 +486,7 @@ theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (form
   case itemRoles =>
     exact formed.itemRoles.shrink (fun _ member => left.openItemsSub.items member) fun _ member => kept member
   case raises =>
-    exact formed.raises.transport (fun _ _ queued => left.signals ▸ queued) (Nat.le_of_eq left.nextIssue.symm)
+    exact formed.raises.transport (fun _ _ queued => left.signals ▸ queued) grows
       (fun x present _ => ⟨by
         obtain ⟨entry, inside, named⟩ := List.mem_map.mp present
         exact List.mem_map.mpr ⟨entry, left.scopesSublist.subset inside, named⟩, left.instances x present⟩)

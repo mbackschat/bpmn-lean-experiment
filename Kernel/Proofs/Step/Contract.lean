@@ -272,8 +272,8 @@ theorem dropWithin_steady {inv : State → Prop} {program : Program} (ops : Laws
       issued := ops.issued
       fail := fun t _ kept => by rw [Laws.State.signal_eq]; exact kept } ctx scope (state := state) (fun _ => id)
   rw [same] at kept ⊢
-  exact ⟨rfl, rfl, Nat.le_refl _, fun _ queued => queued, Laws.State.instanceOf_congr rfl rfl, rfl, kept, [], by simp,
-    by simp⟩
+  exact ⟨rfl, rfl, Nat.le_refl _, rfl, fun _ queued => queued, Laws.State.instanceOf_congr rfl rfl, rfl, kept, [],
+    by simp, by simp⟩
 
 /-- `Hooks.failCompensation` keeps `inv`. -/
 theorem failCompensation_keeps {inv : State → Prop} {program : Program} (ops : Laws.Compensation.CompensationOps program inv)
@@ -345,7 +345,7 @@ theorem compensationKeeps_of (compensation : ∀ program, Laws.Compensation.Comp
     refine compensate_keeps (runs _) holds (List.mem_map.mpr ⟨entry, inside, named⟩) resumable pending
       (fun next same => ?_) ran
     obtain ⟨queue, kept, signals, same'⟩ := popped
-    refine ⟨queue, kept, Nat.le_of_eq (by rw [same']), ?_, by rw [same'], by rw [same']⟩
+    refine ⟨queue, kept, by rw [same']; exact .of_same rfl rfl, ?_, by rw [same'], by rw [same']⟩
     rw [signals, same]
     simp [Laws.Step.resumesOf]
   handlerCompleted _ _ _ _ _ holds stands ran := by
@@ -363,7 +363,7 @@ theorem untriggered_complete (id : Nat) (leave : Leave) (writes : List (String �
 /-- What a variable write changes, it changes alone, so a raise's search reads the same. -/
 theorem steady_of_same {before after : State} (same : Laws.State.SameButVariables before after) :
     Laws.State.Steady before after :=
-  ⟨same.occurrences, same.scopes, Nat.le_of_eq same.nextIssue.symm, fun _ named => by
+  ⟨same.occurrences, same.scopes, Nat.le_of_eq same.nextIssue.symm, same.scopeOrdinals, fun _ named => by
     unfold Laws.State.Queued at named ⊢
     rwa [same.signals, same.tokens] at named, same.instances, same.activations, fun _ inside => same.slots ▸ inside, [],
     by simp [same.signals], by simp⟩
@@ -403,7 +403,7 @@ theorem registeredSearch (ops : FeatureOps inv) (compensation : CompensationKeep
       · refine ⟨(ops.join _).complete _ _ _ _ _ kept ((settled.steady steady) host named)
           (fun _ same => by cases same), steady.trans ?_, by rw [Laws.State.signal_eq]; exact instances⟩
         rw [Laws.State.signal_eq]
-        exact ⟨rfl, rfl, Nat.le_refl _, fun request named => named.elim (fun named =>
+        exact ⟨rfl, rfl, Nat.le_refl _, rfl, fun request named => named.elim (fun named =>
           .inl ((List.mem_append.mp named).resolve_right (by simp))) .inr, Laws.State.instanceOf_congr rfl rfl, rfl,
           fun _ => id, [_], rfl, fun signal inside => List.mem_singleton.mp inside ▸ untriggered_complete _ _ _ _⟩
     writeCaught := fun _ _ _ _ holds ran => outward _ _ _ _ holds (caught _ _ _ ▸ ran)
@@ -432,7 +432,8 @@ theorem raise_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.Propagat
     have entries : state.slots.instances = queue.slots.instances := by rw [shape]
     obtain ⟨linked, listed⟩ := Laws.Propagation.boundariesOf_sourced inside
     exact (Laws.Propagation.boundaryFire_keeps ops _ _ _ _ kept (Laws.Propagation.boundariesOf_boundaryOf inside)
-      (Laws.Flow.Anchored.held queued (Nat.le_trans (Nat.le_of_eq (by rw [shape])) steady.issued)
+      (Laws.Flow.Anchored.held queued
+        ((show Laws.State.ScopeGrows queue state by rw [shape]; exact .of_same rfl rfl).trans steady.grows)
         (fun _ member => by rw [steady.scopes, scopes] at member; exact member)
         (fun _ member => by rw [instances, entries] at member; exact member) linked
         (.inr (.inr (.inr ⟨raised, origin, by rw [heads]; exact List.mem_cons_self .., rfl, rfl⟩)))) listed).1

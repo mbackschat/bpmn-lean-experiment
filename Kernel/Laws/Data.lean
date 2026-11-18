@@ -413,8 +413,8 @@ theorem sub_declares_p : DeclaringOccurrence itemBefore subScope ⟨"Sub"⟩ sub
     | parent child parent _ member link within =>
       simp only [itemBefore, framesWith, List.mem_cons, List.not_mem_nil, or_false] at member
       rcases member with rfl | rfl
-      · simp [rootScope] at link
-      · simp only [childScope, Option.some.injEq] at link
+      · simp [rootScope, processRoot] at link
+      · simp [childScope, subScope] at link
         subst link
         exact absurd (root_within within) (by simp [subScope, processRoot])⟩
 

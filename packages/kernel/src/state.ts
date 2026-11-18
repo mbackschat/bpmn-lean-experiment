@@ -65,13 +65,14 @@ export {
   type ScopeOccurrenceId,
 };
 
+import { childScope, compareScopeSlot, rootScope, scopeParent, type ScopeSlot } from "./state/key.js";
 import {
   compareItemKey, insertItem, type ItemKey, itemAt, itemKeyText, ItemRole, itemsByPosition, type OpenItem, type OpenItems, sameItemKey,
 } from "./state/items.js";
 export {
   compareItemKey, insertItem, type ItemKey, itemAt, itemKeyText, ItemRole, itemsByPosition, type OpenItem, type OpenItems, sameItemKey,
 };
-import { type TreeMap } from "./state/map.js";
+import { type TreeMap, treeMapGetD, treeMapInsert } from "./state/map.js";
 export { type TreeMap };
 
 /** Guarded type: `step.ts` owns matching on it. Whom `Step` tells when an occurrence completes. */
@@ -117,14 +118,19 @@ export interface Occurrence {
  * process instance, whose `element` is the Call Activity and `calledInstance` the instance's identifier, a
  * Multi-Instance body or instance, the occurrence holding a compensation handler's restored context, or an Activity's
  * local variables (CIB-EXT-0015), which live as long as the Activity. `occurrence` is the flow-node occurrence it
- * belongs to, `null` for the process root, a Multi-Instance instance and a handler's context.
+ * belongs to, `null` for the process root, a Multi-Instance instance and a handler's context. Its parent is its key's
+ * (`scopeOccurrenceParent`), so no record can name another.
  */
 export interface ScopeOccurrence {
   readonly id: ScopeOccurrenceId;
   readonly element: ElementId | null;
-  readonly parent: ScopeOccurrenceId | null;
   readonly occurrence: number | null;
   readonly calledInstance: string | null;
+}
+
+/** Lean's `ScopeOccurrence.parent` over a search's result: the parent of a found record's key, `null` for none. */
+export function scopeOccurrenceParent(scope: ScopeOccurrence | null | undefined): ScopeOccurrenceId | null {
+  return scope === null || scope === undefined ? null : scopeParent(scope.id);
 }
 
 export interface ScopeVariables { readonly scope: ScopeOccurrenceId; readonly entries: readonly Binding[]; }
@@ -330,6 +336,8 @@ export interface State {
   readonly openItems: OpenItems;
   /** The next item ordinal of each occurrence that opened an item, in occurrence order, pruned with the occurrence. */
   readonly itemOrdinals: TreeMap<number, number>;
+  /** The next ordinal of each element in each scope occurrence that entered one, pruned with the scope occurrence. */
+  readonly scopeOrdinals: TreeMap<ScopeSlot, number>;
   readonly activations: readonly ActivationCount[];
   readonly nextIssue: number;
   readonly logicalTimeMs: number;
@@ -429,19 +437,20 @@ export function keyed(bindings: readonly Binding[]): readonly Binding[] {
   return kept;
 }
 
-export const root: ScopeOccurrenceId = 0;
+export const root: ScopeOccurrenceId = rootScope;
 
 /** A fresh process instance: one root scope occurrence with the given variables, `keyed`. */
 export function initial(instanceId: string, variables: readonly Binding[], businessKey: string | null = null): State {
   return {
     instanceId,
     status: InstanceStatus.Running,
-    scopes: [{ id: root, element: null, parent: null, occurrence: null, calledInstance: null }],
+    scopes: [{ id: root, element: null, occurrence: null, calledInstance: null }],
     occurrences: [],
     tokens: [],
     variables: [{ scope: root, entries: keyed(variables) }],
     openItems: [],
     itemOrdinals: [],
+    scopeOrdinals: [],
     activations: [],
     nextIssue: 1,
     logicalTimeMs: 0,
@@ -505,14 +514,19 @@ export function ownScope(state: State, host: number, scope: ScopeOccurrenceId): 
   return localScope(state, host) ?? scope;
 }
 
-/** The root of the process instance `scope` belongs to: the nearest called-instance root, else the process root. */
+/** Whether the scope occurrence `scope` stands. */
+export function stands(state: State, scope: ScopeOccurrenceId): boolean {
+  return state.scopes.some((entry) => entry.id === scope);
+}
+
+/**
+ * The root of the process instance `scope` belongs to: the nearest called-instance root, else the process root. The
+ * search climbs `scope`'s key while its scope occurrences stand.
+ */
 export function instanceRoot(state: State, scope: ScopeOccurrenceId): ScopeOccurrenceId {
-  let current = scope;
-  for (let fuel = state.scopes.length; fuel > 0; fuel -= 1) {
+  for (let current = scope; current !== root; current = scopeParent(current) ?? root) {
     if (calledRoot(state, current)) return current;
-    const parent = scopeOf(state, current)?.parent ?? null;
-    if (parent === null) return root;
-    current = parent;
+    if (!stands(state, current)) return root;
   }
   return root;
 }
@@ -527,7 +541,7 @@ export function busyScopes(state: State): ReadonlySet<ScopeOccurrenceId> {
     ...state.tokens.map((token) => token.scope),
     ...state.openItems.flatMap((item) => item.passive ? [] : [item.scope]),
     ...state.occurrences.flatMap((occurrence) => occurrence.begun ? [occurrence.scope] : []),
-    ...state.scopes.flatMap((candidate) => candidate.parent === null ? [] : [candidate.parent]),
+    ...state.scopes.flatMap((candidate) => scopeOccurrenceParent(candidate) ?? []),
     ...featureSlotsKeptAlive(state.slots),
   ]);
 }
@@ -657,9 +671,8 @@ export function startReserved(state: State, occurrence: Occurrence, sourceType: 
 
 /** A fresh key for an item of `occurrence` in `role`: the occurrence's next ordinal, counted up. */
 export function issueItem(state: State, occurrence: number, role: ItemRole): readonly [State, ItemKey] {
-  const ordinal = state.itemOrdinals.find(([id]) => id === occurrence)?.[1] ?? 0;
-  const itemOrdinals = [...state.itemOrdinals.filter(([id]) => id !== occurrence), [occurrence, ordinal + 1] as const]
-    .sort((left, right) => left[0] - right[0]);
+  const ordinal = treeMapGetD(state.itemOrdinals, occurrence, (left, right) => left - right, 0);
+  const itemOrdinals = treeMapInsert(state.itemOrdinals, occurrence, ordinal + 1, (left, right) => left - right);
   return [{ ...state, itemOrdinals }, { occurrence, role, ordinal }];
 }
 
@@ -726,12 +739,15 @@ export function enterScope(
   locals: readonly Binding[],
   occurrence: number | null,
 ): readonly [State, ScopeOccurrenceId] {
-  const [issued, id] = issue(state);
+  const slot: ScopeSlot = { parent, element };
+  const ordinal = treeMapGetD(state.scopeOrdinals, slot, compareScopeSlot, 0);
+  const id = childScope(parent, element, ordinal);
   return [
     {
-      ...issued,
-      scopes: [...issued.scopes, { id, element, parent, occurrence, calledInstance: null }],
-      variables: [...issued.variables, { scope: id, entries: keyed(locals) }],
+      ...state,
+      scopeOrdinals: treeMapInsert(state.scopeOrdinals, slot, ordinal + 1, compareScopeSlot),
+      scopes: [...state.scopes, { id, element, occurrence, calledInstance: null }],
+      variables: [...state.variables, { scope: id, entries: keyed(locals) }],
     },
     id,
   ];
@@ -786,19 +802,6 @@ export function childrenOf(state: State, program: Program, scope: ScopeOccurrenc
   return programChildren(program, occurrence?.element ?? null);
 }
 
-/** The scope occurrences inside `scope`, transitively, including `scope`, the deepest last. */
-export function subtree(state: State, scope: ScopeOccurrenceId): readonly ScopeOccurrenceId[] {
-  let frontier: ScopeOccurrenceId[] = [scope];
-  const seen: ScopeOccurrenceId[] = [];
-  for (let fuel = state.scopes.length + 1; fuel > 0 && frontier.length > 0; fuel -= 1) {
-    const [next, ...rest] = frontier as [ScopeOccurrenceId, ...ScopeOccurrenceId[]];
-    const children = state.scopes.filter((candidate) => candidate.parent === next).map((candidate) => candidate.id);
-    frontier = [...rest, ...children];
-    seen.push(next);
-  }
-  return seen;
-}
-
 function ownEntries(state: State, scope: ScopeOccurrenceId): readonly Binding[] | null {
   return state.variables.find((entry) => entry.scope === scope)?.entries ?? null;
 }
@@ -816,12 +819,11 @@ export function shows(state: State, program: Program, scope: ScopeOccurrenceId, 
 /** Variables visible from `scope`, innermost first, up to the root of its process instance, each frame's as it `shows` them. */
 export function visible(state: State, program: Program, scope: ScopeOccurrenceId): readonly Binding[] {
   const out: Binding[] = [];
-  let current: ScopeOccurrenceId | null = scope;
-  for (let fuel = state.scopes.length; fuel > 0 && current !== null; fuel -= 1) {
+  for (let current: ScopeOccurrenceId | null = scope; current !== null;) {
     const frame = current;
     out.push(...(ownEntries(state, frame) ?? []).filter(([name]) => shows(state, program, frame, name)));
-    if (calledRoot(state, current)) break;
-    current = scopeOf(state, current)?.parent ?? null;
+    if (frame === root || calledRoot(state, frame) || !stands(state, frame)) break;
+    current = scopeParent(frame);
   }
   return out;
 }
@@ -831,24 +833,19 @@ export function visible(state: State, program: Program, scope: ScopeOccurrenceId
  * occurrence whose frame holds the items `element` declares for a site in `scope`.
  */
 export function declaring(state: State, scope: ScopeOccurrenceId, element: ElementId): ScopeOccurrenceId | null {
-  let current: ScopeOccurrenceId | null = scope;
-  for (let fuel = state.scopes.length; fuel > 0 && current !== null; fuel -= 1) {
-    const occurrence = scopeOf(state, current);
-    if (occurrence?.element === element) return current;
-    if (calledRoot(state, current)) return null;
-    current = occurrence?.parent ?? null;
+  for (let current: ScopeOccurrenceId | null = scope; current !== null; current = scopeParent(current)) {
+    if (scopeOf(state, current)?.element === element) return current;
+    if (calledRoot(state, current) || !stands(state, current)) return null;
   }
   return null;
 }
 
 /** The innermost scope visible from `scope` that declares `name`, up to the root of its process instance. */
 export function owner(state: State, scope: ScopeOccurrenceId, name: string): ScopeOccurrenceId | null {
-  const declares = (id: ScopeOccurrenceId): boolean => (ownEntries(state, id) ?? []).some(([key]) => key === name);
-  let current: ScopeOccurrenceId | null = scope;
-  for (let fuel = state.scopes.length; fuel > 0 && current !== null; fuel -= 1) {
-    if (declares(current)) return current;
-    if (calledRoot(state, current)) return null;
-    current = scopeOf(state, current)?.parent ?? null;
+  const bindsOwn = (id: ScopeOccurrenceId): boolean => (ownEntries(state, id) ?? []).some(([key]) => key === name);
+  for (let current: ScopeOccurrenceId | null = scope; current !== null; current = scopeParent(current)) {
+    if (bindsOwn(current)) return current;
+    if (calledRoot(state, current) || !stands(state, current)) return null;
   }
   return null;
 }

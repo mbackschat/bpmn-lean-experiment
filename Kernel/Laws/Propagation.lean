@@ -283,7 +283,7 @@ theorem contextFires_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.P
   obtain ⟨kept, steady, instances⟩ := catchDecided_keeps search holds settled decision
   obtain ⟨linked, listed⟩ := boundariesOf_sourced member
   have anchored : Laws.Flow.Anchored inv ctx.program decided boundary.id scope :=
-    Laws.Flow.Anchored.held holds steady.issued (fun _ inside => steady.scopes ▸ inside)
+    Laws.Flow.Anchored.held holds steady.grows (fun _ inside => steady.scopes ▸ inside)
       (fun _ inside => instances ▸ inside) linked (.inl (.inr (.inr (.inl ⟨stands, declared⟩))))
   obtain ⟨fired, same⟩ := boundaryFire_keeps ops boundary none scope [] kept (boundariesOf_boundaryOf member) anchored listed
   exact throwerLeaves_keeps ops fired (thrown.steady (same.trans steady.occurrences))
@@ -341,7 +341,7 @@ theorem searchScopes_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.P
           have chain := (steady.trans dropped.2.1).trans decidedSteady
           have instances := (decidedInstances.trans dropped.2.2).trans passedInstances
           have begun := ops.begin _ element occurrence.id decidedKept ⟨occurrence, chain.scopes ▸ present, rfl⟩
-            (Laws.Flow.Anchored.held holds chain.issued (fun _ inside => chain.scopes ▸ inside)
+            (Laws.Flow.Anchored.held holds chain.grows (fun _ inside => chain.scopes ▸ inside)
               (fun _ inside => instances ▸ inside) (.inl rfl) (.inl (.inr (.inr (.inl
                 ⟨⟨occurrence, present, rfl⟩, levelCandidates_children candidates _ (best?_mem handled)⟩)))))
           split

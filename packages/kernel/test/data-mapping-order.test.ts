@@ -12,7 +12,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
+import { decodeProgram, rootScope, step, stimulusFromJson } from "./lean-paired.ts";
 import type { Outcome, State } from "@bpmn-lean/kernel";
 
 import {
@@ -68,7 +68,7 @@ function run(json: Json, ...stimuli: Json[]): Outcome {
 }
 
 const root = (outcome: Outcome): unknown => outcome.ok
-  ? Object.fromEntries((outcome.value.variables.find((entry) => entry.scope === 0)?.entries ?? []).map(([name, value]) => [name, value]))
+  ? Object.fromEntries((outcome.value.variables.find((entry) => entry.scope === rootScope)?.entries ?? []).map(([name, value]) => [name, value]))
   : outcome.failure;
 
 const chained = [mapping("total", reads("amount")), mapping("summary", reads("total"))];

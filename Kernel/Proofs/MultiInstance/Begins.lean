@@ -117,11 +117,7 @@ theorem BeginsKept.enterScope {program : Program} {s : State} (held : BeginsKept
 theorem BeginsKept.enterCalled {program other : Program} {s : State} (formed : WellFormed other s)
     (held : BeginsKept program s) (called : Program) (call : Occurrence) (variables : List (String × Value))
     (definition : DefinitionRef) : BeginsKept program (s.enterCalled called call variables definition).1 := by
-  have fresh : ∀ entry ∈ s.scopes, entry.id ≠ ⟨s.nextIssue⟩ := fun entry inside same => by
-    have below := formed.issued.scopes entry inside
-    rw [same] at below
-    exact Nat.lt_irrefl _ below
-  rw [Laws.State.enterCalled_eq _ _ _ _ _ fresh]
+  rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]
   exact held.frame (fun _ inside => inside) (fun element named => pending_same rfl rfl element named) rfl rfl
 
 /-- A reservation of an element that does not loop under a program whose identifiers are unique keeps `BeginsKept`. -/
@@ -477,7 +473,7 @@ theorem beginsKept_alongside (program : Program) : Alongside program (BeginsKept
   raise _ _ _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
   signalBegin _ request _ _ _ held := held.signalBegin request
   issue _ held := held.issue
-  enterScope _ element parent locals owner _ _ held := held.enterScope element parent locals owner
+  enterScope _ element parent locals owner _ _ _ held := held.enterScope element parent locals owner
   reserve _ _ scope _ _ pending _ held :=
     held.reserve (fun apart => PendingIn.unlooped (fun _ kept => (kept apart).occurs) pending) scope
   leaveScope _ _ formed present _ held := held.leaveScope formed present

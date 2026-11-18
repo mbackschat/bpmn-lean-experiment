@@ -148,14 +148,14 @@ an issued scope occurrence or occurrence it names, and the scope occurrence it a
 inductive Performed (hooks : Hooks) (ctx : Ctx) : Signal → State → State → Prop where
   | onArm {host : Nat} {element : ElementId} {scope : ScopeOccurrenceId} {state after : State} :
       (host < state.nextIssue → ∃ occurrence, state.occurrence? host = some occurrence) →
-      (scope.value < state.nextIssue → ScopeStands state scope) →
+      (Laws.State.ScopeIssued state scope → ScopeStands state scope) →
       hooks.arm ctx host element scope state = .ok after → Performed hooks ctx (.arm host element scope) state after
   | onArmScope {scope : ScopeOccurrenceId} {state after : State} :
-      (scope.value < state.nextIssue → ScopeStands state scope) →
+      (Laws.State.ScopeIssued state scope → ScopeStands state scope) →
       hooks.armScope ctx scope state = .ok after → Performed hooks ctx (.armScope scope) state after
   | onArmGateway {occurrence : Nat} {gateway : ElementId} {scope : ScopeOccurrenceId} {state after : State} :
       (occurrence < state.nextIssue → ∃ found, state.occurrence? occurrence = some found) →
-      (scope.value < state.nextIssue → ScopeStands state scope) →
+      (Laws.State.ScopeIssued state scope → ScopeStands state scope) →
       hooks.armGateway ctx occurrence gateway scope state = .ok after →
       Performed hooks ctx (.armGateway occurrence gateway scope) state after
   | onRaise {event : Raised} {origin : Origin} {state after : State} :

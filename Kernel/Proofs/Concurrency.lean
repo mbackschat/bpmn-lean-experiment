@@ -66,11 +66,12 @@ structure Reordered (left right : State) : Prop where
     ∀ queued ∈ block, ∃ item delivery, queued = .fire item (.signal delivery)
   rest : { right with tokens := left.tokens, signals := left.signals } = left
 
-/-- A bijection of the identities issued at or above `from`, fixing every identity below it. -/
-structure Issued (rename : Nat → Nat) (from_ : Nat) : Prop where
+/-- A bijection of scope keys fixing every key `state` issued (`Laws.State.ScopeIssued`), so only the scope occurrences
+entered from `state` on are renamed. -/
+structure ScopesRenamed (state : State) (rename : ScopeOccurrenceId → ScopeOccurrenceId) : Prop where
   injective : ∀ first second, rename first = rename second → first = second
   surjective : ∀ target, ∃ source, rename source = target
-  fixed : ∀ id, id < from_ → rename id = id
+  fixed : ∀ x, Laws.State.ScopeIssued state x → rename x = x
 
 /-- A bijection of activations: it keeps an occurrence key's instance, element and role, and fixes every activation
 `state` had already counted, so only those numbered from `state` on are renamed. -/
@@ -90,11 +91,11 @@ def openKeys (state : State) : List (OccurrenceKey × OpenKind) :=
 /-- Equal at the canonical-result observation boundary up to `ids` and `keys`: status and failure, the variable sets
 by renamed scope occurrence, each set's bindings as a multiset, the journal's start and end facts and the open waits by
 renamed key, and the outbox, each as a multiset. -/
-structure Alike (ids : Nat → Nat) (keys : OccurrenceKey → OccurrenceKey) (left right : State) : Prop where
+structure Alike (ids : ScopeOccurrenceId → ScopeOccurrenceId) (keys : OccurrenceKey → OccurrenceKey) (left right : State) : Prop where
   status : left.status = right.status
   failure : left.failure = right.failure
   variables : ∃ matched : List ScopeVariables, matched.Perm right.variables ∧ matched.length = left.variables.length ∧
-    ∀ pair ∈ left.variables.zip matched, pair.2.scope = ⟨ids pair.1.scope.value⟩ ∧ pair.1.entries.Perm pair.2.entries
+    ∀ pair ∈ left.variables.zip matched, pair.2.scope = ids pair.1.scope ∧ pair.1.entries.Perm pair.2.entries
   started : ((left.journal.flatMap (·.started)).map fun fact => keys fact.occurrence).Perm
     ((right.journal.flatMap (·.started)).map (·.occurrence))
   ended : ((left.journal.flatMap (·.ended)).map fun fact => (keys fact.1, fact.2)).Perm (right.journal.flatMap (·.ended))
@@ -148,7 +149,7 @@ def SchedulesAgree (hooks : Hooks) : Prop :=
     Reaches hooks (Laws.Step.inputCtx hooks program input) start state → Reordered state reordered →
     Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel work state = .ok left →
     Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel' work' reordered = .ok right →
-    ∃ ids keys, Issued ids state.nextIssue ∧ Activations state keys ∧ Alike ids keys left right
+    ∃ ids keys, ScopesRenamed state ids ∧ Activations state keys ∧ Alike ids keys left right
 
 /-- PC-HUM-04 (`DTB-COMMUTE-01`): a token to a None End beside a token entering an embedded Sub-Process commute under
 `orderInvariant` (BPMN 2.0.2 §10.5.3, §13.5.6). The pair's two orders are one `Reordered` pair of a closure state, so
@@ -163,7 +164,7 @@ theorem endBesideEntry {hooks : Hooks} (agree : SchedulesAgree hooks)
     (swapped : Reordered state reordered)
     (settled : Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel work state = .ok left)
     (settled' : Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel' work' reordered = .ok right) :
-    ∃ ids keys, Issued ids state.nextIssue ∧ Activations state keys ∧ Alike ids keys left right :=
+    ∃ ids keys, ScopesRenamed state ids ∧ Activations state keys ∧ Alike ids keys left right :=
   agree program input start state reordered left right fuel work fuel' work' invariant separate opens reached swapped
     settled settled'
 

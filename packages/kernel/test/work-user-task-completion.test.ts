@@ -13,7 +13,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import { decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
+import { decodeProgram, rootScope, step, stimulusFromJson } from "./lean-paired.ts";
 import type { State } from "@bpmn-lean/kernel";
 
 type Json = Record<string, unknown>;
@@ -101,7 +101,7 @@ function afterReview(json: Json, values: Record<string, string> | ReadonlyArray<
     if (!outcome.ok) return outcome.failure;
     state = outcome.value;
   }
-  const rootEntries = state!.variables.find((entry) => entry.scope === 0)?.entries ?? [];
+  const rootEntries = state!.variables.find((entry) => entry.scope === rootScope)?.entries ?? [];
   return {
     root: Object.fromEntries(rootEntries.map(([name, value]) => [name, (value as { value: unknown }).value])),
     open: state!.openItems.map((item) => item.element).sort(),

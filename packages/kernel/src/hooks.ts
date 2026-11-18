@@ -95,6 +95,7 @@ import {
 export {
   cancelOccurrence, clearInside, idleWithout, leaveScope, removeOccurrence, withdrawInside, withdrawOccurrence,
 } from "./state/removal.js";
+export { subtree } from "./state/tree.js";
 
 /**
  * An in-kernel evaluation. A failure is an absent reference (`unknown-variable`), which `Mapping.dialect` reads, or a

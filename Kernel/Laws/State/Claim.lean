@@ -146,8 +146,8 @@ theorem signal_settled_named {s : State} {request : BeginRequest} (formed : Well
     fun run member occurrence leave resume => carry _ (formed.settled.resumed run member occurrence leave resume)
       (.inr (.inr (.inl ⟨run, member, leave, resume⟩))),
     fun scope activity trigger leave occurrence resume member => ?_,
-    fun run member => (formed.settled.placed run member).transport (Nat.le_refl _) fun _ inside => .inl inside,
-    fun run member => (formed.settled.runsPlaced run member).transport (Nat.le_refl _) fun _ inside => .inl inside,
+    fun run member => (formed.settled.placed run member).transport (.refl _) fun _ inside => .inl inside,
+    fun run member => (formed.settled.runsPlaced run member).transport (.refl _) fun _ inside => .inl inside,
     fun scope activity trigger leave outer context member => ?_, fun raised origin host member named => ?_⟩
   · rcases List.mem_append.mp member with old | new
     · exact carry _ (formed.settled.queued scope activity trigger leave occurrence resume old)
@@ -282,12 +282,13 @@ theorem enterScope_inner {s : State} (formed : WellFormed program s) (element : 
     fun id named => ⟨occurrence, member, Option.some.inj named, begun, rfl⟩
   rw [enterScope_eq] at formedAfter ⊢
   dsimp only at formedAfter ⊢
-  generalize entryIs : ScopeOccurrence.mk ⟨s.nextIssue⟩ (some element) (some occurrence.scope) (some occurrence.id)
-    none = entry at formedAfter ⊢
+  generalize keyIs : occurrence.scope.child element (slotCount s occurrence.scope element) = key at formedAfter ⊢
+  generalize entryIs : ScopeOccurrence.mk key (some element) (some occurrence.id) none = entry at formedAfter ⊢
   generalize afterIs : ({ s with
-      nextIssue := s.nextIssue + 1
+      scopeOrdinals := s.scopeOrdinals.insert { parent := occurrence.scope, element }
+        (slotCount s occurrence.scope element + 1)
       scopes := s.scopes ++ [entry]
-      variables := s.variables ++ [ScopeVariables.mk ⟨s.nextIssue⟩ (keyed locals)] } : State) = t at formedAfter ⊢
+      variables := s.variables ++ [ScopeVariables.mk key (keyed locals)] } : State) = t at formedAfter ⊢
   have scopes : t.scopes = s.scopes ++ [entry] := by rw [← afterIs]
   have entryMember : entry ∈ t.scopes := scopes ▸ List.mem_append_right _ (List.mem_singleton_self _)
   have kept : ∀ x ∈ scopeIds s, t.instanceOf x = s.instanceOf x := fun x stands =>
@@ -297,14 +298,14 @@ theorem enterScope_inner {s : State} (formed : WellFormed program s) (element : 
   have presentAfter : occurrence.scope ∈ scopeIds t := by
     rw [scopeIds, scopes, List.map_append]
     exact List.mem_append_left _ present
-  have child := instanceOf_child formedAfter entryMember (by rw [← entryIs]) (by rw [← entryIs]) presentAfter
-  have entryId : entry.id = ⟨s.nextIssue⟩ := by rw [← entryIs]
+  have child := instanceOf_child formedAfter entryMember (by rw [← entryIs]) (by rw [← entryIs, ← keyIs]) presentAfter
+  have entryId : entry.id = key := by rw [← entryIs]
   have occurrences : t.occurrences = s.occurrences := by rw [← afterIs]
   have items : itemList t.openItems = itemList s.openItems := by rw [← afterIs]
-  have issued : t.nextIssue = s.nextIssue + 1 := by rw [← afterIs]
+  have issued : t.nextIssue = s.nextIssue := by rw [← afterIs]
   refine ⟨formedAfter, rfl, List.mem_map.mpr ⟨_, entryMember, entryId⟩, fun id innerId => ?_⟩
   obtain ⟨⟨below, facts⟩, unnamed, uncompleted, unslotted⟩ := claimable id innerId
-  refine ⟨⟨issued ▸ Nat.lt_succ_of_lt below, fun found inside same => ?_⟩, ?_⟩
+  refine ⟨⟨issued ▸ below, fun found inside same => ?_⟩, ?_⟩
   · obtain ⟨unbegun, free, instance_⟩ := facts found (occurrences ▸ inside) same
     refine ⟨unbegun, items ▸ free, fun _ => ?_⟩
     rw [← entryId, child, kept _ present, kept _ (formed.owned.occurrenceScopes found (occurrences ▸ inside))]

@@ -52,6 +52,7 @@ import {
   type ValueSource,
 } from "../il/types.js";
 import {
+  scopeOccurrenceParent,
   FailureTag,
   FiredTag,
   StartTriggerTag,
@@ -229,7 +230,7 @@ function signalAddress(ctx: Ctx, context: EvalContext, trigger: SignalTrigger): 
  * start or call variables CIB sets after it subscribes (`PvmExecutionImpl.java:278-286`).
  */
 function enclosingContext(program: Program, state: State, scope: ScopeOccurrenceId): EvalContext {
-  const parent = calledRoot(state, scope) ? null : state.scopes.find((entry) => entry.id === scope)?.parent ?? null;
+  const parent = calledRoot(state, scope) ? null : scopeOccurrenceParent(state.scopes.find((entry) => entry.id === scope));
   return { variables: parent === null ? [] : visible(state, program, parent), nowMs: state.logicalTimeMs, bounds: program.options.bounds };
 }
 

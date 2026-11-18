@@ -26,6 +26,7 @@ import {
   type Subscription,
 } from "../il/types.js";
 import {
+  scopeOccurrenceParent,
   FailureTag,
   SignalTag,
   WriteRule,
@@ -150,7 +151,8 @@ export function completeScope(
   owner: Occurrence,
   state: State,
 ): Outcome {
-  const outer = scope.parent === null ? [] : visible(state, ctx.program, scope.parent);
+  const parent = scopeOccurrenceParent(scope);
+  const outer = parent === null ? [] : visible(state, ctx.program, parent);
   const reads = ctxOutputReads(ctx, state.logicalTimeMs, ownVariables(state, scope.id), [], outer);
   const outputs = ctxRequireMappingsWith(ctx, reads, payload.envelope.outputs);
   if (!outputs.ok) return outputs;

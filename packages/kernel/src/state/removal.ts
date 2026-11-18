@@ -4,8 +4,9 @@
  * layer, above `state.ts`, whose callers import it directly.
  */
 import {
-  closeOwnItems, disarm, idle, keyOf, occurrenceOf, subtree, type Occurrence, type State,
+  closeOwnItems, disarm, idle, keyOf, occurrenceOf, type Occurrence, type State,
 } from "../state.js";
+import { subtree } from "./tree.js";
 import { Terminal } from "./journal.js";
 import { featureSlotsClear, type ScopeOccurrenceId } from "./slots.js";
 
@@ -20,8 +21,8 @@ function recordCancelled(state: State, occurrences: readonly Occurrence[]): Stat
 }
 
 /**
- * Remove every token, item, occurrence, slot entry, variable set and child scope occurrence inside `scope`, keeping
- * `scope` itself and the occurrences `keep` names. Each begun occurrence is journalled cancelled, deepest scope first,
+ * Remove every token, item, occurrence, slot entry, variable set and child scope occurrence inside `scope`, with the
+ * ordinal counters of the removed scope occurrences, keeping `scope` itself and the occurrences `keep` names. Each begun occurrence is journalled cancelled, deepest scope first,
  * then by id; `Hooks.cancelled` tells the owning features afterwards.
  */
 export function clearInside(state: State, scope: ScopeOccurrenceId, keep: readonly number[] = []): State {
@@ -38,6 +39,7 @@ export function clearInside(state: State, scope: ScopeOccurrenceId, keep: readon
     occurrences: journalled.occurrences.filter((occurrence) =>
       !inside.includes(occurrence.scope) || keep.includes(occurrence.id)),
     scopes: journalled.scopes.filter((candidate) => !nested.includes(candidate.id)),
+    scopeOrdinals: journalled.scopeOrdinals.filter(([slot]) => !nested.includes(slot.parent)),
     variables: journalled.variables.filter((entry) => !nested.includes(entry.scope)),
     slots: featureSlotsClear(journalled.slots, inside, nested),
   };
@@ -53,6 +55,7 @@ export function leaveScope(state: State, scope: ScopeOccurrenceId): State {
   return {
     ...cleared,
     scopes: cleared.scopes.filter((candidate) => candidate.id !== scope),
+    scopeOrdinals: cleared.scopeOrdinals.filter(([slot]) => slot.parent !== scope),
     variables: cleared.variables.filter((entry) => entry.scope !== scope),
     slots: {
       ...cleared.slots,

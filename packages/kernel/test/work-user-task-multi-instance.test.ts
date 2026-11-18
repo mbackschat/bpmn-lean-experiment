@@ -19,7 +19,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { admit, decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
+import { admit, decodeProgram, rootScope, step, stimulusFromJson } from "./lean-paired.ts";
 import type { State } from "@bpmn-lean/kernel";
 
 import { activity, base, loop, task, userWork, withOptions, wired } from "./admission-refusal-support.ts";
@@ -54,7 +54,7 @@ function run(outputDataItem: string | null, completions: ReadonlyArray<readonly 
   }));
   assert.ok(started.ok, JSON.stringify(started));
   const seen = (state: State): unknown => ({
-    root: Object.fromEntries((state.variables.find((entry) => entry.scope === 0)?.entries ?? [])
+    root: Object.fromEntries((state.variables.find((entry) => entry.scope === rootScope)?.entries ?? [])
       .filter(([name]) => name !== "items").map(([name, value]) => [name, (value as { value: unknown }).value])),
     open: state.status === "running"
       ? state.openItems.map((item) => state.occurrences.find((entry) => entry.id === item.id.occurrence)?.activation)

@@ -10,7 +10,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
+import { decodeProgram, rootScope, step, stimulusFromJson } from "./lean-paired.ts";
 import type { State } from "@bpmn-lean/kernel";
 
 import {
@@ -50,7 +50,7 @@ function committed(json: Json): State {
 
 const open = (state: State): string[] => state.openItems.map((item) => item.element);
 const rootVariables = (state: State): Record<string, unknown> => {
-  const root = state.scopes.find((entry) => entry.parent === null);
+  const root = state.scopes.find((entry) => entry.id === rootScope);
   return Object.fromEntries(state.variables.find((entry) => entry.scope === root?.id)?.entries ?? []);
 };
 const code = { tag: "string", value: "X" };

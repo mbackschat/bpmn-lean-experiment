@@ -14,8 +14,8 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
 
-import { decodeProgram, hooks, step, stimulusFromJson } from "@bpmn-lean/kernel";
-import type { State } from "@bpmn-lean/kernel";
+import { decodeProgram, hooks, scopeParent, step, stimulusFromJson } from "@bpmn-lean/kernel";
+import type { ScopeOccurrenceId, State } from "@bpmn-lean/kernel";
 
 import { readCaseKernelProgram } from "./kernel-program.ts";
 import { projectRoot } from "./pipeline-target-support.ts";
@@ -24,7 +24,7 @@ type Transition = State["journal"][number];
 type Key = Transition["started"][number]["occurrence"];
 
 /** An open occurrence: its owning scope occurrence and its issue position among the run's starts. */
-type Open = Readonly<{ owner: number; issued: number }>;
+type Open = Readonly<{ owner: ScopeOccurrenceId; issued: number }>;
 
 const keyOf = (key: Key): string => `${key.element}#${key.activation}/${key.role}`;
 
@@ -36,7 +36,7 @@ type Termination = Readonly<{
   /** The occurrences open just before the End's transition. */
   open: ReadonlyMap<string, Open>;
   /** Each scope occurrence ever issued in the run, with its parent. */
-  parents: ReadonlyMap<number, number | null>;
+  parents: ReadonlyMap<ScopeOccurrenceId, ScopeOccurrenceId | null>;
 }>;
 
 /** Runs the scenario and records, for every committed input, each transition that starts one of `ends`. */
@@ -49,7 +49,7 @@ async function terminations(name: string, ends: readonly string[]): Promise<Term
   const decoded = decodeProgram(program);
   assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
   const open = new Map<string, Open>();
-  const parents = new Map<number, number | null>();
+  const parents = new Map<ScopeOccurrenceId, ScopeOccurrenceId | null>();
   const found: Termination[] = [];
   let issued = 0;
   let state: State | null = null;
@@ -62,7 +62,7 @@ async function terminations(name: string, ends: readonly string[]): Promise<Term
       continue;
     }
     state = outcome.value;
-    for (const scope of state.scopes) parents.set(scope.id, scope.parent);
+    for (const scope of state.scopes) parents.set(scope.id, scopeParent(scope.id));
     state.journal.forEach((transition, at) => {
       const end = transition.started.find((fact) => ends.includes(fact.occurrence.element));
       if (end !== undefined) {
@@ -75,14 +75,16 @@ async function terminations(name: string, ends: readonly string[]): Promise<Term
   return found;
 }
 
-function depth(parents: ReadonlyMap<number, number | null>, scope: number): number {
+function depth(parents: ReadonlyMap<ScopeOccurrenceId, ScopeOccurrenceId | null>, scope: ScopeOccurrenceId): number {
   let levels = 0;
   for (let current = parents.get(scope) ?? null; current !== null; current = parents.get(current) ?? null) levels += 1;
   return levels;
 }
 
-function within(parents: ReadonlyMap<number, number | null>, region: number, scope: number): boolean {
-  for (let current: number | null = scope; current !== null; current = parents.get(current) ?? null) {
+function within(
+  parents: ReadonlyMap<ScopeOccurrenceId, ScopeOccurrenceId | null>, region: ScopeOccurrenceId, scope: ScopeOccurrenceId,
+): boolean {
+  for (let current: ScopeOccurrenceId | null = scope; current !== null; current = parents.get(current) ?? null) {
     if (current === region) return true;
   }
   return false;

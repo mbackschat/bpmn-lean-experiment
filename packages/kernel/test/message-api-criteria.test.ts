@@ -11,7 +11,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { admit, decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
+import { admit, decodeProgram, rootScope, step, stimulusFromJson } from "./lean-paired.ts";
 import type { Program, State } from "@bpmn-lean/kernel";
 
 import {
@@ -128,7 +128,7 @@ test("a delivery's variables install by the nearest-owner rule", () => {
     [{ name: "local", value: string("L-2") }, { name: "confirmedBy", value: string("ops") }]), "C");
   const holders = (name: string) => state.variables
     .filter((entry) => entry.entries.some(([held]) => held === name))
-    .map((entry) => [entry.scope === 0 ? "root" : "local", entry.entries.find(([held]) => held === name)?.[1]]);
+    .map((entry) => [entry.scope === rootScope ? "root" : "local", entry.entries.find(([held]) => held === name)?.[1]]);
   assert.deepEqual(holders("confirmedBy"), [["root", { tag: "string", value: "ops" }]]);
   assert.deepEqual(holders("local"), [["local", { tag: "string", value: "L-2" }]]);
 });
@@ -140,7 +140,7 @@ test("a Receive Task checks the criteria in its own scope and installs the deliv
     [{ name: "confirmedBy", value: string("ops") }]);
   assert.ok(completed.ok, JSON.stringify(completed));
   assert.equal(completed.value.status, "completed");
-  assert.deepEqual(completed.value.variables.find((entry) => entry.scope === 0)?.entries.find(([name]) => name === "confirmedBy"),
+  assert.deepEqual(completed.value.variables.find((entry) => entry.scope === rootScope)?.entries.find(([name]) => name === "confirmedBy"),
     ["confirmedBy", { tag: "string", value: "ops" }]);
 });
 

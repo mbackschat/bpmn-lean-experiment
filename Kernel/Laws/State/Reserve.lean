@@ -30,6 +30,7 @@ structure Reserves (before after : State) (element : ElementId) (scope : ScopeOc
   activated : ActivationsKeyed before →
     Activated before after (before.instanceOf scope) element .element reserved.activation
   scopes : after.scopes = before.scopes
+  scopeOrdinals : after.scopeOrdinals = before.scopeOrdinals
   instances : ∀ x, after.instanceOf x = before.instanceOf x
   instanceId : after.instanceId = before.instanceId
   itemMap : after.openItems = before.openItems ∧ after.itemOrdinals = before.itemOrdinals
@@ -55,6 +56,8 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
     (stands : scope ∈ scopeIds before) :
     WellFormed program after ∧ ∀ request, Queued after request → reserved.id ∉ names request := by
   have keys : ∀ occurrence, key after occurrence = key before occurrence := fun _ => key_congr (reserves.instances _)
+  have grows : ScopeGrows before after :=
+    .of_same (congrArg (List.map ScopeOccurrence.id) reserves.scopes) reserves.scopeOrdinals
   have issuedAt := reserves.id
   have next := reserves.nextIssue
   have activated := reserves.activated formed.activations
@@ -90,9 +93,7 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
         · have := formed.issued.occurrences occurrence old
           omega,
       fun item member _ => reserves.itemMap.2 ▸ formed.itemBelow (reserves.items ▸ member),
-      fun entry member => by
-        have := formed.issued.scopes entry (reserves.scopes ▸ member)
-        omega⟩
+      fun entry member => grows.issued (formed.issued.scopes entry (reserves.scopes ▸ member))⟩
   case distinct =>
     refine ⟨?_, reserves.itemMap.1 ▸ formed.distinct.items,
       by simpa [scopeIds, reserves.scopes] using formed.distinct.scopes, ?_⟩
@@ -153,14 +154,13 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
     refine ⟨fun host element scope queued => ?_, fun scope queued => ?_, fun occurrence gateway scope queued => ?_,
       fun status failure queued => queue.ends status failure (reserves.signals ▸ queued), fun id leave writes rule queued => ?_⟩
     · obtain ⟨hostBelow, scopeBelow, facts⟩ := queue.arm host element scope (reserves.signals ▸ queued)
-      refine ⟨by omega, by omega, fun found member named => ?_⟩
+      refine ⟨by omega, grows.issued scopeBelow, fun found member named => ?_⟩
       rcases members found member with rfl | old
       · omega
       · exact facts found old named
-    · have := queue.armScope scope (reserves.signals ▸ queued)
-      omega
+    · exact grows.issued (queue.armScope scope (reserves.signals ▸ queued))
     · obtain ⟨occurrenceBelow, scopeBelow, facts⟩ := queue.armGateway occurrence gateway scope (reserves.signals ▸ queued)
-      refine ⟨by omega, by omega, fun found member named => ?_⟩
+      refine ⟨by omega, grows.issued scopeBelow, fun found member named => ?_⟩
       rcases members found member with rfl | old
       · omega
       · exact facts found old named
@@ -207,9 +207,7 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
       queuesApart := by simpa [reserves.signals, reserves.tokens] using formed.claimed.queuesApart
       uncompleted := fun request id leave writes rule queued =>
         reserves.signals ▸ formed.claimed.uncompleted request id leave writes rule (queuedBefore request queued)
-      scopesIssued := fun request queued => by
-        have := formed.claimed.scopesIssued request (queuedBefore request queued)
-        omega
+      scopesIssued := fun request queued => grows.issued (formed.claimed.scopesIssued request (queuedBefore request queued))
       innerPlaced := fun request queued id named found member same => by
         rcases members found member with rfl | old
         · have := ((formed.claimed.named request (queuedBefore request queued)).2 id
@@ -217,7 +215,7 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
           omega
         · exact formed.claimed.innerPlaced request (queuedBefore request queued) id named found old same }
   case settled =>
-    exact formed.settled.transport (.same reserves.slots) (by omega)
+    exact formed.settled.transport (.same reserves.slots) (by omega) grows
       (fun found inside _ => by
         rcases members found inside with rfl | old
         · exact .inr (by omega)
@@ -253,7 +251,7 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
   case raises =>
     intro raised origin queued event
     obtain ⟨below, counted, begun⟩ := formed.raises raised origin (reserves.signals ▸ queued) event
-    refine ⟨by omega, fun present => ?_, fun found inside element placed activation => ?_⟩
+    refine ⟨grows.issued below, fun present => ?_, fun found inside element placed activation => ?_⟩
     · rw [reserves.instances]
       exact activated.counted (counted (by simpa [scopeIds, reserves.scopes] using present))
     · rcases members found inside with rfl | old
@@ -270,6 +268,7 @@ structure StartsReserved (before after : State) (occurrence : Occurrence) (sourc
   started : after.draft.started =
     before.draft.started ++ [{ occurrence := key after occurrence, owner := occurrence.scope, sourceType }]
   scopes : after.scopes = before.scopes
+  scopeOrdinals : after.scopeOrdinals = before.scopeOrdinals
   instances : ∀ x, after.instanceOf x = before.instanceOf x
   instanceId : after.instanceId = before.instanceId
   activations : after.activations = before.activations
@@ -296,6 +295,8 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
     (unnamed : ∀ request, Queued before request → occurrence.id ∉ names request)
     (waitless : ∀ item ∈ itemList before.openItems, item.id.occurrence ≠ occurrence.id) : WellFormed program after := by
   have keys : ∀ other, key after other = key before other := fun _ => key_congr (starts_.instances _)
+  have grows : ScopeGrows before after :=
+    .of_same (congrArg (List.map ScopeOccurrence.id) starts_.scopes) starts_.scopeOrdinals
   have issued := starts_.nextIssue
   have queuedBefore : ∀ request, Queued after request → Queued before request := fun request queued => by
     simpa [Queued, starts_.signals, starts_.tokens] using queued
@@ -332,7 +333,7 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
         · exact formed.issued.occurrences occurrence member
         · exact formed.issued.occurrences found old,
       fun item inside _ => starts_.itemMap.2 ▸ formed.itemBelow (starts_.items ▸ inside),
-      fun entry inside => issued ▸ formed.issued.scopes entry (starts_.scopes ▸ inside)⟩
+      fun entry inside => grows.issued (formed.issued.scopes entry (starts_.scopes ▸ inside))⟩
   case distinct =>
     refine ⟨?_, starts_.itemMap.1 ▸ formed.distinct.items,
       by simpa [scopeIds, starts_.scopes] using formed.distinct.scopes, ?_⟩
@@ -410,14 +411,13 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
       fun status failure queued => queue.ends status failure (starts_.signals ▸ queued),
       fun id leave writes rule queued => issued ▸ queue.completes id leave writes rule (starts_.signals ▸ queued)⟩
     · obtain ⟨hostBelow, scopeBelow, facts⟩ := queue.arm host element scope (starts_.signals ▸ queued)
-      refine ⟨issued ▸ hostBelow, issued ▸ scopeBelow, fun found inside named => ?_⟩
+      refine ⟨issued ▸ hostBelow, grows.issued scopeBelow, fun found inside named => ?_⟩
       rcases members found inside with rfl | ⟨old, _⟩
       · simp [(facts occurrence member named).1] at unbegun
       · exact facts found old named
-    · rw [issued]
-      exact queue.armScope scope (starts_.signals ▸ queued)
+    · exact grows.issued (queue.armScope scope (starts_.signals ▸ queued))
     · obtain ⟨foundBelow, scopeBelow, facts⟩ := queue.armGateway found gateway scope (starts_.signals ▸ queued)
-      refine ⟨issued ▸ foundBelow, issued ▸ scopeBelow, fun other inside named => ?_⟩
+      refine ⟨issued ▸ foundBelow, grows.issued scopeBelow, fun other inside named => ?_⟩
       rcases members other inside with rfl | ⟨old, _⟩
       · simp [(facts occurrence member named).1] at unbegun
       · exact facts other old named
@@ -465,13 +465,13 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
       queuesApart := by simpa [starts_.signals, starts_.tokens] using formed.claimed.queuesApart
       uncompleted := fun request id leave writes rule queued =>
         starts_.signals ▸ formed.claimed.uncompleted request id leave writes rule (queuedBefore request queued)
-      scopesIssued := fun request queued => issued ▸ formed.claimed.scopesIssued request (queuedBefore request queued)
+      scopesIssued := fun request queued => grows.issued (formed.claimed.scopesIssued request (queuedBefore request queued))
       innerPlaced := fun request queued id named found inside same => by
         rcases members found inside with rfl | ⟨old, _⟩
         · exact formed.claimed.innerPlaced request (queuedBefore request queued) id named occurrence member same
         · exact formed.claimed.innerPlaced request (queuedBefore request queued) id named found old same }
   case settled =>
-    exact formed.settled.transport (.same starts_.slots) (Nat.le_of_eq issued.symm)
+    exact formed.settled.transport (.same starts_.slots) (Nat.le_of_eq issued.symm) grows
       (fun found inside unbegun => by
         rcases members found inside with rfl | ⟨old, _⟩
         · simp at unbegun
@@ -507,7 +507,7 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
     · exact absurd named.symm (waitless item (starts_.items ▸ held))
     · exact formed.itemRoles item (starts_.items ▸ held) found old named
   case raises =>
-    exact formed.raises.transport (fun _ _ queued => starts_.signals ▸ queued) (Nat.le_of_eq issued.symm)
+    exact formed.raises.transport (fun _ _ queued => starts_.signals ▸ queued) grows
       (fun x present _ => ⟨by simpa [scopeIds, starts_.scopes] using present, starts_.instances x⟩)
       (fun _ counted => counted.congr starts_.activations) fun found inside unbegun => by
         rcases members found inside with rfl | ⟨old, _⟩

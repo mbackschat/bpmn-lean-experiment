@@ -37,7 +37,7 @@ theorem ReservationsClaimed.shrink {before after : State} (claimed : Reservation
     (housed : ∀ occurrence ∈ after.occurrences, occurrence.scope ∈ scopeIds after)
     (scopes : ∀ x ∈ scopeIds after, x ∈ scopeIds before)
     (instances : ∀ x ∈ scopeIds after, after.instanceOf x = before.instanceOf x)
-    (issued : before.nextIssue ≤ after.nextIssue)
+    (issued : before.nextIssue ≤ after.nextIssue) (grows : ScopeGrows before after)
     (signals : after.signals.Sublist before.signals) (tokens : after.tokens.Sublist before.tokens) :
     ReservationsClaimed after where
   attached item member attached reserved other inside same :=
@@ -58,7 +58,7 @@ theorem ReservationsClaimed.shrink {before after : State} (claimed : Reservation
     claimed.queuesApart first second (signals.subset signal) (tokens.subset token)
   uncompleted request id leave writes rule queued named completed :=
     claimed.uncompleted request id leave writes rule (queued.shrink signals tokens) named (signals.subset completed)
-  scopesIssued request queued := Nat.lt_of_lt_of_le (claimed.scopesIssued request (queued.shrink signals tokens)) issued
+  scopesIssued request queued := grows.issued (claimed.scopesIssued request (queued.shrink signals tokens))
   innerPlaced request queued id named occurrence member :=
     claimed.innerPlaced request (queued.shrink signals tokens) id named occurrence (occurrences occurrence member)
 
@@ -89,46 +89,46 @@ theorem Settled.transport {before after : State} {id : Nat} (settled : Settled b
 
 /-- A run stays placed through a change that issues nothing back and adds only scope occurrences it issues. -/
 theorem Placed.transport {before after : State} {run : MultiInstanceRun} (placed : Placed before run)
-    (issued : before.nextIssue ≤ after.nextIssue)
-    (scopes : ∀ entry ∈ after.scopes, entry ∈ before.scopes ∨ before.nextIssue ≤ entry.id.value) : Placed after run :=
+    (grows : ScopeGrows before after)
+    (scopes : ∀ entry ∈ after.scopes, entry ∈ before.scopes ∨ ¬ ScopeIssued before entry.id) : Placed after run :=
   fun scope active => by
     obtain ⟨below, parent⟩ := placed scope active
-    refine ⟨Nat.lt_of_lt_of_le below issued, fun entry member named => ?_⟩
+    refine ⟨grows.issued below, fun entry member named => ?_⟩
     rcases scopes entry member with old | fresh
     · exact parent entry old named
     · rw [named] at fresh
-      omega
+      exact absurd below fresh
 
 /-- A compensation run stays placed through a change that issues nothing back and adds only scope occurrences it
 issues. -/
 theorem RunPlaced.transport {before after : State} {run : CompensationRun} (placed : RunPlaced before run)
-    (issued : before.nextIssue ≤ after.nextIssue)
-    (scopes : ∀ entry ∈ after.scopes, entry ∈ before.scopes ∨ before.nextIssue ≤ entry.id.value) : RunPlaced after run :=
+    (grows : ScopeGrows before after)
+    (scopes : ∀ entry ∈ after.scopes, entry ∈ before.scopes ∨ ¬ ScopeIssued before entry.id) : RunPlaced after run :=
   ⟨placed.1, fun context running => by
     obtain ⟨below, parent⟩ := placed.2 context running
-    refine ⟨Nat.lt_of_lt_of_le below issued, fun entry member named => ?_⟩
+    refine ⟨grows.issued below, fun entry member named => ?_⟩
     rcases scopes entry member with old | fresh
     · exact parent entry old named
     · rw [named] at fresh
-      omega⟩
+      exact absurd below fresh⟩
 
 /-- The slots stay settled through such a change that adds no slot entry, queues no compensation and adds only scope
 occurrences it issues. -/
 theorem SlotsSettled.transport {before after : State} (settled : SlotsSettled before) (slots : SlotsWithin before after)
-    (issued : before.nextIssue ≤ after.nextIssue)
+    (issued : before.nextIssue ≤ after.nextIssue) (grows : ScopeGrows before after)
     (occurrences : ∀ occurrence ∈ after.occurrences, occurrence.begun = false →
       occurrence ∈ before.occurrences ∨ before.nextIssue ≤ occurrence.id)
     (queued : ∀ request, Queued after request → Queued before request)
     (signals : ∀ signal ∈ after.signals, signal ∈ before.signals)
-    (scopes : ∀ entry ∈ after.scopes, entry ∈ before.scopes ∨ before.nextIssue ≤ entry.id.value) : SlotsSettled after where
+    (scopes : ∀ entry ∈ after.scopes, entry ∈ before.scopes ∨ ¬ ScopeIssued before entry.id) : SlotsSettled after where
   parked waiting member := (settled.parked waiting (slots.parked waiting member)).transport issued occurrences queued
   bodies run member := (settled.bodies run (slots.bodies run member)).transport issued occurrences queued
   resumed run member occurrence leave resume :=
     (settled.resumed run (slots.runs run member) occurrence leave resume).transport issued occurrences queued
   queued scope activity trigger leave occurrence resume member :=
     (settled.queued scope activity trigger leave occurrence resume (signals _ member)).transport issued occurrences queued
-  placed run member := (settled.placed run (slots.bodies run member)).transport issued scopes
-  runsPlaced run member := (settled.runsPlaced run (slots.runs run member)).transport issued scopes
+  placed run member := (settled.placed run (slots.bodies run member)).transport grows scopes
+  runsPlaced run member := (settled.runsPlaced run (slots.runs run member)).transport grows scopes
   grouped scope activity trigger leave outer context member :=
     settled.grouped scope activity trigger leave outer context (signals _ member)
   raised raised origin host member named :=
@@ -347,14 +347,14 @@ theorem ItemRoles.shrink {before after : State} (roles : ItemRoles before)
 occurrence that stands standing in its process instance, keeps every count and adds no unbegun occurrence. -/
 theorem RaisesSound.transport {program : Program} {before after : State} (raises : RaisesSound program before)
     (signals : ∀ raised origin, Signal.raise raised origin ∈ after.signals → Signal.raise raised origin ∈ before.signals)
-    (issued : before.nextIssue ≤ after.nextIssue)
-    (scopes : ∀ x ∈ scopeIds after, x.value < before.nextIssue →
+    (grows : ScopeGrows before after)
+    (scopes : ∀ x ∈ scopeIds after, ScopeIssued before x →
       x ∈ scopeIds before ∧ after.instanceOf x = before.instanceOf x)
     (counters : ∀ k, Counted before k → Counted after k)
     (occurrences : ∀ occurrence ∈ after.occurrences, occurrence.begun = false → occurrence ∈ before.occurrences) :
     RaisesSound program after := fun raised origin queued event => by
   obtain ⟨below, counted, begun⟩ := raises raised origin (signals raised origin queued) event
-  refine ⟨Nat.lt_of_lt_of_le below issued, fun present => ?_, fun occurrence member element scope activation => ?_⟩
+  refine ⟨grows.issued below, fun present => ?_, fun occurrence member element scope activation => ?_⟩
   · obtain ⟨old, same⟩ := scopes _ present below
     rw [same]
     exact counters _ (counted old)
@@ -365,81 +365,12 @@ theorem RaisesSound.transport {program : Program} {before after : State} (raises
 /-- `RaisesSound` reads the queue, the counter, the scope occurrences and their process instances, the counts and the
 occurrences. -/
 theorem RaisesSound.same {program : Program} {s t : State} (raises : RaisesSound program s)
-    (signals : t.signals = s.signals) (nextIssue : t.nextIssue = s.nextIssue) (scopes : t.scopes = s.scopes)
+    (signals : t.signals = s.signals) (ordinals : t.scopeOrdinals = s.scopeOrdinals) (scopes : t.scopes = s.scopes)
     (instances : ∀ x, t.instanceOf x = s.instanceOf x) (activations : t.activations = s.activations)
     (occurrences : t.occurrences = s.occurrences) : RaisesSound program t :=
-  raises.transport (fun _ _ queued => signals ▸ queued) (Nat.le_of_eq nextIssue.symm)
+  raises.transport (fun _ _ queued => signals ▸ queued) (.of_same (congrArg (List.map ScopeOccurrence.id) scopes) ordinals)
     (fun x present _ => ⟨by simpa [scopeIds, scopes] using present, instances x⟩) (fun _ counted => counted.congr activations)
     fun _ member _ => occurrences ▸ member
-
-/-- What lies within `scope` belongs to every set that holds `scope` and the children of its members. -/
-theorem Within.closed_mem {s : State} {scope x : ScopeOccurrenceId} {set : List ScopeOccurrenceId} (inside : Within s x scope)
-    (start : scope ∈ set) (closed : ∀ p ∈ set, ∀ child ∈ s.scopes, child.parent = some p → child.id ∈ set) : x ∈ set := by
-  induction inside with
-  | refl => exact start
-  | parent child parent _ member link _ ih => exact closed parent (ih start) child member link
-
-/-- What `State.subtree`'s breadth-first search keeps, from `scope`: everything it met is a present scope occurrence
-within `scope`, met once, `scope` itself or a child of one it expanded; every child of one it expanded was met. -/
-structure Search (s : State) (scope : ScopeOccurrenceId) (seen frontier : List ScopeOccurrenceId) : Prop where
-  present : ∀ x ∈ seen ++ frontier, x ∈ scopeIds s
-  nodup : (seen ++ frontier).Nodup
-  within : ∀ x ∈ seen ++ frontier, Within s x scope
-  closed : ∀ p ∈ seen, ∀ child ∈ s.scopes, child.parent = some p → child.id ∈ seen ++ frontier
-  reached : ∀ x ∈ seen ++ frontier, x = scope ∨ ∃ p ∈ seen, ∃ child ∈ s.scopes, child.id = x ∧ child.parent = some p
-
-theorem search_step {s : State} (formed : WellFormed program s) {scope next : ScopeOccurrenceId}
-    {seen rest : List ScopeOccurrenceId} (search : Search s scope seen (next :: rest)) :
-    Search s scope (seen ++ [next]) (rest ++ (s.scopes.filter (·.parent == some next)).map (·.id)) := by
-  have perm : ((seen ++ [next]) ++ (rest ++ (s.scopes.filter (·.parent == some next)).map (·.id))).Perm
-      ((seen ++ next :: rest) ++ (s.scopes.filter (·.parent == some next)).map (·.id)) := by
-    simp only [List.append_assoc, List.cons_append]
-    exact List.Perm.refl _
-  have nextWithin := search.within next (by simp)
-  have child_mem : ∀ x, x ∈ (s.scopes.filter (·.parent == some next)).map (·.id) →
-      ∃ child ∈ s.scopes, child.id = x ∧ child.parent = some next := fun x member => by
-    obtain ⟨child, inside, same⟩ := List.mem_map.mp member
-    obtain ⟨inside, linked⟩ := List.mem_filter.mp inside
-    exact ⟨child, inside, same, by simpa using linked⟩
-  constructor
-  · intro x member
-    rcases List.mem_append.mp (perm.mem_iff.mp member) with old | new
-    · exact search.present x old
-    · obtain ⟨child, inside, same, _⟩ := child_mem x new
-      exact List.mem_map.mpr ⟨child, inside, same⟩
-  · refine perm.nodup_iff.mpr (List.nodup_append.mpr ⟨search.nodup, ?_, ?_⟩)
-    · exact (formed.distinct.scopes.sublist ((List.filter_sublist).map _))
-    · intro x old y new same
-      subst same
-      obtain ⟨child, inside, named, linked⟩ := child_mem x new
-      rcases search.reached x old with first | ⟨p, seenP, found⟩
-      · subst first
-        exact parent_not_within formed inside linked (named ▸ nextWithin)
-      · obtain ⟨other, otherInside, otherNamed, otherLinked⟩ := found
-        have := scope_unique formed.distinct otherInside inside (otherNamed.trans named.symm)
-        subst this
-        rw [linked] at otherLinked
-        cases otherLinked
-        exact (List.nodup_append.mp search.nodup).2.2 _ seenP _ (by simp) rfl
-  · intro x member
-    rcases List.mem_append.mp (perm.mem_iff.mp member) with old | new
-    · exact search.within x old
-    · obtain ⟨child, inside, same, linked⟩ := child_mem x new
-      exact same ▸ .parent child next scope inside linked nextWithin
-  · intro p seenP child inside linked
-    refine perm.mem_iff.mpr ?_
-    rcases List.mem_append.mp seenP with old | new
-    · exact List.mem_append_left _ (search.closed p old child inside linked)
-    · simp only [List.mem_singleton] at new
-      subst new
-      exact List.mem_append_right _ (List.mem_map.mpr ⟨child, List.mem_filter.mpr ⟨inside, by simp [linked]⟩, rfl⟩)
-  · intro x member
-    rcases List.mem_append.mp (perm.mem_iff.mp member) with old | new
-    · rcases search.reached x old with first | ⟨p, seenP, rest⟩
-      · exact .inl first
-      · exact .inr ⟨p, List.mem_append_left _ seenP, rest⟩
-    · obtain ⟨child, inside, same, linked⟩ := child_mem x new
-      exact .inr ⟨next, by simp, child, inside, same, linked⟩
 
 /-! ## Narrowing -/
 
@@ -448,6 +379,7 @@ progress, and no new identifier: the phases that only drop or reorder entries, a
 (`WellFormed.reshape`), the variable writes. -/
 structure Narrows (before after : State) : Prop where
   scopes : after.scopes = before.scopes
+  scopeOrdinals : after.scopeOrdinals = before.scopeOrdinals
   occurrences : after.occurrences = before.occurrences
   activations : after.activations = before.activations
   nextIssue : after.nextIssue = before.nextIssue
@@ -466,16 +398,19 @@ theorem WellFormed.reshape {before after : State} (formed : WellFormed program b
     (keyed : VariablesKeyed after) : WellFormed program after := by
   have keys : ∀ occurrence, key after occurrence = key before occurrence := fun _ => key_congr (narrows.instances _)
   have items : itemList after.openItems ⊆ itemList before.openItems := by exact narrows.items.subset
-  have settled := formed.settled.transport narrows.slots (Nat.le_of_eq narrows.nextIssue.symm)
+  have grows : ScopeGrows before after :=
+    .of_same (congrArg (List.map ScopeOccurrence.id) narrows.scopes) narrows.scopeOrdinals
+  have settled := formed.settled.transport narrows.slots (Nat.le_of_eq narrows.nextIssue.symm) grows
     (fun _ member _ => .inl (narrows.occurrences ▸ member)) (fun _ queued => queued.shrink narrows.signals narrows.tokens)
     (fun _ member => narrows.signals.subset member) (fun _ member => .inl (narrows.scopes ▸ member))
   have queue : QueueSound after := {
     arm := fun host element scope queued => by
-      simpa [narrows.nextIssue, narrows.occurrences] using formed.queue.arm host element scope (narrows.signals.subset queued)
-    armScope := fun scope queued => narrows.nextIssue ▸ formed.queue.armScope scope (narrows.signals.subset queued)
+      obtain ⟨host', scope', begun⟩ := formed.queue.arm host element scope (narrows.signals.subset queued)
+      exact ⟨narrows.nextIssue ▸ host', grows.issued scope', narrows.occurrences ▸ begun⟩
+    armScope := fun scope queued => grows.issued (formed.queue.armScope scope (narrows.signals.subset queued))
     armGateway := fun occurrence gateway scope queued => by
-      simpa [narrows.nextIssue, narrows.occurrences] using
-        formed.queue.armGateway occurrence gateway scope (narrows.signals.subset queued)
+      obtain ⟨occurrence', scope', begun⟩ := formed.queue.armGateway occurrence gateway scope (narrows.signals.subset queued)
+      exact ⟨narrows.nextIssue ▸ occurrence', grows.issued scope', narrows.occurrences ▸ begun⟩
     ends := fun status failure queued => formed.queue.ends status failure (narrows.signals.subset queued)
     completes := fun id leave writes rule queued =>
       narrows.nextIssue ▸ formed.queue.completes id leave writes rule (narrows.signals.subset queued) }
@@ -485,14 +420,14 @@ theorem WellFormed.reshape {before after : State} (formed : WellFormed program b
     intro scope member
     exact Within.congr narrows.scopes (reach scope (narrows.scopes ▸ member))
   have raises : RaisesSound program after := formed.raises.transport (fun _ _ queued => narrows.signals.subset queued)
-    (Nat.le_of_eq narrows.nextIssue.symm)
+    grows
     (fun x present _ => ⟨by simpa [scopeIds, narrows.scopes] using present, narrows.instances x⟩)
     (fun _ counted => counted.congr narrows.activations) fun _ member _ => narrows.occurrences ▸ member
   exact {
   issued := ⟨by simpa [narrows.occurrences, narrows.nextIssue] using formed.issued.occurrences,
     fun item member present => Nat.lt_of_lt_of_le
       (formed.issued.items item (items member) (narrows.occurrences ▸ present)) (narrows.items.ordinals _),
-    by simpa [narrows.scopes, narrows.nextIssue] using formed.issued.scopes⟩
+    fun scope member => grows.issued (formed.issued.scopes scope (narrows.scopes ▸ member))⟩
   distinct := ⟨by simpa [occurrenceIds, narrows.occurrences] using formed.distinct.occurrences,
     narrows.items.keyed formed.distinct.items, by simpa [scopeIds, narrows.scopes] using formed.distinct.scopes,
     by rw [narrows.occurrences, funext keys]; exact formed.distinct.keys⟩
@@ -525,7 +460,7 @@ theorem WellFormed.reshape {before after : State} (formed : WellFormed program b
   ownedBelow := by simpa [OwnedBelow, narrows.scopes, narrows.occurrences] using formed.ownedBelow
   claimed := formed.claimed.shrink (fun _ member => items member) (fun _ member => narrows.occurrences ▸ member)
     (by simpa [scopeIds, narrows.occurrences, narrows.scopes] using formed.owned.occurrenceScopes)
-    (by simp [scopeIds, narrows.scopes]) (fun x _ => narrows.instances x) (Nat.le_of_eq narrows.nextIssue.symm)
+    (by simp [scopeIds, narrows.scopes]) (fun x _ => narrows.instances x) (Nat.le_of_eq narrows.nextIssue.symm) grows
     narrows.signals narrows.tokens
   settled := settled
   attachedReserved := formed.attachedReserved.shrink (fun _ member => items member)
@@ -557,7 +492,7 @@ theorem WellFormed.withStatus {s : State} (formed : WellFormed program s) {statu
     {failure : Option InstanceFailure} (instances : ∀ scope, { s with status, failure }.instanceOf scope = s.instanceOf scope)
     (recorded : failure.isSome = true ↔ status = .failed) : WellFormed program { s with status, failure } :=
   formed.narrow {
-      scopes := rfl, occurrences := rfl, activations := rfl, nextIssue := rfl, instances := instances,
+      scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, nextIssue := rfl, instances := instances,
       recorded := fun _ => recorded, items := .refl _, tokens := .refl _, signals := .refl _, starts := fun _ => id,
       slots := .same rfl } rfl
     formed.startedOnce
@@ -565,6 +500,7 @@ theorem WellFormed.withStatus {s : State} (formed : WellFormed program s) {statu
 /-- What `WellFormed` reads besides the variable sets: `setVariable` and `removeVariable` keep all of it. -/
 structure SameButVariables (before after : State) : Prop where
   scopes : after.scopes = before.scopes
+  scopeOrdinals : after.scopeOrdinals = before.scopeOrdinals
   occurrences : after.occurrences = before.occurrences
   items : after.openItems = before.openItems
   ordinals : after.itemOrdinals = before.itemOrdinals
@@ -586,7 +522,7 @@ theorem WellFormed.ofVariables {before after : State} (formed : WellFormed progr
     (located : ∀ variables ∈ after.variables, variables.scope ∈ scopeIds after) (keyed : VariablesKeyed after) :
     WellFormed program after :=
   formed.reshape {
-      scopes := same.scopes, occurrences := same.occurrences, activations := same.activations,
+      scopes := same.scopes, scopeOrdinals := same.scopeOrdinals, occurrences := same.occurrences, activations := same.activations,
       nextIssue := same.nextIssue, instances := same.instances,
       recorded := by simp [FailureRecorded, same.failure, same.status],
       items := by rw [same.items, same.ordinals]; exact .refl _, tokens := by rw [same.tokens]; exact .refl _,
@@ -615,6 +551,7 @@ structure Steady (before after : State) : Prop where
   occurrences : after.occurrences = before.occurrences
   scopes : after.scopes = before.scopes
   issued : before.nextIssue ≤ after.nextIssue
+  ordinals : after.scopeOrdinals = before.scopeOrdinals
   queued : ∀ request, Queued after request → Queued before request
   instances : ∀ scope, after.instanceOf scope = before.instanceOf scope
   activations : after.activations = before.activations
@@ -622,19 +559,24 @@ structure Steady (before after : State) : Prop where
   signals : ∃ more, after.signals = before.signals ++ more ∧ ∀ signal ∈ more, Untriggered signal
 
 theorem Steady.refl (state : State) : Steady state state :=
-  ⟨rfl, rfl, Nat.le_refl _, fun _ => id, fun _ => rfl, rfl, fun _ => id, [], by simp, by simp⟩
+  ⟨rfl, rfl, Nat.le_refl _, rfl, fun _ => id, fun _ => rfl, rfl, fun _ => id, [], by simp, by simp⟩
 
 theorem Steady.trans {first second third : State} (one : Steady first second) (two : Steady second third) :
     Steady first third := by
   obtain ⟨more, appended, quiet⟩ := one.signals
   obtain ⟨further, appendedTwo, quietTwo⟩ := two.signals
   refine ⟨two.occurrences.trans one.occurrences, two.scopes.trans one.scopes, Nat.le_trans one.issued two.issued,
+    two.ordinals.trans one.ordinals,
     fun request queued => one.queued request (two.queued request queued), fun scope => (two.instances scope).trans
       (one.instances scope), two.activations.trans one.activations, fun run inside => one.runs run (two.runs run inside), more ++ further,
     by rw [appendedTwo, appended, List.append_assoc], fun signal inside => ?_⟩
   rcases List.mem_append.mp inside with early | late
   · exact quiet signal early
   · exact quietTwo signal late
+
+/-- A `Steady` step keeps every scope-key history: it keeps the scope occurrences and their counters. -/
+theorem Steady.grows {before after : State} (steady : Steady before after) : ScopeGrows before after :=
+  .of_same (congrArg (List.map (·.id)) steady.scopes) steady.ordinals
 
 /-- What `Step.begin` establishes of the request it begins from `before`, for the throw its occurrence of the element
 role makes (`Step.roleOf`, `Laws.Step.HookContract.arriveThrow`): the request's scope occurrence stands and the

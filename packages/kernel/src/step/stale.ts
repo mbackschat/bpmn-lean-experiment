@@ -3,7 +3,11 @@
  * removed a target of before it ran (`stale`), transcribed from `Kernel/Step/Stale.lean`. `step.ts` builds each
  * signal's work in its one switch on `SignalTag`.
  */
-import { FailureTag, SemanticCause, failed, semanticFailure, type Outcome, type ScopeOccurrenceId, type State } from "../state.js";
+import {
+  FailureTag, SemanticCause, failed, semanticFailure, stands, type Outcome, type ScopeOccurrenceId, type State,
+} from "../state.js";
+import { compareScopeSlot, scopeHead } from "../state/key.js";
+import { treeMapGetD } from "../state/map.js";
 
 /**
  * An occurrence begins only in a scope occurrence that stands: a begin into one that is gone is an invariant failure,
@@ -12,6 +16,21 @@ import { FailureTag, SemanticCause, failed, semanticFailure, type Outcome, type 
  */
 export function requireScope(state: State, scope: ScopeOccurrenceId): Outcome | null {
   return state.scopes.some((entry) => entry.id === scope) ? null : semanticFailure(SemanticCause.Invariant, "begin-into-missing-scope");
+}
+
+/**
+ * Whether the scope occurrence key `scope` was issued, as far as the counters that remain can tell: the ordinal below
+ * its deepest standing ancestor is below that ancestor's counter for its element. A counter goes with its scope
+ * occurrence, so of a key below a removed subtree only this is known (KD1, `stale`).
+ */
+function scopeIssued(state: State, scope: ScopeOccurrenceId): boolean {
+  for (let head = scopeHead(scope); head !== null; head = scopeHead(head[1])) {
+    const [segment, parent] = head;
+    if (stands(state, parent)) {
+      return segment.ordinal < treeMapGetD(state.scopeOrdinals, { parent, element: segment.element }, compareScopeSlot, 0);
+    }
+  }
+  return true;
 }
 
 /**
@@ -27,12 +46,14 @@ export type SignalRun = Readonly<{
 /**
  * `Kernel.Step.stale`: whether a queued signal names a scope occurrence or an occurrence issued and since removed, which
  * an interruption's queued cancellation or interrupting begin removed after a micro-step enqueued the signal. Only a
- * begin, an arming and an `occur` name targets. `nextIssue` counts every identity of whatever kind, so a target below it
- * is only known to have been issued: one of the wrong kind reads as removed, and only one at or above it fails as never
- * issued (`requireScope`).
+ * begin, an arming and an `occur` name targets. `nextIssue` counts every occurrence identity of whatever kind, so a
+ * target below it is only known to have been issued: one of the wrong kind reads as removed, and only one at or above it
+ * fails as never issued (`requireScope`). A scope occurrence key reads as issued by the counter of its deepest standing
+ * ancestor (`scopeIssued`), so a key below a removed subtree is only known to lie below an issued one, and reads as
+ * removed (KD1).
  */
 function stale(state: State, work: SignalRun): boolean {
-  return work.scopes.some((scope) => scope < state.nextIssue && !state.scopes.some((entry) => entry.id === scope)) ||
+  return work.scopes.some((scope) => scopeIssued(state, scope) && !state.scopes.some((entry) => entry.id === scope)) ||
     work.occurrences.some((id) => id < state.nextIssue && !state.occurrences.some((occurrence) => occurrence.id === id));
 }
 

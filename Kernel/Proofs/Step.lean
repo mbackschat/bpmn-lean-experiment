@@ -280,9 +280,8 @@ theorem multiInstanceOps : Laws.MultiInstance.MultiInstanceOps program (Laws.Sta
   hold _ held formed := hold_wellFormed formed held
   enter _ element parent locals owner formed stands owned _ :=
     ⟨Laws.State.enterScope_wellFormed formed element stands locals owned,
-      fun _ settled => settled.enter element parent locals owner, by
-        rw [Laws.State.enterScope_eq]
-        exact Laws.State.scopes_fresh formed⟩
+      fun _ settled => settled.enter element parent locals owner, Laws.State.enterScope_fresh formed.historic element stands
+        locals owner⟩
   arm _ _ element formed member begun _ :=
     ⟨queueArm_wellFormed formed member begun element, fun _ settled => settled.signal fun _ same => by simp at same⟩
   begin _ _ formed bare stands _ := ⟨bareBegin_wellFormed formed bare stands, fun _ settled => settled.begin bare⟩
@@ -298,7 +297,7 @@ theorem multiInstanceOps : Laws.MultiInstance.MultiInstanceOps program (Laws.Sta
         (fun _ present _ => .inl (frame.occurrencesSublist.subset present))
         (fun _ queued => queued.shrink (by rw [frame.signals]; exact .refl _) frame.tokensSublist)
     have placed : Laws.State.Placed (state.leaveScope entry.id) (Laws.MultiInstance.recorded run index output results) :=
-      fun inner active => (formed.settled.placed run member).transport (Nat.le_of_eq frame.nextIssue.symm)
+      fun inner active => (formed.settled.placed run member).transport (Laws.State.leaveScope_grows state entry.id)
         (fun _ present => .inl (frame.scopesSublist.subset present)) inner
         ((List.mem_or_eq_of_mem_set active).resolve_right (by simp))
     rw [Laws.MultiInstance.leftWith, Laws.MultiInstance.setRun_eq]
@@ -358,7 +357,7 @@ theorem propagationOps : Laws.Propagation.PropagationOps program (Laws.State.Wel
   raise _ event _ formed member begun _ := raiseFrom_wellFormed formed member begun event (fun _ same => by cases same) []
   fire _ _ _ formed := queue_wellFormed formed trivial
   outbox _ _ formed := formed.narrow {
-      scopes := rfl, occurrences := rfl, activations := rfl, nextIssue := rfl,
+      scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, nextIssue := rfl,
       instances := fun _ => by apply Laws.State.instanceOf_congr <;> rfl, recorded := id, items := .refl _,
       tokens := .refl _, signals := .refl _, starts := fun _ => id, slots := .same rfl } rfl formed.startedOnce
   compensate _ _ _ _ _ _ formed member begun _ _ _ := queue_wellFormed formed fun _ same => by
@@ -474,7 +473,9 @@ theorem runsOps : Laws.Compensation.RunsOps program (Laws.State.WellFormed progr
   enter _ element parent locals formed stands _ := ⟨Laws.State.enterScope_wellFormed formed element stands locals
     (fun _ same => by cases same), fun _ settled => settled.enter element parent locals none⟩
   entered _ _ _ _ := by rw [Laws.State.enterScope_eq]; exact ⟨rfl, rfl, rfl, rfl⟩
+  fresh _ element _ locals formed stands := Laws.State.enterScope_fresh formed.historic element stands locals none
   signalled _ _ := by rw [Laws.State.signal_eq]; exact ⟨rfl, rfl, rfl⟩
+  signalGrows _ _ := by rw [Laws.State.signal_eq]; exact .refl _
   cancel _ _ formed := ⟨queue_wellFormed formed trivial, fun _ settled => settled.signal fun _ same => by simp at same⟩
   complete _ _ leave writes rule formed settled _ := ⟨settled_wellFormed formed settled leave writes rule,
     fun _ settled => settled.signal fun _ same => by simp at same⟩
@@ -483,7 +484,7 @@ theorem runsOps : Laws.Compensation.RunsOps program (Laws.State.WellFormed progr
     fun _ settled => settled.begin (by simp [Laws.State.names])⟩
   leave _ _ _ formed member link _ := by
     obtain ⟨left, standing, frame⟩ := Laws.State.leaveChild_wellFormed formed member link
-    exact ⟨left, standing, frame.nextIssue, fun _ kept => frame.scopesSublist.subset kept, frame.slots.bodies, fun _ settled =>
+    exact ⟨left, standing, frame.nextIssue, frame.scopeGrows, fun _ kept => frame.scopesSublist.subset kept, frame.slots.bodies, fun _ settled =>
       settled.transport (Nat.le_of_eq frame.nextIssue.symm) (fun _ present _ => .inl (frame.occurrencesSublist.subset present))
         fun _ queued => queued.shrink (by rw [frame.signals]; exact .refl _) frame.tokensSublist⟩
 
@@ -571,8 +572,8 @@ theorem registered_countersEntered : MultiInstance.CountersEntered Registry.hook
         simp at same⟩) cib
       (Laws.MultiInstance.itemName_ne apart.1 apart.2.1 apart.2.2) ran with ⟨held, same⟩ | counted
     · subst same
-      exact MultiInstance.nothingCounted multiInstanceOps (multiInstanceOps.hold _ _ formed)
-        (by rw [Laws.Hooks.hold_eq]; exact Nat.le_refl _)
+      exact MultiInstance.nothingCounted fun other inside scope active =>
+        (multiInstanceOps.placed _ other formed (by rwa [Laws.Hooks.hold_eq] at inside) scope active).1
     · exact counted
   · rw [Laws.Registry.hooks_instanceCompleted] at ran
     exact MultiInstance.instanceCompleted_counted multiInstanceOps formed stands cib

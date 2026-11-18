@@ -12,7 +12,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
 
-import { decodeProgram, hooks, step, stimulusFromJson } from "@bpmn-lean/kernel";
+import { decodeProgram, hooks, scopeParent, step, stimulusFromJson } from "@bpmn-lean/kernel";
 import type { State } from "@bpmn-lean/kernel";
 
 import { projectRoot } from "./pipeline-target-support.ts";
@@ -50,7 +50,7 @@ test("a raised event that reaches a called root writes its Call's outputs outwar
   const outcome = raisedOutputs!(context!(hooks, decoded.value), route, after) as Json;
   assert.deepEqual(JSON.parse(JSON.stringify(outcome)), {
     ok: true,
-    value: [route.parent, [["carrier", { tag: "string", value: "DHL" }], ["routeSlot", { tag: "null" }]]],
+    value: [scopeParent(route.id), [["carrier", { tag: "string", value: "DHL" }], ["routeSlot", { tag: "null" }]]],
   });
 });
 

@@ -46,18 +46,18 @@ def Entering (inv : State → Prop) (settled : State → Nat → Prop) (run : Mu
     (run ∈ state.slots.multiInstances ∨ ∃ entry ∈ state.scopes, entry.id = run.scope ∧
       entry.element = some run.element ∧ entry.calledInstance = none)
 
-/-- A change that keeps the scope occurrences, the counter and the bodies' slot records keeps what a body keeps while
-it enters. -/
+/-- A change that keeps the scope occurrences, issues no fewer scope keys and keeps the bodies' slot records keeps what
+a body keeps while it enters. -/
 theorem Entering.frame {run : MultiInstanceRun}
     {state after : State} {instances : List Iteration} {requests : List BeginRequest}
     (entering : Entering inv settled run state instances requests) (holds : inv after)
     (carried : settled after run.occurrence) (scopes : after.scopes = state.scopes)
-    (issued : after.nextIssue = state.nextIssue) (runs : after.slots.multiInstances = state.slots.multiInstances) :
+    (grows : Laws.State.ScopeGrows state after) (runs : after.slots.multiInstances = state.slots.multiInstances) :
     Entering inv settled run after instances requests := by
   obtain ⟨_, _, stands, rest⟩ := entering
   obtain ⟨placed, queued, held⟩ := rest
   have same : Laws.State.scopeIds after = Laws.State.scopeIds state := by simp [Laws.State.scopeIds, scopes]
-  exact ⟨holds, carried, same ▸ stands, placed.transport (Nat.le_of_eq issued.symm)
+  exact ⟨holds, carried, same ▸ stands, placed.transport grows
     (fun _ member => .inl (scopes ▸ member)), fun request member =>
       have ⟨bare, standing, rest⟩ := queued request member
       ⟨bare, same ▸ standing, rest.1, scopes ▸ rest.2⟩, held.imp (fun inside => runs ▸ inside) fun entered => scopes ▸ entered⟩

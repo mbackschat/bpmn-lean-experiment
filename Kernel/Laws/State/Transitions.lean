@@ -29,7 +29,7 @@ structure IssuesFresh (before after : State) : Prop where
   /-- A new item's ordinal is at or above its occurrence's counter before (KD1). -/
   items : ∀ item ∈ itemList after.openItems, item.id ∉ (itemList before.openItems).map (·.id) →
     before.itemOrdinals.getD item.id.occurrence 0 ≤ item.id.ordinal
-  scopes : ∀ id ∈ scopeIds after, id ∉ scopeIds before → before.nextIssue ≤ id.value
+  scopes : ∀ id ∈ scopeIds after, id ∉ scopeIds before → ¬ ScopeIssued before id
 
 /-- Activation counters only grow, so a re-entered element's next occurrence has a number no earlier one had (R8,
 [scopes, SRE-FRESH-01](../../../docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md#concurrent-activations-and-re-entry)). -/

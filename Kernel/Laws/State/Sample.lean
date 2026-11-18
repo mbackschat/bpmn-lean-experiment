@@ -21,7 +21,7 @@ private theorem sample_instance (kind : OpenKind) :
     (sample kind).instanceOf processRoot = "p" ∧ (sample kind).instanceOf subScope = "p" := by
   have nodup : (scopeIds (sample kind)).Nodup := by simp [scopeIds, sample, rootScope, childScope, processRoot, subScope]
   have parentless : ∀ entry ∈ (sample kind).scopes, entry.parent = none → entry.id = State.root := by
-    simp [sample, rootScope, childScope, processRoot, root_eq]
+    simp [sample, rootScope, childScope, processRoot, subScope, root_eq]
   have root : InstanceIn (sample kind) processRoot (sample kind).instanceId [rootScope] :=
     .root rootScope (by simp [sample]) rfl rfl
   have sub : InstanceIn (sample kind) subScope (sample kind).instanceId [childScope, rootScope] :=
@@ -34,7 +34,7 @@ theorem sample_wellFormed (kind : OpenKind) {program : Program}
     (unstarted : ∀ item ∈ itemList (sample kind).openItems, ((program.element? item.element).bind (·.start?)).isSome = false) :
     WellFormed program (sample kind) where
   issued := ⟨by simp [sample, subProcess, innerTask, outerTask], by simp [sample, innerItem, outerItem, Std.ExtTreeMap.getD_insert],
-    by simp [sample, rootScope, childScope, processRoot, subScope]⟩
+    fun _ member => (sample_historic kind).issued member⟩
   distinct := ⟨by simp [occurrenceIds, sample, subProcess, innerTask, outerTask], keyedBy_ofItems _,
     by simp [scopeIds, sample, rootScope, childScope, processRoot, subScope],
     by simp [key, sample, subProcess, innerTask, outerTask]⟩
@@ -68,7 +68,7 @@ theorem sample_wellFormed (kind : OpenKind) {program : Program}
   ownedBelow := by
     simp only [OwnedBelow, sample, List.mem_cons, List.not_mem_nil, or_false]
     rintro scope (rfl | rfl) occurrence (rfl | rfl | rfl) owner <;>
-      simp_all [rootScope, childScope, subProcess, innerTask, outerTask]
+      simp_all [rootScope, childScope, subProcess, innerTask, outerTask, processRoot, subScope]
   claimed := ⟨by simp [sample, innerItem, outerItem], by simp [Queued, sample], by simp [Precedes, sample],
     by simp [Precedes, sample], by simp [sample], by simp [Queued, sample], by simp [Queued, sample],
     by simp [Queued, sample]⟩
@@ -95,15 +95,15 @@ theorem early_start_rejected (kind : OpenKind) :
       t.instanceOf processRoot = "p" := fun _ scopes named => (instanceOf_congr scopes named processRoot).trans (sample_instance kind).1
   exact this (same { armedState kind with draft := { started := [startFact reservation] } } rfl rfl).symm
 
-/-- A second parentless scope breaks `Rooted`. -/
-theorem forest_rejected (kind : OpenKind) :
-    ¬ Rooted { sample kind with scopes := [rootScope, { childScope with parent := none }] } := by
-  rintro ⟨_, parentless, _⟩
-  have second := (parentless { childScope with parent := none } (by simp)).mp rfl
-  simp [childScope, subScope, root_eq] at second
+/-- A second parentless scope occurrence is unrepresentable: a key's parent is its tail (KD1), so only the root's key
+has none, and `Rooted`'s parentless clause holds of every scope occurrence. -/
+theorem parentless_iff_root (scope : ScopeOccurrence) : scope.parent = none ↔ scope.id = State.root := by
+  obtain ⟨⟨segments⟩, _⟩ := scope
+  cases segments <;> simp [root_eq]
 
 /-- A lone parentless scope occurrence other than `State.root` breaks `Rooted`. -/
-theorem foreign_root_rejected (kind : OpenKind) : ¬ Rooted { sample kind with scopes := [{ rootScope with id := ⟨7⟩ }] } := by
+theorem foreign_root_rejected (kind : OpenKind) :
+    ¬ Rooted { sample kind with scopes := [{ rootScope with id := ⟨[{ element := ⟨"Foreign"⟩, ordinal := 7 }]⟩ }] } := by
   rintro ⟨present, _, _⟩
   simp [scopeIds, root_eq] at present
 
@@ -193,7 +193,7 @@ theorem envelopeless_body_rejected (kind : OpenKind) {program : Program}
 theorem thrower_raisable (kind : OpenKind) {program : Program} :
     Raisable program (sample kind) { element := ⟨"Outer"⟩, scope := processRoot, activation := 1 } := fun _ => by
   obtain ⟨root, _⟩ := sample_instance kind
-  refine ⟨by simp [sample, processRoot], fun _ => ⟨_, List.mem_cons_of_mem _ (List.mem_cons_of_mem _
+  refine ⟨(sample_historic kind).issued_key (by simp [sample, rootScope]), fun _ => ⟨_, List.mem_cons_of_mem _ (List.mem_cons_of_mem _
     (List.mem_singleton_self _)), by simp [root], rfl, rfl, Nat.le_refl _⟩, ?_⟩
   simp only [sample, List.mem_cons, List.not_mem_nil, or_false]
   rintro occurrence (rfl | rfl | rfl) <;> simp [subProcess, innerTask, outerTask]

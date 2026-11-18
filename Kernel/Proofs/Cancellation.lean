@@ -101,7 +101,7 @@ failure and `Inert` holds vacuously. It is stated of any closure state: such wor
 that what queued work names was issued (`Laws.State.QueueSound`). -/
 def QueuedWorkInert (hooks : Hooks) : Prop :=
   ∀ (ctx : Ctx) (state after : State) (next : Signal) (rest : List Signal) (scope : ScopeOccurrenceId),
-    state.signals = next :: rest → ActsIn next scope → scope.value < state.nextIssue → scope ∉ scopeIds state →
+    state.signals = next :: rest → ActsIn next scope → Laws.State.ScopeIssued state scope → scope ∉ scopeIds state →
     Step.microStep hooks ctx (.signal (Step.signalName next)) none State.root (Step.dispatchSignal hooks ctx next)
       { state with signals := rest } = .ok after →
     Inert { state with signals := rest } after
@@ -192,7 +192,7 @@ occurrence `s` enters is none of them: what a committed input keeps of its befor
 occurrence is entered once with its parent, `State.enterScope`, and removed whole, `State.clearInside`,
 `State.leaveScope`). -/
 def ScopesKept (before s : State) : Prop :=
-  (∀ old ∈ before.scopes, old.id.value < s.nextIssue) ∧ ∀ entry ∈ s.scopes, entry.id ∈ scopeIds before → entry ∈ before.scopes
+  (∀ old ∈ before.scopes, Laws.State.ScopeIssued s old.id) ∧ ∀ entry ∈ s.scopes, entry.id ∈ scopeIds before → entry ∈ before.scopes
 
 /-- A committed input keeps its well-formed before-state's scope occurrences (`ScopesKept`). -/
 def StepKeepsScopes (hooks : Hooks) : Prop :=
@@ -286,33 +286,37 @@ some, or leaves them, and never lowers the counter. The hooks' primitive operati
 premise for it in `Alongside`; `Kernel.Proofs.Cancellation.Registered` turns them into each feature's operations record
 and the registered hooks' contract. -/
 
-/-- `t` keeps the scope occurrences `before` held at `s`: those of `s` or ones issued at or above `s`'s counter, under
-a counter that has not moved back. -/
-theorem ScopesKept.grow {before s t : State} (kept : ScopesKept before s) (issued : s.nextIssue ≤ t.nextIssue)
-    (scopes : ∀ entry ∈ t.scopes, entry ∈ s.scopes ∨ s.nextIssue ≤ entry.id.value) : ScopesKept before t := by
-  refine ⟨fun old member => Nat.lt_of_lt_of_le (kept.1 old member) issued, fun entry member named => ?_⟩
+/-- `t` keeps the scope occurrences `before` held at `s`: those of `s` or ones under keys `s` never issued, while every
+key `s` issued stays issued. -/
+theorem ScopesKept.grow {before s t : State} (kept : ScopesKept before s) (grows : Laws.State.ScopeGrows s t)
+    (scopes : ∀ entry ∈ t.scopes, entry ∈ s.scopes ∨ ¬ Laws.State.ScopeIssued s entry.id) : ScopesKept before t := by
+  refine ⟨fun old member => grows.issued (kept.1 old member), fun entry member named => ?_⟩
   rcases scopes entry member with old | fresh
   · exact kept.2 entry old named
   · obtain ⟨prior, inside, same⟩ := List.mem_map.mp named
-    have below := kept.1 prior inside
-    rw [same] at below
-    omega
+    exact absurd (same ▸ kept.1 prior inside) fresh
 
-/-- `ScopesKept.grow` for an operation that drops scope occurrences and issues nothing. -/
+/-- `ScopesKept.grow` for an operation that drops scope occurrences. -/
 theorem ScopesKept.shrink {before s t : State} (kept : ScopesKept before s) (fewer : t.scopes.Sublist s.scopes)
-    (issued : t.nextIssue = s.nextIssue) : ScopesKept before t :=
-  kept.grow (Nat.le_of_eq issued.symm) fun _ member => .inl (fewer.subset member)
+    (grows : Laws.State.ScopeGrows s t) : ScopesKept before t :=
+  kept.grow grows fun _ member => .inl (fewer.subset member)
 
-/-- `ScopesKept.grow` for an operation that issues one identity and enters at most one scope occurrence, under it. -/
-theorem ScopesKept.enter {before s t : State} (kept : ScopesKept before s) (issued : t.nextIssue = s.nextIssue + 1)
-    (scopes : ∀ entry ∈ t.scopes, entry ∈ s.scopes ∨ entry.id = ⟨s.nextIssue⟩) : ScopesKept before t :=
-  kept.grow (by omega) fun entry member => (scopes entry member).imp_right fun same => by
+/-- `ScopesKept.grow` for an operation that keeps the scope occurrences and their counters. -/
+theorem ScopesKept.same {before s t : State} (kept : ScopesKept before s) (scopes : t.scopes = s.scopes)
+    (ordinals : t.scopeOrdinals = s.scopeOrdinals) : ScopesKept before t :=
+  kept.shrink (scopes ▸ .refl _) (.of_same (congrArg (List.map ScopeOccurrence.id) scopes) ordinals)
+
+/-- `ScopesKept.grow` for an operation that enters at most one scope occurrence, under a key fresh from `s`. -/
+theorem ScopesKept.enter {before s t : State} (kept : ScopesKept before s) {x : ScopeOccurrenceId}
+    (fresh : Laws.State.ScopeFresh s t x) (scopes : ∀ entry ∈ t.scopes, entry ∈ s.scopes ∨ entry.id = x) :
+    ScopesKept before t :=
+  kept.grow fresh.2.2 fun entry member => (scopes entry member).imp_right fun same => by
     rw [same]
-    exact Nat.le_refl _
+    exact fresh.1
 
 /-- The state operations the hooks apply keep the scope occurrences of any before-state. -/
 theorem scopesKept_alongside (before : State) (program : Program) : Alongside program (ScopesKept before) where
-  frame _ _ moved kept := kept.shrink (by rw [moved.scopes]; exact .refl _) moved.nextIssue
+  frame _ _ moved kept := kept.same moved.scopes moved.scopeOrdinals
   emit s _ _ _ _ _ kept := by rw [Laws.State.emit_eq]; exact kept
   complete s _ _ _ _ _ kept := by rw [Laws.State.signal_eq]; exact kept
   park _ _ _ _ kept := kept
@@ -324,27 +328,28 @@ theorem scopesKept_alongside (before : State) (program : Program) : Alongside pr
     exact kept
   issue s kept := by
     rw [Laws.State.issue_eq]
-    exact kept.enter rfl fun _ member => .inl member
-  enterScope s element parent locals owner _ _ kept := by
-    rw [Laws.State.enterScope_eq]
-    exact kept.enter rfl fun entry member => (List.mem_append.mp member).imp_right fun fresh => by
-      rw [List.mem_singleton.mp fresh]
+    exact kept.shrink (.refl _) (.refl _)
+  enterScope s element parent locals owner formed stands _ kept := by
+    have fresh := Laws.State.enterScope_fresh formed.historic element stands locals owner
+    rw [Laws.State.enterScope_eq] at fresh ⊢
+    exact kept.enter fresh fun entry member => (List.mem_append.mp member).imp_right fun new => by
+      rw [List.mem_singleton.mp new]
   reserve s element scope _ _ _ _ kept :=
     have reserves := Laws.State.reserve_reserves s element scope
-    kept.enter reserves.nextIssue fun _ member => .inl (reserves.scopes ▸ member)
+    kept.same reserves.scopes reserves.scopeOrdinals
   leaveScope s scope _ _ _ kept :=
-    kept.shrink ((Laws.State.removal_shrinks s).2.1 scope).1 ((Laws.State.removal_shrinks s).2.1 scope).2
+    kept.shrink ((Laws.State.removal_shrinks s).2.1 scope).1 ((Laws.State.removal_shrinks s).2.1 scope).2.2
   clearInside s scope keep _ _ _ kept :=
-    kept.shrink ((Laws.State.removal_shrinks s).1 scope keep).1 ((Laws.State.removal_shrinks s).1 scope keep).2
+    kept.shrink ((Laws.State.removal_shrinks s).1 scope keep).1 ((Laws.State.removal_shrinks s).1 scope keep).2.2
   disarm s host _ kept := by
     rw [Laws.State.disarm_eq]
     exact kept
   setVariable s target name value _ kept :=
     have same := Laws.State.setVariable_same s target name value
-    kept.shrink (by rw [same.scopes]; exact .refl _) same.nextIssue
+    kept.same same.scopes same.scopeOrdinals
   removeVariable s target name _ kept :=
     have same := Laws.State.removeVariable_same s target name
-    kept.shrink (by rw [same.scopes]; exact .refl _) same.nextIssue
+    kept.same same.scopes same.scopeOrdinals
   instanceBegin s _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept
@@ -352,12 +357,13 @@ theorem scopesKept_alongside (before : State) (program : Program) : Alongside pr
     rw [Laws.State.deferBegins_eq]
     exact kept
   leaveInstance s _ scope _ _ _ _ kept :=
-    kept.shrink ((Laws.State.removal_shrinks s).2.1 scope).1 ((Laws.State.removal_shrinks s).2.1 scope).2
-  runs _ _ _ _ kept := kept.shrink (.refl _) rfl
+    kept.shrink ((Laws.State.removal_shrinks s).2.1 scope).1 ((Laws.State.removal_shrinks s).2.1 scope).2.2
+  runs _ _ _ _ kept := kept.shrink (.refl _) (.refl _)
 
 /-- Storing compensation runs keeps the scope occurrences of any before-state. -/
 theorem scopesKept_stores (before : State) (program : Program) : StoresAlongside program (ScopesKept before) :=
-  { (scopesKept_alongside before program).toFrameAlongside with storeRuns := fun _ _ _ _ _ _ kept => kept.shrink (.refl _) rfl }
+  { (scopesKept_alongside before program).toFrameAlongside with
+    storeRuns := fun _ _ _ _ _ _ kept => kept.shrink (.refl _) (.refl _) }
 
 /-- `Step`'s phases keep the scope occurrences of any before-state: journalling and ordering move no scope occurrence
 nor the counter, beginning issues at most one identity and enters no scope occurrence, and cancelling drops some
@@ -370,13 +376,9 @@ theorem scopesKept_stepAlongside (before : State) (program : Program) : StepAlon
   untoken _ _ _ _ kept := kept
   begin s request role sourceType formed _ _ _ _ kept :=
     have begins := Laws.State.beginOccurrence_begins formed.activations request role sourceType
-    kept.grow (by
-      rcases begins.source with ⟨_, reserved⟩ | fresh
-      · exact Nat.le_of_eq reserved.nextIssue.symm
-      · rw [fresh.nextIssue]
-        exact Nat.le_succ _) fun _ member => .inl (begins.scopes ▸ member)
+    kept.same begins.scopes begins.scopeOrdinals
   cancel s id _ kept :=
-    kept.shrink ((Laws.State.removal_shrinks s).2.2.2 id).1 ((Laws.State.removal_shrinks s).2.2.2 id).2
+    kept.shrink ((Laws.State.removal_shrinks s).2.2.2 id).1 ((Laws.State.removal_shrinks s).2.2.2 id).2.2
 
 /-- `Step`'s phases keep `KeepsScopes before` where they keep `WellFormed`. -/
 theorem keepsScopes_phases (phases : Laws.Step.Phases WellFormed) (before : State) :
@@ -394,13 +396,13 @@ theorem keepsScopes_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellForm
     show ScopesKept before (s.startReserved occurrence sourceType).1
     cases begun : occurrence.begun
     · have starts := Laws.State.startReserved_starts s sourceType begun
-      exact holds.2.shrink (by rw [starts.scopes]; exact .refl _) starts.nextIssue
+      exact holds.2.same starts.scopes starts.scopeOrdinals
     · rw [Laws.State.startReserved_begun s sourceType begun]
       exact holds.2
   removeOccurrence _ s occurrence holds member free :=
     have removed := pipeline.removeOccurrence _ _ occurrence holds.1 member free
     ⟨⟨removed.1, holds.2.shrink ((Laws.State.removal_shrinks s).2.2.1 occurrence.id).1
-      ((Laws.State.removal_shrinks s).2.2.1 occurrence.id).2⟩, removed.2⟩
+      ((Laws.State.removal_shrinks s).2.2.1 occurrence.id).2.2⟩, removed.2⟩
   recordEnd _ _ key terminal holds := ⟨pipeline.recordEnd _ _ key terminal holds.1, by
     rw [Laws.State.recordEnd_eq]
     exact holds.2⟩

@@ -43,6 +43,7 @@ import {
   type ElementId,
 } from "../il/types.js";
 import {
+  scopeOccurrenceParent,
   FailureTag,
   InstanceStatus,
   RaisedTag,
@@ -175,7 +176,7 @@ function enclosingInstances(ctx: Ctx, state: State, start: ScopeOccurrenceId): O
       return failed(FailureTag.Unsupported, "unhandled-error-leaves-multi-instance-instance"); // dynamic-only: where its thrower runs
     }
     const id: ScopeOccurrenceId = current;
-    current = state.scopes.find((scope) => scope.id === id)?.parent ?? null;
+    current = scopeOccurrenceParent(state.scopes.find((scope) => scope.id === id));
   }
   return committed(state);
 }
@@ -266,7 +267,8 @@ function interruptedOutputs(ctx: Ctx, occurrence: ScopeOccurrence, parent: Scope
   switch (selected) {
     case ErrorPathOutputs.Mapped: {
       if (mappings.length === 0) return committed(state);
-      const outer = occurrence.parent === null ? [] : visible(state, ctx.program, occurrence.parent);
+      const above = scopeOccurrenceParent(occurrence);
+      const outer = above === null ? [] : visible(state, ctx.program, above);
       const reads = ctxOutputReads(ctx, state.logicalTimeMs, ownVariables(state, occurrence.id), [], outer);
       const outputs = ctxRequireMappingsWith(ctx, reads, mappings);
       if (!outputs.ok) return outputs;
@@ -292,7 +294,7 @@ function cancelledScope(origin: Origin, occurrence: ScopeOccurrence, state: Stat
     const entry = state.scopes.find((scope) => scope.id === at);
     if (entry === undefined) return occurrence.id;
     if (entry.element === occurrence.element) return entry.id;
-    current = entry.parent;
+    current = scopeOccurrenceParent(entry);
   }
   return occurrence.id;
 }
@@ -476,7 +478,7 @@ function searchScopes(
     const handlers = levelCandidates(ctx, raised, origin, state, occurrence, jumped);
     if (!handlers.ok) return failedWith(handlers.failure);
     const handled = best(ctx, raised, ([, subscription]) => subscription.trigger, handlers.value);
-    const attached = occurrence.element === null || occurrence.parent === null || role === ScopeRole.MultiInstanceInstance
+    const attached = occurrence.element === null || scopeOccurrenceParent(occurrence) === null || role === ScopeRole.MultiInstanceInstance
       ? []
       : boundariesOf(ctx, occurrence.element);
     const caught = best(ctx, raised, (boundary) => boundary.subscription.trigger, attached);
@@ -491,11 +493,12 @@ function searchScopes(
       const begun = signal(decided.value, { tag: SignalTag.Begin, request: beginRequest({ element, scope: occurrence.id }) });
       return committed(interrupting ? begun : throwerLeaves(ctx, origin, begun));
     }
-    if (caught !== null && occurrence.parent !== null) {
-      return leaveOccurrence(hooks, ctx, raised, origin, occurrence, occurrence.parent, caught[0], caught[1], state);
+    const parent = scopeOccurrenceParent(occurrence);
+    if (caught !== null && parent !== null) {
+      return leaveOccurrence(hooks, ctx, raised, origin, occurrence, parent, caught[0], caught[1], state);
     }
     jumped = false;
-    current = occurrence.parent;
+    current = scopeOccurrenceParent(occurrence);
   }
   return exhausted(hooks, ctx, raised, origin, null, state);
 }

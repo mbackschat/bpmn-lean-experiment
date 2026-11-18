@@ -1,5 +1,6 @@
 module
 
+public import Kernel.Laws.State.History
 public import Kernel.State
 
 /-! # Laws of flow: where queued work comes from
@@ -130,7 +131,7 @@ later is none it named (`Proofs.Former.unissued_enter_rejected`). -/
 def Anchored (inv : State → Prop) (program : Program) (state : State) (element : ElementId)
     (scope : ScopeOccurrenceId) : Prop :=
   ∃ anchor, Linked program anchor element ∧ (AnchoredBy program state anchor scope ∨
-    ∃ held, inv held ∧ held.nextIssue ≤ state.nextIssue ∧ (∀ entry ∈ state.scopes, entry ∈ held.scopes) ∧
+    ∃ held, inv held ∧ Laws.State.ScopeGrows held state ∧ (∀ entry ∈ state.scopes, entry ∈ held.scopes) ∧
       (∀ entry ∈ state.slots.instances, entry ∈ held.slots.instances) ∧ (AnchoredBy program held anchor scope ∨
         (∃ host, Signal.arm host anchor scope ∈ held.signals) ∨
         (∃ occurrence, Signal.armGateway occurrence anchor scope ∈ held.signals) ∨
@@ -151,7 +152,7 @@ theorem Anchored.occurrence {inv : State → Prop} {program : Program} {state : 
 /-- Work linked to an anchor that a state `held` that kept `inv`, issued no more and with `state`'s scope occurrences
 and instance entries, places or queued an arming for, is anchored in `state`. -/
 theorem Anchored.held {inv : State → Prop} {program : Program} {held state : State} {anchor element : ElementId}
-    {scope : ScopeOccurrenceId} (holds : inv held) (issued : held.nextIssue ≤ state.nextIssue) (scopes : ∀ entry ∈ state.scopes, entry ∈ held.scopes)
+    {scope : ScopeOccurrenceId} (holds : inv held) (issued : Laws.State.ScopeGrows held state) (scopes : ∀ entry ∈ state.scopes, entry ∈ held.scopes)
     (instances : ∀ entry ∈ state.slots.instances, entry ∈ held.slots.instances) (linked : Linked program anchor element)
     (source : AnchoredBy program held anchor scope ∨ (∃ host, Signal.arm host anchor scope ∈ held.signals) ∨
       (∃ occurrence, Signal.armGateway occurrence anchor scope ∈ held.signals) ∨
@@ -163,7 +164,7 @@ theorem Anchored.held {inv : State → Prop} {program : Program} {held state : S
 and instance entries it includes, read off that state. -/
 theorem Anchored.weaken {inv : State → Prop} {program : Program} {state after : State} {element : ElementId}
     {scope : ScopeOccurrenceId} (holds : inv state) (anchored : Anchored inv program state element scope)
-    (issued : state.nextIssue ≤ after.nextIssue)
+    (issued : Laws.State.ScopeGrows state after)
     (scopes : ∀ entry ∈ after.scopes, entry ∈ state.scopes)
     (instances : ∀ entry ∈ after.slots.instances, entry ∈ state.slots.instances) :
     Anchored inv program after element scope := by
@@ -172,7 +173,7 @@ theorem Anchored.weaken {inv : State → Prop} {program : Program} {state after 
   rcases source with here | ⟨held, kept, rest⟩
   · exact ⟨state, holds, issued, scopes, instances, .inl here⟩
   · obtain ⟨heldIssued, heldScopes, heldInstances, there⟩ := rest
-    exact ⟨held, kept, Nat.le_trans heldIssued issued, fun _ inside => heldScopes _ (scopes _ inside),
+    exact ⟨held, kept, heldIssued.trans issued, fun _ inside => heldScopes _ (scopes _ inside),
       fun _ inside => heldInstances _ (instances _ inside), there⟩
 
 /-- Where a begin queued in `state` comes from: its element anchored in the scope occurrence it begins in
@@ -190,7 +191,7 @@ instance entries include `state`'s, resumes by reserving `element` in `scope` an
 comes from. -/
 def ResumedBy (inv : State → Prop) (state : State) (element : ElementId) (scope : ScopeOccurrenceId) (leave : Leave) :
     Prop :=
-  ∃ held, inv held ∧ held.nextIssue ≤ state.nextIssue ∧ (∀ entry ∈ state.scopes, entry ∈ held.scopes) ∧
+  ∃ held, inv held ∧ Laws.State.ScopeGrows held state ∧ (∀ entry ∈ state.scopes, entry ∈ held.scopes) ∧
     (∀ entry ∈ state.slots.instances, entry ∈ held.slots.instances) ∧
     ∃ run ∈ held.slots.compensation.runs, run.resume = some (.occur element scope leave)
 

@@ -297,15 +297,16 @@ theorem ownersPlaced_of {program : Program} {s : State} (formed : WellFormed pro
 
 /-! ### The clauses reject
 
-A Call `CallIt`'s occurrence 1 in the process root and called roots 2 and 3 below it: each clause rejects a state the
-others accept. -/
+A Call `CallIt`'s occurrence 1 in the process root and called roots of ordinals 2 and 3 below it: each clause rejects
+a state the others accept. -/
 
 /-- The process root of the witnesses. -/
-def witnessRoot : ScopeOccurrence := { id := ⟨0⟩, element := none, parent := none }
+def witnessRoot : ScopeOccurrence := { id := ⟨[]⟩, element := none }
 
-/-- A called root of the witnesses, owned by `owner`. -/
-def witnessCalled (id : Nat) (owner : Option Nat) : ScopeOccurrence :=
-  { id := ⟨id⟩, element := some ⟨"CallIt"⟩, parent := some ⟨0⟩, occurrence := owner, calledInstance := some "I1-call" }
+/-- A called root of the witnesses, the `ordinal`th of `CallIt` in the process root, owned by `owner`. -/
+def witnessCalled (ordinal : Nat) (owner : Option Nat) : ScopeOccurrence :=
+  { id := ⟨[{ element := ⟨"CallIt"⟩, ordinal }]⟩, element := some ⟨"CallIt"⟩, occurrence := owner
+    calledInstance := some "I1-call" }
 
 /-- A called root that no occurrence owns breaks `Named`. -/
 theorem unowned_root_rejected (program : Program) :
@@ -316,7 +317,7 @@ theorem unowned_root_rejected (program : Program) :
 and activation, so the instance's invocation would name its root alike. -/
 theorem body_owner_rejected :
     ¬ Roled { instanceId := "I1", scopes := [witnessRoot, witnessCalled 2 (some 1)]
-              occurrences := [{ id := 1, element := ⟨"CallIt"⟩, scope := ⟨0⟩, activation := 1
+              occurrences := [{ id := 1, element := ⟨"CallIt"⟩, scope := ⟨[]⟩, activation := 1
                                 role := .multiInstanceBody }] } := fun roled => by
   have := roled (witnessCalled 2 (some 1)) (by simp) rfl _ (List.mem_singleton_self _) rfl
   cases this
@@ -325,7 +326,7 @@ theorem body_owner_rejected :
 theorem nonActivity_owner_rejected (program : Program) :
     ¬ ActivityOwners { program with elements := [] }
       { instanceId := "I1", scopes := [witnessRoot, witnessCalled 2 (some 1)]
-        occurrences := [{ id := 1, element := ⟨"CallIt"⟩, scope := ⟨0⟩, activation := 1 }] } := fun owners => by
+        occurrences := [{ id := 1, element := ⟨"CallIt"⟩, scope := ⟨[]⟩, activation := 1 }] } := fun owners => by
   have activity := owners (witnessCalled 2 (some 1)) (by simp) rfl _ (List.mem_singleton_self _) rfl
   cases found : ({ program with elements := [] } : Program).element? ⟨"CallIt"⟩ with
   | none => simp [found] at activity
@@ -392,12 +393,13 @@ private theorem enterLocal_facts {program : Program} {header : Header} {inputs :
       (∀ root ∈ (Feature.Work.enterLocal header inputs occurrence state).scopes, root.calledInstance.isSome →
         root ∈ state.scopes) ∧
       ∀ entry ∈ (Feature.Work.enterLocal header inputs occurrence state).scopes,
-        entry.id ≠ ⟨(Feature.Work.enterLocal header inputs occurrence state).nextIssue⟩ := by
-  have below : ∀ entry ∈ state.scopes, entry.id.value < state.nextIssue := formed.issued.scopes
+        entry.id ≠ occurrence.scope.child occurrence.element
+          (Laws.State.slotCount (Feature.Work.enterLocal header inputs occurrence state) occurrence.scope
+            occurrence.element) := by
+  have below : ∀ entry ∈ state.scopes, Laws.State.ScopeIssued state entry.id := formed.issued.scopes
   rw [Laws.Work.enterLocal_eq]
   split
-  · exact ⟨rfl, fun _ inside _ => inside, fun entry inside same => by
-      have := below entry inside; rw [same] at this; exact Nat.lt_irrefl _ this⟩
+  · exact ⟨rfl, fun _ inside _ => inside, Laws.State.scopes_fresh formed⟩
   · refine ⟨?_, fun root inside called => ?_, fun entry inside same => ?_⟩
     · rw [Laws.Hooks.evalContext_eq, Laws.Hooks.evalContext_eq,
         Laws.State.visible_enterScope formed (formed.owned.occurrenceScopes occurrence member)]
@@ -406,10 +408,20 @@ private theorem enterLocal_facts {program : Program} {header : Header} {inputs :
       rcases List.mem_append.mp inside with old | new
       · exact old
       · rw [List.mem_singleton.mp new] at called; cases called
-    · rw [Laws.State.enterScope_eq] at inside same
+    · have stands : occurrence.scope ∈ Laws.State.standingKeys state := formed.owned.occurrenceScopes occurrence member
+      rw [Laws.State.enterScope_eq] at inside same
       rcases List.mem_append.mp inside with old | new
-      · have := below entry old; rw [same] at this; simp at this; omega
-      · rw [List.mem_singleton.mp new] at same; simp at same
+      · refine Laws.State.unissued_of_count stands ?_ (by rw [← same]; exact below entry old)
+        simp only [Laws.State.slotCount, Std.ExtTreeMap.getD_insert]
+        by_cases slot : compare ({ parent := occurrence.scope, element := header.id } : ScopeSlot)
+            { parent := occurrence.scope, element := occurrence.element } = .eq
+        · simp only [slot, ↓reduceIte]; rw [Std.LawfulEqOrd.eq_of_compare slot]; omega
+        · simp only [slot, ↓reduceIte]; omega
+      · rw [List.mem_singleton.mp new] at same
+        simp only [Laws.State.child_eq, ScopeOccurrenceId.mk.injEq, List.cons.injEq, ScopeSegment.mk.injEq] at same
+        obtain ⟨⟨elements, counted⟩, _⟩ := same
+        rw [← elements] at counted
+        simp [Laws.State.slotCount, Std.ExtTreeMap.getD_insert_self] at counted
 
 theorem callInstallsSnapshot {hooks : Hooks} {workHooks : Feature.Work.WorkHooks}
     (arrive : hooks.arriveActivity = Feature.Work.arriveActivity workHooks) : CallInstallsSnapshot hooks := by
@@ -424,13 +436,17 @@ theorem callInstallsSnapshot {hooks : Hooks} {workHooks : Feature.Work.WorkHooks
   refine ⟨installed, context ▸ evaluated, ?_⟩
   obtain ⟨made, rfl⟩ := Laws.Hooks.evaluateMappings_some evaluated
   have scopes : armed.scopes = (Feature.Work.enterLocal header inputs occurrence state).scopes ++
-      [{ id := ⟨(Feature.Work.enterLocal header inputs occurrence state).nextIssue⟩, element := some occurrence.element,
-         parent := some occurrence.scope, occurrence := some occurrence.id
+      [{ id := occurrence.scope.child occurrence.element
+           (Laws.State.slotCount (Feature.Work.enterLocal header inputs occurrence state) occurrence.scope
+             occurrence.element)
+         element := some occurrence.element, occurrence := some occurrence.id
          calledInstance := some (State.calledInstanceId
            ((Feature.Work.enterLocal header inputs occurrence state).instanceOf occurrence.scope)
            (ctx.program.publicId occurrence.element) occurrence.activation) }] ∧
       armed.variables = (Feature.Work.enterLocal header inputs occurrence state).variables ++
-        [{ scope := ⟨(Feature.Work.enterLocal header inputs occurrence state).nextIssue⟩,
+        [{ scope := occurrence.scope.child occurrence.element
+             (Laws.State.slotCount (Feature.Work.enterLocal header inputs occurrence state) occurrence.scope
+               occurrence.element),
            entries := keyed (lastWrites made) }] := by
     rcases armedIs with rfl | rfl <;> rw [Laws.State.enterCalled_eq _ _ _ _ _ unissued] <;> simp [Laws.State.signal_eq]
   simp only [Laws.State.signal_eq] at inside ⊢
@@ -570,7 +586,8 @@ theorem CallsFormed.entered (formed : WellFormed under s) (holds : CallsFormed p
     CallsFormed program (s.enterScope element parent locals owner).1 := by
   have scopes := (Laws.State.enterScope_eq s element parent locals owner ▸ rfl :
     (s.enterScope element parent locals owner).1.scopes =
-      s.scopes ++ [{ id := ⟨s.nextIssue⟩, element := some element, parent := some parent, occurrence := owner }])
+      s.scopes ++ [{ id := parent.child element (Laws.State.slotCount s parent element), element := some element
+                     occurrence := owner }])
   have occurrences : (s.enterScope element parent locals owner).1.occurrences = s.occurrences := by
     rw [Laws.State.enterScope_eq]
   have named : (s.enterScope element parent locals owner).1.instanceId = s.instanceId := by
@@ -643,14 +660,19 @@ theorem CallsFormed.enterCalled (formed : WellFormed under s) (holds : CallsForm
     CallsFormed program (s.enterCalled program call variables definition).1 := by
   rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]
   have stays := fun {x} => instanceOf_grown (t := { s with
-      nextIssue := s.nextIssue + 1
-      scopes := s.scopes ++ [{ id := ⟨s.nextIssue⟩, element := some call.element, parent := some call.scope
-                               occurrence := some call.id
+      scopeOrdinals := s.scopeOrdinals.insert { parent := call.scope, element := call.element }
+        (Laws.State.slotCount s call.scope call.element + 1)
+      scopes := s.scopes ++ [{ id := call.scope.child call.element (Laws.State.slotCount s call.scope call.element)
+                               element := some call.element, occurrence := some call.id
                                calledInstance := some (State.calledInstanceId (s.instanceOf call.scope)
                                  (program.publicId call.element) call.activation) }]
-      variables := s.variables ++ [{ scope := ⟨s.nextIssue⟩, entries := keyed variables }]
+      variables := s.variables ++
+        [{ scope := call.scope.child call.element (Laws.State.slotCount s call.scope call.element)
+           entries := keyed variables }]
       slots := { s.slots with
-        instances := s.slots.instances ++ [{ root := ⟨s.nextIssue⟩, definition := some definition }] } })
+        instances := s.slots.instances ++
+          [{ root := call.scope.child call.element (Laws.State.slotCount s call.scope call.element),
+             definition := some definition }] } })
     (x := x) formed rfl (Laws.State.scopes_fresh formed) rfl rfl
   have only : ∀ other ∈ s.occurrences, other.id = call.id → other = call := fun other inside same =>
     Laws.State.nodup_map_eq formed.distinct.occurrences inside member same
@@ -697,7 +719,7 @@ theorem callsFormed_alongside (program : Program) : Alongside program (CallsForm
   signalBegin _ request _ _ _ held := held.signal (.begin request)
   issue _ held := held.same (by rw [Laws.State.issue_eq]) (by rw [Laws.State.issue_eq]; exact fun _ member => member)
     (by rw [Laws.State.issue_eq])
-  enterScope _ element parent locals owner formed _ held := held.entered formed element parent locals owner
+  enterScope _ element parent locals owner formed _ _ held := held.entered formed element parent locals owner
   reserve _ element scope formed _ _ _ held := held.reserved formed element scope
   leaveScope _ _ formed present _ held := held.left formed (Laws.State.leaveScope_left formed present)
   clearInside _ _ keep formed present kept held :=

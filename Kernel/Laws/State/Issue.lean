@@ -107,6 +107,7 @@ structure Begins (before after : State) (request : BeginRequest) (role : Activat
   isBegun : begun.begun = true
   source : (∃ reserved, Reserved before after request begun reserved) ∨ Issued before after request role begun
   scopes : after.scopes = before.scopes
+  scopeOrdinals : after.scopeOrdinals = before.scopeOrdinals
   instances : ∀ x, after.instanceOf x = before.instanceOf x
   instanceId : after.instanceId = before.instanceId
   itemMap : after.openItems = before.openItems ∧ after.itemOrdinals = before.itemOrdinals
@@ -197,6 +198,8 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
       (((program.element? request.element).bind (·.envelope?)).bind (·.multiInstance)).isSome = true) :
     WellFormed program after := by
   have keys : ∀ occurrence, key after occurrence = key before occurrence := fun _ => key_congr (begins.instances _)
+  have grows : ScopeGrows before after :=
+    .of_same (congrArg (List.map ScopeOccurrence.id) begins.scopes) begins.scopeOrdinals
   obtain ⟨keyNew, factNew, keyCounted⟩ := begins.keyNew formed stands admitted
   obtain ⟨itemsFree, unbegunOnly, unclaimed, issued⟩ := begins.idNew formed admitted
   have counters : ∀ k, Counted before k → Counted after k := fun k counted => by
@@ -256,7 +259,7 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
         · have := formed.issued.occurrences occurrence old
           omega,
       fun item member _ => begins.itemMap.2 ▸ formed.itemBelow (begins.items ▸ member),
-      fun entry member => Nat.lt_of_lt_of_le (formed.issued.scopes entry (begins.scopes ▸ member)) issued⟩
+      fun entry member => grows.issued (formed.issued.scopes entry (begins.scopes ▸ member))⟩
   case distinct =>
     refine ⟨?_, begins.itemMap.1 ▸ formed.distinct.items, by simpa [scopeIds, begins.scopes] using formed.distinct.scopes,
       ?_⟩
@@ -337,14 +340,13 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
     refine ⟨fun host element scope queued => ?_, fun scope queued => ?_, fun occurrence gateway scope queued => ?_,
       fun status failure queued => queue.ends status failure (begins.signals ▸ queued), fun id leave writes rule queued => ?_⟩
     · obtain ⟨hostBelow, scopeBelow, facts⟩ := queue.arm host element scope (begins.signals ▸ queued)
-      refine ⟨by omega, by omega, fun found member named => ?_⟩
+      refine ⟨by omega, grows.issued scopeBelow, fun found member named => ?_⟩
       rcases members found member with rfl | ⟨old, _⟩
       · exact absurd named (unarmed host hostBelow fun found inside same => (facts found inside same).1)
       · exact facts found old named
-    · have := queue.armScope scope (begins.signals ▸ queued)
-      omega
+    · exact grows.issued (queue.armScope scope (begins.signals ▸ queued))
     · obtain ⟨occurrenceBelow, scopeBelow, facts⟩ := queue.armGateway occurrence gateway scope (begins.signals ▸ queued)
-      refine ⟨by omega, by omega, fun found member named => ?_⟩
+      refine ⟨by omega, grows.issued scopeBelow, fun found member named => ?_⟩
       rcases members found member with rfl | ⟨old, _⟩
       · exact absurd named (unarmed occurrence occurrenceBelow fun found inside same => (facts found inside same).1)
       · exact facts found old named
@@ -395,13 +397,8 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
       tokensApart := by simpa [begins.tokens] using formed.claimed.tokensApart
       queuesApart := by simpa [begins.signals, begins.tokens] using formed.claimed.queuesApart
       uncompleted := by simpa [Queued, begins.signals, begins.tokens] using formed.claimed.uncompleted
-      scopesIssued := fun other queued => by
-        have := formed.claimed.scopesIssued other (by simpa [Queued, begins.signals, begins.tokens] using queued)
-        rcases begins.source with ⟨_, reservation⟩ | fresh
-        · have := reservation.nextIssue
-          omega
-        · have := fresh.nextIssue
-          omega
+      scopesIssued := fun other queued =>
+        grows.issued (formed.claimed.scopesIssued other (by simpa [Queued, begins.signals, begins.tokens] using queued))
       innerPlaced := fun other queued id named found member same => by
         have queuedBefore : Queued before other := by simpa [Queued, begins.signals, begins.tokens] using queued
         rcases members found member with rfl | ⟨old, _⟩
@@ -413,7 +410,7 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
       · exact Nat.le_of_eq reservation.nextIssue.symm
       · have := fresh.nextIssue
         omega
-    exact formed.settled.transport (.same begins.slots) later
+    exact formed.settled.transport (.same begins.slots) later grows
       (fun found inside unbegun => by
         rcases members found inside with rfl | ⟨old, _⟩
         · simp [begins.isBegun] at unbegun
@@ -457,7 +454,7 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
     · exact absurd named.symm (itemsFree item (begins.items ▸ member)).1
     · exact formed.itemRoles item (begins.items ▸ member) found old named
   case raises =>
-    refine formed.raises.transport (fun _ _ queued => begins.signals ▸ queued) issued
+    refine formed.raises.transport (fun _ _ queued => begins.signals ▸ queued) grows
       (fun x present _ => ⟨by simpa [scopeIds, begins.scopes] using present, begins.instances x⟩) counters
       fun found inside unbegun => ?_
     rcases members found inside with rfl | ⟨old, _⟩

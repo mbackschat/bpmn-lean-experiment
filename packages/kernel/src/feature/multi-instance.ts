@@ -66,6 +66,7 @@ import {
   type Occurrence,
   type Outcome,
   type Result,
+  type ScopeOccurrenceId,
   type State,
   SemanticCause,
   semanticFailure,
@@ -404,7 +405,7 @@ function countOf(rule: MultiInstanceCount, value: Value): Result<number> {
  * `null` when an unavailable input holds the occurrence, as an unavailable InputSet does (BPMN 2.0.2 §10.4.2), and a
  * value `rule` refuses a semantic failure; under `rollback` both fail the operation.
  */
-function entryInput<T>(ctx: Ctx, state: State, scope: number, expression: Expression, rule: (value: Value) => Result<T>): Result<T | null> {
+function entryInput<T>(ctx: Ctx, state: State, scope: ScopeOccurrenceId, expression: Expression, rule: (value: Value) => Result<T>): Result<T | null> {
   const rollback = ctx.program.options.multiInstanceInputFailure === MultiInstanceInputFailure.Rollback;
   const evaluation = ctx.evaluate({ ...evalContext(state, ctx.program, scope), domainChecked: false }, expression);
   switch (evaluation.tag) {
@@ -427,7 +428,7 @@ type EntryRead = readonly [collection: Value, items: readonly Value[], count: nu
  * What an entry reads: the collection, its items and the number of instances; a cardinality loop's collection is
  * `null` and its instances get no item (`MultiInstanceActivityBehavior:85`).
  */
-function entryRead(ctx: Ctx, loop: MultiInstance, state: State, scope: number): Result<EntryRead | null> {
+function entryRead(ctx: Ctx, loop: MultiInstance, state: State, scope: ScopeOccurrenceId): Result<EntryRead | null> {
   const count = loop.count;
   switch (count.tag) {
     case InstanceCountTag.Collection: {
@@ -565,7 +566,7 @@ function evaluatesFinalCondition(ctx: Ctx, loop: MultiInstance): boolean {
   return !sequential(loop.mode);
 }
 
-function activeIn(slot: Iteration, scope: number): boolean {
+function activeIn(slot: Iteration, scope: ScopeOccurrenceId): boolean {
   switch (slot.tag) {
     case IterationTag.Active:
       return slot.scope === scope;
@@ -582,7 +583,7 @@ function activeIn(slot: Iteration, scope: number): boolean {
  * instance's zero-based index; the count; the active instances, which CIB never lowers
  * below 1 in sequential mode (`SequentialMultiInstanceActivityBehavior:41`); the completed ones, this one included.
  */
-function conditionContext(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, index: number, scope: number, state: State): EvalContext {
+function conditionContext(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, index: number, scope: ScopeOccurrenceId, state: State): EvalContext {
   const context = evalContext(state, ctx.program, scope);
   const counters = counterLocals(ctx, [...instanceCounts(index), ...bodyCounts(loop, run.instances)]);
   return { ...context, variables: [...counters, ...context.variables] };
@@ -593,7 +594,7 @@ function conditionContext(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, 
  * mode an earlier instance's result this one did not overwrite, which CIB keeps on the body, has no kernel reading. A
  * failure fails the operation that reached it, so it follows the stimulus table (`MultiInstanceActivityBehavior:157-162`).
  */
-function stops(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, index: number, scope: number, results: readonly string[],
+function stops(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, index: number, scope: ScopeOccurrenceId, results: readonly string[],
   state: State): Result<boolean> {
   if (loop.completionCondition === null) return committed(false);
   // Dynamic-only: which names an earlier instance's result left depends on the run's effect results.
@@ -651,7 +652,7 @@ function rereadCollection(ctx: Ctx, loop: MultiInstance): Expression | null {
  * is no collection fails the operation (a `ClassCastException`, `MultiInstanceActivityBehavior.java:96-97`), as does one
  * shorter than `next + 1` (`getElementAtIndex`'s iterator, `:131-138`) and a failing JUEL read.
  */
-function nextItems(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, next: number, scope: number, results: readonly string[],
+function nextItems(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, next: number, scope: ScopeOccurrenceId, results: readonly string[],
   state: State): Result<readonly Value[]> {
   const read = rereadCollection(ctx, loop);
   if (read === null) return committed(multiInstanceRunItems(run) ?? []);

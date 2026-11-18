@@ -89,7 +89,7 @@ theorem instanceRoot_called {program : Program} {s : State} (formed : WellFormed
     (member : root ∈ s.scopes) {name : String} (called : root.calledInstance = some name) :
     s.instanceRoot root.id = root.id := by
   have reading := InstanceIn.called root name member called
-  rw [instanceRoot_chain reading (by simp) formed.distinct.scopes reading.mem]
+  rw [instanceRoot_chain reading formed.distinct.scopes reading.mem]
   simp [chainRoot, called]
 
 /-- The process root is its own instance root. -/
@@ -102,7 +102,7 @@ theorem instanceRoot_root {program : Program} {s : State} (formed : WellFormed p
   | some name => exact instanceRoot_called formed member called
   | none =>
     have reading := InstanceIn.root entry member called parentless
-    rw [instanceRoot_chain reading (by simp) formed.distinct.scopes reading.mem]
+    rw [instanceRoot_chain reading formed.distinct.scopes reading.mem]
     simp [chainRoot, called, named]
 
 /-- Two members of a list whose images are pairwise distinct are one when their images are. -/

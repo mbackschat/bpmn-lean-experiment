@@ -10,6 +10,7 @@
  */
 import { distinctCount } from "../../il/types.js";
 import {
+  scopeOccurrenceParent,
   FailureTag,
   committed,
   failed,
@@ -30,7 +31,7 @@ function declared(state: State, scope: ScopeOccurrenceId): readonly string[] {
   for (let fuel = state.scopes.length; fuel > 0 && current !== null && current !== top; fuel -= 1) {
     const at: ScopeOccurrenceId = current;
     names.push(...(state.variables.find((entry) => entry.scope === at)?.entries ?? []).map(([name]) => name));
-    current = state.scopes.find((candidate) => candidate.id === at)?.parent ?? null;
+    current = scopeOccurrenceParent(state.scopes.find((candidate) => candidate.id === at));
   }
   return names;
 }

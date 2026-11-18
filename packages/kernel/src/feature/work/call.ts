@@ -27,6 +27,7 @@ import {
   type Mapping,
 } from "../../il/types.js";
 import {
+  scopeOccurrenceParent,
   FailureTag,
   SignalTag,
   WriteRule,
@@ -135,10 +136,11 @@ export function raisedOutputs(ctx: Ctx, root: ScopeOccurrence, state: State): Re
   const activity = element === null ? null : elementActivity(element);
   const work = activity === null ? null : workCall(activity[1].work);
   if (work === null) return semanticFailure(SemanticCause.Invariant, "called-root-without-call");
-  if (root.parent === null) return semanticFailure(SemanticCause.Invariant, "called-root-without-caller");
+  const caller = scopeOccurrenceParent(root);
+  if (caller === null) return semanticFailure(SemanticCause.Invariant, "called-root-without-caller");
   const outputs = copy(ctx, "call-output-unavailable", evalContext(state, ctx.program, root.id), work.outputs);
   if (!outputs.ok) return outputs;
-  return committed([root.parent, outputs.value] as const);
+  return committed([caller, outputs.value] as const);
 }
 
 /**

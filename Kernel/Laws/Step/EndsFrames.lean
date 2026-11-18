@@ -171,16 +171,17 @@ section Hooks
 
 variable {program : Program} {s t : State}
 
-/-- Entering a scope occurrence below a parent keeps every occurrence and its key. -/
+/-- Entering a scope occurrence below a parent, under a key no scope occurrence holds, keeps every occurrence and its
+key. -/
 theorem enters_frame (formed : WellFormed program s) {entry : ScopeOccurrence} {locals : List (String × Value)}
-    (enters : Laws.State.Enters s t entry locals) (parented : entry.parent ≠ none) : EndsStep s t none := by
-  have fresh := Laws.State.scopes_fresh formed
+    (enters : Laws.State.ScopeAppended s t entry locals) (apart : ∀ old ∈ s.scopes, old.id ≠ entry.id)
+    (parented : entry.parent ≠ none) : EndsStep s t none := by
   have nodup : (scopeIds t).Nodup := by
     rw [scopeIds, enters.scopes, List.map_append]
     refine List.nodup_append.mpr ⟨formed.distinct.scopes, by simp, fun x old y new same => ?_⟩
     obtain ⟨old', inside, rfl⟩ := List.mem_map.mp old
     rw [List.map_singleton, List.mem_singleton] at new
-    exact fresh old' inside (same.trans (new.trans enters.id))
+    exact apart old' inside (same.trans new)
   have keyed : ∀ o ∈ s.occurrences, key t o = key s o := fun o member =>
     Laws.State.key_congr (Laws.State.instanceOf_kept formed nodup (fun e inside orphan => by
         rw [enters.scopes] at inside
@@ -189,7 +190,7 @@ theorem enters_frame (formed : WellFormed program s) {entry : ScopeOccurrence} {
         · exact absurd (List.mem_singleton.mp new ▸ orphan) parented)
       enters.instanceId (formed.owned.occurrenceScopes o member)
       fun e inside _ => enters.scopes ▸ List.mem_append_left _ inside)
-  refine .quiet enters.instanceId (by rw [enters.nextIssue]; exact Nat.le_succ _) (countsGrow_same enters.activations)
+  refine .quiet enters.instanceId (Nat.le_of_eq enters.nextIssue.symm) (countsGrow_same enters.activations)
     (by simp [endKeys, enters.journal, enters.draft]) (fun o' inside => ?_) fun o member _ => ?_
   · rw [enters.occurrences] at inside
     exact .inl ⟨o', inside, rfl, keyed o' inside, fun _ => rfl⟩
@@ -200,18 +201,19 @@ theorem enterScope_frame (formed : WellFormed program s) (element : ElementId) (
     (locals : List (String × Value)) (owner : Option Nat) : EndsStep s (s.enterScope element parent locals owner).1 none := by
   rw [Laws.State.enterScope_eq]
   exact enters_frame formed {
-      id := rfl, nextIssue := rfl, scopes := rfl, variables := rfl, occurrences := rfl, itemMap := ⟨rfl, rfl⟩,
+      nextIssue := rfl, scopes := rfl, variables := rfl, occurrences := rfl, itemMap := ⟨rfl, rfl⟩,
       tokens := rfl, signals := rfl, activations := rfl, journal := rfl, draft := rfl, status := rfl, failure := rfl,
-      instanceId := rfl, slots := .same rfl } (by simp)
+      instanceId := rfl, slots := .same rfl } (Laws.State.scopes_fresh formed) (by simp)
 
 theorem enterCalled_frame (formed : WellFormed program s) (called : Program) (call : Occurrence)
     (variables : List (String × Value)) (definition : DefinitionRef) :
     EndsStep s (s.enterCalled called call variables definition).1 none := by
   rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]
   exact enters_frame formed {
-      id := rfl, nextIssue := rfl, scopes := rfl, variables := rfl, occurrences := rfl, itemMap := ⟨rfl, rfl⟩,
+      nextIssue := rfl, scopes := rfl, variables := rfl, occurrences := rfl, itemMap := ⟨rfl, rfl⟩,
       tokens := rfl, signals := rfl, activations := rfl, journal := rfl, draft := rfl, status := rfl, failure := rfl,
-      instanceId := rfl, slots := ⟨fun _ inside => inside, fun _ inside => inside, fun _ inside => inside⟩ } (by simp)
+      instanceId := rfl, slots := ⟨fun _ inside => inside, fun _ inside => inside, fun _ inside => inside⟩ }
+    (Laws.State.scopes_fresh formed) (by simp)
 
 /-- A reservation is a fresh occurrence whose key the counters had not issued. -/
 theorem reserve_frame (formed : WellFormed program s) (element : ElementId)
@@ -541,7 +543,7 @@ theorem cancelOccurrence_frame (formed : WellFormed program s) (id : Nat) :
     have uFormed : WellFormed program (s.withdrawOccurrence occurrence.id) := by
       rw [withdrawn]
       exact disarmed.narrow {
-          scopes := rfl, occurrences := rfl, activations := rfl, nextIssue := rfl,
+          scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, nextIssue := rfl,
           instances := Laws.State.instanceOf_congr rfl rfl, recorded := id, items := ⟨fewer, fun _ => Nat.le_refl _⟩,
           tokens := .refl _, signals := .refl _, starts := fun _ => id, slots := .same rfl } rfl disarmed.startedOnce
     have within : ∀ o ∈ (s.withdrawOccurrence occurrence.id).occurrences, o ∈ s.occurrences := fun o inside => by

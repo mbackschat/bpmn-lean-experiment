@@ -35,8 +35,8 @@ import {
   failedWith,
   openKindView,
   ownScope,
+  scopeOccurrenceParent,
   signal,
-  subtree,
   type OpenItem,
   type Outcome,
   type Result,
@@ -45,7 +45,9 @@ import {
   type WriteEvent,
   itemKeyText, itemsByPosition, sameItemKey,
 } from "../../state.js";
-import { EvaluationTag, evalContext, subscriptionOf, withdrawInside, withdrawOccurrence, type Ctx } from "../../hooks.js";
+import {
+  EvaluationTag, evalContext, subscriptionOf, subtree, withdrawInside, withdrawOccurrence, type Ctx,
+} from "../../hooks.js";
 
 /** `ownScope` of an open item: its host's own scope, else the item's scope. */
 function homeScope(state: State, item: OpenItem): ScopeOccurrenceId {
@@ -338,7 +340,7 @@ function inSubtree(state: State, owner: ScopeOccurrenceId, scope: ScopeOccurrenc
     if (current === owner) return true;
     if (calledRoot(state, current)) return false;
     const at: ScopeOccurrenceId = current;
-    current = state.scopes.find((entry) => entry.id === at)?.parent ?? null;
+    current = scopeOccurrenceParent(state.scopes.find((entry) => entry.id === at));
   }
   return false;
 }
@@ -349,7 +351,7 @@ function depth(state: State, item: OpenItem): number {
   let current: ScopeOccurrenceId = item.scope;
   for (let fuel = state.scopes.length; fuel > 0; fuel -= 1) {
     const at: ScopeOccurrenceId = current;
-    const parent = state.scopes.find((entry) => entry.id === at)?.parent ?? null;
+    const parent = scopeOccurrenceParent(state.scopes.find((entry) => entry.id === at));
     if (parent === null) break;
     current = parent;
     levels += 1;

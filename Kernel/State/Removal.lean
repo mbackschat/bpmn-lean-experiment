@@ -1,6 +1,6 @@
 module
 
-public import Kernel.State
+public import Kernel.State.Tree
 
 /-! # Removing occurrences
 
@@ -21,8 +21,8 @@ private def recordCancelled (state : State) (occurrences : List Occurrence) : St
   { state with draft := { state.draft with
       ended := state.draft.ended ++ ended, cancelled := state.draft.cancelled ++ begun } }
 
-/-- Remove every token, item, occurrence, slot entry, variable set and child scope occurrence inside `scope`, keeping
-`scope` itself and the occurrences `keep` names. Each begun occurrence is journalled cancelled, deepest scope first,
+/-- Remove every token, item, occurrence, slot entry, variable set and child scope occurrence inside `scope`, with the
+ordinal counters of the removed scope occurrences, keeping `scope` itself and the occurrences `keep` names. Each begun occurrence is journalled cancelled, deepest scope first,
 then by id; `Hooks.cancelled` tells the owning features afterwards. -/
 def clearInside (state : State) (scope : ScopeOccurrenceId) (keep : List Nat := []) : State :=
   let inside := state.subtree scope
@@ -36,6 +36,7 @@ def clearInside (state : State) (scope : ScopeOccurrenceId) (keep : List Nat := 
       itemOrdinals := journalled.itemOrdinals.filter fun id _ => !removed.any (·.id == id)
       occurrences := journalled.occurrences.filter fun occurrence => !inside.contains occurrence.scope || keep.contains occurrence.id
       scopes := journalled.scopes.filter (!nested.contains ·.id)
+      scopeOrdinals := journalled.scopeOrdinals.filter fun slot _ => !nested.contains slot.parent
       variables := journalled.variables.filter (!nested.contains ·.scope)
       slots := journalled.slots.clear inside nested }
 
@@ -46,6 +47,7 @@ def leaveScope (state : State) (scope : ScopeOccurrenceId) : State :=
   let cleared := state.clearInside scope
   { cleared with
       scopes := cleared.scopes.filter (·.id != scope)
+      scopeOrdinals := cleared.scopeOrdinals.filter fun slot _ => slot.parent != scope
       variables := cleared.variables.filter (·.scope != scope)
       slots := { cleared.slots with compensation := { cleared.slots.compensation with
         retained := cleared.slots.compensation.retained.filter (·.scope != scope) } } }

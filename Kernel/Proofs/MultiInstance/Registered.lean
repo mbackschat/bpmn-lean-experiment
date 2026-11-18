@@ -67,7 +67,8 @@ theorem enterBody_placed {program : Program} {occurrence : Occurrence} {state : 
         { scope := (state.enterScope element occurrence.scope locals (some occurrence.id)).2, element,
           occurrence := occurrence.id, collection, instances := List.replicate count .waiting } := by
   have entered := (runsFramed_frameAlongside program).enterScope state element occurrence.scope locals
-    (some occurrence.id) formed (named ▸ Laws.Flow.Anchored.occurrence member) framed
+    (some occurrence.id) formed (formed.owned.occurrenceScopes occurrence member)
+    (named ▸ Laws.Flow.Anchored.occurrence member) framed
   have none : ∀ scope, Iteration.active scope ∉ List.replicate count Iteration.waiting := fun _ active => by
     cases List.eq_of_mem_replicate active
   have placed : RunPlaced (state.enterScope element occurrence.scope locals (some occurrence.id)).1
@@ -79,9 +80,7 @@ theorem enterBody_placed {program : Program} {occurrence : Occurrence} {state : 
       absurd (List.mem_of_getElem? one) (none scope)⟩, fun entry inside same => ?_,
       fun scope active => absurd active (none scope), fun scope active => absurd active (none scope)⟩
     rcases List.mem_append.mp inside with old | new
-    · have below := formed.issued.scopes entry old
-      rw [same] at below
-      exact absurd below (Nat.lt_irrefl _)
+    · exact absurd same (Laws.State.scopes_fresh formed entry old)
     · rw [List.mem_singleton.mp new]
   cases unarmed
   · simp only [Bool.false_eq_true, ↓reduceIte]
@@ -332,10 +331,10 @@ theorem framedNumbered_frameAlongside (program : Program) :
     request formed fits (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1,
     fun apart => (kept.2 apart).signalBegin kept.1.owns fits.1 fits.2⟩
   issue s kept := ⟨(runsFramed_frameAlongside program).issue s kept.1, fun apart => (kept.2 apart).issue⟩
-  enterScope s element parent locals owner formed anchored kept :=
-    ⟨(runsFramed_frameAlongside program).enterScope s element parent locals owner formed
+  enterScope s element parent locals owner formed stands anchored kept :=
+    ⟨(runsFramed_frameAlongside program).enterScope s element parent locals owner formed stands
       (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1,
-      fun apart => (kept.2 apart).enterScope formed kept.1.owns element parent locals owner⟩
+      fun apart => (kept.2 apart).enterScope formed kept.1.owns element parent locals owner stands⟩
   reserve s element scope formed _ pending _ kept :=
     ⟨reserve_runsFramed s element scope kept.1, fun apart =>
       (kept.2 apart).reserve formed (PendingIn.unlooped (fun _ kept => (kept.2 apart).2.occurs) pending)⟩
@@ -394,7 +393,8 @@ theorem framedNumbered_occursAlongside (program : Program) : OccursAlongside pro
   enterCalled s call variables definition formed member begun role activity unowned kept :=
     ⟨(runsFramed_occursAlongside program).enterCalled s call variables definition formed member begun role activity
       unowned kept.1,
-      fun apart => (kept.2 apart).enterCalled formed kept.1.owns program call variables definition⟩
+      fun apart => (kept.2 apart).enterCalled formed kept.1.owns program call variables definition
+        (formed.owned.occurrenceScopes call member)⟩
 
 /-- Dropping a record that owns no scope occurrence keeps the numbering beside the slot invariant. -/
 theorem framedNumbered_withoutRecord {program : Program} (t : State) (id : Nat)

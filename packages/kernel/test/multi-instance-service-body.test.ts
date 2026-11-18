@@ -10,7 +10,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import { decodeProgram, runScenario, step, stimulusFromJson } from "./lean-paired.ts";
+import { decodeProgram, rootScope, runScenario, step, stimulusFromJson } from "./lean-paired.ts";
 import type { State } from "@bpmn-lean/kernel";
 
 type Json = Record<string, unknown>;
@@ -183,7 +183,7 @@ function stateAfterStart(json: Json, collection: Json): State {
 }
 
 const locals = (state: State): unknown[] =>
-  state.variables.filter((entry) => entry.scope !== 0).map((entry) => entry.entries).filter((entries) => entries.length > 0);
+  state.variables.filter((entry) => entry.scope !== rootScope).map((entry) => entry.entries).filter((entries) => entries.length > 0);
 
 test("the loop-reference binding reads the loop's collection variable and gives each instance its item by name", () => {
   const state = stateAfterStart(program(), items("same", "other"));

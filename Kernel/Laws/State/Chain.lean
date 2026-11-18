@@ -52,7 +52,7 @@ theorem visible_congr {s t : State} (scopes : t.scopes = s.scopes) (variables : 
       cases current with
       | none => rw [laterNone, earlierNone]
       | some id => rw [laterStep, earlierStep, shows, called, scopes, variables, ih]
-  rw [laterStart, earlierStart, go, scopes]
+  rw [laterStart, earlierStart, go]
 
 /-! ## What a search finds stands -/
 
@@ -65,7 +65,7 @@ theorem declaring?_stands {state : State} {scope found : ScopeOccurrenceId} {ele
     (ran : state.declaring? scope element = some found) : ∃ entry ∈ state.scopes, entry.id = found := by
   obtain ⟨go, start, zero, step⟩ := declaring?_go state element
   rw [start] at ran
-  generalize state.scopes.length = fuel at ran
+  generalize scope.segments.length + 1 = fuel at ran
   induction fuel generalizing scope with
   | zero => simp [zero] at ran
   | succ fuel ih =>
@@ -86,7 +86,7 @@ theorem owner?_holds {state : State} {scope found : ScopeOccurrenceId} {name : S
     (ran : state.owner? scope name = some found) : ∃ variables ∈ state.variables, variables.scope = found := by
   obtain ⟨go, start, zero, step⟩ := owner?_go state name
   rw [start] at ran
-  generalize state.scopes.length = fuel at ran
+  generalize scope.segments.length + 1 = fuel at ran
   induction fuel generalizing scope with
   | zero => simp [zero] at ran
   | succ fuel ih =>
@@ -108,7 +108,7 @@ theorem instanceRoot_stands (state : State) (scope : ScopeOccurrenceId) :
     state.instanceRoot scope = State.root ∨ ∃ entry ∈ state.scopes, entry.id = state.instanceRoot scope := by
   obtain ⟨go, start, zero, step⟩ := instanceRoot_go state
   rw [start]
-  generalize state.scopes.length = fuel
+  generalize scope.segments.length + 1 = fuel
   induction fuel generalizing scope with
   | zero => exact .inl (zero scope)
   | succ fuel ih =>
@@ -127,8 +127,8 @@ theorem instanceRoot_stands (state : State) (scope : ScopeOccurrenceId) :
 /-! ## The scope tree the searches walk
 
 What the searches need of `WellFormed`: a scope occurrence's record is the one a search by its identifier finds
-(`Distinct`), and each lies a finite depth below `State.root` (`Rooted`), less than the number of scope occurrences, so
-the fuel each search takes, that number, always reaches the end of the way. -/
+(`Distinct`), and each lies below `State.root` (`Rooted`) at the depth its key's segments count (`Depth.length`), so the
+characterization's fuel, one more than that, always reaches the end of the way. -/
 
 section Tree
 
@@ -205,36 +205,25 @@ theorem Within.comparable (distinct : (scopeIds s).Nodup) {scope first second : 
     · rw [← same]; exact .inr (.parent child parent outer member link above)
     · exact ih (Within.through distinct member link two same)
 
-/-- The scope occurrences on the way from one at depth `n` to `State.root`. -/
-private theorem Depth.chain (formed : WellFormed program s) {scope : ScopeOccurrenceId} {n : Nat}
-    (depth : Depth s scope n) : ∃ chain : List ScopeOccurrenceId, chain.length = n + 1 ∧ chain.Nodup ∧
-      ∀ x ∈ chain, x ∈ scopeIds s ∧ ∃ m ≤ n, Depth s x m := by
+/-- A scope occurrence's depth is the number of its key's segments: each step up drops one. -/
+theorem Depth.length {scope : ScopeOccurrenceId} {n : Nat} (depth : Depth s scope n) : n = scope.segments.length := by
   induction depth with
-  | root =>
-    refine ⟨[State.root], rfl, by simp, fun x member => ?_⟩
-    rw [List.mem_singleton] at member
-    subst member
-    exact ⟨formed.rooted.1, 0, Nat.le_refl 0, .root⟩
-  | child child parent n member link depth ih =>
-    obtain ⟨chain, length, nodup, inside⟩ := ih
-    refine ⟨child.id :: chain, by simp [length], List.nodup_cons.mpr ⟨fun mem => ?_, nodup⟩, fun x mem => ?_⟩
-    · obtain ⟨_, m, le, other⟩ := inside _ mem
-      have := Depth.unique formed (.child child parent n member link depth) other
-      omega
-    · rcases List.mem_cons.mp mem with rfl | mem
-      · exact ⟨List.mem_map.mpr ⟨child, member, rfl⟩, n + 1, Nat.le_refl _, .child child parent n member link depth⟩
-      · obtain ⟨present, m, le, d⟩ := inside x mem
-        exact ⟨present, m, Nat.le_succ_of_le le, d⟩
+  | root => rw [root_eq]; rfl
+  | child child parent n _ link _ ih =>
+    simp only [ScopeOccurrence.parent, ScopeOccurrenceId.parent?] at link
+    split at link
+    · simp at link
+    · rename_i same
+      simp at link
+      subst link
+      simp [same, ih]
 
-/-- A present scope occurrence lies at a depth below the number of scope occurrences. -/
+/-- A present scope occurrence lies at a depth below one more than its key's segments. -/
 theorem depth_of (formed : WellFormed program s) {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s) :
-    ∃ n, Depth s scope n ∧ n < s.scopes.length := by
+    ∃ n, Depth s scope n ∧ n < scope.segments.length + 1 := by
   obtain ⟨entry, member, rfl⟩ := List.mem_map.mp present
   obtain ⟨n, depth⟩ := (formed.rooted.2.2 entry member).depth
-  obtain ⟨chain, length, nodup, inside⟩ := Depth.chain formed depth
-  have := nodup.length_le_of_subset (fun x mem => (inside x mem).1)
-  simp only [scopeIds, List.length_map] at this
-  exact ⟨n, depth, by omega⟩
+  exact ⟨n, depth, by rw [depth.length]; omega⟩
 
 /-- `State.root` lies within no other scope occurrence. -/
 theorem root_within (formed : WellFormed program s) {outer : ScopeOccurrenceId} (within : Within s State.root outer) :
@@ -406,7 +395,7 @@ instance rooted at `root`. -/
 private theorem search_spec (formed : WellFormed program s) {found : ScopeOccurrenceId → Bool}
     {go : Nat → ScopeOccurrenceId → Option ScopeOccurrenceId} (steps : Searches s found go)
     {scope root : ScopeOccurrenceId} (inInstance : InstanceRoot s scope root) (target : ScopeOccurrenceId) :
-    go s.scopes.length scope = some target ↔ Within s scope target ∧ Within s target root ∧ found target = true ∧
+    go (scope.segments.length + 1) scope = some target ↔ Within s scope target ∧ Within s target root ∧ found target = true ∧
       ∀ nearer, Within s scope nearer → Within s nearer target → found nearer = true → nearer = target := by
   constructor
   · intro ran
@@ -546,9 +535,10 @@ theorem visible_enterScope (formed : WellFormed program s) {scope : ScopeOccurre
   obtain ⟨t, entered⟩ : ∃ t : State, (s.enterScope element parent locals occurrence).1 = t := ⟨_, rfl⟩
   rw [entered]
   have scopes : t.scopes = s.scopes ++
-      [{ id := ⟨s.nextIssue⟩, element := some element, parent := some parent, occurrence := occurrence }] := by
+      [{ id := parent.child element (slotCount s parent element), element := some element, occurrence }] := by
     rw [← entered, enterScope_eq]
-  have variables : t.variables = s.variables ++ [{ scope := ⟨s.nextIssue⟩, entries := keyed locals }] := by
+  have variables : t.variables = s.variables ++
+      [{ scope := parent.child element (slotCount s parent element), entries := keyed locals }] := by
     rw [← entered, enterScope_eq]
   have record : ∀ entry ∈ s.scopes, t.scopes.find? (·.id == entry.id) = s.scopes.find? (·.id == entry.id) := by
     intro entry member
@@ -559,8 +549,8 @@ theorem visible_enterScope (formed : WellFormed program s) {scope : ScopeOccurre
     cases s.variables.find? (·.scope == entry.id) with
     | some _ => rfl
     | none =>
-      have below := formed.issued.scopes entry member
-      have : (⟨s.nextIssue⟩ : ScopeOccurrenceId) ≠ entry.id := fun same => by rw [← same] at below; exact Nat.lt_irrefl _ below
+      have : parent.child element (slotCount s parent element) ≠ entry.id := fun same =>
+        entered_unissued (parent_stands formed member (by rw [← same])) element (same ▸ formed.issued.scopes entry member)
       simp [this]
   obtain ⟨later, laterStart, ⟨laterZero, laterEnded, laterStep⟩⟩ := visible_go t reading
   obtain ⟨earlier, earlierStart, ⟨earlierZero, earlierEnded, earlierStep⟩⟩ := visible_go s reading
@@ -592,8 +582,8 @@ theorem visible_enterScope (formed : WellFormed program s) {scope : ScopeOccurre
       rw [shows, find?_record formed.distinct.scopes member]
       simp only [Option.bind_some, link, ih first second (by omega) (by omega)]
   obtain ⟨n, depth, lt⟩ := depth_of formed present
-  rw [laterStart, earlierStart, scopes]
-  exact walk scope n depth _ _ (by simp; omega) lt
+  rw [laterStart, earlierStart]
+  exact walk scope n depth _ _ lt lt
 
 end Searches
 

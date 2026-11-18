@@ -72,11 +72,11 @@ theorem silent_caught_rejected : ¬ Chosen rank [[silent], [exact]] none := fun 
   have := law [exact] (by simp) exact (by simp)
   simp [rank] at this
 
-def raising : ScopeOccurrenceId := ⟨3⟩
-def handlerContext : ScopeOccurrenceId := ⟨2⟩
-def above : ScopeOccurrenceId := ⟨1⟩
-def recordScope : ScopeOccurrenceId := ⟨0⟩
-def triggerScope : ScopeOccurrenceId := ⟨0⟩
+def raising : ScopeOccurrenceId := ⟨[{ element := ⟨"Sub"⟩, ordinal := 0 }]⟩
+def handlerContext : ScopeOccurrenceId := ⟨[{ element := ⟨"Handler"⟩, ordinal := 0 }]⟩
+def above : ScopeOccurrenceId := ⟨[{ element := ⟨"Above"⟩, ordinal := 0 }]⟩
+def recordScope : ScopeOccurrenceId := ⟨[]⟩
+def triggerScope : ScopeOccurrenceId := ⟨[]⟩
 
 theorem stops_at_handler :
     Searched .failsInstance [raising, handlerContext, above] (some 1) [recordScope] [raising, handlerContext] :=
@@ -106,13 +106,12 @@ def boundaryFlow : FlowId := ⟨"ToRecovery"⟩
 def counter : ActivationCount := { processInstance := "p", element := exact, role := .element, count := 2 }
 
 def running : State :=
-  { instanceId := "p", scopes := [{ id := triggerScope, element := none, parent := none },
-      { id := raising, element := some ⟨"Sub"⟩, parent := some triggerScope }],
+  { instanceId := "p", scopes := [{ id := triggerScope, element := none }, { id := raising, element := some ⟨"Sub"⟩ }],
     tokens := [.flow ⟨"Inner"⟩ raising], activations := [counter] }
 
 def recovered : State :=
   { running with
-    scopes := [{ id := triggerScope, element := none, parent := none }]
+    scopes := [{ id := triggerScope, element := none }]
     tokens := [.flow boundaryFlow triggerScope] }
 
 theorem catch_interrupts : InterruptingCatch true (· = raising) triggerScope [boundaryFlow] running recovered := fun _ =>
@@ -121,7 +120,7 @@ theorem catch_interrupts : InterruptingCatch true (· = raising) triggerScope [b
 /-- Keeping the interrupted scope occurrence is rejected. -/
 theorem keeps_inner_scope_rejected :
     ¬ InterruptingCatch true (· = raising) triggerScope [boundaryFlow] running { recovered with scopes := running.scopes } :=
-  fun law => (law rfl).1 { id := raising, element := some ⟨"Sub"⟩, parent := some triggerScope } (by simp [running]) rfl
+  fun law => (law rfl).1 { id := raising, element := some ⟨"Sub"⟩ } (by simp [running]) rfl
 
 /-- Adding no token on the catcher's flow is rejected. -/
 theorem no_boundary_token_rejected :

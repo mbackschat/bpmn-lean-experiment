@@ -46,8 +46,8 @@ theorem written_entering (ops : MultiInstanceOps program inv settled)
     (scope : ScopeOccurrenceId) (writes : List (String × Value)) (rule : WriteRule) :
     Entering inv settled run (state.signal (.write scope writes rule)) run.instances [] := by
   obtain ⟨kept, carry⟩ := ops.write state scope writes rule entering.1
-  exact entering.frame kept (carry _ entering.2.1) (by rw [Laws.State.signal_eq]) (by rw [Laws.State.signal_eq])
-    (by rw [Laws.State.signal_eq])
+  exact entering.frame kept (carry _ entering.2.1) (by rw [Laws.State.signal_eq])
+    (by rw [Laws.State.signal_eq]; exact .refl _) (by rw [Laws.State.signal_eq])
 
 /-- A body whose instances are done completes its occurrence. -/
 theorem finish_keeps (ops : MultiInstanceOps program inv settled)
@@ -127,9 +127,9 @@ theorem enterBody_entering (ops : MultiInstanceOps program inv settled) {occurre
     · exact .inr ⟨_, List.mem_append_right _ (List.mem_singleton_self _), rfl, rfl, rfl⟩
     · simp only [Bool.false_eq_true, ↓reduceIte]
     · simp only [Bool.false_eq_true, ↓reduceIte]
-      exact Nat.le_succ _
+      exact Nat.le_refl _
   · exact ⟨⟨entered, carried, by simp [Laws.State.scopeIds], none _ _ rfl, fun _ none => (by cases none),
-      .inr ⟨_, List.mem_append_right _ (List.mem_singleton_self _), rfl, rfl, rfl⟩⟩, rfl, Nat.le_succ _⟩
+      .inr ⟨_, List.mem_append_right _ (List.mem_singleton_self _), rfl, rfl, rfl⟩⟩, rfl, Nat.le_refl _⟩
 
 /-- Entering the body's scope occurrence below a begun occurrence's own, which it owns, arming its boundaries or not, and
 beginning the instances below it, every slot waiting, keeps `inv`. -/
@@ -228,12 +228,26 @@ theorem instanceCompleted_keeps {ctx : Ctx} (ops : MultiInstanceOps ctx.program 
 
 /-! ## Counters entered -/
 
-/-- Whatever keeps `inv` without issuing past a state's counter enters no instance anew since that state. -/
-theorem nothingCounted (ops : MultiInstanceOps program inv settled) {state after : State} (holds : inv after)
-    (issued : after.nextIssue ≤ state.nextIssue) : SlotsCounted state after := by
-  intro run member index scope slot fresh
-  have := (ops.placed after run holds member scope (List.mem_of_getElem? slot)).1
-  exact absurd (Nat.lt_of_lt_of_le this issued) (Nat.not_lt.mpr fresh)
+/-- A state whose bodies hold only instances issued by an earlier state enters no instance anew since it. -/
+theorem nothingCounted {state after : State}
+    (issued : ∀ other ∈ after.slots.multiInstances, ∀ scope, Iteration.active scope ∈ other.instances →
+      Laws.State.ScopeIssued state scope) : SlotsCounted state after :=
+  fun run member _ scope slot fresh => absurd (issued run member scope (List.mem_of_getElem? slot)) fresh
+
+/-- An instance's completion, its counters written or not, keeps only the bodies it had and the one it records. -/
+theorem counted_bodies {state counted : State} {scope : ScopeOccurrenceId} {next other : MultiInstanceRun}
+    (left : Laws.MultiInstance.Counted state scope next counted) (member : other ∈ counted.slots.multiInstances) :
+    other ∈ state.slots.multiInstances ∨ other = next := by
+  have kept : other ∈ (leftWith state scope next).slots.multiInstances := by
+    rcases left with rfl | ⟨_, _, _, rfl⟩
+    · exact member
+    · rwa [Laws.State.signal_eq] at member
+  rcases mem_setRun (state := state.leaveScope scope) kept with ⟨held, _⟩ | same
+  · rw [(Laws.State.leaveScope_slots state scope).2.1] at held
+    obtain ⟨_, made⟩ := Laws.State.clearInside_eq state scope []
+    rw [made] at held
+    exact .inl (List.mem_filter.mp held).1
+  · exact .inr same
 
 /-- Setting the body's slot record after `Begun` enters each instance anew holding its counter, under `cibLocals` and
 an item local not named `loopCounter`, when every slot active before was issued before `before`. -/
@@ -241,17 +255,17 @@ theorem begun_counted {ctx : Ctx} {loop : MultiInstance}
     {state queued : State} {run : MultiInstanceRun} {instances : List Iteration}
     (begun : Begun inv settled ctx loop state run queued instances) (before : State)
     (others : ∀ other ∈ state.slots.multiInstances, ∀ scope, Iteration.active scope ∈ other.instances →
-      scope.value < before.nextIssue)
-    (old : ∀ scope, Iteration.active scope ∈ run.instances → scope.value < before.nextIssue)
+      Laws.State.ScopeIssued before scope)
+    (old : ∀ scope, Iteration.active scope ∈ run.instances → Laws.State.ScopeIssued before scope)
     (cib : ctx.program.options.multiInstanceCounters = .cibLocals)
     (apart : Feature.MultiInstance.itemName ctx loop ≠ some "loopCounter") :
     SlotsCounted before (Feature.MultiInstance.setRun queued { run with instances }) := by
   intro other member index scope slot fresh
   rcases mem_setRun member with ⟨held, _⟩ | rfl
   · rw [begun.slots] at held
-    exact absurd fresh (Nat.not_le.mpr (others other held scope (List.mem_of_getElem? slot)))
+    exact absurd (others other held scope (List.mem_of_getElem? slot)) fresh
   · rcases begun.counted index scope slot with earlier | ⟨_, counter⟩
-    · exact absurd fresh (Nat.not_le.mpr (old scope (List.mem_of_getElem? earlier)))
+    · exact absurd (old scope (List.mem_of_getElem? earlier)) fresh
     · obtain ⟨locals, present, at_, entry⟩ := counter cib apart
       exact ⟨locals, by rw [setRun_eq]; exact present, at_, entry⟩
 
@@ -260,8 +274,8 @@ theorem beginInstances_counted (ops : MultiInstanceOps program inv settled) {ctx
     {items : List Value} {run : MultiInstanceRun} {state before : State}
     (entering : Entering inv settled run state run.instances [])
     (others : ∀ other ∈ state.slots.multiInstances, ∀ scope, Iteration.active scope ∈ other.instances →
-      scope.value < before.nextIssue)
-    (old : ∀ scope, Iteration.active scope ∈ run.instances → scope.value < before.nextIssue)
+      Laws.State.ScopeIssued before scope)
+    (old : ∀ scope, Iteration.active scope ∈ run.instances → Laws.State.ScopeIssued before scope)
     (cib : ctx.program.options.multiInstanceCounters = .cibLocals)
     (apart : Feature.MultiInstance.itemName ctx loop ≠ some "loopCounter") :
     SlotsCounted before (Feature.MultiInstance.beginInstances ctx loop items run state) := by
@@ -312,8 +326,8 @@ theorem arriveMultiInstance_counted (ops : MultiInstanceOps program inv settled)
     (∃ held, after = state.hold held) ∨ SlotsCounted state after := by
   rcases arriveMultiInstance_spec ran with held | ⟨writes, rfl⟩ | ⟨locals, unarmed, entered⟩
   · exact .inl held
-  · exact .inr (nothingCounted ops (ops.complete _ _ _ _ _ holds (ops.begun _ _ holds member begun) fun _ same => by cases same)
-      (Nat.le_of_eq (signal_issue _ _)))
+  · exact .inr (nothingCounted fun other inside scope active =>
+      (ops.placed state other holds (by rwa [Laws.State.signal_eq] at inside) scope active).1)
   · obtain ⟨collection, count, items, ⟨_, rfl⟩⟩ := entered
     exact .inr (enterBody_counted ops holds member begun _ enters armed _ _ _ _
       (fun _ inside => List.eq_of_mem_replicate inside) cib apart)
@@ -330,15 +344,22 @@ theorem instanceCompleted_counted {ctx : Ctx} (ops : MultiInstanceOps ctx.progra
     SlotsCounted state after := by
   obtain ⟨run, loop, index, found⟩ := instanceCompleted_spec ran
   obtain ⟨output, done⟩ := found
-  obtain ⟨_, counted, recorded⟩ := instanceCompleted_entering ops holds stands done
-  obtain ⟨entering, issue, _, ended⟩ := recorded
-  rcases ended with rfl | ⟨items, rfl⟩
-  · exact nothingCounted ops (finish_keeps ops entering) (Nat.le_of_eq ((finish_issue _ _ _ _).trans issue))
-  · refine beginInstances_counted ops entering (fun other held scope active => issue ▸
-      (ops.placed counted other entering.1 held scope active).1) (fun scope active => ?_) cib
-      (apart _ _ done.looped)
-    exact (ops.placed state run holds (Laws.MultiInstance.found_mem done.found) scope
+  obtain ⟨results, counted, left, ended⟩ := done.ends
+  obtain ⟨entering, -⟩ := counted_entering ops holds stands done left
+  have recordedIssued : ∀ scope, Iteration.active scope ∈ (recorded run index output results).instances →
+      Laws.State.ScopeIssued state scope := fun scope active =>
+    (ops.placed state run holds (Laws.MultiInstance.found_mem done.found) scope
       ((List.mem_or_eq_of_mem_set active).resolve_right (by simp))).1
+  have earlier : ∀ other ∈ counted.slots.multiInstances, ∀ scope, Iteration.active scope ∈ other.instances →
+      Laws.State.ScopeIssued state scope := fun other member scope active => by
+    rcases counted_bodies left member with old | rfl
+    · exact (ops.placed state other holds old scope active).1
+    · exact recordedIssued scope active
+  rcases ended with rfl | ⟨items, rfl⟩
+  · refine nothingCounted fun other member scope active => earlier other ?_ scope active
+    obtain ⟨_, same, _⟩ := Laws.MultiInstance.finish_spec ctx loop (recorded run index output results) counted
+    rwa [same, Laws.State.signal_eq] at member
+  · exact beginInstances_counted ops entering earlier recordedIssued cib (apart _ _ done.looped)
 
 /-! ## Completions queued -/
 

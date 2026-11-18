@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import { decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
+import { decodeProgram, rootScope, step, stimulusFromJson } from "./lean-paired.ts";
 import type { State } from "@bpmn-lean/kernel";
 
 type Json = Record<string, unknown>;
@@ -79,7 +79,7 @@ function complete(json: Json): unknown {
 
 test("a write to a declared process item lands at the instance root", () => {
   assert.deepEqual(complete(program("Property_Outcome", ["Property_Outcome"])),
-    [{ scope: 0, entries: [["Property_Outcome", { tag: "string", value: "recorded" }]] }]);
+    [{ scope: rootScope, entries: [["Property_Outcome", { tag: "string", value: "recorded" }]] }]);
 });
 
 test("a write to an undeclared name is refused under the standards reading", () => {

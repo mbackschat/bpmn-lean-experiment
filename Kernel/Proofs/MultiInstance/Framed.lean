@@ -166,13 +166,11 @@ theorem Carries.equal {s t : State} (scopes : t.scopes = s.scopes) (occurrences 
   .grow (fun _ inside => .inl (scopes ▸ inside)) (fun _ inside => scopes ▸ inside) bodies runs
     fun _ present => occurrences ▸ present
 
-/-- No scope occurrence of a well-formed state carries the identity at its counter. -/
-theorem counter_fresh {program : Program} {s : State} (formed : WellFormed program s) :
-    (⟨s.nextIssue⟩ : ScopeOccurrenceId) ∉ scopeIds s := fun inside => by
+/-- No scope occurrence of a well-formed state carries the key a parent's counter issues next. -/
+theorem counter_fresh {program : Program} {s : State} (formed : WellFormed program s) {parent : ScopeOccurrenceId}
+    {element : ElementId} : parent.child element (Laws.State.slotCount s parent element) ∉ scopeIds s := fun inside => by
   obtain ⟨entry, member, named⟩ := List.mem_map.mp inside
-  have below := formed.issued.scopes entry member
-  rw [named] at below
-  exact Nat.lt_irrefl _ below
+  exact Laws.State.scopes_fresh formed entry member named
 
 /-! ## What removal keeps -/
 
@@ -315,7 +313,7 @@ theorem runsFramed_frameAlongside (program : Program) : StoresAlongside program 
   issue s kept := by
     rw [Laws.State.issue_eq]
     exact kept.carry (.equal rfl rfl rfl rfl)
-  enterScope s element parent locals owner formed _ kept := by
+  enterScope s element parent locals owner formed stands _ kept := by
     rw [Laws.State.enterScope_eq]
     refine kept.carry (.grow (fun entry inside => ?_) (fun _ inside => List.mem_append_left _ inside) rfl rfl
       fun _ present => present)
@@ -358,9 +356,7 @@ theorem runsFramed_occursAlongside (program : Program) : OccursAlongside program
     rw [Laws.State.signal_eq]
     exact kept.carry (.equal rfl rfl rfl rfl)
   enterCalled s call variables definition formed _ _ _ _ _ kept := by
-    have fresh : ∀ entry ∈ s.scopes, entry.id ≠ ⟨s.nextIssue⟩ := fun entry inside same =>
-      counter_fresh formed (same ▸ List.mem_map.mpr ⟨entry, inside, rfl⟩)
-    rw [Laws.State.enterCalled_eq _ _ _ _ _ fresh]
+    rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]
     refine kept.carry (.grow (fun entry inside => ?_) (fun _ inside => List.mem_append_left _ inside) rfl rfl
       fun _ present => present)
     rcases List.mem_append.mp inside with old | new
@@ -646,7 +642,7 @@ theorem unstarted_alongside (b : State) (program : Program) : Alongside program 
   issue s kept := by
     rw [Laws.State.issue_eq]
     exact kept.move (.same rfl rfl rfl (Nat.le_succ _) rfl)
-  enterScope s element parent locals owner formed _ kept :=
+  enterScope s element parent locals owner formed _ _ kept :=
     kept.move (.ofEnds (Laws.Step.enterScope_frame formed element parent locals owner) (by rw [Laws.State.enterScope_eq]))
   reserve s element scope formed _ _ _ kept := kept.reserve formed
   leaveScope _ _ formed present _ kept :=
@@ -702,7 +698,7 @@ theorem snapshots_frameAlongside (b : State) (program : Program) : StoresAlongsi
   issue s kept := by
     rw [Laws.State.issue_eq]
     exact kept.same rfl
-  enterScope s element parent locals owner _ _ kept := by
+  enterScope s element parent locals owner _ _ _ kept := by
     rw [Laws.State.enterScope_eq]
     exact kept.same rfl
   reserve s element scope _ _ _ _ kept := kept.reserve element scope
@@ -743,9 +739,10 @@ theorem since_frameAlongside (b : State) (program : Program) :
       ⟨one.signalBegin s request formed fits (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1,
         two.signalBegin s request formed fits (anchored.mono fun _ held => ⟨held.1, held.2.2⟩) kept.2⟩
     issue := fun s kept => ⟨one.issue s kept.1, two.issue s kept.2⟩
-    enterScope := fun s element parent locals owner formed anchored kept =>
-      ⟨one.enterScope s element parent locals owner formed (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1,
-        two.enterScope s element parent locals owner formed (anchored.mono fun _ held => ⟨held.1, held.2.2⟩) kept.2⟩
+    enterScope := fun s element parent locals owner formed stands anchored kept =>
+      ⟨one.enterScope s element parent locals owner formed stands (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1,
+        two.enterScope s element parent locals owner formed stands (anchored.mono fun _ held => ⟨held.1, held.2.2⟩)
+          kept.2⟩
     reserve := fun _ element scope formed _ _ _ kept => ⟨kept.1.reserve formed, kept.2.reserve element scope⟩
     leaveScope := fun s scope formed present leaves kept =>
       ⟨one.leaveScope s scope formed present leaves kept.1, two.leaveScope s scope formed present leaves kept.2⟩

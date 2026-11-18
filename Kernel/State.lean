@@ -54,15 +54,17 @@ called process instance, whose `element` is the Call Activity and `calledInstanc
 Multi-Instance body or instance, the occurrence holding a compensation handler's restored context, or an Activity's
 local variables (CIB-EXT-0015), which live as long as the Activity. `occurrence` is the flow-node occurrence it belongs
 to, `none` for the process root, a Multi-Instance instance and a handler's context, which
-`Kernel.Feature.MultiInstance` and `Kernel.Feature.Compensation` leave themselves. -/
+`Kernel.Feature.MultiInstance` and `Kernel.Feature.Compensation` leave themselves. Its parent is its key's
+(`ScopeOccurrence.parent`), so no record can name another. -/
 structure ScopeOccurrence where
   id : ScopeOccurrenceId
   element : Option ElementId
-  parent : Option ScopeOccurrenceId
   occurrence : Option Nat := none
   calledInstance : Option String := none
   deriving Repr
 
+/-- The scope occurrence `scope` was entered in, read from its key; `none` for the root. -/
+abbrev ScopeOccurrence.parent (scope : ScopeOccurrence) : Option ScopeOccurrenceId := scope.id.parent?
 
 structure ScopeVariables where
   scope : ScopeOccurrenceId
@@ -209,6 +211,9 @@ structure State where
   openItems : OpenItems := ∅
   /-- The next item ordinal of each occurrence that opened an item, pruned with the occurrence (KD1). -/
   itemOrdinals : TreeMap Nat Nat compare := ∅
+  /-- The next ordinal of each element in each scope occurrence that entered one, pruned with the scope occurrence
+  (KD1). -/
+  scopeOrdinals : TreeMap ScopeSlot Nat compare := ∅
   activations : List ActivationCount := []
   nextIssue : Nat := 1
   logicalTimeMs : Nat := 0
@@ -275,12 +280,12 @@ def keyed (bindings : List (String × Value)) : List (String × Value) :=
 
 namespace State
 
-def root : ScopeOccurrenceId := ⟨0⟩
+def root : ScopeOccurrenceId := ⟨[]⟩
 
 /-- A fresh process instance: one root scope occurrence with the given variables, `keyed`. -/
 def initial (instanceId : String) (variables : List (String × Value)) (businessKey : Option String := none) : State :=
   { instanceId
-    scopes := [{ id := root, element := none, parent := none }]
+    scopes := [{ id := root, element := none }]
     variables := [{ scope := root, entries := keyed variables }]
     slots := { instances := [{ root, businessKey }] } }
 
@@ -312,17 +317,20 @@ input-mapped locals are visible (`PvmExecutionImpl.java:1304-1318`), otherwise `
 def ownScope (state : State) (host : Nat) (scope : ScopeOccurrenceId) : ScopeOccurrenceId :=
   (state.localScope? host).getD scope
 
-/-- The root of the process instance `scope` belongs to: the nearest called-instance root, else the process root. -/
+/-- Whether the scope occurrence `scope` stands. -/
+def stands (state : State) (scope : ScopeOccurrenceId) : Bool :=
+  state.scopes.any (·.id == scope)
+
+/-- The root of the process instance `scope` belongs to: the nearest called-instance root, else the process root. The
+search climbs `scope`'s key while its scope occurrences stand. -/
 def instanceRoot (state : State) (scope : ScopeOccurrenceId) : ScopeOccurrenceId :=
-  let rec go (fuel : Nat) (current : ScopeOccurrenceId) : ScopeOccurrenceId :=
-    match fuel with
-    | 0 => root
-    | fuel + 1 =>
-      if state.calledRoot current then current
-      else match (state.scopes.find? (·.id == current)).bind (·.parent) with
-        | some parent => go fuel parent
-        | none => root
-  go state.scopes.length scope
+  let rec go : List ScopeSegment → ScopeOccurrenceId
+    | [] => root
+    | segment :: rest =>
+      if state.calledRoot ⟨segment :: rest⟩ then ⟨segment :: rest⟩
+      else if state.stands ⟨segment :: rest⟩ then go rest
+      else root
+  go scope.segments
 
 /-- The scope occurrences in which something remains: a token, an open item that keeps it alive, a begun occurrence, a
 child scope occurrence or a feature slot entry, in one pass over the state. -/
@@ -448,10 +456,12 @@ def disarm (state : State) (host : Nat) : State :=
 belongs to `occurrence`, when it has one. -/
 def enterScope (state : State) (element : ElementId) (parent : ScopeOccurrenceId)
     (locals : List (String × Value)) (occurrence : Option Nat) : State × ScopeOccurrenceId :=
-  let (state, issued) := state.issue
-  let id : ScopeOccurrenceId := ⟨issued⟩
+  let slot : ScopeSlot := { parent, element }
+  let ordinal := state.scopeOrdinals.getD slot 0
+  let id := parent.child element ordinal
   ({ state with
-      scopes := state.scopes ++ [{ id, element := some element, parent := some parent, occurrence }]
+      scopeOrdinals := state.scopeOrdinals.insert slot (ordinal + 1)
+      scopes := state.scopes ++ [{ id, element := some element, occurrence }]
       variables := state.variables ++ [{ scope := id, entries := keyed locals }] }, id)
 
 /-- The identifier of the process instance a Call Activity's `activation` calls from the instance `caller`: each
@@ -485,17 +495,6 @@ def childrenOf (state : State) (program : Program) (scope : ScopeOccurrenceId) :
     ((program.processes.find? (·.definition == definition)).map program.processChildren).getD []
   | _, _ => program.children (occurrence.bind (·.element))
 
-/-- The scope occurrences inside `scope`, transitively, including `scope`, the deepest last. -/
-def subtree (state : State) (scope : ScopeOccurrenceId) : List ScopeOccurrenceId :=
-  let rec go (fuel : Nat) (frontier : List ScopeOccurrenceId) (seen : List ScopeOccurrenceId) :
-      List ScopeOccurrenceId :=
-    match fuel, frontier with
-    | 0, _ | _, [] => seen
-    | fuel + 1, next :: rest =>
-      let children := (state.scopes.filter (·.parent == some next)).map (·.id)
-      go fuel (rest ++ children) (seen ++ [next])
-  go (state.scopes.length + 1) [scope] []
-
 /-- Whether the frame of `scope` shows its binding of `name`: a Scope's item only in an occurrence of the Scope that
 declares it, any other name in every frame. BPMN references data by element identity (§10.4.1), so another frame's
 binding of an item's identifier neither shadows the item nor stands in for it while it is unset. -/
@@ -504,42 +503,44 @@ def shows (state : State) (program : Program) (scope : ScopeOccurrenceId) (name 
   | none => true
   | some declaring => ((state.scopes.find? (·.id == scope)).bind (·.element)) == some declaring
 
+/-- The bindings the frame of `scope` shows (`shows`). -/
+def frame (state : State) (program : Program) (scope : ScopeOccurrenceId) : List (String × Value) :=
+  (((state.variables.find? (·.scope == scope)).map (·.entries)).getD []).filter (state.shows program scope ·.1)
+
 /-- Variables visible from `scope`, innermost first, up to the root of its process instance, each frame's as it
 `shows` them. -/
 def visible (state : State) (program : Program) (scope : ScopeOccurrenceId) : List (String × Value) :=
-  let rec go (fuel : Nat) (current : Option ScopeOccurrenceId) : List (String × Value) :=
-    match fuel, current with
-    | 0, _ | _, none => []
-    | fuel + 1, some id =>
-      let own := (((state.variables.find? (·.scope == id)).map (·.entries)).getD []).filter (state.shows program id ·.1)
-      if state.calledRoot id then own else own ++ go fuel ((state.scopes.find? (·.id == id)).bind (·.parent))
-  go state.scopes.length (some scope)
+  let rec go : List ScopeSegment → List (String × Value)
+    | [] => state.frame program root
+    | segment :: rest =>
+      state.frame program ⟨segment :: rest⟩ ++
+        if state.calledRoot ⟨segment :: rest⟩ then [] else if state.stands ⟨segment :: rest⟩ then go rest else []
+  go scope.segments
 
 /-- The nearest occurrence of the Scope `element` from `scope` outward, up to the root of its process instance: the
 occurrence whose frame holds the items `element` declares for a site in `scope`. -/
 def declaring? (state : State) (scope : ScopeOccurrenceId) (element : ElementId) : Option ScopeOccurrenceId :=
-  let rec go (fuel : Nat) (current : ScopeOccurrenceId) : Option ScopeOccurrenceId :=
-    match fuel with
-    | 0 => none
-    | fuel + 1 =>
-      let occurrence := state.scopes.find? (·.id == current)
-      if (occurrence.bind (·.element)) == some element then some current
-      else if state.calledRoot current then none
-      else (occurrence.bind (·.parent)).bind (go fuel)
-  go state.scopes.length scope
+  let rec go : List ScopeSegment → Option ScopeOccurrenceId
+    | [] => if ((state.scopes.find? (·.id == root)).bind (·.element)) == some element then some root else none
+    | segment :: rest =>
+      if ((state.scopes.find? (·.id == ⟨segment :: rest⟩)).bind (·.element)) == some element then some ⟨segment :: rest⟩
+      else if state.calledRoot ⟨segment :: rest⟩ then none
+      else if state.stands ⟨segment :: rest⟩ then go rest else none
+  go scope.segments
+
+/-- Whether the own variables of `scope` bind `name`. -/
+def bindsOwn (state : State) (scope : ScopeOccurrenceId) (name : String) : Bool :=
+  ((state.variables.find? (·.scope == scope)).map (·.entries.any (·.1 == name))).getD false
 
 /-- The innermost scope visible from `scope` that declares `name`, up to the root of its process instance. -/
 def owner? (state : State) (scope : ScopeOccurrenceId) (name : String) : Option ScopeOccurrenceId :=
-  let declares (id : ScopeOccurrenceId) :=
-    ((state.variables.find? (·.scope == id)).map (·.entries.any (·.1 == name))).getD false
-  let rec go (fuel : Nat) (current : ScopeOccurrenceId) : Option ScopeOccurrenceId :=
-    match fuel with
-    | 0 => none
-    | fuel + 1 =>
-      if declares current then some current
-      else if state.calledRoot current then none
-      else ((state.scopes.find? (·.id == current)).bind (·.parent)).bind (go fuel)
-  go state.scopes.length scope
+  let rec go : List ScopeSegment → Option ScopeOccurrenceId
+    | [] => if state.bindsOwn root name then some root else none
+    | segment :: rest =>
+      if state.bindsOwn ⟨segment :: rest⟩ name then some ⟨segment :: rest⟩
+      else if state.calledRoot ⟨segment :: rest⟩ then none
+      else if state.stands ⟨segment :: rest⟩ then go rest else none
+  go scope.segments
 
 /-- Set `name` in `target`'s own variables and log the write. -/
 def setVariable (state : State) (target : ScopeOccurrenceId) (name : String) (value : Value) : State :=

@@ -52,10 +52,10 @@ theorem compensationKeeps_formed (hooks : Hooks) (wf : Proofs.Step.CompensationK
     exact ⟨kept, compensate_formed hooks holds.1 holds.2 stands popped kept ran⟩
   handlerCompleted ctx run occurrence state after holds stands ran := by
     have kept := wf.handlerCompleted ctx run occurrence state after holds.1 stands ran
-    exact ⟨kept, handlerCompleted_formed hooks holds.1 holds.2 kept ran⟩
+    exact ⟨kept, handlerCompleted_formed hooks holds.1 holds.2 stands kept ran⟩
   handlerEnded ctx run occurrence state after holds stands ran := by
     have kept := wf.handlerEnded ctx run occurrence state after holds.1 stands ran
-    exact ⟨kept, handlerEnded_formed hooks holds.1 holds.2 kept ran⟩
+    exact ⟨kept, handlerEnded_formed hooks holds.1 holds.2 stands kept ran⟩
 
 /-- The registered compensation hooks keep `WellFormed` with the lane relation beside it. -/
 theorem registered_compensationKeeps :
@@ -128,7 +128,8 @@ theorem compensate_shape {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : Opt
         ∃ (started : List (ScopeOccurrenceId × Compensable)) (begun : State) (next : CompensationRun),
           Advances (Depends ctx.program (footprintReads ctx) (footprintWrites ctx))
             ({ trigger, scope, pending := taken, leave, resume } : CompensationRun) next (started.map (·.2)) ∧ next.scope = scope ∧
-          next.trigger = trigger ∧ BegunFormed (Depends ctx.program (footprintReads ctx) (footprintWrites ctx)) (started.map (·.2))
+          next.trigger = trigger ∧ BegunFormed (Depends ctx.program (footprintReads ctx) (footprintWrites ctx)) scope
+            (started.map (·.2))
             (started.map (·.1)) (opened state others { trigger, scope, pending := taken, leave, resume }) begun ∧
           after = stored begun { begun.slots.compensation with
             runs := begun.slots.compensation.runs.filter (!Feature.Compensation.isRun scope trigger ·) ++ [next] }) := by
@@ -145,14 +146,14 @@ theorem compensate_shape {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : Opt
   rcases taken with _ | ⟨record, rest⟩
   · have ended := advance_ended (fun run first => by rw [firstNew run first]; exact ⟨rfl, rfl, fresh.2⟩) advanced
     exact .inl ⟨rfl, ended⟩
-  have issued : scope.value < state.nextIssue := by
+  have stands : scope ∈ Laws.State.scopeIds state := by
     obtain ⟨retainedIn, covered, _⟩ := (takes.1 record).1 (List.mem_cons_self ..)
     rcases Laws.Compensation.visibleScopes_mem covered with same | ⟨entry, inside, named⟩
-    · obtain ⟨entry, inside, named⟩ := List.mem_map.mp (formed.retained record retainedIn)
-      rw [← same, ← named]
-      exact before.issued.scopes entry inside
-    · rw [← named]
-      exact before.issued.scopes entry inside
+    · rw [← same]; exact formed.retained record retainedIn
+    · exact List.mem_map.mpr ⟨entry, inside, named⟩
+  have issued : Laws.State.ScopeIssued state scope := by
+    obtain ⟨entry, inside, named⟩ := List.mem_map.mp stands
+    exact named ▸ before.issued.scopes entry inside
   have tame := tame_opened (others := others) (run := { trigger, scope, pending := record :: rest, leave, resume })
     (tame_of before formed.retained formed.keyed formed.runsIssued)
     (fun kept inside => perm.subset (List.mem_append_right _ inside)) fresh.1 issued rfl fresh.2
@@ -164,7 +165,7 @@ theorem compensate_shape {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : Opt
   obtain ⟨law, _, _, rest'⟩ := rest'
   obtain ⟨chain, rfl⟩ := rest'
   obtain rfl := firstNew run first
-  have post := chain_formed (runs_form (precedes_depends ctx) less).2.2 chain tame
+  have post := chain_formed (runs_form (precedes_depends ctx) less).2.2 chain tame stands
     ⟨_, List.mem_append_right _ (List.mem_singleton_self _), rfl⟩
   rw [store_stored]
   exact .inr ⟨started, begun, _, advances_of (precedes_depends ctx) law, rfl, rfl, post, rfl⟩
@@ -185,7 +186,7 @@ theorem compensate_takesOut {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : 
       taken.leave = leave ∧ taken.resume = resume ∧
       TakesOut covered activity state.slots.compensation
         { retained := kept, runs := state.slots.compensation.runs ++ [taken] } taken ∧
-      (∀ record, record.scope.value < state.nextIssue →
+      (∀ record, Laws.State.ScopeIssued state record.scope →
         (record ∈ after.slots.compensation.retained ↔ record ∈ kept)) ∧
       ((taken.pending = [] ∧ ∀ next ∈ after.slots.compensation.runs, next.scope = scope → next.trigger ≠ trigger) ∨
         ∃ next ∈ after.slots.compensation.runs, next.scope = scope ∧ next.trigger = trigger ∧
@@ -238,13 +239,14 @@ theorem compensate_inOrder {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : O
         exact ⟨rfl, rfl⟩
     · have below := formed.runsIssued run member
       rw [← sameScope] at below
-      exact absurd (Nat.lt_of_lt_of_le below late) (Nat.lt_irrefl _)
+      exact absurd below late
   · rw [List.mem_singleton.mp new] at other
     exact absurd ⟨scopeNamed, named⟩ other
 
 theorem handlerCompleted_inOrder {ctx : Ctx} {context : ScopeOccurrenceId} {occurrence : Occurrence}
     {state after : State} (before : WellFormed ctx.program state)
     (formed : Formed (Depends ctx.program (footprintReads ctx) (footprintWrites ctx)) state)
+    (stands : Laws.Step.ScopeStands state occurrence.scope)
     (ran : Feature.Compensation.handlerCompleted ctx context occurrence state = .ok after)
     {run next : CompensationRun} (member : run ∈ state.slots.compensation.runs)
     (inside : next ∈ after.slots.compensation.runs) (sameTrigger : next.trigger = run.trigger)
@@ -255,11 +257,11 @@ theorem handlerCompleted_inOrder {ctx : Ctx} {context : ScopeOccurrenceId} {occu
   obtain ⟨less, _, fuel, _⟩ := Laws.Compensation.release_spec ran
   rw [fuel] at ran
   have post := (runs_form (precedes_depends ctx) (less + 1)).2.1 _ _ _
-    (tame_of before formed.retained formed.keyed formed.runsIssued) ran
+    (tame_of before formed.retained formed.keyed formed.runsIssued) (List.mem_map.mpr stands) ran
   rcases post.steps next inside with late | ⟨source, sourceIn, rest⟩
   · have below := formed.runsIssued run member
     rw [← sameScope] at below
-    exact absurd (Nat.lt_of_lt_of_le below late) (Nat.lt_irrefl _)
+    exact absurd below late
   obtain ⟨sameSource, named, which⟩ := rest
   obtain rfl : source = run :=
     Laws.State.nodup_map_eq formed.keyed sourceIn member (by rw [sameSource, named, sameScope, sameTrigger])
@@ -286,8 +288,9 @@ theorem registered_handlersInOrder : HandlersInOrder Registry.hooks footprintRea
   · obtain ⟨leave, resume, fresh, ran⟩ := rest
     rw [Laws.Registry.hooks_compensate] at ran
     exact compensate_inOrder before formed fresh ran member inside sameTrigger sameScope
-  · rw [Laws.Registry.hooks_handlerCompleted] at ran
-    exact handlerCompleted_inOrder before formed ran member inside sameTrigger sameScope
+  · obtain ⟨stands, ran⟩ := ran
+    rw [Laws.Registry.hooks_handlerCompleted] at ran
+    exact handlerCompleted_inOrder before formed stands ran member inside sameTrigger sameScope
 
 /-- Every compensation `Step` performs takes out once and starts handlers in order: it is taken off a queue that kept
 `WellFormed` and the lane relation (`Laws.State.Popped`, as `CompensationKeeps.compensate` reads it), so it is a
@@ -304,7 +307,7 @@ theorem registered_dequeued {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : 
         taken.leave = leave ∧ taken.resume = resume ∧
         TakesOut covered activity state.slots.compensation
           { retained := kept, runs := state.slots.compensation.runs ++ [taken] } taken ∧
-        (∀ record, record.scope.value < state.nextIssue →
+        (∀ record, Laws.State.ScopeIssued state record.scope →
           (record ∈ after.slots.compensation.retained ↔ record ∈ kept)) ∧
         ((taken.pending = [] ∧ ∀ next ∈ after.slots.compensation.runs, next.scope = scope → next.trigger ≠ trigger) ∨
           ∃ next ∈ after.slots.compensation.runs, next.scope = scope ∧ next.trigger = trigger ∧

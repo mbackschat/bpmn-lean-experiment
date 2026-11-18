@@ -23,9 +23,10 @@ import {
   foldSynchronousEffects,
 } from "@bpmn-lean/differential";
 import {
-  FailureTag, decodeProgram, elementHeader, failureCode, failureName, hooks, itemKeyText, observationJson, step, stimulusFromJson,
+  FailureTag, decodeProgram, elementHeader, failureCode, failureName, hooks, itemKeyText, observationJson, scopeParent, step,
+  stimulusFromJson,
 } from "@bpmn-lean/kernel";
-import type { Program, State } from "@bpmn-lean/kernel";
+import type { Program, ScopeOccurrenceId, State } from "@bpmn-lean/kernel";
 
 import { projectRoot } from "./pipeline-target-support.ts";
 import { readSourceFor } from "./scenario-discovery.ts";
@@ -109,8 +110,8 @@ async function noticed(directory: string, names: readonly string[], mutant: Muta
   assert.ok(subjects.some((subject) => !agrees(subject, mutant)), `no witness of ${directory} notices the mutant`);
 }
 
-const parentOf = (state: State, scope: number): number | null =>
-  state.scopes.find((candidate) => candidate.id === scope)?.parent ?? null;
+const parentOf = (state: State, scope: ScopeOccurrenceId): ScopeOccurrenceId | null =>
+  state.scopes.some((candidate) => candidate.id === scope) ? scopeParent(scope) : null;
 
 type Thrown = Parameters<Hooks["arriveThrow"]>[3];
 
@@ -129,24 +130,27 @@ async function terminateThrow(): Promise<Thrown> {
 }
 
 /** An ordinary embedded Sub-Process's scope occurrence: one with an element, owned by an occurrence, not a called root. */
-const embedded = (state: State, scope: number | null): boolean => {
+const embedded = (state: State, scope: ScopeOccurrenceId | null): boolean => {
   const found = state.scopes.find((candidate) => candidate.id === scope);
   return found !== undefined && found.element !== null && found.occurrence !== null && found.calledInstance === null;
 };
 
 /** The scope occurrences an input removed whose parent it kept: the occurrences it left or interrupted. */
-function removedRoots(before: State, after: State): number[] {
+function removedRoots(before: State, after: State): ScopeOccurrenceId[] {
   const kept = new Set(after.scopes.map((scope) => scope.id));
-  return before.scopes.filter((scope) => !kept.has(scope.id) && scope.parent !== null && kept.has(scope.parent))
-    .map((scope) => scope.id);
+  return before.scopes.filter((scope) => {
+    const parent = scopeParent(scope.id);
+    return !kept.has(scope.id) && parent !== null && kept.has(parent);
+  }).map((scope) => scope.id);
 }
 
-function subtreeOf(state: State, root: number): Set<number> {
+function subtreeOf(state: State, root: ScopeOccurrenceId): Set<ScopeOccurrenceId> {
   const inside = new Set([root]);
   for (let grown = true; grown;) {
     grown = false;
     for (const scope of state.scopes) {
-      if (scope.parent !== null && inside.has(scope.parent) && !inside.has(scope.id)) {
+      const parent = scopeParent(scope.id);
+      if (parent !== null && inside.has(parent) && !inside.has(scope.id)) {
         inside.add(scope.id);
         grown = true;
       }
@@ -156,8 +160,8 @@ function subtreeOf(state: State, root: number): Set<number> {
 }
 
 /** `after` with the rows of `before` that sat in `scopes` put back. */
-function restore(before: State, after: State, scopes: ReadonlySet<number>): State {
-  const back = <T>(rows: readonly T[], kept: readonly T[], at: (row: T) => number): T[] =>
+function restore(before: State, after: State, scopes: ReadonlySet<ScopeOccurrenceId>): State {
+  const back = <T>(rows: readonly T[], kept: readonly T[], at: (row: T) => ScopeOccurrenceId): T[] =>
     [...kept, ...rows.filter((row) => scopes.has(at(row)) && !kept.includes(row))];
   return {
     ...after,
@@ -189,9 +193,9 @@ test("PC-SCOPE-01: a nested Sub-Process whose completion completes its parent is
     ...hooks,
     completeScope: (ctx, header, payload, scope, owner, state) => {
       // A Sub-Process nested in another completes the outer one's occurrence instead of its own.
-      const parent = state.scopes.find((candidate) => candidate.id === scope.parent);
+      const parent = state.scopes.find((candidate) => candidate.id === scopeParent(scope.id));
       const parentOwner = state.occurrences.find((candidate) => candidate.id === parent?.occurrence);
-      const nested = embedded(state, scope.parent) && parentOwner !== undefined;
+      const nested = embedded(state, scopeParent(scope.id)) && parentOwner !== undefined;
       return hooks.completeScope(ctx, header, payload, scope, nested ? parentOwner : owner, state);
     },
   };
@@ -252,7 +256,7 @@ test("PC-TERMINATE-01: a nested Terminate that leaves a wait of its region open 
 });
 
 /** A Terminate whose region is moved from its own scope occurrence to the one `widen` names, all else unchanged. */
-async function widenedTerminate(widen: (state: State, scope: number) => number): Promise<Hooks> {
+async function widenedTerminate(widen: (state: State, scope: ScopeOccurrenceId) => ScopeOccurrenceId): Promise<Hooks> {
   const terminate = await terminateThrow();
   return {
     ...hooks,
@@ -262,7 +266,7 @@ async function widenedTerminate(widen: (state: State, scope: number) => number):
   };
 }
 
-const elementOf = (state: State, scope: number): string | null =>
+const elementOf = (state: State, scope: ScopeOccurrenceId): string | null =>
   state.scopes.find((candidate) => candidate.id === scope)?.element ?? null;
 
 test("PC-TERMINATE-02: a Terminate in a Multi-Instance instance that ends the whole Multi-Instance body is noticed", async () => {

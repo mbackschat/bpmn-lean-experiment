@@ -6,6 +6,7 @@
  */
 import { assertNever, compareStrings, mergeSort, programPublicId, type ElementId, type Program } from "./il/types.js";
 import {
+  scopeOccurrenceParent,
   ActivationRole,
   InstanceStatus,
   instanceOf,
@@ -129,7 +130,8 @@ function publishedScope(state: State, scope: ScopeOccurrence, entries: readonly 
     };
   }
   const hosted = state.occurrences.find((occurrence) => occurrence.scope === scope.id && occurrence.element === element);
-  const role = scope.parent !== null && ownedByBody(state, scope.parent) ? ScopeRole.MultiInstanceInstance : ScopeRole.CompensationContext;
+  const parent = scopeOccurrenceParent(scope);
+  const role = parent !== null && ownedByBody(state, parent) ? ScopeRole.MultiInstanceInstance : ScopeRole.CompensationContext;
   return { processInstanceId, element, activation: hosted?.activation ?? 0, role, variables: entries };
 }
 

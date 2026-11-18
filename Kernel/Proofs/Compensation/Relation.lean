@@ -69,7 +69,7 @@ def RunsKeyed (s : State) : Prop :=
 /-- Every run's scope occurrence was issued, so a context entered later is no run's and a group's nested run takes a
 key no run has. -/
 def RunsIssued (s : State) : Prop :=
-  ∀ run ∈ s.slots.compensation.runs, run.scope.value < s.nextIssue
+  ∀ run ∈ s.slots.compensation.runs, Laws.State.ScopeIssued s run.scope
 
 /-- Whether a compensation resumes a group's nested run (`Resume.group`), which only `Compensation.beginHandler`
 makes. -/
@@ -116,7 +116,7 @@ structure TriggersApart (s : State) : Prop where
   apart : (heldTriggers s).Nodup
   grouped : ∀ run ∈ s.slots.compensation.runs, resumesGroup run.resume = true → run.trigger ∉ queuedTriggers s
   counted : ∀ trigger ∈ s.slots.compensation.runs.map (·.trigger) ++ queuedTriggers s, Counted s (triggerKey trigger)
-  issued : ∀ origin, .inr origin ∈ Laws.Step.triggersOf s.signals → origin.scope.value < s.nextIssue
+  issued : ∀ origin, .inr origin ∈ Laws.Step.triggersOf s.signals → Laws.State.ScopeIssued s origin.scope
   unreserved : ∀ occurrence ∈ s.occurrences, occurrence.begun = false →
     ∀ trigger ∈ s.slots.compensation.runs.map (·.trigger) ++ queuedTriggers s,
       triggerKey trigger ≠ Laws.State.key s occurrence
@@ -159,7 +159,10 @@ occurrence; a trigger thrown by occurrence 7 of `T`. -/
 
 def subjectA : ElementId := ⟨"A"⟩
 def thrower : ElementId := ⟨"T"⟩
-def rootScope : ScopeOccurrenceId := ⟨0⟩
+def rootScope : ScopeOccurrenceId := ⟨[]⟩
+
+/-- A key below the root that no history of `holdingState` holds: the root's counter of `T` has issued none. -/
+def unissuedScope : ScopeOccurrenceId := rootScope.child thrower 0
 
 def recordA : Compensable := { subject := subjectA, handler := some ⟨"UndoA"⟩, scope := rootScope, completion := 1 }
 def thrownBy : OccurrenceRef := { processInstanceId := "p", element := thrower, activation := 1 }
@@ -167,7 +170,7 @@ def pendingRun : CompensationRun := { trigger := thrownBy, scope := rootScope, p
 
 /-- A state holding `compensation` and queuing `signals`, its root scope occurrence and the counter of `T` at 1. -/
 def holdingState (compensation : Compensations) (signals : List Signal) : State :=
-  { instanceId := "p", scopes := [{ id := rootScope, element := none, parent := none }], nextIssue := 8, signals,
+  { instanceId := "p", scopes := [{ id := rootScope, element := none }], nextIssue := 8, signals,
     activations := [{ processInstance := "p", element := thrower, role := .element, count := 1 }],
     slots := { compensation } }
 
@@ -190,8 +193,9 @@ theorem shared_key_rejected : ¬ RunsKeyed (holdingState { runs := [pendingRun, 
   simp [RunsKeyed, holdingState]
 
 /-- A run in a scope occurrence not yet issued breaks `RunsIssued`. -/
-theorem unissued_run_rejected : ¬ RunsIssued (holdingState { runs := [{ pendingRun with scope := ⟨8⟩ }] } []) := by
-  simp [RunsIssued, holdingState]
+theorem unissued_run_rejected : ¬ RunsIssued (holdingState { runs := [{ pendingRun with scope := unissuedScope }] } []) :=
+  fun issued => Laws.State.unissued_of_count (parent := rootScope) (element := thrower) (ordinal := 0)
+    (by simp [holdingState]) (by simp [Laws.State.slotCount, holdingState]) (issued _ (List.mem_singleton_self _))
 
 /-- A queued compensation with a run's trigger breaks `TriggersApart`. -/
 theorem shared_trigger_rejected :
@@ -230,10 +234,11 @@ theorem uncounted_group_rejected :
 
 /-- A queued Cancel raise from a scope occurrence not yet issued breaks `TriggersApart`. -/
 theorem unissued_raise_rejected :
-    ¬ TriggersApart (holdingState {} [.raise .cancel { element := thrower, scope := ⟨8⟩, activation := 1 }]) := fun apart => by
-  have below := apart.issued { element := thrower, scope := ⟨8⟩, activation := 1 }
-    (by simp [holdingState, Laws.Step.triggersOf_raise, Laws.State.isCancel_cancel])
-  simp [holdingState] at below
+    ¬ TriggersApart (holdingState {} [.raise .cancel { element := thrower, scope := unissuedScope, activation := 1 }]) :=
+  fun apart => Laws.State.unissued_of_count (parent := rootScope) (element := thrower) (ordinal := 0)
+    (by simp [holdingState]) (by simp [Laws.State.slotCount, holdingState])
+    (apart.issued { element := thrower, scope := unissuedScope, activation := 1 }
+      (by simp [holdingState, Laws.Step.triggersOf_raise, Laws.State.isCancel_cancel]))
 
 /-- An unbegun reservation of occurrence 7 of `T` in the root scope occurrence, with a Cancel raise queued from that
 occurrence. -/

@@ -19,10 +19,10 @@ namespace Kernel.Laws.MultiInstance
 open Kernel
 
 def review : ElementId := ⟨"Review"⟩
-def root : ScopeOccurrenceId := ⟨0⟩
-def bodyScope : ScopeOccurrenceId := ⟨2⟩
-def firstScope : ScopeOccurrenceId := ⟨3⟩
-def secondScope : ScopeOccurrenceId := ⟨4⟩
+def root : ScopeOccurrenceId := ⟨[]⟩
+def bodyScope : ScopeOccurrenceId := ⟨[{ element := review, ordinal := 0 }]⟩
+def firstScope : ScopeOccurrenceId := ⟨[{ element := review, ordinal := 0 }, { element := review, ordinal := 0 }]⟩
+def secondScope : ScopeOccurrenceId := ⟨[{ element := review, ordinal := 1 }, { element := review, ordinal := 0 }]⟩
 
 def running : MultiInstanceRun :=
   { scope := bodyScope, element := review, occurrence := 1, collection := .stringList ["x", "x"]
@@ -34,15 +34,15 @@ def firstInstance : Occurrence :=
 def secondInstance : Occurrence :=
   { id := 6, element := review, scope := secondScope, activation := 2, continuation := .multiInstance 1 }
 
-def firstOwned : ScopeOccurrence := { id := firstScope, element := some review, parent := some bodyScope }
-def secondOwned : ScopeOccurrence := { id := secondScope, element := some review, parent := some bodyScope }
+def firstOwned : ScopeOccurrence := { id := firstScope, element := some review }
+def secondOwned : ScopeOccurrence := { id := secondScope, element := some review }
 def firstLocals : ScopeVariables := { scope := firstScope, entries := [("item", .string "x"), ("loopCounter", .int 0)] }
 def secondLocals : ScopeVariables := { scope := secondScope, entries := [("item", .string "x"), ("loopCounter", .int 1)] }
 
 def entered : State :=
   { instanceId := "p"
-    scopes := [{ id := root, element := none, parent := none },
-      { id := bodyScope, element := some review, parent := some root, occurrence := some 1 }, firstOwned, secondOwned]
+    scopes := [{ id := root, element := none },
+      { id := bodyScope, element := some review, occurrence := some 1 }, firstOwned, secondOwned]
     occurrences := [bodyOccurrence, firstInstance, secondInstance]
     variables := [firstLocals, secondLocals]
     slots := { multiInstances := [running] } }
@@ -82,8 +82,8 @@ theorem body_owned : BodyOwns entered running := by
 
 /-- A body scope occurrence no occurrence owns breaks `BodyOwns`. -/
 theorem unowned_body_rejected :
-    ¬ BodyOwns { entered with scopes := [{ id := bodyScope, element := some review, parent := some root }] } running :=
-  fun owns => by simpa using owns { id := bodyScope, element := some review, parent := some root } (by simp) rfl
+    ¬ BodyOwns { entered with scopes := [{ id := bodyScope, element := some review }] } running :=
+  fun owns => by simpa using owns { id := bodyScope, element := some review } (by simp) rfl
 
 theorem instances_unowned : InstancesUnowned entered running := by
   intro scope active entry member named
@@ -187,7 +187,7 @@ theorem stray_occurrence_rejected :
     (placed firstScope (by simp [running]) _ (List.mem_singleton_self _) rfl rfl rfl)
   simp [running] at this
 
-theorem slots_counted : SlotsCounted { entered with nextIssue := 3 } entered := by
+theorem slots_counted : SlotsCounted { entered with scopes := entered.scopes.take 2 } entered := by
   intro run member index scope slot _
   simp only [entered, List.mem_singleton] at member
   subst member
@@ -198,10 +198,13 @@ theorem slots_counted : SlotsCounted { entered with nextIssue := 3 } entered := 
 
 /-- A one-based `loopCounter` breaks `SlotsCounted`. -/
 theorem one_based_rejected :
-    ¬ SlotsCounted entered { entered with variables := [{ scope := firstScope, entries := [("loopCounter", .int 1)] }] } :=
+    ¬ SlotsCounted { entered with scopes := entered.scopes.take 2 }
+      { entered with variables := [{ scope := firstScope, entries := [("loopCounter", .int 1)] }] } :=
   fun counted => by
     obtain ⟨locals, member, _, entry⟩ :=
-      counted running (by simp [entered]) 0 firstScope (by simp [running]) (by simp [entered, firstScope])
+      counted running (by simp [entered]) 0 firstScope (by simp [running])
+        (Laws.State.unissued_of_count (parent := bodyScope) (element := review) (ordinal := 0) (by simp [entered])
+          (by simp [Laws.State.slotCount, entered]))
     simp only [List.mem_singleton] at member
     subst member
     simp at entry

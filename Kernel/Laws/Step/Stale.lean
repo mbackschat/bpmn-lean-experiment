@@ -22,9 +22,26 @@ open Kernel Kernel.Step
 
 /-- `Step.stale` restated. -/
 theorem stale_eq {state : State} {work : SignalWork} : stale state work =
-    (work.scopes.any (fun scope => scope.value < state.nextIssue && !state.scopes.any (·.id == scope)) ||
+    (work.scopes.any (fun scope => scopeIssued state scope && !state.scopes.any (·.id == scope)) ||
       work.occurrences.any fun id => id < state.nextIssue && (state.occurrence? id).isNone) := by
   unfold stale; rfl
+
+/-- What the counters that remain read of a key some history holds: issued (`scopeIssued`), as `stale` reads it of a
+key below a removed subtree. -/
+theorem scopeIssued_of_issued {state : State} {scope : ScopeOccurrenceId} (issued : Laws.State.ScopeIssued state scope) :
+    scopeIssued state scope = true := by
+  obtain ⟨H, history, held⟩ := issued
+  obtain ⟨segments⟩ := scope
+  simp only [scopeIssued]
+  induction segments with
+  | nil => rfl
+  | cons segment rest ih =>
+    simp only [scopeIssued.go]
+    by_cases stands : state.scopes.any (·.id == ⟨rest⟩) = true
+    · simp only [stands, ite_true, decide_eq_true_eq]
+      exact history.below segment rest held (by simpa using stands)
+    · simp only [stands, Bool.false_eq_true, ite_false]
+      exact ih (history.closed segment rest held)
 
 /-- `Step.gone` restated. -/
 theorem gone_eq {state : State} {work : SignalWork} : gone state work =
@@ -55,7 +72,7 @@ theorem perform_gone {work : SignalWork} {state : State} {code : String} (fresh 
 interrupted before its wait (`perform_stale`) or as an invariant failure (`perform_gone`), whatever its hooks would do
 there: no write reaches the instance root or leaves a variable set for a removed scope occurrence (#121). -/
 theorem perform_absent {work : SignalWork} {state : State} {scope : ScopeOccurrenceId}
-    (names : scope ∈ work.scopes ∨ scope ∈ work.requires) (issued : scope.value < state.nextIssue)
+    (names : scope ∈ work.scopes ∨ scope ∈ work.requires) (issued : Laws.State.ScopeIssued state scope)
     (absent : ∀ entry ∈ state.scopes, entry.id ≠ scope) :
     work.perform state = .error (.unsupported "interrupted-before-wait") ∨
       work.perform state = .error (.semanticFailure .invariant "queued-work-scope-gone") := by
@@ -69,7 +86,7 @@ theorem perform_absent {work : SignalWork} {state : State} {scope : ScopeOccurre
     · have refused : stale state work = true := by
         unfold stale
         simp only [Bool.or_eq_true, List.any_eq_true]
-        exact .inl ⟨scope, named, by simp [issued, none]⟩
+        exact .inl ⟨scope, named, by simp [scopeIssued_of_issued issued, none]⟩
       simp [refused] at fresh
     · have scopeGone : work.requires.any (fun scope => !state.scopes.any (·.id == scope)) = true :=
         List.any_eq_true.mpr ⟨scope, named, by simp [none]⟩
@@ -87,7 +104,7 @@ theorem requireScope_stands {state : State} {scope : ScopeOccurrenceId} {done : 
   · simp at ran
 
 theorem scope_of_fresh {state : State} {work : SignalWork} {scope : ScopeOccurrenceId}
-    (fresh : stale state work = false) (named : scope ∈ work.scopes) (issued : scope.value < state.nextIssue) :
+    (fresh : stale state work = false) (named : scope ∈ work.scopes) (issued : Laws.State.ScopeIssued state scope) :
     ScopeStands state scope := by
   cases present : state.scopes.any (·.id == scope) with
   | true =>
@@ -97,7 +114,7 @@ theorem scope_of_fresh {state : State} {work : SignalWork} {scope : ScopeOccurre
     have refused : stale state work = true := by
       unfold stale
       simp only [Bool.or_eq_true, List.any_eq_true]
-      exact .inl ⟨scope, named, by simp [issued, present]⟩
+      exact .inl ⟨scope, named, by simp [scopeIssued_of_issued issued, present]⟩
     simp [refused] at fresh
 
 theorem occurrence_of_fresh {state : State} {work : SignalWork} {id : Nat}

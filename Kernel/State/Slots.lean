@@ -1,21 +1,17 @@
 module
 
 public import Kernel.State.Input
+public import Kernel.State.Key
 
 /-! # Feature slots
 
-The scope occurrence identity every slot entry keys on, and the feature-owned data of `FeatureSlots`, which is
-always present and empty by default, with the records a compensation run resumes by. Part of `Kernel.State`, which
-re-exports it.
+The feature-owned data of `FeatureSlots`, which is always present and empty by default, with the records a compensation
+run resumes by. Part of `Kernel.State`, which re-exports it.
 -/
 
 public section
 
 namespace Kernel
-
-structure ScopeOccurrenceId where
-  value : Nat
-  deriving DecidableEq, Repr, Inhabited
 
 /-- How an occurrence leaves: its element's own outgoing selection, the flows given (`flows []` consumes the
 token), or `raised` by an event, which runs no retention, outflow or continuation. -/

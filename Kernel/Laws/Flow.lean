@@ -284,7 +284,7 @@ def edgeC : Flow := { id := flowC, source := ⟨"C"⟩, target := ⟨"B"⟩ }
 def edgeOut : Flow := { id := flowOut, source := joinGateway, target := ⟨"D"⟩ }
 def diagram : List Flow := [edgeA, edgeB, edgeC, edgeOut]
 
-def root : ScopeOccurrenceId := ⟨0⟩
+def root : ScopeOccurrenceId := ⟨[]⟩
 def arrivedA : Parked := { occurrence := 1, flow := flowA, scope := root }
 def arrivedB : Parked := { occurrence := 2, flow := flowB, scope := root }
 def againA : Parked := { occurrence := 3, flow := flowA, scope := root }
@@ -378,7 +378,7 @@ def atC : Occurrence := { id := 4, element := ⟨"C"⟩, scope := root, activati
 
 /-- `A` arrived; `C` still works upstream of `b`, so the Inclusive join waits. -/
 def waitingAtC : State :=
-  { instanceId := "p", scopes := [{ id := root, element := none, parent := none }], occurrences := [atJoin, atC],
+  { instanceId := "p", scopes := [{ id := root, element := none }], occurrences := [atJoin, atC],
     slots := { parked := [arrivedA] } }
 
 /-- `C` is gone: nothing can reach `b` any more, so the join is ready without an arrival on `b`. -/
@@ -412,7 +412,7 @@ theorem nothing_upstream_ready : InclusiveReady diagram (fun _ _ => False) [flow
     exact other same.symm
   · simp only [doneAtC, waitingAtC, List.mem_singleton] at member
     subst member
-    simp at parent
+    simp [root] at parent
   · simp [doneAtC, waitingAtC] at token
 
 /-! ## Link Events -/

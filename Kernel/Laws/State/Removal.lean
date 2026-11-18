@@ -82,6 +82,15 @@ theorem cancelOccurrence_absent {state : State} {id : Nat} (absent : state.occur
     state.cancelOccurrence id = state := by
   simp [State.cancelOccurrence, absent]
 
+/-- Clearing inside a scope occurrence keeps the counters of the scope occurrences that remain, so every history grows. -/
+theorem clearInside_grows (s : State) (scope : ScopeOccurrenceId) (keep : List Nat) :
+    ScopeGrows s (s.clearInside scope keep) := by
+  have fewer : (s.clearInside scope keep).scopes.Sublist s.scopes := List.filter_sublist
+  refine .shrink (fun _ member => (fewer.map _).subset member) fun parent standing _ => ?_
+  simp only [State.clearInside, State.recordCancelled] at standing ⊢
+  obtain ⟨entry, inside, rfl⟩ := List.mem_map.mp standing
+  exact getD_filter_keep fun _ => (List.mem_filter.mp inside).2
+
 /-- `State.clearInside` of a present scope occurrence of a well-formed state is `Cleared`. -/
 theorem clearInside_cleared {s : State} (formed : WellFormed program s) {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s)
     (keep : List Nat) : Cleared s (s.clearInside scope keep) scope keep := by
@@ -109,6 +118,7 @@ theorem clearInside_cleared {s : State} (formed : WellFormed program s) {scope :
   refine {
       scopes := scopes, occurrences := fun occurrence => ?_, items := fun item => ?_, tokens := fun token => ?_,
       variables := fun variables => ?_, scopesSublist := fewer, occurrencesSublist := List.filter_sublist,
+      scopeGrows := clearInside_grows s scope keep,
       openItemsSub := ItemsSub.filter _ _, ordinals := ordinals, tokensSublist := List.filter_sublist,
       variablesSublist := List.filter_sublist, instances := fun x member => ?_, activations := rfl, nextIssue := rfl,
       signals := rfl, status := rfl, failure := rfl, journal := rfl, started := rfl,
@@ -177,6 +187,7 @@ theorem clearInside_eq (s : State) (scope : ScopeOccurrenceId) (keep : List Nat)
       occurrences := s.occurrences.filter fun occurrence =>
         !(s.subtree scope).contains occurrence.scope || keep.contains occurrence.id
       scopes := s.scopes.filter (!((s.subtree scope).filter (· != scope)).contains ·.id)
+      scopeOrdinals := s.scopeOrdinals.filter fun slot _ => !((s.subtree scope).filter (· != scope)).contains slot.parent
       variables := s.variables.filter (!((s.subtree scope).filter (· != scope)).contains ·.scope)
       slots := {
         parked := s.slots.parked.filter (!(s.subtree scope).contains ·.scope)
@@ -200,6 +211,7 @@ theorem leaveScope_slots_eq (s : State) (scope : ScopeOccurrenceId) :
 theorem leaveScope_eq (s : State) (scope : ScopeOccurrenceId) :
     s.leaveScope scope = { s.clearInside scope with
       scopes := (s.clearInside scope).scopes.filter (·.id != scope)
+      scopeOrdinals := (s.clearInside scope).scopeOrdinals.filter fun slot _ => slot.parent != scope
       variables := (s.clearInside scope).variables.filter (·.scope != scope)
       slots := (s.leaveScope scope).slots } ∧
     (s.leaveScope scope).instanceId = s.instanceId := by

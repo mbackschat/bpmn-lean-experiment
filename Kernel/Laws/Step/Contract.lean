@@ -617,13 +617,13 @@ structure ClosurePhases (inv : Program → State → Prop) : Prop where
     inv program (state.signal (.write scope writes rule))
   queueRemove : ∀ program state scope names, inv program state → inv program (state.signal (.remove scope names))
   armIssued : ∀ program state host element scope, inv program state → Signal.arm host element scope ∈ state.signals →
-    host < state.nextIssue ∧ scope.value < state.nextIssue ∧
+    host < state.nextIssue ∧ Laws.State.ScopeIssued state scope ∧
       ∀ occurrence ∈ state.occurrences, occurrence.id = host → occurrence.begun = true ∧ occurrence.scope = scope
   armScopeIssued : ∀ program state scope, inv program state → Signal.armScope scope ∈ state.signals →
-    scope.value < state.nextIssue
+    Laws.State.ScopeIssued state scope
   armGatewayIssued : ∀ program state occurrence gateway scope, inv program state →
     Signal.armGateway occurrence gateway scope ∈ state.signals →
-    occurrence < state.nextIssue ∧ scope.value < state.nextIssue ∧
+    occurrence < state.nextIssue ∧ Laws.State.ScopeIssued state scope ∧
       ∀ found ∈ state.occurrences, found.id = occurrence → found.begun = true ∧ found.scope = scope
   endRecorded : ∀ program state status failure, inv program state → Signal.endInstance status failure ∈ state.signals →
     (failure.isSome = true ↔ status = .failed)

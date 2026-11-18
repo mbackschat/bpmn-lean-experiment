@@ -91,6 +91,7 @@ public import Kernel.Laws.State.Derived
 public import Kernel.Laws.State.Enter
 public import Kernel.Laws.State.Fire
 public import Kernel.Laws.State.Frames
+public import Kernel.Laws.State.History
 public import Kernel.Laws.State.Invariant
 public import Kernel.Laws.State.Issue
 public import Kernel.Laws.State.Items
@@ -133,6 +134,7 @@ public import Kernel.Proofs.Compensation.Lane
 public import Kernel.Proofs.Compensation.Raise
 public import Kernel.Proofs.Compensation.Registered
 public import Kernel.Proofs.Compensation.Relation
+public import Kernel.Proofs.Compensation.Triggers
 public import Kernel.Proofs.Concurrency
 public import Kernel.Proofs.Former
 public import Kernel.Proofs.Former.Calls
@@ -171,10 +173,12 @@ public import Kernel.State.Criteria
 public import Kernel.State.Input
 public import Kernel.State.Items
 public import Kernel.State.Journal
+public import Kernel.State.Key
 public import Kernel.State.Map
 public import Kernel.State.Raise
 public import Kernel.State.Removal
 public import Kernel.State.Slots
+public import Kernel.State.Tree
 public import Kernel.State.Wait
 public import Kernel.Step
 public import Kernel.Step.Commit

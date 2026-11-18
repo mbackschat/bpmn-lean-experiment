@@ -20,6 +20,15 @@ open Kernel
 
 /-! ## Leaving a scope occurrence -/
 
+/-- Leaving a scope occurrence keeps the counters of the scope occurrences that remain, so every history grows. -/
+theorem leaveScope_grows (s : State) (scope : ScopeOccurrenceId) : ScopeGrows s (s.leaveScope scope) := by
+  have shape := (leaveScope_eq s scope).1
+  refine (clearInside_grows s scope []).trans (.shrink
+    (fun _ member => by rw [shape] at member; exact (List.filter_sublist.map _).subset member) fun _ standing _ => ?_)
+  rw [shape] at standing ⊢
+  obtain ⟨entry, inside, rfl⟩ := List.mem_map.mp standing
+  exact getD_filter_keep fun _ => (List.mem_filter.mp inside).2
+
 /-- Leaving a present scope occurrence of a well-formed state. -/
 theorem leaveScope_left {s : State} (formed : WellFormed program s) {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s) :
     Left s (s.leaveScope scope) scope := by
@@ -43,7 +52,8 @@ theorem leaveScope_left {s : State} (formed : WellFormed program s) {scope : Sco
       tokensSublist := by rw [shape]; exact cleared.tokensSublist,
       variablesSublist := by rw [shape]; exact List.filter_sublist.trans cleared.variablesSublist,
       instances := fun x member => ?_, activations := by rw [shape]; exact cleared.activations,
-      nextIssue := by rw [shape]; exact cleared.nextIssue, signals := by rw [shape]; exact cleared.signals,
+      nextIssue := by rw [shape]; exact cleared.nextIssue, scopeGrows := leaveScope_grows s scope,
+      signals := by rw [shape]; exact cleared.signals,
       status := by rw [shape]; exact cleared.status, failure := by rw [shape]; exact cleared.failure,
       journal := by rw [shape]; exact cleared.journal, started := by rw [shape]; exact cleared.started, slots := ?_ }
   rotate_right
@@ -117,7 +127,7 @@ theorem withoutRecord_wellFormed {s : State} (formed : WellFormed program s) {id
       (withoutRecord s id).itemOrdinals.getD occurrence.id 0 = s.itemOrdinals.getD occurrence.id 0 :=
     fun occurrence member => getD_erase_ne (by simpa using (List.mem_filter.mp member).2)
   refine Prunes.wellFormed formed {
-      scopes := rfl, instances := instanceOf_congr rfl rfl, occurrences := List.filter_sublist,
+      scopes := rfl, scopeOrdinals := rfl, instances := instanceOf_congr rfl rfl, occurrences := List.filter_sublist,
       items := ItemsSub.refl _, ordinals := ordinals, tokens := rfl, signals := rfl, variables := rfl,
       activations := rfl, nextIssue := rfl, journal := rfl, started := rfl, status := rfl, failure := rfl,
       slots := rfl, waited := fun item member occurrence inside link => ?_,
@@ -210,7 +220,7 @@ reservation hosts no item and owns no scope occurrence, so what stays refers onl
 theorem disarm_wellFormed {s : State} (formed : WellFormed program s) (host : Nat) : WellFormed program (s.disarm host) := by
   rw [disarm_eq]
   refine Prunes.wellFormed formed {
-      scopes := rfl, instances := instanceOf_congr rfl rfl, occurrences := List.filter_sublist,
+      scopes := rfl, scopeOrdinals := rfl, instances := instanceOf_congr rfl rfl, occurrences := List.filter_sublist,
       items := ItemsSub.filter _ _, ordinals := fun occurrence member => getD_filter_keep fun _ => ?_, tokens := rfl,
       signals := rfl, variables := rfl, activations := rfl, nextIssue := rfl, journal := rfl, started := rfl,
       status := rfl, failure := rfl, slots := rfl, waited := fun item member occurrence inside link => ?_,
@@ -256,7 +266,7 @@ theorem withdrawAll : ∀ (scopes : List ScopeOccurrence) (t : State), WellForme
     have step : WellFormed program (t.withdrawInside first.id) := by
       rw [withdrawInside_eq]
       exact formed.narrow {
-          scopes := rfl, occurrences := rfl, activations := rfl, nextIssue := rfl,
+          scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, nextIssue := rfl,
           instances := instanceOf_congr rfl rfl, recorded := id, items := .filter _, tokens := .refl _,
           signals := .refl _, starts := fun _ => id, slots := .same rfl } rfl formed.startedOnce
     obtain ⟨kept, fewer, same⟩ := withdrawAll rest _ step
@@ -269,7 +279,7 @@ theorem withdrawAll : ∀ (scopes : List ScopeOccurrence) (t : State), WellForme
 theorem draftEnds_wellFormed {s : State} (formed : WellFormed program s) (ended : List (OccurrenceKey × Terminal))
     (cancelled : List Occurrence) : WellFormed program { s with draft := { s.draft with ended, cancelled } } :=
   formed.narrow {
-      scopes := rfl, occurrences := rfl, activations := rfl, nextIssue := rfl, instances := instanceOf_congr rfl rfl,
+      scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, nextIssue := rfl, instances := instanceOf_congr rfl rfl,
       recorded := id, items := .refl _, tokens := .refl _, signals := .refl _, starts := fun _ => id,
       slots := .same rfl }
     rfl formed.startedOnce
@@ -321,41 +331,54 @@ private theorem leaveScope_shrinks (s : State) (scope : ScopeOccurrenceId) :
 
 private theorem leaveAll_shrinks : ∀ (scopes : List ScopeOccurrence) (t : State),
     (scopes.foldl (fun t entry => t.leaveScope entry.id) t).scopes.Sublist t.scopes ∧
-      (scopes.foldl (fun t entry => t.leaveScope entry.id) t).nextIssue = t.nextIssue
-  | [], _ => ⟨.refl _, rfl⟩
+      (scopes.foldl (fun t entry => t.leaveScope entry.id) t).nextIssue = t.nextIssue ∧
+      ScopeGrows t (scopes.foldl (fun t entry => t.leaveScope entry.id) t)
+  | [], _ => ⟨.refl _, rfl, .refl _⟩
   | entry :: rest, t => by
-    obtain ⟨fewer, same⟩ := leaveAll_shrinks rest (t.leaveScope entry.id)
+    obtain ⟨fewer, same, grows⟩ := leaveAll_shrinks rest (t.leaveScope entry.id)
     obtain ⟨fewer', same'⟩ := leaveScope_shrinks t entry.id
-    exact ⟨fewer.trans fewer', same.trans same'⟩
+    exact ⟨fewer.trans fewer', same.trans same', (leaveScope_grows t entry.id).trans grows⟩
 
 private theorem removeOccurrence_shrinks (s : State) (id : Nat) :
-    (s.removeOccurrence id).scopes.Sublist s.scopes ∧ (s.removeOccurrence id).nextIssue = s.nextIssue := by
+    (s.removeOccurrence id).scopes.Sublist s.scopes ∧ (s.removeOccurrence id).nextIssue = s.nextIssue ∧
+      ScopeGrows s (s.removeOccurrence id) := by
   rw [removeOccurrence_eq]
-  exact leaveAll_shrinks _ (withoutRecord s id)
+  obtain ⟨fewer, same, grows⟩ := leaveAll_shrinks _ (withoutRecord s id)
+  exact ⟨fewer, same, (ScopeGrows.of_same (t := withoutRecord s id) rfl rfl).trans grows⟩
 
 private theorem withdrawAll_shrinks : ∀ (scopes : List ScopeOccurrence) (t : State),
     (scopes.foldl (fun t entry => t.withdrawInside entry.id) t).scopes = t.scopes ∧
-      (scopes.foldl (fun t entry => t.withdrawInside entry.id) t).nextIssue = t.nextIssue
-  | [], _ => ⟨rfl, rfl⟩
+      (scopes.foldl (fun t entry => t.withdrawInside entry.id) t).nextIssue = t.nextIssue ∧
+      (scopes.foldl (fun t entry => t.withdrawInside entry.id) t).scopeOrdinals = t.scopeOrdinals
+  | [], _ => ⟨rfl, rfl, rfl⟩
   | entry :: rest, t => by
-    obtain ⟨scopes, issued⟩ := withdrawAll_shrinks rest (t.withdrawInside entry.id)
-    exact ⟨scopes.trans (by simp [withdrawInside_eq]), issued.trans (by simp [withdrawInside_eq])⟩
+    obtain ⟨scopes, issued, ordinals⟩ := withdrawAll_shrinks rest (t.withdrawInside entry.id)
+    exact ⟨scopes.trans (by simp [withdrawInside_eq]), issued.trans (by simp [withdrawInside_eq]),
+      ordinals.trans (by simp [withdrawInside_eq])⟩
 
-/-- The removal operations drop scope occurrences and issue no identity. -/
+/-- The removal operations drop scope occurrences, issue no identity and keep every scope occurrence key issued. -/
 theorem removal_shrinks (s : State) :
-    (∀ scope keep, (s.clearInside scope keep).scopes.Sublist s.scopes ∧ (s.clearInside scope keep).nextIssue = s.nextIssue) ∧
-    (∀ scope, (s.leaveScope scope).scopes.Sublist s.scopes ∧ (s.leaveScope scope).nextIssue = s.nextIssue) ∧
-    (∀ id, (s.removeOccurrence id).scopes.Sublist s.scopes ∧ (s.removeOccurrence id).nextIssue = s.nextIssue) ∧
-    ∀ id, (s.cancelOccurrence id).scopes.Sublist s.scopes ∧ (s.cancelOccurrence id).nextIssue = s.nextIssue := by
-  refine ⟨clearInside_shrinks s, leaveScope_shrinks s, removeOccurrence_shrinks s, fun id => ?_⟩
+    (∀ scope keep, (s.clearInside scope keep).scopes.Sublist s.scopes ∧
+      (s.clearInside scope keep).nextIssue = s.nextIssue ∧ ScopeGrows s (s.clearInside scope keep)) ∧
+    (∀ scope, (s.leaveScope scope).scopes.Sublist s.scopes ∧ (s.leaveScope scope).nextIssue = s.nextIssue ∧
+      ScopeGrows s (s.leaveScope scope)) ∧
+    (∀ id, (s.removeOccurrence id).scopes.Sublist s.scopes ∧ (s.removeOccurrence id).nextIssue = s.nextIssue ∧
+      ScopeGrows s (s.removeOccurrence id)) ∧
+    ∀ id, (s.cancelOccurrence id).scopes.Sublist s.scopes ∧ (s.cancelOccurrence id).nextIssue = s.nextIssue ∧
+      ScopeGrows s (s.cancelOccurrence id) := by
+  refine ⟨fun scope keep => ⟨(clearInside_shrinks s scope keep).1, (clearInside_shrinks s scope keep).2,
+      clearInside_grows s scope keep⟩,
+    fun scope => ⟨(leaveScope_shrinks s scope).1, (leaveScope_shrinks s scope).2, leaveScope_grows s scope⟩,
+    removeOccurrence_shrinks s, fun id => ?_⟩
   cases found : s.occurrence? id with
-  | none => rw [cancelOccurrence_absent found]; exact ⟨.refl _, rfl⟩
+  | none => rw [cancelOccurrence_absent found]; exact ⟨.refl _, rfl, .refl _⟩
   | some occurrence =>
     obtain ⟨_, _, cancels⟩ := cancelOccurrence_some found
-    obtain ⟨fewer, same⟩ := removeOccurrence_shrinks (s.withdrawOccurrence id) id
-    obtain ⟨scopes, issued⟩ := withdrawAll_shrinks _ ((s.closeOwnItems id).disarm id)
-    rw [← withdrawOccurrence_eq, disarm_eq, closeOwnItems_eq] at scopes issued
+    obtain ⟨fewer, same, grows⟩ := removeOccurrence_shrinks (s.withdrawOccurrence id) id
+    obtain ⟨scopes, issued, ordinals⟩ := withdrawAll_shrinks _ ((s.closeOwnItems id).disarm id)
+    rw [← withdrawOccurrence_eq, disarm_eq, closeOwnItems_eq] at scopes issued ordinals
     rw [cancels]
-    exact ⟨fewer.trans (scopes ▸ .refl _), same.trans issued⟩
+    exact ⟨fewer.trans (scopes ▸ .refl _), same.trans issued,
+      (ScopeGrows.of_same (congrArg (List.map ScopeOccurrence.id) scopes) ordinals).trans grows⟩
 
 end Kernel.Laws.State

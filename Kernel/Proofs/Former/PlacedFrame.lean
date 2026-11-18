@@ -43,10 +43,10 @@ theorem occurAt_placed (lane : PlacedLane program s) {element : ElementId} {x : 
 less. -/
 theorem OccurPlaced.same {t : State} {element : ElementId} {x : ScopeOccurrenceId} {leave : Leave}
     (placed : OccurPlaced program s element x leave) (scopes : t.scopes = s.scopes)
-    (instances : t.slots.instances = s.slots.instances) (issue : s.nextIssue ≤ t.nextIssue) :
+    (instances : t.slots.instances = s.slots.instances) (ordinals : t.scopeOrdinals = s.scopeOrdinals) :
     OccurPlaced program t element x leave :=
   ⟨⟨fun stands => (placed.1.1 (scopeIds_congr scopes ▸ stands)).same scopes fun _ inside => instances ▸ inside,
-    placed.1.2⟩, Nat.lt_of_lt_of_le placed.2 issue⟩
+    placed.1.2⟩, (Laws.State.ScopeGrows.of_same (scopeIds_congr scopes) ordinals).issued placed.2⟩
 
 /-- A placed begin stays placed in a state with the same scope occurrences, instance entries and occurrences. -/
 theorem BeginPlaced.same {t : State} {request : BeginRequest} (placed : BeginPlaced program s request)
@@ -58,7 +58,7 @@ theorem BeginPlaced.same {t : State} {request : BeginRequest} (placed : BeginPla
 /-- A change of the variable sets alone keeps the lane. -/
 theorem PlacedLane.sameBut {t : State} (lane : PlacedLane program s) (same : Laws.State.SameButVariables s t) :
     PlacedLane program t :=
-  lane.queue same.scopes (by rw [same.slots]) (Nat.le_of_eq same.nextIssue.symm) (fun _ member => same.occurrences ▸ member)
+  lane.queue same.scopes (by rw [same.slots]) same.scopeOrdinals (fun _ member => same.occurrences ▸ member)
     same.tokens same.slots fun _ member => .inl (same.signals ▸ member)
 
 /-- Flow tokens queued where a continuation says keep the lane (`Laws.Flow.LeavesFrom`). -/
@@ -67,7 +67,7 @@ theorem PlacedLane.emitted (refs : ReferencesPlaced program) (formed : WellForme
     (leaves : Laws.Flow.LeavesFrom (fun held => WellFormed program held ∧ Placing program held) program s occurrence
       (.flows flows)) : PlacedLane program (s.emit flows occurrence.scope) := by
   rw [Laws.State.emit_eq]
-  refine lane.within formed rfl rfl (Nat.le_refl _) (fun _ member => .inl member) listKept
+  refine lane.within formed rfl rfl rfl (fun _ member => .inl member) listKept
     (listExtended fun token member => ⟨fun flow scope same target ends => ?_, fun _ same => ?_⟩) listKept listKept
     listKept listKept
   · obtain ⟨named, inside, rfl⟩ := List.mem_map.mp member
@@ -83,7 +83,7 @@ theorem PlacedLane.parkedAt (formed : WellFormed program s) (lane : PlacedLane p
     PlacedLane program { s with slots := { s.slots with parked := s.slots.parked ++ [waiting] } } := by
   obtain ⟨occurrence, member, rest⟩ := found
   obtain ⟨named, -, lies, arrived⟩ := rest
-  refine lane.within formed rfl rfl (Nat.le_refl _) (fun _ member => .inl member) listKept listKept listKept listKept
+  refine lane.within formed rfl rfl rfl (fun _ member => .inl member) listKept listKept listKept listKept
     listKept (listExtended fun x new o inside same => ?_)
   obtain rfl := List.mem_singleton.mp new
   obtain rfl := Laws.State.nodup_map_eq formed.distinct.occurrences inside member (same.trans named.symm)
@@ -109,7 +109,7 @@ theorem PlacedLane.reserved (formed : WellFormed program s) (lane : PlacedLane p
     PlacedLane program (s.reserve element scope).1 := by
   have reserves := Laws.State.reserve_reserves s element scope
   have instances : (s.reserve element scope).1.slots.instances = s.slots.instances := by rw [reserves.slots]
-  refine lane.within formed reserves.scopes instances (by rw [reserves.nextIssue]; exact Nat.le_succ _)
+  refine lane.within formed reserves.scopes instances reserves.scopeOrdinals
     (fun o member => ?_) (fun _ member => .inl (reserves.signals ▸ member)) (fun _ member => .inl (reserves.tokens ▸ member))
     (fun _ member => .inl (reserves.slots ▸ member)) (fun _ member => .inl (reserves.slots ▸ member))
     (fun _ member => .inl (reserves.slots ▸ member)) (fun _ member => .inl (reserves.slots ▸ member))
@@ -147,7 +147,7 @@ theorem PlacedLane.left (formed : WellFormed program s) (lane : PlacedLane progr
   obtain ⟨draft, cleared⟩ := Laws.State.clearInside_eq s scope []
   refine lane.shrink formed scope (Within s · scope) (fun _ _ _ within out => within.trans out)
     (fun _ within => within.1) left.scopesSublist left.scopes (instances ▸ entries.1)
-    (fun entry member free => instances ▸ entries.2 entry member free) left.nextIssue
+    (fun entry member free => instances ▸ entries.2 entry member free) (Laws.State.leaveScope_grows s scope)
     (fun o member => (left.occurrences o).mp member) (fun token member => (left.tokens token).mp member)
     (fun _ member => left.signals ▸ member) left.slots.runs (fun record member => ?_) left.slots.bodies
     left.slots.parked
@@ -165,7 +165,8 @@ theorem PlacedLane.cleared (formed : WellFormed program s) (lane : PlacedLane pr
   obtain ⟨draft, shape⟩ := Laws.State.clearInside_eq s scope keep
   refine lane.shrink formed scope (StrictlyWithin s · scope) (fun _ _ stands within ⟨up, other⟩ =>
       ⟨within.trans up, fun same => other (Laws.State.Within.antisymm formed stands up (same ▸ within))⟩)
-    (fun _ within => within) cleared.scopesSublist cleared.scopes entries.1 entries.2 cleared.nextIssue
+    (fun _ within => within) cleared.scopesSublist cleared.scopes entries.1 entries.2
+    (Laws.State.clearInside_grows s scope keep)
     (fun o member => ?_) (fun token member => ?_) (fun _ member => cleared.signals ▸ member) cleared.slots.runs
     (fun record member => ?_) cleared.slots.bodies cleared.slots.parked
   · obtain ⟨old, how⟩ := (cleared.occurrences o).mp member
@@ -178,10 +179,12 @@ theorem PlacedLane.cleared (formed : WellFormed program s) (lane : PlacedLane pr
 /-- Entering a scope occurrence of an element anchored where it is entered keeps the lane (`Laws.Flow.Anchored`). -/
 theorem PlacedLane.entered (refs : ReferencesPlaced program) (formed : WellFormed program s) (lane : PlacedLane program s)
     {element : ElementId} {parent : ScopeOccurrenceId} {locals : List (String × Value)} {owner : Option Nat}
+    (stands : parent ∈ scopeIds s)
     (anchored : Laws.Flow.Anchored (fun t => WellFormed program t ∧ Placing program t) program s element parent) :
     PlacedLane program (s.enterScope element parent locals owner).1 := by
-  rw [Laws.State.enterScope_eq]
-  exact lane.grown formed (added := none) rfl rfl rfl (List.append_nil _).symm (fun _ same => by cases same)
+  have fresh := Laws.State.enterScope_fresh formed.historic element stands locals owner
+  rw [Laws.State.enterScope_eq] at fresh ⊢
+  exact lane.grown formed (added := none) rfl fresh (List.append_nil _).symm (fun _ same => by cases same)
     (fun called => by cases called)
     (fun _ link => Option.some.inj link ▸ anchored_issued refs formed lane anchored)
     (fun _ _ named link stands => by
@@ -204,8 +207,11 @@ theorem PlacedLane.calledEntered (formed : WellFormed program s) (lane : PlacedL
       show element.scope?.isNone = true
       rw [Laws.Step.activity?_scope? activity]
       rfl
-  rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]
-  exact lane.grown formed (added := some { root := ⟨s.nextIssue⟩, definition := some definition }) rfl rfl rfl rfl
+  have fresh := Laws.State.enterCalled_fresh formed program (formed.owned.occurrenceScopes call member) variables definition
+  rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)] at fresh ⊢
+  exact lane.grown formed
+    (added := some { root := call.scope.child call.element (Laws.State.slotCount s call.scope call.element)
+                     definition := some definition }) rfl fresh rfl
     (fun _ same => by cases same; exact ⟨rfl, rfl⟩) (fun _ => rfl)
     (fun _ link => Option.some.inj link ▸ present_issued formed (formed.owned.occurrenceScopes call member))
     (fun _ _ named link _ => by cases named; cases link; exact occurrence_placed lane member)
@@ -220,7 +226,7 @@ theorem PlacedLane.deferred (refs : ReferencesPlaced program) (formed : WellForm
       Laws.Flow.BeginAnchored (fun t => WellFormed program t ∧ Placing program t) program s request) :
     PlacedLane program (s.deferBegins requests) := by
   rw [Laws.State.deferBegins_eq]
-  refine lane.within formed rfl rfl (Nat.le_refl _) (fun _ member => .inl member) listKept
+  refine lane.within formed rfl rfl rfl (fun _ member => .inl member) listKept
     (listExtended fun token member => ⟨fun _ _ same => ?_, fun request same stands => ?_⟩) listKept listKept
     listKept listKept
   · obtain ⟨_, _, rfl⟩ := List.mem_map.mp (List.mem_reverse.mp member)
@@ -235,7 +241,7 @@ theorem PlacedLane.bodied (refs : ReferencesPlaced program) (formed : WellFormed
     (anchored : ∀ run ∈ runs,
       Laws.Flow.Anchored (fun t => WellFormed program t ∧ Placing program t) program s run.element run.scope) :
     PlacedLane program { s with slots := { s.slots with multiInstances := runs } } :=
-  lane.within formed rfl rfl (Nat.le_refl _) (fun _ member => .inl member) listKept listKept listKept listKept
+  lane.within formed rfl rfl rfl (fun _ member => .inl member) listKept listKept listKept listKept
     (fun run member => .inr ⟨fun stands => (anchored_placed refs formed lane ((anchored run member).mono
       (placing_held refs)) stands).same rfl fun _ inside => inside, anchored_issued refs formed lane (anchored run member)⟩)
     listKept
@@ -251,21 +257,21 @@ theorem PlacedLane.stored (refs : ReferencesPlaced program) (formed : WellFormed
     fun placed => placed.same rfl fun _ inside => inside
   have record : ∀ {record x}, Laws.Compensation.RecordFrom program s record x →
       (x ∈ scopeIds s → ∀ element ∈ Laws.Compensation.recordElements record,
-        PlacedIn program { s with slots := { s.slots with compensation } } element x) ∧ x.value < s.nextIssue :=
+        PlacedIn program { s with slots := { s.slots with compensation } } element x) ∧ Laws.State.ScopeIssued s x :=
     fun from_ => ⟨fun stands element inside => move (recordFrom_placed refs formed lane from_ stands element inside),
       recordFrom_issued formed lane from_⟩
-  refine lane.within formed rfl rfl (Nat.le_refl _) (fun _ member => .inl member) listKept listKept
+  refine lane.within formed rfl rfl rfl (fun _ member => .inl member) listKept listKept
     (fun run member => .inr ?_) (fun record' member => .inr (record (stored.1 record' member))) listKept listKept
   obtain ⟨pending, resumes⟩ := stored.2 run member
   refine ⟨fun stands record' inside => (record (pending record' inside)).1 stands,
     ⟨fun _ _ _ resumed => ?_, fun _ _ resumed => ?_⟩, fun nonempty => ?_⟩
   · rcases resumes _ resumed with ⟨held, kept, same⟩ | ⟨_, _, same⟩ | ⟨queue, holds, issued, rest⟩
-    · exact (occurAt_placed lane (.inr (.inr ⟨held, kept, same⟩))).same rfl rfl (Nat.le_refl _)
+    · exact (occurAt_placed lane (.inr (.inr ⟨held, kept, same⟩))).same rfl rfl rfl
     · exact Resume.noConfusion same
     · obtain ⟨queued, scopes, instances⟩ := rest
       obtain ⟨⟨there, listed⟩, below⟩ := occurAt_placed (holds.2 refs) (.inr (.inl queued))
       exact ⟨⟨fun stands => move ((there (scopeIds_congr scopes.symm ▸ stands)).same scopes.symm
-        fun _ inside => instances ▸ inside), listed⟩, Nat.lt_of_lt_of_le below issued⟩
+        fun _ inside => instances ▸ inside), listed⟩, issued.issued below⟩
   · rcases resumes _ resumed with ⟨held, kept, same⟩ | ⟨_, _, same⟩ | ⟨queue, holds, -, rest⟩
     · exact lane.resumes held kept _ _ same
     · exact Resume.noConfusion same
@@ -351,9 +357,7 @@ theorem PlacedLane.begun (refs : ReferencesPlaced program) (formed : WellFormed 
     (fun _ member => .inl (begins.signals ▸ member)) (fun _ member => .inl (begins.tokens ▸ member))
     (fun _ member => .inl (begins.slots ▸ member)) (fun _ member => .inl (begins.slots ▸ member))
     (fun _ member => .inl (begins.slots ▸ member)) (fun _ member => .inl (begins.slots ▸ member))
-  · rcases begins.source with ⟨_, reservation⟩ | issued
-    · exact Nat.le_of_eq reservation.nextIssue.symm
-    · rw [issued.nextIssue]; exact Nat.le_succ _
+  · exact begins.scopeOrdinals
   · rw [begins.occurrences] at member
     rcases List.mem_append.mp member with old | new
     · exact .inl (List.mem_filter.mp old).1
@@ -370,7 +374,7 @@ theorem PlacedLane.started (formed : WellFormed program s) (lane : PlacedLane pr
     have starts := Laws.State.startReserved_starts s sourceType begun
     have instances : (s.startReserved occurrence sourceType).1.slots.instances = s.slots.instances := by
       rw [starts.slots]
-    refine lane.within formed starts.scopes instances (Nat.le_of_eq starts.nextIssue.symm) (fun o inside => ?_)
+    refine lane.within formed starts.scopes instances starts.scopeOrdinals (fun o inside => ?_)
       (fun _ member => .inl (starts.signals ▸ member)) (fun _ member => .inl (starts.tokens ▸ member))
       (fun _ member => .inl (starts.slots ▸ member)) (fun _ member => .inl (starts.slots ▸ member))
       (fun _ member => .inl (starts.slots ▸ member)) (fun _ member => .inl (starts.slots ▸ member))
@@ -408,14 +412,14 @@ theorem placedAlongside (program : Program) : Alongside program (Placing program
   signalBegin _ _ formed _ anchored held refs :=
     (held refs).signalled (.ofBegin (beginAnchored_placed refs formed (held refs) anchored))
   issue _ held refs := (held refs).issue
-  enterScope _ _ _ _ _ formed anchored held refs := (held refs).entered refs formed anchored
+  enterScope _ _ _ _ _ formed stands anchored held refs := (held refs).entered refs formed stands anchored
   reserve _ _ _ formed stands _ popped held refs :=
     (held refs).reserved formed (stands_present stands) (popped_placed refs popped (stands_present stands))
   leaveScope _ _ formed present _ held refs := (held refs).left formed present
   clearInside _ _ _ formed present kept held refs := (held refs).cleared formed present kept
   disarm _ _ _ held refs := by
     rw [Laws.State.disarm_eq]
-    exact (held refs).queue rfl rfl (Nat.le_refl _) (fun _ member => (List.mem_filter.mp member).1) rfl rfl listKept
+    exact (held refs).queue rfl rfl rfl (fun _ member => (List.mem_filter.mp member).1) rfl rfl listKept
   setVariable s target name value _ held refs := (held refs).sameBut (Laws.State.setVariable_same s target name value)
   removeVariable s target name _ held refs := (held refs).sameBut (Laws.State.removeVariable_same s target name)
   instanceBegin _ _ formed anchored held refs :=
@@ -467,16 +471,16 @@ theorem placedOccursAlongside (program : Program) : OccursAlongside program (Pla
 `Proofs.Frame.FrameAlongside.cancelOccurrence`. -/
 theorem placedStepAlongside (program : Program) : StepAlongside program (Placing program) where
   toFrameAlongside := (placedAlongside program).toFrameAlongside
-  journal _ _ _ held _ _ refs := (held refs).queue rfl rfl (Nat.le_refl _) (fun _ member => member) rfl rfl listKept
-  dequeue _ _ _ fewer held refs := (held refs).queue rfl rfl (Nat.le_refl _) (fun _ member => member) rfl rfl
+  journal _ _ _ held _ _ refs := (held refs).queue rfl rfl rfl (fun _ member => member) rfl rfl listKept
+  dequeue _ _ _ fewer held refs := (held refs).queue rfl rfl rfl (fun _ member => member) rfl rfl
     fun _ member => .inl (fewer.subset member)
-  untoken _ _ formed fewer held refs := (held refs).within formed rfl rfl (Nat.le_refl _) (fun _ member => .inl member)
+  untoken _ _ formed fewer held refs := (held refs).within formed rfl rfl rfl (fun _ member => .inl member)
     listKept (fun _ member => .inl (fewer.subset member)) listKept listKept listKept listKept
   begin _ _ _ _ formed stands admitted _ origin held refs := (held refs).begun refs formed stands admitted origin
   cancel _ _ formed held := (placedAlongside program).toFrameAlongside.cancelOccurrence
     (fun _ id _ kept refs => (kept refs).withoutRecord id)
-    (fun _ _ _ kept refs => (kept refs).queue rfl rfl (Nat.le_refl _) (fun _ member => member) rfl rfl listKept) formed held
-  runOrder _ _ held refs := (held refs).queue rfl rfl (Nat.le_refl _) (fun _ member => member) rfl rfl listKept
+    (fun _ _ _ kept refs => (kept refs).queue rfl rfl rfl (fun _ member => member) rfl rfl listKept) formed held
+  runOrder _ _ held refs := (held refs).queue rfl rfl rfl (fun _ member => member) rfl rfl listKept
 
 /-! ## The lane beside `WellFormed` -/
 
@@ -487,7 +491,7 @@ def PlacedForm (program : Program) (s : State) : Prop :=
 /-- An input starts from an empty journal, outbox, draft and write log (`Step.onRunning`), which keeps `PlacedForm`. -/
 theorem placed_reset {program : Program} {s : State} (holds : PlacedForm program s) :
     PlacedForm program { s with journal := [], outbox := [], draft := {}, writes := [] } :=
-  ⟨Laws.State.reset_wellFormed holds.1, fun refs => (holds.2 refs).queue rfl rfl (Nat.le_refl _) (fun _ member => member)
+  ⟨Laws.State.reset_wellFormed holds.1, fun refs => (holds.2 refs).queue rfl rfl rfl (fun _ member => member)
     rfl rfl listKept⟩
 
 /-- The completion pipeline's own phases keep the placement lane where they keep `WellFormed`. -/
@@ -495,7 +499,7 @@ theorem placed_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellFormed) :
   startReserved _ _ occurrence sourceType holds member unnamed :=
     ⟨pipeline.startReserved _ _ occurrence sourceType holds.1 member unnamed, fun refs => by
       rw [Laws.State.closeOwnItems_eq]
-      exact ((holds.2 refs).started holds.1 member sourceType).queue rfl rfl (Nat.le_refl _) (fun _ inside => inside)
+      exact ((holds.2 refs).started holds.1 member sourceType).queue rfl rfl rfl (fun _ inside => inside)
         rfl rfl listKept⟩
   removeOccurrence program _ occurrence holds member free :=
     have removed := pipeline.removeOccurrence _ _ occurrence holds.1 member free
@@ -504,7 +508,7 @@ theorem placed_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellFormed) :
   recordEnd _ _ key terminal holds :=
     ⟨pipeline.recordEnd _ _ key terminal holds.1, fun refs => by
       rw [Laws.State.recordEnd_eq]
-      exact (holds.2 refs).queue rfl rfl (Nat.le_refl _) (fun _ inside => inside) rfl rfl listKept⟩
+      exact (holds.2 refs).queue rfl rfl rfl (fun _ inside => inside) rfl rfl listKept⟩
 
 /-- A start's fresh instance holds the placement lane: it holds the process root alone, rooted at an entry of the root
 process, and queues only the root's arming. -/
@@ -516,6 +520,7 @@ theorem placedLane_initial (program : Program) (instanceId : String) (variables 
     refine ⟨⟨⟨⟨_, List.mem_singleton_self _, rfl⟩, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
       ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
       simp [OccurAt, CalledApart, Laws.State.Queued, Laws.Step.mem_resumesOf, Laws.State.root_eq]
+    exact Laws.State.Historic.issued_key (Laws.State.historic_of_standing (by simp) (by simp)) (by simp)
   exact lane.signalled ⟨fun _ same => Signal.noConfusion same, fun _ _ _ _ _ same => Signal.noConfusion same,
     fun _ _ _ _ _ same => Signal.noConfusion same, fun _ _ _ same => Signal.noConfusion same,
     fun _ _ _ same => Signal.noConfusion same, fun _ _ _ _ same => Signal.noConfusion same,

@@ -72,14 +72,15 @@ def ResumesPending (rel : State → Prop) (s : State) (compensation : Compensati
   ∀ run ∈ compensation.runs, ∀ element at_ leave, run.resume = some (.occur element at_ leave) →
     OccurPending s element ∨ PendingIn rel element
 
-/-- `t` agrees with `s` on everything a property carried beside `WellFormed` may read: the scope occurrences, the
-occurrences, the issue and activation counters, the journal, the draft, the instance identity, the Multi-Instance runs,
+/-- `t` agrees with `s` on everything a property carried beside `WellFormed` may read: the scope occurrences and their
+counters, the occurrences, the issue and activation counters, the journal, the draft, the instance identity, the Multi-Instance runs,
 the compensation slot, the instance entries, the queued begins in queue order (`Laws.Step.beginsOf`,
 `Laws.Step.deferredOf`), the queued triggers (`Laws.Step.triggersOf`) and the queued compensations' resumes
 (`Laws.Step.resumesOf`), and `t` has no reservation pending (`Laws.Step.OccurPending`), flow token
 (`Laws.Step.flowsOf`), join wait or queued signal that places work (`Laws.Step.placing`) that `s` lacks. -/
 structure Unmoved (s t : State) : Prop where
   scopes : t.scopes = s.scopes
+  scopeOrdinals : t.scopeOrdinals = s.scopeOrdinals
   occurrences : t.occurrences = s.occurrences
   nextIssue : t.nextIssue = s.nextIssue
   activations : t.activations = s.activations
@@ -101,6 +102,7 @@ structure Unmoved (s t : State) : Prop where
 /-- `Unmoved` stating only the fields a change moves: every other field holds by definition, so a field added to
 `Unmoved` is one edit here. -/
 theorem Unmoved.same {s t : State} (scopes : t.scopes = s.scopes := by exact rfl)
+    (scopeOrdinals : t.scopeOrdinals = s.scopeOrdinals := by exact rfl)
     (occurrences : t.occurrences = s.occurrences := by exact rfl) (nextIssue : t.nextIssue = s.nextIssue := by exact rfl)
     (activations : t.activations = s.activations := by exact rfl) (journal : t.journal = s.journal := by exact rfl)
     (draft : t.draft = s.draft := by exact rfl) (instanceId : t.instanceId = s.instanceId := by exact rfl)
@@ -116,7 +118,7 @@ theorem Unmoved.same {s t : State} (scopes : t.scopes = s.scopes := by exact rfl
     (parked : ∀ waiting ∈ t.slots.parked, waiting ∈ s.slots.parked := by exact fun _ held => held)
     (placings : ∀ signal ∈ t.signals, Laws.Step.placing signal = true → signal ∈ s.signals :=
       by exact fun _ held _ => held) : Unmoved s t :=
-  ⟨scopes, occurrences, nextIssue, activations, journal, draft, instanceId, multiInstances, compensation, begins,
+  ⟨scopes, scopeOrdinals, occurrences, nextIssue, activations, journal, draft, instanceId, multiInstances, compensation, begins,
     triggers, resumes, deferred, pending, instances, flows, parked, placings⟩
 
 /-- `scope` is the context of a handler or group a compensation run of `s` holds running. -/
@@ -240,8 +242,9 @@ structure FrameAlongside (program : Program) (rel : State → Prop) (srel : Stat
     Laws.Flow.BeginAnchored (fun t => WellFormed program t ∧ rel t) program s request → rel s →
     rel (s.signal (.begin request))
   issue : ∀ s, rel s → rel s.issue.1
-  /-- Entering a scope occurrence of an element anchored where it is entered (`Laws.Flow.Anchored`). -/
-  enterScope : ∀ s element parent locals owner, WellFormed program s →
+  /-- Entering, below a scope occurrence that stands, a scope occurrence of an element anchored where it is entered
+  (`Laws.Flow.Anchored`). -/
+  enterScope : ∀ s element parent locals owner, WellFormed program s → parent ∈ Laws.State.scopeIds s →
     Laws.Flow.Anchored (fun t => WellFormed program t ∧ rel t) program s element parent → rel s →
     rel (s.enterScope element parent locals owner).1
   /-- The reservation a `Signal.occur` taken off a queue that kept `rel` asks for (`Laws.State.Popped`). -/

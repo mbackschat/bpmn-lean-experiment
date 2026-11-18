@@ -695,10 +695,10 @@ theorem Numbered.unmoved {program : Program} {s t : State} (held : Numbered prog
   held.shrink ⟨runs ▸ .refl _, fun _ inside => occurrences ▸ inside, fun _ inside => .inl (scopes ▸ inside),
     fun _ _ outside => absurd (runs ▸ ‹_›) outside, begins ▸ .refl _, deferred ▸ .refl _, pending⟩
 
-/-- Entering a scope occurrence under the identity counter keeps `Numbered`: no active instance and no queued begin
-names the fresh identity, each issued below the counter. -/
+/-- Entering a scope occurrence at a key not issued keeps `Numbered`: no active instance and no queued begin names the
+fresh key, each issued. -/
 theorem Numbered.enter {program other : Program} {s t : State} (formed : WellFormed other s) (owns : SlotsOwned s)
-    (held : Numbered program s) (scopes : ∀ entry ∈ t.scopes, entry ∈ s.scopes ∨ entry.id = ⟨s.nextIssue⟩)
+    (held : Numbered program s) (scopes : ∀ entry ∈ t.scopes, entry ∈ s.scopes ∨ ¬ Laws.State.ScopeIssued s entry.id)
     (occurrences : t.occurrences = s.occurrences) (runs : t.slots.multiInstances = s.slots.multiInstances)
     (signals : t.signals = s.signals) (tokens : t.tokens = s.tokens)
     (compensation : t.slots.compensation.runs = s.slots.compensation.runs) : Numbered program t := by
@@ -709,31 +709,31 @@ theorem Numbered.enter {program other : Program} {s t : State} (formed : WellFor
   · obtain ⟨index, slot⟩ := List.mem_iff_getElem?.mp active
     obtain ⟨placed, placedIn, placedNamed, _⟩ := (owns.owned run member).instanceScopes index entry.id slot
     have below := formed.issued.scopes placed placedIn
-    rw [placedNamed, fresh] at below
-    exact Nat.lt_irrefl _ below
+    rw [placedNamed] at below
+    exact fresh below
   · have below := formed.claimed.scopesIssued request inQueue
-    rw [named, fresh] at below
-    exact Nat.lt_irrefl _ below
+    rw [named] at below
+    exact fresh below
 
 /-- Entering a scope occurrence keeps `Numbered`. -/
 theorem Numbered.enterScope {program other : Program} {s : State} (formed : WellFormed other s) (owns : SlotsOwned s)
     (element : ElementId) (parent : ScopeOccurrenceId) (locals : List (String × Value)) (owner : Option Nat)
-    (held : Numbered program s) : Numbered program (s.enterScope element parent locals owner).1 := by
-  rw [Laws.State.enterScope_eq]
+    (stands : parent ∈ Laws.State.scopeIds s) (held : Numbered program s) :
+    Numbered program (s.enterScope element parent locals owner).1 := by
+  have fresh := (Laws.State.enterScope_fresh formed.historic element stands locals owner).1
+  rw [Laws.State.enterScope_eq] at fresh ⊢
   exact held.enter formed owns (fun entry inside => (List.mem_append.mp inside).imp_right fun new => by
-    rw [List.mem_singleton.mp new]) rfl rfl rfl rfl rfl
+    rw [List.mem_singleton.mp new]; exact fresh) rfl rfl rfl rfl rfl
 
 /-- Entering a Call's called root keeps `Numbered`. -/
 theorem Numbered.enterCalled {program other : Program} {s : State} (formed : WellFormed other s) (owns : SlotsOwned s)
     (called : Program) (call : Occurrence) (variables : List (String × Value)) (definition : DefinitionRef)
-    (held : Numbered program s) : Numbered program (s.enterCalled called call variables definition).1 := by
-  have fresh : ∀ entry ∈ s.scopes, entry.id ≠ ⟨s.nextIssue⟩ := fun entry inside same => by
-    have below := formed.issued.scopes entry inside
-    rw [same] at below
-    exact Nat.lt_irrefl _ below
-  rw [Laws.State.enterCalled_eq _ _ _ _ _ fresh]
+    (stands : call.scope ∈ Laws.State.scopeIds s) (held : Numbered program s) :
+    Numbered program (s.enterCalled called call variables definition).1 := by
+  have fresh := (Laws.State.enterCalled_fresh formed called stands variables definition).1
+  rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)] at fresh ⊢
   exact held.enter formed owns (fun entry inside => (List.mem_append.mp inside).imp_right fun new => by
-    rw [List.mem_singleton.mp new]) rfl rfl rfl rfl rfl
+    rw [List.mem_singleton.mp new]; exact fresh) rfl rfl rfl rfl rfl
 
 /-- A pair in order in a list with `last` appended was in order before, or ends at `last`. -/
 theorem precedes_append {α : Type} {l : List α} {last first second : α}

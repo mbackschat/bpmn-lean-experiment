@@ -47,6 +47,7 @@ import {
   type Program,
 } from "../il/types.js";
 import {
+  scopeOccurrenceParent,
   FailureTag,
   LeaveTag,
   SignalTag,
@@ -316,7 +317,7 @@ function positions(ctx: Ctx, state: State, gateway: ElementId, scope: ScopeOccur
   };
   const queued = state.tokens.filter((token) => token.scope === scope).flatMap((token) => tokenArrivalFlow(token) ?? []);
   const items = state.openItems.filter((item) => item.scope === scope && !item.passive).flatMap((item) => continuing(item.element));
-  const children = state.scopes.filter((child) => child.parent === scope)
+  const children = state.scopes.filter((child) => scopeOccurrenceParent(child) === scope)
     .flatMap((child) => (child.element === null ? [] : continuing(child.element)));
   const parked = state.slots.parked
     .filter((waiting) => waiting.scope === scope && programTarget(program, waiting.flow) !== gateway)

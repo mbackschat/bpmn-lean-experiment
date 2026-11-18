@@ -13,7 +13,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
+import { decodeProgram, rootScope, step, stimulusFromJson } from "./lean-paired.ts";
 import type { Outcome, State } from "@bpmn-lean/kernel";
 
 import { activity, base, catchEvent, mapping, message, replace, serviceWork, start, task, userWork, variable, withOptions, wired } from "./admission-refusal-support.ts";
@@ -119,7 +119,7 @@ test("a completion with one value over a bound is rejected whole, and the task t
   assert.ok(committed(started!));
   assert.deepEqual(overflow, outside);
   assert.ok(completed !== undefined && completed.ok);
-  assert.deepEqual(completed.value.variables.find((entry) => entry.scope === 0)?.entries.map(([name]) => name).sort(), ["accepted", "payload"]);
+  assert.deepEqual(completed.value.variables.find((entry) => entry.scope === rootScope)?.entries.map(([name]) => name).sort(), ["accepted", "payload"]);
 });
 
 test("a variable update and an effect result outside the domain are rejected", () => {

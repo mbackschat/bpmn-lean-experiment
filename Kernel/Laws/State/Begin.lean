@@ -141,7 +141,8 @@ theorem startReserved_closeOwnItems_wellFormed {state : State} (formed : WellFor
           state.instanceOf x := by apply instanceOf_congr <;> rfl
       rw [after, before, starts_.instances x]
     refine StartsReserved.wellFormed (sourceType := sourceType) closed {
-        occurrences := starts_.occurrences, started := ?_, scopes := starts_.scopes, instances := instances,
+        occurrences := starts_.occurrences, started := ?_, scopes := starts_.scopes,
+        scopeOrdinals := starts_.scopeOrdinals, instances := instances,
         instanceId := starts_.instanceId, activations := starts_.activations, nextIssue := starts_.nextIssue,
         itemMap := ⟨by simp [starts_.itemMap.1], starts_.itemMap.2⟩, tokens := starts_.tokens,
         signals := starts_.signals, variables := starts_.variables, journal := starts_.journal, ended := starts_.ended,

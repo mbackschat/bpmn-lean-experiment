@@ -71,13 +71,13 @@ theorem setRun_framed {program : Program} {s : State} {next : MultiInstanceRun} 
   · exact move (others run held differs)
   · exact move fresh
 
-/-- No scope occurrence of a well-formed state carries an identity at or above its counter. -/
+/-- No scope occurrence of a well-formed state carries a key it has not issued. -/
 theorem issued_fresh {program : Program} {s : State} (formed : WellFormed program s) {scope : ScopeOccurrenceId}
-    (fresh : s.nextIssue ≤ scope.value) : scope ∉ scopeIds s := fun inside => by
+    (fresh : ¬ Laws.State.ScopeIssued s scope) : scope ∉ scopeIds s := fun inside => by
   obtain ⟨entry, member, named⟩ := List.mem_map.mp inside
   have below := formed.issued.scopes entry member
   rw [named] at below
-  omega
+  exact fresh below
 
 /-- Entering and queuing a body's instances keeps the invariant: they add only fresh scope occurrences and keep every
 occurrence, scope occurrence and slot. -/
