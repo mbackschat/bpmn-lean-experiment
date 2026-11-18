@@ -347,6 +347,25 @@ theorem enterCalled_wellFormed {s : State} (formed : WellFormed program s) (call
       instanceId := rfl, slots := ⟨fun _ inside => inside, fun _ inside => inside, fun _ inside => inside⟩ } stands
     rfl fun id named => ⟨call, member, Option.some.inj named, begun, rfl⟩
 
+/-- A begun Call that enters its Activity's locals and then its called root, both below its own scope occurrence for its
+own element, gives them distinct keys: the two draw on the one counter of that parent and element, so the root's key
+was never issued while the locals' stands. The state stays well-formed, its standing keys apart (`Unique.scopes`). -/
+theorem localsCalled_apart {s : State} (formed : WellFormed program s) (called : Program) {call : Occurrence}
+    (member : call ∈ s.occurrences) (begun : call.begun = true) (locals variables : List (String × Value))
+    (definition : DefinitionRef) :
+    ((s.enterScope call.element call.scope locals (some call.id)).1.enterCalled called call variables definition).2 ≠
+        (s.enterScope call.element call.scope locals (some call.id)).2 ∧
+      WellFormed program
+        ((s.enterScope call.element call.scope locals (some call.id)).1.enterCalled called call variables definition).1 := by
+  have first := enterScope_wellFormed formed call.element (formed.owned.occurrenceScopes call member) locals
+    (owner := some call.id) fun id named => ⟨call, member, Option.some.inj named, begun, rfl⟩
+  have kept : call ∈ (s.enterScope call.element call.scope locals (some call.id)).1.occurrences := by
+    rw [enterScope_eq]; exact member
+  refine ⟨fun same => ?_, enterCalled_wellFormed first called kept begun variables definition⟩
+  apply (enterCalled_fresh first called (first.owned.occurrenceScopes call kept) variables definition).1
+  rw [same]
+  exact first.historic.issued_key (by rw [enterScope_eq]; simp [standingKeys])
+
 /-! ## Bare begins -/
 
 /-- What has settled stays settled through a change that issues nothing back, keeps the occurrences and queues only
