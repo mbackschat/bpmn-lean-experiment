@@ -265,7 +265,9 @@ def conditionHolds (ctx : Ctx) (input : StartInput) (trigger : ConditionTrigger)
 consumes its trigger itself. -/
 def fires (ctx : Ctx) (input : StartInput) (subscription : Option Subscription) : Except Failure Bool :=
   match input.trigger, (subscription.map (·.trigger) : Option Trigger) with
-  | .none, _ => .ok true
+  | .none, none | .none, some (.timer _) | .none, some (.message _) | .none, some (.signal _)
+  | .none, some (.condition _) | .none, some (.error _) | .none, some (.escalation _) | .none, some .compensation
+  | .none, some .cancel => .ok true
   | _, none => .ok false
   | .timer _, some (.timer _) => .ok true
   | .message channel _, some (.message subscribed) => .ok (subscribed.channel == channel)

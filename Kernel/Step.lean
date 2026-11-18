@@ -226,9 +226,13 @@ def dispatchSignal (hooks : Hooks) (ctx : Ctx) (signal : Signal) (state : State)
 it (`SignalWork.perform`). -/
 def absorb (hooks : Hooks) (ctx : Ctx) (before : Nat) (state : State) : Outcome :=
   match state.signals.drop before with
-  | [.complete occurrence leave writes rule] =>
-    (signalWork hooks ctx (.complete occurrence leave writes rule)).perform
-      { state with signals := state.signals.take before }
+  | [sole] =>
+    match sole with
+    | .complete occurrence leave writes rule =>
+      (signalWork hooks ctx (.complete occurrence leave writes rule)).perform
+        { state with signals := state.signals.take before }
+    | .arm .. | .armScope .. | .armGateway .. | .raise .. | .begin .. | .write .. | .remove .. | .occur .. | .cancel ..
+    | .fire .. | .endInstance .. | .compensate .. | .compensationFailed .. => .ok state
   | _ => .ok state
 
 /-- Turn the draft into one `Transition` (`journalDraft`) and tell the features what the micro-step removed and wrote. -/

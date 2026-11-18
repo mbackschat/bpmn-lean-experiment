@@ -287,11 +287,13 @@ def missingMethod {α : Type} : Eval α := fail elError
 
 def textArgument : Option JVal → Eval String
   | some (.string value) => .ok value
-  | _ => wrongArgument
+  | none | some .null | some (.bool _) | some (.int _ _) | some (.decimal _ _) | some (.list _) | some (.map _) =>
+    wrongArgument
 
 def intArgument : Option JVal → Eval Int
   | some (.int value _) => .ok (wrap32 value)
-  | _ => wrongArgument
+  | none | some .null | some (.bool _) | some (.decimal _ _) | some (.string _) | some (.list _) | some (.map _) =>
+    wrongArgument
 
 /-- A String a cut or insertion produced, unless it split a surrogate pair. -/
 def whole (units : List Nat) : Eval JVal :=
@@ -316,7 +318,8 @@ def stringMethod (method : JuelMethod) (receiver : String) (args : List JVal) : 
   | .equals =>
     return .bool (match args.head? with
       | some (.string other) => other == receiver
-      | _ => false)
+      | none | some .null | some (.bool _) | some (.int _ _) | some (.decimal _ _) | some (.list _) | some (.map _) =>
+        false)
   | .contains => return .bool (firstIndex (utf16 (← textArgument args.head?)) units).isSome
   | .startsWith => return .bool ((utf16 (← textArgument args.head?)).isPrefixOf units)
   | .endsWith => return .bool ((utf16 (← textArgument args.head?)).isSuffixOf units)
