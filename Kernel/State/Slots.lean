@@ -140,12 +140,12 @@ structure FeatureSlots where
   deriving Repr
 
 /-- The scope occurrences a slot keeps alive. Every slot's own entry is an open occurrence or a child occurrence
-already, so only the join and held waits count here. One of the two places that enumerate the slots. -/
+already, so only the join and held waits count here. One of the three places that enumerate the slots. -/
 def FeatureSlots.keptAlive (slots : FeatureSlots) : List ScopeOccurrenceId :=
   slots.parked.map (·.scope) ++ slots.held.map (·.scope)
 
-/-- The slot entries that survive removing the scope occurrences `inside`, of which `nested` are the children. The
-other place that enumerates the slots. -/
+/-- The slot entries that survive removing the scope occurrences `inside`, of which `nested` are the children. One of
+the three places that enumerate the slots. -/
 def FeatureSlots.clear (slots : FeatureSlots) (inside nested : List ScopeOccurrenceId) : FeatureSlots :=
   { parked := slots.parked.filter (!inside.contains ·.scope)
     held := slots.held.filter (!inside.contains ·.scope)
@@ -154,5 +154,27 @@ def FeatureSlots.clear (slots : FeatureSlots) (inside nested : List ScopeOccurre
       retained := slots.compensation.retained.filter (!nested.contains ·.scope)
       runs := slots.compensation.runs.filter (!inside.contains ·.scope) }
     instances := slots.instances.filter (!nested.contains ·.root) }
+
+/-- An occurrence a slot holds suspended: neither an open item nor a token, yet it continues in scope occurrence
+`scope` once its wait ends, leaving as `leave` says. -/
+structure Suspended where
+  element : ElementId
+  scope : ScopeOccurrenceId
+  leave : Leave
+  deriving Repr
+
+/-- The suspended occurrences the slots hold, which an Inclusive join's waiting rule counts (`Feature.Flow.positions`,
+CIB-INT-0016): each held occurrence, which leaves by its outgoing flows once its InputSet is available, and each
+compensation run's resume, a waiting Compensation throw or a caught Cancel's boundary, which continues once its handlers
+have completed. A group's nested run resumes the run holding it, whose own resume counts. The third place that
+enumerates the slots. -/
+def FeatureSlots.suspended (slots : FeatureSlots) : List Suspended :=
+  slots.held.map (fun held => { element := held.occurrence.element, scope := held.scope, leave := .outgoing }) ++
+    slots.compensation.runs.filterMap fun run =>
+      match run.resume with
+      | some (.complete occurrence leave) => some { element := occurrence.element, scope := occurrence.scope, leave }
+      | some (.occur element scope leave) => some { element, scope, leave }
+      | some (.group _) => none
+      | none => none
 
 end Kernel

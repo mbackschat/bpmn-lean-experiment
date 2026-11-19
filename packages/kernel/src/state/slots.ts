@@ -7,7 +7,7 @@ import { type OccurrenceRef } from "./input.js";
 import { type Binding } from "./wait.js";
 /** Re-exported for `raise.ts`, as Lean's `Kernel.State.Raise` sees `Kernel.State.Wait` only through this module. */
 export { type Binding };
-import { compareOccurrenceId, type OccurrenceId, type ScopeOccurrenceId } from "./key.js";
+import { compareOccurrenceId, type OccurrenceId, occurrenceIdParts, type ScopeOccurrenceId } from "./key.js";
 /** Re-exported for `items.ts` and `raise.ts`, as Lean's `Kernel.State.Items` and `Kernel.State.Raise` see `Kernel.State.Key`
  * only through this module. */
 export { compareOccurrenceId, type OccurrenceId, type ScopeOccurrenceId };
@@ -165,13 +165,16 @@ export interface FeatureSlots {
 
 /**
  * The scope occurrences a slot keeps alive. Every slot's own entry is an open occurrence or a child occurrence already,
- * so only the join and held waits count here. One of the two places that enumerate the slots.
+ * so only the join and held waits count here. One of the three places that enumerate the slots.
  */
 export function featureSlotsKeptAlive(slots: FeatureSlots): readonly ScopeOccurrenceId[] {
   return [...slots.parked.map((entry) => entry.scope), ...slots.held.map((entry) => entry.scope)];
 }
 
-/** The slot entries that survive removing the scope occurrences `inside`, of which `nested` are the children. The other place that enumerates the slots. */
+/**
+ * The slot entries that survive removing the scope occurrences `inside`, of which `nested` are the children. One of the
+ * three places that enumerate the slots.
+ */
 export function featureSlotsClear(
   slots: FeatureSlots,
   inside: readonly ScopeOccurrenceId[],
@@ -187,4 +190,36 @@ export function featureSlotsClear(
     },
     instances: slots.instances.filter((instance) => !nested.includes(instance.root)),
   };
+}
+
+/**
+ * An occurrence a slot holds suspended: neither an open item nor a token, yet it continues in scope occurrence `scope`
+ * once its wait ends, leaving as `leave` says.
+ */
+export interface Suspended { readonly element: ElementId; readonly scope: ScopeOccurrenceId; readonly leave: Leave; }
+
+/**
+ * The suspended occurrences the slots hold, which an Inclusive join's waiting rule counts (`positions` in
+ * `feature/flow.ts`, CIB-INT-0016): each held occurrence and each compensation run's resume; a group's nested run resumes
+ * the run holding it, whose own resume counts. The third place that enumerates the slots.
+ */
+export function featureSlotsSuspended(slots: FeatureSlots): readonly Suspended[] {
+  const resumed = slots.compensation.runs.flatMap((run): Suspended[] => {
+    const resume = run.resume;
+    if (resume === null) return [];
+    switch (resume.tag) {
+      case ResumeTag.Complete: {
+        const { element, scope } = occurrenceIdParts(resume.occurrence);
+        return [{ element, scope, leave: resume.leave }];
+      }
+      case ResumeTag.Occur:
+        return [{ element: resume.element, scope: resume.scope, leave: resume.leave }];
+      case ResumeTag.Group:
+        return [];
+    }
+    return assertNever(resume);
+  });
+  const held = slots.held.map((entry): Suspended =>
+    ({ element: occurrenceIdParts(entry.occurrence).element, scope: entry.scope, leave: leaveOutgoing }));
+  return [...held, ...resumed];
 }

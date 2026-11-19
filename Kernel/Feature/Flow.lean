@@ -193,10 +193,18 @@ least as much (`Laws.Flow.reaches_mono`). -/
 def reaches (ctx : Ctx) (gateway : ElementId) (targets start : List FlowId) : Bool :=
   reachSearch ctx gateway targets [] start
 
+/-- The flows a suspended occurrence leaves on once its wait ends. -/
+def suspendedFlows (ctx : Ctx) (waiting : Suspended) : List FlowId :=
+  match waiting.leave with
+  | .outgoing => ((ctx.program.element? waiting.element).map (successors ctx)).getD []
+  | .flows selected => selected
+  | .raised => []
+
 /-- The flows from which the remaining work of scope occurrence `scope` continues, excluding the tokens parked at
-`gateway`: queued tokens, the elements of open items and child scope occurrences, and tokens parked at other
-joins. A passive item keeps nothing alive and is no position; a boundary item is no element, and its host's
-position covers the boundary's flows as far as `leaving` follows them. -/
+`gateway`: queued tokens, the elements of open items and child scope occurrences, tokens parked at other joins, and
+the suspended occurrences of the slots (`FeatureSlots.suspended`), by the flows each leaves on. A passive item keeps
+nothing alive and is no position; a boundary item is no element, and its host's position covers the boundary's flows
+as far as `leaving` follows them. -/
 def positions (ctx : Ctx) (state : State) (gateway : ElementId) (scope : ScopeOccurrenceId) :
     List FlowId :=
   let program := ctx.program
@@ -209,7 +217,8 @@ def positions (ctx : Ctx) (state : State) (gateway : ElementId) (scope : ScopeOc
   let parked := (state.slots.parked.filter fun waiting =>
       waiting.scope == scope && program.target? waiting.flow != some gateway).flatMap fun waiting =>
     ((program.target? waiting.flow).map continuing).getD []
-  queued ++ items ++ children ++ parked
+  let suspended := (state.slots.suspended.filter (·.scope == scope)).flatMap (suspendedFlows ctx)
+  queued ++ items ++ children ++ parked ++ suspended
 
 def park (state : State) (waiting : Parked) : State :=
   { state with slots := { state.slots with parked := state.slots.parked ++ [waiting] } }

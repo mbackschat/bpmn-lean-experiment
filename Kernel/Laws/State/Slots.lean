@@ -28,4 +28,16 @@ theorem featureSlotsClear_eq (slots : FeatureSlots) (inside nested : List ScopeO
       instances := slots.instances.filter (!nested.contains ·.root) } := by
   simp only [FeatureSlots.clear]
 
+/-- A held occurrence is suspended, leaving by its outgoing flows. -/
+theorem held_suspended {slots : FeatureSlots} {held : Held} (mem : held ∈ slots.held) :
+    { element := held.occurrence.element, scope := held.scope, leave := .outgoing : Suspended } ∈ slots.suspended :=
+  List.mem_append_left _ (List.mem_map.mpr ⟨held, mem, rfl⟩)
+
+/-- A compensation run that completes an existing occurrence once its handlers end, as a waiting Compensation throw's
+does, holds that occurrence suspended. -/
+theorem resume_suspended {slots : FeatureSlots} {run : CompensationRun} {occurrence : OccurrenceId} {leave : Leave}
+    (mem : run ∈ slots.compensation.runs) (resume : run.resume = some (.complete occurrence leave)) :
+    { element := occurrence.element, scope := occurrence.scope, leave : Suspended } ∈ slots.suspended :=
+  List.mem_append_right _ (List.mem_filterMap.mpr ⟨run, mem, by simp [resume]⟩)
+
 end Kernel.Laws.State

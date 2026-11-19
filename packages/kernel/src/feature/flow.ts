@@ -57,6 +57,7 @@ import {
   emit,
   failed,
   failedWith,
+  featureSlotsSuspended,
   leaveFlows,
   leaveOutgoing,
   parkedEquals,
@@ -70,6 +71,7 @@ import {
   type Result,
   type ScopeOccurrenceId,
   type State,
+  type Suspended,
   SemanticCause,
   semanticFailure, type OccurrenceId,
 } from "../state.js";
@@ -313,11 +315,27 @@ function reaches(ctx: Ctx, gateway: ElementId, targets: readonly FlowId[], start
   return false;
 }
 
+/** The flows a suspended occurrence leaves on once its wait ends. */
+function suspendedFlows(ctx: Ctx, waiting: Suspended): readonly FlowId[] {
+  switch (waiting.leave.tag) {
+    case LeaveTag.Outgoing: {
+      const element = programElement(ctx.program, waiting.element);
+      return element === null ? [] : successors(ctx, element);
+    }
+    case LeaveTag.Flows:
+      return waiting.leave.selected;
+    case LeaveTag.Raised:
+      return [];
+  }
+  return assertNever(waiting.leave);
+}
+
 /**
  * The flows from which the remaining work of scope occurrence `scope` continues, excluding the tokens parked at
- * `gateway`: queued tokens, the elements of open items and child scope occurrences, and tokens parked at other joins.
- * A passive item keeps nothing alive and is no position; a boundary item is no element, and its host's position covers
- * the boundary's flows as far as `leaving` follows them.
+ * `gateway`: queued tokens, the elements of open items and child scope occurrences, tokens parked at other joins, and
+ * the suspended occurrences of the slots (`featureSlotsSuspended`), by the flows each leaves on. A passive item keeps
+ * nothing alive and is no position; a boundary item is no element, and its host's position covers the boundary's flows
+ * as far as `leaving` follows them.
  */
 function positions(ctx: Ctx, state: State, gateway: ElementId, scope: ScopeOccurrenceId): readonly FlowId[] {
   const program = ctx.program;
@@ -335,7 +353,9 @@ function positions(ctx: Ctx, state: State, gateway: ElementId, scope: ScopeOccur
       const target = programTarget(program, waiting.flow);
       return target === null ? [] : continuing(target);
     });
-  return [...queued, ...items, ...children, ...parked];
+  const suspended = featureSlotsSuspended(state.slots).filter((waiting) => waiting.scope === scope)
+    .flatMap((waiting) => suspendedFlows(ctx, waiting));
+  return [...queued, ...items, ...children, ...parked, ...suspended];
 }
 
 function park(state: State, waiting: Parked): State {

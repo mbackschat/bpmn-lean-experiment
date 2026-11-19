@@ -523,13 +523,14 @@ theorem arriveGateway_keeps {inv : State → Prop} {settled : State → Occurren
   · cases ran
     exact ops.armGateway _ _ _ _ holds member begun named
 
-/-! ## The reach search (DC3)
+/-! ## The reach search (DC3) and suspended positions (DC19)
 
 `Feature.Flow.reaches` answers exactly whether a path of `reachNext` steps leads from a member of its start list to a
 target (`reaches_iff`), so it answers from the members of the start list alone: more members answer at least as much
 (`reaches_mono`) and duplicates change nothing (`reaches_congr`). Before DC3 a fuel figure bounded the search, and an
 exhausted fuel answered "reachable" whatever the graph, which no such law admits. `ReachPath` is the search's own step
-relation; relating it to `CanReach` above is the proof wave's. -/
+relation; relating it to `CanReach` above is the proof wave's. A suspended occurrence of the slots is a position
+(`suspended_mem_positions`), so it keeps a join waiting while it can reach an empty input (`suspended_keeps_waiting`). -/
 
 section Reach
 
@@ -696,6 +697,23 @@ theorem reaches_congr {ctx : Ctx} {gateway : ElementId} {targets start other : L
 theorem reaches_duplicate {ctx : Ctx} {gateway : ElementId} {targets : List FlowId} (flow : FlowId) :
     reaches ctx gateway targets [flow, flow] = reaches ctx gateway targets [flow] :=
   reaches_congr fun _ => by simp
+
+/-- Every flow a suspended occurrence of `scope` leaves on is a position of `scope` (DC19). -/
+theorem suspended_mem_positions {ctx : Ctx} {state : State} {gateway : ElementId} {scope : ScopeOccurrenceId}
+    {waiting : Suspended} {flow : FlowId} (mem : waiting ∈ state.slots.suspended) (here : waiting.scope = scope)
+    (leaves : flow ∈ suspendedFlows ctx waiting) : flow ∈ positions ctx state gateway scope := by
+  unfold positions
+  simp only [List.mem_append, List.mem_flatMap, List.mem_filter]
+  exact .inr ⟨waiting, ⟨mem, by simp [here]⟩, leaves⟩
+
+/-- **A join waits for its suspended occurrences (DC19).** While a held occurrence or a compensation resume of the
+join's scope occurrence leaves on a flow with a path to an empty incoming flow, the reach answers "reachable", so the
+join keeps waiting (CIB-INT-0016). -/
+theorem suspended_keeps_waiting {ctx : Ctx} {state : State} {gateway : ElementId} {scope : ScopeOccurrenceId}
+    {waiting : Suspended} {flow target : FlowId} {empty : List FlowId} (mem : waiting ∈ state.slots.suspended)
+    (here : waiting.scope = scope) (leaves : flow ∈ suspendedFlows ctx waiting) (path : ReachPath ctx gateway flow target)
+    (isEmpty : target ∈ empty) : reaches ctx gateway empty (positions ctx state gateway scope) = true :=
+  reaches_iff.mpr ⟨flow, suspended_mem_positions mem here leaves, target, isEmpty, path⟩
 
 end Reach
 
