@@ -27,14 +27,14 @@ def simpleBoolean (variables : List (String × Value)) : SimpleBoolean → Bool
     | some value =>
       match value with
       | .null => true
-      | .bool _ | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => false
+      | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .string _ | .stringList _ | .list _ | .map _ => false
     | none => false
   | .stringEquals name expected =>
     match lookup variables name with
     | some value =>
       match value with
       | .string actual => actual == expected
-      | .null | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ => false
+      | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .stringList _ | .list _ | .map _ => false
     | none => false
 
 def evaluate (context : EvalContext) : Expression → Evaluation

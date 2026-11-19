@@ -17,6 +17,8 @@ export enum ValueTag {
   Bool = "bool",
   Int = "int",
   Decimal = "decimal",
+  Double = "double",
+  Date = "date",
   String = "string",
   StringList = "stringList",
   List = "list",
@@ -28,6 +30,10 @@ export type Value =
   | { readonly tag: ValueTag.Bool; readonly value: boolean }
   | { readonly tag: ValueTag.Int; readonly value: number }
   | { readonly tag: ValueTag.Decimal; readonly coefficient: bigint; readonly scale: number }
+  /** A Java `double` by its IEEE 754 binary64 bits, an unsigned 64-bit integer, so equality and the wire stay exact. */
+  | { readonly tag: ValueTag.Double; readonly bits: bigint }
+  /** A Java `Date` by its milliseconds since the Unix epoch, UTC: a Java `long`, so a signed decimal string on the wire. */
+  | { readonly tag: ValueTag.Date; readonly epochMs: bigint }
   | { readonly tag: ValueTag.String; readonly value: string }
   | { readonly tag: ValueTag.StringList; readonly items: readonly string[] }
   | { readonly tag: ValueTag.List; readonly items: readonly Value[] }

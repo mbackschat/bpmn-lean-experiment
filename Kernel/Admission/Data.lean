@@ -148,6 +148,24 @@ def juelNodes (nodes : List JuelNode) (site : Site := {}) : Option String :=
 /-- The language the reader gives a JUEL text outside the pinned grammar (`kernel-reader/data.ts`). -/
 def juelLanguage : String := "urn:cibseven:expression-language:juel"
 
+mutual
+/-- A literal value: a Double or a Date at any depth is refused until A3 gives the kernel their meaning. -/
+def literal : Value → Option String
+  | .double _ => some "value.double"
+  | .date _ => some "value.date"
+  | .list items => literalItems items
+  | .map entries => literalEntries entries
+  | .null | .bool _ | .int _ | .decimal _ _ | .string _ | .stringList _ => none
+
+def literalItems : List Value → Option String
+  | [] => none
+  | item :: items => literal item <|> literalItems items
+
+def literalEntries : List (String × Value) → Option String
+  | [] => none
+  | (_, value) :: entries => literal value <|> literalEntries entries
+end
+
 /-- A Multi-Instance loop expression under `Evaluator.juel`: JUEL, a variable read or text
 ([Multi-Instance level](../../docs/kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#multi-instance-level)). CIB reads no
 declared language there (`BpmnParse.java:1824-1838`), so a declared one is refused; `counters` admits the counter
@@ -155,7 +173,7 @@ names, which only the completion condition reads. -/
 def loopExpression (counters : Bool) : Expression → Option String
   | .juel nodes => juelNodes nodes { counters }
   | .variable name => juelName { counters } name
-  | .literal _ => none
+  | .literal value => literal value
   | .simpleBoolean _ => some "expression.outsideJuel"
   | .foreign language _ => if language == juelLanguage then some "expression.juel.syntax" else some "multiInstance.expressionLanguage"
 
@@ -169,7 +187,7 @@ def mapping (evaluator : Evaluator) (site : Site) (entry : Mapping) : Option Str
     if evaluator == .simpleBoolean then some "mapping.expression"
     else if cib then juelNodes nodes site else some "expression.juel.site"
   | .simpleBoolean _ => if evaluator == .juel then some "expression.outsideJuel" else none
-  | .literal _ => none
+  | .literal value => literal value
   | .variable name => if evaluator == .juel then juelName site name else none
 
 def mappings (evaluator : Evaluator) (site : Site) (list : List Mapping) : Option String :=

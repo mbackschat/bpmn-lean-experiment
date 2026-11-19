@@ -73,7 +73,7 @@ function node(context: EvalContext, nodes: readonly JuelNode[], at: number): Eva
       return ok(text(current.value));
     case JuelNodeTag.Identifier: {
       const found = context.variables.find(([name]) => name === current.name);
-      return found === undefined ? fail("unknown-variable") : ok(fromValue(found[1]));
+      return found === undefined ? fail("unknown-variable") : fromValue(found[1]);
     }
     case JuelNodeTag.Function:
       return unsupported("expression.juel.function");
@@ -326,12 +326,18 @@ function equal(left: JVal, right: JVal): Eval<boolean> {
 
 /**
  * Java `equals` of an evaluated value against a context value, three-valued: `null` when it depends on an Integer's
- * class, which a context value does not record. Every comparison the evaluator makes has a context value on one side, an
- * item or entry of a collection or the collection itself, whose `equals` Java keeps symmetric; so two equal Integers
- * always leave the answer to their classes.
+ * class, which a context value does not record, or on a Double or a Date, which no admitted run holds until A3. Every
+ * comparison the evaluator makes has a context value on one side, an item or entry of a collection or the collection
+ * itself, whose `equals` Java keeps symmetric; so two equal Integers always leave the answer to their classes.
  */
 function javaEquals(left: JVal, value: Value): boolean | null {
-  const right = fromValue(value);
+  const converted = fromValue(value);
+  if (!converted.ok) return null;
+  const right = converted.value;
+  const itemEquals = (item: Value, other: Value): boolean | null => {
+    const leftItem = fromValue(item);
+    return leftItem.ok ? javaEquals(leftItem.value, other) : null;
+  };
   switch (left.tag) {
     case JValTag.Int:
       return !sameKind(left, right) ? false : left.value !== right.value ? false : null;
@@ -339,13 +345,13 @@ function javaEquals(left: JVal, value: Value): boolean | null {
       return sameKind(left, right) && left.coefficient === right.coefficient && left.scale === right.scale;
     case JValTag.List: {
       if (!sameKind(left, right) || left.items.length !== right.items.length) return false;
-      return every(left.items.map((item, index) => javaEquals(fromValue(item), right.items[index] as Value)));
+      return every(left.items.map((item, index) => itemEquals(item, right.items[index] as Value)));
     }
     case JValTag.Map: {
       if (!sameKind(left, right) || left.entries.length !== right.entries.length) return false;
       const pairs = left.entries.map(([name, item]) => {
         const other = right.entries.find(([key]) => key === name);
-        return other === undefined ? false : javaEquals(fromValue(item), other[1]);
+        return other === undefined ? false : itemEquals(item, other[1]);
       });
       return every(pairs);
     }
@@ -457,13 +463,13 @@ function property(base: JVal, name: JVal): Eval<JVal> {
       // dynamic-only: a non-String key's lookup depends on the host Map class.
       if (key === null) return unsupported("juel.indexType");
       const entry = base.entries.find(([candidate]) => candidate === key);
-      return ok(entry === undefined ? nullValue : fromValue(entry[1]));
+      return entry === undefined ? ok(nullValue) : fromValue(entry[1]);
     }
     case JValTag.List: {
       const index = listIndex(name);
       if (!index.ok) return stopped(index);
       const item = index.value >= 0 && index.value < base.items.length ? base.items[index.value] : undefined;
-      return ok(item === undefined ? nullValue : fromValue(item));
+      return item === undefined ? ok(nullValue) : fromValue(item);
     }
     case JValTag.String:
       return scalarProperty(["class", "empty", "blank", "bytes"], name);
@@ -655,7 +661,7 @@ function stringMethod(method: JuelMethod, receiver: string, args: readonly JVal[
 }
 
 function listMethod(method: JuelMethod, receiver: JVal & { readonly tag: JValTag.List }, argument: JVal): Eval<JVal> {
-  const items = receiver.items.map(fromValue);
+  const items = receiver.items;
   const found = (order: readonly number[]): Eval<JVal> => {
     for (const index of order) {
       const answer = decided(javaEquals(argument, receiver.items[index] as Value));
@@ -686,7 +692,7 @@ function listMethod(method: JuelMethod, receiver: JVal & { readonly tag: JValTag
       if (index === null) return wrongArgument();
       const item = items[index];
       // `IndexOutOfBoundsException` (`List.get`).
-      return index < 0 || item === undefined ? fail(elError) : ok(item);
+      return index < 0 || item === undefined ? fail(elError) : fromValue(item);
     }
     case JuelMethod.Length:
     case JuelMethod.StartsWith:
@@ -714,11 +720,12 @@ function mapMethod(method: JuelMethod, receiver: JVal & { readonly tag: JValTag.
       const answer = decided(javaEquals(argument, { tag: ValueTag.Map, entries: receiver.entries }));
       return answer.ok ? ok(bool(answer.value)) : stopped(answer);
     }
-    case JuelMethod.Get:
-      return withText(argument, (key) => {
-        const entry = receiver.entries.find(([name]) => name === key);
-        return entry === undefined ? nullValue : fromValue(entry[1]);
-      });
+    case JuelMethod.Get: {
+      const key = textArgument(argument);
+      if (key === null) return wrongArgument();
+      const entry = receiver.entries.find(([name]) => name === key);
+      return entry === undefined ? ok(nullValue) : fromValue(entry[1]);
+    }
     case JuelMethod.ContainsKey:
       return withText(argument, (key) => bool(receiver.entries.some(([name]) => name === key)));
     case JuelMethod.ContainsValue: {

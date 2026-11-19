@@ -59,6 +59,8 @@ def signalBusinessKey (ctx : Ctx) (context : EvalContext) : Option Expression â†
       | .string key => .ok (some key)
       | .null => .ok none
       -- dynamic-only: a key's value type is the run's data.
+      -- dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+      | .double _ | .date _ => .error (.unsupported "value-kind")
       | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ =>
         .error (.rolledBack "signal-business-key-type")
     | .failure code => .error (.rolledBack code)
@@ -87,6 +89,8 @@ def thrownAddress (ctx : Ctx) (context : EvalContext) (record : SignalThrow) : E
       | .string text => .ok (.named text)
       -- dynamic-only: the evaluated name is the run's data.
       | .null => .error (.unsupported "signal-name-null")
+      -- dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+      | .double _ | .date _ => .error (.unsupported "value-kind")
       | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ => .error (.rolledBack "signal-name-type")
     | .failure code => .error (.rolledBack code)
     | .unsupported code => .error (.unsupported code)

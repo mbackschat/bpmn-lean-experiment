@@ -174,7 +174,7 @@ def candidateHolds (ctx : Ctx) (context : EvalContext) (candidate : FlowId) : Bo
       | .value result =>
         match result with
         | .bool value => value
-        | .null | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => false
+        | .null | .int _ | .decimal _ _ | .double _ | .date _ | .string _ | .stringList _ | .list _ | .map _ => false
       | _ => false
 
 /-- A condition `Kernel.Feature.Flow` reads without failing has the value `candidateHolds` gives it. -/

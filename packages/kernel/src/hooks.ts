@@ -153,6 +153,8 @@ export function collectionItems(collection: Value): readonly Value[] | null {
     case ValueTag.Bool:
     case ValueTag.Int:
     case ValueTag.Decimal:
+    case ValueTag.Double:
+    case ValueTag.Date:
     case ValueTag.String:
     case ValueTag.Map:
       return null;
@@ -205,6 +207,8 @@ export function valueBytes(value: Value): number | null {
         utf8ByteSize(String(value.scale));
     case ValueTag.String:
       return shellBytes("{\"kind\":\"string\",\"value\":}") + stringBytes(value.value);
+    case ValueTag.Double:
+    case ValueTag.Date:
     case ValueTag.StringList:
       return null;
     case ValueTag.List: {
@@ -258,7 +262,8 @@ export const integerBound = 9007199254740991;
 /**
  * The value nodes of `value`, the root included, when every node lies in the portable domain under `bounds` and no
  * container is nested deeper than `bounds.containerLevels` counting from `depth` containers above it; `null` otherwise.
- * A String List is outside the portable arms at every depth.
+ * A String List is outside the portable arms at every depth, and so are a Double and a Date until A3 admits them, so
+ * every input carrying one is rejected (`value-outside-domain`).
  */
 function domainNodes(bounds: Bounds, value: Value, depth: number): number | null {
   switch (value.tag) {
@@ -271,6 +276,8 @@ function domainNodes(bounds: Bounds, value: Value, depth: number): number | null
       return canonicalDecimal(value.coefficient, BigInt(value.scale)) ? 1 : null;
     case ValueTag.String:
       return utf8ByteSize(value.value) <= bounds.textBytes ? 1 : null;
+    case ValueTag.Double:
+    case ValueTag.Date:
     case ValueTag.StringList:
       return null;
     case ValueTag.List:
@@ -308,6 +315,8 @@ export function inValueDomain(bounds: Bounds, value: Value): boolean {
     case ValueTag.Bool:
     case ValueTag.Int:
     case ValueTag.Decimal:
+    case ValueTag.Double:
+    case ValueTag.Date:
     case ValueTag.String:
     case ValueTag.List:
     case ValueTag.Map: {

@@ -115,43 +115,51 @@ def anyEqual (answers : List (Option Bool)) : Option Bool :=
   if answers.contains (some true) then some true else if answers.contains none then none else some false
 
 /-- Java `equals` of an evaluated value against a context value, three-valued: `none` when it depends on an Integer's
-class, which a context value does not record. Every comparison the evaluator makes has a context value on one side, an
-item or entry of a collection or the collection itself, whose `equals` Java keeps symmetric; so two equal Integers
-always leave the answer to their classes. -/
+class, which a context value does not record, or on a Double or a Date, which no admitted run holds until A3. Every
+comparison the evaluator makes has a context value on one side, an item or entry of a collection or the collection
+itself, whose `equals` Java keeps symmetric; so two equal Integers always leave the answer to their classes. -/
 def javaEquals (left : JVal) (right : Value) : Option Bool :=
   match left with
   | .int a _ =>
     match right with
     | .int b => if a != b then some false else none
+    | .double _ | .date _ => none
     | .null | .bool _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => some false
   | .decimal a scaleA =>
     match right with
     | .decimal b scaleB => some (a == b && scaleA == (scaleB : Int))
+    | .double _ | .date _ => none
     | .null | .bool _ | .int _ | .string _ | .stringList _ | .list _ | .map _ => some false
   | .list items => valueEquals (.list items) right
   | .map entries => valueEquals (.map entries) right
   | .null =>
     match right with
     | .null => some true
+    | .double _ | .date _ => none
     | .bool _ | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => some false
   | .bool a =>
     match right with
     | .bool b => some (a == b)
+    | .double _ | .date _ => none
     | .null | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => some false
   | .string a =>
     match right with
     | .string b => some (a == b)
+    | .double _ | .date _ => none
     | .null | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ => some false
 where
   /-- Two context values, both of unknown class at every depth. -/
   valueEquals : Value → Value → Option Bool
+    | .double _, _ | .date _, _ => none
     | .int a, right =>
       match right with
       | .int b => if a != b then some false else none
+      | .double _ | .date _ => none
       | .null | .bool _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => some false
     | .decimal a scaleA, right =>
       match right with
       | .decimal b scaleB => some (a == b && scaleA == scaleB)
+      | .double _ | .date _ => none
       | .null | .bool _ | .int _ | .string _ | .stringList _ | .list _ | .map _ => some false
     | .list left, right =>
       match right with
@@ -159,11 +167,13 @@ where
         if left.length != right.length then some false
         else allEqual ((left.attach.zip right).map fun (⟨a, _⟩, b) => valueEquals a b)
       | .stringList right => textsEqual right left
+      | .double _ | .date _ => none
       | .null | .bool _ | .int _ | .decimal _ _ | .string _ | .map _ => some false
     | .stringList left, right =>
       match right with
       | .stringList right => some (left == right)
       | .list right => textsEqual left right
+      | .double _ | .date _ => none
       | .null | .bool _ | .int _ | .decimal _ _ | .string _ | .map _ => some false
     | .map left, right =>
       match right with
@@ -173,18 +183,22 @@ where
           match right.find? (·.1 == entry.1) with
           | some (_, other) => valueEquals entry.2 other
           | none => some false)
+      | .double _ | .date _ => none
       | .null | .bool _ | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ => some false
     | .null, right =>
       match right with
       | .null => some true
+      | .double _ | .date _ => none
       | .bool _ | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => some false
     | .bool a, right =>
       match right with
       | .bool b => some (a == b)
+      | .double _ | .date _ => none
       | .null | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => some false
     | .string a, right =>
       match right with
       | .string b => some (a == b)
+      | .double _ | .date _ => none
       | .null | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ => some false
   termination_by left => sizeOf left
   decreasing_by
@@ -195,10 +209,11 @@ where
   /-- A `stringList` against a List: equal Strings in order. -/
   textsEqual (texts : List String) (items : List Value) : Option Bool :=
     if texts.length != items.length then some false
-    else some ((texts.zip items).all fun (text, item) =>
+    else allEqual ((texts.zip items).map fun (text, item) =>
       match item with
-      | .string other => other == text
-      | .null | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ => false)
+      | .string other => some (other == text)
+      | .double _ | .date _ => none
+      | .null | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ => some false)
 
 def decided (answer : Option Bool) : Eval Bool :=
   match answer with
@@ -267,10 +282,10 @@ def property (base name : JVal) : Eval JVal := do
   match base with
   | .map entries =>
     match name with
-    | .string key => return ((entries.find? (·.1 == key)).map (fromValue ·.2)).getD .null
+    | .string key => (entries.find? (·.1 == key)).elim (pure .null) (fromValue ·.2)
     -- dynamic-only: a non-String key's lookup depends on the host Map class.
     | .null | .bool _ | .int _ _ | .decimal _ _ | .list _ | .map _ => limit "juel.indexType"
-  | .list items => return ((listItem? items (← listIndex name)).map fromValue).getD .null
+  | .list items => (listItem? items (← listIndex name)).elim (pure .null) fromValue
   | .string _ => scalarProperty ["class", "empty", "blank", "bytes"] name
   | .bool _ | .int _ _ | .decimal _ _ | .null => scalarProperty ["class"] name
 
@@ -360,7 +375,7 @@ def listMethod (method : JuelMethod) (items : List Value) (argument : JVal) : Ev
     let index ← intArgument (some argument)
     -- `IndexOutOfBoundsException` (`List.get`).
     match listItem? items index with
-    | some item => return fromValue item
+    | some item => fromValue item
     | none => fail elError
   | .length | .startsWith | .endsWith | .substring | .toUpperCase | .toLowerCase | .trim | .concat
   | .replace | .containsKey | .containsValue => missingMethod
@@ -372,7 +387,7 @@ def mapMethod (method : JuelMethod) (entries : List (String × Value)) (argument
   | .equals => return .bool (← decided (javaEquals argument (.map entries)))
   | .get =>
     let key ← textArgument (some argument)
-    return ((entries.find? (·.1 == key)).map (fromValue ·.2)).getD .null
+    (entries.find? (·.1 == key)).elim (pure .null) (fromValue ·.2)
   | .containsKey =>
     let key ← textArgument (some argument)
     return .bool (entries.any (·.1 == key))
@@ -419,7 +434,7 @@ def visit (context : EvalContext) (sub : Nat → Eval JVal) : JuelNode → Eval 
   | .stringLiteral value => .ok (.string value)
   | .identifier name =>
     match context.variables.find? (·.1 == name) with
-    | some (_, value) => .ok (fromValue value)
+    | some (_, value) => fromValue value
     | none => fail "unknown-variable"
   | .function _ => limit "expression.juel.function"
   | .dot base name => do

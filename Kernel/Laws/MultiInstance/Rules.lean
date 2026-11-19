@@ -270,12 +270,12 @@ def FormKept : Value → Value → Prop
   | .stringList _, right =>
     match right with
     | .stringList _ => True
-    | .null | .bool _ | .int _ | .decimal _ _ | .string _ | .list _ | .map _ => False
+    | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .string _ | .list _ | .map _ => False
   | .list _, right =>
     match right with
     | .list _ => True
-    | .null | .bool _ | .int _ | .decimal _ _ | .string _ | .stringList _ | .map _ => False
-  | .null, _ | .bool _, _ | .int _, _ | .decimal _ _, _ | .string _, _ | .map _, _ => False
+    | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .string _ | .stringList _ | .map _ => False
+  | .null, _ | .bool _, _ | .int _, _ | .decimal _ _, _ | .double _, _ | .date _, _ | .string _, _ | .map _, _ => False
 
 /-- Under `CollectionRead.sequentialReread` a later sequential instance holds the item at its index in the collection
 `current` read as it is generated, while the slot count stays the entry count and `run.collection` the entry value

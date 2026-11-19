@@ -195,6 +195,8 @@ function holdsCounts(ctx: Ctx, variables: readonly Binding[], counts: Counts): b
           case ValueTag.Null:
           case ValueTag.Bool:
           case ValueTag.Decimal:
+          case ValueTag.Double:
+          case ValueTag.Date:
           case ValueTag.String:
           case ValueTag.StringList:
           case ValueTag.List:
@@ -205,6 +207,8 @@ function holdsCounts(ctx: Ctx, variables: readonly Binding[], counts: Counts): b
       case ValueTag.Null:
       case ValueTag.Bool:
       case ValueTag.Decimal:
+      case ValueTag.Double:
+      case ValueTag.Date:
       case ValueTag.String:
       case ValueTag.StringList:
       case ValueTag.List:
@@ -267,6 +271,8 @@ function outputCollection(collection: Value, collected: readonly Value[]): Value
           case ValueTag.Bool:
           case ValueTag.Int:
           case ValueTag.Decimal:
+          case ValueTag.Double:
+          case ValueTag.Date:
           case ValueTag.StringList:
           case ValueTag.List:
           case ValueTag.Map:
@@ -279,6 +285,8 @@ function outputCollection(collection: Value, collected: readonly Value[]): Value
     case ValueTag.Bool:
     case ValueTag.Int:
     case ValueTag.Decimal:
+    case ValueTag.Double:
+    case ValueTag.Date:
     case ValueTag.String:
     case ValueTag.Map:
       return { tag: ValueTag.List, items: collected };
@@ -327,6 +335,10 @@ function countOf(rule: MultiInstanceCount, value: Value): Result<number> {
       switch (value.tag) {
         case ValueTag.Int:
           return counted(rule, BigInt(value.value));
+        case ValueTag.Double:
+        case ValueTag.Date:
+          // dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+          return failed(FailureTag.Unsupported, "value-kind");
         case ValueTag.Null:
         case ValueTag.Bool:
         case ValueTag.Decimal:
@@ -349,6 +361,10 @@ function countOf(rule: MultiInstanceCount, value: Value): Result<number> {
         }
         case ValueTag.String:
           return parsedCount(rule, value.value);
+        case ValueTag.Double:
+        case ValueTag.Date:
+          // dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+          return failed(FailureTag.Unsupported, "value-kind");
         case ValueTag.Null:
         case ValueTag.Bool:
         case ValueTag.StringList:
@@ -461,6 +477,8 @@ function submitted(loop: MultiInstance, run: MultiInstanceRun, writes: readonly 
         case ValueTag.Bool:
         case ValueTag.Int:
         case ValueTag.Decimal:
+        case ValueTag.Double:
+        case ValueTag.Date:
         case ValueTag.StringList:
         case ValueTag.List:
         case ValueTag.Map:
@@ -471,6 +489,8 @@ function submitted(loop: MultiInstance, run: MultiInstanceRun, writes: readonly 
     case ValueTag.Bool:
     case ValueTag.Int:
     case ValueTag.Decimal:
+    case ValueTag.Double:
+    case ValueTag.Date:
     case ValueTag.String:
     case ValueTag.List:
     case ValueTag.Map:
@@ -567,6 +587,10 @@ function stops(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, index: numb
       switch (result.tag) {
         case ValueTag.Bool:
           return committed(result.value);
+        case ValueTag.Double:
+        case ValueTag.Date:
+          // dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+          return failed(FailureTag.Unsupported, "value-kind");
         case ValueTag.Null:
         case ValueTag.Int:
         case ValueTag.Decimal:
@@ -636,6 +660,8 @@ function nextItems(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, next: n
         case ValueTag.Bool:
         case ValueTag.Int:
         case ValueTag.Decimal:
+        case ValueTag.Double:
+        case ValueTag.Date:
         case ValueTag.String:
         case ValueTag.StringList:
         case ValueTag.List:

@@ -22,6 +22,8 @@ The CIB runner fills the state in `CibSevenStateProjector` (status, logical time
 | `variables[].value.kind` | `adapter-derived` | `string`, `boolean`, `integer`, `stringList` or `null` selected from the host carrier by `ScenarioVariableValueProjection.project`, without text coercion |
 | `variables[].value.value` | `engine-observed` | Exact host String, Boolean, integer or String-list members when the value is not null (`ScenarioVariableValueProjection.requireHostStringList` for a list) |
 | `variables[].value.coefficient` | `not-claimed` | Portable Decimal part; `ScenarioVariableValueProjection.project` selects no Decimal arm |
+| `variables[].value.bits` | `not-claimed` | a Double or a Date, which the value domain rejects until A3 admits them |
+| `variables[].value.epochMs` | `not-claimed` | a Double or a Date, which the value domain rejects until A3 admits them |
 | `variables[].value.scale` | `not-claimed` | Portable Decimal part; `ScenarioVariableValueProjection.project` selects no Decimal arm |
 | `variables[].value.value[].name` | `not-claimed` | Portable Map entry; `ScenarioVariableValueProjection.project` selects no Map arm |
 | `variables[].value.value[].value` | `not-claimed` | Recursive portable List or Map member; `ScenarioVariableValueProjection.project` selects neither arm, and the members of a String list are classified at `value.value` |
@@ -37,6 +39,8 @@ The CIB runner fills the state in `CibSevenStateProjector` (status, logical time
 | `scopes[].variables[].value.kind` | `not-claimed` | kernel-only: the CIB runner projects the instance root only; the comparator compares scopes between the kernels |
 | `scopes[].variables[].value.value` | `not-claimed` | kernel-only: the CIB runner projects the instance root only; the comparator compares scopes between the kernels |
 | `scopes[].variables[].value.coefficient` | `not-claimed` | kernel-only: the CIB runner projects the instance root only; the comparator compares scopes between the kernels |
+| `scopes[].variables[].value.bits` | `not-claimed` | kernel-only: the CIB runner projects the instance root only; the comparator compares scopes between the kernels |
+| `scopes[].variables[].value.epochMs` | `not-claimed` | kernel-only: the CIB runner projects the instance root only; the comparator compares scopes between the kernels |
 | `scopes[].variables[].value.scale` | `not-claimed` | kernel-only: the CIB runner projects the instance root only; the comparator compares scopes between the kernels |
 | `scopes[].variables[].value.value[].name` | `not-claimed` | kernel-only: the CIB runner projects the instance root only; the comparator compares scopes between the kernels |
 | `scopes[].variables[].value.value[].value` | `not-claimed` | kernel-only: the CIB runner projects the instance root only; the comparator compares scopes between the kernels |
@@ -75,6 +79,8 @@ The CIB runner fills the state in `CibSevenStateProjector` (status, logical time
 | `openWaits[].detail.inputs[].value.kind` | `adapter-derived` | `string`, `boolean`, `integer`, `stringList` or `null` selected from the host carrier by `ScenarioVariableValueProjection.project`, without text coercion |
 | `openWaits[].detail.inputs[].value.value` | `engine-observed` | Exact host value of the execution's local variable, absent for null |
 | `openWaits[].detail.inputs[].value.coefficient` | `not-claimed` | Portable Decimal part; `ScenarioVariableValueProjection.project` selects no Decimal arm |
+| `openWaits[].detail.inputs[].value.bits` | `not-claimed` | a Double or a Date, which the value domain rejects until A3 admits them |
+| `openWaits[].detail.inputs[].value.epochMs` | `not-claimed` | a Double or a Date, which the value domain rejects until A3 admits them |
 | `openWaits[].detail.inputs[].value.scale` | `not-claimed` | Portable Decimal part; `ScenarioVariableValueProjection.project` selects no Decimal arm |
 | `openWaits[].detail.inputs[].value.value[].name` | `not-claimed` | Portable Map entry; `ScenarioVariableValueProjection.project` selects no Map arm |
 | `openWaits[].detail.inputs[].value.value[].value` | `not-claimed` | Recursive portable List or Map member; `ScenarioVariableValueProjection.project` selects neither arm, and the members of a String list are classified at `value.value` |
@@ -102,6 +108,8 @@ The CIB runner fills the state in `CibSevenStateProjector` (status, logical time
 | `openWaits[].detail.arguments[].value.kind` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
 | `openWaits[].detail.arguments[].value.value` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
 | `openWaits[].detail.arguments[].value.coefficient` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.arguments[].value.bits` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.arguments[].value.epochMs` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
 | `openWaits[].detail.arguments[].value.scale` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
 | `openWaits[].detail.arguments[].value.value[].name` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
 | `openWaits[].detail.arguments[].value.value[].value` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
@@ -114,6 +122,8 @@ The CIB runner fills the state in `CibSevenStateProjector` (status, logical time
 | `openWaits[].detail.send.correlation[].value.kind` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
 | `openWaits[].detail.send.correlation[].value.value` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
 | `openWaits[].detail.send.correlation[].value.coefficient` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.send.correlation[].value.bits` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.send.correlation[].value.epochMs` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
 | `openWaits[].detail.send.correlation[].value.scale` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
 | `openWaits[].detail.send.correlation[].value.value[].name` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
 | `openWaits[].detail.send.correlation[].value.value[].value` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
@@ -126,6 +136,8 @@ The CIB runner fills the state in `CibSevenStateProjector` (status, logical time
 | `openWaits[].detail.effect.arguments[].value.kind` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
 | `openWaits[].detail.effect.arguments[].value.value` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
 | `openWaits[].detail.effect.arguments[].value.coefficient` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.effect.arguments[].value.bits` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.effect.arguments[].value.epochMs` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
 | `openWaits[].detail.effect.arguments[].value.scale` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
 | `openWaits[].detail.effect.arguments[].value.value[].name` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
 | `openWaits[].detail.effect.arguments[].value.value[].value` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
@@ -138,6 +150,8 @@ The CIB runner fills the state in `CibSevenStateProjector` (status, logical time
 | `openWaits[].detail.effect.send.correlation[].value.kind` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
 | `openWaits[].detail.effect.send.correlation[].value.value` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
 | `openWaits[].detail.effect.send.correlation[].value.coefficient` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.effect.send.correlation[].value.bits` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.effect.send.correlation[].value.epochMs` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
 | `openWaits[].detail.effect.send.correlation[].value.scale` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
 | `openWaits[].detail.effect.send.correlation[].value.value[].name` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
 | `openWaits[].detail.effect.send.correlation[].value.value[].value` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
@@ -175,6 +189,8 @@ The CIB runner fills the state in `CibSevenStateProjector` (status, logical time
 | `broadcasts[].variables[].value.kind` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |
 | `broadcasts[].variables[].value.value` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |
 | `broadcasts[].variables[].value.coefficient` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |
+| `broadcasts[].variables[].value.bits` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |
+| `broadcasts[].variables[].value.epochMs` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |
 | `broadcasts[].variables[].value.scale` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |
 | `broadcasts[].variables[].value.value[].name` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |
 | `broadcasts[].variables[].value.value[].value` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |

@@ -32,20 +32,20 @@ def sameKindAndValue (left right : Value) : Bool :=
   | .null =>
     match right with
     | .null => true
-    | .bool _ | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => false
+    | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .string _ | .stringList _ | .list _ | .map _ => false
   | .bool held =>
     match right with
     | .bool expected => held == expected
-    | .null | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => false
+    | .null | .int _ | .decimal _ _ | .double _ | .date _ | .string _ | .stringList _ | .list _ | .map _ => false
   | .int held =>
     match right with
     | .int expected => held == expected
-    | .null | .bool _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => false
+    | .null | .bool _ | .decimal _ _ | .double _ | .date _ | .string _ | .stringList _ | .list _ | .map _ => false
   | .string held =>
     match right with
     | .string expected => held == expected
-    | .null | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ => false
-  | .decimal _ _ | .stringList _ | .list _ | .map _ => false
+    | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .stringList _ | .list _ | .map _ => false
+  | .decimal _ _ | .double _ | .date _ | .stringList _ | .list _ | .map _ => false
 
 /-- Whether `criterion` holds for an item waiting in `scope`: `processVariable` names a variable the instance root holds
 and `localVariable` one `scope` holds itself, never one of an enclosing scope, each with an equal value
@@ -63,7 +63,7 @@ def criterionHolds (state : State) (scope : ScopeOccurrenceId) (criterion : Corr
       match actual with
       | some actual => expected == actual
       | none => false
-    | .null | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ => false
+    | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .stringList _ | .list _ | .map _ => false
   match criterion.target with
   | .processVariable name => holds root name
   | .localVariable name => holds scope name
@@ -89,7 +89,7 @@ def keyValue (ctx : Ctx) (context : EvalContext) (criterion : CorrelationCriteri
     match value with
     -- dynamic-only: a key's value is the run's data.
     | .string key => if key.isEmpty then .error (.unsupported "correlation-key-empty") else .ok key
-    | .null | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ =>
+    | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .stringList _ | .list _ | .map _ =>
       -- dynamic-only: a key's value type is the run's data.
       .error (.unsupported "correlation-key-type")
   -- dynamic-only: whether a key's variable is bound is the run's data.
@@ -115,7 +115,7 @@ def correlationMatches (ctx : Ctx) (context : EvalContext) (bound : List Correla
     | .processVariable key =>
       criterion.key == key && match delivered.expected with
         | .string value => value == expected
-        | .null | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ => false
+        | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .stringList _ | .list _ | .map _ => false
     -- `criteriaRefusal` refused every other target above; the arm keeps the match total.
     | .localVariable _ | .businessKey | .processInstance => false
 

@@ -62,7 +62,11 @@ def convert (typeRef : TypeRef) (value : Value) : Except Failure Value :=
   | _, .list _ => .error (.unsupported "decision-input-kind") -- dynamic-only: a collection is the run's data
   | _, .map _ => .error (.unsupported "decision-input-kind") -- dynamic-only: a collection is the run's data
   | _, .stringList _ => .error (.unsupported "decision-input-kind") -- dynamic-only: a collection is the run's data
-  | .foreign _, .bool _ | .foreign _, .int _ | .foreign _, .decimal _ _ | .foreign _, .string _ =>
+  -- dynamic-only: no input carries a Double or a Date (A3 fills their conversions; the value domain refuses both)
+  | _, .double _ | _, .date _ => .error (.unsupported "decision-input-kind")
+  -- dynamic-only: admission refuses a `double` typeRef until A3 converts to it (`decision.typeRef`)
+  | .foreign _, .bool _ | .foreign _, .int _ | .foreign _, .decimal _ _ | .foreign _, .string _
+  | .double, .bool _ | .double, .int _ | .double, .decimal _ _ | .double, .string _ =>
     .error (.unsupported "decision-type-ref")
 
 /-- An input's value: the visible binding nearest its scope occurrence, converted by its `typeRef`. An absent variable
@@ -91,7 +95,8 @@ def ordering (value : Value) (bound : FeelLiteral) : Option Ordering :=
   match value, bound with
   | .int n, .number coefficient scale => some (compareNumber n coefficient scale)
   | .int _, _ => none
-  | .null, _ | .bool _, _ | .decimal _ _, _ | .string _, _ | .stringList _, _ | .list _, _ | .map _, _ => none
+  | .null, _ | .bool _, _ | .decimal _ _, _ | .double _, _ | .date _, _ | .string _, _ | .stringList _, _ | .list _, _
+  | .map _, _ => none
 
 def satisfies (operator : Comparison) (order : Ordering) : Bool :=
   match operator with
@@ -107,7 +112,7 @@ def test (value : Value) : UnaryTest → Option Bool
   | .literal .null =>
     match value with
     | .null => some true
-    | .bool _ | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => some false
+    | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .string _ | .stringList _ | .list _ | .map _ => some false
   | .literal literal =>
     match value, literal with
     | .null, _ => some false
@@ -115,7 +120,7 @@ def test (value : Value) : UnaryTest → Option Bool
     | .string text, .string expected => some (text == expected)
     | .bool flag, .bool expected => some (flag == expected)
     | .int _, _ | .string _, _ | .bool _, _ => some false
-    | .decimal _ _, _ | .stringList _, _ | .list _, _ | .map _, _ => some false
+    | .decimal _ _, _ | .double _, _ | .date _, _ | .stringList _, _ | .list _, _ | .map _, _ => some false
   | .compare operator bound => (ordering value bound).map (satisfies operator)
   | .interval range =>
     match ordering value range.low, ordering value range.high with
@@ -156,20 +161,20 @@ def sameValue : Value → Value → Bool
   | .null, right =>
     match right with
     | .null => true
-    | .bool _ | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => false
+    | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .string _ | .stringList _ | .list _ | .map _ => false
   | .bool left, right =>
     match right with
     | .bool right => left == right
-    | .null | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => false
+    | .null | .int _ | .decimal _ _ | .double _ | .date _ | .string _ | .stringList _ | .list _ | .map _ => false
   | .int left, right =>
     match right with
     | .int right => left == right
-    | .null | .bool _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => false
+    | .null | .bool _ | .decimal _ _ | .double _ | .date _ | .string _ | .stringList _ | .list _ | .map _ => false
   | .string left, right =>
     match right with
     | .string right => left == right
-    | .null | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ => false
-  | .decimal _ _, _ | .stringList _, _ | .list _, _ | .map _, _ => false
+    | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .stringList _ | .list _ | .map _ => false
+  | .decimal _ _, _ | .double _, _ | .date _, _ | .stringList _, _ | .list _, _ | .map _, _ => false
 
 def sameEntries (left right : List (String × Value)) : Bool :=
   left.length == right.length && (left.zip right).all fun (l, r) => l.1 == r.1 && sameValue l.2 r.2

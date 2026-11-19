@@ -150,6 +150,10 @@ function resolveName(ctx: Ctx, context: EvalContext, name: ValueSource | null): 
               if (evaluation.result.value !== "") return committed(evaluation.result.value);
               // dynamic-only: the resolved name is the run's data.
               return failed(FailureTag.Unsupported, "message-name-empty");
+            case ValueTag.Double:
+            case ValueTag.Date:
+              // dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+              return failed(FailureTag.Unsupported, "value-kind");
             case ValueTag.Bool:
             case ValueTag.Int:
             case ValueTag.Decimal:
@@ -202,6 +206,10 @@ function signalAddress(ctx: Ctx, context: EvalContext, trigger: SignalTrigger): 
                   if (evaluation.result.value !== "") return committed({ tag: SignalAddressTag.Named, name: evaluation.result.value });
                   // dynamic-only: the resolved name is the run's data.
                   return failed(FailureTag.Unsupported, "signal-name-empty");
+                case ValueTag.Double:
+                case ValueTag.Date:
+                  // dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+                  return failed(FailureTag.Unsupported, "value-kind");
                 case ValueTag.Bool:
                 case ValueTag.Int:
                 case ValueTag.Decimal:
@@ -250,6 +258,10 @@ function timerText(ctx: Ctx, context: EvalContext, value: ValueSource): Result<r
           switch (evaluation.result.tag) {
             case ValueTag.String:
               return committed([evaluation.result.value, true]);
+            case ValueTag.Double:
+            case ValueTag.Date:
+              // dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+              return failed(FailureTag.Unsupported, "value-kind");
             case ValueTag.Null:
             case ValueTag.Bool:
             case ValueTag.Int:

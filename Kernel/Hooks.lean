@@ -53,7 +53,7 @@ def collectionItems : Value → Option (List Value)
   | .null => none
   | .bool _ => none
   | .int _ => none
-  | .decimal _ _ => none
+  | .decimal _ _ | .double _ | .date _ => none
   | .string _ => none
   | .map _ => none
 
@@ -89,7 +89,7 @@ def valueBytes : Value → Option Nat
     some ("{\"kind\":\"decimal\",\"coefficient\":,\"scale\":}".utf8ByteSize + stringBytes (toString coefficient) +
       (toString scale).utf8ByteSize)
   | .string value => some ("{\"kind\":\"string\",\"value\":}".utf8ByteSize + stringBytes value)
-  | .stringList _ => none
+  | .double _ | .date _ | .stringList _ => none
   | .list items => do some ("{\"kind\":\"list\",\"value\":}".utf8ByteSize + arrayBytes (← itemsBytes items))
   | .map entries => do some ("{\"kind\":\"map\",\"value\":}".utf8ByteSize + arrayBytes (← entriesBytes entries))
 
@@ -122,14 +122,15 @@ def keysInDomain (bounds : Bounds) (entries : List (String × Value)) : Bool :=
 mutual
 /-- The value nodes of `value`, the root included, when every node lies in the portable domain under `bounds` and no
 container is nested deeper than `bounds.containerLevels` counting from `depth` containers above it; `none` otherwise.
-Integers stay within 2^53 − 1. A String List is outside the portable arms at every depth. -/
+Integers stay within 2^53 − 1. A String List is outside the portable arms at every depth, and so are a Double and a Date
+until A3 admits them, so every input carrying one is rejected (`value-outside-domain`). -/
 def domainNodes (bounds : Bounds) (depth : Nat) : Value → Option Nat
   | .null => some 1
   | .bool _ => some 1
   | .int value => if 0 ≤ value && value ≤ integerBound then some 1 else none
   | .decimal coefficient scale => if canonicalDecimal coefficient scale then some 1 else none
   | .string value => if value.utf8ByteSize ≤ bounds.textBytes then some 1 else none
-  | .stringList _ => none
+  | .double _ | .date _ | .stringList _ => none
   | .list items =>
     if depth < bounds.containerLevels && items.length ≤ bounds.containerMembers then
       (memberNodes bounds (depth + 1) items).map (· + 1)
@@ -154,7 +155,7 @@ has (DATA-SEMANTICS-SPEC "Values"). -/
 def inValueDomain (bounds : Bounds) (value : Value) : Bool :=
   match value with
   | .stringList items => items.length ≤ bounds.containerMembers && items.all (·.utf8ByteSize ≤ bounds.textBytes)
-  | .null | .bool _ | .int _ | .decimal _ _ | .string _ | .list _ | .map _ =>
+  | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .string _ | .list _ | .map _ =>
     match domainNodes bounds 0 value, valueBytes value with
     | some nodes, some bytes => nodes ≤ bounds.valueNodes && bytes ≤ bounds.canonicalBytes
     | _, _ => false

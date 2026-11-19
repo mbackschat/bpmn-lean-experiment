@@ -52,6 +52,7 @@ function typeRef(ref: TypeRef): string | null {
     case TypeRefTag.Integer:
     case TypeRefTag.Boolean:
       return null;
+    case TypeRefTag.Double:
     case TypeRefTag.Foreign:
       return "decision.typeRef";
   }
@@ -65,6 +66,7 @@ function typeRef(ref: TypeRef): string | null {
 function testLiteral(ref: TypeRef, literal: FeelLiteral): string | null {
   const kindOf = (admitted: TypeRefTag): string | null => {
     switch (ref.tag) {
+      case TypeRefTag.Double:
       case TypeRefTag.Foreign:
         return "decision.typeRef";
       case TypeRefTag.String:
@@ -133,6 +135,7 @@ function numberOutput(ref: TypeRef | null, coefficient: bigint, scale: number): 
       return null;
     case TypeRefTag.Boolean:
       return "decision.number";
+    case TypeRefTag.Double:
     case TypeRefTag.Foreign:
       return "decision.typeRef";
   }

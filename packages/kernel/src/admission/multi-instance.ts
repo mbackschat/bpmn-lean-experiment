@@ -234,6 +234,8 @@ export function mayRunNone(loop: MultiInstance): boolean {
         case ValueTag.Null:
         case ValueTag.Bool:
         case ValueTag.Decimal:
+        case ValueTag.Double:
+        case ValueTag.Date:
         case ValueTag.String:
         case ValueTag.StringList:
         case ValueTag.List:

@@ -19,6 +19,8 @@ namespace Kernel
 spelling but the three lower-case names as `foreign`, which admission refuses (`decision.typeRef`). -/
 inductive TypeRef where
   | string | integer | boolean
+  /-- DMN `double`: carried for A3, which converts to `Value.double`; admission refuses it (`decision.typeRef`). -/
+  | double
   | foreign (name : String)
   deriving Repr
 

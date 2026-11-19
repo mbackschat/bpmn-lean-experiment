@@ -90,7 +90,7 @@ def holdsCounts (ctx : Ctx) (variables : List (String × Value)) (counts : List 
     | some actual, some expected =>
       match actual with
       | .int actual => actual == expected
-      | .null | .bool _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => false
+      | .null | .bool _ | .decimal _ _ | .double _ | .date _ | .string _ | .stringList _ | .list _ | .map _ => false
     | _, _ => false
 
 /-- Queue the begins of instances already entered, in item order. Under `declarationDepthFirst` a parallel body defers
@@ -130,7 +130,7 @@ def outputCollection (collection : Value) (outputs : List Value) : Value :=
     | .null => none
     | .bool _ => none
     | .int _ => none
-    | .decimal _ _ => none
+    | .decimal _ _ | .double _ | .date _ => none
     | .stringList _ => none
     | .list _ => none
     | .map _ => none)
@@ -138,7 +138,7 @@ def outputCollection (collection : Value) (outputs : List Value) : Value :=
   | .null => .list outputs
   | .bool _ => .list outputs
   | .int _ => .list outputs
-  | .decimal _ _ => .list outputs
+  | .decimal _ _ | .double _ | .date _ => .list outputs
   | .string _ => .list outputs
   | .map _ => .list outputs
 
@@ -165,6 +165,8 @@ def countOf (rule : MultiInstanceCount) (value : Value) : Except Failure Nat :=
   | .integer =>
     match value with
     | .int count => counted count
+    -- dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+    | .double _ | .date _ => .error (.unsupported "value-kind")
     | .null | .bool _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => notANumber
   | .javaInt =>
     match value with
@@ -180,6 +182,8 @@ def countOf (rule : MultiInstanceCount) (value : Value) : Except Failure Nat :=
         | some parsed => counted parsed
         | none => notANumber
     | .null | .bool _ | .stringList _ | .list _ | .map _ => notANumber
+    -- dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+    | .double _ | .date _ => .error (.unsupported "value-kind")
 
 /-- One entry input, read before the domain predicate, under the profile's `MultiInstanceInputFailure`
 (CIB-INT-0019): `none` when an unavailable input holds the occurrence, as an unavailable InputSet does
@@ -244,9 +248,9 @@ def submitted (loop : MultiInstance) (run : MultiInstanceRun) (writes : List (St
     | .stringList _ =>
       match value with
       | .string _ => .ok (some value)
-      | .null | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ =>
+      | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .stringList _ | .list _ | .map _ =>
         .error (.rejected "instance-output-kind")
-    | .null | .bool _ | .int _ | .decimal _ _ | .string _ | .list _ | .map _ => .ok (some value)
+    | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .string _ | .list _ | .map _ => .ok (some value)
   | _, _ => .error (.rejected "undeclared-output")
 
 /-- The body is done: complete it, writing the output collection when every slot is filled. -/
@@ -311,6 +315,8 @@ def stops (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) (index : N
       | .value result =>
         match result with
         | .bool holds => .ok holds
+        -- dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+        | .double _ | .date _ => .error (.unsupported "value-kind")
         | .null | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ =>
           .error (.rolledBack "multiInstance.completionNotBoolean")
       | .failure code => .error (.rolledBack code)
@@ -355,7 +361,7 @@ def nextItems (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) (next 
             if next < members.length then .ok members else .error (.rolledBack "multiInstance.collectionShortened")
         match value with
         | .null => removed
-        | .bool _ | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => read
+        | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .string _ | .stringList _ | .list _ | .map _ => read
 
 /-- `Hooks.instanceCompleted`: fill the instance's slot, evaluate the completion condition in the instance's scope
 occurrence, leave it, then finish, close early or continue, updating the body's counter locals first. -/

@@ -28,6 +28,8 @@ def predicateHolds (ctx : Ctx) (state : State) (scope : ScopeOccurrenceId) (cond
   | .value result =>
     match result with
     | .bool value => .ok value
+    -- dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+    | .double _ | .date _ => .error (.unsupported "value-kind")
     | .null | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ =>
       .error (.rolledBack "condition-not-boolean")
   | .failure code =>

@@ -101,6 +101,18 @@ export const rows: readonly Row[] = [
     control: underJuel(userTaskMapping(admittedJuel)),
   },
   {
+    code: "value.double",
+    description: "a literal Double inside a List",
+    mutate: userTaskMapping(literalValue({ kind: "list", value: [{ kind: "double", bits: "4607182418800017408" }] })),
+    control: userTaskMapping(literalValue({ kind: "list", value: [{ kind: "decimal", coefficient: "1", scale: 0 }] })),
+  },
+  {
+    code: "value.date",
+    description: "a literal Date",
+    mutate: userTaskMapping(literalValue({ kind: "date", epochMs: "0" })),
+    control: userTaskMapping(literalValue({ kind: "integer", value: 0 })),
+  },
+  {
     code: "expression.juel.floatLiteral",
     description: "a floating literal",
     mutate: juelInput({ float: { lexeme: "1.5" } }),

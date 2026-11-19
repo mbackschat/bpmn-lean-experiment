@@ -56,6 +56,8 @@ export function simpleBoolean(variables: readonly Binding[], body: SimpleBoolean
         case ValueTag.Bool:
         case ValueTag.Int:
         case ValueTag.Decimal:
+        case ValueTag.Double:
+        case ValueTag.Date:
         case ValueTag.String:
         case ValueTag.StringList:
         case ValueTag.List:
@@ -74,6 +76,8 @@ export function simpleBoolean(variables: readonly Binding[], body: SimpleBoolean
         case ValueTag.Bool:
         case ValueTag.Int:
         case ValueTag.Decimal:
+        case ValueTag.Double:
+        case ValueTag.Date:
         case ValueTag.StringList:
         case ValueTag.List:
         case ValueTag.Map:

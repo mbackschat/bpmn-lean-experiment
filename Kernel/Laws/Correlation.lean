@@ -71,7 +71,7 @@ def NamesVariable (criterion : CorrelationMatch) : Prop :=
 
 /-- A Decimal, a String list, a list or a map, which CIB's variable query refuses as an Object value. -/
 def ObjectValued : Value → Prop
-  | .decimal _ _ | .stringList _ | .list _ | .map _ => True
+  | .decimal _ _ | .double _ | .date _ | .stringList _ | .list _ | .map _ => True
   | .null | .bool _ | .int _ | .string _ => False
 
 /-- Two criteria name one target: CIB's criteria are a map. -/
@@ -131,7 +131,7 @@ def KeyVerdict (evaluation : Evaluation) (verdict : Except Failure String) : Pro
     match value with
     | .string key =>
       (key ≠ "" ∧ verdict = .ok key) ∨ (key = "" ∧ verdict = .error (.unsupported "correlation-key-empty"))
-    | .null | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ =>
+    | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .stringList _ | .list _ | .map _ =>
       verdict = .error (.unsupported "correlation-key-type")
   | .failure code =>
     (code = "unknown-variable" ∧ verdict = .error (.unsupported "correlation-key-unbound")) ∨

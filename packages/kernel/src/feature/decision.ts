@@ -69,6 +69,10 @@ function convert(ref: TypeRef, value: Value): Result<Value> {
     case ValueTag.StringList:
       // dynamic-only: a collection is the run's data
       return failed(FailureTag.Unsupported, "decision-input-kind");
+    case ValueTag.Double:
+    case ValueTag.Date:
+      // dynamic-only: no input carries a Double or a Date (A3 fills their conversions; the value domain refuses both)
+      return failed(FailureTag.Unsupported, "decision-input-kind");
     case ValueTag.Bool:
     case ValueTag.Int:
     case ValueTag.Decimal:
@@ -86,6 +90,8 @@ function convertScalar(ref: TypeRef, value: Value): Result<Value> {
       return toBoolean(value);
     case TypeRefTag.String:
       return toTextValue(value);
+    // dynamic-only: admission refuses a `double` typeRef until A3 converts to it (`decision.typeRef`)
+    case TypeRefTag.Double:
     case TypeRefTag.Foreign:
       return failed(FailureTag.Unsupported, "decision-type-ref");
   }
@@ -113,6 +119,10 @@ function toInteger(value: Value): Result<Value> {
     }
     case ValueTag.Bool:
       return decisionFailed();
+    case ValueTag.Double:
+    case ValueTag.Date:
+      // dynamic-only: `convert` hands no Double or Date here; A3 fills their conversions
+      return failed(FailureTag.Unsupported, "decision-input-kind");
     case ValueTag.Null:
     case ValueTag.List:
     case ValueTag.Map:
@@ -136,6 +146,10 @@ function toBoolean(value: Value): Result<Value> {
     case ValueTag.Int:
     case ValueTag.Decimal:
       return decisionFailed();
+    case ValueTag.Double:
+    case ValueTag.Date:
+      // dynamic-only: `convert` hands no Double or Date here; A3 fills their conversions
+      return failed(FailureTag.Unsupported, "decision-input-kind");
     case ValueTag.Null:
     case ValueTag.List:
     case ValueTag.Map:
@@ -156,6 +170,10 @@ function toTextValue(value: Value): Result<Value> {
     case ValueTag.Decimal:
       // dynamic-only: `String.valueOf` of a BigDecimal is a Java text form the kernel does not decide
       return failed(FailureTag.Unsupported, "decision-conversion-kind");
+    case ValueTag.Double:
+    case ValueTag.Date:
+      // dynamic-only: `convert` hands no Double or Date here; A3 fills their conversions
+      return failed(FailureTag.Unsupported, "decision-input-kind");
     case ValueTag.Null:
     case ValueTag.List:
     case ValueTag.Map:
@@ -211,6 +229,8 @@ function ordering(value: Value, bound: FeelLiteral): number | null {
     case ValueTag.Null:
     case ValueTag.Bool:
     case ValueTag.Decimal:
+    case ValueTag.Double:
+    case ValueTag.Date:
     case ValueTag.String:
     case ValueTag.StringList:
     case ValueTag.List:
@@ -244,6 +264,8 @@ function equalsLiteral(value: Value, literal: FeelLiteral): boolean {
         case ValueTag.Bool:
         case ValueTag.Int:
         case ValueTag.Decimal:
+        case ValueTag.Double:
+        case ValueTag.Date:
         case ValueTag.String:
         case ValueTag.StringList:
         case ValueTag.List:
@@ -261,6 +283,8 @@ function equalsLiteral(value: Value, literal: FeelLiteral): boolean {
         case ValueTag.Bool:
         case ValueTag.Int:
         case ValueTag.Decimal:
+        case ValueTag.Double:
+        case ValueTag.Date:
         case ValueTag.StringList:
         case ValueTag.List:
         case ValueTag.Map:
@@ -274,6 +298,8 @@ function equalsLiteral(value: Value, literal: FeelLiteral): boolean {
         case ValueTag.Null:
         case ValueTag.Int:
         case ValueTag.Decimal:
+        case ValueTag.Double:
+        case ValueTag.Date:
         case ValueTag.String:
         case ValueTag.StringList:
         case ValueTag.List:
@@ -374,6 +400,8 @@ function sameValue(left: Value, right: Value): boolean {
         case ValueTag.Bool:
         case ValueTag.Int:
         case ValueTag.Decimal:
+        case ValueTag.Double:
+        case ValueTag.Date:
         case ValueTag.String:
         case ValueTag.StringList:
         case ValueTag.List:
@@ -388,6 +416,8 @@ function sameValue(left: Value, right: Value): boolean {
         case ValueTag.Null:
         case ValueTag.Int:
         case ValueTag.Decimal:
+        case ValueTag.Double:
+        case ValueTag.Date:
         case ValueTag.String:
         case ValueTag.StringList:
         case ValueTag.List:
@@ -402,6 +432,8 @@ function sameValue(left: Value, right: Value): boolean {
         case ValueTag.Null:
         case ValueTag.Bool:
         case ValueTag.Decimal:
+        case ValueTag.Double:
+        case ValueTag.Date:
         case ValueTag.String:
         case ValueTag.StringList:
         case ValueTag.List:
@@ -417,6 +449,8 @@ function sameValue(left: Value, right: Value): boolean {
         case ValueTag.Bool:
         case ValueTag.Int:
         case ValueTag.Decimal:
+        case ValueTag.Double:
+        case ValueTag.Date:
         case ValueTag.StringList:
         case ValueTag.List:
         case ValueTag.Map:
@@ -424,6 +458,8 @@ function sameValue(left: Value, right: Value): boolean {
       }
       return assertNever(right);
     case ValueTag.Decimal:
+    case ValueTag.Double:
+    case ValueTag.Date:
     case ValueTag.StringList:
     case ValueTag.List:
     case ValueTag.Map:

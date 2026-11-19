@@ -673,6 +673,8 @@
         "timer.cycle",
         "timer.date",
         "timer.duration",
+        "value.date",
+        "value.double",
         "work.call.ambiguous",
         "work.call.binding",
         "work.call.bindingExpression",

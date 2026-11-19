@@ -126,6 +126,10 @@ function signalBusinessKey(ctx: Ctx, context: EvalContext, expression: Expressio
           return committed(result.value);
         case ValueTag.Null:
           return committed(null);
+        case ValueTag.Double:
+        case ValueTag.Date:
+          // dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+          return failed(FailureTag.Unsupported, "value-kind");
         case ValueTag.Bool:
         case ValueTag.Int:
         case ValueTag.Decimal:
@@ -188,6 +192,10 @@ function thrownAddress(ctx: Ctx, context: EvalContext, record: SignalThrow): Res
                 case ValueTag.Null:
                   // dynamic-only: the evaluated name is the run's data.
                   return failed(FailureTag.Unsupported, "signal-name-null");
+                case ValueTag.Double:
+                case ValueTag.Date:
+                  // dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+                  return failed(FailureTag.Unsupported, "value-kind");
                 case ValueTag.Bool:
                 case ValueTag.Int:
                 case ValueTag.Decimal:

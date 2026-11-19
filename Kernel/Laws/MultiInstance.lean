@@ -668,7 +668,7 @@ theorem outputCollection_lists {collection : Value} {outputs : List Value}
       obtain ⟨text, rfl⟩ := texts value (List.mem_cons_self ..) items rfl
       rw [List.filterMap_cons_some (by rfl), List.map_cons,
         held fun other inside => texts other (List.mem_cons_of_mem _ inside)]
-  | list _ | null | bool _ | int _ | decimal _ _ | string _ | map _ => exact .inl rfl
+  | list _ | null | bool _ | int _ | decimal _ _ | double _ | date _ | string _ | map _ => exact .inl rfl
 
 /-- A body's completion completes its occurrence, writing what `WritesCollection` allows. -/
 theorem finish_spec (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) (state : State) :

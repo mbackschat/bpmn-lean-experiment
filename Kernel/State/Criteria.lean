@@ -24,7 +24,7 @@ type ("Object values cannot be used to query", `SingleQueryVariableValueConditio
 Decimal, a String list, a list and a map over as `BigDecimal`, `ArrayList` and `LinkedHashMap` (CIB-CFG-0009). -/
 def queryable : Value → Bool
   | .null | .bool _ | .int _ | .string _ => true
-  | .decimal _ _ | .stringList _ | .list _ | .map _ => false
+  | .decimal _ _ | .double _ | .date _ | .stringList _ | .list _ | .map _ => false
 
 /-- Whether a criterion names a variable, whose value CIB's variable query compares. -/
 def namesVariable (criterion : CorrelationMatch) : Bool :=

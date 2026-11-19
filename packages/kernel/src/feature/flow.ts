@@ -94,6 +94,10 @@ function condition(ctx: Ctx, context: EvalContext, candidate: FlowId): Result<bo
       switch (result.tag) {
         case ValueTag.Bool:
           return committed(result.value);
+        case ValueTag.Double:
+        case ValueTag.Date:
+          // dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+          return failed(FailureTag.Unsupported, "value-kind");
         case ValueTag.Null:
         case ValueTag.Int:
         case ValueTag.Decimal:

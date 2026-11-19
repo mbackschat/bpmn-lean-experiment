@@ -117,7 +117,7 @@ def mayRunNone (loop : MultiInstance) : Bool :=
   | .cardinality (.literal value) =>
     match value with
     | .int count => count ≤ 0
-    | .null | .bool _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => true
+    | .null | .bool _ | .decimal _ _ | .double _ | .date _ | .string _ | .stringList _ | .list _ | .map _ => true
   | .cardinality _ => true
   | .collection _ => true
   | .countAndCollection _ _ => true

@@ -162,15 +162,17 @@ def decimalText (text : String) : Eval (Int × Int) :=
 /-! ## Values -/
 
 /-- A context value as Java sees it: Integers of unknown class, a `stringList` as the ArrayList of Strings it is in CIB. -/
-def fromValue : Value → JVal
-  | .null => .null
-  | .bool value => .bool value
-  | .int value => .int value .unknown
-  | .decimal coefficient scale => .decimal coefficient scale
-  | .string value => .string value
-  | .stringList items => .list (items.map Value.string)
-  | .list items => .list items
-  | .map entries => .map entries
+def fromValue : Value → Eval JVal
+  | .null => .ok .null
+  | .bool value => .ok (.bool value)
+  | .int value => .ok (.int value .unknown)
+  | .decimal coefficient scale => .ok (.decimal coefficient scale)
+  -- dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+  | .double _ | .date _ => limit "value-kind"
+  | .string value => .ok (.string value)
+  | .stringList items => .ok (.list (items.map Value.string))
+  | .list items => .ok (.list items)
+  | .map entries => .ok (.map entries)
 
 /-- A result as the Multi-Instance count and collection sites read it, before the domain predicate: any Integer within
 ±(2^53−1), the bound the TypeScript kernel's numbers share, and a Decimal at any scale, a negative one rescaled to 0. -/

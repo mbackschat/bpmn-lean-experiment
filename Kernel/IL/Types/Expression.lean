@@ -20,6 +20,10 @@ inductive Value where -- guard-exception(3): the portable value vocabulary JUEL'
   | bool (value : Bool)
   | int (value : Int)
   | decimal (coefficient : Int) (scale : Nat)
+  /-- A Java `double` by its IEEE 754 binary64 bits, so equality and the wire stay exact (NaN and `-0.0` included). -/
+  | double (bits : UInt64)
+  /-- A Java `Date` by its milliseconds since the Unix epoch, UTC: a Java `long`, so a signed decimal string on the wire. -/
+  | date (epochMs : Int)
   | string (value : String)
   | stringList (items : List String)
   | list (items : List Value)

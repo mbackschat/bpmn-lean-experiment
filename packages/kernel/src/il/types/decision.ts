@@ -12,6 +12,8 @@ export enum TypeRefTag {
   String = "string",
   Integer = "integer",
   Boolean = "boolean",
+  /** DMN `double`: carried for A3, which converts to `Value` Double; admission refuses it (`decision.typeRef`). */
+  Double = "double",
   Foreign = "foreign",
 }
 
@@ -19,6 +21,7 @@ export type TypeRef =
   | { readonly tag: TypeRefTag.String }
   | { readonly tag: TypeRefTag.Integer }
   | { readonly tag: TypeRefTag.Boolean }
+  | { readonly tag: TypeRefTag.Double }
   | { readonly tag: TypeRefTag.Foreign; readonly name: string };
 
 // guard-exception(3): FEEL unary-test comparisons (decision semantics item 4), a separate expression language from JUEL's operators.

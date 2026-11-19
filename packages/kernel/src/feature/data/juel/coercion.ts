@@ -77,24 +77,28 @@ export function portable(bounds: Bounds, value: JVal): Value | null {
 
 
 /** A context value as Java sees it: Integers of unknown class, a `stringList` as the ArrayList of Strings it is in CIB. */
-export function fromValue(value: Value): JVal {
+export function fromValue(value: Value): Eval<JVal> {
   switch (value.tag) {
     case ValueTag.Null:
-      return nullValue;
+      return ok(nullValue);
     case ValueTag.Bool:
-      return bool(value.value);
+      return ok(bool(value.value));
     case ValueTag.Int:
-      return { tag: JValTag.Int, value: BigInt(value.value), carrier: Carrier.Unknown };
+      return ok({ tag: JValTag.Int, value: BigInt(value.value), carrier: Carrier.Unknown });
     case ValueTag.Decimal:
-      return { tag: JValTag.Decimal, coefficient: value.coefficient, scale: BigInt(value.scale) };
+      return ok({ tag: JValTag.Decimal, coefficient: value.coefficient, scale: BigInt(value.scale) });
+    case ValueTag.Double:
+    case ValueTag.Date:
+      // dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+      return unsupported("value-kind");
     case ValueTag.String:
-      return text(value.value);
+      return ok(text(value.value));
     case ValueTag.StringList:
-      return { tag: JValTag.List, items: value.items.map((item) => ({ tag: ValueTag.String, value: item })) };
+      return ok({ tag: JValTag.List, items: value.items.map((item) => ({ tag: ValueTag.String, value: item })) });
     case ValueTag.List:
-      return { tag: JValTag.List, items: value.items };
+      return ok({ tag: JValTag.List, items: value.items });
     case ValueTag.Map:
-      return { tag: JValTag.Map, entries: value.entries };
+      return ok({ tag: JValTag.Map, entries: value.entries });
   }
   return assertNever(value);
 }

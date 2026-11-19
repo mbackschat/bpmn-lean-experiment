@@ -29,7 +29,7 @@ def typeRef : TypeRef → Option String
   | .string => none
   | .integer => none
   | .boolean => none
-  | .foreign _ => some "decision.typeRef"
+  | .double | .foreign _ => some "decision.typeRef"
 
 /-- A literal a test of an input with `typeRef` may name (item 3): numbers under `integer`, Strings under `string`,
 `true` and `false` under `boolean`, `null` under every one. -/
@@ -40,19 +40,19 @@ def testLiteral (typeRef : TypeRef) : FeelLiteral → Option String
     | .integer => if portableNumber coefficient scale then none else some "decision.number"
     | .string => some "decision.testKind"
     | .boolean => some "decision.testKind"
-    | .foreign _ => some "decision.typeRef"
+    | .double | .foreign _ => some "decision.typeRef"
   | .string _ =>
     match typeRef with
     | .string => none
     | .integer => some "decision.testKind"
     | .boolean => some "decision.testKind"
-    | .foreign _ => some "decision.typeRef"
+    | .double | .foreign _ => some "decision.typeRef"
   | .bool _ =>
     match typeRef with
     | .boolean => none
     | .integer => some "decision.testKind"
     | .string => some "decision.testKind"
-    | .foreign _ => some "decision.typeRef"
+    | .double | .foreign _ => some "decision.typeRef"
 
 /-- A number bound, the only one a comparison or an interval has in the grammar; under `integer` only. -/
 def bound (typeRef : TypeRef) : FeelLiteral → Option String
@@ -83,7 +83,7 @@ def outputEntry (typeRef : Option TypeRef) : OutputEntry → Option String
       | some .integer => none
       | some .string => none
       | some .boolean => some "decision.number"
-      | some (.foreign _) => some "decision.typeRef"
+      | some .double | some (.foreign _) => some "decision.typeRef"
       | none => some "decision.number"
   | .literal .null => none
   | .literal (.bool _) => none

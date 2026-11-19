@@ -528,6 +528,12 @@
           "$ref": "#/$defs/decimalValue"
         },
         {
+          "$ref": "#/$defs/doubleValue"
+        },
+        {
+          "$ref": "#/$defs/dateValue"
+        },
+        {
           "$ref": "#/$defs/listValue"
         },
         {
@@ -1238,6 +1244,44 @@
           "elementId": {
             "$ref": "#/$defs/nonEmptyString"
           }
+        }
+      }
+    },
+    "doubleValue": {
+      "description": "A Java double by its IEEE 754 binary64 bit pattern as a decimal string, carried for A3; the kernel's value domain rejects it (value-outside-domain) until A3 admits it.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "bits"
+      ],
+      "properties": {
+        "kind": {
+          "const": "double"
+        },
+        "bits": {
+          "type": "string",
+          "maxLength": 20,
+          "pattern": "^(0|[1-9][0-9]*)$"
+        }
+      }
+    },
+    "dateValue": {
+      "description": "A Java Date by its milliseconds since the Unix epoch as a signed decimal string (a Java long), carried for A3; the kernel's value domain rejects it (value-outside-domain) until A3 admits it.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "epochMs"
+      ],
+      "properties": {
+        "kind": {
+          "const": "date"
+        },
+        "epochMs": {
+          "type": "string",
+          "maxLength": 20,
+          "pattern": "^(0|-?[1-9][0-9]*)$"
         }
       }
     }

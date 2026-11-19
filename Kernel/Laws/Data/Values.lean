@@ -55,7 +55,7 @@ mutual
 def nodes : Value → Nat
   | .list items => 1 + itemNodes items
   | .map entries => 1 + entryNodes entries
-  | .null | .bool _ | .int _ | .decimal _ _ | .string _ | .stringList _ => 1
+  | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .string _ | .stringList _ => 1
 
 def itemNodes : List Value → Nat
   | [] => 0
@@ -89,8 +89,8 @@ def digitBytes (value : Int) : Nat :=
 mutual
 /-- The bytes of a portable value's canonical JSON: no whitespace, each node `{"kind":…,"value":…}` (a Decimal's
 coefficient a string beside its scale), each Map entry `{"name":…,"value":…}`; each constant is the bytes of the
-template its comment shows. A String List has no canonical value JSON; `Portable` excludes it before its measure is
-read. -/
+template its comment shows. A String List, a Double and a Date have no measure here; `Portable` excludes them
+before it is read. -/
 def jsonBytes : Value → Nat
   | .null => 15 -- {"kind":"null"}
   | .bool value => 27 + if value then 4 else 5 -- {"kind":"boolean","value":}
@@ -98,7 +98,7 @@ def jsonBytes : Value → Nat
   | .decimal coefficient scale => 42 + (2 + digitBytes coefficient) + digitBytes scale
     -- {"coefficient":,"kind":"decimal","scale":}
   | .string text => 26 + textBytes text -- {"kind":"string","value":}
-  | .stringList _ => 0
+  | .double _ | .date _ | .stringList _ => 0
   | .list items => 26 + itemBytes items + (items.length - 1) -- {"kind":"list","value":[]}
   | .map entries => 25 + entryBytes entries + (entries.length - 1) -- {"kind":"map","value":[]}
 
@@ -115,7 +115,7 @@ end
 `bounds.containerMembers` Strings of at most `bounds.textBytes` UTF-8 bytes. -/
 def WholeStringList (bounds : Bounds) : Value → Prop
   | .stringList items => items.length ≤ bounds.containerMembers ∧ ∀ text ∈ items, text.utf8ByteSize ≤ bounds.textBytes
-  | .null | .bool _ | .int _ | .decimal _ _ | .string _ | .list _ | .map _ => False
+  | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .string _ | .list _ | .map _ => False
 
 /-- A value an input may carry under `bounds`: a portable root value of at most `bounds.valueNodes` nodes and
 `bounds.canonicalBytes` canonical JSON bytes, or a `stringList` as a whole. -/

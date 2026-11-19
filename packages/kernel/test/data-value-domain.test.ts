@@ -106,6 +106,15 @@ test("a Start value outside a scalar domain is rejected at any depth", () => {
   }
 });
 
+test("a Start value carrying a Double or a Date is rejected at any depth until A3 admits them", () => {
+  // 1.0 as IEEE 754 binary64 bits, and the Unix epoch.
+  for (const value of [{ kind: "double", bits: "4607182418800017408" }, { kind: "date", epochMs: "0" }]) {
+    assert.deepEqual(run(userTask(), startWith(value)), outside);
+    assert.deepEqual(run(userTask(), startWith(list(value))), outside);
+  }
+  assert.ok(committed(run(userTask(), startWith(list(decimal("1", 0))))), "the control value is accepted");
+});
+
 test("the legacy String List is admitted as a whole variable value only", () => {
   const strings: Json = { kind: "stringList", value: ["a", "b"] };
   assert.ok(committed(run(userTask(), startWith(strings))));

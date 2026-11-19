@@ -56,6 +56,8 @@ function sameKindAndValue(left: Value, right: Value): boolean {
         case ValueTag.Bool:
         case ValueTag.Int:
         case ValueTag.Decimal:
+        case ValueTag.Double:
+        case ValueTag.Date:
         case ValueTag.String:
         case ValueTag.StringList:
         case ValueTag.List:
@@ -70,6 +72,8 @@ function sameKindAndValue(left: Value, right: Value): boolean {
         case ValueTag.Null:
         case ValueTag.Int:
         case ValueTag.Decimal:
+        case ValueTag.Double:
+        case ValueTag.Date:
         case ValueTag.String:
         case ValueTag.StringList:
         case ValueTag.List:
@@ -84,6 +88,8 @@ function sameKindAndValue(left: Value, right: Value): boolean {
         case ValueTag.Null:
         case ValueTag.Bool:
         case ValueTag.Decimal:
+        case ValueTag.Double:
+        case ValueTag.Date:
         case ValueTag.String:
         case ValueTag.StringList:
         case ValueTag.List:
@@ -99,6 +105,8 @@ function sameKindAndValue(left: Value, right: Value): boolean {
         case ValueTag.Bool:
         case ValueTag.Int:
         case ValueTag.Decimal:
+        case ValueTag.Double:
+        case ValueTag.Date:
         case ValueTag.StringList:
         case ValueTag.List:
         case ValueTag.Map:
@@ -106,6 +114,8 @@ function sameKindAndValue(left: Value, right: Value): boolean {
       }
       return assertNever(right);
     case ValueTag.Decimal:
+    case ValueTag.Double:
+    case ValueTag.Date:
     case ValueTag.StringList:
     case ValueTag.List:
     case ValueTag.Map:
@@ -135,6 +145,8 @@ function criterionHolds(state: State, scope: ScopeOccurrenceId, criterion: Corre
       case ValueTag.Bool:
       case ValueTag.Int:
       case ValueTag.Decimal:
+      case ValueTag.Double:
+      case ValueTag.Date:
       case ValueTag.StringList:
       case ValueTag.List:
       case ValueTag.Map:
@@ -189,6 +201,8 @@ function keyValue(ctx: Ctx, context: EvalContext, criterion: CorrelationCriterio
         case ValueTag.Bool:
         case ValueTag.Int:
         case ValueTag.Decimal:
+        case ValueTag.Double:
+        case ValueTag.Date:
         case ValueTag.StringList:
         case ValueTag.List:
         case ValueTag.Map:
@@ -252,6 +266,8 @@ function criterionMatches(criterion: CorrelationCriterion, delivered: Correlatio
         case ValueTag.Bool:
         case ValueTag.Int:
         case ValueTag.Decimal:
+        case ValueTag.Double:
+        case ValueTag.Date:
         case ValueTag.StringList:
         case ValueTag.List:
         case ValueTag.Map:

@@ -57,6 +57,8 @@ def resolveName (ctx : Ctx) (context : EvalContext) : Option ValueSource → Exc
       -- dynamic-only: the resolved name is the run's data.
       | .string "" | .null => .error (.unsupported "message-name-empty")
       | .string text => .ok (some text)
+      -- dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+      | .double _ | .date _ => .error (.unsupported "value-kind")
       | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ => .error (.rolledBack "message-name-type")
     | .failure code => .error (.rolledBack code)
     | .unsupported code => .error (.unsupported code)
@@ -76,6 +78,8 @@ def signalAddress (ctx : Ctx) (context : EvalContext) (trigger : SignalTrigger) 
       -- dynamic-only: the resolved name is the run's data.
       | .string "" | .null => .error (.unsupported "signal-name-empty")
       | .string text => .ok (.named text)
+      -- dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+      | .double _ | .date _ => .error (.unsupported "value-kind")
       | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ => .error (.rolledBack "signal-name-type")
     | .failure code => .error (.rolledBack code)
     | .unsupported code => .error (.unsupported code)
@@ -94,6 +98,8 @@ def timerText (ctx : Ctx) (context : EvalContext) : ValueSource → Except Failu
       match value with
       | .string text => .ok (text, true)
       -- dynamic-only: a value's type is the run's data.
+      -- dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+      | .double _ | .date _ => .error (.unsupported "value-kind")
       | .null | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ =>
         .error (.rolledBack "timer-value-type")
     | .failure code => .error (.rolledBack code)
