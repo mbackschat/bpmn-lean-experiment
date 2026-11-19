@@ -551,6 +551,7 @@ const profileOptions = struct<ProfileOptions>("ProfileOptions", {
   deploymentErrors: members("DeploymentErrors", DeploymentErrors),
   handlerEscalation: members("HandlerEscalation", HandlerEscalation),
   defaultRetryCycle: option(string),
+  inertExtensions: list(struct("InertExtension", { elementType: string, name: qName })),
 });
 
 const program = struct<Program>("Program", {
@@ -569,6 +570,7 @@ const program = struct<Program>("Program", {
   })),
   executable: bool,
   decisionResources: list(decisionResource),
+  retainedExtensions: list(struct("RetainedExtension", { name: qName, elementType: string, element: string, value: string })),
 });
 
 /** A kernel IL program, strictly (`Kernel.Codec.programFromJson`). */

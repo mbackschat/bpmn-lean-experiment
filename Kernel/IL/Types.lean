@@ -341,6 +341,18 @@ structure CalledProcess where
   executable : Bool := true
   deriving Repr
 
+/-- An extension attribute the reader retained without consuming it (AD1's inert tier): its expanded `name`, the BPMN
+`elementType` it sits on, the source identifier of that `element` (a process's own included) and its `value` text. Only
+an item whose register entry finds it without effect at the observation boundary may ever pass; the profile's
+inert table (`ProfileOptions.inertExtensions`) decides per element type and name, and admission refuses every other
+(`extension.retained`). -/
+structure RetainedExtension where
+  name : QName
+  elementType : String
+  element : String
+  value : String
+  deriving Repr
+
 /-- `processes` lists the called processes; every other parentless element belongs to the root process, whose
 declared item names are `variables` (as `CalledProcess.variables`). -/
 structure Program where
@@ -354,6 +366,7 @@ structure Program where
   executable : Bool := true
   /-- The DMN resources deployed with the source, which a Business Rule Task's `decisionRef` names. -/
   decisionResources : List DecisionResource := []
+  retainedExtensions : List RetainedExtension := []
 
 /-! ## Queries
 

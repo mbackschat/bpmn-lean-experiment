@@ -493,6 +493,15 @@ export const defaultBounds: Bounds = {
   containerLevels: 4, containerMembers: 32, valueNodes: 256, canonicalBytes: 16384, textBytes: 1024, instanceIdentityBytes: 1024,
 };
 
+/**
+ * An XML QName as the reader resolved it: the namespace its prefix is bound to (the Definitions' `targetNamespace` for
+ * an unprefixed name), and its local part, which names an element by its id (BPMN 2.0.2 §15.3.2).
+ */
+export interface QName { readonly namespace: string | null; readonly localName: string; }
+
+/** An extension attribute a profile finds inert (AD1): the BPMN element type it sits on and its expanded name. */
+export interface InertExtension { readonly elementType: string; readonly name: QName; }
+
 export interface ProfileOptions {
   readonly relations: readonly string[];
   readonly evaluator: Evaluator;
@@ -556,4 +565,10 @@ export interface ProfileOptions {
    * refuses one (`profile.defaultRetryCycle`) until the job model's stage reads it.
    */
   readonly defaultRetryCycle: string | null;
+  /**
+   * AD1's inert table: the retained extension attributes (`Program.retainedExtensions`) admission lets pass; every
+   * other is refused (`extension.retained`). Each item needs its register entry, so admission refuses a non-empty
+   * table (`profile.inertExtensions`) until the extension stage admits the first.
+   */
+  readonly inertExtensions: readonly InertExtension[];
 }

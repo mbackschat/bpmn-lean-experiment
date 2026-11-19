@@ -9,7 +9,7 @@
  * `ElementId`/`FlowId` are plain strings as on the wire. A Lean query `T.f` is exported as `tF`, `?` dropped.
  */
 
-import { CalledElementResolution, type ProfileOptions } from "./types/options.js";
+import { CalledElementResolution, type ProfileOptions, type QName } from "./types/options.js";
 import {
   ExpressionTag, MappingDialect, ParameterNodeTag, SimpleBooleanTag, ValueSourceTag, ValueTag, type Expression, type Mapping,
   type ParameterEntry, type ParameterNode, type ParameterScript, type SimpleBoolean, type StructuredParameter, type Value,
@@ -18,7 +18,7 @@ import {
 import type { Decision, DecisionResource } from "./types/decision.js";
 import {
   type CallWork, callWorkSelects, callWorkNamesDefinition, type DefinitionRef, definitionRefEquals,
-  type ProgramIdentity, type QName,
+  type ProgramIdentity,
 } from "./types/reference.js";
 import type { MultiInstance } from "./types/multi-instance.js";
 import { assertNever } from "./types/expression.js";
@@ -37,7 +37,7 @@ export {
   MultiInstanceBinding, ResultValues, OutputContext, MultiInstanceCounters, MultiInstanceInputFailure, MultiInstanceCount,
   CollectionRead, multiInstanceCounterNames, BusinessRuleTask, ScriptTask, ConfiguredTask, InclusiveJoinReach, BranchSchedule, ConditionalRetrigger, MalformedTimer, MessageNames,
   ScopeStart, SignalNames, SignalPayload, SignalDelivery, ConditionalStart, CalledElementResolution, MessageThrowForms,
-  DeploymentErrors, HandlerEscalation, defaultBounds, type Bounds,
+  DeploymentErrors, HandlerEscalation, defaultBounds, type Bounds, type InertExtension, type QName,
 } from "./types/options.js";
 export {
   ExpressionTag, MappingDialect, ParameterNodeTag, SimpleBooleanTag, ValueSourceTag, ValueTag, type Expression, type Mapping,
@@ -46,7 +46,7 @@ export {
 };
 export {
   type CallBinding, CallBindingTag, type CallWork, callWorkSelects, callWorkNamesDefinition, type DefinitionRef, definitionRefEquals,
-  definitionRefEligibleFor, type ProgramIdentity, type QName,
+  definitionRefEligibleFor, type ProgramIdentity,
 } from "./types/reference.js";
 export { assertNever };
 export type { CorrelationCriterion, DataOutputDecl, EffectBinding, MessageTrigger } from "./types/message.js";
@@ -439,6 +439,20 @@ export interface CalledProcess {
 }
 
 /**
+ * An extension attribute the reader retained without consuming it (AD1's inert tier): its expanded `name`, the BPMN
+ * `elementType` it sits on, the source identifier of that `element` (a process's own included) and its `value` text.
+ * Only an item whose register entry finds it without effect at the observation boundary may ever pass; the profile's
+ * inert table (`ProfileOptions.inertExtensions`) decides per element type and name, and admission refuses every other
+ * (`extension.retained`).
+ */
+export interface RetainedExtension {
+  readonly name: QName;
+  readonly elementType: string;
+  readonly element: string;
+  readonly value: string;
+}
+
+/**
  * `processes` lists the called processes; every other parentless element belongs to the root process, whose declared
  * item names are `variables` (as `CalledProcess.variables`).
  */
@@ -453,6 +467,7 @@ export interface Program {
   readonly executable: boolean;
   /** The DMN resources deployed with the source, which a Business Rule Task's `decisionRef` names. */
   readonly decisionResources: readonly DecisionResource[];
+  readonly retainedExtensions: readonly RetainedExtension[];
 }
 
 // Queries: read-only projections of a `Program`, in this module so that no module beyond the three hubs has more than

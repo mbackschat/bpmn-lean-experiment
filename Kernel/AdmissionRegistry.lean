@@ -383,6 +383,12 @@ def calledProcessBinding (process : CalledProcess) : Option String :=
 def executable (program : Program) : Option String :=
   if !program.executable || program.processes.any (!·.executable) then some "process.notExecutable" else none
 
+/-- A retained extension attribute passes only where the profile's inert table lists its element type and expanded
+name (AD1); every other is refused. -/
+def retainedExtension (options : ProfileOptions) (extension : RetainedExtension) : Option String :=
+  if options.inertExtensions.any fun inert => inert.elementType == extension.elementType && inert.name == extension.name
+  then none else some "extension.retained"
+
 /-- A refusal code, and the element or flow it names when that element's or flow's own check refused. -/
 structure AdmissionRefusal where
   code : String
@@ -397,7 +403,8 @@ def unlocated (code : Option String) : Option AdmissionRefusal :=
 def located {α : Type} (items : List α) (id : α → String) (check : α → Option String) : Option AdmissionRefusal :=
   items.findSome? fun item => (check item).map ({ code := ·, element := some (id item) })
 
-/-- The first refusal: references, profile options, a process not marked executable, the carried DMN resources, then
+/-- The first refusal: references, profile options, a process not marked executable, a retained extension attribute
+outside the profile's inert table, the carried DMN resources, then
 called-process bindings, the process levels' Event Sub-Processes, flows and elements in program order, the instances of
 each loop, the units each element's run fans out to (`Admission.Flow.Concurrency.fanOutConflict`), the Conditional starts of
 each process level, then the Message and the Signal names of the whole program. A flow's, an element's or a loop's own
@@ -409,6 +416,7 @@ def admitLocated (program : Program) : Option AdmissionRefusal :=
       { abnormalScope := abnormalScope program, loops := loops program, errorExit := errorExit program
         loopedHandler := loopedHandler program } program.options) <|>
     unlocated (executable program) <|>
+    located program.retainedExtensions (·.element) (retainedExtension program.options) <|>
     unlocated (Admission.Work.Decision.resources program) <|>
     unlocated (program.processes.findSome? calledProcessBinding) <|>
     unlocated (processEventSubProcesses program) <|>

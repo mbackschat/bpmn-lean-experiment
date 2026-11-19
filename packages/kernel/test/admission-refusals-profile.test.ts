@@ -99,6 +99,14 @@ export const rows: readonly Row[] = [
     control: option({ defaultRetryCycle: null }),
   },
   {
+    // AD1: every inert item needs its register entry; none is admitted yet.
+    code: "profile.inertExtensions",
+    description: "a non-empty inert extension table",
+    mutate: option({ inertExtensions: [{ elementType: "bpmn:Process",
+      name: { namespace: "http://camunda.org/schema/1.0/bpmn", localName: "historyTimeToLive" } }] }),
+    control: option({ inertExtensions: [] }),
+  },
+  {
     code: "profile.abnormalScopeEnd.withoutOutflow",
     description: "an abnormal scope end that leaves without outflow, reached by a Terminate in a Sub-Process",
     mutate: (program) => terminatingScope(withOptions(program, { abnormalScopeEnd: "withoutOutflow" })),

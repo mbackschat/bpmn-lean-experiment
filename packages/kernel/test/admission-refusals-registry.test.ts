@@ -96,6 +96,14 @@ export const rows: readonly Row[] = [
     control: calledProcess(),
   },
   {
+    // AD1: no profile-selected inert table exists yet, so every retained extension attribute is refused.
+    code: "extension.retained",
+    description: "a retained extension attribute",
+    mutate: (program) => ({ ...program, retainedExtensions: [{ name: { namespace: "http://camunda.org/schema/1.0/bpmn",
+      localName: "historyTimeToLive" }, elementType: "bpmn:Process", element: "Process_SimpleBooleanChoice", value: "P180D" }] }),
+    control: (program) => ({ ...program, retainedExtensions: [] }),
+  },
+  {
     code: "event.multipleDefinitions",
     description: "a Multiple End Event throwing an Error and an Escalation",
     mutate: multipleEnd([{ escalation: { payload: { code: "X1" } } }]),

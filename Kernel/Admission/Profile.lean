@@ -60,6 +60,7 @@ def options (reach : Reach) (selected : ProfileOptions) : Option String :=
   (if selected.deploymentErrors == .cibDeployment then some "profile.deploymentErrors.cibDeployment" else none) <|>
   (if selected.handlerEscalation == .reentersHandler then some "profile.handlerEscalation.reentersHandler" else none) <|>
   (if selected.defaultRetryCycle.isSome then some "profile.defaultRetryCycle" else none) <|>
+  (if selected.inertExtensions.isEmpty then none else some "profile.inertExtensions") <|>
   multiInstance reach.loops selected
 
 end Kernel.Admission.Profile

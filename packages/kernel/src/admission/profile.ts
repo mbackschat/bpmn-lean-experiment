@@ -86,5 +86,6 @@ export function options(reach: Reach, selected: ProfileOptions): string | null {
   if (selected.deploymentErrors === DeploymentErrors.CibDeployment) return "profile.deploymentErrors.cibDeployment";
   if (selected.handlerEscalation === HandlerEscalation.ReentersHandler) return "profile.handlerEscalation.reentersHandler";
   if (selected.defaultRetryCycle !== null) return "profile.defaultRetryCycle";
+  if (selected.inertExtensions.length > 0) return "profile.inertExtensions";
   return multiInstance(reach.loops, selected);
 }

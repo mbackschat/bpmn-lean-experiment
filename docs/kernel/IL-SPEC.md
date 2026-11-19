@@ -34,6 +34,7 @@ The wire form is Lean's derived JSON encoding of the IL types ([`Kernel/IL/Codec
 | `variables` | the item names the root process declares (Properties, Data Objects, its own Data Inputs and Outputs; a Data Object reference declares none), declared at the instance root before any value is bound (BPMN 2.0.2 §10.4.1) |
 | `processes` | the called processes the program carries: bound `definition` (`DefinitionRef`), process-level `children`, declared `variables`, `executable` |
 | `executable` | the root process's `isExecutable` (Table 10.1), absent read as `false` |
+| `retainedExtensions` | the extension attributes the reader retained without consuming them (AD1's inert tier), each its expanded `name`, `elementType`, source `element` and `value` text; admission refuses every one outside the profile's inert table `inertExtensions` (`extension.retained`), and the reader still refuses every unconsumed attribute, so none is retained today |
 
 The table is flat and identifier-keyed: a Scope names its children and a flow its endpoints by identifier, and no IL or state type is a nested or mutual inductive. A parentless element belongs to the root process unless a called process lists it. `Header.id` is unique in the program, so two versions of one called definition coexist; `origin.sourceId` is the identifier the model's author wrote, which publication shows.
 
@@ -107,6 +108,7 @@ One enumerated field per decision point the kernel branches on, each defaulting 
 | `deploymentErrors` | `bpmnValidity`, `cibDeployment` (refused as `profile.deploymentErrors.cibDeployment` until CIB's deployment errors are classified, AD7) |
 | `handlerEscalation` | `passesHandler`, `reentersHandler` (refused as `profile.handlerEscalation.reentersHandler`; both readings stay refused at run time as `escalation-rethrow-reenters-handler`) |
 | `defaultRetryCycle` | `null` or CIB's engine-wide `failedJobRetryTimeCycle` text (refused as `profile.defaultRetryCycle` until the job model reads it, AD8) |
+| `inertExtensions` | AD1's inert table: the element type and expanded name of each retained extension attribute admission lets pass, empty in every profile (a non-empty table is refused as `profile.inertExtensions` until the extension stage admits its first item with its register entry) |
 
 ## Inputs
 

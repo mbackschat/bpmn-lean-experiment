@@ -40,6 +40,7 @@ import {
   type MessageTrigger,
   type ProfileOptions,
   type Program,
+  type RetainedExtension,
   type SignalTrigger,
   type Subscription,
   type ThrowView,
@@ -610,6 +611,16 @@ function executable(program: Program): string | null {
   return !program.executable || program.processes.some((process) => !process.executable) ? "process.notExecutable" : null;
 }
 
+/**
+ * A retained extension attribute passes only where the profile's inert table lists its element type and expanded name
+ * (AD1); every other is refused.
+ */
+function retainedExtension(options: ProfileOptions, extension: RetainedExtension): string | null {
+  return options.inertExtensions.some((inert) => inert.elementType === extension.elementType &&
+    inert.name.namespace === extension.name.namespace && inert.name.localName === extension.name.localName)
+    ? null : "extension.retained";
+}
+
 /** A refusal code, and the element or flow it names when that element's or flow's own check refused. */
 export type AdmissionRefusal = Readonly<{ code: string; element: string | null }>;
 
@@ -633,7 +644,8 @@ function located<T>(items: readonly T[], id: (item: T) => string, check: (item: 
 }
 
 /**
- * The first refusal: references, profile options, a process not marked executable, the carried DMN resources, then
+ * The first refusal: references, profile options, a process not marked executable, a retained extension attribute
+ * outside the profile's inert table, the carried DMN resources, then
  * called-process bindings, the process levels' Event Sub-Processes, flows and elements in program order, the instances
  * of each loop, the units each element's run fans out to (`admission/flow/concurrency.ts` `fanOutConflict`), the Conditional
  * starts of each process level, then the Message and the Signal names of the whole program.
@@ -650,6 +662,7 @@ export function admitLocated(program: Program): AdmissionRefusal | null {
       loopedHandler: loopedHandler(program),
     }, program.options)),
     unlocated(() => executable(program)),
+    located(program.retainedExtensions, (entry) => entry.element, (entry) => retainedExtension(program.options, entry)),
     unlocated(() => Decision.resources(program)),
     unlocated(() => firstOf(program.processes, calledProcessBinding)),
     unlocated(() => processEventSubProcesses(program)),

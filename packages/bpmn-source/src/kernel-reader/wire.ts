@@ -100,6 +100,7 @@ export type KernelProfileOptions = Readonly<{
   deploymentErrors: "bpmnValidity" | "cibDeployment";
   handlerEscalation: "passesHandler" | "reentersHandler";
   defaultRetryCycle: string | null;
+  inertExtensions: { elementType: string; name: { namespace: string | null; localName: string } }[];
 }>;
 
 /** The kernel IL's `Bounds` in its wire form. */
@@ -185,6 +186,7 @@ export function kernelProfileOptions(relations: readonly string[]): KernelProfil
     deploymentErrors: "bpmnValidity",
     handlerEscalation: "passesHandler",
     defaultRetryCycle: null,
+    inertExtensions: [],
   };
 }
 

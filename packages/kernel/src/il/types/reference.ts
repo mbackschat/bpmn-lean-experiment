@@ -5,13 +5,7 @@
  */
 import { type Expression, type Mapping, type ValueSource, ValueSourceTag } from "./expression.js";
 import { parseJavaInt } from "./lexical.js";
-import { CalledElementResolution } from "./options.js";
-
-/**
- * An XML QName as the reader resolved it: the namespace its prefix is bound to (the Definitions' `targetNamespace` for
- * an unprefixed name), and its local part, which names an element by its id (BPMN 2.0.2 §15.3.2).
- */
-export interface QName { readonly namespace: string | null; readonly localName: string; }
+import { CalledElementResolution, type QName } from "./options.js";
 
 export enum CallBindingTag {
   Latest = "latest",

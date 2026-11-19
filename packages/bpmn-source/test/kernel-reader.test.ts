@@ -339,6 +339,7 @@ test("the profile options are the full record, each non-default selected by the 
     deploymentErrors: "bpmnValidity",
     handlerEscalation: "passesHandler",
     defaultRetryCycle: null,
+    inertExtensions: [],
   });
   const relations = ["CIB-EXT-0010", "CIB-EXT-0020", "CIB-EXT-0016", "CIB-CFG-0008", "CIB-OP-0009", "CIB-EXT-0026",
     "CIB-INT-0011", "CIB-EXT-0025", "CIB-INT-0009", "CIB-LIM-0001", "CIB-INT-0007", "CIB-INT-0013", "CIB-EXT-0028"];
@@ -396,6 +397,7 @@ test("the profile options are the full record, each non-default selected by the 
     deploymentErrors: "bpmnValidity",
     handlerEscalation: "passesHandler",
     defaultRetryCycle: null,
+    inertExtensions: [],
   });
   assert.equal(kernelProfileOptions(["CIB-EXT-0031"]).outputContext, "activityScope");
   assert.equal(kernelProfileOptions(["CIB-EXT-0039"]).messageThrowForms, "cibForms");

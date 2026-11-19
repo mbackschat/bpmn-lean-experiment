@@ -94,7 +94,8 @@
     "messageThrowForms": "refused",
     "deploymentErrors": "bpmnValidity",
     "handlerEscalation": "passesHandler",
-    "defaultRetryCycle": null
+    "defaultRetryCycle": null,
+    "inertExtensions": []
   },
   "elements": [
     {
@@ -226,5 +227,6 @@
   ],
   "processes": [],
   "executable": true,
-  "decisionResources": []
+  "decisionResources": [],
+  "retainedExtensions": []
 }

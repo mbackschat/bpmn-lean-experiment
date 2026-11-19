@@ -51,8 +51,8 @@ deriving instance FromJson, ToJson for JuelFunctionNode, JuelCallNode, JuelCompu
   MultiInstanceBinding, ResultValues, OutputContext, MultiInstanceCounters, MultiInstanceInputFailure, MultiInstanceCount, CollectionRead,
   BusinessRuleTask, ScriptTask, ConfiguredTask, InclusiveJoinReach, BranchSchedule, ConditionalRetrigger, MalformedTimer, MessageNames, ScopeStart,
   SignalNames, SignalPayload, SignalDelivery, ConditionalStart, CalledElementResolution, MessageThrowForms, DeploymentErrors,
-  HandlerEscalation, Bounds, ProfileOptions,
-  CalledProcess, Program
+  HandlerEscalation, InertExtension, Bounds, ProfileOptions,
+  CalledProcess, RetainedExtension, Program
 
 /-- `[{name, value}]`, the scenario contract's variable bindings. -/
 def bindingsFromJson (json : Json) : Except String (List (String × Value)) := do

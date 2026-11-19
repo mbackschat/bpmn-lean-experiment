@@ -201,7 +201,8 @@
     "messageThrowForms": "cibForms",
     "deploymentErrors": "bpmnValidity",
     "handlerEscalation": "passesHandler",
-    "defaultRetryCycle": null
+    "defaultRetryCycle": null,
+    "inertExtensions": []
   },
   "elements": [
     {
@@ -724,5 +725,6 @@
         }
       ]
     }
-  ]
+  ],
+  "retainedExtensions": []
 }

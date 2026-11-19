@@ -14,13 +14,6 @@ public section
 
 namespace Kernel
 
-/-- An XML QName as the reader resolved it: the namespace its prefix is bound to (the Definitions' `targetNamespace`
-for an unprefixed name), and its local part, which names an element by its id (BPMN 2.0.2 §15.3.2). -/
-structure QName where
-  «namespace» : Option String
-  localName : String
-  deriving DecidableEq, Repr
-
 inductive CallBinding where
   | latest
   | deployment
