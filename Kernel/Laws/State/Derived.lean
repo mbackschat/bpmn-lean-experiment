@@ -133,6 +133,16 @@ theorem leaveScope_slots (s : State) (scope : ScopeOccurrenceId) :
   rw [leaveScope_slots_eq]
   exact ⟨rfl, rfl, rfl⟩
 
+/-- Leaving a scope occurrence keeps only instance entries the state had, and none rooted at it, so a completed called
+instance leaves no entry behind (DC24, #169). -/
+theorem leaveScope_instances (s : State) (scope : ScopeOccurrenceId) :
+    (s.leaveScope scope).slots.instances.Sublist s.slots.instances ∧
+      ∀ entry ∈ (s.leaveScope scope).slots.instances, entry.root ≠ scope := by
+  obtain ⟨_, made⟩ := clearInside_eq s scope []
+  rw [leaveScope_slots_eq, made]
+  refine ⟨List.filter_sublist.trans List.filter_sublist, fun entry member => ?_⟩
+  simpa using (List.mem_filter.mp member).2
+
 /-- Leaving a scope occurrence keeps a sublist of the occurrences. -/
 theorem leaveScope_occurrences (s : State) (scope : ScopeOccurrenceId) :
     (s.leaveScope scope).occurrences.Sublist s.occurrences := by

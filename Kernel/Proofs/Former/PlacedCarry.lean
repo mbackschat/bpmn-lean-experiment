@@ -358,15 +358,14 @@ theorem PlacedLane.within (formed : WellFormed program s) (lane : PlacedLane pro
     · exact ids ▸ fits.stands
 
 /-- The lane carries to a state that keeps the scope occurrences of `s` outside a region `out` closed downwards, which
-holds every scope occurrence strictly within `scope`, the instance entries of the scope occurrences not strictly within
-it, and only occurrences and flow tokens outside `out` and work `s` holds: what leaving or clearing `scope` keeps. -/
-theorem PlacedLane.shrink (formed : WellFormed program s) (lane : PlacedLane program s) (scope : ScopeOccurrenceId)
+leaves `State.root` out, the instance entries rooted outside it, and only occurrences and flow tokens outside `out` and
+work `s` holds: what leaving or clearing a scope occurrence keeps. -/
+theorem PlacedLane.shrink (formed : WellFormed program s) (lane : PlacedLane program s)
     (out : ScopeOccurrenceId → Prop) (upward : ∀ x y, y ∈ scopeIds s → Laws.State.Within s x y → out y → out x)
-    (strict : ∀ x, Laws.State.StrictlyWithin s x scope → out x) (fewer : t.scopes.Sublist s.scopes)
+    (rootStays : ¬ out State.root) (fewer : t.scopes.Sublist s.scopes)
     (scopes : ∀ entry, entry ∈ t.scopes ↔ entry ∈ s.scopes ∧ ¬ out entry.id)
     (instances : t.slots.instances.Sublist s.slots.instances)
-    (entries : ∀ entry ∈ s.slots.instances, ¬ Laws.State.StrictlyWithin s entry.root scope →
-      entry ∈ t.slots.instances)
+    (entries : ∀ entry ∈ s.slots.instances, ¬ out entry.root → entry ∈ t.slots.instances)
     (grows : Laws.State.ScopeGrows s t) (occurrences : ∀ o ∈ t.occurrences, o ∈ s.occurrences ∧ ¬ out o.scope)
     (tokens : ∀ token ∈ t.tokens, token ∈ s.tokens ∧ ¬ out token.busyScope)
     (signals : ∀ signal ∈ t.signals, signal ∈ s.signals)
@@ -404,11 +403,10 @@ theorem PlacedLane.shrink (formed : WellFormed program s) (lane : PlacedLane pro
     (fun _ member => .inl (runs _ member)) (fun _ member => .inl (retained _ member))
     (fun _ member => .inl (bodies _ member)) (fun _ member => .inl (parked _ member))
   · obtain ⟨entry, member, rooted⟩ := lane.placed.rooted
-    exact ⟨entry, entries entry member (rooted ▸ fun within => within.2 (Laws.State.root_within formed within.1)),
-      rooted⟩
+    exact ⟨entry, entries entry member (rooted ▸ rootStays), rooted⟩
   · obtain ⟨old, free⟩ := (scopes root).mp member
     obtain ⟨entry, inside, rooted⟩ := lane.placed.entered root old called
-    exact ⟨entry, entries entry inside (rooted ▸ fun within => free (strict _ within)), rooted⟩
+    exact ⟨entry, entries entry inside (rooted ▸ free), rooted⟩
   · have apart := lane.calledApart entry ((scopes entry).mp member).1 called
     exact ⟨apart.1, fun owner inside owns => apart.2 owner (occurrences owner inside).1 owns⟩
 

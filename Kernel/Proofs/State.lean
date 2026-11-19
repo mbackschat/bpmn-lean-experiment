@@ -79,7 +79,7 @@ private theorem leaveAll_kept : ∀ (scopes : List ScopeOccurrence) (t : State),
       exact (List.mem_filter.mp (List.mem_filter.mp inLeft).1).1
     · have inLeft := instances found member
       rw [Laws.State.leaveScope_slots_eq, cleared] at inLeft
-      exact (List.mem_filter.mp inLeft).1
+      exact (List.mem_filter.mp (List.mem_filter.mp inLeft).1).1
 
 /-- What the state operations `Step` applies do to the fields it reads (`Laws.State`). -/
 theorem stateFacts : Laws.Step.StateFacts where

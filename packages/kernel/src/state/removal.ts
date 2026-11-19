@@ -50,7 +50,9 @@ export function clearInside(state: State, scope: ScopeOccurrenceId, keep: readon
 /**
  * Leave `scope`: clear it and remove the occurrence, its variables and the compensation records it retains, so the
  * Activities completed in a Sub-Process left before its own completion are never compensated: compensation is for
- * completed Activities only (BPMN 2.0.2 §13.5.5, "presumed abort").
+ * completed Activities only (BPMN 2.0.2 §13.5.5, "presumed abort"). A called instance's root takes its instance entry
+ * with it, which every reader finds only through a standing root (`instanceRoot`), so a completed call retains nothing
+ * (DC24, #169).
  */
 export function leaveScope(state: State, scope: ScopeOccurrenceId): State {
   const cleared = clearInside(state, scope);
@@ -66,6 +68,7 @@ export function leaveScope(state: State, scope: ScopeOccurrenceId): State {
         ...cleared.slots.compensation,
         retained: cleared.slots.compensation.retained.filter((record) => record.scope !== scope),
       },
+      instances: cleared.slots.instances.filter((instance) => instance.root !== scope),
     },
   };
 }

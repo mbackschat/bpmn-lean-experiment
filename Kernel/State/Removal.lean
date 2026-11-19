@@ -44,7 +44,9 @@ def clearInside (state : State) (scope : ScopeOccurrenceId) (keep : List Occurre
 
 /-- Leave `scope`: clear it and remove the occurrence, its variables and the compensation records it retains, so the
 Activities completed in a Sub-Process left before its own completion are never compensated: compensation is for
-completed Activities only ([BPMN 2.0.2 §13.5.5](../docs/reference/bpmn-2.0.2/README.md), "presumed abort"). -/
+completed Activities only ([BPMN 2.0.2 §13.5.5](../docs/reference/bpmn-2.0.2/README.md), "presumed abort"). A called
+instance's root takes its instance entry with it, which every reader finds only through a standing root
+(`State.instanceRoot`), so a completed call retains nothing (DC24, #169). -/
 def leaveScope (state : State) (scope : ScopeOccurrenceId) : State :=
   let cleared := state.clearInside scope
   { cleared with
@@ -52,8 +54,10 @@ def leaveScope (state : State) (scope : ScopeOccurrenceId) : State :=
       scopeOrdinals := cleared.scopeOrdinals.filter fun slot _ => slot.parent != scope
       occurrenceOrdinals := cleared.occurrenceOrdinals.filter fun slot _ => slot.parent != scope
       variables := cleared.variables.filter (·.scope != scope)
-      slots := { cleared.slots with compensation := { cleared.slots.compensation with
-        retained := cleared.slots.compensation.retained.filter (·.scope != scope) } } }
+      slots := { cleared.slots with
+        compensation := { cleared.slots.compensation with
+          retained := cleared.slots.compensation.retained.filter (·.scope != scope) }
+        instances := cleared.slots.instances.filter (·.root != scope) } }
 
 /-- Remove the occurrence record `id` and the scope occurrences it owns, if any. The record goes first, so that
 leaving a scope does not cancel the occurrence that owns it. -/

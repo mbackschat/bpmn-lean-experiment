@@ -125,7 +125,7 @@ private theorem leaveScope_entries (s : State) (scope : ScopeOccurrenceId) :
   rw [Laws.State.leaveScope_slots_eq] at inside
   obtain ⟨_, shape⟩ := Laws.State.clearInside_eq s scope []
   rw [shape] at inside
-  exact (List.mem_filter.mp inside).1
+  exact (List.mem_filter.mp (List.mem_filter.mp inside).1).1
 
 /-- The bodies' slot records after `next` is set in a state `t`: each held in `t`, or `next`, anchored in `t`. -/
 private theorem setRun_anchored {inv : State → Prop} {program : Program} {t : State} {next : MultiInstanceRun}

@@ -137,17 +137,42 @@ theorem clearInside_entries (formed : WellFormed program s) {scope : ScopeOccurr
     · exact .inl sub
   simpa using outside
 
-/-- Leaving a standing scope occurrence keeps the lane. -/
+/-- A standing scope occurrence with a parent is not the root: the process root is the one without one (`Rooted`). -/
+theorem notRoot_of_parent (formed : WellFormed program s) {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s)
+    (parented : ∀ entry ∈ s.scopes, entry.id = scope → ∃ parent, entry.parent = some parent) : scope ≠ State.root :=
+  fun same => by
+    obtain ⟨entry, member, named⟩ := List.mem_map.mp present
+    obtain ⟨parent, link⟩ := parented entry member named
+    simp [(formed.rooted.2.1 entry member).mpr (named.trans same)] at link
+
+/-- What a frame leaves is not the root: an owned scope occurrence lies below its owner's (`OwnedBelow`), and a running
+compensation context below its run's (`RunPlaced`). -/
+theorem LeavesOwned.notRoot (formed : WellFormed program s) {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s)
+    (leaves : LeavesOwned s scope) : scope ≠ State.root := by
+  refine notRoot_of_parent formed present fun entry member named => ?_
+  rcases leaves with ⟨owned, inside, same, owning⟩ | ⟨run, running, context⟩
+  · obtain ⟨owner, owns⟩ := owning
+    obtain ⟨occurrence, found, id, _⟩ := formed.owned.scopeOwners owned inside owner owns
+    have := formed.ownedBelow owned inside occurrence found (by rw [id]; exact owns)
+    rw [Laws.State.nodup_map_eq formed.distinct.scopes member inside (named.trans same.symm)]
+    exact ⟨_, this⟩
+  · exact ⟨_, ((formed.settled.runsPlaced run running).2 scope context).2 entry member named⟩
+
+/-- Leaving a standing scope occurrence other than the root keeps the lane. -/
 theorem PlacedLane.left (formed : WellFormed program s) (lane : PlacedLane program s) {scope : ScopeOccurrenceId}
-    (present : scope ∈ scopeIds s) : PlacedLane program (s.leaveScope scope) := by
+    (present : scope ∈ scopeIds s) (notRoot : scope ≠ State.root) : PlacedLane program (s.leaveScope scope) := by
   have left := Laws.State.leaveScope_left formed present
   have slots := Laws.State.leaveScope_slots_eq s scope
-  have instances : (s.leaveScope scope).slots.instances = (s.clearInside scope).slots.instances := by rw [slots]
   have entries := clearInside_entries formed present []
   obtain ⟨draft, cleared⟩ := Laws.State.clearInside_eq s scope []
-  refine lane.shrink formed scope (Within s · scope) (fun _ _ _ within out => within.trans out)
-    (fun _ within => within.1) left.scopesSublist left.scopes (instances ▸ entries.1)
-    (fun entry member free => instances ▸ entries.2 entry member free) (Laws.State.leaveScope_grows s scope)
+  refine lane.shrink formed (Within s · scope) (fun _ _ _ within out => within.trans out)
+    (fun within => notRoot (Laws.State.root_within formed within).symm) left.scopesSublist left.scopes
+    (by rw [slots]; exact List.filter_sublist.trans entries.1)
+    (fun entry member free => by
+      rw [slots]
+      exact List.mem_filter.mpr ⟨entries.2 entry member fun within => free within.1,
+        by simpa using fun (same : entry.root = scope) => free (same ▸ .refl _)⟩)
+    (Laws.State.leaveScope_grows s scope)
     (fun o member => (left.occurrences o).mp member) (fun token member => (left.tokens token).mp member)
     (fun _ member => left.signals ▸ member) left.slots.runs (fun record member => ?_) left.slots.bodies
     left.slots.parked
@@ -163,9 +188,10 @@ theorem PlacedLane.cleared (formed : WellFormed program s) (lane : PlacedLane pr
   have cleared := Laws.State.clearInside_cleared formed present keep
   have entries := clearInside_entries formed present keep
   obtain ⟨draft, shape⟩ := Laws.State.clearInside_eq s scope keep
-  refine lane.shrink formed scope (StrictlyWithin s · scope) (fun _ _ stands within ⟨up, other⟩ =>
+  refine lane.shrink formed (StrictlyWithin s · scope) (fun _ _ stands within ⟨up, other⟩ =>
       ⟨within.trans up, fun same => other (Laws.State.Within.antisymm formed stands up (same ▸ within))⟩)
-    (fun _ within => within) cleared.scopesSublist cleared.scopes entries.1 entries.2
+    (fun within => within.2 (Laws.State.root_within formed within.1)) cleared.scopesSublist cleared.scopes entries.1
+    entries.2
     (Laws.State.clearInside_grows s scope keep)
     (fun o member => ?_) (fun token member => ?_) (fun _ member => cleared.signals ▸ member) cleared.slots.runs
     (fun record member => ?_) cleared.slots.bodies cleared.slots.parked
@@ -415,7 +441,8 @@ theorem placedAlongside (program : Program) : Alongside program (Placing program
   enterScope _ _ _ _ _ formed stands anchored held refs := (held refs).entered refs formed stands anchored
   reserve _ _ _ formed stands _ popped held refs :=
     (held refs).reserved formed (stands_present stands) (popped_placed refs popped (stands_present stands))
-  leaveScope _ _ formed present _ held refs := (held refs).left formed present
+  leaveScope _ _ formed present leaves held refs :=
+    (held refs).left formed present (LeavesOwned.notRoot formed present leaves)
   clearInside _ _ _ formed present kept held refs := (held refs).cleared formed present kept
   disarm _ _ _ held refs := by
     rw [Laws.State.disarm_eq]
@@ -425,7 +452,9 @@ theorem placedAlongside (program : Program) : Alongside program (Placing program
   instanceBegin _ _ formed anchored held refs :=
     (held refs).signalled (.ofBegin (beginAnchored_placed refs formed (held refs) anchored))
   defer _ _ formed anchored held refs := (held refs).deferred refs formed anchored
-  leaveInstance _ _ _ formed _ _ present held refs := (held refs).left formed present
+  leaveInstance _ run scope formed member active present held refs := (held refs).left formed present
+    (notRoot_of_parent formed present fun entry inside named =>
+      ⟨_, (formed.settled.placed run member scope active).2 entry inside named⟩)
   runs _ _ formed anchored held refs := (held refs).bodied refs formed anchored
 
 /-- Storing compensation records and runs keeps the placement lane under its premise. -/

@@ -211,11 +211,13 @@ theorem clearInside_eq (s : State) (scope : ScopeOccurrenceId) (keep : List Occu
       draft } :=
   ⟨_, by simp only [State.clearInside, State.recordCancelled, featureSlotsClear_eq]; rfl⟩
 
-/-- Leaving a scope occurrence keeps the slots its clearing leaves but the compensation records it retains. -/
+/-- Leaving a scope occurrence keeps the slots its clearing leaves but the compensation records it retains and its
+instance entry. -/
 theorem leaveScope_slots_eq (s : State) (scope : ScopeOccurrenceId) :
-    (s.leaveScope scope).slots = { (s.clearInside scope).slots with compensation :=
-      { (s.clearInside scope).slots.compensation with
-        retained := (s.clearInside scope).slots.compensation.retained.filter (·.scope != scope) } } := by
+    (s.leaveScope scope).slots = { (s.clearInside scope).slots with
+      compensation := { (s.clearInside scope).slots.compensation with
+        retained := (s.clearInside scope).slots.compensation.retained.filter (·.scope != scope) }
+      instances := (s.clearInside scope).slots.instances.filter (·.root != scope) } := by
   simp only [State.leaveScope]
 
 /-- `State.leaveScope` clears the scope occurrence, then removes it and its variable set, and keeps the instance. -/
