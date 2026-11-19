@@ -18,30 +18,31 @@
  *
  * How a micro-step's draft becomes a journalled transition is `step/commit.ts`; how a closure's failure becomes its
  * input's outcome where CIB runs the work in a job is `step/jobs.ts`; what becomes of a queued signal whose target an
- * interruption removed is `step/stale.ts`.
+ * interruption removed is `step/stale.ts`; the clock an input advances, its ranking of competing Conditional items and the
+ * transitions of a command and an effect result are `step/inputs.ts`.
  */
 import {
   BranchSchedule, ElementTag, EventRoleTag, assertNever, elementActivity, elementEnvelope, elementGateway,
-  elementHeader, programElement, programPublicId, programSourceType, programTarget, type Element, type ElementId,
+  elementHeader, programElement, programSourceType, programTarget, type Element, type ElementId,
   type Envelope, type FlowId, type MultiInstance, type Program,
 } from "./il/types.js";
 import {
-  ActivationRole, CauseTag, CommandActionTag, ContinuationTag, FailureTag, FiredTag, InputTag,
+  ActivationRole, CauseTag, ContinuationTag, FailureTag, FiredTag, InputTag,
   InstanceStatus, LeaveTag, SignalTag, Terminal, TokenTag, WriteRule, beginOccurrence, beginRequest,
-  busyScopes, closeOwnItems, committed, emptyDraft, entryCount, failed, failedWith, idle, initial, instanceOf,
-  keyOf, localScope, occurrenceOf, ownScope, recordEnd, reserve, root, signal as enqueue, startReserved, type BeginRequest,
-  type Binding, type Cause, type CommandInput, type EffectInput, type Fired, type IncidentDetail, type Input,
-  type InstanceFailure, type Leave, type Occurrence, type OccurrenceRef, type OpenItem, type Outcome,
+  busyScopes, closeOwnItems, committed, emptyDraft, entryCount, failed, failedWith, idle, initial, keyOf, localScope, occurrenceOf, recordEnd, reserve, root, signal as enqueue, startReserved, type BeginRequest,
+  type Binding, type Cause, type Fired, type Input,
+  type InstanceFailure, type Leave, type Occurrence, type OpenItem, type Outcome,
   type Result, type ScopeOccurrence, type ScopeOccurrenceId, type Signal, type StartInput, type StartTrigger, type State,
   type Token,
   SemanticCause, semanticFailure,
   itemAt, iterationHolds, type OccurrenceId,
 } from "./state.js";
 import {
-  ScopeRole, admitThen, cancelOccurrence, chooseStart, clearInside, itemDetailOf, itemOf, removeOccurrence, type Ctx, type Hooks, type ScopeEntry,
+  ScopeRole, admitThen, cancelOccurrence, chooseStart, clearInside, itemOf, removeOccurrence, type Ctx, type Hooks, type ScopeEntry,
 } from "./hooks.js";
 import { journalDraft } from "./step/commit.js";
 import { deferred, effectContinuation, timerJob } from "./step/jobs.js";
+import { advanceClock, admitChoicesThen, command, deliverEffectResult } from "./step/inputs.js";
 import { perform, requireScope, type SignalRun } from "./step/stale.js";
 
 /** The name a transition records for a signal: its tag, which spells the Lean constructor. */
@@ -457,70 +458,6 @@ function settle(hooks: Hooks, ctx: Ctx, bound: number, start: State): Outcome {
     if (!stepped.ok) return stepped;
     state = stepped.value;
   }
-}
-
-/** The begun occurrence with the public identity `ref`, the instance rather than the body of a Multi-Instance element. */
-function occurrenceOfRef(ctx: Ctx, state: State, ref: OccurrenceRef): Occurrence | null {
-  return state.occurrences.find((occurrence) =>
-    (occurrence.begun || state.openItems.some((item) => item.id.occurrence === occurrence.id)) && occurrence.role === ActivationRole.Element && occurrence.activation === ref.activation &&
-    programPublicId(ctx.program, occurrence.element) === ref.element &&
-    instanceOf(state, occurrence.scope) === ref.processInstanceId) ?? null;
-}
-
-function command(hooks: Hooks, ctx: Ctx, input: CommandInput, state: State): Outcome {
-  const incident = (resolve: (item: OpenItem, detail: IncidentDetail) => Outcome): Outcome => {
-    const found = itemDetailOf(ctx, state, input.occurrence, (view) => view.incident);
-    return found === null ? failed(FailureTag.Rejected, "unknown-incident") : resolve(found[0], found[1]);
-  };
-  // A variable command acts from the occurrence's own scope outward, its input-mapped locals first, as CIB's
-  // `setVariables` on the waiting activity's execution does (`AbstractVariableScope#setVariable`).
-  const variables = (act: (scope: ScopeOccurrenceId) => Signal): Outcome => {
-    const occurrence = occurrenceOfRef(ctx, state, input.occurrence);
-    return occurrence === null
-      ? failed(FailureTag.Rejected, "unknown-occurrence")
-      : committed(enqueue(state, act(ownScope(state, occurrence.id, occurrence.scope))));
-  };
-  const action = input.action;
-  switch (action.tag) {
-    case CommandActionTag.CompleteUserTask: {
-      const item = itemOf(ctx, state, input.occurrence, (view) => view.userTask);
-      if (item === null) return failed(FailureTag.Rejected, "unknown-user-task");
-      const element = programElement(ctx.program, item.element);
-      const activity = element === null ? null : elementActivity(element);
-      if (activity === null) return semanticFailure(SemanticCause.Invariant, "activity-item-without-activity");
-      return hooks.completeUserTask(ctx, activity[0], activity[1], item, action.values, state);
-    }
-    case CommandActionTag.RetryIncident:
-      return incident((item, detail) => hooks.retryIncident(ctx, item, detail, action.generation, state));
-    case CommandActionTag.CancelIncidentProcess:
-      return incident((_item, detail) => hooks.cancelIncidentProcess(ctx, detail, action.generation, state));
-    case CommandActionTag.SetVariables:
-      return admitThen(ctx.program.options.bounds, action.values.map(([, value]) => value), () => variables((scope) => ({ tag: SignalTag.Write, scope, writes: action.values, rule: WriteRule.Outward })));
-    case CommandActionTag.RemoveVariables:
-      return variables((scope) => ({ tag: SignalTag.Remove, scope, names: action.names }));
-  }
-  return assertNever(action);
-}
-
-function deliverEffectResult(hooks: Hooks, ctx: Ctx, input: EffectInput, state: State): Outcome {
-  const item = itemOf(ctx, state, input.occurrence, (view) => view.effect);
-  return item === null ? failed(FailureTag.Rejected, "unknown-effect") : hooks.effectResult(ctx, item, input.outcome, state);
-}
-
-/** `Kernel.Step.admitChoices *> next`: `next` runs only on a ranking that repeats no element and names only competing ones. */
-function admitChoicesThen(hooks: Hooks, ctx: Ctx, next: () => Outcome): Outcome {
-  const elements = ctx.conditionChoices.map((choice) => choice.element);
-  if (new Set(elements).size !== elements.length) return failed(FailureTag.Rejected, "condition-choice-duplicate");
-  return elements.every((element) => hooks.competes(ctx, element)) ? next() : failed(FailureTag.Rejected, "condition-choice-not-candidate");
-}
-
-/**
- * Advance the clock to an input's logical time, `null` leaving it where it is; a time before the clock is rejected,
- * since logical time never runs backward.
- */
-function advanceClock(atMs: number | null, state: State): Outcome {
-  if (atMs === null) return committed(state);
-  return atMs < state.logicalTimeMs ? failed(FailureTag.Rejected, "logical-time-backward") : committed({ ...state, logicalTimeMs: atMs });
 }
 
 /**

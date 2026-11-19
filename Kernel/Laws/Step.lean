@@ -7,6 +7,7 @@ public import Kernel.Laws.Step.Commit
 public import Kernel.Laws.Step.Jobs
 public import Kernel.Laws.Step.Stale
 import all Kernel.Step
+import all Kernel.Step.Inputs
 
 /-! # Laws of the step function
 

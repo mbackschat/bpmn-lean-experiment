@@ -191,6 +191,7 @@ public import Kernel.State.Tree
 public import Kernel.State.Wait
 public import Kernel.Step
 public import Kernel.Step.Commit
+public import Kernel.Step.Inputs
 public import Kernel.Step.Jobs
 public import Kernel.Step.Stale
 
