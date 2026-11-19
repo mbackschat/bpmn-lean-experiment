@@ -11,7 +11,8 @@ an ordinal counted the same way by `State.occurrenceOrdinals`. A scope occurrenc
 (DC20), whose cached depth and fingerprint and whose jump pointers only accelerate: equality rejects on the cached
 fields and the order meets two keys in O(log depth), and both decide on the full path. Each key has a lawful order, so
 maps may key on it, and an order that reads only the key's value: no site may read it as an order of entry. Scope
-occurrence keys order outermost first, so a subtree is one key range (KD1). Part of `Kernel.State`, which re-exports it.
+occurrence keys order outermost first, so a subtree is one key range (KD1). `scripts/kernel-effects.lean` holds the
+spine to `Spine.push` and the comparators to the key-order contract (KD7). Part of `Kernel.State`, which re-exports it.
 -/
 
 public section

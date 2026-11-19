@@ -14,6 +14,11 @@ passed guards 1 and 2 (hence guard 17), so this scan reads calls and writes rath
   binder cap of guard 9 keeps such patterns exhaustive.
 - Fan-out (18): match sites per guarded type, codecs excluded, against `budgets` below; a new mechanism that needs
   another site changes the seam, not the budget, and the budget moves only by owner decision.
+- The spine (KD7 and DC20 of [the rewrite-2 proposal](../docs/REWRITE-2-PROPOSAL.md)): a `Spine` node is built only by
+  `Spine.push`, so its cached depth and fingerprint are its path's by the laws of `push` alone; and the key-order
+  contract: each comparator in `orderContracts` reads its key's fixed-size cached fields, in the listed order, before any
+  variable-length component, and reads one of those last, so the full path decides. A `DecidableEq`, `Ord` or `BEq`
+  instance of a type holding a `Spine` must reach a contracted comparator, so a new key type cannot skip the contract.
 - No pairwise proof estate (KD8 of [the rewrite-2 proposal](../docs/REWRITE-2-PROPOSAL.md)): no theorem, in any kernel
   module, states one claim about two distinct `QueuingMechanism` constructors or two distinct wait kinds (`OpenKind`).
 
@@ -128,20 +133,75 @@ def matcherTypes (matcher : Name) (info : Match.MatcherInfo) : MetaM (List Name)
     discriminants.filterMapM fun discriminant => do
       pure (← whnf (← inferType discriminant)).getAppFn.constName?
 
-/-- Compiler-generated declarations (derived instances, recursors, match helpers) are not readers: a derived `Repr`
+/-- Compiler-generated declarations (derived instances, recursors and their helpers, match helpers) are not readers: a derived `Repr`
 touches every field, so counting one would mark every field live. -/
 def isGenerated (env : Environment) (declaration : Name) : Bool :=
   declaration.isInternal || declaration.hasMacroScopes || isAuxRecursor env declaration ||
+    isAuxRecursor env declaration.getPrefix ||
     isNoConfusion env declaration || env.isProjectionFn declaration ||
     (Match.Extension.getMatcherInfo? env declaration).isSome ||
     (match declaration with
-     | .str _ last => ["sizeOf", "ctorIdx", "toCtorIdx", "injEq", "inj", "sizeOf_spec", "noConfusionType"].contains last
+     | .str _ last => ["sizeOf", "ctorIdx", "toCtorIdx", "injEq", "inj", "sizeOf_spec", "noConfusionType", "ctorElimType"].contains last
      | _ => false)
+
+/-- The spine node constructor and the one declaration that may call it (KD7). -/
+def spineNode : Name := `Kernel.Spine.node
+def spineBuilder : Name := `Kernel.Spine.push
+
+/-- One comparator of the key-order contract: the fixed-size cached reads it makes first, in this order, and the
+variable-length reads (the path, or a comparator over it) that may only follow them. -/
+structure OrderContract where
+  comparator : Name
+  cached : List Name
+  decisive : List Name
+
+/-- The kernel's key comparators (KD7, DC20). Equality rejects on depth and fingerprint before it compares paths; the
+outermost-first order branches on depth before it compares, climbs or meets. -/
+def orderContracts : List OrderContract :=
+  let depth := `Kernel.Spine.level
+  let fingerprint := `Kernel.Spine.fingerprint
+  [ ⟨`Kernel.Spine.sameNode, [depth, fingerprint], [`Kernel.Spine.path]⟩,
+    ⟨`Kernel.instDecidableEqScopeOccurrenceId, [depth, fingerprint], [`Kernel.ScopeOccurrenceId.segments]⟩,
+    ⟨`Kernel.Spine.compareOuter, [depth],
+      [`Kernel.Spine.sameNode, `Kernel.Spine.meet, `Kernel.Spine.climb, `Kernel.Spine.stepOrder, `Kernel.Spine.path]⟩ ]
+
+/-- The listed constants in the order a value first reads them: left to right, a function before its arguments, so
+the condition of an `if` comes before its branches. -/
+partial def firstReads (names : List Name) (root : Expr) : List Name := Id.run do
+  let mut seen : Array Name := #[]
+  let mut visited : Std.HashSet Expr := {}
+  let mut stack := [root]
+  while !stack.isEmpty do
+    let expr := stack.head!
+    stack := stack.tail!
+    if visited.contains expr then continue
+    visited := visited.insert expr
+    match expr with
+    | .const name _ => if names.contains name && !seen.contains name then seen := seen.push name
+    | .app .. => stack := expr.getAppFn :: expr.getAppArgs.toList ++ stack
+    | .lam _ type body _ | .forallE _ type body _ => stack := type :: body :: stack
+    | .letE _ type value body _ => stack := type :: value :: body :: stack
+    | .mdata _ body | .proj _ _ body => stack := body :: stack
+    | _ => pure ()
+  return seen.toList
+
+/-- Key-order contract findings for one comparator. -/
+def contractFindings (env : Environment) (contract : OrderContract) : List String :=
+  match (env.find? contract.comparator).bind (·.value? (allowOpaque := true)) with
+  | none => [s!"KD7: {contract.comparator} is not defined, so its key-order contract read nothing"]
+  | some value =>
+    let reads := firstReads (contract.cached ++ contract.decisive) value
+    if reads.take contract.cached.length != contract.cached then
+      [s!"KD7 {contract.comparator}: reads {reads}, not its cached fields {contract.cached} first"]
+    else if reads.length == contract.cached.length then
+      [s!"KD7 {contract.comparator}: reads no variable-length component of {contract.decisive} last"]
+    else []
 
 structure Config where
   /-- The module a declaration belongs to; the fixture maps by namespace, a real scan by the module table. -/
   moduleOf : Name → Option Name
   budgets : List (Name × Nat)
+  orderContracts : List OrderContract
   /-- A real scan requires each guarded type to have at least one site, so a renamed type empties no budget silently. -/
   requireEveryGuardedType : Bool
 
@@ -178,10 +238,17 @@ def scan (config : Config) : MetaM Report := do
   let mut matched : NameSet := {}
   let mut matcherCache : Std.HashMap Name (List Name) := {}
   let mut siteCounts : Std.HashMap Name Nat := {}
+  let mut sawSpineBuilder := false
+  let mut usesOf : Std.HashMap Name NameSet := {}
   for (declaration, module, info) in declarations do
     if (Match.Extension.getMatcherInfo? env declaration).isSome then continue
     let some value := info.value? (allowOpaque := true) | continue
     let uses := collect stateFields value
+    usesOf := usesOf.insert declaration uses.constants
+    if uses.constants.contains spineNode then
+      if declaration == spineBuilder then sawSpineBuilder := true
+      else if !isGenerated env declaration then
+        findings := findings.push s!"KD7 {module} {declaration}: builds a {spineNode} outside {spineBuilder}"
     for rule in callRules do
       if uses.constants.contains rule.primitive && declaration != rule.primitive then
         if allowedFor config module rule.writers rule.primitive then
@@ -231,6 +298,35 @@ def scan (config : Config) : MetaM Report := do
   for (field, _) in fieldWriters do
     unless sawFieldWriter.contains field do
       findings := findings.push s!"G17: State.{field} has no permitted writer, so its rule read nothing"
+  unless sawSpineBuilder do
+    findings := findings.push s!"KD7: {spineBuilder} builds no {spineNode}, so its rule read nothing"
+  for contract in config.orderContracts do
+    findings := findings ++ (contractFindings env contract).toArray
+  -- A type holding a spine is a key: each of its equality and order instances reaches a contracted comparator through
+  -- declarations of its own module.
+  let contracted := config.orderContracts.map (·.comparator)
+  for (declaration, module, info) in declarations do
+    unless (← isInstance declaration) do continue
+    let type := info.type
+    unless [``DecidableEq, ``Ord, ``BEq].any type.getAppFn.isConstOf do continue
+    let some key := type.getAppArgs[0]?.bind (·.getAppFn.constName?) | continue
+    unless isStructure env key do continue
+    let holdsSpine := (getStructureFieldsFlattened env key (includeSubobjectFields := false)).any fun field =>
+      match (env.find? (key ++ field)) with
+      | some projection => projection.type.getForallBody.getAppFn.isConstOf `Kernel.Spine
+      | none => false
+    unless holdsSpine do continue
+    let mut reached : NameSet := {}
+    let mut pending := [declaration]
+    while !pending.isEmpty do
+      let next := pending.head!
+      pending := pending.tail!
+      if reached.contains next then continue
+      reached := reached.insert next
+      for used in (usesOf.getD next {}).toList do
+        if config.moduleOf used == some module then pending := used :: pending
+    unless contracted.any reached.contains do
+      findings := findings.push s!"KD7 {module} {declaration}: an instance on the spine key {key} reaches no key-order contract"
   let mut structures : Array Name := #[]
   for (declaration, module, info) in declarations do
     if (`Kernel.IL.Types).isPrefixOf module && isStructure env declaration && (info matches .inductInfo _) then
@@ -380,6 +476,32 @@ theorem seededKindPair (detail : Nat) (_ : Awaits (.timer detail)) : Awaits (.me
 theorem seededMechanismPair (queued : QueuingMechanism → Prop) (_ : queued .split) : queued .instances ∨ True :=
   .inr trivial
 end Laws.State
+inductive Spine where
+  | root
+  | node (step : Nat) (path : List Nat) (depth : Nat) (fingerprint : UInt64) (parent : Spine)
+namespace Spine
+def depth : Spine → Nat
+  | .root => 0
+  | .node _ _ depth _ _ => depth
+def fingerprint : Spine → UInt64
+  | .root => 0
+  | .node _ _ _ fingerprint _ => fingerprint
+def path : Spine → List Nat
+  | .root => []
+  | .node _ path _ _ _ => path
+def push (step : Nat) (parent : Spine) : Spine :=
+  .node step (step :: parent.path) (parent.depth + 1) (parent.fingerprint + 1) parent
+def seededNode (parent : Spine) : Spine := .node 0 parent.path parent.depth parent.fingerprint parent
+def same (a b : Spine) : Bool := a.depth == b.depth && a.fingerprint == b.fingerprint && a.path == b.path
+def seededPathFirst (a b : Spine) : Bool := a.path == b.path && a.depth == b.depth && a.fingerprint == b.fingerprint
+def seededCachedOnly (a b : Spine) : Bool := a.depth == b.depth && a.fingerprint == b.fingerprint
+end Spine
+structure Keyed where
+  spine : Spine
+instance : BEq Keyed := ⟨fun a b => Spine.same a.spine b.spine⟩
+structure Unkeyed where
+  spine : Spine
+instance seededUncontracted : BEq Unkeyed := ⟨fun a b => a.spine.path == b.spine.path⟩
 namespace Step
 def firstMatch (element : Element) : Nat := match element with
   | .task => 1
@@ -405,7 +527,17 @@ def expectedInFixture : List String := [
   "writes State.tokens through a structure update",
   "calls pipeline hook Kernel.Hooks.outflow outside Step",
   "Kernel.Used.unread: read by no non-codec declaration",
-  "2 match sites on Kernel.Element, above its budget of 1"]
+  "2 match sites on Kernel.Element, above its budget of 1",
+  "Kernel.Spine.seededNode: builds a Kernel.Spine.node outside Kernel.Spine.push",
+  "KD7 Kernel.Spine.seededPathFirst: reads [Kernel.Spine.path, Kernel.Spine.depth, Kernel.Spine.fingerprint]",
+  "KD7 Kernel.Spine.seededCachedOnly: reads no variable-length component",
+  "Kernel.seededUncontracted: an instance on the spine key Kernel.Unkeyed reaches no key-order contract"]
+
+/-- The fixture's comparators: one keeps the contract and two break it. -/
+def fixtureContracts : List OrderContract :=
+  let cached := [`Kernel.Spine.depth, `Kernel.Spine.fingerprint]
+  [⟨`Kernel.Spine.same, cached, [`Kernel.Spine.path]⟩, ⟨`Kernel.Spine.seededPathFirst, cached, [`Kernel.Spine.path]⟩,
+   ⟨`Kernel.Spine.seededCachedOnly, cached, [`Kernel.Spine.path]⟩]
 
 def expectedPairs : List String := [
   "Kernel.Laws.State.seededKindPair: one claim names [Kernel.OpenKind.timer, Kernel.OpenKind.message]",
@@ -418,13 +550,19 @@ def selfTest : IO UInt32 := do
     for message in messages.toList do IO.eprintln (← message.toString)
     IO.eprintln "the self-test fixture did not elaborate"
     return 1
-  let config : Config := { moduleOf := fixtureModuleOf, budgets := [(`Kernel.Element, 1)], requireEveryGuardedType := false }
+  let config : Config :=
+    { moduleOf := fixtureModuleOf, budgets := [(`Kernel.Element, 1)], orderContracts := fixtureContracts
+      requireEveryGuardedType := false }
   let report ← run env config
   let joined := "\n".intercalate report.findings.toList
   let mut failed := false
   for expected in expectedInFixture do
     unless (joined.splitOn expected).length > 1 do
       IO.eprintln s!"self-test: the seeded violation was not reported: {expected}"
+      failed := true
+  for clean in ["Kernel.Spine.same", "Kernel.instBEqKeyed", "Kernel.Spine.push"] do
+    if (joined.splitOn (clean ++ ":")).length > 1 then
+      IO.eprintln s!"self-test: {clean}, which keeps the spine rules, was reported"
       failed := true
   -- A law builds states and reads fields without being an executable effect or reader (`lawWrite`, `lawRead`).
   if (joined.splitOn "Kernel.Laws").length > 1 then
@@ -441,7 +579,7 @@ def selfTest : IO UInt32 := do
   unless (pairwiseFindings base fixtureModuleOf).any (fun line => (line.splitOn "read nothing").length > 1) do
     IO.eprintln "self-test: a pairwise scan of an environment with no kernel did not fail"
     failed := true
-  let empty ← run base { moduleOf := fixtureModuleOf, budgets := [], requireEveryGuardedType := false }
+  let empty ← run base { moduleOf := fixtureModuleOf, budgets := [], orderContracts, requireEveryGuardedType := false }
   unless empty.findings.any (fun line => (line.splitOn "read nothing").length > 1 || (line.splitOn "read no ").length > 1) do
     IO.eprintln "self-test: a scan of an environment with no kernel did not fail"
     failed := true
@@ -464,7 +602,7 @@ unsafe def main (arguments : List String) : IO UInt32 := do
     {} (loadExts := true)
   let moduleOf (declaration : Name) : Option Name :=
     (env.getModuleIdxFor? declaration).bind fun idx => env.header.moduleNames[idx.toNat]?
-  let report ← run env { moduleOf, budgets, requireEveryGuardedType := true }
+  let report ← run env { moduleOf, budgets, orderContracts, requireEveryGuardedType := true }
   for (type, count) in report.sites do IO.println s!"G18 sites {type}: {count}"
   let lines := (report.findings ++ pairwiseFindings env moduleOf).toList.eraseDups.toArray.qsort (· < ·)
   for line in lines do IO.println line
