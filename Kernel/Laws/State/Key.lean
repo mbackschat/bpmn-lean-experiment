@@ -9,7 +9,10 @@ What a `Spine` is (DC20): `push` keeps it well-formed, its cached depth and fing
 of paths, the meeting point `meet` finds is the longest common prefix of two paths read outermost first, and
 `compareOuter` is the outermost-first order of the full paths. None of it reads a fingerprint's value: a fingerprint only
 rejects. Then the scope occurrence key: one key per path (`ext`), so laws name a key by its segments (`ofSegments`), and
-its order is its reversed segments' (`compare_eq`). Nothing executable imports this module.
+its order is its reversed segments' (`compare_eq`). Then the unit key (DC4): one key per root and path (`ext`), `push`
+injective with the parent `parent?` reads back, its order the order of (depth, path fingerprint, root, path)
+(`compare_eq`) and its breadth-first order that of (depth, root, path read outermost first) (`breadth_eq`). Nothing
+executable imports this module.
 -/
 
 @[expose] public section
@@ -193,5 +196,83 @@ theorem compare_child (parent : ScopeOccurrenceId) (element : ElementId) (ordina
     exact ih
 
 end ScopeOccurrenceId
+
+/-! ## The unit key -/
+
+namespace UnitKey
+
+/-- A unit key is its root and path: its spine is theirs. -/
+theorem ext {a b : UnitKey} (roots : a.root = b.root) (paths : a.path = b.path) : a = b := by
+  obtain ⟨root, path, spine, ok⟩ := a
+  obtain ⟨root', path', spine', ok'⟩ := b
+  simp only at roots paths
+  subst roots paths ok ok'
+  rfl
+
+theorem ext_iff {a b : UnitKey} : a = b ↔ a.root = b.root ∧ a.path = b.path :=
+  ⟨fun same => same ▸ ⟨rfl, rfl⟩, fun ⟨roots, paths⟩ => ext roots paths⟩
+
+/-- The spine's depth is the path's length and its fingerprint the path's, by the spine laws alone. -/
+theorem spine_level (key : UnitKey) : key.spine.level = key.path.length := by
+  have built := Spine.ofPath_good key.path
+  rw [← key.spineOk] at built
+  rw [Spine.level_eq built.1, built.2]
+
+theorem spine_fingerprint (key : UnitKey) : key.spine.fingerprint = Spine.fingerprintOf key.path := by
+  have built := Spine.ofPath_good key.path
+  rw [← key.spineOk] at built
+  rw [Spine.fingerprint_eq built.1, built.2]
+
+@[simp] theorem push_root (parent : UnitKey) (step : UnitStep) : (parent.push step).root = parent.root := rfl
+
+@[simp] theorem push_path (parent : UnitKey) (step : UnitStep) : (parent.push step).path = step :: parent.path := rfl
+
+@[simp] theorem ofRoot_path (root : UnitRoot) : (UnitKey.ofRoot root).path = [] := by unfold UnitKey.ofRoot; rfl
+
+/-- Pushing is injective: a unit names the unit that queued it and its step. -/
+theorem push_inj {a b : UnitKey} {x y : UnitStep} : a.push x = b.push y ↔ a = b ∧ x = y := by
+  simp only [ext_iff, List.cons.injEq]
+  exact ⟨fun ⟨roots, steps, paths⟩ => ⟨⟨roots, paths⟩, steps⟩, fun ⟨⟨roots, paths⟩, steps⟩ => ⟨roots, steps, paths⟩⟩
+
+/-- A pushed key's parent is the key it was pushed on, with its step; a root has none. -/
+@[simp] theorem parent?_push (parent : UnitKey) (step : UnitStep) : (parent.push step).parent? = some (parent, step) := by
+  simp only [UnitKey.parent?, Option.some.injEq, Prod.mk.injEq, and_true]
+  exact ext rfl rfl
+
+@[simp] theorem parent?_ofRoot (root : UnitRoot) : (UnitKey.ofRoot root).parent? = none := by
+  unfold UnitKey.ofRoot; rfl
+
+/-- A pushed key is never a root. -/
+theorem push_ne_ofRoot (parent : UnitKey) (step : UnitStep) (root : UnitRoot) : parent.push step ≠ .ofRoot root :=
+  fun same => by simpa using congrArg UnitKey.path same
+
+/-- The unit-key order is the order of (depth, path fingerprint, root, path): the cached fields only split it. -/
+theorem compare_eq (a b : UnitKey) : compare a b =
+    compareLex (compareOn (·.path.length)) (compareLex (compareOn (Spine.fingerprintOf ·.path))
+      (compareLex (compareOn (·.root)) (compareOn (·.path)))) a b :=
+  congrFun (congrFun UnitKey.unitOrder.property a) b
+
+/-- Breadth-first order is the order of (depth, root, path read outermost first). -/
+theorem breadth_eq (a b : UnitKey) : UnitKey.breadth.val a b =
+    compareLex (compareOn (·.path.length)) (compareLex (compareOn (·.root)) (compareOn (·.path.reverse))) a b :=
+  congrFun (congrFun UnitKey.breadth.property a) b
+
+/-- Breadth-first order decides equality: it is `.eq` only on one key. -/
+theorem breadth_eq_eq {a b : UnitKey} : UnitKey.breadth.val a b = .eq ↔ a = b := by
+  rw [breadth_eq, compareLex_eq_eq, compareLex_eq_eq]
+  constructor
+  · intro ⟨_, roots, paths⟩
+    exact ext (Std.LawfulEqOrd.eq_of_compare roots)
+      (List.reverse_inj.mp (Std.LawfulEqOrd.eq_of_compare paths))
+  · intro same
+    subst same
+    exact ⟨Std.ReflCmp.compare_self, Std.ReflCmp.compare_self, Std.ReflCmp.compare_self⟩
+
+/-- A unit runs before every unit it queued in breadth-first order: fewer steps first. -/
+theorem breadth_push (parent : UnitKey) (step : UnitStep) : UnitKey.breadth.val parent (parent.push step) = .lt := by
+  rw [breadth_eq]
+  simp [compareLex, compareOn, Ordering.then, compare, compareOfLessAndEq]
+
+end UnitKey
 
 end Kernel.Laws.State

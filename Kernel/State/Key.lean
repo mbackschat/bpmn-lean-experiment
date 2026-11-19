@@ -11,8 +11,10 @@ an ordinal counted the same way by `State.occurrenceOrdinals`. A scope occurrenc
 (DC20), whose cached depth and fingerprint and whose jump pointers only accelerate: equality rejects on the cached
 fields and the order meets two keys in O(log depth), and both decide on the full path. Each key has a lawful order, so
 maps may key on it, and an order that reads only the key's value: no site may read it as an order of entry. Scope
-occurrence keys order outermost first, so a subtree is one key range (KD1). `scripts/kernel-effects.lean` holds the
-spine to `Spine.push` and the comparators to the key-order contract (KD7). Part of `Kernel.State`, which re-exports it.
+occurrence keys order outermost first, so a subtree is one key range (KD1). A closure's unit key (DC4) is a structured
+root and a path of unit steps on the same spine, ordered by depth, fingerprint, root and path, with the breadth-first
+order the closure runs signals in beside it. `scripts/kernel-effects.lean` holds the spine to `Spine.push` and the
+comparators to the key-order contract (KD7). Part of `Kernel.State`, which re-exports it.
 -/
 
 public section
@@ -542,5 +544,222 @@ instance : Std.LawfulEqOrd OccurrenceId where
     have ordinals : ordinal = ordinal' := Std.LawfulEqOrd.eq_of_compare h.2.2
     subst scopes same ordinals
     rfl
+
+/-! ## Unit keys -/
+
+/-- One step down a closure's unit chain (DC4, DC20): the `index`th signal or token the unit above queued, its index in
+that unit's batch, so in-batch order is in the key and no order of entry is kept (DC2, DC10). -/
+inductive UnitStep where
+  | signal (index : Nat)
+  | token (index : Nat)
+  deriving DecidableEq, Repr
+
+/-- A step's place in the order of steps: signals before tokens, each by index. -/
+def UnitStep.stepRank : UnitStep → Nat × Nat
+  | .signal index => (0, index)
+  | .token index => (1, index)
+
+instance : Ord UnitStep where
+  compare := compareLex (compareOn (·.stepRank.1)) (compareOn (·.stepRank.2))
+
+instance : Std.TransOrd UnitStep := inferInstanceAs <| Std.TransCmp (compareLex _ _)
+
+instance : Std.LawfulEqOrd UnitStep where
+  eq_of_compare {a b} h := by
+    have h : compareLex (compareOn fun step : UnitStep => step.stepRank.1) (compareOn fun step : UnitStep => step.stepRank.2) a b =
+      .eq := h
+    rw [compareLex_eq_eq] at h
+    have tags : a.stepRank.1 = b.stepRank.1 := Std.LawfulEqOrd.eq_of_compare h.1
+    have indexes : a.stepRank.2 = b.stepRank.2 := Std.LawfulEqOrd.eq_of_compare h.2
+    cases a <;> cases b <;> simp_all [UnitStep.stepRank]
+
+/-- A step's index in the batch of the unit above. -/
+def UnitStep.batchIndex (step : UnitStep) : Nat := step.stepRank.2
+
+/-- A unit step's fingerprint code: its index and its kind, so a `signal` and a `token` of one index differ. -/
+instance : SpineStep UnitStep where
+  code step := UInt64.ofNat (2 * step.stepRank.2 + step.stepRank.1)
+
+/-- Where a closure's unit chain starts (DC4): the work queued before an input's own transition (a start's arming of the
+root's Event Sub-Process starts), the input's own transition, the completion of an idle scope occurrence (the process
+root's is the instance's completion), or a parked join offered again, named by the latest occurrence parked there and
+the round, the number of times the closure offered that occurrence before: a join that consumes the first arrival
+parked on a flow leaves the latest one parked, so one occurrence can be offered more than once in a closure. A
+structured root, never a tagged element identifier, so no element can take a root's name (T56). -/
+inductive UnitRoot where
+  | seed
+  | input
+  | idle (scope : ScopeOccurrenceId)
+  | offer (occurrence : OccurrenceId) (round : Nat)
+  deriving DecidableEq, Repr
+
+/-- A root's place in the order of roots: the seed first, so its batch runs before the input's (`Step.settle`), then
+the input, then idle completions and offers by their keys. -/
+def UnitRoot.rootRank : UnitRoot → Nat
+  | .seed => 0
+  | .input => 1
+  | .idle _ => 2
+  | .offer _ _ => 3
+
+def UnitRoot.idleOf? : UnitRoot → Option ScopeOccurrenceId
+  | .idle scope => some scope
+  | .seed | .input | .offer _ _ => none
+
+def UnitRoot.offerOf? : UnitRoot → Option OccurrenceId
+  | .offer occurrence _ => some occurrence
+  | .seed | .input | .idle _ => none
+
+def UnitRoot.round : UnitRoot → Nat
+  | .offer _ round => round
+  | .seed | .input | .idle _ => 0
+
+instance : Ord UnitRoot where
+  compare := compareLex (compareOn (·.rootRank)) <| compareLex (compareOn (·.idleOf?)) <|
+    compareLex (compareOn (·.offerOf?)) (compareOn (·.round))
+
+instance : Std.TransOrd UnitRoot := inferInstanceAs <| Std.TransCmp (compareLex _ _)
+
+instance : Std.LawfulEqOrd UnitRoot where
+  eq_of_compare {a b} h := by
+    have h : compareLex (compareOn fun root : UnitRoot => root.rootRank)
+        (compareLex (compareOn fun root : UnitRoot => root.idleOf?)
+          (compareLex (compareOn fun root : UnitRoot => root.offerOf?) (compareOn fun root : UnitRoot => root.round)))
+        a b = .eq := h
+    rw [compareLex_eq_eq, compareLex_eq_eq, compareLex_eq_eq] at h
+    have ranks : a.rootRank = b.rootRank := Std.LawfulEqOrd.eq_of_compare h.1
+    have scopes : a.idleOf? = b.idleOf? := Std.LawfulEqOrd.eq_of_compare h.2.1
+    have occurrences : a.offerOf? = b.offerOf? := Std.LawfulEqOrd.eq_of_compare h.2.2.1
+    have rounds : a.round = b.round := Std.LawfulEqOrd.eq_of_compare h.2.2.2
+    cases a <;> cases b <;> simp_all [UnitRoot.rootRank, UnitRoot.idleOf?, UnitRoot.offerOf?, UnitRoot.round]
+
+/-- The key of one unit of a closure's work, one micro-step (DC4, DC20): its root and the steps from the root down to it,
+innermost first, with their spine, which `push` extends and `parent?` reads, so neither copies the path. Structural and
+the same in every schedule: when a unit ran is the run log's (`Step.RunLog`), never the key's. A unit key never
+outlives its closure: the commit empties every family keyed by one (`Step.orderJournal`). Never a wire value. -/
+structure UnitKey where
+  root : UnitRoot
+  path : List UnitStep
+  spine : Spine UnitStep
+  spineOk : spine = (Spine.ofPath path).val
+
+namespace UnitKey
+
+/-- The key of a root unit. -/
+def ofRoot (root : UnitRoot) : UnitKey := ⟨root, [], .root, rfl⟩
+
+/-- The key of the unit `step` names below `parent`: one `Spine.push`. -/
+abbrev push (parent : UnitKey) (step : UnitStep) : UnitKey :=
+  ⟨parent.root, step :: parent.path, Spine.push step parent.spine, by rw [parent.spineOk]; rfl⟩
+
+/-- The `index`th signal the unit `parent` queued, as the unit it runs as. -/
+abbrev signalUnit (parent : UnitKey) (index : Nat) : UnitKey := parent.push (.signal index)
+
+/-- The `index`th token the unit `parent` queued, as the unit it runs as. -/
+abbrev tokenUnit (parent : UnitKey) (index : Nat) : UnitKey := parent.push (.token index)
+
+/-- The unit that queued this one and the step it queued it as, `none` for a root: its spine's parent, read in
+constant time. -/
+abbrev parent? (key : UnitKey) : Option (UnitKey × UnitStep) :=
+  match same : key.path with
+  | [] => none
+  | step :: rest => some (⟨key.root, rest, key.spine.parentNode, by rw [key.spineOk, same]; rfl⟩, step)
+
+end UnitKey
+
+instance : Inhabited UnitKey := ⟨.ofRoot .input⟩
+
+instance : Repr UnitKey where
+  reprPrec key _ := Std.Format.bracket "{ " ("root := " ++ repr key.root ++ ", path := " ++ repr key.path) " }"
+
+/-- Equality rejects on depth and fingerprint at once, then compares the roots, and accepts a shared path at once; only
+a fingerprint collision or an unshared equal path walks it. No derived walk: a derived instance would also compare the
+spines. -/
+instance : DecidableEq UnitKey := fun a b =>
+  if cached : a.spine.level = b.spine.level ∧ a.spine.fingerprint = b.spine.fingerprint then
+    if roots : a.root = b.root then
+      match withPtrEqDecEq a.path b.path (fun _ => inferInstance) with
+      | isTrue same => isTrue <| by
+          obtain ⟨root, path, spine, ok⟩ := a
+          obtain ⟨root', path', spine', ok'⟩ := b
+          simp only at same roots
+          subst same ok ok' roots
+          rfl
+      | isFalse other => isFalse fun same => other (congrArg UnitKey.path same)
+    else isFalse fun same => roots (congrArg UnitKey.root same)
+  else isFalse fun same => cached ⟨congrArg (·.spine.level) same, congrArg (·.spine.fingerprint) same⟩
+
+/-- The order of two unit keys' paths, a shared path at once. -/
+def UnitKey.comparePath (a b : UnitKey) : Ordering :=
+  match withPtrEqDecEq a.path b.path (fun _ => inferInstance) with
+  | isTrue _ => .eq
+  | isFalse _ => compare a.path b.path
+
+/-- The order of unit keys (DC20): depth, fingerprint, root, then the full path, so a map operation compares fixed-size
+cached fields first and the path decides last; with its agreement with the order of (path length, path fingerprint,
+root, path) proved inline beside the order, since an executable module holds no theorem (guard 6). No law reads the
+fingerprint's value: it only splits the order (T60 F3). -/
+def UnitKey.unitOrder : { cmp : UnitKey → UnitKey → Ordering //
+    cmp = compareLex (compareOn (·.path.length)) (compareLex (compareOn (Spine.fingerprintOf ·.path))
+      (compareLex (compareOn (·.root)) (compareOn (·.path)))) } :=
+  ⟨compareLex (compareOn (·.spine.level)) (compareLex (compareOn (·.spine.fingerprint))
+      (compareLex (compareOn (·.root)) UnitKey.comparePath)), by
+    have cached : ∀ key : UnitKey, key.spine.level = key.path.length ∧
+        key.spine.fingerprint = Spine.fingerprintOf key.path := by
+      intro key
+      obtain ⟨good, path⟩ := (Spine.ofPath key.path).property
+      rw [← key.spineOk] at good path
+      cases spine : key.spine with
+      | root => rw [spine] at path; simp [Spine.level, Spine.fingerprint, ← path, Spine.path, Spine.fingerprintOf]
+      | node =>
+        rw [spine] at good path
+        exact ⟨by rw [← path]; exact good.2.2.2.1, by rw [← path]; exact good.2.2.2.2.1⟩
+    funext a b
+    have path : UnitKey.comparePath a b = compare a.path b.path := by
+      unfold UnitKey.comparePath
+      split
+      · next same _ => rw [same]; exact Std.ReflCmp.compare_self.symm
+      · rfl
+    simp only [compareLex, compareOn, (cached a).1, (cached b).1, (cached a).2, (cached b).2, path]⟩
+
+instance : Ord UnitKey where
+  compare := UnitKey.unitOrder.val
+
+instance : Std.TransOrd UnitKey := by
+  show Std.TransCmp UnitKey.unitOrder.val
+  rw [UnitKey.unitOrder.property]
+  exact inferInstanceAs <| Std.TransCmp (compareLex _ _)
+
+instance : Std.LawfulEqOrd UnitKey where
+  eq_of_compare {a b} h := by
+    have h := (show compare a b = UnitKey.unitOrder.val a b from rfl) ▸ h
+    rw [UnitKey.unitOrder.property, compareLex_eq_eq, compareLex_eq_eq, compareLex_eq_eq] at h
+    have roots : a.root = b.root := Std.LawfulEqOrd.eq_of_compare h.2.2.1
+    have paths : a.path = b.path := Std.LawfulEqOrd.eq_of_compare h.2.2.2
+    obtain ⟨root, path, spine, ok⟩ := a
+    obtain ⟨root', path', spine', ok'⟩ := b
+    simp only at roots paths
+    subst roots paths ok ok'
+    rfl
+
+/-- Breadth-first order of unit keys (DC4, T56 F2), the order the closure runs queued signals in: fewer steps first,
+then the root, then the path read outermost first, decided where the two spines meet in O(log depth)
+(`Spine.compareOuter`); with its agreement with the order of (path length, root, reversed path) proved inline. -/
+def UnitKey.breadth : { cmp : UnitKey → UnitKey → Ordering //
+    cmp = compareLex (compareOn (·.path.length)) (compareLex (compareOn (·.root)) (compareOn (·.path.reverse))) } :=
+  ⟨compareLex (compareOn (·.spine.level)) (compareLex (compareOn (·.root)) fun a b => Spine.outer.val a.spine b.spine), by
+    have good : ∀ key : UnitKey, key.spine.Good ∧ key.spine.path = key.path := by
+      intro key
+      have built := (Spine.ofPath key.path).property
+      rw [← key.spineOk] at built
+      exact built
+    have level : ∀ key : UnitKey, key.spine.level = key.path.length := by
+      intro key
+      have g := good key
+      cases spine : key.spine with
+      | root => rw [spine] at g; simp [Spine.level, ← g.2, Spine.path]
+      | node => rw [spine] at g; rw [← g.2]; exact g.1.2.2.2.1
+    funext a b
+    have outer := Spine.outer.property.2 _ _ (good a).1 (good b).1
+    simp only [compareLex, compareOn, level, outer, (good a).2, (good b).2]⟩
 
 end Kernel

@@ -266,3 +266,80 @@ export function hookDefaultFindings(tree: KernelTree): string[] {
       : [`${label} ${registry.file}: the registry leaves ${field.name} to its failing default, which would run in production`]);
   });
 }
+
+/** The body of each top-level `function NAME` of `source`, as token ranges `[open, close)`. */
+function functionBodies(source: Source): Map<string, readonly [number, number]> {
+  const bodies = new Map<string, readonly [number, number]>();
+  const { tokens } = source;
+  for (let i = 0; i + 1 < tokens.length; i += 1) {
+    if (tokens[i]?.text !== "function" || tokens[i + 1]?.kind !== TokenKind.Word) continue;
+    let open = closeOf(tokens, i + 2);
+    while (open < tokens.length && tokens[open]?.text !== "{") open += 1;
+    bodies.set(tokens[i + 1]?.text ?? "", [open, closeOf(tokens, open)]);
+  }
+  return bodies;
+}
+
+/** The member names `names` in the order `tokens[from, to)` first reads them, as `.name` or as a call `name(`. */
+function firstReads(tokens: readonly Token[], [from, to]: readonly [number, number], names: readonly string[]): string[] {
+  const seen: string[] = [];
+  for (let i = from; i < to; i += 1) {
+    const text = tokens[i]?.text ?? "";
+    const read = tokens[i - 1]?.text === "." || tokens[i + 1]?.text === "(";
+    if (read && names.includes(text) && !seen.includes(text)) seen.push(text);
+  }
+  return seen;
+}
+
+const unitKeyFile = `${kernelPrefix}state/key.ts`;
+
+/** A unit key comparator of KD7's key-order contract: the cached reads it makes first, then the decisive ones. */
+const unitKeyContracts: ReadonlyArray<Readonly<{ comparator: string; cached: readonly string[]; decisive: readonly string[] }>> = [
+  { comparator: "compareUnitKey", cached: ["depth", "fingerprint"], decisive: ["compareUnitRoot", "comparePath"] },
+  { comparator: "sameUnitKey", cached: [], decisive: ["compareUnitKey"] },
+  { comparator: "breadthUnitKey", cached: ["depth"], decisive: ["compareUnitRoot", "sameNode", "meet"] },
+];
+
+/**
+ * The TypeScript halves of KD7's spine rules for the closure's unit keys (DC4, DC20; `scripts/kernel-effects.lean` holds
+ * the Lean halves): a unit key node, the only kernel value with a `jump` or a `fingerprint`, is built only by
+ * `unitRoot` and `pushUnit`, so its cached depth and fingerprint are its path's by those two alone; and each unit key
+ * comparator reads the fixed-size cached fields, in order, before the root or the path, which decide last.
+ */
+export function unitKeyFindings(tree: KernelTree): string[] {
+  const label = "KD7 unit keys";
+  const keys = tree.typeScript.find((source) => source.file === unitKeyFile);
+  if (keys === undefined) return [`${label}: read no ${unitKeyFile}, so the guard read nothing`];
+  const findings: string[] = [];
+  const builders = functionBodies(keys);
+  let built = 0;
+  for (const source of tree.typeScript) {
+    const { tokens } = source;
+    for (let i = 1; i + 1 < tokens.length; i += 1) {
+      const text = tokens[i]?.text;
+      if ((text !== "jump" && text !== "fingerprint") || tokens[i + 1]?.text !== ":") continue;
+      if (tokens[i - 1]?.text !== "{" && tokens[i - 1]?.text !== ",") continue;
+      const inBuilder = source === keys && ["unitRoot", "pushUnit"].some((name) => {
+        const body = builders.get(name);
+        return body !== undefined && body[0] < i && i < body[1];
+      });
+      if (inBuilder) built += 1;
+      else findings.push(`${label} ${source.file}:${tokens[i]?.line}: builds a unit key node outside unitRoot and pushUnit`);
+    }
+  }
+  if (built === 0) findings.push(`${label}: unitRoot and pushUnit build no unit key node, so the builder rule read nothing`);
+  for (const { comparator, cached, decisive } of unitKeyContracts) {
+    const body = builders.get(comparator);
+    if (body === undefined) {
+      findings.push(`${label}: ${comparator} is not defined in ${unitKeyFile}, so its key-order contract read nothing`);
+      continue;
+    }
+    const reads = firstReads(keys.tokens, body, [...cached, ...decisive]);
+    if (cached.some((name, index) => reads[index] !== name)) {
+      findings.push(`${label} ${comparator}: reads ${reads.join(", ")}, not its cached fields ${cached.join(", ")} first`);
+    } else if (reads.length === cached.length) {
+      findings.push(`${label} ${comparator}: reads none of ${decisive.join(", ")} last`);
+    }
+  }
+  return findings;
+}

@@ -163,7 +163,11 @@ def orderContracts : List OrderContract :=
   [ ⟨`Kernel.Spine.sameNode, [depth, fingerprint], [`Kernel.Spine.path]⟩,
     ⟨`Kernel.instDecidableEqScopeOccurrenceId, [depth, fingerprint], [`Kernel.ScopeOccurrenceId.segments]⟩,
     ⟨`Kernel.Spine.compareOuter, [depth],
-      [`Kernel.Spine.sameNode, `Kernel.Spine.meet, `Kernel.Spine.climb, `Kernel.Spine.stepOrder, `Kernel.Spine.path]⟩ ]
+      [`Kernel.Spine.sameNode, `Kernel.Spine.meet, `Kernel.Spine.climb, `Kernel.Spine.stepOrder, `Kernel.Spine.path]⟩,
+    ⟨`Kernel.instDecidableEqUnitKey, [depth, fingerprint], [`Kernel.UnitKey.path]⟩,
+    ⟨`Kernel.UnitKey.comparePath, [], [`Kernel.UnitKey.path]⟩,
+    ⟨`Kernel.UnitKey.unitOrder, [depth, fingerprint], [`Kernel.UnitKey.comparePath]⟩,
+    ⟨`Kernel.UnitKey.breadth, [depth], [`Kernel.Spine.outer]⟩ ]
 
 /-- The listed constants in the order a value first reads them: left to right, a function before its arguments, so
 the condition of an `if` comes before its branches. -/

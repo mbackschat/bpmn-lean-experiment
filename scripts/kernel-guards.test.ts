@@ -24,7 +24,7 @@ import {
   tsMatchSiteCounts,
 } from "./kernel-guards-dispatch.ts";
 import { boundAgreementFindings, boundCopies, strayBoundLiteralFindings } from "./kernel-guards-bounds.ts";
-import { effectWriterFindings, fieldLivenessFindings, hookDefaultFindings } from "./kernel-guards-effects.ts";
+import { effectWriterFindings, fieldLivenessFindings, hookDefaultFindings, unitKeyFindings } from "./kernel-guards-effects.ts";
 import {
   boundedNumberFindings,
   discoveryFindings,
@@ -557,6 +557,19 @@ test("the hook-defaults guard (KD7) needs every failing default filled, in both 
   assert.equal(hookDefaultFindings(emptyFixture()).length, 2, "an empty tree must fail in both languages");
 });
 
+test("the unit-key guard (KD7) holds a node to its two builders and each comparator to its cached reads, and fails on an empty tree", () => {
+  const file = "packages/kernel/src/state/key.ts";
+  const keys = readFileSync(path.join(tree.root, file), "utf8");
+  assert.deepEqual(unitKeyFindings(fixture({ [file]: keys })), []);
+  seeded(unitKeyFindings, { [file]: keys, "packages/kernel/src/step/forge.ts": "export const forge = (key) => ({ ...key, fingerprint: 0n });\n" },
+    /KD7 unit keys packages\/kernel\/src\/step\/forge\.ts:1: builds a unit key node outside unitRoot and pushUnit/u);
+  const header = "export function compareUnitKey(left: UnitKey, right: UnitKey): number {\n";
+  assert.ok(keys.includes(header));
+  seeded(unitKeyFindings, { [file]: keys.replace(header, `${header}  const roots = compareUnitRoot(left.root, right.root);\n  if (roots !== 0) return roots;\n`) },
+    /KD7 unit keys compareUnitKey: reads compareUnitRoot, depth, fingerprint, comparePath, not its cached fields depth, fingerprint first/u);
+  assert.notDeepEqual(unitKeyFindings(emptyFixture()), [], "an empty tree must fail");
+});
+
 holdsItsGround("guard 19 (field liveness)", fieldLivenessFindings, {
   "packages/kernel/src/feature/data.ts": `import { setVariable } from "../state.js";\nexport function store(state) { return setVariable(state, "x"); }\n`,
 }, /IL field assignee is read by no non-codec module/u);
@@ -725,6 +738,7 @@ for (const [name, guard] of [
   ["guard 15 (rebuild model)", rebuildFindings],
   ["guard 17", effectWriterFindings],
   ["the hook-defaults guard (KD7)", hookDefaultFindings],
+  ["the unit-key guard (KD7)", unitKeyFindings],
   ["guard 19", fieldLivenessFindings],
   ["guard 20", refusalParityFindings],
   ["guard 23 (structural inputs)", structureInputFindings],
