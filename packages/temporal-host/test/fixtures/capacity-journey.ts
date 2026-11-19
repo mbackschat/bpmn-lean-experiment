@@ -28,8 +28,22 @@ export const map = (entries: readonly (readonly [string, JsonValue])[]): JsonVal
   ({ kind: "map", value: [...entries].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([name, value]) => ({ name, value })) });
 export const list = (values: readonly JsonValue[]): JsonValue => ({ kind: "list", value: values });
 
-/** A List of Strings of `lengths` ASCII characters: one character more is one canonical byte more wherever it is held once. */
-export const pad = (lengths: readonly number[]): JsonValue => list(lengths.map((length) => str("x".repeat(length))));
+/**
+ * A List of Strings of `lengths` ASCII characters. Every String is distinct from every other String of every pad with
+ * another `salt` (use the variable's name), because the state codec writes a repeated String of 8 or more code units once
+ * (`wire-codec.ts`, `internStrings`): equal pads would collapse to one table entry and neither carry their volume nor move
+ * a measure by one byte per character. With the salt fixed and every length at least 8, one character more is one canonical
+ * byte more in the encoded state, however many copies of the pad the state holds.
+ */
+export const pad = (lengths: readonly number[], salt: string): JsonValue =>
+  list(lengths.map((length, index) => str(`${salt}~${String(index)}~`.padEnd(length, "x").slice(0, length))));
+
+/** `count` variables named `${prefix}1`.., sharing `total` pad characters evenly: each within the value domain's byte bound. */
+export const padVariables = (prefix: string, total: number, count: number): JsonValue[] =>
+  Array.from({ length: count }, (_, index) => {
+    const name = `${prefix}${String(index + 1)}`;
+    return { name, value: pad(padLengths(Math.floor(total / count) + (index < total % count ? 1 : 0)), name) };
+  });
 
 /**
  * `total` characters spread over `strings` Strings, each within the value domain's 1,024-byte String bound: with the
@@ -208,7 +222,7 @@ export function effectOutcomeAtBound(extra: number): JsonValue {
   const outcome = (characters: number, top = 0): JsonValue => ({
     kind: "success",
     outputs: [{ name: "result", value: str(`ok${"k".repeat(top)}`) },
-      ...["r1", "r2", "r3", "r4", "r5"].map((name) => ({ name, value: pad(padLengths(characters)) }))],
+      ...["r1", "r2", "r3", "r4", "r5"].map((name) => ({ name, value: pad(padLengths(characters), name) }))],
   });
   const below = Math.floor((chainCapacity.effectResultBytes - canonicalBytes(outcome(0))) / 5);
   const sized = outcome(below, chainCapacity.effectResultBytes - canonicalBytes(outcome(below)) + extra);
@@ -217,7 +231,7 @@ export function effectOutcomeAtBound(extra: number): JsonValue {
 }
 
 export const sizingVariables = (names: readonly string[], characters: number): JsonValue[] =>
-  names.map((name) => ({ name, value: pad(padLengths(characters)) }));
+  names.map((name) => ({ name, value: pad(padLengths(characters), name) }));
 
 /**
  * The continuation witness's model and inputs: a program exactly at its own bound, a state grown by four completions,
@@ -236,7 +250,7 @@ export async function continuationCase(): Promise<Readonly<{
     program,
     inputs: [{ kind: "start", commandId: "s", instanceId, variables: sizingVariables(["a", "b", "c"], 15_000) },
       fill(1), fill(2), fill(3), fill(4)],
-    last: (knob) => completeTask("fill-5", "Fill5", 1, [...sizingVariables(["fixed"], 15_000), { name: "last", value: pad(padLengths(knob)) }]),
+    last: (knob) => completeTask("fill-5", "Fill5", 1, [...sizingVariables(["fixed"], 15_000), { name: "last", value: pad(padLengths(knob), "last") }]),
   };
 }
 

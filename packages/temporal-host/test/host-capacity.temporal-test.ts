@@ -209,7 +209,7 @@ test("an effect of an instance whose identity exceeds Temporal's identifier limi
 
 test("one byte pair through the Update validator: a state of exactly 256 KiB commits, one byte more never enters history", async () => {
   const program = await fx.scenarioProgram(fx.parallelModel);
-  const journey = (knob: number) => fx.realisticJourney([{ name: "pad", value: fx.pad(fx.padLengths(knob)) }]);
+  const journey = (knob: number) => fx.realisticJourney(fx.padVariables("pad", knob, 4));
   const memoryState = async (knob: number) => {
     const host = createMemoryProcessHost({ taskQueue: "measure" });
     const phases = journey(knob);
@@ -217,7 +217,12 @@ test("one byte pair through the Update validator: a state of exactly 256 KiB com
     for (const stimulus of [...phases.commercial, ...phases.compliance]) await host.command("W", stimulus);
     return canonicalBytes(await host.state("W"));
   };
-  const knob = chainCapacity.stateBytes - await memoryState(0);
+  // The interning codec makes a pad character one byte only once each pad String has 8 or more characters, so the knob is
+  // found from a first estimate by correction, as `memory-host-capacity.test.ts` does.
+  let knob = 30_000;
+  for (let attempt = 0; attempt < 4 && await memoryState(knob) !== chainCapacity.stateBytes; attempt += 1) {
+    knob += chainCapacity.stateBytes - await memoryState(knob);
+  }
   assert.equal(await memoryState(knob), chainCapacity.stateBytes);
   for (const [label, padding, outcome] of [["fits", knob, "committed"], ["over", knob + 1, "rejected"]] as const) {
     const id = workflowId(`state-${label}`);

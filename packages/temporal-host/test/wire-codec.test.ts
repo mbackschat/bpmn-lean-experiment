@@ -29,3 +29,35 @@ test("a value JSON cannot carry is refused rather than silently changed", () => 
 test("an object that merely looks like the marker is refused on decode", () => {
   assert.throws(() => codec.fromWire({ $bigint: 7 }), TypeError);
 });
+
+const longText = "interned-text";
+
+test("a String of 8 code units occurring twice is interned, one of 7 or one occurring once is written in place", () => {
+  const eight = "12345678";
+  const seven = "1234567";
+  assert.deepEqual(codec.internStrings([eight, eight, seven, seven, "only-once-here"]),
+    { strings: [eight], body: [{ $: 0 }, { $: 0 }, seven, seven, "only-once-here"] });
+});
+
+test("interning round-trips and orders its table by code unit whatever the traversal order", () => {
+  const forward = { first: ["zzzzzzzz", "aaaaaaaa", "zzzzzzzz"], second: { x: "aaaaaaaa", y: "mmmmmmmm", z: "mmmmmmmm" } };
+  const backward = { second: { z: "mmmmmmmm", y: "mmmmmmmm", x: "aaaaaaaa" }, first: ["aaaaaaaa", "zzzzzzzz", "zzzzzzzz"] };
+  const encoded = codec.internStrings(forward);
+  assert.deepEqual((encoded as { strings: string[] }).strings, ["aaaaaaaa", "mmmmmmmm", "zzzzzzzz"]);
+  assert.deepEqual((codec.internStrings(backward) as { strings: string[] }).strings, (encoded as { strings: string[] }).strings);
+  assert.equal(JSON.stringify(codec.internStrings(forward)), JSON.stringify(encoded), "the same value gives the same bytes");
+  assert.deepEqual(codec.expandStrings(JSON.parse(JSON.stringify(encoded))), forward);
+});
+
+test("a decoded reference outside the table is a harness error", () => {
+  assert.throws(() => codec.expandStrings({ strings: [longText], body: { $: 1 } }), TypeError);
+  assert.throws(() => codec.expandStrings({ strings: [longText], body: { $: -1 } }), TypeError);
+  assert.throws(() => codec.expandStrings({ strings: [longText], body: { $: "0" } }), TypeError);
+  assert.throws(() => codec.expandStrings({ strings: [longText], body: [{ $: 5 }] }), TypeError);
+  assert.throws(() => codec.expandStrings([longText]), TypeError);
+  assert.deepEqual(codec.expandStrings({ strings: [longText], body: [{ $: 0 }] }), [longText]);
+});
+
+test("an object whose only member is the reference marker cannot be written", () => {
+  assert.throws(() => codec.internStrings({ $: 0 }), TypeError);
+});

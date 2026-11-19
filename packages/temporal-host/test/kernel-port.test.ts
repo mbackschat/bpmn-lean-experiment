@@ -141,3 +141,39 @@ test("a wait's Script Task is the one of the called definition the wait runs in"
   assert.equal(kernelPort.scriptOf(carried, wait(version(1)))?.source, "1");
   assert.equal(kernelPort.scriptOf(carried, wait(null))?.source, "0");
 });
+
+// The reference marker `{"$": i}` must be unreachable from business data: a state names object members only from its
+// fixed field set, and a business Map is `{tag, entries}` with its keys as Strings inside entry tuples.
+test("a business Map keyed `$` round-trips through the interned continuation codec byte-identically", async () => {
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="D" targetNamespace="urn:t">
+  <bpmn:process id="P" isExecutable="true">
+    <bpmn:startEvent id="S"/><bpmn:sequenceFlow id="f1" sourceRef="S" targetRef="T"/><bpmn:userTask id="T"/>
+    <bpmn:sequenceFlow id="f2" sourceRef="T" targetRef="E"/><bpmn:endEvent id="E"/>
+  </bpmn:process>
+</bpmn:definitions>`;
+  const read = await readKernelProgram({
+    bytes: new TextEncoder().encode(xml), overlay: null, profile: "test-profile", limits: { maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 },
+  }, kernelProfileOptions([]));
+  assert.equal(read.kind, "read", JSON.stringify(read));
+  if (read.kind !== "read") return;
+  const program = kernelPort.decodeProgram(JSON.parse(JSON.stringify(read.program)));
+  const text = (value: string) => ({ kind: "string", value });
+  const entry = (name: string, value: unknown) => ({ name, value });
+  const maps = [
+    { kind: "map", value: [entry("$", text("repeated-business-text"))] },
+    { kind: "map", value: [entry("$", text("repeated-business-text")), entry("repeated-business-text", text("$"))] },
+    { kind: "map", value: [entry("$", { kind: "map", value: [entry("$", text("repeated-business-text"))] }), entry("a", text("$"))] },
+  ];
+  for (const [index, value] of maps.entries()) {
+    const started = kernelPort.step(program, null, kernelPort.decodeStimulus({
+      kind: "start", commandId: "start", instanceId: "I", variables: [entry("m", value), entry("n", text("repeated-business-text"))], at: 0,
+    } as never).input);
+    assert.ok(started.committed, `map ${String(index)} commits`);
+    const encoded = kernelPort.encodeState(started.state);
+    const carried = kernelPort.decodeState(JSON.parse(JSON.stringify(encoded)));
+    assert.equal(JSON.stringify(kernelPort.encodeState(carried)), JSON.stringify(encoded), `map ${String(index)} re-encodes byte-identically`);
+    assert.deepEqual(carried, { ...started.state, journal: [], outbox: [] });
+    assert.ok((encoded as { strings: string[] }).strings.includes("repeated-business-text"), "the text is interned");
+  }
+});
