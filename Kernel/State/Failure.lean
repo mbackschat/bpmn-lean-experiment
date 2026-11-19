@@ -19,9 +19,11 @@ inductive SemanticCause where
 
 /-- Why a step does not commit, a semantic failure carrying `σ` beside its code. Harness failures never appear here.
 `rolledBack` is a command whose closure could not continue (no outgoing flow to take): it ends the run with the state
-before the command. -/
+before the command. A rejection's `stale` says the input arrived for an open item the instance no longer has, which a
+host drops, where it suspends the instance on any other rejected arrival (PD7). No site sets it until P2 classifies the
+arrival sites, and the record drops it, so a pattern names it explicitly: one that omits it matches only `false`. -/
 inductive FailureOf (σ : Type) where
-  | rejected (code : String)
+  | rejected (code : String) (stale : Bool := false)
   | rolledBack (code : String)
   | semanticFailure (cause : σ) (code : String)
   | unsupported (code : String)
@@ -34,9 +36,9 @@ abbrev Failure := FailureOf SemanticCause
 of records compares one. The wire never carries a cause. -/
 abbrev RecordedFailure := FailureOf Unit
 
-/-- `failure` without its cause. -/
+/-- `failure` without its cause, and a rejection without its `stale` flag, which no contract records yet. -/
 def Failure.recorded : Failure → RecordedFailure
-  | .rejected code => .rejected code
+  | .rejected code _ => .rejected code
   | .rolledBack code => .rolledBack code
   | .semanticFailure _ code => .semanticFailure () code
   | .unsupported code => .unsupported code

@@ -206,7 +206,7 @@ def execute (program : Program) : Option State → List RunStimulus → List Jso
       let name := Codec.failureName failure
       let observed := commandJson commandId name (some (Codec.failureCode failure)) :: snapshot program state
       match failure, rest with
-      | .rejected _, _ :: _ =>
+      | .rejected _ _, _ :: _ =>
         let (trace, outcome) := execute program state rest
         (observed ++ trace, outcome)
       | _, _ => (observed, name)
@@ -311,7 +311,7 @@ def hostViews (program : Program) : Option State → List RunStimulus → List H
   | state, (_, input, firing) :: rest =>
     match runStep program state input firing with
     | .ok next => Host.hostView program next :: hostViews program (some next) rest
-    | .error (.rejected _) => hostViews program state rest
+    | .error (.rejected _ _) => hostViews program state rest
     | .error _ => []
 
 def requirementsJson (requirements : Host.Requirements) : Json :=

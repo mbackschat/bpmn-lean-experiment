@@ -23,9 +23,15 @@ export enum SemanticCause {
   Invariant = "invariant",
 }
 
-/** A step's failure (Lean's `Failure`): a semantic failure carries its `SemanticCause`, which only the step reads. */
+/**
+ * A step's failure (Lean's `Failure`): a semantic failure carries its `SemanticCause`, which only the step reads. A
+ * rejection's `stale` says the input arrived for an open item the instance no longer has, which a host drops, where it
+ * suspends the instance on any other rejected arrival (PD7); Lean's `false` is its absence. No site sets it until P2
+ * classifies the arrival sites, and the record drops it.
+ */
 export type Failure =
-  | { readonly tag: Exclude<FailureTag, FailureTag.SemanticFailure>; readonly code: string }
+  | { readonly tag: FailureTag.Rejected; readonly code: string; readonly stale?: true }
+  | { readonly tag: FailureTag.RolledBack | FailureTag.Unsupported; readonly code: string }
   | { readonly tag: FailureTag.SemanticFailure; readonly code: string; readonly cause: SemanticCause };
 
 /**
@@ -34,7 +40,7 @@ export type Failure =
  */
 export interface RecordedFailure { readonly tag: FailureTag; readonly code: string; readonly cause?: never }
 
-/** `failure` without its cause. */
+/** `failure` without its cause, and a rejection without its `stale` flag, which no contract records yet. */
 export function recorded(failure: Failure): RecordedFailure { return { tag: failure.tag, code: failure.code }; }
 
 /** Lean's `Except Failure α`. */

@@ -231,13 +231,13 @@ def stimulusFromJson (json : Json) : Except String (String × Input) :=
 
 /-- The refusal or failure code a failure carries; the wire carries no cause. -/
 def failureCode {σ : Type} : FailureOf σ → String
-  | .rejected code => code
+  | .rejected code _ => code
   | .rolledBack code => code
   | .semanticFailure _ code => code
   | .unsupported code => code
 
 def failureName {σ : Type} : FailureOf σ → String
-  | .rejected _ => "rejected"
+  | .rejected _ _ => "rejected"
   | .rolledBack _ => "rolledBack"
   | .semanticFailure _ _ => "semanticFailure"
   | .unsupported _ => "unsupported"

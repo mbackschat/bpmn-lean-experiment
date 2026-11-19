@@ -20,7 +20,7 @@ def occurrence (program : Program) (state : State) (item : OpenItem) : Occurrenc
 
 /-- The code a refusal carries. -/
 def refusalCode : Failure → String
-  | .rejected code | .rolledBack code | .semanticFailure _ code | .unsupported code => code
+  | .rejected code _ | .rolledBack code | .semanticFailure _ code | .unsupported code => code
 
 /-- The refusal with the least code in the codes' string order, so the code a publication reports never depends on the
 order its candidates are scanned in; of two refusals with one code the first is kept, which only a scan's refusal kinds
@@ -116,7 +116,7 @@ def startFor (hooks : Hooks) (instances : List Instance) (publication : Publicat
 or a reached subscription's (`messageReceivers`). Each only rejects or refuses as unsupported, so another failure is a
 harness defect. -/
 def refusalOf : Failure → Except String Resolution
-  | .rejected code => pure (.rejected code)
+  | .rejected code _ => pure (.rejected code)
   | .unsupported code => pure (.unsupported code)
   | .rolledBack _ | .semanticFailure _ _ => throw "publication-refusal-not-command-level"
 
