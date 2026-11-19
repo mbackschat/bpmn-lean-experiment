@@ -164,8 +164,8 @@ def HandlersInOrder (hooks : Hooks) (reads writes : Ctx → ElementId → List S
     Formed (Depends ctx.program (reads ctx) (writes ctx)) state →
     ((∃ scope activity trigger leave resume, FreshCall state scope trigger resume ∧
         hooks.compensate ctx scope activity trigger leave resume state = .ok after) ∨
-      ∃ context occurrence, Laws.Step.ScopeStands state occurrence.scope ∧
-        hooks.handlerCompleted ctx context occurrence state = .ok after) →
+      ∃ occurrence, Laws.Step.ScopeStands state occurrence.scope ∧
+        hooks.handlerCompleted ctx occurrence state = .ok after) →
     run ∈ state.slots.compensation.runs → next ∈ after.slots.compensation.runs → next.trigger = run.trigger →
     next.scope = run.scope → ∃ released started, Advances (Depends ctx.program (reads ctx) (writes ctx)) released next started ∧
       released.pending = run.pending ∧ released.trigger = run.trigger

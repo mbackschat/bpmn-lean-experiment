@@ -151,8 +151,8 @@ def continueAfter (hooks : Hooks) (ctx : Ctx) (occurrence : Occurrence) (leave :
   match occurrence.continuation with
   | .flow => if raised then .ok state else hooks.outflow ctx occurrence leave state
   | .multiInstance body => if raised then .ok state else hooks.instanceCompleted ctx body occurrence writes state
-  | .compensation run =>
-    if raised then hooks.handlerEnded ctx run occurrence state else hooks.handlerCompleted ctx run occurrence state
+  | .compensation _ =>
+    if raised then hooks.handlerEnded ctx occurrence state else hooks.handlerCompleted ctx occurrence state
 
 /-- The one completion pipeline: disarm, write, retain, continue, remove and journal, in that order. The occurrence's
 record and owned scope go before its continuation runs, so that a continuation leaving its instance or handler scope

@@ -390,14 +390,14 @@ theorem signal_settled {s : State} {signal : Signal} (formed : WellFormed progra
     fun run member => carry _ (formed.settled.bodies run member),
     fun run member occurrence leave resume => carry _ (formed.settled.resumed run member occurrence leave resume),
     fun scope activity trigger leave occurrence resume member => carry _ ?_, formed.settled.placed,
-    formed.settled.runsPlaced, fun scope activity trigger leave outer context member => ?_,
+    formed.settled.runsPlaced, fun scope activity trigger leave context member => ?_,
     fun raised' origin host member named => carry _ ?_⟩
   · rcases List.mem_append.mp member with old | new
     · exact formed.settled.queued scope activity trigger leave occurrence resume old
     · exact (compensates scope activity trigger leave _ (List.mem_singleton.mp new).symm).1 _ _ rfl
   · rcases List.mem_append.mp member with old | new
-    · exact formed.settled.grouped scope activity trigger leave outer context old
-    · exact (compensates scope activity trigger leave _ (List.mem_singleton.mp new).symm).2 _ _ rfl
+    · exact formed.settled.grouped scope activity trigger leave context old
+    · exact (compensates scope activity trigger leave _ (List.mem_singleton.mp new).symm).2 _ rfl
   · rcases List.mem_append.mp member with old | new
     · exact formed.settled.raised raised' origin host old named
     · exact raised raised' origin host (List.mem_singleton.mp new).symm named

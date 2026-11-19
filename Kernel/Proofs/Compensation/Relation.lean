@@ -74,7 +74,7 @@ def RunsIssued (s : State) : Prop :=
 /-- Whether a compensation resumes a group's nested run (`Resume.group`), which only `Compensation.beginHandler`
 makes. -/
 def resumesGroup : Option Resume → Bool
-  | some (.group _ _) => true
+  | some (.group _) => true
   | some (.complete _ _) => false
   | some (.occur _ _ _) => false
   | none => false
@@ -208,7 +208,7 @@ theorem shared_trigger_rejected :
     queuedTrigger] at nodup
 
 /-- `pendingRun` as a group's nested run. -/
-def groupRun : CompensationRun := { pendingRun with resume := some (.group rootScope rootScope) }
+def groupRun : CompensationRun := { pendingRun with resume := some (.group rootScope) }
 
 /-- A group's nested run with a queued compensation's trigger breaks `TriggersApart`, though no run but a group's holds
 the trigger. -/
@@ -261,9 +261,9 @@ theorem reserved_trigger_rejected : ¬ TriggersApart reservedRaise := fun apart 
 
 /-- A queued compensation that resumes a group breaks `QueuedUngrouped`. -/
 theorem queued_group_rejected :
-    ¬ QueuedUngrouped (holdingState {} [.compensate rootScope none thrownBy none (some (.group rootScope rootScope))]) :=
+    ¬ QueuedUngrouped (holdingState {} [.compensate rootScope none thrownBy none (some (.group rootScope))]) :=
   fun ungrouped => by
-    have := ungrouped rootScope none thrownBy none (some (.group rootScope rootScope)) (by simp [holdingState])
+    have := ungrouped rootScope none thrownBy none (some (.group rootScope)) (by simp [holdingState])
     simp [resumesGroup] at this
 
 end Kernel.Proofs.Compensation

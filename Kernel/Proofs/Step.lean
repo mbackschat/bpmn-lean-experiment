@@ -363,7 +363,7 @@ theorem propagationOps : Laws.Propagation.PropagationOps program (Laws.State.Wel
       tokens := .refl _, signals := .refl _, starts := fun _ => id, slots := .same rfl } rfl formed.startedOnce
   compensate _ _ _ _ _ _ formed member begun _ _ _ := queue_wellFormed formed fun _ same => by
     cases same
-    exact ⟨fun _ _ same => by cases same; exact begun_settled formed member begun, fun _ _ same => by simp at same⟩
+    exact ⟨fun _ _ same => by cases same; exact begun_settled formed member begun, fun _ same => by simp at same⟩
   terminate _ _ formed member begun :=
     have cleared := Laws.State.clearInside_inner formed member begun (inner := none) (by simp)
     ⟨cleared.1, cleared.2.1⟩
@@ -383,7 +383,7 @@ theorem propagationOps : Laws.Propagation.PropagationOps program (Laws.State.Wel
   rollBack _ _ _ _ _ _ _ formed stands _ _ _ _ := queue_wellFormed
     (Laws.State.clearAll_wellFormed formed (List.mem_map.mpr stands)) fun _ same => by
       cases same
-      exact ⟨fun _ _ wrong => (by cases wrong), fun _ _ wrong => by cases wrong⟩
+      exact ⟨fun _ _ wrong => (by cases wrong), fun _ wrong => by cases wrong⟩
 
 /-- A fired item's scope occurrence stands, and so does its host, if any, begun there. -/
 theorem fired_hangs {state : State} (formed : Laws.State.WellFormed program state) {item : OpenItem}

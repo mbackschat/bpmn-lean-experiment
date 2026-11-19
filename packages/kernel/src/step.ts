@@ -141,9 +141,7 @@ function continueAfter(hooks: Hooks, ctx: Ctx, occurrence: Occurrence, leave: Le
     case ContinuationTag.MultiInstance:
       return raised ? committed(state) : hooks.instanceCompleted(ctx, continuation.body, occurrence, writes, state);
     case ContinuationTag.Compensation:
-      return raised
-        ? hooks.handlerEnded(ctx, continuation.run, occurrence, state)
-        : hooks.handlerCompleted(ctx, continuation.run, occurrence, state);
+      return raised ? hooks.handlerEnded(ctx, occurrence, state) : hooks.handlerCompleted(ctx, occurrence, state);
   }
   return assertNever(continuation);
 }

@@ -57,6 +57,9 @@ def options (reach : Reach) (selected : ProfileOptions) : Option String :=
   (if selected.callBindingTime == .invocation then some "profile.callBindingTime.invocation" else none) <|>
   (if selected.timerZone.isSome then some "profile.timerZone" else none) <|>
   (if reach.abnormalScope && selected.abnormalScopeEnd == .withoutOutflow then some "profile.abnormalScopeEnd.withoutOutflow" else none) <|>
+  (if selected.deploymentErrors == .cibDeployment then some "profile.deploymentErrors.cibDeployment" else none) <|>
+  (if selected.handlerEscalation == .reentersHandler then some "profile.handlerEscalation.reentersHandler" else none) <|>
+  (if selected.defaultRetryCycle.isSome then some "profile.defaultRetryCycle" else none) <|>
   multiInstance reach.loops selected
 
 end Kernel.Admission.Profile

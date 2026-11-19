@@ -129,8 +129,8 @@ theorem SlotsSettled.transport {before after : State} (settled : SlotsSettled be
     (settled.queued scope activity trigger leave occurrence resume (signals _ member)).transport issued occurrences queued
   placed run member := (settled.placed run (slots.bodies run member)).transport grows scopes
   runsPlaced run member := (settled.runsPlaced run (slots.runs run member)).transport grows scopes
-  grouped scope activity trigger leave outer context member :=
-    settled.grouped scope activity trigger leave outer context (signals _ member)
+  grouped scope activity trigger leave context member :=
+    settled.grouped scope activity trigger leave context (signals _ member)
   raised raised origin host member named :=
     (settled.raised raised origin host (signals _ member) named).transport issued occurrences queued
 

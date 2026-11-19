@@ -19,6 +19,8 @@ import {
   programCallsRoot,
   programElement,
   programProcessChildren,
+  programPublicId,
+  utf8ByteSize,
   workCall,
   type ActivityPayload,
   type CallWork,
@@ -32,10 +34,12 @@ import {
   SignalTag,
   WriteRule,
   beginRequest,
+  calledInstanceId,
   committed,
   completeSignal,
   enterCalled,
   failed,
+  instanceOf,
   instanceRoot,
   leaveOutgoing,
   signal,
@@ -90,9 +94,16 @@ function calledProcess(ctx: Ctx, header: Header, work: CallWork): Result<CalledP
 
 /**
  * Start the called instance: enter its root, arm the Call's boundaries and the called process's Event Sub-Process
- * starts (`Signal.armScope`, as `Scopes.enter` arms a Sub-Process), and begin its none start.
+ * starts (`Signal.armScope`, as `Scopes.enter` arms a Sub-Process), and begin its none start. A called instance's
+ * identifier embeds its caller's (`calledInstanceId`), so a deep enough chain of Calls outgrows
+ * `Bounds.instanceIdentityBytes` (OD14) and is refused before anything is evaluated.
  */
 export function invoke(ctx: Ctx, header: Header, payload: ActivityPayload, work: CallWork, occurrence: Occurrence, state: State): Outcome {
+  const called = calledInstanceId(instanceOf(state, occurrence.scope), programPublicId(ctx.program, occurrence.element),
+    occurrence.activation);
+  if (utf8ByteSize(called) > ctx.program.options.bounds.instanceIdentityBytes) {
+    return failed(FailureTag.Unsupported, "instance-identity-bound"); // dynamic-only: an identifier grows with its chain of Calls
+  }
   const process = calledProcess(ctx, header, work);
   if (!process.ok) return process;
   const children = programProcessChildren(ctx.program, process.value);

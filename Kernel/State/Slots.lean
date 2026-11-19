@@ -23,11 +23,11 @@ inductive Leave where
 
 /-- What a compensation run does once its handlers have completed: complete an existing occurrence, begin and complete
 a fresh one (a caught Cancel's boundary, which `Step` numbers when the run ends), or, for a group's nested run, leave
-the group's `context` and advance the run in `outer` as a completed handler does. -/
+the group's `context` and advance the run holding it as a completed handler does. -/
 inductive Resume where
   | complete (occurrence : OccurrenceId) (leave : Leave)
   | occur (element : ElementId) (scope : ScopeOccurrenceId) (leave : Leave)
-  | group (outer context : ScopeOccurrenceId)
+  | group (context : ScopeOccurrenceId)
   deriving Repr
 
 /-- One instance of a Multi-Instance Activity: waiting to start, running in its instance scope occurrence, or

@@ -76,7 +76,7 @@ One enumerated field per decision point the kernel branches on, each defaulting 
 | `evaluator` | `simpleBoolean`, `juel` |
 | `submission` | `outputSet`, `installsVariables` |
 | `scopeChainSubmissionBytes` | `null` or a byte limit |
-| `bounds` | the value domain's bounds (`containerLevels` 4, `containerMembers` 32, `valueNodes` 256, `canonicalBytes` 16,384, `textBytes` 1,024 by default), carried with the program so an instance keeps the bounds it started with (HD7 of the [rewrite proposal](../REWRITE-2-PROPOSAL.md)); the Lean `Bounds` defaults are their one owner, and a guard fails a copy elsewhere that disagrees |
+| `bounds` | the value domain's bounds (`containerLevels` 4, `containerMembers` 32, `valueNodes` 256, `canonicalBytes` 16,384, `textBytes` 1,024, `instanceIdentityBytes` 1,024 by default; a Call refuses a called instance whose identifier would exceed `instanceIdentityBytes`, `instance-identity-bound`, OD14), carried with the program so an instance keeps the bounds it started with (HD7 of the [rewrite proposal](../REWRITE-2-PROPOSAL.md)); the Lean `Bounds` defaults are their one owner, and a guard fails a copy elsewhere that disagrees |
 | `undeclaredWrite` | `refused`, `atInstanceRoot` |
 | `errorPathOutputs` | `none`, `mapped` |
 | `technicalFailure` | `hostFailure`, `incident` |
@@ -104,6 +104,9 @@ One enumerated field per decision point the kernel branches on, each defaulting 
 | `outputContext` | `submission`, `activityScope` |
 | `multiInstanceCollection` | `entrySnapshot`, `sequentialReread` |
 | `configuredTask` | `externalWork`, `refused` |
+| `deploymentErrors` | `bpmnValidity`, `cibDeployment` (refused as `profile.deploymentErrors.cibDeployment` until CIB's deployment errors are classified, AD7) |
+| `handlerEscalation` | `passesHandler`, `reentersHandler` (refused as `profile.handlerEscalation.reentersHandler`; both readings stay refused at run time as `escalation-rethrow-reenters-handler`) |
+| `defaultRetryCycle` | `null` or CIB's engine-wide `failedJobRetryTimeCycle` text (refused as `profile.defaultRetryCycle` until the job model reads it, AD8) |
 
 ## Inputs
 

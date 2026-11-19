@@ -177,7 +177,7 @@ def occursOf (signals : List Signal) : List ElementId :=
   signals.filterMap fun
     | .occur element _ _ _ _ => some element
     | .compensate _ _ _ _ (some (.occur element _ _)) => some element
-    | .compensate _ _ _ _ (some (.complete _ _)) | .compensate _ _ _ _ (some (.group _ _)) | .compensate _ _ _ _ none
+    | .compensate _ _ _ _ (some (.complete _ _)) | .compensate _ _ _ _ (some (.group _)) | .compensate _ _ _ _ none
     | .arm _ _ _ | .armScope _ | .armGateway _ _ _ | .raise _ _ | .begin _ | .complete _ _ _ _ | .write _ _ _
     | .remove _ _ | .cancel _ | .fire _ _ | .endInstance _ _ | .compensationFailed _ _ _ _ => none
 
@@ -579,10 +579,10 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) (src :
   instanceCompleted : ∀ ctx body occurrence writes state after, inv ctx.program state →
     ScopeStands state occurrence.scope →
     hooks.instanceCompleted ctx body occurrence writes state = .ok after → inv ctx.program after
-  handlerCompleted : ∀ ctx run occurrence state after, inv ctx.program state → ScopeStands state occurrence.scope →
-    hooks.handlerCompleted ctx run occurrence state = .ok after → inv ctx.program after
-  handlerEnded : ∀ ctx run occurrence state after, inv ctx.program state → ScopeStands state occurrence.scope →
-    hooks.handlerEnded ctx run occurrence state = .ok after → inv ctx.program after
+  handlerCompleted : ∀ ctx occurrence state after, inv ctx.program state → ScopeStands state occurrence.scope →
+    hooks.handlerCompleted ctx occurrence state = .ok after → inv ctx.program after
+  handlerEnded : ∀ ctx occurrence state after, inv ctx.program state → ScopeStands state occurrence.scope →
+    hooks.handlerEnded ctx occurrence state = .ok after → inv ctx.program after
   cancelled : ∀ ctx occurrence state after, inv ctx.program state →
     hooks.cancelled ctx occurrence state = .ok after → inv ctx.program after
   written : ∀ ctx writes state after, inv ctx.program state → hooks.written ctx writes state = .ok after →

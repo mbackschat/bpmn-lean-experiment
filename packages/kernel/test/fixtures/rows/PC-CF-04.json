@@ -152,7 +152,8 @@
       "containerMembers": 32,
       "valueNodes": 256,
       "canonicalBytes": 16384,
-      "textBytes": 1024
+      "textBytes": 1024,
+      "instanceIdentityBytes": 1024
     },
     "undeclaredWrite": "atInstanceRoot",
     "errorPathOutputs": "mapped",
@@ -198,7 +199,10 @@
     "signalDelivery": "occurrenceTargeted",
     "conditionalStart": "submittedContext",
     "calledElementResolution": "cibKey",
-    "messageThrowForms": "cibForms"
+    "messageThrowForms": "cibForms",
+    "deploymentErrors": "bpmnValidity",
+    "handlerEscalation": "passesHandler",
+    "defaultRetryCycle": null
   },
   "elements": [
     {

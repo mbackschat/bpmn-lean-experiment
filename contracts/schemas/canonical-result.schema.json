@@ -864,50 +864,53 @@
           "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
         },
         "recurrence": {
-          "oneOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "object",
-              "additionalProperties": false,
-              "required": [
-                "periodMs",
-                "cron",
-                "remaining"
-              ],
-              "properties": {
-                "periodMs": {
-                  "oneOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/positiveSafeInteger"
-                    }
-                  ]
-                },
-                "cron": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "remaining": {
-                  "oneOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
-                    }
-                  ]
-                }
-              }
-            }
-          ]
+          "$ref": "#/$defs/timerRecurrence"
         }
       }
+    },
+    "timerRecurrence": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "periodMs",
+            "cron",
+            "remaining"
+          ],
+          "properties": {
+            "periodMs": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/positiveSafeInteger"
+                }
+              ]
+            },
+            "cron": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "remaining": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
+                }
+              ]
+            }
+          }
+        }
+      ]
     },
     "effectDetail": {
       "type": "object",
@@ -966,7 +969,7 @@
       }
     },
     "incidentDetail": {
-      "description": "An incident names its subject by exactly one member: the failed effect or the failed job.",
+      "description": "An incident names its subject by exactly one member: the failed effect, the failed job or the Timer whose job failed.",
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -983,6 +986,9 @@
         },
         "job": {
           "$ref": "#/$defs/incidentJob"
+        },
+        "timer": {
+          "$ref": "#/$defs/incidentTimer"
         },
         "generation": {
           "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/positiveSafeInteger"
@@ -1010,6 +1016,16 @@
           },
           "required": [
             "job"
+          ]
+        },
+        {
+          "properties": {
+            "timer": {
+              "$ref": "#/$defs/incidentTimer"
+            }
+          },
+          "required": [
+            "timer"
           ]
         }
       ]
@@ -1060,6 +1076,23 @@
       "properties": {
         "dueMs": {
           "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
+        }
+      }
+    },
+    "incidentTimer": {
+      "description": "The Timer whose job failed (AD8): its due time and, for a cycle, its recurrence.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "deadlineMs",
+        "recurrence"
+      ],
+      "properties": {
+        "deadlineMs": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
+        },
+        "recurrence": {
+          "$ref": "#/$defs/timerRecurrence"
         }
       }
     },

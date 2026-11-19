@@ -81,6 +81,24 @@ export const rows: readonly Row[] = [
     control: option({ timerZone: null }),
   },
   {
+    code: "profile.deploymentErrors.cibDeployment",
+    description: "CIB's deployment errors over forms BPMN 2.0.2 defines, before A1 classifies them (AD7)",
+    mutate: option({ deploymentErrors: "cibDeployment" }),
+    control: option({ deploymentErrors: "bpmnValidity" }),
+  },
+  {
+    code: "profile.handlerEscalation.reentersHandler",
+    description: "CIB's re-entry of a handler an Escalation from deeper inside it matches",
+    mutate: option({ handlerEscalation: "reentersHandler" }),
+    control: option({ handlerEscalation: "passesHandler" }),
+  },
+  {
+    code: "profile.defaultRetryCycle",
+    description: "an engine-wide default retry cycle, before the job model reads it (AD8)",
+    mutate: option({ defaultRetryCycle: "R3/PT5M" }),
+    control: option({ defaultRetryCycle: null }),
+  },
+  {
     code: "profile.abnormalScopeEnd.withoutOutflow",
     description: "an abnormal scope end that leaves without outflow, reached by a Terminate in a Sub-Process",
     mutate: (program) => terminatingScope(withOptions(program, { abnormalScopeEnd: "withoutOutflow" })),

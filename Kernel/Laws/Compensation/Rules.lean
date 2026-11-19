@@ -383,7 +383,7 @@ def StoredFrom (program : Program) (state : State) (resumed : Resume → Prop) (
   (∀ record ∈ compensation.retained, RecordFrom program state record record.scope) ∧
     ∀ run ∈ compensation.runs, (∀ record ∈ run.pending, RecordFrom program state record run.scope) ∧
       ∀ resume, run.resume = some resume → (∃ held ∈ state.slots.compensation.runs, held.resume = some resume) ∨
-        (∃ outer context, resume = .group outer context) ∨ resumed resume
+        (∃ context, resume = .group context) ∨ resumed resume
 
 /-! ## What the hooks need -/
 

@@ -306,7 +306,7 @@ and while it stands its parent is the run's (`Compensation.beginHandler`), so re
 the run in a scope occurrence that stands (`Compensation.release`); a group's nested run resumes from its own context,
 the one it runs in. -/
 def RunPlaced (s : State) (run : CompensationRun) : Prop :=
-  (∀ outer context, run.resume = some (.group outer context) → context = run.scope) ∧
+  (∀ context, run.resume = some (.group context) → context = run.scope) ∧
     ∀ context ∈ run.running.map (·.1), ScopeIssued s context ∧
       ∀ entry ∈ s.scopes, entry.id = context → entry.parent = some run.scope
 
@@ -314,7 +314,7 @@ def RunPlaced (s : State) (run : CompensationRun) : Prop :=
 releases is `scope` itself (`Compensation.advance`). -/
 def Resumable (s : State) (scope : ScopeOccurrenceId) (resume : Resume) : Prop :=
   (∀ occurrence leave, resume = .complete occurrence leave → Settled s occurrence) ∧
-    ∀ outer context, resume = .group outer context → context = scope
+    ∀ context, resume = .group context → context = scope
 
 /-- What the feature slots and a queued compensation will complete has begun: the occurrences parked at a join
 (`Feature.Flow.join` completes them when it fires), a Multi-Instance body's occurrence (`MultiInstance.finish`), and
@@ -333,8 +333,8 @@ structure SlotsSettled (s : State) : Prop where
   runsPlaced : ∀ run ∈ s.slots.compensation.runs, RunPlaced s run
   /-- A queued compensation releases no group context but its own scope occurrence: `Propagation` queues none that
   resumes a group. -/
-  grouped : ∀ scope activity trigger leave outer context,
-    Signal.compensate scope activity trigger leave (some (.group outer context)) ∈ s.signals → context = scope
+  grouped : ∀ scope activity trigger leave context,
+    Signal.compensate scope activity trigger leave (some (.group context)) ∈ s.signals → context = scope
   raised : ∀ raised origin host, Signal.raise raised origin ∈ s.signals → origin.host = some host → Settled s host
 
 /-- What a slot completes no queued begin names. -/

@@ -211,7 +211,7 @@ theorem tame_opened {s : State} (tame : Tame s) {others : List Compensable} {run
     (issued : Laws.State.ScopeIssued s run.scope) (idle : run.running = []) (free : resumesGroup run.resume = false) :
     Tame (opened s others run) := by
   refine ⟨fun record inside => tame.retained record (kept record inside), ?_, fun other inside => ?_,
-    fun other inside context running => ?_, tame.scopes, fun other inside outer context resumed => ?_, tame.parents,
+    fun other inside context running => ?_, tame.scopes, fun other inside context resumed => ?_, tame.parents,
     fun other inside context running => ?_⟩
   · simp only [RunsKeyed, opened, stored, List.map_append, List.map_cons, List.map_nil]
     refine List.nodup_append.mpr ⟨tame.keyed, by simp, fun key old key' new same => ?_⟩
@@ -228,7 +228,7 @@ theorem tame_opened {s : State} (tame : Tame s) {others : List Compensable} {run
     · rw [idle] at running; cases running
   · simp only [opened, stored, List.mem_append, List.mem_singleton] at inside
     rcases inside with old | rfl
-    · exact tame.grouped other old outer context resumed
+    · exact tame.grouped other old context resumed
     · rw [resumed] at free; cases free
   · simp only [opened, stored, List.mem_append, List.mem_singleton] at inside
     rcases inside with old | rfl

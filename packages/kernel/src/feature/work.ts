@@ -56,6 +56,8 @@ import {
   failed,
   failedWith,
   IncidentSubjectTag,
+  JobSubjectTag,
+  type JobSubject,
   leaveOutgoing,
   leaveRaised,
   localScope,
@@ -599,10 +601,21 @@ export function retryIncident(_ctx: Ctx, item: OpenItem, incident: IncidentDetai
     case IncidentSubjectTag.Effect:
       return committed(reopen(state, item.id, { tag: OpenKindTag.Effect, detail: subject.detail }));
     case IncidentSubjectTag.Job:
-      // dynamic-only: no feature opens a job's incident until the job model's stage (AD8) retries it
-      return failed(FailureTag.Unsupported, "job-incident-retry");
+      return retryJob(subject.job);
   }
   return assertNever(subject);
+}
+
+function retryJob(job: JobSubject): Outcome {
+  switch (job.tag) {
+    case JobSubjectTag.Continuation:
+      // dynamic-only: no feature opens a job's incident until the job model's stage (AD8) retries it
+      return failed(FailureTag.Unsupported, "job-incident-retry");
+    case JobSubjectTag.Timer:
+      // dynamic-only: no feature opens a Timer's incident until the job model's stage (AD8) retries it
+      return failed(FailureTag.Unsupported, "timer-incident-retry");
+  }
+  return assertNever(job);
 }
 
 /** See `retryIncident`. */

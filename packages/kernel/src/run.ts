@@ -45,6 +45,9 @@ import {
   type IncidentSubject,
   IncidentSubjectTag,
   type JobDetail,
+  type JobSubject,
+  JobSubjectTag,
+  type TimerRecurrence,
   type Input,
   type InstanceFailure,
   type OccurrenceKey,
@@ -135,13 +138,36 @@ function jobFields(job: JobDetail): Record<string, JsonValue> {
   return { dueMs: job.dueMs };
 }
 
-/** What an incident's failure belongs to, published under its own member: `effect` or `job`. */
+/** A Timer wait's due time and, for a cycle, its recurrence. */
+function timerFields(deadlineMs: number, recurrence: TimerRecurrence | null): Record<string, JsonValue> {
+  return {
+    deadlineMs,
+    recurrence: nullable(recurrence, (cycle) => ({
+      periodMs: nullable(cycle.periodMs, number),
+      cron: nullable(cycle.cron, jsonString),
+      remaining: nullable(cycle.remaining, number),
+    })),
+  };
+}
+
+/** A failed job, published under its own member: `job` for a continuation's, `timer` for a Timer's. */
+function jobSubjectFields(job: JobSubject): Record<string, JsonValue> {
+  switch (job.tag) {
+    case JobSubjectTag.Continuation:
+      return { job: jobFields(job.detail) };
+    case JobSubjectTag.Timer:
+      return { timer: timerFields(job.detail.deadlineMs, job.detail.recurrence) };
+  }
+  return assertNever(job);
+}
+
+/** What an incident's failure belongs to, published under its own member: `effect`, `job` or `timer`. */
 function subjectFields(subject: IncidentSubject): Record<string, JsonValue> {
   switch (subject.tag) {
     case IncidentSubjectTag.Effect:
       return { effect: effectFields(subject.detail) };
     case IncidentSubjectTag.Job:
-      return { job: jobFields(subject.detail) };
+      return jobSubjectFields(subject.job);
   }
   return assertNever(subject);
 }
@@ -164,16 +190,7 @@ function detail(view: WaitView): readonly [string, Record<string, JsonValue>] | 
       lastValue: nullable(condition.lastValue, flag),
     }];
   }
-  if (view.deadlineMs !== null) {
-    return ["timer", {
-      deadlineMs: view.deadlineMs,
-      recurrence: nullable(view.recurrence, (recurrence) => ({
-        periodMs: nullable(recurrence.periodMs, number),
-        cron: nullable(recurrence.cron, jsonString),
-        remaining: nullable(recurrence.remaining, number),
-      })),
-    }];
-  }
+  if (view.deadlineMs !== null) return ["timer", timerFields(view.deadlineMs, view.recurrence)];
   if (view.channel !== null) {
     return ["message", { channel: channelToJson(view.channel), payload: view.payload, criteria: [...view.criteria] }];
   }

@@ -179,7 +179,7 @@ def beginHandler (ctx : Ctx) (trigger : OccurrenceRef) (scope : ScopeOccurrenceI
       let pending := begunChildren record context
       let compensation := state.slots.compensation
       let nested : CompensationRun :=
-        { trigger, scope := context, pending, leave := none, resume := some (.group scope context) }
+        { trigger, scope := context, pending, leave := none, resume := some (.group context) }
       let state ← advance ctx context trigger (store state { compensation with runs := compensation.runs ++ [nested] }) fuel
       .ok (state, context)
     | some handler =>
@@ -216,7 +216,7 @@ def advance (ctx : Ctx) (scope : ScopeOccurrenceId) (trigger : OccurrenceRef) (s
       match run.resume with
         | some (.complete occurrence leave) => .ok (state.signal (.complete occurrence leave [] .outward))
         | some (.occur element at_ leave) => .ok (state.signal (.occur element at_ leave [] .outward))
-        | some (.group _ context) => release ctx context state fuel
+        | some (.group context) => release ctx context state fuel
         | none => .ok state
     -- Dynamic-only: a dependency cycle needs the retained set, which depends on the run.
     else if ready.isEmpty && run.running.isEmpty then .error (.unsupported "compensation-dependency-cycle")
@@ -283,8 +283,8 @@ def compensate (ctx : Ctx) (scope : ScopeOccurrenceId) (activity : Option Elemen
     (runBound ctx state)
 
 /-- `Hooks.handlerCompleted`: the handler's context, the scope occurrence it began in, is left and the run holding that
-context starts what that releases; the run's scope cannot tell two runs of one scope apart. -/
-def handlerCompleted (ctx : Ctx) (_ : ScopeOccurrenceId) (occurrence : Occurrence) (state : State) : Outcome :=
+context starts what that releases; the context, not a run's scope, names the run, since two runs of one scope share it. -/
+def handlerCompleted (ctx : Ctx) (occurrence : Occurrence) (state : State) : Outcome :=
   release ctx occurrence.scope state (runBound ctx state)
 
 /-- The runs in `scope` and inside it go at once, when a catcher that interrupts `scope` has decided
@@ -306,11 +306,11 @@ def runningRecord (_ : Ctx) (context : ScopeOccurrenceId) (state : State) : Opti
 the run when the catch is decided (`dropWithin`), before the handler's leave arrives here; with no catcher, or one that
 does not interrupt, the run goes on. Under `failsInstance` the failure that follows ends the instance, so nothing
 changes. -/
-def handlerEnded (ctx : Ctx) (run : ScopeOccurrenceId) (occurrence : Occurrence) (state : State) : Outcome :=
+def handlerEnded (ctx : Ctx) (occurrence : Occurrence) (state : State) : Outcome :=
   match ctx.program.options.compensationHandlerFailure with
   | .propagatesFromHandler =>
     if state.slots.compensation.runs.any (·.running.any (·.1 == occurrence.scope)) then
-      handlerCompleted ctx run occurrence state
+      handlerCompleted ctx occurrence state
     else .ok state
   | .failsInstance | .selected _ => .ok state
 

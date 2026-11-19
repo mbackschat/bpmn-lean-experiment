@@ -15,9 +15,11 @@ import path from "node:path";
 
 import { emptyInputFinding, TokenKind, type KernelTree } from "./kernel-guard-scan.ts";
 
-export type BoundName = "containerLevels" | "containerMembers" | "valueNodes" | "canonicalBytes" | "textBytes";
+export type BoundName =
+  "containerLevels" | "containerMembers" | "valueNodes" | "canonicalBytes" | "textBytes" | "instanceIdentityBytes";
 
-const boundNames: readonly BoundName[] = ["containerLevels", "containerMembers", "valueNodes", "canonicalBytes", "textBytes"];
+const boundNames: readonly BoundName[] =
+  ["containerLevels", "containerMembers", "valueNodes", "canonicalBytes", "textBytes", "instanceIdentityBytes"];
 const leanOwner = "Kernel/IL/Types/Options.lean";
 const typeScriptPair = "packages/kernel/src/il/types/options.ts";
 
@@ -102,7 +104,10 @@ export function strayBoundLiteralFindings(tree: KernelTree): string[] {
   const defaults = leanBoundDefaults(tree.root);
   if (defaults === null) return [emptyInputFinding(8, `the Bounds defaults in ${leanOwner}`)];
   if (tree.lean.length === 0 || tree.typeScript.length === 0) return [emptyInputFinding(8, "kernel modules")];
-  const distinctive = new Map([...defaults].filter(([, value]) => value >= 100).map(([bound, value]) => [value, bound]));
+  const distinctive = new Map<number, string>();
+  for (const [bound, value] of defaults) {
+    if (value >= 100) distinctive.set(value, distinctive.has(value) ? `${distinctive.get(value)} or ${bound}` : bound);
+  }
   const findings: string[] = [];
   for (const source of [...tree.lean, ...tree.typeScript]) {
     if (source.file === leanOwner || source.file === typeScriptPair) continue;

@@ -310,8 +310,8 @@ theorem body_item_rejected (kind : OpenKind) :
 `SlotsSettled`. -/
 theorem foreign_group_rejected (kind : OpenKind) :
     ¬ SlotsSettled { sample kind with
-      signals := [.compensate subScope none subTrigger none (some (.group processRoot processRoot))] } := fun settled => by
-  have := settled.grouped subScope none subTrigger none processRoot processRoot (by simp)
+      signals := [.compensate subScope none subTrigger none (some (.group processRoot))] } := fun settled => by
+  have := settled.grouped subScope none subTrigger none processRoot (by simp)
   simp [processRoot, subScope] at this
 
 end Kernel.Laws.State

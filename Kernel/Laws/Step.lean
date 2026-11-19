@@ -364,8 +364,8 @@ theorem continueAfter_ok {hooks : Hooks} {ctx : Ctx} {occurrence : Occurrence} {
     (ran : continueAfter hooks ctx occurrence leave writes state = .ok after) :
     after = state ∨ hooks.outflow ctx occurrence leave state = .ok after ∨
       (∃ body, hooks.instanceCompleted ctx body occurrence writes state = .ok after) ∨
-      ∃ run, hooks.handlerCompleted ctx run occurrence state = .ok after ∨
-        hooks.handlerEnded ctx run occurrence state = .ok after := by
+      hooks.handlerCompleted ctx occurrence state = .ok after ∨
+        hooks.handlerEnded ctx occurrence state = .ok after := by
   unfold continueAfter at ran
   cases continuation : occurrence.continuation <;> cases leave <;>
     simp only [continuation, Bool.false_eq_true, ite_true, ite_false] at ran
@@ -373,8 +373,8 @@ theorem continueAfter_ok {hooks : Hooks} {ctx : Ctx} {occurrence : Occurrence} {
     | exact .inl (Except.ok.inj ran).symm
     | exact .inr (.inl ran)
     | exact .inr (.inr (.inl ⟨_, ran⟩))
-    | exact .inr (.inr (.inr ⟨_, .inl ran⟩))
-    | exact .inr (.inr (.inr ⟨_, .inr ran⟩))
+    | exact .inr (.inr (.inr (.inl ran)))
+    | exact .inr (.inr (.inr (.inr ran)))
 
 /-- The completion pipeline (`Step.complete`): a committed completion found its occurrence; its reservation, if it
 is one, starts, its own items close, `Hooks.leave` disarms what hangs on it, `Hooks.select` resolves how it leaves,

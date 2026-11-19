@@ -226,7 +226,7 @@ theorem resumable_signal {state : State} (formed : WellFormed program state) {sc
       (.refl _) (fun _ member _ => .inl member) fun _ queued =>
         queued.shrink (before := state) (after := { state with signals := rest })
           (by rw [head]; exact List.sublist_cons_self _ _) (.refl _),
-    fun outer context same => formed.settled.grouped scope activity trigger leave outer context
+    fun context same => formed.settled.grouped scope activity trigger leave context
       (same ▸ head ▸ List.mem_cons_self ..)⟩
 
 /-- The closure's next signal, a raise, finds what its origin names and a settled host once it leaves the queue. -/

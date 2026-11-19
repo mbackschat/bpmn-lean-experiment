@@ -265,14 +265,14 @@ theorem PlacedLane.stored (refs : ReferencesPlaced program) (formed : WellFormed
   obtain ⟨pending, resumes⟩ := stored.2 run member
   refine ⟨fun stands record' inside => (record (pending record' inside)).1 stands,
     ⟨fun _ _ _ resumed => ?_, fun _ _ resumed => ?_⟩, fun nonempty => ?_⟩
-  · rcases resumes _ resumed with ⟨held, kept, same⟩ | ⟨_, _, same⟩ | ⟨queue, holds, issued, rest⟩
+  · rcases resumes _ resumed with ⟨held, kept, same⟩ | ⟨_, same⟩ | ⟨queue, holds, issued, rest⟩
     · exact (occurAt_placed lane (.inr (.inr ⟨held, kept, same⟩))).same rfl rfl rfl
     · exact Resume.noConfusion same
     · obtain ⟨queued, scopes, instances⟩ := rest
       obtain ⟨⟨there, listed⟩, below⟩ := occurAt_placed (holds.2 refs) (.inr (.inl queued))
       exact ⟨⟨fun stands => move ((there (scopeIds_congr scopes.symm ▸ stands)).same scopes.symm
         fun _ inside => instances ▸ inside), listed⟩, issued.issued below⟩
-  · rcases resumes _ resumed with ⟨held, kept, same⟩ | ⟨_, _, same⟩ | ⟨queue, holds, -, rest⟩
+  · rcases resumes _ resumed with ⟨held, kept, same⟩ | ⟨_, same⟩ | ⟨queue, holds, -, rest⟩
     · exact lane.resumes held kept _ _ same
     · exact Resume.noConfusion same
     · exact (holds.2 refs).compensates _ _ rest.1

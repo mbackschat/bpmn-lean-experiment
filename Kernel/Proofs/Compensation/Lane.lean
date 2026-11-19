@@ -89,7 +89,7 @@ structure Tame (s : State) : Prop where
   runsIssued : RunsIssued s
   running : ∀ run ∈ s.slots.compensation.runs, ∀ context ∈ run.running.map (·.1), Laws.State.ScopeIssued s context
   scopes : ∀ entry ∈ s.scopes, Laws.State.ScopeIssued s entry.id
-  grouped : ∀ run ∈ s.slots.compensation.runs, ∀ outer context, run.resume = some (.group outer context) →
+  grouped : ∀ run ∈ s.slots.compensation.runs, ∀ context, run.resume = some (.group context) →
     context = run.scope
   parents : ParentsStand s
   runningIn : ∀ run ∈ s.slots.compensation.runs, ∀ context ∈ run.running.map (·.1), ∀ entry ∈ s.scopes,
@@ -304,7 +304,7 @@ def withRetained (s : State) (records : List Compensable) : State :=
 theorem tame_withRun {s : State} (tame : Tame s) (element : ElementId) {parent : ScopeOccurrenceId}
     (stands : parent ∈ scopeIds s) (locals : List (String × Value)) {run : CompensationRun}
     (placed : run.scope = (s.enterScope element parent locals none).2) (idle : run.running = [])
-    (grouped : ∀ outer context, run.resume = some (.group outer context) → context = run.scope) :
+    (grouped : ∀ context, run.resume = some (.group context) → context = run.scope) :
     Tame (withRun (s.enterScope element parent locals none).1 run) := by
   obtain ⟨contextEq, slots, -, rest⟩ := entered_eq s element parent locals
   obtain ⟨scopes, _⟩ := rest
@@ -312,7 +312,7 @@ theorem tame_withRun {s : State} (tame : Tame s) (element : ElementId) {parent :
   rw [contextEq] at unissued
   have below : ∀ other ∈ s.slots.compensation.runs, Laws.State.ScopeIssued s other.scope := tame.runsIssued
   refine ⟨fun record inside => ?_, ?_, fun other inside => ?_, fun other inside context running => ?_,
-    fun entry inside => ?_, fun other inside outer context resumed => ?_, ?_, ?_⟩
+    fun entry inside => ?_, fun other inside context resumed => ?_, ?_, ?_⟩
   · simp only [withRun, stored, slots] at inside
     simp only [withRun, stored, scopeIds, scopes, List.map_append, List.mem_append]
     exact .inl (tame.retained record inside)
@@ -337,8 +337,8 @@ theorem tame_withRun {s : State} (tame : Tame s) (element : ElementId) {parent :
     · exact contextEq ▸ issuedNew
   · simp only [withRun, stored, slots, List.mem_append, List.mem_singleton] at inside
     rcases inside with old | rfl
-    · exact tame.grouped other old outer context resumed
-    · exact grouped outer context resumed
+    · exact tame.grouped other old context resumed
+    · exact grouped context resumed
   · exact parents_append tame.parents scopes parent stands (by simp [Laws.State.child_eq])
   · intro other inside context running entry member named
     simp only [withRun, stored, slots, List.mem_append, List.mem_singleton] at inside
@@ -381,7 +381,7 @@ theorem tame_withRetained {s : State} (tame : Tame s) (element : ElementId) {par
   obtain ⟨unissued, issuedNew, grows⟩ := entered_fresh tame element stands locals
   rw [contextEq] at unissued
   refine ⟨fun record inside => ?_, ?_, fun other inside => ?_, fun other inside context running => ?_,
-    fun entry inside => ?_, fun other inside outer context resumed => ?_,
+    fun entry inside => ?_, fun other inside context resumed => ?_,
     parents_append tame.parents scopes parent stands (by simp [Laws.State.child_eq]),
     fun other inside context running entry member named => ?_⟩
   · simp only [withRetained, stored, slots, List.mem_append] at inside
@@ -401,7 +401,7 @@ theorem tame_withRetained {s : State} (tame : Tame s) (element : ElementId) {par
     · exact grows.issued (tame.scopes entry old)
     · exact contextEq ▸ issuedNew
   · simp only [withRetained, stored, slots] at inside
-    exact tame.grouped other inside outer context resumed
+    exact tame.grouped other inside context resumed
   · simp only [withRetained, stored, slots] at inside
     simp only [withRetained, stored, scopes, List.mem_append, List.mem_singleton] at member
     rcases member with older | rfl
@@ -510,7 +510,7 @@ theorem tame_trimmed {s : State} (tame : Tame s) (context : ScopeOccurrenceId) {
   have grows := Laws.State.leaveScope_grows s context
   have runsSub := left_runs s context
   refine ⟨fun record inside => ?_, ?_, fun run inside => ?_, fun run inside held running => ?_,
-    fun entry inside => ?_, fun run inside outer held resumed => ?_, parents_left tame.parents context,
+    fun entry inside => ?_, fun run inside held resumed => ?_, parents_left tame.parents context,
     fun run inside held running entry member named => ?_⟩
   · simp only [trimmed, stored] at inside
     rw [retainedEq, List.mem_filter, List.mem_filter] at inside
@@ -536,7 +536,7 @@ theorem tame_trimmed {s : State} (tame : Tame s) (context : ScopeOccurrenceId) {
     obtain ⟨source, member, rfl⟩ := inside
     rw [trims.sameResume] at resumed
     rw [trims.sameScope]
-    exact tame.grouped source (runsSub.subset member) outer held resumed
+    exact tame.grouped source (runsSub.subset member) held resumed
   · simp only [trimmed, stored, List.mem_map] at inside
     obtain ⟨source, sourceIn, rfl⟩ := inside
     rw [trims.sameScope]

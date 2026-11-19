@@ -667,10 +667,10 @@ export interface Hooks {
   readonly outflow: (ctx: Ctx, occurrence: Occurrence, leave: Leave, state: State) => Outcome;
   /** MultiInstance: one instance of the body occurrence completed. */
   readonly instanceCompleted: (ctx: Ctx, body: OccurrenceId, occurrence: Occurrence, writes: readonly Binding[], state: State) => Outcome;
-  /** Compensation: a handler of the run in that scope occurrence completed. */
-  readonly handlerCompleted: (ctx: Ctx, run: ScopeOccurrenceId, occurrence: Occurrence, state: State) => Outcome;
-  /** Compensation: a handler of the run in that scope occurrence left without completing, raised by an event. */
-  readonly handlerEnded: (ctx: Ctx, run: ScopeOccurrenceId, occurrence: Occurrence, state: State) => Outcome;
+  /** Compensation: a compensation handler's occurrence completed. */
+  readonly handlerCompleted: (ctx: Ctx, occurrence: Occurrence, state: State) => Outcome;
+  /** Compensation: a compensation handler's occurrence left without completing, raised by an event. */
+  readonly handlerEnded: (ctx: Ctx, occurrence: Occurrence, state: State) => Outcome;
   // Notifications
   /** A generic cancellation removed the occurrence; a feature that must react has this one place. */
   readonly cancelled: (ctx: Ctx, occurrence: Occurrence, state: State) => Outcome;

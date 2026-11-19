@@ -413,12 +413,12 @@ structure Hooks where
   /-- MultiInstance: one instance of the body occurrence completed. -/
   instanceCompleted : Ctx → OccurrenceId → Occurrence → List (String × Value) → State → Outcome :=
     fun _ _ _ _ => refuse "instanceCompleted"
-  /-- Compensation: a handler of the run in that scope occurrence completed. -/
-  handlerCompleted : Ctx → ScopeOccurrenceId → Occurrence → State → Outcome :=
-    fun _ _ _ => refuse "handlerCompleted"
-  /-- Compensation: a handler of the run in that scope occurrence left without completing, raised by an event. -/
-  handlerEnded : Ctx → ScopeOccurrenceId → Occurrence → State → Outcome :=
-    fun _ _ _ => refuse "handlerEnded"
+  /-- Compensation: a compensation handler's occurrence completed. -/
+  handlerCompleted : Ctx → Occurrence → State → Outcome :=
+    fun _ _ => refuse "handlerCompleted"
+  /-- Compensation: a compensation handler's occurrence left without completing, raised by an event. -/
+  handlerEnded : Ctx → Occurrence → State → Outcome :=
+    fun _ _ => refuse "handlerEnded"
   -- Notifications
   /-- A generic cancellation removed the occurrence; a feature that must react has this one place. -/
   cancelled : Ctx → Occurrence → State → Outcome := fun _ _ state => .ok state

@@ -54,6 +54,8 @@ import {
   MalformedTimer,
   MessageNames,
   MessageThrowForms,
+  DeploymentErrors,
+  HandlerEscalation,
   ScopeStart,
   SignalDelivery,
   SignalNames,
@@ -499,7 +501,7 @@ const profileOptions = struct<ProfileOptions>("ProfileOptions", {
   submission: members("SubmissionRule", SubmissionRule),
   scopeChainSubmissionBytes: option(nat),
   bounds: struct<Bounds>("Bounds", {
-    containerLevels: nat, containerMembers: nat, valueNodes: nat, canonicalBytes: nat, textBytes: nat,
+    containerLevels: nat, containerMembers: nat, valueNodes: nat, canonicalBytes: nat, textBytes: nat, instanceIdentityBytes: nat,
   }),
   undeclaredWrite: members("UndeclaredWrite", UndeclaredWrite),
   errorPathOutputs: members("ErrorPathOutputs", ErrorPathOutputs),
@@ -546,6 +548,9 @@ const profileOptions = struct<ProfileOptions>("ProfileOptions", {
   conditionalStart: members("ConditionalStart", ConditionalStart),
   calledElementResolution: members("CalledElementResolution", CalledElementResolution),
   messageThrowForms: members("MessageThrowForms", MessageThrowForms),
+  deploymentErrors: members("DeploymentErrors", DeploymentErrors),
+  handlerEscalation: members("HandlerEscalation", HandlerEscalation),
+  defaultRetryCycle: option(string),
 });
 
 const program = struct<Program>("Program", {

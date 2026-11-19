@@ -54,12 +54,12 @@ theorem continueAfter_keeps {src : Program → State → Prop} (contract : HookC
     (holds : inv ctx.program state) (stands : ScopeStands state occurrence.scope)
     (continues : Laws.Flow.LeavesFrom (src ctx.program) ctx.program state occurrence leave)
     (ran : continueAfter hooks ctx occurrence leave writes state = .ok after) : inv ctx.program after := by
-  rcases continueAfter_ok ran with same | flowed | ⟨_, done⟩ | ⟨_, done | ended⟩
+  rcases continueAfter_ok ran with same | flowed | ⟨_, done⟩ | done | ended
   · exact same ▸ holds
   · exact contract.outflow _ _ _ _ _ holds stands continues flowed
   · exact contract.instanceCompleted _ _ _ _ _ _ holds stands done
-  · exact contract.handlerCompleted _ _ _ _ _ holds stands done
-  · exact contract.handlerEnded _ _ _ _ _ holds stands ended
+  · exact contract.handlerCompleted _ _ _ _ holds stands done
+  · exact contract.handlerEnded _ _ _ _ holds stands ended
 
 /-- The completion pipeline keeps `inv`: its continuation comes from where the completion did, read off the states
 it ran through, which keep the scope occurrences and add no instance entry. -/

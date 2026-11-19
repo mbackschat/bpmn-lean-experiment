@@ -77,10 +77,18 @@ def effectFields (effect : EffectDetail) : List (String × Json) :=
 def jobFields (job : JobDetail) : List (String × Json) :=
   [("dueMs", toJson job.dueMs)]
 
-/-- What an incident's failure belongs to, published under its own member: `effect` or `job`. -/
+/-- A Timer wait's due time and, for a cycle, its recurrence. -/
+def timerFields (deadlineMs : Nat) (recurrence : Option TimerRecurrence) : List (String × Json) :=
+  [("deadlineMs", toJson deadlineMs),
+    ("recurrence", nullable recurrence fun recurrence => Json.mkObj [
+      ("periodMs", nullable recurrence.periodMs toJson), ("cron", nullable recurrence.cron Json.str),
+      ("remaining", nullable recurrence.remaining toJson)])]
+
+/-- What an incident's failure belongs to, published under its own member: `effect`, `job` or `timer`. -/
 def subjectFields : IncidentSubject → List (String × Json)
   | .effect effect => [("effect", Json.mkObj (effectFields effect))]
-  | .job job => [("job", Json.mkObj (jobFields job))]
+  | .job (.continuation job) => [("job", Json.mkObj (jobFields job))]
+  | .job (.timer timer) => [("timer", Json.mkObj (timerFields timer.deadlineMs timer.recurrence))]
 
 def userTaskFields (task : UserTaskDetail) : List (String × Json) :=
   [("name", nullable task.name Json.str), ("assignee", nullable task.assignee Json.str),
@@ -101,10 +109,7 @@ def detail (view : WaitView) : Option (String × List (String × Json)) :=
   (view.signal.map fun signal => ("signal", Codec.signalAddressToJson signal.address ++ [("payload", toJson signal.payload)])) <|>
   (view.conditional.map fun condition => ("conditional", [("variableName", nullable condition.variableName Json.str),
     ("variableEvents", toJson condition.variableEvents), ("lastValue", nullable condition.lastValue toJson)])) <|>
-  (view.deadlineMs.map fun deadline => ("timer", [("deadlineMs", toJson deadline),
-    ("recurrence", nullable view.recurrence fun recurrence => Json.mkObj [
-      ("periodMs", nullable recurrence.periodMs toJson), ("cron", nullable recurrence.cron Json.str),
-      ("remaining", nullable recurrence.remaining toJson)])])) <|>
+  (view.deadlineMs.map fun deadline => ("timer", timerFields deadline view.recurrence)) <|>
   (view.channel.map fun channel => ("message", [("channel", Codec.channelToJson channel),
     ("payload", toJson view.payload), ("criteria", toJson view.criteria)]))
 

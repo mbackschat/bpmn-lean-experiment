@@ -14,8 +14,10 @@ import {
   CollectionRead,
   CompensationHandlerFailureTag,
   CompensationOrder,
+  DeploymentErrors,
   ErrorExitCompensation,
   Evaluator,
+  HandlerEscalation,
   MultiInstanceCompensation,
   MultiInstanceCounters,
   MultiInstanceInputFailure,
@@ -81,5 +83,8 @@ export function options(reach: Reach, selected: ProfileOptions): string | null {
   if (selected.callBindingTime === CallBindingTime.Invocation) return "profile.callBindingTime.invocation";
   if (selected.timerZone !== null) return "profile.timerZone";
   if (reach.abnormalScope && selected.abnormalScopeEnd === AbnormalScopeEnd.WithoutOutflow) return "profile.abnormalScopeEnd.withoutOutflow";
+  if (selected.deploymentErrors === DeploymentErrors.CibDeployment) return "profile.deploymentErrors.cibDeployment";
+  if (selected.handlerEscalation === HandlerEscalation.ReentersHandler) return "profile.handlerEscalation.reentersHandler";
+  if (selected.defaultRetryCycle !== null) return "profile.defaultRetryCycle";
   return multiInstance(reach.loops, selected);
 }

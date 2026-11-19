@@ -210,12 +210,12 @@ theorem begin_formed {precedes : Compensable → Compensable → Prop} {ctx : Ct
     obtain ⟨unissued, issuedNew, grows⟩ := entered_fresh tame record.subject stands record.snapshot
     rw [store_stored] at nested
     have post := advances _ _ _ _ (tame_withRun tame record.subject stands record.snapshot rfl rfl
-      fun outer context resumed => by cases resumed; rfl)
+      fun context resumed => by cases resumed; rfl)
       (by simp [withRun, stored, scopeIds, scopesEq, contextEq]) nested
     have unheld : Laws.Compensation.Unheld (withRun (s.enterScope record.subject scope record.snapshot none).1
         { trigger, scope := (s.enterScope record.subject scope record.snapshot none).2,
           pending := Feature.Compensation.begunChildren record (s.enterScope record.subject scope record.snapshot none).2,
-          leave := none, resume := some (.group scope (s.enterScope record.subject scope record.snapshot none).2) })
+          leave := none, resume := some (.group (s.enterScope record.subject scope record.snapshot none).2) })
         (s.enterScope record.subject scope record.snapshot none).2 := fun run inside running => by
       simp only [withRun, stored, slots, List.mem_append, List.mem_singleton] at inside
       rcases inside with old | rfl
@@ -413,7 +413,7 @@ theorem advance_formed {precedes : Compensable → Compensable → Prop} {ctx : 
         other ∈ s.slots.compensation.runs ∧ ¬ Keyed scope trigger other := fun other inside => by
       rw [runsEnded, List.mem_filter, Bool.not_eq_true', isRun_false] at inside
       exact inside
-    rcases resumed : run.resume with _ | ⟨occurrence, leave⟩ | ⟨element, at_, leave⟩ | ⟨outer, context⟩
+    rcases resumed : run.resume with _ | ⟨occurrence, leave⟩ | ⟨element, at_, leave⟩ | context
     · rw [resumedNone resumed]
       exact advanceFormed_filtered tameEnded movesEnded countedEnded runsEnded retainedEnded scopesEnded
     · have last : Quieted ended t := .inr ⟨_, Laws.Step.untriggered_complete _ _ _ _, resumedComplete _ _ resumed⟩
@@ -424,11 +424,11 @@ theorem advance_formed {precedes : Compensable → Compensable → Prop} {ctx : 
       exact advanceFormed_filtered (last.tame tameEnded) (movesEnded.trans last.moves)
         (fun n => by rw [last.slots]; exact countedEnded n) (by rw [last.slots]; exact runsEnded)
         (by rw [last.slots]; exact retainedEnded) ((quieted_scopes last).trans scopesEnded)
-    · have released := resumedGroup outer context resumed
-      have own : context = scope := (tame.grouped run first.mem outer context resumed).trans first.1.1
+    · have released := resumedGroup context resumed
+      have own : context = scope := (tame.grouped run first.mem context resumed).trans first.1.1
       have post := releases _ _ _ tameEnded (by unfold scopeIds; rw [scopesEnded, own]; exact stands) released
       have never : ¬ Laws.Compensation.Unheld s scope := fun unheld => by
-        have own : context = scope := (tame.grouped run first.mem outer context resumed).trans first.1.1
+        have own : context = scope := (tame.grouped run first.mem context resumed).trans first.1.1
         obtain ⟨_, owner, _, rest⟩ := Laws.Compensation.release_spec released
         have found := rest.1
         have held := found.mem
@@ -465,7 +465,7 @@ theorem advance_formed {precedes : Compensable → Compensable → Prop} {ctx : 
         ((begun.slots.compensation.runs.filter (!Feature.Compensation.isRun scope trigger ·) ++ [run]).map
           fun (run : CompensationRun) => (run.scope, run.trigger)) := by simp
     refine ⟨⟨post.tame.retained, ?_, fun other inside => ?_, fun other inside context running => ?_, post.tame.scopes,
-      fun other inside outer context resumed' => ?_, post.tame.parents,
+      fun other inside context resumed' => ?_, post.tame.parents,
       fun other inside context running entry entered named => ?_⟩, ?_, fun n => ?_, fun other inside => ?_,
       fun _ other inside differs => ?_, fun other inside keyed' => ?_, fun other inside differs' => ?_,
       fun _ => ⟨fun record below => post.retained record below, fun other inside => ?_⟩,
@@ -485,9 +485,9 @@ theorem advance_formed {precedes : Compensable → Compensable → Prop} {ctx : 
         · exact post.tame.running run member context held
         · exact (post.fresh context begun').2
     · rcases List.mem_append.mp inside with old | new
-      · exact post.tame.grouped other (List.mem_filter.mp old).1 outer context resumed'
+      · exact post.tame.grouped other (List.mem_filter.mp old).1 context resumed'
       · rw [List.mem_singleton.mp new] at resumed' ⊢
-        exact post.tame.grouped run member outer context resumed'
+        exact post.tame.grouped run member context resumed'
     · rcases List.mem_append.mp inside with old | new
       · exact post.tame.runningIn other (List.mem_filter.mp old).1 context running entry entered named
       · rw [List.mem_singleton.mp new] at running ⊢
@@ -640,20 +640,20 @@ theorem released_formed (hooks : Hooks) {ctx : Ctx} {context : ScopeOccurrenceId
     (apart_of_counts post.counted formed.completions formed.issued post.moves.issued) post.runs
     (triggers_moved before (.refl s) after post.moves formed.triggers formed.ungrouped)
 
-theorem handlerCompleted_formed (hooks : Hooks) {ctx : Ctx} {run : ScopeOccurrenceId} {occurrence : Occurrence}
+theorem handlerCompleted_formed (hooks : Hooks) {ctx : Ctx} {occurrence : Occurrence}
     {s t : State} (before : WellFormed ctx.program s)
     (formed : Formed (DependsIn hooks footprintReads footprintWrites ctx.program) s)
     (stands : Laws.Step.ScopeStands s occurrence.scope) (after : WellFormed ctx.program t)
-    (ran : Feature.Compensation.handlerCompleted ctx run occurrence s = .ok t) :
+    (ran : Feature.Compensation.handlerCompleted ctx occurrence s = .ok t) :
     Formed (DependsIn hooks footprintReads footprintWrites ctx.program) t := by
   rw [Laws.Compensation.handlerCompleted_spec] at ran
   exact released_formed hooks before formed (List.mem_map.mpr stands) after ran
 
-theorem handlerEnded_formed (hooks : Hooks) {ctx : Ctx} {run : ScopeOccurrenceId} {occurrence : Occurrence}
+theorem handlerEnded_formed (hooks : Hooks) {ctx : Ctx} {occurrence : Occurrence}
     {s t : State} (before : WellFormed ctx.program s)
     (formed : Formed (DependsIn hooks footprintReads footprintWrites ctx.program) s)
     (stands : Laws.Step.ScopeStands s occurrence.scope) (after : WellFormed ctx.program t)
-    (ran : Feature.Compensation.handlerEnded ctx run occurrence s = .ok t) :
+    (ran : Feature.Compensation.handlerEnded ctx occurrence s = .ok t) :
     Formed (DependsIn hooks footprintReads footprintWrites ctx.program) t := by
   rcases Laws.Compensation.handlerEnded_spec ran with ⟨_, _, released⟩ | ⟨_, rfl⟩
   · exact released_formed hooks before formed (List.mem_map.mpr stands) after released

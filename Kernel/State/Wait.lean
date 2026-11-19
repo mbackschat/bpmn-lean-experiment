@@ -110,10 +110,19 @@ structure JobDetail where
   failures : Nat := 0
   deriving Repr
 
-/-- What an incident's failure belongs to: an effect, or a job the kernel runs itself (`JobDetail`). -/
+/-- A failed job no effect stands for, which the kernel runs as an input of its own (AD8): an asynchronous continuation's
+(`JobDetail`), or a Timer's firing, which CIB runs as a job too (`TimerEntity` is a `JobEntity`; `timer-job-failure`).
+No feature opens an incident of either until the job model's stage does; the shapes are here so that stage changes no
+state shape. -/
+inductive JobSubject where
+  | continuation (detail : JobDetail)
+  | timer (detail : TimerDetail)
+  deriving Repr
+
+/-- What an incident's failure belongs to: an effect, or a job the kernel runs itself. -/
 inductive IncidentSubject where
   | effect (detail : EffectDetail)
-  | job (detail : JobDetail)
+  | job (job : JobSubject)
   deriving Repr
 
 /-- `cancellable` publishes the `cancelIncidentProcess` interaction beside `retryIncident`. -/

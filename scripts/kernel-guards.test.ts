@@ -753,7 +753,7 @@ test("the bound guards fail a copy that disagrees with Lean's Bounds defaults an
   assert.deepEqual(strayBoundLiteralFindings(fixture(owner)), []);
   seeded(strayBoundLiteralFindings, { ...owner, "packages/kernel/src/feature/data.ts": "export const limit = 16_384;\n",
     "Kernel/Feature/Flow.lean": "module\ndef limit : Nat := 1024 -- 256 in a comment is no literal\n" },
-    /G8 Kernel\/Feature\/Flow\.lean:2: literal 1024 restates the textBytes bound[\s\S]*G8 packages\/kernel\/src\/feature\/data\.ts:1: literal 16_384 restates the canonicalBytes bound/u);
+    /G8 Kernel\/Feature\/Flow\.lean:2: literal 1024 restates the textBytes or instanceIdentityBytes bound[\s\S]*G8 packages\/kernel\/src\/feature\/data\.ts:1: literal 16_384 restates the canonicalBytes bound/u);
   assert.notDeepEqual(strayBoundLiteralFindings(emptyFixture()), [], "an empty tree must fail");
 });
 

@@ -443,6 +443,18 @@
             "refused",
             "cibForms"
           ]
+        },
+        "deploymentErrors": {
+          "enum": [
+            "bpmnValidity",
+            "cibDeployment"
+          ]
+        },
+        "handlerEscalation": {
+          "enum": [
+            "passesHandler",
+            "reentersHandler"
+          ]
         }
       }
     },
@@ -568,7 +580,10 @@
         "profile.callBindingTime.invocation",
         "profile.compensationHandlerFailure.selected",
         "profile.compensationOrder.allAtOnce",
+        "profile.defaultRetryCycle",
+        "profile.deploymentErrors.cibDeployment",
         "profile.errorExitCompensation.compensatesContained",
+        "profile.handlerEscalation.reentersHandler",
         "profile.multiInstanceCollection.sequentialReread",
         "profile.multiInstanceCompensation.perInstance",
         "profile.multiInstanceCounters.cibLocals",

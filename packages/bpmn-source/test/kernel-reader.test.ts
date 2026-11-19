@@ -290,7 +290,7 @@ test("the profile options are the full record, each non-default selected by the 
     evaluator: "simpleBoolean",
     submission: "outputSet",
     scopeChainSubmissionBytes: null,
-    bounds: { containerLevels: 4, containerMembers: 32, valueNodes: 256, canonicalBytes: 16384, textBytes: 1024 },
+    bounds: { containerLevels: 4, containerMembers: 32, valueNodes: 256, canonicalBytes: 16384, textBytes: 1024, instanceIdentityBytes: 1024 },
     undeclaredWrite: "refused",
     errorPathOutputs: "none",
     raisedCallOutputs: "none",
@@ -336,6 +336,9 @@ test("the profile options are the full record, each non-default selected by the 
     conditionalStart: "refused",
     calledElementResolution: "qualifiedName",
     messageThrowForms: "refused",
+    deploymentErrors: "bpmnValidity",
+    handlerEscalation: "passesHandler",
+    defaultRetryCycle: null,
   });
   const relations = ["CIB-EXT-0010", "CIB-EXT-0020", "CIB-EXT-0016", "CIB-CFG-0008", "CIB-OP-0009", "CIB-EXT-0026",
     "CIB-INT-0011", "CIB-EXT-0025", "CIB-INT-0009", "CIB-LIM-0001", "CIB-INT-0007", "CIB-INT-0013", "CIB-EXT-0028"];
@@ -344,7 +347,7 @@ test("the profile options are the full record, each non-default selected by the 
     evaluator: "simpleBoolean",
     submission: "installsVariables",
     scopeChainSubmissionBytes: 16_384,
-    bounds: { containerLevels: 4, containerMembers: 32, valueNodes: 256, canonicalBytes: 16384, textBytes: 1024 },
+    bounds: { containerLevels: 4, containerMembers: 32, valueNodes: 256, canonicalBytes: 16384, textBytes: 1024, instanceIdentityBytes: 1024 },
     undeclaredWrite: "atInstanceRoot",
     errorPathOutputs: "mapped",
     raisedCallOutputs: "none",
@@ -390,6 +393,9 @@ test("the profile options are the full record, each non-default selected by the 
     conditionalStart: "refused",
     calledElementResolution: "qualifiedName",
     messageThrowForms: "refused",
+    deploymentErrors: "bpmnValidity",
+    handlerEscalation: "passesHandler",
+    defaultRetryCycle: null,
   });
   assert.equal(kernelProfileOptions(["CIB-EXT-0031"]).outputContext, "activityScope");
   assert.equal(kernelProfileOptions(["CIB-EXT-0039"]).messageThrowForms, "cibForms");

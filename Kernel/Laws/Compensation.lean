@@ -110,7 +110,7 @@ theorem advance_spec {ctx : Ctx} {scope : ScopeOccurrenceId} {trigger : Occurren
             after = ended.signal (.complete occurrence leave [] .outward)) ∧
           (∀ element at_ leave, run.resume = some (.occur element at_ leave) →
             after = ended.signal (.occur element at_ leave [] .outward)) ∧
-          ∀ outer context, run.resume = some (.group outer context) → Feature.Compensation.release ctx context ended less = .ok after) ∨
+          ∀ context, run.resume = some (.group context) → Feature.Compensation.release ctx context ended less = .ok after) ∨
         ∃ later started begun,
           Advances (fun record other => Feature.Compensation.precedes ctx record other = true) run
             { run with pending := later, running := run.running ++ started } (started.map (·.2)) ∧
@@ -134,7 +134,7 @@ theorem advance_spec {ctx : Ctx} {scope : ScopeOccurrenceId} {trigger : Occurren
       refine .inl ⟨empty.1, empty.2, ?_⟩
       refine ⟨_, _, rfl, rfl, ?_⟩
       rcases left : run.leave with _ | cancelled <;> simp only [left, Option.elim] at ran ⊢ <;>
-        refine ⟨fun same => ?_, fun _ _ same => ?_, fun _ _ _ same => ?_, fun _ _ same => ?_⟩ <;>
+        refine ⟨fun same => ?_, fun _ _ same => ?_, fun _ _ _ same => ?_, fun _ same => ?_⟩ <;>
         simp only [same] at ran
       all_goals first | exact ran | (cases ran; rfl)
     · split at ran
@@ -188,7 +188,7 @@ theorem beginHandler_spec {ctx : Ctx} {trigger : OccurrenceRef} {scope : ScopeOc
         Feature.Compensation.advance ctx context trigger (Feature.Compensation.store entered { entered.slots.compensation with
           runs := entered.slots.compensation.runs ++ [{
             trigger, scope := context, pending := Feature.Compensation.begunChildren record context,
-            leave := none, resume := some (.group scope context) }] }) less = .ok after) ∨
+            leave := none, resume := some (.group context) }] }) less = .ok after) ∨
        ∃ handler element, record.handler = some handler ∧ ctx.program.element? handler = some element ∧
         (element.activity?.isSome ∨ element.scope?.isSome) ∧
         state.enterScope handler scope record.snapshot none = (entered, context) ∧
@@ -238,15 +238,15 @@ theorem release_spec {ctx : Ctx} {context : ScopeOccurrenceId} {state : State} {
     exact ⟨less, owner, rfl, FirstOf.of_find (Holds.any_iff context) found, ran⟩
 
 /-- `Hooks.handlerCompleted` releases the handler's context. -/
-theorem handlerCompleted_spec (ctx : Ctx) (run : ScopeOccurrenceId) (occurrence : Occurrence) (state : State) :
-    Feature.Compensation.handlerCompleted ctx run occurrence state =
+theorem handlerCompleted_spec (ctx : Ctx) (occurrence : Occurrence) (state : State) :
+    Feature.Compensation.handlerCompleted ctx occurrence state =
       Feature.Compensation.release ctx occurrence.scope state (Feature.Compensation.runBound ctx state) := by
   unfold Feature.Compensation.handlerCompleted; rfl
 
 /-- A committed `Hooks.handlerEnded` released the handler's context when the handler failure policy is
 `propagatesFromHandler` and a run holds it, and changed nothing otherwise. -/
-theorem handlerEnded_spec {ctx : Ctx} {run : ScopeOccurrenceId} {occurrence : Occurrence} {state after : State}
-    (ran : Feature.Compensation.handlerEnded ctx run occurrence state = .ok after) :
+theorem handlerEnded_spec {ctx : Ctx} {occurrence : Occurrence} {state after : State}
+    (ran : Feature.Compensation.handlerEnded ctx occurrence state = .ok after) :
     (ctx.program.options.compensationHandlerFailure = .propagatesFromHandler ∧
         (∃ owner ∈ state.slots.compensation.runs, Holds occurrence.scope owner) ∧
         Feature.Compensation.release ctx occurrence.scope state (Feature.Compensation.runBound ctx state) = .ok after) ∨
@@ -544,7 +544,7 @@ theorem runs_keep {inv : State → Prop} {settled : State → OccurrenceId → P
         have endedCancel := ended_cancel ops holds scope { state.slots.compensation with
           runs := state.slots.compensation.runs.filter (!Feature.Compensation.isRun scope trigger ·) } held kept rfl
         split at ran
-        · rcases resumed : run.resume with _ | (⟨occurrence, leave⟩ | ⟨element, at_, leave⟩ | ⟨outer, context⟩) <;>
+        · rcases resumed : run.resume with _ | (⟨occurrence, leave⟩ | ⟨element, at_, leave⟩ | context) <;>
             simp only [resumed] at ran <;> rcases left : run.leave with _ | cancelled <;> simp only [left] at ran
           · cases ran
             exact endedStore.done
@@ -566,9 +566,9 @@ theorem runs_keep {inv : State → Prop} {settled : State → OccurrenceId → P
                   fun _ inside => by rw [(ops.signalled _ _).1] at inside; exact inside,
                   fun _ inside => by rw [(ops.signalled _ _).2.2] at inside; exact inside, run, member,
                   resumed⟩)
-          · obtain rfl := (fits.2.1 _ _ resumed).trans own
+          · obtain rfl := (fits.2.1 _ resumed).trans own
             exact endedStore.group releases stands ran
-          · obtain rfl := (fits.2.1 _ _ resumed).trans own
+          · obtain rfl := (fits.2.1 _ resumed).trans own
             exact (endedCancel _).group releases stands ran
         · split at ran
           · cases ran
@@ -742,19 +742,19 @@ theorem runs_keep {inv : State → Prop} {settled : State → OccurrenceId → P
           have stored : ∀ pending, (∀ record ∈ pending, RecordFrom program entered record key) →
               inv (Feature.Compensation.store entered (.mk entered.slots.compensation.retained
               (entered.slots.compensation.runs ++
-                [.mk trigger key pending [] none (some (.group scope key))]))) ∧
+                [.mk trigger key pending [] none (some (.group key))]))) ∧
               ∀ id, settled entered id → settled (Feature.Compensation.store entered (.mk entered.slots.compensation.retained
                 (entered.slots.compensation.runs ++
-                  [.mk trigger key pending [] none (some (.group scope key))]))) id :=
+                  [.mk trigger key pending [] none (some (.group key))]))) id :=
             fun pending from_ => by
               refine ops.store entered _ enter.1 (fun run member => ?_) (fun run member context running => ?_)
                 (appended_resumes enter.1 (fun _ old => old) fun _ _ _ same => by cases same)
                 (StoredFrom.append (.held (fun _ member => member) fun run member => ⟨run, member, rfl, rfl, fun _ => id⟩)
-                  from_ fun _ same => .inl ⟨scope, _, (Option.some.inj same).symm⟩)
+                  from_ fun _ same => .inl ⟨_, (Option.some.inj same).symm⟩)
               · rcases List.mem_append.mp member with old | new
                 · exact .inl old
                 · rw [List.mem_singleton.mp new]
-                  refine .inr ⟨fun _ _ same => ?_, fun _ _ same => ?_, fun _ running => ?_⟩
+                  refine .inr ⟨fun _ _ same => ?_, fun _ same => ?_, fun _ running => ?_⟩
                   · cases same
                   · cases same
                     rfl
@@ -769,7 +769,7 @@ theorem runs_keep {inv : State → Prop} {settled : State → OccurrenceId → P
           obtain ⟨nestedHolds, nestedFollows, keeps⟩ := advances _ _ _ _ (stored _ children).1 standsNested nested
           have unheld : ∀ pending, Unheld (Feature.Compensation.store entered (.mk entered.slots.compensation.retained
               (entered.slots.compensation.runs ++
-                [.mk trigger key pending [] none (some (.group scope key))])))
+                [.mk trigger key pending [] none (some (.group key))])))
               key := fun _ run member running => by
             rcases List.mem_append.mp member with old | new
             · exact unissued ((ops.fits state run holds (slotsEq ▸ old)).2.2 _ running).1

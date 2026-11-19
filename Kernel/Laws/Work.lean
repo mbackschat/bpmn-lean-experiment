@@ -292,6 +292,15 @@ theorem retryIncident_keeps {inv : State → Prop} (ops : WorkOps program inv) {
     · cases ran
       exact reopen_keeps ops holds member (.inr (by rw [waits]; rfl)) _
     · cases ran
+    · cases ran
+
+/-- A Timer's incident, which no feature opens before the job model's stage (AD8), is refused when retried: the shape is
+carried, its retry is not chosen. -/
+theorem retryIncident_timer (ctx : Ctx) (item : OpenItem) (timer : TimerDetail) (generation : Nat) (cancellable : Bool)
+    (state : State) :
+    Feature.Work.retryIncident ctx item { subject := .job (.timer timer), generation, cancellable } generation state =
+      .error (.unsupported "timer-incident-retry") := by
+  simp [Feature.Work.retryIncident]
 
 /-- `Hooks.cancelIncidentProcess` keeps `inv`. -/
 theorem cancelIncidentProcess_keeps {inv : State → Prop} (ops : WorkOps program inv) {ctx : Ctx} {incident : IncidentDetail}

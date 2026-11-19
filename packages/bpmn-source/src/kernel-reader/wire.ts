@@ -97,6 +97,9 @@ export type KernelProfileOptions = Readonly<{
   conditionalStart: "refused" | "submittedContext";
   calledElementResolution: "qualifiedName" | "cibKey";
   messageThrowForms: "refused" | "cibForms";
+  deploymentErrors: "bpmnValidity" | "cibDeployment";
+  handlerEscalation: "passesHandler" | "reentersHandler";
+  defaultRetryCycle: string | null;
 }>;
 
 /** The kernel IL's `Bounds` in its wire form. */
@@ -106,6 +109,7 @@ export type KernelBounds = Readonly<{
   valueNodes: number;
   canonicalBytes: number;
   textBytes: number;
+  instanceIdentityBytes: number;
 }>;
 
 /**
@@ -113,7 +117,9 @@ export type KernelBounds = Readonly<{
  * bound-agreement guard (`scripts/kernel-guards-bounds.ts`) fails when the two disagree. One portable value's
  * canonical bytes also bound a scope-chain submission (`NSD-TASK-01`).
  */
-const valueBounds: KernelBounds = { containerLevels: 4, containerMembers: 32, valueNodes: 256, canonicalBytes: 16384, textBytes: 1024 };
+const valueBounds: KernelBounds = {
+  containerLevels: 4, containerMembers: 32, valueNodes: 256, canonicalBytes: 16384, textBytes: 1024, instanceIdentityBytes: 1024,
+};
 
 /**
  * The kernel options a profile selects, derived from its CIB relation identifiers
@@ -174,6 +180,11 @@ export function kernelProfileOptions(relations: readonly string[]): KernelProfil
     conditionalStart: selects("CIB-EXT-0044") ? "submittedContext" : "refused",
     calledElementResolution: selects("CIB-EXT-0045") ? "cibKey" : "qualifiedName",
     messageThrowForms: selects("CIB-EXT-0039", "CIB-INT-0027") ? "cibForms" : "refused",
+    // No relation selects these yet: A1 classifies CIB's deployment errors (AD7), A4 the handler escalation reading, and
+    // the job model's stage the engine-wide default cycle (AD8); each alternative is refused at admission until then.
+    deploymentErrors: "bpmnValidity",
+    handlerEscalation: "passesHandler",
+    defaultRetryCycle: null,
   };
 }
 

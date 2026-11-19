@@ -256,7 +256,7 @@ function beginHandler(
     const pending = begunChildren(record, context);
     const compensation = entered.slots.compensation;
     const nested: CompensationRun = {
-      trigger, scope: context, pending, running: [], leave: null, resume: { tag: ResumeTag.Group, outer: scope, context },
+      trigger, scope: context, pending, running: [], leave: null, resume: { tag: ResumeTag.Group, context },
     };
     const advanced = advance(ctx, context, trigger, store(entered, { ...compensation, runs: [...compensation.runs, nested] }), fuel - 1);
     return advanced.ok ? committed([advanced.value, context]) : advanced;
@@ -401,9 +401,9 @@ export function compensate(
 
 /**
  * `Hooks.handlerCompleted`: the handler's context, the scope occurrence it began in, is left and the run holding that
- * context starts what that releases; the run's scope `_run` cannot tell two runs of one scope apart.
+ * context starts what that releases; the context, not a run's scope, names the run, since two runs of one scope share it.
  */
-export function handlerCompleted(ctx: Ctx, _run: ScopeOccurrenceId, occurrence: Occurrence, state: State): Outcome {
+export function handlerCompleted(ctx: Ctx, occurrence: Occurrence, state: State): Outcome {
   return release(ctx, occurrence.scope, state, runBound(ctx, state));
 }
 
@@ -438,12 +438,12 @@ export function runningRecord(_ctx: Ctx, context: ScopeOccurrenceId, state: Stat
  * does not interrupt, the run goes on. Under `FailsInstance` the failure that follows ends the instance, so nothing
  * changes.
  */
-export function handlerEnded(ctx: Ctx, run: ScopeOccurrenceId, occurrence: Occurrence, state: State): Outcome {
+export function handlerEnded(ctx: Ctx, occurrence: Occurrence, state: State): Outcome {
   const failure = ctx.program.options.compensationHandlerFailure;
   switch (failure.tag) {
     case CompensationHandlerFailureTag.PropagatesFromHandler:
       return state.slots.compensation.runs.some((candidate) => candidate.running.some(([context]) => context === occurrence.scope))
-        ? handlerCompleted(ctx, run, occurrence, state)
+        ? handlerCompleted(ctx, occurrence, state)
         : committed(state);
     case CompensationHandlerFailureTag.FailsInstance:
     case CompensationHandlerFailureTag.Selected:

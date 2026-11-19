@@ -44,7 +44,8 @@
       "containerMembers": 32,
       "valueNodes": 256,
       "canonicalBytes": 16384,
-      "textBytes": 1024
+      "textBytes": 1024,
+      "instanceIdentityBytes": 1024
     },
     "undeclaredWrite": "refused",
     "errorPathOutputs": "none",
@@ -90,7 +91,10 @@
     "signalDelivery": "broadcastOnly",
     "conditionalStart": "refused",
     "calledElementResolution": "qualifiedName",
-    "messageThrowForms": "refused"
+    "messageThrowForms": "refused",
+    "deploymentErrors": "bpmnValidity",
+    "handlerEscalation": "passesHandler",
+    "defaultRetryCycle": null
   },
   "elements": [
     {

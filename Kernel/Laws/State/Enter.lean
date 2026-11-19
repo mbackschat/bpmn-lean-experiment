@@ -455,8 +455,8 @@ theorem SlotsSettled.bare {s t : State} (settled : SlotsSettled s) (slots : t.sl
     (.of_same (congrArg (List.map ScopeOccurrence.id) scopes) ordinals) fun _ inside => .inl (scopes ▸ inside)
   runsPlaced run member := (settled.runsPlaced run (slots ▸ member)).transport
     (.of_same (congrArg (List.map ScopeOccurrence.id) scopes) ordinals) fun _ inside => .inl (scopes ▸ inside)
-  grouped scope activity trigger leave outer context member :=
-    settled.grouped scope activity trigger leave outer context (compensations scope activity trigger leave _ member)
+  grouped scope activity trigger leave context member :=
+    settled.grouped scope activity trigger leave context (compensations scope activity trigger leave _ member)
   raised raised origin host member named :=
     (settled.raised raised origin host (raises raised origin member) named).bare issued occurrences queued
 

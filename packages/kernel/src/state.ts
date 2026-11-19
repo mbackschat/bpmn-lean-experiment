@@ -20,13 +20,13 @@ import {
   type Binding, type ConditionalWaitDetail, type EffectDetail, type IncidentDetail, InputTag, type MessageChannel,
   messageChannelEquals, type MessageWaitDetail, type OpenKind, OpenKindTag, openKindView, optionalChannelEquals,
   type SendDescriptor, type SignalAddress, SignalAddressTag, signalAddressMatches, type SignalWaitDetail, type TimerDetail,
-  type TimerRecurrence, type UserTaskDetail, type WaitView, type IncidentSubject, IncidentSubjectTag, type JobDetail,
+  type TimerRecurrence, type UserTaskDetail, type WaitView, type IncidentSubject, IncidentSubjectTag, type JobDetail, type JobSubject, JobSubjectTag,
 } from "./state/wait.js";
 export {
   type Binding, type ConditionalWaitDetail, type EffectDetail, type IncidentDetail, InputTag, type MessageChannel,
   messageChannelEquals, type MessageWaitDetail, type OpenKind, OpenKindTag, openKindView, optionalChannelEquals,
   type SendDescriptor, type SignalAddress, SignalAddressTag, signalAddressMatches, type SignalWaitDetail, type TimerDetail,
-  type TimerRecurrence, type UserTaskDetail, type WaitView, type IncidentSubject, IncidentSubjectTag, type JobDetail,
+  type TimerRecurrence, type UserTaskDetail, type WaitView, type IncidentSubject, IncidentSubjectTag, type JobDetail, type JobSubject, JobSubjectTag,
 };
 import {
   type CommandAction, CommandActionTag, type CommandInput, type ConditionChoice, type CorrelationMatch, type CriterionTarget,

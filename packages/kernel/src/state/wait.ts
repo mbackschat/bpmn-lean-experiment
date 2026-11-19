@@ -126,7 +126,22 @@ export interface JobDetail {
   readonly failures: number;
 }
 
-/** What an incident's failure belongs to: an effect, or a job the kernel runs itself (`JobDetail`). */
+/**
+ * A failed job no effect stands for, which the kernel runs as an input of its own (AD8): an asynchronous continuation's
+ * (`JobDetail`), or a Timer's firing, which CIB runs as a job too (`TimerEntity` is a `JobEntity`; `timer-job-failure`).
+ * No feature opens an incident of either until the job model's stage does; the shapes are here so that stage changes no
+ * state shape.
+ */
+export enum JobSubjectTag {
+  Continuation = "continuation",
+  Timer = "timer",
+}
+
+export type JobSubject =
+  | { readonly tag: JobSubjectTag.Continuation; readonly detail: JobDetail }
+  | { readonly tag: JobSubjectTag.Timer; readonly detail: TimerDetail };
+
+/** What an incident's failure belongs to: an effect, or a job the kernel runs itself. */
 export enum IncidentSubjectTag {
   Effect = "effect",
   Job = "job",
@@ -134,7 +149,7 @@ export enum IncidentSubjectTag {
 
 export type IncidentSubject =
   | { readonly tag: IncidentSubjectTag.Effect; readonly detail: EffectDetail }
-  | { readonly tag: IncidentSubjectTag.Job; readonly detail: JobDetail };
+  | { readonly tag: IncidentSubjectTag.Job; readonly job: JobSubject };
 
 /** `cancellable` publishes the `cancelIncidentProcess` interaction beside `retryIncident`. */
 export interface IncidentDetail {

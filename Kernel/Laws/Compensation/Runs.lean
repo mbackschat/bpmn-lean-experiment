@@ -31,7 +31,7 @@ own context, and each running handler's context was issued and, while it stands,
 occurrence. -/
 def Fits (settled : State → OccurrenceId → Prop) (state : State) (run : CompensationRun) : Prop :=
   (∀ occurrence leave, run.resume = some (.complete occurrence leave) → settled state occurrence) ∧
-    (∀ outer context, run.resume = some (.group outer context) → context = run.scope) ∧
+    (∀ context, run.resume = some (.group context) → context = run.scope) ∧
     ∀ context ∈ run.running.map (·.1), Laws.State.ScopeIssued state context ∧
       ∀ entry ∈ state.scopes, entry.id = context → entry.parent = some run.scope
 
@@ -302,7 +302,7 @@ theorem StoredFrom.append {program : Program} {state : State} {resumed : Resume 
     {retained : List Compensable} {runs : List CompensationRun} {run : CompensationRun}
     (stored : StoredFrom program state resumed ⟨retained, runs⟩)
     (pending : ∀ record ∈ run.pending, RecordFrom program state record run.scope)
-    (resumes : ∀ resume, run.resume = some resume → (∃ outer context, resume = .group outer context) ∨ resumed resume) :
+    (resumes : ∀ resume, run.resume = some resume → (∃ context, resume = .group context) ∨ resumed resume) :
     StoredFrom program state resumed ⟨retained, runs ++ [run]⟩ := by
   refine ⟨stored.1, fun other member => ?_⟩
   rcases List.mem_append.mp member with old | new

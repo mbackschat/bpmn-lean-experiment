@@ -50,11 +50,11 @@ theorem compensationKeeps_formed (hooks : Hooks) (wf : Proofs.Step.CompensationK
         obtain ⟨queue, queueHolds, rest⟩ := popped
         exact ⟨queue, queueHolds.1, rest⟩) ran
     exact ⟨kept, compensate_formed hooks holds.1 holds.2 stands popped kept ran⟩
-  handlerCompleted ctx run occurrence state after holds stands ran := by
-    have kept := wf.handlerCompleted ctx run occurrence state after holds.1 stands ran
+  handlerCompleted ctx occurrence state after holds stands ran := by
+    have kept := wf.handlerCompleted ctx occurrence state after holds.1 stands ran
     exact ⟨kept, handlerCompleted_formed hooks holds.1 holds.2 stands kept ran⟩
-  handlerEnded ctx run occurrence state after holds stands ran := by
-    have kept := wf.handlerEnded ctx run occurrence state after holds.1 stands ran
+  handlerEnded ctx occurrence state after holds stands ran := by
+    have kept := wf.handlerEnded ctx occurrence state after holds.1 stands ran
     exact ⟨kept, handlerEnded_formed hooks holds.1 holds.2 stands kept ran⟩
 
 /-- The registered compensation hooks keep `WellFormed` with the lane relation beside it. -/
@@ -88,7 +88,7 @@ theorem advance_ended {ctx : Ctx} {scope : ScopeOccurrenceId} {trigger : Occurre
       | some occurrence => exact .inr ⟨_, Laws.Step.untriggered_cancel occurrence, rfl⟩
     subst droppedEq
     have ungrouped := (idle run first).2.2
-    rcases resumed : run.resume with _ | ⟨occurrence, leave⟩ | ⟨element, at_, leave⟩ | ⟨outer, context⟩
+    rcases resumed : run.resume with _ | ⟨occurrence, leave⟩ | ⟨element, at_, leave⟩ | context
     · rw [resumedNone resumed, quieted.slots]
       exact ⟨rfl, rfl⟩
     · have last : Quieted ended t := .inr ⟨_, Laws.Step.untriggered_complete _ _ _ _, resumedComplete _ _ resumed⟩
@@ -243,11 +243,11 @@ theorem compensate_inOrder {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : O
   · rw [List.mem_singleton.mp new] at other
     exact absurd ⟨scopeNamed, named⟩ other
 
-theorem handlerCompleted_inOrder {ctx : Ctx} {context : ScopeOccurrenceId} {occurrence : Occurrence}
+theorem handlerCompleted_inOrder {ctx : Ctx} {occurrence : Occurrence}
     {state after : State} (before : WellFormed ctx.program state)
     (formed : Formed (Depends ctx.program (footprintReads ctx) (footprintWrites ctx)) state)
     (stands : Laws.Step.ScopeStands state occurrence.scope)
-    (ran : Feature.Compensation.handlerCompleted ctx context occurrence state = .ok after)
+    (ran : Feature.Compensation.handlerCompleted ctx occurrence state = .ok after)
     {run next : CompensationRun} (member : run ∈ state.slots.compensation.runs)
     (inside : next ∈ after.slots.compensation.runs) (sameTrigger : next.trigger = run.trigger)
     (sameScope : next.scope = run.scope) :
@@ -284,7 +284,7 @@ theorem registered_takesOutOnce : TakesOutOnce Registry.hooks footprintReads foo
 /-- Under the registered hooks handlers start in order (`HandlersInOrder`). -/
 theorem registered_handlersInOrder : HandlersInOrder Registry.hooks footprintReads footprintWrites := by
   intro ctx state after run next before formed ran member inside sameTrigger sameScope
-  rcases ran with ⟨scope, activity, trigger, rest⟩ | ⟨context, occurrence, ran⟩
+  rcases ran with ⟨scope, activity, trigger, rest⟩ | ⟨occurrence, ran⟩
   · obtain ⟨leave, resume, fresh, ran⟩ := rest
     rw [Laws.Registry.hooks_compensate] at ran
     exact compensate_inOrder before formed fresh ran member inside sameTrigger sameScope

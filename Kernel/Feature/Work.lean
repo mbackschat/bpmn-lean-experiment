@@ -345,7 +345,9 @@ def retryIncident (_ : Ctx) (item : OpenItem) (incident : IncidentDetail) (gener
   else match incident.subject with
     | .effect effect => .ok (reopen state item.id (.effect effect))
     -- dynamic-only: no feature opens a job's incident until the job model's stage (AD8) retries it
-    | .job _ => .error (.unsupported "job-incident-retry")
+    | .job (.continuation _) => .error (.unsupported "job-incident-retry")
+    -- dynamic-only: no feature opens a Timer's incident until the job model's stage (AD8) retries it
+    | .job (.timer _) => .error (.unsupported "timer-incident-retry")
 
 /-- See `retryIncident`. -/
 def cancelIncidentProcess (_ : Ctx) (incident : IncidentDetail) (generation : Nat) (state : State) : Outcome :=
