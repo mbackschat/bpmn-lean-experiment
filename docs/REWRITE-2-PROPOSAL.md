@@ -336,7 +336,7 @@ The design removes P6's causes C1–C6 by construction instead of proving around
 - `SchedulesAgree` keeps its current form (`Kernel/Proofs/Concurrency.lean:146`): two schedules that both settle commit results alike up to a bijection of the identities and activations issued from that state on. Parked joins and scope order are included. This closes the gap that the strong `Sim` closes in K11.
 - Under KD1, the bijection is the identity except in two places, both found by T4a:
   - **Activations of one element begun in one closure.** They swap with begin order (T4a F4), as public numbering keeps CIB's begin order.
-  - **Excess arrivals parked on one flow.** Three arrivals at a two-way join, two on one flow, leave a different one parked depending on the schedule, and no canonical choice repairs that, because at the firing only one of the two has arrived (T4a F3, `excess_leftover_differs`). Excess arrivals are admitted (`Laws/Flow.lean:89`).
+  - **Excess arrivals parked on one flow.** Three arrivals at a two-way join, two on one flow, leave a different one parked depending on the schedule, and no canonical choice repairs that, because at the firing only one of the two has arrived (T4a F3, `excess_leftover_differs`). Excess arrivals are admitted (`Laws/Flow/Rules.lean:84`).
 - **Rejected:** numbering activations in canonical key order at commit under `orderInvariant` (T4a F4's proposal). That would make every equality exact, but it is a new public-identity rule for the standards profile, a choice of observation boundary, and the statement does not need it.
 - **Premises:**
   - both schedules settle, since two failing units report a schedule-dependent failure (T4a F9);

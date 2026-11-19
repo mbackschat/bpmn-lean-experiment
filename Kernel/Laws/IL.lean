@@ -388,6 +388,14 @@ theorem NameSet.meets_iff_listed {every : List String} {sentinel : String} (inha
   · simp only [Bool.true_and, Bool.true_or, ite_true, true_iff]
     exact ⟨sentinel, inhabited, inhabited⟩
 
+/-- A flow the program does not declare has no target. -/
+theorem target?_undeclared {program : Program} {flow : FlowId}
+    (undeclared : ¬(program.flows.map (·.id)).contains flow = true) : program.target? flow = none := by
+  unfold Program.target?
+  have missing : program.flows.find? (·.id == flow) = none :=
+    List.find?_eq_none.mpr fun found mem same => undeclared (by simpa using ⟨found, mem, by simpa using same⟩)
+  simp [missing]
+
 /-- A flow's source and target, looked up by its identifier, are those of one flow the program declares. -/
 theorem source?_target? {program : Program} {flow : FlowId} {source target : ElementId}
     (leaves : program.source? flow = some source) (ends : program.target? flow = some target) :

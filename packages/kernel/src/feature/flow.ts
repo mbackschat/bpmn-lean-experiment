@@ -284,27 +284,33 @@ function successors(ctx: Ctx, element: Element): readonly FlowId[] {
   return linkCatches(ctx.program, event[0], name).flatMap(([, payload]) => payload.outgoing);
 }
 
-/** Whether a token on one of `start` can reach one of `targets` without passing through `gateway`. */
+/**
+ * The flows a token on `flow` continues on in the reach query: none past the join `gateway`, and none after a flow the
+ * program does not declare.
+ */
+function reachNext(ctx: Ctx, gateway: ElementId, flow: FlowId): readonly FlowId[] {
+  const target = programTarget(ctx.program, flow);
+  const element = target === null || target === gateway ? null : programElement(ctx.program, target);
+  return element === null ? [] : successors(ctx, element);
+}
+
+/**
+ * Whether a token on one of `start` can reach one of `targets` without passing through `gateway`: the search of
+ * `Feature.Flow.reachSearch`, which expands each declared flow once and needs no fuel, so a duplicate start entry costs
+ * one membership test and the answer depends only on the members of `start` (DC3).
+ */
 function reaches(ctx: Ctx, gateway: ElementId, targets: readonly FlowId[], start: readonly FlowId[]): boolean {
-  const program = ctx.program;
-  let frontier = [...start];
-  const seen: FlowId[] = [];
-  // The fuel bounds every visit of every flow by every edge into it, so it is never exhausted; running out answers
-  // "reachable", which only keeps the join waiting.
-  for (let fuel = (program.flows.length + 1) * (program.flows.length + 1); ; fuel -= 1) {
-    const [flow, ...rest] = frontier;
-    if (flow === undefined) return false;
-    if (fuel === 0) return true;
+  const declared = new Set(ctx.program.flows.map((flow) => flow.id));
+  const seen = new Set<FlowId>();
+  const frontier = [...start];
+  for (let index = 0; index < frontier.length; index += 1) {
+    const flow = frontier[index] as FlowId;
     if (targets.includes(flow)) return true;
-    if (seen.includes(flow)) {
-      frontier = rest;
-      continue;
-    }
-    const target = programTarget(program, flow);
-    const element = target === null || target === gateway ? null : programElement(program, target);
-    frontier = [...rest, ...(element === null ? [] : successors(ctx, element))];
-    seen.unshift(flow);
+    if (seen.has(flow) || !declared.has(flow)) continue;
+    seen.add(flow);
+    frontier.push(...reachNext(ctx, gateway, flow));
   }
+  return false;
 }
 
 /**

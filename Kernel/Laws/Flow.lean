@@ -3,26 +3,16 @@ module
 public import Kernel.Hooks
 public import Kernel.Feature.Flow
 public import Kernel.Laws.State
+public import Kernel.Laws.Flow.Rules
 public import Kernel.Laws.Flow.Sources
+public import Kernel.Laws.IL
 import all Kernel.Feature.Flow
 
-/-! # Laws of flow: splits, joins and reach
+/-! # Laws of flow: Flow's hooks against the rules
 
-The rules of the [flow semantics](../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md) over the IL's flows, the parked
-arrivals of `State` and the condition values, independent of `Kernel.Feature.Flow`'s code: which flows an Exclusive, an
-Inclusive and an Activity's own split take for given condition values, when a Parallel and an Inclusive join may fire,
-which arrivals a firing consumes and how the joined occurrences leave. The Inclusive join's reach is Table 13.3's
-upstream-token rule as an inductive path relation over Sequence Flows; the continuations a profile's reach adds beyond
-an element's outgoing flows (a host's Boundary Events, an Event-Based Gateway's arms, a throwing Link's catch) are the
-parameter `extra`, since stating them needs the element kinds, whose matching `Kernel.Step` owns.
-
-The laws take a gateway's candidates and default as lists, not its `GatewayKind`, whose matching `Kernel.Feature.Flow`
-owns (guard 1); the proof wave relates them to the gateway's payload. Condition values are a function `holds`, so every
-candidate is evaluated against one state (Table 13.3) and an unconditioned candidate is one that `holds` always takes.
-Nothing executable imports this module.
-
-Each law is followed by its non-vacuity witness: values that satisfy it and, where the law could otherwise hold of
-everything, values that violate it.
+What `Kernel.Feature.Flow`'s hooks do, stated by the rules of `Kernel.Laws.Flow.Rules` (which flows a split takes,
+when a join may fire, what a firing consumes, the reach as a path relation), Flow's share of the state invariant, and
+the reach search's own laws. Nothing executable imports this module.
 -/
 
 @[expose] public section
@@ -31,134 +21,9 @@ namespace Kernel.Laws.Flow
 
 open Kernel
 
-/-! ## Splits -/
-
-/-- An Exclusive Gateway's outcome: the first candidate in declaration order whose condition holds, the conditions
-evaluated exactly up to it; the default exactly when every candidate is false; `none`, the command rolled back, when no
-candidate holds and there is no default (§13.4.2, Table 13.2,
-[flow, Exclusive Gateway](../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md#exclusive-gateway)). -/
-def ExclusiveTakes (candidates : List FlowId) (default : Option FlowId) (holds : FlowId → Bool)
-    (evaluated : List FlowId) : Option (List FlowId) → Prop
-  | some taken =>
-    (∃ earlier chosen later, candidates = earlier ++ chosen :: later ∧ (∀ flow ∈ earlier, holds flow = false) ∧
-      holds chosen = true ∧ evaluated = earlier ++ [chosen] ∧ taken = [chosen]) ∨
-    ((∀ flow ∈ candidates, holds flow = false) ∧ evaluated = candidates ∧ ∃ fallback, default = some fallback ∧
-      taken = [fallback])
-  | none => (∀ flow ∈ candidates, holds flow = false) ∧ evaluated = candidates ∧ default = none
-
-/-- An Inclusive Gateway's outcome: every candidate whose condition holds; the default alone when none holds; every
-outgoing flow for a pure join, which lists no candidates and no default; `none`, the command rolled back, when
-candidates exist but none holds and there is no default (§10.6.3, Table 13.3, CIB-INT-0005, CIB-INT-0012). The order of
-the taken flows is the branch schedule's, so only their multiset is the construct's. -/
-def InclusiveTakes (candidates : List FlowId) (default : Option FlowId) (outgoing : List FlowId)
-    (holds : FlowId → Bool) : Option (List FlowId) → Prop
-  | some taken =>
-    (candidates = [] ∧ default = none ∧ taken.Perm outgoing) ∨
-    (candidates.filter holds ≠ [] ∧ taken.Perm (candidates.filter holds)) ∨
-    (candidates.filter holds = [] ∧ ∃ fallback, default = some fallback ∧ taken = [fallback])
-  | none => candidates ≠ [] ∧ candidates.filter holds = [] ∧ default = none
-
-/-- An Activity's or Scope's own selection over its outgoing flows: every non-default flow whose condition holds or that
-has none, the default only when it takes no other, nothing when it has no outgoing flow, and `none`, the command rolled
-back, when it has outgoing flows but takes none (§13.3.1, §10.3.1 `default`, Table 13.3, CIB-INT-0012). -/
-def OwnTakes (outgoing : List FlowId) (default : Option FlowId) (holds : FlowId → Bool) : Option (List FlowId) → Prop
-  | some taken =>
-    (outgoing = [] ∧ taken = []) ∨
-    (((outgoing.filter (default != some ·)).filter holds ≠ [] ∧
-      taken.Perm ((outgoing.filter (default != some ·)).filter holds))) ∨
-    ((outgoing.filter (default != some ·)).filter holds = [] ∧ ∃ fallback, default = some fallback ∧
-      fallback ∈ outgoing ∧ taken = [fallback])
-  | none => outgoing ≠ [] ∧ (outgoing.filter (default != some ·)).filter holds = [] ∧ default = none
-
-/-- A Parallel fork puts one token on every outgoing flow (§10.6.4, §13.4.1). -/
-def ForkTakes (outgoing taken : List FlowId) : Prop :=
-  taken.Perm outgoing
-
-/-! ## Joins -/
-
-/-- An arrival on `flow` is parked in the scope occurrence `scope`. -/
-def Filled (parked : List Parked) (scope : ScopeOccurrenceId) (flow : FlowId) : Prop :=
-  ∃ arrival ∈ parked, arrival.scope = scope ∧ arrival.flow = flow
-
-/-- A Parallel join is ready only when every incoming flow holds an arrival in the same scope occurrence: incoming-flow
-provenance, never a count of arrivals (§13.4.1, [flow, Parallel Gateway](../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md#parallel-gateway)). -/
-def ParallelReady (incoming : List FlowId) (parked : List Parked) (scope : ScopeOccurrenceId) : Prop :=
-  ∀ flow ∈ incoming, Filled parked scope flow
-
-/-- A firing join consumes exactly one arrival from each filled incoming flow of its scope occurrence and nothing else:
-every other arrival, an excess one on a filled flow and those of other scope occurrences included, stays parked. -/
-structure Consumes (incoming : List FlowId) (scope : ScopeOccurrenceId) (before after consumed : List Parked) :
-    Prop where
-  kept : before.Perm (consumed ++ after)
-  inScope : ∀ arrival ∈ consumed, arrival.scope = scope
-  onIncoming : ∀ arrival ∈ consumed, arrival.flow ∈ incoming
-  oneEach : (consumed.map (·.flow)).Nodup
-  everyFilled : ∀ flow ∈ incoming, Filled before scope flow → flow ∈ consumed.map (·.flow)
-
-/-- The joined occurrences leave once: exactly one of them leaves on the join's outgoing selection `taken`, every other
-ends with no flow, as one activity instance ends per joined execution. -/
-def LeavesOnce (consumed : List Parked) (taken : List FlowId) (leaving : List (OccurrenceId × List FlowId)) : Prop :=
-  ∃ winner others, (winner :: others).Perm (consumed.map (·.occurrence)) ∧
-    leaving.Perm ((winner, taken) :: others.map (·, []))
-
-/-- A path of Sequence Flows from `start` to `target` that passes no occurrence of `gateway`: each step leaves the
-target of the flow before on one of its outgoing flows, or on a continuation the profile's reach adds (`extra`). -/
-inductive Leads (flows : List Flow) (extra : ElementId → FlowId → Prop) (gateway : ElementId) :
-    FlowId → FlowId → Prop where
-  | here (flow : FlowId) : Leads flows extra gateway flow flow
-  | step (first : Flow) (next target : FlowId) : first ∈ flows → first.target ≠ gateway →
-      ((∃ out ∈ flows, out.source = first.target ∧ out.id = next) ∨ extra first.target next) →
-      Leads flows extra gateway next target → Leads flows extra gateway first.id target
-
-/-- The flows a position held by `element` continues on: its outgoing flows, or a continuation of the profile's reach. -/
-def Continues (flows : List Flow) (extra : ElementId → FlowId → Prop) (element : ElementId) (flow : FlowId) : Prop :=
-  (∃ out ∈ flows, out.source = element ∧ out.id = flow) ∨ extra element flow
-
-/-- An element holding remaining work of `scope` other than the arrivals parked at `gateway`: a begun occurrence, which
-also stands for the open items it waits on and the subscriptions hanging on it; a child scope occurrence, which
-continues after its host; a deferred begin. A subscription's reservation counts only through its host's continuation,
-so the profile's reach alone decides whether a Boundary Event's path counts. -/
-def Holds (s : State) (scope : ScopeOccurrenceId) (gateway element : ElementId) : Prop :=
-  element ≠ gateway ∧
-    ((∃ occurrence ∈ s.occurrences, occurrence.scope = scope ∧ occurrence.begun = true ∧ occurrence.element = element) ∨
-      (∃ child ∈ s.scopes, child.parent = some scope ∧ child.element = some element) ∨
-      ∃ request, Token.begin request ∈ s.tokens ∧ request.scope = scope ∧ request.element = element)
-
-/-- Some remaining work of `scope` can still reach `target` without passing `gateway`: a flow token of the scope
-occurrence, or an element holding work there, with a path to it (Table 13.3, CIB-INT-0016,
-[flow, Inclusive Gateway](../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md#inclusive-gateway)). -/
-def CanReach (flows : List Flow) (extra : ElementId → FlowId → Prop) (s : State) (gateway : ElementId)
-    (scope : ScopeOccurrenceId) (target : FlowId) : Prop :=
-  (∃ start, Token.flow start scope ∈ s.tokens ∧ Leads flows extra gateway start target) ∨
-    ∃ element next, Holds s scope gateway element ∧ Continues flows extra element next ∧
-      Leads flows extra gateway next target
-
-/-- An Inclusive join is ready when at least one incoming flow holds an arrival and no remaining work of its scope
-occurrence can reach an incoming flow that holds none. -/
-def InclusiveReady (flows : List Flow) (extra : ElementId → FlowId → Prop) (incoming : List FlowId) (s : State)
-    (gateway : ElementId) (scope : ScopeOccurrenceId) : Prop :=
-  (∃ flow ∈ incoming, Filled s.slots.parked scope flow) ∧
-    ∀ flow ∈ incoming, ¬ Filled s.slots.parked scope flow → ¬ CanReach flows extra s gateway scope flow
-
-/-- A Parallel join fires only when ready, consuming one arrival per incoming flow. -/
-structure ParallelFires (incoming : List FlowId) (scope : ScopeOccurrenceId) (before after consumed : List Parked) :
-    Prop where
-  ready : ParallelReady incoming before scope
-  consumes : Consumes incoming scope before after consumed
-
-/-- An Inclusive join fires only when ready in the state `s` it is offered in, consuming one arrival per filled flow. -/
-structure InclusiveFires (flows : List Flow) (extra : ElementId → FlowId → Prop) (incoming : List FlowId) (s : State)
-    (gateway : ElementId) (scope : ScopeOccurrenceId) (after consumed : List Parked) : Prop where
-  ready : InclusiveReady flows extra incoming s gateway scope
-  consumes : Consumes incoming scope s.slots.parked after consumed
-
-theorem ParallelFires.consumesAll {incoming : List FlowId} {scope : ScopeOccurrenceId} {before after consumed : List Parked}
-    (fires : ParallelFires incoming scope before after consumed) : ∀ flow ∈ incoming, flow ∈ consumed.map (·.flow) :=
-  fun flow member => fires.consumes.everyFilled flow member (fires.ready flow member)
-
 /-! ## Flow's hooks against the laws
 
-What `Kernel.Feature.Flow`'s hooks do, stated by the laws above, for `Kernel.Proofs` to compose with `Step`. -/
+What `Kernel.Feature.Flow`'s hooks do, stated by the rules, for `Kernel.Proofs` to compose with `Step`. -/
 
 /-- Whether a candidate's condition holds in `context`: its Sequence Flow is unconditioned, or its condition evaluates
 to `true`. A missing flow, a failing or a non-Boolean evaluation holds for no candidate, since it rolls the command back
@@ -267,182 +132,6 @@ theorem arriveGateway_exclusive {ctx : Ctx} {header : Header} {payload : Gateway
         subst ran
         exact ⟨[fallback], candidates, by simp [Feature.Flow.signalComplete],
           .inr ⟨absent (by simp), by simp, fallback, by simp, by simp⟩⟩
-
-/-! ## Non-vacuity
-
-A gateway `J` with incoming flows `a` (from `A`) and `b` (from `B`) and outgoing `out`; `B` is fed by `c` from `C`. -/
-
-def flowA : FlowId := ⟨"a"⟩
-def flowB : FlowId := ⟨"b"⟩
-def flowC : FlowId := ⟨"c"⟩
-def flowOut : FlowId := ⟨"out"⟩
-def joinGateway : ElementId := ⟨"J"⟩
-
-def edgeA : Flow := { id := flowA, source := ⟨"A"⟩, target := joinGateway }
-def edgeB : Flow := { id := flowB, source := ⟨"B"⟩, target := joinGateway }
-def edgeC : Flow := { id := flowC, source := ⟨"C"⟩, target := ⟨"B"⟩ }
-def edgeOut : Flow := { id := flowOut, source := joinGateway, target := ⟨"D"⟩ }
-def diagram : List Flow := [edgeA, edgeB, edgeC, edgeOut]
-
-def root : ScopeOccurrenceId := ⟨[]⟩
-
-/-- The occurrence keys of the witnesses: three of `J` and one of `C`, all in the root. -/
-@[simp] def joinedFirst : OccurrenceId := { scope := root, element := joinGateway, ordinal := 0 }
-@[simp] def joinedSecond : OccurrenceId := { scope := root, element := joinGateway, ordinal := 1 }
-@[simp] def joinedThird : OccurrenceId := { scope := root, element := joinGateway, ordinal := 2 }
-@[simp] def keyC : OccurrenceId := { scope := root, element := ⟨"C"⟩, ordinal := 0 }
-
-def arrivedA : Parked := { occurrence := joinedFirst, flow := flowA, scope := root }
-def arrivedB : Parked := { occurrence := joinedSecond, flow := flowB, scope := root }
-def againA : Parked := { occurrence := joinedThird, flow := flowA, scope := root }
-
-/-- `true` for `a` only. -/
-def onlyA (flow : FlowId) : Bool := flow == flowA
-
-theorem first_true_taken : ExclusiveTakes [flowB, flowA, flowC] none onlyA [flowB, flowA] (some [flowA]) :=
-  .inl ⟨[flowB], flowA, [flowC], rfl, by simp [onlyA, flowA, flowB], by simp [onlyA], rfl, rfl⟩
-
-theorem later_true_rejected : ¬ ExclusiveTakes [flowA, flowB] none (fun _ => true) [flowA, flowB] (some [flowB]) := by
-  rintro (⟨earlier, chosen, later, facts⟩ | ⟨_, _, fallback⟩)
-  · obtain ⟨_, before, rest⟩ := facts
-    obtain ⟨_, evaluated, _⟩ := rest
-    cases earlier with
-    | nil => simp at evaluated
-    | cons head tail => exact absurd (before head (by simp)) (by simp)
-  · obtain ⟨_, none, _⟩ := fallback
-    simp at none
-
-theorem default_taken : ExclusiveTakes [flowA] (some flowC) (fun _ => false) [flowA] (some [flowC]) :=
-  .inr ⟨by simp, rfl, flowC, rfl, rfl⟩
-
-theorem no_default_rolls_back : ExclusiveTakes [flowA] none (fun _ => false) [flowA] none :=
-  ⟨by simp, rfl, rfl⟩
-
-theorem every_true_taken :
-    InclusiveTakes [flowA, flowB] (some flowC) [flowA, flowB, flowC] (fun flow => flow != flowC) (some [flowB, flowA]) := by
-  have chosen : [flowA, flowB].filter (fun flow => flow != flowC) = [flowA, flowB] := by
-    simp [flowA, flowB, flowC]
-  exact .inr (.inl ⟨by simp [chosen], by rw [chosen]; exact List.Perm.swap _ _ []⟩)
-
-theorem default_beside_true_rejected :
-    ¬ InclusiveTakes [flowA, flowB] (some flowC) [flowA, flowB, flowC] onlyA (some [flowC]) := by
-  have chosen : [flowA, flowB].filter onlyA = [flowA] := by simp [onlyA, flowA, flowB]
-  rintro (⟨empty, _⟩ | ⟨_, taken⟩ | ⟨none, _⟩)
-  · simp at empty
-  · rw [chosen] at taken
-    simpa [flowA, flowC] using taken.mem_iff.mp (List.mem_singleton_self flowC)
-  · simp [chosen] at none
-
-theorem pure_join_takes_all : InclusiveTakes [] none [flowOut] onlyA (some [flowOut]) :=
-  .inl ⟨rfl, rfl, List.Perm.refl _⟩
-
-theorem own_default_when_none : OwnTakes [flowA, flowB] (some flowB) (fun _ => false) (some [flowB]) :=
-  .inr (.inr ⟨by simp, flowB, rfl, by simp, rfl⟩)
-
-theorem own_rollback : OwnTakes [flowA] none (fun _ => false) none :=
-  ⟨by simp, by simp, rfl⟩
-
-theorem own_sink : OwnTakes [] none onlyA (some []) := .inl ⟨rfl, rfl⟩
-
-theorem fork_all : ForkTakes [flowA, flowB] [flowB, flowA] := List.Perm.swap _ _ []
-
-theorem parallel_fires :
-    ParallelFires [flowA, flowB] root [arrivedA, againA, arrivedB] [againA] [arrivedA, arrivedB] where
-  ready := by simp [ParallelReady, Filled, arrivedA, arrivedB, againA]
-  consumes := {
-    kept := List.Perm.cons _ (List.Perm.swap _ _ [])
-    inScope := by simp [arrivedA, arrivedB]
-    onIncoming := by simp [arrivedA, arrivedB]
-    oneEach := by simp [arrivedA, arrivedB, flowA, flowB]
-    everyFilled := by simp [arrivedA, arrivedB] }
-
-/-- One flow's arrivals twice over are no Parallel join: provenance, not count. -/
-theorem count_without_provenance_rejected : ¬ ParallelReady [flowA, flowB] [arrivedA, againA] root := by
-  intro ready
-  obtain ⟨arrival, member, _, flow⟩ := ready flowB (by simp)
-  simp only [List.mem_cons, List.not_mem_nil, or_false] at member
-  rcases member with rfl | rfl <;> simp [arrivedA, againA, flowA, flowB] at flow
-
-/-- Consuming the excess arrival too consumes more than one per flow. -/
-theorem excess_consumed_rejected :
-    ¬ Consumes [flowA, flowB] root [arrivedA, againA, arrivedB] [] [arrivedA, againA, arrivedB] := fun consumes => by
-  have := consumes.oneEach
-  simp [arrivedA, againA, arrivedB] at this
-
-theorem leaves_once : LeavesOnce [arrivedA, arrivedB] [flowOut] [(joinedSecond, []), (joinedFirst, [flowOut])] :=
-  ⟨joinedFirst, [joinedSecond], List.Perm.refl _, List.Perm.swap _ _ []⟩
-
-/-- Both joined occurrences leaving on the outgoing flow is two leavings, not one. -/
-theorem both_leave_rejected :
-    ¬ LeavesOnce [arrivedA, arrivedB] [flowOut] [(joinedFirst, [flowOut]), (joinedSecond, [flowOut])] := by
-  rintro ⟨winner, others, _, leaving⟩
-  have first := leaving.mem_iff.mp (List.mem_cons_self (a := (joinedFirst, [flowOut])))
-  have second := leaving.mem_iff.mp (List.mem_cons_of_mem _ (List.mem_singleton_self (joinedSecond, [flowOut])))
-  simp at first second
-  cases first
-  simp at second
-
-def atJoin : Occurrence := { id := joinedFirst, element := joinGateway, scope := root, activation := 1 }
-def atC : Occurrence := { id := keyC, element := ⟨"C"⟩, scope := root, activation := 1 }
-
-/-- `A` arrived; `C` still works upstream of `b`, so the Inclusive join waits. -/
-def waitingAtC : State :=
-  { instanceId := "p", scopes := [{ id := root, element := none }], occurrences := [atJoin, atC],
-    slots := { parked := [arrivedA] } }
-
-/-- `C` is gone: nothing can reach `b` any more, so the join is ready without an arrival on `b`. -/
-def doneAtC : State := { waitingAtC with occurrences := [atJoin] }
-
-theorem c_reaches_b : CanReach diagram (fun _ _ => False) waitingAtC joinGateway root flowB :=
-  .inr ⟨⟨"C"⟩, flowC, ⟨by simp [joinGateway], .inl ⟨atC, by simp [waitingAtC], rfl, rfl, rfl⟩⟩,
-    .inl ⟨edgeC, by simp [diagram], rfl, rfl⟩,
-    .step edgeC flowB flowB (by simp [diagram]) (by simp [edgeC, joinGateway])
-      (.inl ⟨edgeB, by simp [diagram], rfl, rfl⟩) (.here _)⟩
-
-theorem upstream_blocks : ¬ InclusiveReady diagram (fun _ _ => False) [flowA, flowB] waitingAtC joinGateway root := by
-  rintro ⟨_, quiet⟩
-  refine quiet flowB (by simp) ?_ c_reaches_b
-  rintro ⟨arrival, member, _, flow⟩
-  simp only [waitingAtC, List.mem_singleton] at member
-  subst member
-  simp [arrivedA, flowA, flowB] at flow
-
-/-- The parked arrival at `J` is no position, and `J`'s own outgoing flow passes `J`, so nothing blocks the join. -/
-theorem nothing_upstream_ready : InclusiveReady diagram (fun _ _ => False) [flowA, flowB] doneAtC joinGateway root := by
-  refine ⟨⟨flowA, by simp, arrivedA, by simp [doneAtC, waitingAtC], rfl, rfl⟩, ?_⟩
-  intro flow _ _ reach
-  rcases reach with ⟨_, token, _⟩ | ⟨element, _, position⟩
-  · simp [doneAtC, waitingAtC] at token
-  obtain ⟨⟨other, holds⟩, _, _⟩ := position
-  rcases holds with ⟨occurrence, member, facts⟩ | ⟨child, member, parent, _⟩ | ⟨_, token, _⟩
-  · obtain ⟨_, _, same⟩ := facts
-    simp only [doneAtC, List.mem_singleton] at member
-    subst member
-    exact other same.symm
-  · simp only [doneAtC, waitingAtC, List.mem_singleton] at member
-    subst member
-    simp [root] at parent
-  · simp [doneAtC, waitingAtC] at token
-
-/-! ## Link Events -/
-
-/-- A Link Event passes its token on within the micro-step that began it: no state between micro-steps holds an
-occurrence of an element whose occurrences are unpublished, `unpublished` standing for the negation of
-`Program.publishesOccurrences`. So the publication boundary, which leaves out such an occurrence's start and end and a
-transition acting on its element, drops no fact of an occurrence that lives on (the observation contract's Link
-exception, [flow, Link Events](../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md#link-events)). -/
-def LinkPassesThrough (unpublished : ElementId → Bool) (between : State) : Prop :=
-  ∀ occurrence ∈ between.occurrences, unpublished occurrence.element = false
-
-theorem no_link_held : LinkPassesThrough (· == ⟨"L"⟩) waitingAtC := by
-  intro occurrence member
-  simp only [waitingAtC, List.mem_cons, List.not_mem_nil, or_false] at member
-  rcases member with rfl | rfl <;> simp [atJoin, atC, joinGateway]
-
-/-- A state still holding the occurrence of an unpublished element breaks the rule. -/
-theorem held_link_rejected : ¬ LinkPassesThrough (· == ⟨"C"⟩) waitingAtC := fun passes => by
-  have := passes atC (by simp [waitingAtC])
-  simp [atC] at this
 
 /-! ## The state invariant under Flow's hooks
 
@@ -833,5 +522,181 @@ theorem arriveGateway_keeps {inv : State → Prop} {settled : State → Occurren
       · exact listing flow (.inl outgoing)) ran
   · cases ran
     exact ops.armGateway _ _ _ _ holds member begun named
+
+/-! ## The reach search (DC3)
+
+`Feature.Flow.reaches` answers exactly whether a path of `reachNext` steps leads from a member of its start list to a
+target (`reaches_iff`), so it answers from the members of the start list alone: more members answer at least as much
+(`reaches_mono`) and duplicates change nothing (`reaches_congr`). Before DC3 a fuel figure bounded the search, and an
+exhausted fuel answered "reachable" whatever the graph, which no such law admits. `ReachPath` is the search's own step
+relation; relating it to `CanReach` above is the proof wave's. -/
+
+section Reach
+
+open Kernel.Feature.Flow
+
+/-- A path of the reach query's steps from `flow` to `target`, passing no join `gateway`. -/
+inductive ReachPath (ctx : Ctx) (gateway : ElementId) : FlowId → FlowId → Prop where
+  | here (flow : FlowId) : ReachPath ctx gateway flow flow
+  | step {flow after target : FlowId} :
+      after ∈ reachNext ctx gateway flow → ReachPath ctx gateway after target → ReachPath ctx gateway flow target
+
+/-- A flow the program does not declare leads nowhere. -/
+theorem reachNext_undeclared {ctx : Ctx} {gateway : ElementId} {flow : FlowId}
+    (undeclared : ¬(ctx.program.flows.map (·.id)).contains flow = true) : reachNext ctx gateway flow = [] := by
+  simp [reachNext, Laws.IL.target?_undeclared undeclared]
+
+/-- Some target is at the end of a path from `start`. -/
+def ReachLeads (ctx : Ctx) (gateway : ElementId) (targets : List FlowId) (start : FlowId) : Prop :=
+  ∃ target ∈ targets, ReachPath ctx gateway start target
+
+/-- What the search answers "reachable" for is reachable: some frontier flow leads to a target. -/
+theorem reachSearch_sound {ctx : Ctx} {gateway : ElementId} {targets seen frontier : List FlowId}
+    (found : reachSearch ctx gateway targets seen frontier = true) :
+    ∃ start ∈ frontier, ReachLeads ctx gateway targets start := by
+  fun_induction reachSearch ctx gateway targets seen frontier with
+  | case1 => simp at found
+  | case2 _ flow rest hit => exact ⟨flow, by simp, flow, by simpa using hit, .here flow⟩
+  | case3 _ flow rest _ _ ih =>
+    obtain ⟨start, mem, leads⟩ := ih found
+    exact ⟨start, List.mem_cons_of_mem _ mem, leads⟩
+  | case4 _ flow rest _ _ _ ih =>
+    obtain ⟨start, mem, leads⟩ := ih found
+    obtain ⟨target, isTarget, path⟩ := leads
+    rcases List.mem_append.mp mem with inRest | after
+    · exact ⟨start, List.mem_cons_of_mem _ inRest, target, isTarget, path⟩
+    · exact ⟨flow, by simp, target, isTarget, .step after path⟩
+  | case5 _ flow rest _ _ _ ih =>
+    obtain ⟨start, mem, leads⟩ := ih found
+    exact ⟨start, List.mem_cons_of_mem _ mem, leads⟩
+
+/-- What the search answers "unreachable" for is unreachable: when it ends without a target, no path from a seen or
+frontier flow reaches one, given that no seen flow is a target and every step out of a seen flow lands on a seen flow,
+a frontier flow or a non-target flow that leads nowhere. -/
+theorem reachSearch_complete {ctx : Ctx} {gateway : ElementId} {targets seen frontier : List FlowId}
+    (missed : reachSearch ctx gateway targets seen frontier = false)
+    (seenFree : ∀ flow ∈ seen, flow ∉ targets)
+    (closed : ∀ flow ∈ seen, ∀ after ∈ reachNext ctx gateway flow,
+      after ∈ seen ∨ after ∈ frontier ∨ (reachNext ctx gateway after = [] ∧ after ∉ targets)) :
+    ∀ start, (start ∈ seen ∨ start ∈ frontier) → ∀ target, ReachPath ctx gateway start target → target ∉ targets := by
+  fun_induction reachSearch ctx gateway targets seen frontier with
+  | case1 seen =>
+    -- Every path from a seen flow stays among seen flows and dead ends, none a target.
+    have safe : ∀ start target, ReachPath ctx gateway start target →
+        start ∈ seen ∨ (reachNext ctx gateway start = [] ∧ start ∉ targets) → target ∉ targets := by
+      intro start target path
+      induction path with
+      | here flow =>
+        rintro (mem | ⟨_, free⟩)
+        · exact seenFree flow mem
+        · exact free
+      | step after _ ih =>
+        rintro (mem | ⟨dead, _⟩)
+        · rcases closed _ mem _ after with seenAfter | none | dead
+          · exact ih (.inl seenAfter)
+          · simp at none
+          · exact ih (.inr dead)
+        · simp [dead] at after
+    intro start inSome target path
+    exact safe start target path (.inl (by simpa using inSome))
+  | case2 => simp at missed
+  | case3 seen flow rest _ old ih =>
+    have inSeen : flow ∈ seen := by simpa using old
+    intro start inSome
+    refine ih missed seenFree (fun x mem after step => ?_) start ?_
+    · rcases closed x mem after step with s | f | d
+      · exact .inl s
+      · rcases List.mem_cons.mp f with same | r
+        · exact .inl (same ▸ inSeen)
+        · exact .inr (.inl r)
+      · exact .inr (.inr d)
+    · rcases inSome with s | f
+      · exact .inl s
+      · rcases List.mem_cons.mp f with same | r
+        · exact .inl (same ▸ inSeen)
+        · exact .inr r
+  | case4 seen flow rest hit _ _ ih =>
+    have free : flow ∉ targets := by simpa using hit
+    intro start inSome
+    refine ih missed ?_ (fun x mem after step => ?_) start ?_
+    · intro x mem
+      rcases List.mem_cons.mp mem with same | s
+      · exact same ▸ free
+      · exact seenFree x s
+    · rcases List.mem_cons.mp mem with same | s
+      · subst same
+        exact .inr (.inl (List.mem_append_right _ step))
+      · rcases closed x s after step with s' | f | d
+        · exact .inl (List.mem_cons_of_mem _ s')
+        · rcases List.mem_cons.mp f with same | r
+          · exact .inl (same ▸ List.mem_cons_self)
+          · exact .inr (.inl (List.mem_append_left _ r))
+        · exact .inr (.inr d)
+    · rcases inSome with s | f
+      · exact .inl (List.mem_cons_of_mem _ s)
+      · rcases List.mem_cons.mp f with same | r
+        · exact .inl (same ▸ List.mem_cons_self)
+        · exact .inr (List.mem_append_left _ r)
+  | case5 seen flow rest hit _ undeclared ih =>
+    have free : flow ∉ targets := by simpa using hit
+    have dead : reachNext ctx gateway flow = [] := reachNext_undeclared undeclared
+    intro start inSome target path
+    -- The undeclared flow leads nowhere, so a path from it ends where it starts.
+    have fromDead : start = flow → target ∉ targets := by
+      rintro rfl
+      cases path with
+      | here => exact free
+      | step after _ => simp [dead] at after
+    refine (Classical.em (start = flow)).elim fromDead fun other => ?_
+    refine ih missed seenFree (fun x mem after step => ?_) start ?_ target path
+    · rcases closed x mem after step with s | f | d
+      · exact .inl s
+      · rcases List.mem_cons.mp f with same | r
+        · exact .inr (.inr (same ▸ ⟨dead, free⟩))
+        · exact .inr (.inl r)
+      · exact .inr (.inr d)
+    · rcases inSome with s | f
+      · exact .inl s
+      · rcases List.mem_cons.mp f with same | r
+        · exact absurd same other
+        · exact .inr r
+
+/-- `reaches` answers exactly whether some member of `start` leads to a target. -/
+theorem reaches_iff {ctx : Ctx} {gateway : ElementId} {targets start : List FlowId} :
+    reaches ctx gateway targets start = true ↔ ∃ flow ∈ start, ReachLeads ctx gateway targets flow := by
+  constructor
+  · exact reachSearch_sound
+  · rintro ⟨flow, mem, leads⟩
+    obtain ⟨target, isTarget, path⟩ := leads
+    cases answer : reaches ctx gateway targets start with
+    | true => rfl
+    | false =>
+      exact absurd isTarget (reachSearch_complete answer (by simp) (by simp) flow (.inr mem) target path)
+
+/-- **Monotone reach (DC3).** A start list holding at least the members of another answers "reachable" whenever that
+one does, so more positions never let a join fire that fewer would keep waiting. -/
+theorem reaches_mono {ctx : Ctx} {gateway : ElementId} {targets start more : List FlowId}
+    (sub : ∀ flow ∈ start, flow ∈ more) (reached : reaches ctx gateway targets start = true) :
+    reaches ctx gateway targets more = true := by
+  obtain ⟨flow, mem, leads⟩ := reaches_iff.mp reached
+  exact reaches_iff.mpr ⟨flow, sub flow mem, leads⟩
+
+/-- Start lists with the same members answer alike: a duplicate entry changes nothing, the defect class DC3 removed. -/
+theorem reaches_congr {ctx : Ctx} {gateway : ElementId} {targets start other : List FlowId}
+    (same : ∀ flow, flow ∈ start ↔ flow ∈ other) :
+    reaches ctx gateway targets start = reaches ctx gateway targets other := by
+  cases answer : reaches ctx gateway targets start with
+  | true => exact (reaches_mono (fun flow mem => (same flow).mp mem) answer).symm
+  | false =>
+    cases answer' : reaches ctx gateway targets other with
+    | false => rfl
+    | true => rw [reaches_mono (fun flow mem => (same flow).mpr mem) answer'] at answer; cases answer
+
+/-- A start list that repeats one flow answers as that flow alone, however many times it repeats. -/
+theorem reaches_duplicate {ctx : Ctx} {gateway : ElementId} {targets : List FlowId} (flow : FlowId) :
+    reaches ctx gateway targets [flow, flow] = reaches ctx gateway targets [flow] :=
+  reaches_congr fun _ => by simp
+
+end Reach
 
 end Kernel.Laws.Flow

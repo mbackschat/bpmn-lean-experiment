@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_LoopedArrivalsSecondJoin" targetNamespace="urn:bpmn-lean:scenarios:inclusive-join-compositions:looped-arrivals-second-join">
+  <process id="Process_LoopedArrivalsSecondJoin" name="A second Inclusive join beside the looped arrivals, with one unselected input" isExecutable="true">
+    <startEvent id="Started" name="Started" />
+    <inclusiveGateway id="Fork" name="Fork" gatewayDirection="Diverging" />
+    <userTask id="Hold" name="Hold" />
+    <userTask id="Hold2" name="Hold 2" />
+    <task id="Skip" name="Skip" />
+    <exclusiveGateway id="LoopStart" name="Loop start" gatewayDirection="Converging" />
+    <task id="Count" name="Count">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="n">${n + 1}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </task>
+    <parallelGateway id="Copy" name="Copy" gatewayDirection="Diverging" />
+    <exclusiveGateway id="More" name="More" gatewayDirection="Diverging" default="Flow_Done" />
+    <inclusiveGateway id="Join" name="Join" gatewayDirection="Converging" />
+    <inclusiveGateway id="Join2" name="Join 2" gatewayDirection="Converging" />
+    <userTask id="Report" name="Report" />
+    <userTask id="Report2" name="Report 2" />
+    <endEvent id="LoopEnd" name="Loop end" />
+    <endEvent id="Finished" name="Finished" />
+    <endEvent id="Finished2" name="Finished 2" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Fork" />
+    <sequenceFlow id="Flow_ToHold" sourceRef="Fork" targetRef="Hold">
+      <conditionExpression xsi:type="tFormalExpression">${true}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToHold2" sourceRef="Fork" targetRef="Hold2">
+      <conditionExpression xsi:type="tFormalExpression">${true}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToLoop" sourceRef="Fork" targetRef="LoopStart">
+      <conditionExpression xsi:type="tFormalExpression">${true}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToSkip" sourceRef="Fork" targetRef="Skip">
+      <conditionExpression xsi:type="tFormalExpression">${false}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Held" sourceRef="Hold" targetRef="Join" />
+    <sequenceFlow id="Flow_Held2" sourceRef="Hold2" targetRef="Join2" />
+    <sequenceFlow id="Flow_X" sourceRef="Skip" targetRef="Join2" />
+    <sequenceFlow id="Flow_LoopStarted" sourceRef="LoopStart" targetRef="Count" />
+    <sequenceFlow id="Flow_Counted" sourceRef="Count" targetRef="Copy" />
+    <sequenceFlow id="Flow_Copied" sourceRef="Copy" targetRef="Join" />
+    <sequenceFlow id="Flow_Check" sourceRef="Copy" targetRef="More" />
+    <sequenceFlow id="Flow_More" sourceRef="More" targetRef="LoopStart">
+      <conditionExpression xsi:type="tFormalExpression">${n &lt; limit}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Done" sourceRef="More" targetRef="LoopEnd" />
+    <sequenceFlow id="Flow_Joined" sourceRef="Join" targetRef="Report" />
+    <sequenceFlow id="Flow_Reported" sourceRef="Report" targetRef="Finished" />
+    <sequenceFlow id="Flow_Joined2" sourceRef="Join2" targetRef="Report2" />
+    <sequenceFlow id="Flow_Reported2" sourceRef="Report2" targetRef="Finished2" />
+  </process>
+</definitions>

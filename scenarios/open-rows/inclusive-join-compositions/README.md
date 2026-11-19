@@ -1,6 +1,6 @@
 # Inclusive selection and join compositions
 
-Answer-free schedules for [PC-CF-04](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list): Inclusive selection and synchronization at structured, unpaired, looping and scope-fed joins, the cell of [PC-CF-08](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) that places an Inclusive join after a Sub-Process, a Call and a Multi-Instance body, and the Inclusive part of [PC-BASIC-03](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) (declaration permutation). The [flow semantics](../../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md#inclusive-gateway) own the meaning; these inputs only exercise it, and the retained CIB Seven `2.2.0` answer is the row's target. The profile is `cibseven-2.2.0` with no source overlay; conditions are JUEL over Boolean start variables, and every wait is a User Task.
+Answer-free schedules for [PC-CF-04](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list): Inclusive selection and synchronization at structured, unpaired, looping and scope-fed joins, the cell of [PC-CF-08](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) that places an Inclusive join after a Sub-Process, a Call and a Multi-Instance body, and the Inclusive part of [PC-BASIC-03](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) (declaration permutation). The [flow semantics](../../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md#inclusive-gateway) own the meaning; these inputs only exercise it, and the retained CIB Seven `2.2.0` answer is the row's target. The profile is `cibseven-2.2.0` with no source overlay; conditions are JUEL over Boolean start variables, except the `looped-arrivals` models' literal conditions and Integer loop bound, and every wait is a User Task.
 
 ## Models
 
@@ -16,6 +16,8 @@ Answer-free schedules for [PC-CF-04](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGE
 | [scoped-join-counted](scoped-join-counted.bpmn) | The *scoped-join* source with the Multi-Instance branch replaced by the parallel Service Task *Notify item*, whose `loopCardinality` is `${count}` and whose inner instances begin asynchronously, so each one waits for an `effectResult`. |
 | [no-default-split](no-default-split.bpmn) | An Inclusive split whose two flows are both conditioned and which has no default, joined before *Decide*. |
 | [join-reach-paths](join-reach-paths.bpmn) | A Parallel fork over *Review A*, which reaches the Inclusive join *Join*; *Review B*, which ends on its own but whose interrupting `PT1M` Timer boundary leads to *Join*; and *Review C*, which reaches *Join* through the Link throw and catch `to-join`. *Join* leads to *Decide*. |
+| [looped-arrivals](looped-arrivals.bpmn) | An Inclusive split over the User Task *Hold* and a loop whose every pass increments the Integer `n` in the plain Task *Count* and sends one copy through the Parallel *Copy* to the Inclusive join *Join*, which *Hold* also enters, until `n` reaches the start value `limit`; *Join* leads to *Report*. |
+| [looped-arrivals-second-join](looped-arrivals-second-join.bpmn) | *looped-arrivals* plus the User Task *Hold 2*, selected by the split, and the plain Task *Skip*, whose split flow is conditioned `${false}`; both enter the Inclusive join *Join 2* before *Report 2*. |
 
 ## Schedules
 
@@ -45,6 +47,8 @@ Answer-free schedules for [PC-CF-04](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGE
 | [one-selected](no-default-split-one-selected.scenario.json) | no-default-split | One candidate holds. |
 | [link-and-boundary](join-reach-paths-link-and-boundary.scenario.json) | join-reach-paths | `cibseven-2.2.0`: A, then C, then B complete. The join waits for C through the Link and not for B, whose only path to it is a boundary (CIB-INT-0020), so *Decide* opens when C arrives; CIB is predicted to answer the same, since `BpmnParse` rewires the flow into a Link throw to its catch and `InclusiveGatewayActivityBehavior#isReachable` follows only outgoing transitions. |
 | [link-and-boundary-standards](join-reach-paths-link-and-boundary-standards.scenario.json) | join-reach-paths | Kernel-only, `bpmn-2.0.2`: the same journey; the standards reading follows the boundary as well, so the join waits for B and fires once B ends without reaching it. |
+| [171-then-hold](looped-arrivals-171-then-hold.scenario.json) | looped-arrivals | `limit` is 171: 171 copies have arrived at *Join* when *Hold* completes, so the join's reach starts from more parked positions than the kernel's former reach search had fuel for (DC3). |
+| [359-then-hold2](looped-arrivals-second-join-359-then-hold2.scenario.json) | looped-arrivals-second-join | `limit` is 359: *Hold 2* completes while 359 copies wait at *Join* and *Hold* is open, none of which can reach *Join 2*'s empty input from *Skip* (DC3). |
 
 ## Kernel restrictions these inputs reconcile
 

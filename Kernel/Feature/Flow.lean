@@ -138,25 +138,60 @@ def successors (ctx : Ctx) (element : Element) : List FlowId :=
   | some (header, name) => (linkCatches ctx.program header name).flatMap (·.2.outgoing)
   | none => leaving ctx element
 
-/-- Whether a token on one of `start` can reach one of `targets` without passing through `gateway`. -/
+/-- The flows a token on `flow` continues on in the reach query: none past the join `gateway`, and none after a flow
+the program does not declare. -/
+def reachNext (ctx : Ctx) (gateway : ElementId) (flow : FlowId) : List FlowId :=
+  match ctx.program.target? flow with
+  | some target => if target == gateway then [] else ((ctx.program.element? target).map (successors ctx)).getD []
+  | none => []
+
+/-- The search behind `reaches`: the flows of `frontier` in order, each expanded once, `seen` holding those expanded.
+It needs no fuel: an expansion marks a declared flow seen, so fewer declared flows are unseen, and a flow already seen
+or one the program does not declare, which leads nowhere, only shrinks the frontier; a duplicate entry costs one
+membership test. A fuel figure answered "reachable" once exhausted, which kept a join waiting behind enough parked
+duplicates (DC3). -/
+def reachSearch (ctx : Ctx) (gateway : ElementId) (targets : List FlowId) (seen frontier : List FlowId) : Bool :=
+  match frontier with
+  | [] => false
+  | flow :: rest =>
+    if targets.contains flow then true
+    else if _old : seen.contains flow then reachSearch ctx gateway targets seen rest
+    else if _declared : (ctx.program.flows.map (·.id)).contains flow then
+      reachSearch ctx gateway targets (flow :: seen) (rest ++ reachNext ctx gateway flow)
+    else reachSearch ctx gateway targets seen rest
+termination_by ((ctx.program.flows.map (·.id)).countP (fun declared => !seen.contains declared), frontier.length)
+decreasing_by
+  · exact Prod.Lex.right _ (by simp)
+  · apply Prod.Lex.left
+    have declared : flow ∈ ctx.program.flows.map (·.id) := by simpa using _declared
+    generalize ctx.program.flows.map (·.id) = flows at declared ⊢
+    induction flows with
+    | nil => cases declared
+    | cons head tail ih =>
+      rw [List.countP_cons, List.countP_cons]
+      by_cases same : head = flow
+      · subst same
+        have le : tail.countP (fun declared => !(head :: seen).contains declared) ≤
+            tail.countP (fun declared => !seen.contains declared) :=
+          List.countP_mono_left fun x _ unseen => by simp_all
+        simp only [List.contains_cons, beq_self_eq_true, Bool.true_or, Bool.not_true, _old] at le ⊢
+        simp only [Bool.false_eq_true, ite_false, Bool.not_false, ite_true]
+        omega
+      · have inTail : flow ∈ tail := by
+          rcases List.mem_cons.mp declared with first | rest
+          · exact absurd first.symm same
+          · exact rest
+        have step := ih inTail
+        have unchanged : (!(flow :: seen).contains head) = !seen.contains head := by simp [same]
+        rw [unchanged]
+        omega
+  · exact Prod.Lex.right _ (by simp)
+
+/-- Whether a token on one of `start` can reach one of `targets` without passing through `gateway`: the set of flows
+reachable from `start` holds a target, so it answers from the members of `start` alone, and from more members at
+least as much (`Laws.Flow.reaches_mono`). -/
 def reaches (ctx : Ctx) (gateway : ElementId) (targets start : List FlowId) : Bool :=
-  let program := ctx.program
-  let rec go (fuel : Nat) (frontier seen : List FlowId) : Bool :=
-    match fuel, frontier with
-    | _, [] => false
-    -- The fuel bounds every visit of every flow by every edge into it, so it is never exhausted; running out
-    -- answers "reachable", which only keeps the join waiting.
-    | 0, _ :: _ => true
-    | fuel + 1, flow :: rest =>
-      if targets.contains flow then true
-      else if seen.contains flow then go fuel rest seen
-      else
-        let next := match program.target? flow with
-          | some target =>
-            if target == gateway then [] else ((program.element? target).map (successors ctx)).getD []
-          | none => []
-        go fuel (rest ++ next) (flow :: seen)
-  go ((program.flows.length + 1) * (program.flows.length + 1)) start []
+  reachSearch ctx gateway targets [] start
 
 /-- The flows from which the remaining work of scope occurrence `scope` continues, excluding the tokens parked at
 `gateway`: queued tokens, the elements of open items and child scope occurrences, and tokens parked at other
