@@ -291,7 +291,7 @@ theorem enterScope_wellFormed {s : State} (formed : WellFormed program s) (eleme
       unissued := entered_unissued stands element, scopeGrows := grows, entered, occurrenceOrdinals := rfl, scopes := rfl,
       variables := rfl, occurrences := rfl, itemMap := ⟨rfl, rfl⟩, tokens := rfl, signals := rfl, activations := rfl, journal := rfl, draft := rfl, status := rfl, failure := rfl,
       instanceId := rfl, slots := .same rfl }
-    stands rfl ownerBegun
+    stands (ScopeOccurrenceId.parent?_child _ _ _) ownerBegun
 
 /-- A well-formed state has an issue history: its root's key was issued. -/
 theorem WellFormed.historic {s : State} (formed : WellFormed program s) : Historic s := by
@@ -313,7 +313,8 @@ then its key was issued below the counter. -/
 theorem scopes_fresh {s : State} (formed : WellFormed program s) {parent : ScopeOccurrenceId} {element : ElementId} :
     ∀ entry ∈ s.scopes, entry.id ≠ parent.child element (slotCount s parent element) :=
   fun entry inside same =>
-    entered_unissued (parent_stands formed inside (by rw [same])) element (same ▸ formed.issued.scopes entry inside)
+    entered_unissued (ScopeOccurrenceId.ofSegments_eta parent ▸
+      parent_stands formed inside (rest := parent.segments) (by rw [same])) element (same ▸ formed.issued.scopes entry inside)
 
 /-- A Call entering its called root below its own scope occurrence, which stands, takes a key no history of the state
 held, and every history grows into one that holds it. -/
@@ -354,7 +355,7 @@ theorem enterCalled_wellFormed {s : State} (formed : WellFormed program s) (call
       unissued := entered_unissued stands call.element, scopeGrows := grows, entered, occurrenceOrdinals := rfl, scopes := rfl,
       variables := rfl, occurrences := rfl, itemMap := ⟨rfl, rfl⟩, tokens := rfl, signals := rfl, activations := rfl, journal := rfl, draft := rfl, status := rfl, failure := rfl,
       instanceId := rfl, slots := ⟨fun _ inside => inside, fun _ inside => inside, fun _ inside => inside⟩ } stands
-    rfl fun id named => ⟨call, member, Option.some.inj named, begun, rfl⟩
+    (ScopeOccurrenceId.parent?_child _ _ _) fun id named => ⟨call, member, Option.some.inj named, begun, rfl⟩
 
 /-- A begun Call that enters its Activity's locals and then its called root, both below its own scope occurrence for its
 own element, gives them distinct keys: the two draw on the one counter of that parent and element, so the root's key

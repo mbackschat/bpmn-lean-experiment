@@ -255,7 +255,7 @@ def keyed (bindings : List (String × Value)) : List (String × Value) :=
 
 namespace State
 
-def root : ScopeOccurrenceId := ⟨[]⟩
+def root : ScopeOccurrenceId := .ofSegments []
 
 /-- A fresh process instance: one root scope occurrence with the given variables, `keyed`. -/
 def initial (instanceId : String) (variables : List (String × Value)) (businessKey : Option String := none) : State :=
@@ -307,13 +307,13 @@ def stands (state : State) (scope : ScopeOccurrenceId) : Bool :=
 /-- The root of the process instance `scope` belongs to: the nearest called-instance root, else the process root. The
 search climbs `scope`'s key while its scope occurrences stand. -/
 def instanceRoot (state : State) (scope : ScopeOccurrenceId) : ScopeOccurrenceId :=
-  let rec go : List ScopeSegment → ScopeOccurrenceId
-    | [] => root
-    | segment :: rest =>
-      if state.calledRoot ⟨segment :: rest⟩ then ⟨segment :: rest⟩
-      else if state.stands ⟨segment :: rest⟩ then go rest
+  let rec go : (segments : List ScopeSegment) → (scope : ScopeOccurrenceId) → scope.segments = segments → ScopeOccurrenceId
+    | [], _, _ => root
+    | _ :: rest, scope, segments =>
+      if state.calledRoot scope then scope
+      else if state.stands scope then go rest (scope.up segments) rfl
       else root
-  go scope.segments
+  go scope.segments scope rfl
 
 /-- The scope occurrences in which something remains: a token, an open item that keeps it alive, a begun occurrence, a
 child scope occurrence or a feature slot entry, in one pass over the state. -/
@@ -493,23 +493,25 @@ def frame (state : State) (program : Program) (scope : ScopeOccurrenceId) : List
 /-- Variables visible from `scope`, innermost first, up to the root of its process instance, each frame's as it
 `shows` them. -/
 def visible (state : State) (program : Program) (scope : ScopeOccurrenceId) : List (String × Value) :=
-  let rec go : List ScopeSegment → List (String × Value)
-    | [] => state.frame program root
-    | segment :: rest =>
-      state.frame program ⟨segment :: rest⟩ ++
-        if state.calledRoot ⟨segment :: rest⟩ then [] else if state.stands ⟨segment :: rest⟩ then go rest else []
-  go scope.segments
+  let rec go : (segments : List ScopeSegment) → (scope : ScopeOccurrenceId) → scope.segments = segments →
+      List (String × Value)
+    | [], _, _ => state.frame program root
+    | _ :: rest, scope, segments =>
+      state.frame program scope ++
+        if state.calledRoot scope then [] else if state.stands scope then go rest (scope.up segments) rfl else []
+  go scope.segments scope rfl
 
 /-- The nearest occurrence of the Scope `element` from `scope` outward, up to the root of its process instance: the
 occurrence whose frame holds the items `element` declares for a site in `scope`. -/
 def declaring? (state : State) (scope : ScopeOccurrenceId) (element : ElementId) : Option ScopeOccurrenceId :=
-  let rec go : List ScopeSegment → Option ScopeOccurrenceId
-    | [] => if ((state.scopes.find? (·.id == root)).bind (·.element)) == some element then some root else none
-    | segment :: rest =>
-      if ((state.scopes.find? (·.id == ⟨segment :: rest⟩)).bind (·.element)) == some element then some ⟨segment :: rest⟩
-      else if state.calledRoot ⟨segment :: rest⟩ then none
-      else if state.stands ⟨segment :: rest⟩ then go rest else none
-  go scope.segments
+  let rec go : (segments : List ScopeSegment) → (scope : ScopeOccurrenceId) → scope.segments = segments →
+      Option ScopeOccurrenceId
+    | [], _, _ => if ((state.scopes.find? (·.id == root)).bind (·.element)) == some element then some root else none
+    | _ :: rest, scope, segments =>
+      if ((state.scopes.find? (·.id == scope)).bind (·.element)) == some element then some scope
+      else if state.calledRoot scope then none
+      else if state.stands scope then go rest (scope.up segments) rfl else none
+  go scope.segments scope rfl
 
 /-- Whether the own variables of `scope` bind `name`. -/
 def bindsOwn (state : State) (scope : ScopeOccurrenceId) (name : String) : Bool :=
@@ -517,13 +519,14 @@ def bindsOwn (state : State) (scope : ScopeOccurrenceId) (name : String) : Bool 
 
 /-- The innermost scope visible from `scope` that declares `name`, up to the root of its process instance. -/
 def owner? (state : State) (scope : ScopeOccurrenceId) (name : String) : Option ScopeOccurrenceId :=
-  let rec go : List ScopeSegment → Option ScopeOccurrenceId
-    | [] => if state.bindsOwn root name then some root else none
-    | segment :: rest =>
-      if state.bindsOwn ⟨segment :: rest⟩ name then some ⟨segment :: rest⟩
-      else if state.calledRoot ⟨segment :: rest⟩ then none
-      else if state.stands ⟨segment :: rest⟩ then go rest else none
-  go scope.segments
+  let rec go : (segments : List ScopeSegment) → (scope : ScopeOccurrenceId) → scope.segments = segments →
+      Option ScopeOccurrenceId
+    | [], _, _ => if state.bindsOwn root name then some root else none
+    | _ :: rest, scope, segments =>
+      if state.bindsOwn scope name then some scope
+      else if state.calledRoot scope then none
+      else if state.stands scope then go rest (scope.up segments) rfl else none
+  go scope.segments scope rfl
 
 /-- Set `name` in `target`'s own variables and log the write. -/
 def setVariable (state : State) (target : ScopeOccurrenceId) (name : String) (value : Value) : State :=

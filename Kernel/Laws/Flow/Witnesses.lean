@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Laws.Flow.Rules
+public import Kernel.Laws.State.Key
 
 /-! # Laws of flow: the witnesses
 
@@ -31,7 +32,7 @@ def edgeC : Flow := { id := flowC, source := ⟨"C"⟩, target := ⟨"B"⟩ }
 def edgeOut : Flow := { id := flowOut, source := joinGateway, target := ⟨"D"⟩ }
 def diagram : List Flow := [edgeA, edgeB, edgeC, edgeOut]
 
-def root : ScopeOccurrenceId := ⟨[]⟩
+def root : ScopeOccurrenceId := .ofSegments []
 
 /-- The occurrence keys of the witnesses: three of `J` and one of `C`, all in the root. -/
 @[simp] def joinedFirst : OccurrenceId := { scope := root, element := joinGateway, ordinal := 0 }
@@ -168,7 +169,7 @@ theorem nothing_upstream_ready : InclusiveReady diagram (fun _ _ => False) [flow
     exact other same.symm
   · simp only [doneAtC, waitingAtC, List.mem_singleton] at member
     subst member
-    simp [root] at parent
+    simp [root, ScopeOccurrence.parent] at parent
   · simp [doneAtC, waitingAtC] at token
 
 /-! ## Link Events -/

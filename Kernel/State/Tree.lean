@@ -24,7 +24,7 @@ def below (outer : List ScopeSegment) : List ScopeSegment → Bool
 def ranks (state : State) (outer : List ScopeSegment) : List ScopeSegment → List Nat
   | [] => []
   | segment :: rest =>
-    if segment :: rest == outer then [] else ranks state outer rest ++ [state.scopes.findIdx (·.id == ⟨segment :: rest⟩)]
+    if segment :: rest == outer then [] else ranks state outer rest ++ [state.scopes.findIdx (·.id.segments == segment :: rest)]
 
 /-- The scope occurrences inside `scope`, transitively, including `scope`, the deepest last: breadth first, each level
 in the order of its parents and then of entry, which is the order of their places on the way down (`ranks`), shorter

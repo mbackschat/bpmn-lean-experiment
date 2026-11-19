@@ -1,6 +1,7 @@
 module
 
 public import Kernel.State
+public import Kernel.Laws.State.Key
 
 /-! # Laws of the kernel state: the ghost issue history of scope occurrence keys
 
@@ -30,13 +31,8 @@ abbrev slotCount (s : State) (parent : ScopeOccurrenceId) (element : ElementId) 
   s.scopeOrdinals.getD { parent, element } 0
 
 theorem child_eq (parent : ScopeOccurrenceId) (element : ElementId) (ordinal : Nat) :
-    parent.child element ordinal = ⟨{ element, ordinal } :: parent.segments⟩ := by
-  unfold ScopeOccurrenceId.child; rfl
-
-@[simp] theorem parent?_cons (segment : ScopeSegment) (rest : List ScopeSegment) :
-    (⟨segment :: rest⟩ : ScopeOccurrenceId).parent? = some ⟨rest⟩ := rfl
-
-@[simp] theorem parent?_nil : (⟨[]⟩ : ScopeOccurrenceId).parent? = none := rfl
+    parent.child element ordinal = .ofSegments ({ element, ordinal } :: parent.segments) :=
+  ScopeOccurrenceId.ext (ScopeOccurrenceId.ofSegments_segments _).symm
 
 @[simp] theorem ScopeOccurrence.parent_eq (scope : ScopeOccurrence) : scope.parent = scope.id.parent? := rfl
 
@@ -46,9 +42,9 @@ it is closed under parents, and a key of it whose parent stands is below that pa
 structure ScopeHistoryOn (scopes : List ScopeOccurrence) (ordinals : TreeMap ScopeSlot Nat compare)
     (H : ScopeOccurrenceId → Prop) : Prop where
   standing : ∀ scope ∈ scopes, H scope.id
-  closed : ∀ segment rest, H ⟨segment :: rest⟩ → H ⟨rest⟩
-  below : ∀ segment rest, H ⟨segment :: rest⟩ → ⟨rest⟩ ∈ scopes.map (·.id) →
-    segment.ordinal < ordinals.getD { parent := ⟨rest⟩, element := segment.element } 0
+  closed : ∀ segment rest, H (.ofSegments (segment :: rest)) → H (.ofSegments rest)
+  below : ∀ segment rest, H (.ofSegments (segment :: rest)) → (.ofSegments rest) ∈ scopes.map (·.id) →
+    segment.ordinal < ordinals.getD { parent := (.ofSegments rest), element := segment.element } 0
 
 /-- `H` is an issue history of `s`. It reads only the scope occurrences and their counters, so a change of any other
 field keeps it definitionally. -/
@@ -88,7 +84,7 @@ theorem ScopeIssued.historic {s : State} {x : ScopeOccurrenceId} (issued : Scope
 
 /-- An issued key's parent was issued. -/
 theorem ScopeIssued.parent {s : State} {segment : ScopeSegment} {rest : List ScopeSegment}
-    (issued : ScopeIssued s ⟨segment :: rest⟩) : ScopeIssued s ⟨rest⟩ :=
+    (issued : ScopeIssued s (.ofSegments (segment :: rest))) : ScopeIssued s (.ofSegments rest) :=
   let ⟨H, history, held⟩ := issued
   ⟨H, history, history.closed segment rest held⟩
 
@@ -118,9 +114,9 @@ theorem ScopeGrows.of_same {s t : State} (keys : standingKeys t = standingKeys s
           history.standing_key (keys ▸ List.mem_map_of_mem (f := ScopeOccurrence.id) member)
         closed := history.closed
         below := fun segment rest held standing => by
-          change ⟨rest⟩ ∈ standingKeys t at standing
+          change (.ofSegments rest) ∈ standingKeys t at standing
           rw [ordinals]
-          exact history.below segment rest held (show ⟨rest⟩ ∈ standingKeys s from keys ▸ standing) },
+          exact history.below segment rest held (show (.ofSegments rest) ∈ standingKeys s from keys ▸ standing) },
     fun _ held => held⟩
 
 /-- A change whose standing keys stood before, and which keeps the counter of every parent that stands after it, keeps
@@ -132,7 +128,7 @@ theorem ScopeGrows.shrink {s t : State} (keys : ∀ x ∈ standingKeys t, x ∈ 
           history.standing_key (keys _ (List.mem_map_of_mem (f := ScopeOccurrence.id) member))
         closed := history.closed
         below := fun segment rest held standing => by
-          change segment.ordinal < slotCount t ⟨rest⟩ segment.element
+          change segment.ordinal < slotCount t (.ofSegments rest) segment.element
           rw [ordinals _ standing]
           exact history.below segment rest held (keys _ standing) },
     fun _ held => held⟩
@@ -140,8 +136,11 @@ theorem ScopeGrows.shrink {s t : State} (keys : ∀ x ∈ standingKeys t, x ∈ 
 /-- A key under a standing parent whose ordinal its parent's counter has not reached was not issued. -/
 theorem unissued_of_count {s : State} {parent : ScopeOccurrenceId} (standing : parent ∈ standingKeys s) {element : ElementId}
     {ordinal : Nat} (above : slotCount s parent element ≤ ordinal) : ¬ ScopeIssued s (parent.child element ordinal) :=
-  fun ⟨_, history, held⟩ => Nat.lt_irrefl _ (Nat.lt_of_lt_of_le
-    (history.below { element, ordinal } parent.segments held standing) above)
+  fun ⟨_, history, held⟩ => by
+    have lt := history.below { element, ordinal } parent.segments (child_eq parent element ordinal ▸ held)
+      ((ScopeOccurrenceId.ofSegments_eta parent).symm ▸ standing)
+    rw [ScopeOccurrenceId.ofSegments_eta] at lt
+    exact Nat.lt_irrefl _ (Nat.lt_of_lt_of_le lt above)
 
 /-- The key a parent's counter issues next was not issued: its ordinal is not below the counter. -/
 theorem entered_unissued {s : State} {parent : ScopeOccurrenceId} (standing : parent ∈ standingKeys s) (element : ElementId) :
@@ -151,8 +150,8 @@ theorem entered_unissued {s : State} {parent : ScopeOccurrenceId} (standing : pa
 /-- A state whose standing keys are closed under parents and below their standing parents' counters has a history:
 its standing keys. -/
 theorem historic_of_standing {s : State}
-    (closed : ∀ segment rest, ⟨segment :: rest⟩ ∈ standingKeys s → ⟨rest⟩ ∈ standingKeys s)
-    (below : ∀ segment rest, ⟨segment :: rest⟩ ∈ standingKeys s → segment.ordinal < slotCount s ⟨rest⟩ segment.element) :
+    (closed : ∀ segment rest, (.ofSegments (segment :: rest)) ∈ standingKeys s → (.ofSegments rest) ∈ standingKeys s)
+    (below : ∀ segment rest, (.ofSegments (segment :: rest)) ∈ standingKeys s → segment.ordinal < slotCount s (.ofSegments rest) segment.element) :
     Historic s :=
   ⟨(· ∈ standingKeys s),
     { standing := fun _ member => List.mem_map_of_mem (f := ScopeOccurrence.id) member
@@ -177,17 +176,17 @@ theorem ScopeGrows.enter {s t : State} {parent : ScopeOccurrenceId} {element : E
       closed := fun segment rest held => by
         rcases held with old | new
         · exact .inl (history.closed segment rest old)
-        · simp only [fresh, child_eq, ScopeOccurrenceId.mk.injEq, List.cons.injEq] at new
-          rw [new.2]
+        · simp only [fresh, child_eq, ScopeOccurrenceId.ofSegments_inj, List.cons.injEq] at new
+          rw [new.2, ScopeOccurrenceId.ofSegments_eta]
           exact .inl (history.standing_key standing)
       below := fun segment rest held standing' => by
-        change segment.ordinal < slotCount t ⟨rest⟩ segment.element
-        change ⟨rest⟩ ∈ standingKeys t at standing'
+        change segment.ordinal < slotCount t (.ofSegments rest) segment.element
+        change (.ofSegments rest) ∈ standingKeys t at standing'
         rcases held with old | new
         · have parentHeld := history.closed segment rest old
-          by_cases before : (⟨rest⟩ : ScopeOccurrenceId) ∈ standingKeys s
-          · have lt : segment.ordinal < slotCount s ⟨rest⟩ segment.element := history.below segment rest old before
-            by_cases same : ((⟨rest⟩ : ScopeOccurrenceId), segment.element) = (parent, element)
+          by_cases before : (.ofSegments rest : ScopeOccurrenceId) ∈ standingKeys s
+          · have lt : segment.ordinal < slotCount s (.ofSegments rest) segment.element := history.below segment rest old before
+            by_cases same : ((.ofSegments rest : ScopeOccurrenceId), segment.element) = (parent, element)
             · simp only [Prod.mk.injEq] at same
               obtain ⟨p, e⟩ := same
               rw [p, e] at lt ⊢
@@ -197,13 +196,13 @@ theorem ScopeGrows.enter {s t : State} {parent : ScopeOccurrenceId} {element : E
           · rw [keys] at standing'
             rcases List.mem_append.mp standing' with old' | new'
             · exact absurd old' before
-            · have : (⟨rest⟩ : ScopeOccurrenceId) = fresh := List.mem_singleton.mp new'
+            · have : (.ofSegments rest : ScopeOccurrenceId) = fresh := List.mem_singleton.mp new'
               rw [this] at parentHeld
               exact absurd ⟨H, history, parentHeld⟩ (entered_unissued standing element)
-        · simp only [fresh, child_eq, ScopeOccurrenceId.mk.injEq, List.cons.injEq] at new
+        · simp only [fresh, child_eq, ScopeOccurrenceId.ofSegments_inj, List.cons.injEq] at new
           obtain ⟨rfl, rfl⟩ := new
-          show slotCount s parent element < slotCount t ⟨parent.segments⟩ element
-          rw [show (⟨parent.segments⟩ : ScopeOccurrenceId) = parent from rfl, counted]
+          show slotCount s parent element < slotCount t (.ofSegments parent.segments) element
+          rw [ScopeOccurrenceId.ofSegments_eta, counted]
           omega }
   exact ⟨fun H history => ⟨_, grows H history, fun _ held => .inl held⟩,
     fun ⟨H, history⟩ => ⟨_, grows H history, .inr rfl⟩⟩

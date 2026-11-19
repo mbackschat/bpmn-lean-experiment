@@ -233,10 +233,14 @@ section Witnesses
 variable (program : Program) (definition : DefinitionRef)
 
 /-- The key of the witnesses' called root, the first scope occurrence of `Call` in the process root. -/
-def calledKey : ScopeOccurrenceId := ⟨[{ element := ⟨"Call"⟩, ordinal := 0 }]⟩
+def calledKey : ScopeOccurrenceId := .ofSegments [{ element := ⟨"Call"⟩, ordinal := 0 }]
 
 /-- A key below the process root that `placedState` never issued: its root's counter of `A` issued none. -/
-def strayKey : ScopeOccurrenceId := ⟨[{ element := ⟨"A"⟩, ordinal := 0 }]⟩
+def strayKey : ScopeOccurrenceId := .ofSegments [{ element := ⟨"A"⟩, ordinal := 0 }]
+
+/-- `strayKey` as the key the root's counter of `A` would issue first. -/
+theorem stray_child : strayKey = (.ofSegments [] : ScopeOccurrenceId).child ⟨"A"⟩ 0 := by
+  rw [Laws.State.child_eq]; simp [strayKey]
 
 /-- The occurrence of `Call` that owns the called root, and an occurrence of `A` in a scope occurrence. -/
 def callOccurrence : OccurrenceId := { scope := State.root, element := ⟨"Call"⟩, ordinal := 0 }
@@ -343,9 +347,12 @@ theorem shared_root_rejected :
 theorem unissued_root_rejected :
     ¬ PlacedLane program { placedState definition with
         slots := { instances := [{ root := State.root }, { root := strayKey, definition := some definition }] } } :=
-  fun lane => Laws.State.unissued_of_count (parent := ⟨[]⟩) (element := ⟨"A"⟩) (ordinal := 0)
-    (by simp [placedState]) (by simp [Laws.State.slotCount, placedState, Std.ExtTreeMap.getD_insert])
-    (lane.rootsIssued _ (List.mem_of_mem_tail (List.mem_singleton_self _)))
+  fun lane => by
+    have issued : Laws.State.ScopeIssued _ strayKey := lane.rootsIssued _ (List.mem_of_mem_tail (List.mem_singleton_self _))
+    rw [stray_child] at issued
+    exact Laws.State.unissued_of_count (parent := .ofSegments []) (element := ⟨"A"⟩) (ordinal := 0)
+      (by simp [placedState, Laws.State.root_eq]) (by simp [Laws.State.slotCount, placedState, Std.ExtTreeMap.getD_insert, Laws.State.root_eq])
+      issued
 
 /-- A process root entry running a called definition breaks `PlacedLane.rootDefinition`. -/
 theorem called_root_rejected :
@@ -358,10 +365,10 @@ theorem misplaced_scope_rejected :
     ¬ PlacedLane { program with elements := [] } { placedState definition with
         scopes := (placedState definition).scopes ++ [{ id := calledKey.child ⟨"S"⟩ 0, element := some ⟨"S"⟩ }] } :=
   fun lane => placed_misplaced (definition := definition)
-    (lane.scopes _ (List.mem_append_right _ (List.mem_singleton_self _)) _ _ rfl rfl
+    (lane.scopes _ (List.mem_append_right _ (List.mem_singleton_self _)) _ calledKey rfl (Laws.State.ScopeOccurrenceId.parent?_child _ _ _)
       (by simp [scopeIds, placedState, placedCalled]))
     (placed_root (.called placedCalled "I-call" (by simp [placedState]) rfl)
-      (by simp [scopeIds, placedState, placedCalled, Laws.State.root_eq]) rfl)
+      (by simp [scopeIds, placedState, placedCalled, Laws.State.root_eq, Laws.State.ScopeOccurrenceId.eq_child_iff]) rfl)
     (by simp [placedState])
 
 /-- A flow token of the root process inside a called instance breaks `PlacedLane.tokens`. -/
@@ -446,9 +453,11 @@ theorem misplaced_complete_rejected (flow : FlowId) (target : ElementId)
 theorem unissued_occur_rejected :
     ¬ PlacedLane program { placedState definition with signals := [.occur ⟨"A"⟩ strayKey .outgoing [] .outward] } :=
   fun lane => by
-    exact Laws.State.unissued_of_count (parent := ⟨[]⟩) (element := ⟨"A"⟩) (ordinal := 0)
-      (by simp [placedState]) (by simp [Laws.State.slotCount, placedState, Std.ExtTreeMap.getD_insert])
-      (lane.issued strayKey (.inl ⟨⟨"A"⟩, .outgoing, .inl ⟨[], .outward, List.mem_singleton_self _⟩⟩))
+    have issued := lane.issued strayKey (.inl ⟨⟨"A"⟩, .outgoing, .inl ⟨[], .outward, List.mem_singleton_self _⟩⟩)
+    rw [stray_child] at issued
+    exact Laws.State.unissued_of_count (parent := .ofSegments []) (element := ⟨"A"⟩) (ordinal := 0)
+      (by simp [placedState, Laws.State.root_eq]) (by simp [Laws.State.slotCount, placedState, Std.ExtTreeMap.getD_insert, Laws.State.root_eq])
+      issued
 
 /-- A join wait outside its occurrence's scope occurrence breaks `PlacedLane.waits`: a completion offered where the
 wait lies, here in the called root, would name flows of another process than the occurrence's, here the root's. -/

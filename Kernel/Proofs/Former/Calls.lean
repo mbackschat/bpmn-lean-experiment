@@ -301,14 +301,14 @@ A Call `CallIt`'s first occurrence in the process root and called roots of ordin
 a state the others accept. -/
 
 /-- The process root of the witnesses. -/
-def witnessRoot : ScopeOccurrence := { id := ⟨[]⟩, element := none }
+def witnessRoot : ScopeOccurrence := { id := (.ofSegments []), element := none }
 
 /-- The key of `CallIt`'s first occurrence in the process root. -/
-def callItKey : OccurrenceId := { scope := ⟨[]⟩, element := ⟨"CallIt"⟩, ordinal := 0 }
+def callItKey : OccurrenceId := { scope := (.ofSegments []), element := ⟨"CallIt"⟩, ordinal := 0 }
 
 /-- A called root of the witnesses, the `ordinal`th of `CallIt` in the process root, owned by `owner`. -/
 def witnessCalled (ordinal : Nat) (owner : Option OccurrenceId) : ScopeOccurrence :=
-  { id := ⟨[{ element := ⟨"CallIt"⟩, ordinal }]⟩, element := some ⟨"CallIt"⟩, occurrence := owner
+  { id := (.ofSegments [{ element := ⟨"CallIt"⟩, ordinal }]), element := some ⟨"CallIt"⟩, occurrence := owner
     calledInstance := some "I1-call" }
 
 /-- A called root that no occurrence owns breaks `Named`. -/
@@ -320,7 +320,7 @@ theorem unowned_root_rejected (program : Program) :
 and activation, so the instance's invocation would name its root alike. -/
 theorem body_owner_rejected :
     ¬ Roled { instanceId := "I1", scopes := [witnessRoot, witnessCalled 2 (some callItKey)]
-              occurrences := [{ id := callItKey, element := ⟨"CallIt"⟩, scope := ⟨[]⟩, activation := 1
+              occurrences := [{ id := callItKey, element := ⟨"CallIt"⟩, scope := (.ofSegments []), activation := 1
                                 role := .multiInstanceBody }] } := fun roled => by
   have := roled (witnessCalled 2 (some callItKey)) (by simp) rfl _ (List.mem_singleton_self _) rfl
   cases this
@@ -329,7 +329,7 @@ theorem body_owner_rejected :
 theorem nonActivity_owner_rejected (program : Program) :
     ¬ ActivityOwners { program with elements := [] }
       { instanceId := "I1", scopes := [witnessRoot, witnessCalled 2 (some callItKey)]
-        occurrences := [{ id := callItKey, element := ⟨"CallIt"⟩, scope := ⟨[]⟩, activation := 1 }] } := fun owners => by
+        occurrences := [{ id := callItKey, element := ⟨"CallIt"⟩, scope := (.ofSegments []), activation := 1 }] } := fun owners => by
   have activity := owners (witnessCalled 2 (some callItKey)) (by simp) rfl _ (List.mem_singleton_self _) rfl
   cases found : ({ program with elements := [] } : Program).element? ⟨"CallIt"⟩ with
   | none => simp [found] at activity
@@ -421,7 +421,7 @@ private theorem enterLocal_facts {program : Program} {header : Header} {inputs :
         · simp only [slot, ↓reduceIte]; rw [Std.LawfulEqOrd.eq_of_compare slot]; omega
         · simp only [slot, ↓reduceIte]; omega
       · rw [List.mem_singleton.mp new] at same
-        simp only [Laws.State.child_eq, ScopeOccurrenceId.mk.injEq, List.cons.injEq, ScopeSegment.mk.injEq] at same
+        simp only [Laws.State.child_eq, Laws.State.ScopeOccurrenceId.ofSegments_inj, List.cons.injEq, ScopeSegment.mk.injEq] at same
         obtain ⟨⟨elements, counted⟩, _⟩ := same
         rw [← elements] at counted
         simp [Laws.State.slotCount, Std.ExtTreeMap.getD_insert_self] at counted

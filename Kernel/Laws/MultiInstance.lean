@@ -278,6 +278,7 @@ theorem enterInstance_entering (ops : MultiInstanceOps program inv settled)
       rcases List.mem_append.mp member with present | added
       · exact absurd named (apart entry present)
       · rw [List.mem_singleton.mp added]
+        simp [Kernel.Laws.State.ScopeOccurrenceId.parent?_child]
   · rcases List.mem_append.mp inside with old | new
     · obtain ⟨bare, standing, rest⟩ := queued request old
       obtain ⟨incoming, entry, member, facts⟩ := rest
@@ -322,7 +323,7 @@ theorem enterInstance_opening (ops : MultiInstanceOps program inv settled) {ctx 
   · rcases List.mem_append.mp member with old | new
     · exact opening.scopes entry old
     · rw [List.mem_singleton.mp new]
-      exact .inr ⟨unissuedStart, rfl, rfl, rfl⟩
+      exact .inr ⟨unissuedStart, Kernel.Laws.State.ScopeOccurrenceId.parent?_child _ _ _, rfl, rfl⟩
   · have differs : index ≠ other := fun same => outside (by simp [same])
     rw [List.getElem?_set_ne differs]
     exact untouched other fun inside => outside (List.mem_append_left _ inside)

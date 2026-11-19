@@ -143,8 +143,8 @@ def KeyVerdict (evaluation : Evaluation) (verdict : Except Failure String) : Pro
 A root scope occurrence whose instance has business key `k` and variable `order = 7`, and a waiting item's scope
 occurrence of `Sub` below it holding `step = "a"`. -/
 
-def root : ScopeOccurrenceId := ⟨[]⟩
-def inner : ScopeOccurrenceId := ⟨[{ element := ⟨"Sub"⟩, ordinal := 0 }]⟩
+def root : ScopeOccurrenceId := .ofSegments []
+def inner : ScopeOccurrenceId := .ofSegments [{ element := ⟨"Sub"⟩, ordinal := 0 }]
 
 def rootScope : ScopeOccurrence := { id := root, element := none }
 def innerScope : ScopeOccurrence := { id := inner, element := some ⟨"Sub"⟩ }
@@ -161,7 +161,8 @@ def stepIs (value : Value) : CorrelationMatch := { target := .localVariable "ste
 def keyIs (key : String) : CorrelationMatch := { target := .businessKey, expected := .string key }
 
 theorem root_of_inner : RootOf waiting inner root := by
-  refine ⟨.parent innerScope root root (by simp [waiting]) rfl (.refl _), ⟨rootScope, by simp [waiting], rfl, .inl rfl⟩, ?_⟩
+  refine ⟨.parent innerScope root root (by simp [waiting]) (by simp [innerScope, inner, root]) (.refl _),
+    ⟨rootScope, by simp [waiting], rfl, .inl (by simp [rootScope, root])⟩, ?_⟩
   intro nearer _ _ ⟨scope, member, same, kind⟩
   simp only [waiting, List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl

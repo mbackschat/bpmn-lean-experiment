@@ -24,9 +24,9 @@ private theorem sample_instance (kind : OpenKind) :
   have parentless : ∀ entry ∈ (sample kind).scopes, entry.parent = none → entry.id = State.root := by
     simp [sample, rootScope, childScope, processRoot, subScope, root_eq]
   have root : InstanceIn (sample kind) processRoot (sample kind).instanceId [rootScope] :=
-    .root rootScope (by simp [sample]) rfl rfl
+    .root rootScope (by simp [sample]) (by simp [rootScope, processRoot]) (by simp [rootScope, processRoot])
   have sub : InstanceIn (sample kind) subScope (sample kind).instanceId [childScope, rootScope] :=
-    .up childScope processRoot _ [rootScope] (by simp [sample]) rfl rfl root
+    .up childScope processRoot _ [rootScope] (by simp [sample]) rfl (by simp [childScope, subScope, processRoot]) root
   exact ⟨instanceOf_eq nodup parentless root (by simp), instanceOf_eq nodup parentless sub
     (by simp [rootScope, childScope, processRoot, subScope])⟩
 
@@ -105,12 +105,17 @@ theorem early_start_rejected (kind : OpenKind) :
 /-- A second parentless scope occurrence is unrepresentable: a key's parent is its tail (KD1), so only the root's key
 has none, and `Rooted`'s parentless clause holds of every scope occurrence. -/
 theorem parentless_iff_root (scope : ScopeOccurrence) : scope.parent = none ↔ scope.id = State.root := by
-  obtain ⟨⟨segments⟩, _⟩ := scope
-  cases segments <;> simp [root_eq]
+  obtain ⟨id, _⟩ := scope
+  simp only [ScopeOccurrence.parent, root_eq]
+  rcases keyed : id.segments with _ | ⟨segment, rest⟩
+  · have root : id = .ofSegments [] := ScopeOccurrenceId.ext (by simp [keyed, ScopeOccurrenceId.ofSegments_segments])
+    subst root
+    simp
+  · simp [ScopeOccurrenceId.parent?_cons_eq keyed, ScopeOccurrenceId.ext_iff, keyed]
 
 /-- A lone parentless scope occurrence other than `State.root` breaks `Rooted`. -/
 theorem foreign_root_rejected (kind : OpenKind) :
-    ¬ Rooted { sample kind with scopes := [{ rootScope with id := ⟨[{ element := ⟨"Foreign"⟩, ordinal := 7 }]⟩ }] } := by
+    ¬ Rooted { sample kind with scopes := [{ rootScope with id := (.ofSegments [{ element := ⟨"Foreign"⟩, ordinal := 7 }]) }] } := by
   rintro ⟨present, _, _⟩
   simp [scopeIds, root_eq] at present
 

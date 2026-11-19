@@ -84,7 +84,7 @@ theorem misplaced_owner_rejected (kind : OpenKind) :
 
 /-- An arming of a scope occurrence never issued breaks `QueueSound`, and so `WellFormed`: queued work may name a scope
 occurrence that is gone, never one that was never issued. -/
-theorem unissued_arming (kind : OpenKind) : ¬ WellFormed program { sample kind with signals := [.armScope ⟨[{ element := ⟨"Sub"⟩, ordinal := 9 }]⟩] } := fun formed => by
+theorem unissued_arming (kind : OpenKind) : ¬ WellFormed program { sample kind with signals := [.armScope (.ofSegments [{ element := ⟨"Sub"⟩, ordinal := 9 }])] } := fun formed => by
   exact sample_unissued (kind := kind) (formed.queue.armScope _ (by simp)) rfl rfl
 
 /-- So does a completion of an identity never issued: a reservation made later would be completed. -/
@@ -197,7 +197,7 @@ theorem completed_reservation_rejected (kind : OpenKind) :
 /-- A begin queued in the scope occurrence `Sub#9`, never issued, breaks `ReservationsClaimed`: a scope occurrence entered
 later would be the one it begins in. -/
 theorem unissued_begin_scope_rejected (kind : OpenKind) :
-    ¬ ReservationsClaimed { sample kind with signals := [.begin { element := ⟨"Outer"⟩, scope := ⟨[{ element := ⟨"Sub"⟩, ordinal := 9 }]⟩ }] } :=
+    ¬ ReservationsClaimed { sample kind with signals := [.begin { element := ⟨"Outer"⟩, scope := (.ofSegments [{ element := ⟨"Sub"⟩, ordinal := 9 }]) }] } :=
   fun claimed => by
     exact sample_unissued (kind := kind) (claimed.scopesIssued _ (.inl (List.mem_singleton.mpr rfl))) rfl rfl
 

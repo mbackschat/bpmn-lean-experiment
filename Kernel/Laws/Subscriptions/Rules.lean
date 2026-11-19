@@ -78,8 +78,8 @@ A root scope with a Sub-Process scope occurrence below it; an Event-Based Gatewa
 arms `Paid` and `Late` (items at positions 5 and 6); a task occurrence `Work` in the Sub-Process with its item at position
 8. The open-item kinds are parameters. -/
 
-def root : ScopeOccurrenceId := ⟨[]⟩
-def sub : ScopeOccurrenceId := ⟨[{ element := ⟨"Sub"⟩, ordinal := 0 }]⟩
+def root : ScopeOccurrenceId := .ofSegments []
+def sub : ScopeOccurrenceId := .ofSegments [{ element := ⟨"Sub"⟩, ordinal := 0 }]
 
 def choiceId : OccurrenceId := { scope := root, element := ⟨"Choice"⟩, ordinal := 0 }
 def paidId : OccurrenceId := { scope := root, element := ⟨"Paid"⟩, ordinal := 0 }
@@ -187,7 +187,7 @@ theorem conditional_in_subtree (kind : OpenKind) (view : kind.view.conditional.i
     ConditionalReceivers (choosing kind) root [workItem kind] := by
   simp only [ConditionalReceivers, List.mem_singleton, forall_eq]
   exact ⟨(mem_choosing (item := workItem kind)).mpr (by simp), by simpa [workItem] using view,
-    .parent subScope root root (by simp [choosing]) rfl (.refl _)⟩
+    .parent subScope root root (by simp [choosing]) (by simp [subScope, sub, root]) (.refl _)⟩
 
 /-- A write in the Sub-Process scope occurrence is never offered to an item of its parent. -/
 theorem conditional_outside_rejected (kind : OpenKind) :
@@ -270,8 +270,8 @@ root. The witnesses below read the ordinal of an item's occurrence as its public
 decidable by evaluation and a function of the item's identity, as `Commits` requires; distinct members carry distinct
 ordinals and elements. -/
 def member (n : Nat) (name : String) : OpenItem :=
-  { id := ⟨{ scope := ⟨[]⟩, element := ⟨name⟩, ordinal := n }, .subscription, 0⟩, position := n,
-    kind := .conditional {}, element := ⟨name⟩, scope := ⟨[]⟩ }
+  { id := ⟨{ scope := (.ofSegments []), element := ⟨name⟩, ordinal := n }, .subscription, 0⟩, position := n,
+    kind := .conditional {}, element := ⟨name⟩, scope := (.ofSegments []) }
 
 def key (item : OpenItem) : Nat := item.id.occurrence.ordinal
 

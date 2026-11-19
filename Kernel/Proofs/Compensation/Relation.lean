@@ -159,7 +159,7 @@ occurrence; a trigger thrown by occurrence 7 of `T`. -/
 
 def subjectA : ElementId := ⟨"A"⟩
 def thrower : ElementId := ⟨"T"⟩
-def rootScope : ScopeOccurrenceId := ⟨[]⟩
+def rootScope : ScopeOccurrenceId := .ofSegments []
 
 /-- A key below the root that no history of `holdingState` holds: the root's counter of `T` has issued none. -/
 def unissuedScope : ScopeOccurrenceId := rootScope.child thrower 0

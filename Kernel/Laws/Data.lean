@@ -302,7 +302,8 @@ def framesWith (entries : List (String × Value)) : State :=
 def frames (rootValue : Value) : State := framesWith [("a", rootValue)]
 
 theorem sub_within_root {v : Value} : Within (frames v) subScope processRoot :=
-  .parent childScope processRoot processRoot (by simp [frames, framesWith]) rfl (.refl _)
+  .parent childScope processRoot processRoot (by simp [frames, framesWith]) (by simp [childScope, subScope, processRoot])
+    (.refl _)
 
 /-- Only the root and the Sub-Process frame exist, so a frame other than the root's is the Sub-Process's. -/
 theorem only_frames {entries : List (String × Value)} {frame : ScopeVariables}
@@ -403,7 +404,7 @@ theorem root_within {target : ScopeOccurrenceId} (within : Within itemBefore pro
   (Within.parentless (fun scope mem same => by
     simp only [itemBefore, framesWith, List.mem_cons, List.not_mem_nil, or_false] at mem
     rcases mem with rfl | rfl
-    · rfl
+    · simp [rootScope, processRoot]
     · simp [childScope, subScope, processRoot] at same) within).symm
 
 theorem sub_declares_p : DeclaringOccurrence itemBefore subScope ⟨"Sub"⟩ subScope :=

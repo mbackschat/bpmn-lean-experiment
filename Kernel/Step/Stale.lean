@@ -23,13 +23,14 @@ def requireScope (state : State) (scope : ScopeOccurrenceId) : Except Failure Un
 below its deepest standing ancestor is below that ancestor's counter for its element. A counter goes with its scope
 occurrence, so of a key below a removed subtree only this is known (KD1, `stale`). -/
 def scopeIssued (state : State) (scope : ScopeOccurrenceId) : Bool :=
-  let rec go : List ScopeSegment → Bool
-    | [] => true
-    | segment :: rest =>
-      if state.scopes.any (·.id == ⟨rest⟩) then
-        segment.ordinal < state.scopeOrdinals.getD { parent := ⟨rest⟩, element := segment.element } 0
-      else go rest
-  go scope.segments
+  let rec go : (segments : List ScopeSegment) → (scope : ScopeOccurrenceId) → scope.segments = segments → Bool
+    | [], _, _ => true
+    | segment :: rest, scope, segments =>
+      let parent := scope.up segments
+      if state.scopes.any (·.id == parent) then
+        segment.ordinal < state.scopeOrdinals.getD { parent, element := segment.element } 0
+      else go rest parent rfl
+  go scope.segments scope rfl
 
 /-- Whether the occurrence key `id` was issued, as far as the counters that remain can tell: its scope occurrence key was
 issued (`scopeIssued`) and, while that scope occurrence stands, its ordinal is below the scope occurrence's counter for

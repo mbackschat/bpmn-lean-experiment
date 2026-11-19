@@ -220,7 +220,7 @@ theorem enterScope_owned (state : State) (element : ElementId) (parent : ScopeOc
       entry.id = (state.enterScope element parent locals (some id)).2 ∧ entry.occurrence.isSome ∧
         entry.element = some element ∧ entry.parent = some parent ∧ entry.calledInstance = none := by
   rw [Laws.State.enterScope_eq]
-  exact ⟨_, List.mem_append_right _ (List.mem_singleton_self _), rfl, rfl, rfl, rfl, rfl⟩
+  exact ⟨_, List.mem_append_right _ (List.mem_singleton_self _), rfl, rfl, rfl, Laws.State.ScopeOccurrenceId.parent?_child _ _ _, rfl⟩
 
 /-- The start Event `Feature.Scopes.innerStart?` chooses is a child of the Scope. -/
 theorem innerStart?_child {ctx : Ctx} {scope start : ElementId} {payload : ScopePayload}
@@ -473,7 +473,8 @@ def entered : State :=
 
 theorem enters_fresh : Enters true subProcess [("x", .int 1)] entering entered := fun _ =>
   ⟨childScope, by simp [entered], by simp [entering, rootScope, childScope, processRoot, subScope],
-    rfl, rfl, by simp [entered, rootScope, childScope, subProcess], by simp [entered, childScope]⟩
+    rfl, by simp [childScope, subScope, processRoot, subProcess], by simp [entered, rootScope, childScope, subProcess],
+    by simp [entered, childScope]⟩
 
 def staleLocals : ScopeVariables := { scope := subScope, entries := [("x", .int 1), ("old", .int 2)] }
 

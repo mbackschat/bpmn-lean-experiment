@@ -72,14 +72,10 @@ theorem chain_length_le {s : State} {x : ScopeOccurrenceId} {name : String} {cha
   | called => simp
   | root => simp
   | up entry parent _ chain _ _ link _ ih =>
-    obtain ⟨⟨segments⟩, element, occurrence, calledInstance⟩ := entry
-    cases segments with
-    | nil => simp at link
-    | cons segment rest =>
-      simp only [Laws.State.ScopeOccurrence.parent_eq, Laws.State.parent?_cons, Option.some.injEq] at link
-      subst link
-      simp at ih ⊢
-      omega
+    obtain ⟨_, keyed⟩ := Laws.State.ScopeOccurrenceId.parent?_eq_some.mp
+      (by simpa only [Laws.State.ScopeOccurrence.parent_eq] using link)
+    simp only [List.length_cons, keyed]
+    omega
 
 /-- `State.instanceRoot` of any state holding a chain, with distinct scope identifiers, is where the chain ends: the
 search follows the chain's records, since a search by an identifier finds its own record. -/

@@ -212,9 +212,10 @@ theorem PlacedLane.entered (refs : ReferencesPlaced program) (formed : WellForme
   rw [Laws.State.enterScope_eq] at fresh ⊢
   exact lane.grown formed (added := none) rfl fresh (List.append_nil _).symm (fun _ same => by cases same)
     (fun called => by cases called)
-    (fun _ link => Option.some.inj link ▸ anchored_issued refs formed lane anchored)
+    (fun _ link => by simp only [Laws.State.ScopeOccurrence.parent_eq, Laws.State.ScopeOccurrenceId.parent?_child, Option.some.injEq] at link; exact link ▸ anchored_issued refs formed lane anchored)
     (fun _ _ named link stands => by
-      cases named; cases link
+      simp only [Laws.State.ScopeOccurrence.parent_eq, Laws.State.ScopeOccurrenceId.parent?_child, Option.some.injEq] at link
+      cases named; subst link
       exact anchored_placed refs formed lane (anchored.mono (placing_held refs)) stands)
     (fun called => by cases called) (by simp) rfl rfl rfl rfl rfl rfl
 
@@ -239,8 +240,8 @@ theorem PlacedLane.calledEntered (formed : WellFormed program s) (lane : PlacedL
     (added := some { root := call.scope.child call.element (Laws.State.slotCount s call.scope call.element)
                      definition := some definition }) rfl fresh rfl
     (fun _ same => by cases same; exact ⟨rfl, rfl⟩) (fun _ => rfl)
-    (fun _ link => Option.some.inj link ▸ present_issued formed (formed.owned.occurrenceScopes call member))
-    (fun _ _ named link _ => by cases named; cases link; exact occurrence_placed lane member)
+    (fun _ link => by simp only [Laws.State.ScopeOccurrence.parent_eq, Laws.State.ScopeOccurrenceId.parent?_child, Option.some.injEq] at link; exact link ▸ present_issued formed (formed.owned.occurrenceScopes call member))
+    (fun _ _ named link _ => by simp only [Laws.State.ScopeOccurrence.parent_eq, Laws.State.ScopeOccurrenceId.parent?_child, Option.some.injEq] at link; cases named; subst link; exact occurrence_placed lane member)
     (fun _ => ⟨fun _ named => by cases named; exact notScope, fun owner inside owns => by
       obtain rfl := Laws.State.nodup_map_eq formed.distinct.occurrences inside member (Option.some.inj owns).symm
       exact notScope⟩) (by simp) rfl rfl rfl rfl rfl rfl

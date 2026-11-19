@@ -72,11 +72,11 @@ theorem silent_caught_rejected : ¬ Chosen rank [[silent], [exact]] none := fun 
   have := law [exact] (by simp) exact (by simp)
   simp [rank] at this
 
-def raising : ScopeOccurrenceId := ⟨[{ element := ⟨"Sub"⟩, ordinal := 0 }]⟩
-def handlerContext : ScopeOccurrenceId := ⟨[{ element := ⟨"Handler"⟩, ordinal := 0 }]⟩
-def above : ScopeOccurrenceId := ⟨[{ element := ⟨"Above"⟩, ordinal := 0 }]⟩
-def recordScope : ScopeOccurrenceId := ⟨[]⟩
-def triggerScope : ScopeOccurrenceId := ⟨[]⟩
+def raising : ScopeOccurrenceId := .ofSegments [{ element := ⟨"Sub"⟩, ordinal := 0 }]
+def handlerContext : ScopeOccurrenceId := .ofSegments [{ element := ⟨"Handler"⟩, ordinal := 0 }]
+def above : ScopeOccurrenceId := .ofSegments [{ element := ⟨"Above"⟩, ordinal := 0 }]
+def recordScope : ScopeOccurrenceId := .ofSegments []
+def triggerScope : ScopeOccurrenceId := .ofSegments []
 
 theorem stops_at_handler :
     Searched .failsInstance [raising, handlerContext, above] (some 1) [recordScope] [raising, handlerContext] :=

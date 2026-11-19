@@ -76,7 +76,7 @@ def Good (precedes : Compensable → Compensable → Prop) (run : CompensationRu
 
 /-- Every standing scope occurrence's parent stands: what `WellFormed` roots, read off the keys. -/
 def ParentsStand (s : State) : Prop :=
-  ∀ entry ∈ s.scopes, ∀ segment rest, entry.id.segments = segment :: rest → (⟨rest⟩ : ScopeOccurrenceId) ∈ scopeIds s
+  ∀ entry ∈ s.scopes, ∀ segment rest, entry.id.segments = segment :: rest → (.ofSegments rest : ScopeOccurrenceId) ∈ scopeIds s
 
 /-- What every state inside a compensation hook keeps of the lane relation and of `WellFormed`: retained records in
 present scope occurrences, runs keyed apart in issued scope occurrences, running contexts and scope occurrences issued,
@@ -203,15 +203,14 @@ theorem parents_append {s : State} (parents : ParentsStand s) {scopes : List Sco
     (shape : scopes = s.scopes ++ [added]) (parent : ScopeOccurrenceId) (stands : parent ∈ scopeIds s)
     (link : added.id.parent? = some parent) :
     ∀ entry ∈ scopes, ∀ segment rest, entry.id.segments = segment :: rest →
-      (⟨rest⟩ : ScopeOccurrenceId) ∈ scopes.map (·.id) := by
+      (.ofSegments rest : ScopeOccurrenceId) ∈ scopes.map (·.id) := by
   intro entry inside segment rest keyed
   rw [shape, List.map_append, List.mem_append]
   rcases List.mem_append.mp (shape ▸ inside) with old | new
   · exact .inl (parents entry old segment rest keyed)
   · rw [List.mem_singleton.mp new] at keyed
-    have : (⟨rest⟩ : ScopeOccurrenceId) = parent := by
-      have same : added.id = ⟨segment :: rest⟩ := by cases added; cases ‹ScopeOccurrenceId›; simp_all
-      rw [same] at link
+    have : (.ofSegments rest : ScopeOccurrenceId) = parent := by
+      rw [Laws.State.ScopeOccurrenceId.parent?_cons_eq keyed] at link
       exact Option.some.inj link
     exact .inl (this ▸ stands)
 
@@ -260,7 +259,8 @@ theorem parents_left {s : State} (parents : ParentsStand s) (context : ScopeOccu
     rw [kept.2] at this; cases this
   · cases deeper : State.below context.segments other.id.segments
     · rfl
-    · have deep : State.below context.segments rest = true := by rw [named] at deeper; exact deeper
+    · have deep : State.below context.segments rest = true := by
+        rw [named, Laws.State.ScopeOccurrenceId.ofSegments_segments] at deeper; exact deeper
       have : State.below context.segments entry.id.segments = true := by
         rw [keyed, Laws.State.below_cons, deep]; simp
       rw [kept.2] at this; cases this
@@ -269,17 +269,10 @@ theorem parents_left {s : State} (parents : ParentsStand s) (context : ScopeOccu
 theorem left_parent {s : State} (parents : ParentsStand s) {context : ScopeOccurrenceId}
     {entry : ScopeOccurrence} (member : entry ∈ s.scopes) (named : entry.id = context) {outer : ScopeOccurrenceId}
     (link : entry.parent = some outer) : outer ∈ scopeIds (s.leaveScope context) := by
-  obtain ⟨segment, rest, keyed, rfl⟩ : ∃ segment rest, entry.id.segments = segment :: rest ∧ outer = ⟨rest⟩ := by
+  obtain ⟨segment, rest, keyed, rfl⟩ : ∃ segment rest, entry.id.segments = segment :: rest ∧ outer = .ofSegments rest := by
     change entry.id.parent? = some outer at link
-    revert link
-    cases entry.id with
-    | mk segments =>
-      cases segments with
-      | nil => intro link; simp at link
-      | cons segment rest =>
-        intro link
-        rw [Laws.State.parent?_cons] at link
-        exact ⟨segment, rest, rfl, (Option.some.inj link).symm⟩
+    obtain ⟨segment, keyed⟩ := Laws.State.ScopeOccurrenceId.parent?_eq_some.mp link
+    exact ⟨segment, outer.segments, keyed, (Laws.State.ScopeOccurrenceId.ofSegments_eta outer).symm⟩
   obtain ⟨other, inside, same⟩ := List.mem_map.mp (parents entry member segment rest keyed)
   refine List.mem_map.mpr ⟨other, (left_mem inside).mpr ⟨fun equal => ?_, ?_⟩, same⟩
   · have := congrArg (fun x : ScopeOccurrenceId => x.segments.length) (same.symm.trans (equal.trans named.symm))

@@ -473,7 +473,7 @@ theorem runsOps : Laws.Compensation.RunsOps program (Laws.State.WellFormed progr
     formed.settled.grouped, formed.settled.raised⟩, fun _ settled => settled⟩
   enter _ element parent locals formed stands _ := ⟨Laws.State.enterScope_wellFormed formed element stands locals
     (fun _ same => by cases same), fun _ settled => settled.enter formed.historic element stands locals none⟩
-  entered _ _ _ _ := by rw [Laws.State.enterScope_eq]; exact ⟨rfl, rfl, rfl, rfl⟩
+  entered _ _ _ _ := by rw [Laws.State.enterScope_eq]; exact ⟨Laws.State.ScopeOccurrenceId.parent?_child _ _ _, rfl, rfl, rfl⟩
   fresh _ element _ locals formed stands := Laws.State.enterScope_fresh formed.historic element stands locals none
   signalled _ _ := by rw [Laws.State.signal_eq]; exact ⟨rfl, .refl _, rfl⟩
   signalGrows _ _ := by rw [Laws.State.signal_eq]; exact .refl _

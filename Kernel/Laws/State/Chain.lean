@@ -208,15 +208,10 @@ theorem Within.comparable (distinct : (scopeIds s).Nodup) {scope first second : 
 /-- A scope occurrence's depth is the number of its key's segments: each step up drops one. -/
 theorem Depth.length {scope : ScopeOccurrenceId} {n : Nat} (depth : Depth s scope n) : n = scope.segments.length := by
   induction depth with
-  | root => rw [root_eq]; rfl
+  | root => rw [root_eq, ScopeOccurrenceId.ofSegments_segments]; rfl
   | child child parent n _ link _ ih =>
-    simp only [ScopeOccurrence.parent, ScopeOccurrenceId.parent?] at link
-    split at link
-    · simp at link
-    · rename_i same
-      simp at link
-      subst link
-      simp [same, ih]
+    obtain ⟨_, same⟩ := ScopeOccurrenceId.parent?_eq_some.mp (by simpa only [ScopeOccurrence.parent] using link)
+    simp [same, ih]
 
 /-- A present scope occurrence lies at a depth below one more than its key's segments. -/
 theorem depth_of (formed : WellFormed program s) {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s) :
@@ -550,7 +545,9 @@ theorem visible_enterScope (formed : WellFormed program s) {scope : ScopeOccurre
     | some _ => rfl
     | none =>
       have : parent.child element (slotCount s parent element) ≠ entry.id := fun same =>
-        entered_unissued (parent_stands formed member (by rw [← same])) element (same ▸ formed.issued.scopes entry member)
+        entered_unissued (ScopeOccurrenceId.ofSegments_eta parent ▸
+          parent_stands formed member (rest := parent.segments) (by rw [← same])) element
+          (same ▸ formed.issued.scopes entry member)
       simp [this]
   obtain ⟨later, laterStart, ⟨laterZero, laterEnded, laterStep⟩⟩ := visible_go t reading
   obtain ⟨earlier, earlierStart, ⟨earlierZero, earlierEnded, earlierStep⟩⟩ := visible_go s reading

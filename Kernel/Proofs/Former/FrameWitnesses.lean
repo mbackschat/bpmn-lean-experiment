@@ -81,14 +81,14 @@ theorem issued_of_count {s : State} (historic : Laws.State.Historic s) {parent :
       fun segment rest held stands => ?_⟩, .inr rfl⟩
   · rcases held with old | new
     · exact .inl (history.closed segment rest old)
-    · simp only [Laws.State.child_eq, ScopeOccurrenceId.mk.injEq, List.cons.injEq] at new
+    · simp only [Laws.State.child_eq, Laws.State.ScopeOccurrenceId.ofSegments_inj, List.cons.injEq] at new
       obtain ⟨-, rfl⟩ := new
-      exact .inl (history.standing_key standing)
+      exact .inl (by rw [Laws.State.ScopeOccurrenceId.ofSegments_eta]; exact history.standing_key standing)
   · rcases held with old | new
     · exact history.below segment rest old stands
-    · simp only [Laws.State.child_eq, ScopeOccurrenceId.mk.injEq, List.cons.injEq] at new
+    · simp only [Laws.State.child_eq, Laws.State.ScopeOccurrenceId.ofSegments_inj, List.cons.injEq] at new
       obtain ⟨rfl, rfl⟩ := new
-      exact below
+      simpa [Laws.State.slotCount] using below
 
 /-- The process root is its own instance root in every state holding only it. -/
 theorem rootOnly_root {s : State} (scopes : s.scopes = [{ id := State.root, element := none }]) :
@@ -173,7 +173,7 @@ theorem unissued_enter_rejected :
       (.root { id := State.root, element := none } (by rw [scopes]; exact List.mem_cons_self ..) rfl
         (by simp [Laws.State.root_eq]))
   have root := instanceRoot_chain reading
-    (by unfold Laws.State.scopeIds; rw [scopes]; simp [freshEntry, Laws.State.root_eq]) reading.mem
+    (by unfold Laws.State.scopeIds; rw [scopes]; simp [freshEntry, Laws.State.root_eq, Laws.State.child_eq]) reading.mem
   exact rootOnly_misplaced program definition placed (by rw [root]; simp [chainRoot])
     (by rw [entered]; simp [pendingFresh]) (topCalled_placed program definition)
 
@@ -294,18 +294,18 @@ theorem unstood_reserve_rejected :
       ¬ PlacedLane (topCalled program definition) ({ leftReservation with signals := [] }.reserve ⟨"T"⟩ leftKey).1 := by
   have lane : PlacedLane (topCalled program definition) leftReservation :=
     rootOnly_lane program definition rfl rfl rfl rfl rfl rfl
-      (fun signal member => ⟨_, _, by simpa [leftReservation] using member, by simp [Laws.State.root_eq],
+      (fun signal member => ⟨_, _, by simpa [leftReservation] using member, by simp [Laws.State.root_eq, Laws.State.child_eq],
         leftKey_issued rfl rfl⟩)
       (by simp [leftReservation])
   refine ⟨lane, fun ⟨entry, member, named⟩ => ?_, ⟨leftReservation, lane, rfl, rfl⟩, fun after => ?_⟩
-  · simp [leftReservation] at member; subst member; simp [Laws.State.root_eq] at named
+  · simp [leftReservation] at member; subst member; simp [Laws.State.root_eq, Laws.State.child_eq] at named
   · have reserves := Laws.State.reserve_reserves { leftReservation with signals := [] } ⟨"T"⟩ leftKey
     have root : ({ leftReservation with signals := [] }.reserve ⟨"T"⟩ leftKey).1.instanceRoot leftKey = State.root := by
       obtain ⟨go, start, _, step⟩ :=
         Laws.State.instanceRoot_go ({ leftReservation with signals := [] }.reserve ⟨"T"⟩ leftKey).1
       rw [start, show leftKey.segments.length + 1 = 0 + 1 + 1 by simp [Laws.State.root_eq], step,
         Laws.State.calledRoot_eq, reserves.scopes]
-      simp [leftReservation, Laws.State.root_eq]
+      simp [leftReservation, Laws.State.root_eq, Laws.State.child_eq]
     exact rootOnly_misplaced program definition
       (reserves.placed ▸ reserves.kind ▸ after.placed.occurrences _ (by rw [reserves.occurrences]; simp))
       (reserves.placed ▸ root) (by rw [reserves.slots]; simp [leftReservation]) (topCalled_placed program definition)
@@ -330,17 +330,17 @@ theorem unstood_subscription_rejected :
     rootOnly_lane program definition rfl rfl rfl rfl rfl rfl (by simp [leftRun])
       (fun run member => by
         simp only [leftRun, List.mem_singleton] at member
-        exact member ▸ ⟨by simp [leftRunRecord, Laws.State.root_eq], leftKey_issued rfl rfl⟩)
+        exact member ▸ ⟨by simp [leftRunRecord, Laws.State.root_eq, Laws.State.child_eq], leftKey_issued rfl rfl⟩)
   refine ⟨lane, fun ⟨entry, member, named⟩ => ?_,
     .inl ⟨sharedHost "T", by simp [topCalled], _, Laws.IL.envelope?_scope _ _, sharedX, by simp, rfl⟩,
     ⟨sharedX.id, .inl rfl, .inl (.inr (.inr (.inr (.inr (.inl ⟨leftRunRecord, by simp [leftRun], rfl, rfl⟩)))))⟩, fun after => ?_⟩
-  · simp [leftRun] at member; subst member; simp [Laws.State.root_eq] at named
+  · simp [leftRun] at member; subst member; simp [Laws.State.root_eq, Laws.State.child_eq] at named
   · have reserves := Laws.State.reserve_reserves leftRun sharedX.id leftKey
     have root : (leftRun.reserve sharedX.id leftKey).1.instanceRoot leftKey = State.root := by
       obtain ⟨go, start, _, step⟩ := Laws.State.instanceRoot_go (leftRun.reserve sharedX.id leftKey).1
       rw [start, show leftKey.segments.length + 1 = 0 + 1 + 1 by simp [Laws.State.root_eq], step,
         Laws.State.calledRoot_eq, reserves.scopes]
-      simp [leftRun, Laws.State.root_eq]
+      simp [leftRun, Laws.State.root_eq, Laws.State.child_eq]
     exact rootOnly_misplaced program definition
       (reserves.placed ▸ reserves.kind ▸ after.placed.occurrences _ (by rw [reserves.occurrences]; simp))
       (reserves.placed ▸ root) (by rw [reserves.slots]; simp [leftRun]) (topCalled_boundary program definition)

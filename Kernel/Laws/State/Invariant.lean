@@ -575,8 +575,8 @@ holds a waiting occurrence `innerKey` and its item at position 4, beside a waiti
 its item at position 6. The open-item kind is a parameter, so no witness
 depends on what an item waits for. -/
 
-def processRoot : ScopeOccurrenceId := ⟨[]⟩
-def subScope : ScopeOccurrenceId := ⟨[{ element := ⟨"Sub"⟩, ordinal := 0 }]⟩
+def processRoot : ScopeOccurrenceId := .ofSegments []
+def subScope : ScopeOccurrenceId := .ofSegments [{ element := ⟨"Sub"⟩, ordinal := 0 }]
 
 /-- The witnesses' occurrence keys, each the first of its element in its scope occurrence; `ghostKey` names no
 occurrence. They unfold under `simp`, so distinct keys read as distinct. -/
@@ -624,9 +624,11 @@ theorem sample_historic (kind : OpenKind) : Historic (sample kind) :=
       simp [slotCount, sample, processRoot, Std.ExtTreeMap.getD_insert_self])
 
 /-- The sample's key `Sub#9` lies beyond its root's counter of `Sub`, so it was never issued. -/
-theorem sample_unissued {kind : OpenKind} {s : State} (issued : ScopeIssued s ⟨[{ element := ⟨"Sub"⟩, ordinal := 9 }]⟩)
-    (scopes : s.scopes = (sample kind).scopes) (ordinals : s.scopeOrdinals = (sample kind).scopeOrdinals) : False :=
-  unissued_of_count (parent := processRoot) (by simp [scopes, sample, rootScope])
+theorem sample_unissued {kind : OpenKind} {s : State} (issued : ScopeIssued s (.ofSegments [{ element := ⟨"Sub"⟩, ordinal := 9 }]))
+    (scopes : s.scopes = (sample kind).scopes) (ordinals : s.scopeOrdinals = (sample kind).scopeOrdinals) : False := by
+  rw [show (.ofSegments [{ element := ⟨"Sub"⟩, ordinal := 9 }] : ScopeOccurrenceId) = processRoot.child ⟨"Sub"⟩ 9 by
+    rw [child_eq, processRoot, ScopeOccurrenceId.ofSegments_segments]] at issued
+  exact unissued_of_count (parent := processRoot) (by simp [scopes, sample, rootScope])
     (by simp [slotCount, ordinals, sample, processRoot, Std.ExtTreeMap.getD_insert_self]) issued
 
 @[simp] theorem mem_sample_itemList {kind : OpenKind} {item : OpenItem} :
@@ -642,7 +644,8 @@ theorem root_parentless {s : State} (scopes : s.scopes = [rootScope, childScope]
   simp [scopes, rootScope, childScope, processRoot, subScope]
 
 theorem sub_within {kind : OpenKind} : Within (sample kind) subScope processRoot :=
-  .parent childScope processRoot processRoot (by simp [sample]) rfl (.refl _)
+  .parent childScope processRoot processRoot (by simp [sample])
+    (by simp [childScope, subScope, processRoot, ScopeOccurrenceId.parent?_cons]) (.refl _)
 
 theorem root_outside {s : State} (scopes : s.scopes = [rootScope, childScope]) : ¬ Within s processRoot subScope :=
   fun within => by

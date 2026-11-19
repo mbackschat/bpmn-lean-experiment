@@ -227,7 +227,8 @@ theorem begin_formed {precedes : Compensable → Compensable → Prop} {ctx : Ct
       fun run inside => ?_, fun context' inside => ?_, fun record' below => ?_, fun later inside => ?_,
       fun entry inside => post.scopesKept unheld entry (by
         simp only [withRun, stored, scopesEq]; exact List.mem_append_left _ inside),
-      fun context' inside => by rw [List.mem_singleton.mp inside, contextEq]⟩
+      fun context' inside => by
+        rw [List.mem_singleton.mp inside, contextEq]; exact Laws.State.ScopeOccurrenceId.parent?_child _ _ _⟩
     · have bound := post.counted n
       have fewer : (completionsIn (Feature.Compensation.begunChildren record
           (s.enterScope record.subject scope record.snapshot none).2)).count n ≤
@@ -270,7 +271,8 @@ theorem begin_formed {precedes : Compensable → Compensable → Prop} {ctx : Ct
     refine ⟨tame_signal tameHandled _, (moves_withRetained tame handler stands record.snapshot _).trans
       (moves_signal _ (Laws.Step.untriggered_begin _)), fun n => ?_, fun run inside => .inl ?_, fun run inside => ?_,
       fun context' inside => ?_, fun record' below => ?_, fun next inside => .inl ?_, fun entry inside => ?_,
-      fun context' inside => by rw [List.mem_singleton.mp inside, contextEq]⟩
+      fun context' inside => by
+        rw [List.mem_singleton.mp inside, contextEq]; exact Laws.State.ScopeOccurrenceId.parent?_child _ _ _⟩
     · have fewer : (completionsIn (Feature.Compensation.begunChildren record
           (s.enterScope handler scope record.snapshot none).2)).count n ≤
             (record.children.map (·.completion)).count n :=

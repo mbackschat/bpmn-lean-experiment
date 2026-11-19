@@ -19,10 +19,10 @@ namespace Kernel.Laws.MultiInstance
 open Kernel
 
 def review : ElementId := ⟨"Review"⟩
-def root : ScopeOccurrenceId := ⟨[]⟩
-def bodyScope : ScopeOccurrenceId := ⟨[{ element := review, ordinal := 0 }]⟩
-def firstScope : ScopeOccurrenceId := ⟨[{ element := review, ordinal := 0 }, { element := review, ordinal := 0 }]⟩
-def secondScope : ScopeOccurrenceId := ⟨[{ element := review, ordinal := 1 }, { element := review, ordinal := 0 }]⟩
+def root : ScopeOccurrenceId := .ofSegments []
+def bodyScope : ScopeOccurrenceId := .ofSegments [{ element := review, ordinal := 0 }]
+def firstScope : ScopeOccurrenceId := .ofSegments [{ element := review, ordinal := 0 }, { element := review, ordinal := 0 }]
+def secondScope : ScopeOccurrenceId := .ofSegments [{ element := review, ordinal := 1 }, { element := review, ordinal := 0 }]
 
 /-- The witnesses' occurrence keys: the body's in the root and each instance's in its own scope occurrence. -/
 @[simp] def bodyKey : OccurrenceId := { scope := root, element := review, ordinal := 0 }
@@ -63,8 +63,8 @@ theorem entered_owned : Owned entered running where
   instanceScopes := by
     intro index scope slot
     match index with
-    | 0 => simp [running] at slot; subst slot; exact ⟨firstOwned, by simp [entered], rfl, rfl⟩
-    | 1 => simp [running] at slot; subst slot; exact ⟨secondOwned, by simp [entered], rfl, rfl⟩
+    | 0 => simp [running] at slot; subst slot; exact ⟨firstOwned, by simp [entered], rfl, by simp [firstOwned, firstScope, running, bodyScope]⟩
+    | 1 => simp [running] at slot; subst slot; exact ⟨secondOwned, by simp [entered], rfl, by simp [secondOwned, secondScope, running, bodyScope]⟩
     | _ + 2 => simp [running] at slot
   ownScopes := by
     intro first second scope one two
@@ -212,8 +212,11 @@ theorem one_based_rejected :
   fun counted => by
     obtain ⟨locals, member, _, entry⟩ :=
       counted running (by simp [entered]) 0 firstScope (by simp [running])
-        (Laws.State.unissued_of_count (parent := bodyScope) (element := review) (ordinal := 0) (by simp [entered])
-          (by simp [Laws.State.slotCount, entered]))
+        (by
+          rw [show firstScope = bodyScope.child review 0 by
+            rw [Laws.State.child_eq]; simp [firstScope, bodyScope]]
+          exact Laws.State.unissued_of_count (parent := bodyScope) (element := review) (ordinal := 0) (by simp [entered])
+            (by simp [Laws.State.slotCount, entered]))
     simp only [List.mem_singleton] at member
     subst member
     simp at entry

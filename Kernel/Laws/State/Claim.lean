@@ -299,7 +299,7 @@ theorem enterScope_inner {s : State} (formed : WellFormed program s) (element : 
   have presentAfter : occurrence.scope ∈ scopeIds t := by
     rw [scopeIds, scopes, List.map_append]
     exact List.mem_append_left _ present
-  have child := instanceOf_child formedAfter entryMember (by rw [← entryIs]) (by rw [← entryIs, ← keyIs]) presentAfter
+  have child := instanceOf_child formedAfter entryMember (by rw [← entryIs]) (by rw [← entryIs, ← keyIs]; exact Kernel.Laws.State.ScopeOccurrenceId.parent?_child _ _ _) presentAfter
   have entryId : entry.id = key := by rw [← entryIs]
   have occurrences : t.occurrences = s.occurrences := by rw [← afterIs]
   have items : itemList t.openItems = itemList s.openItems := by rw [← afterIs]

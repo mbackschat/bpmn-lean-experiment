@@ -100,6 +100,7 @@ public import Kernel.Laws.State.Invariant
 public import Kernel.Laws.State.Issue
 public import Kernel.Laws.State.Items
 public import Kernel.Laws.State.Keeps
+public import Kernel.Laws.State.Key
 public import Kernel.Laws.State.Removal
 public import Kernel.Laws.State.RemovalKeeps
 public import Kernel.Laws.State.Reserve

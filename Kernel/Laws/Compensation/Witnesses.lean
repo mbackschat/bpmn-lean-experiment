@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Laws.Compensation.Rules
+public import Kernel.Laws.State.Key
 
 /-! # Laws of compensation and Transaction cancellation: the witnesses
 
@@ -21,9 +22,9 @@ Two records: `A` completed first and a Sequence Flow leads from `A` to `B`, so `
 
 def subjectA : ElementId := ⟨"A"⟩
 def subjectB : ElementId := ⟨"B"⟩
-def outer : ScopeOccurrenceId := ⟨[]⟩
+def outer : ScopeOccurrenceId := .ofSegments []
 /-- The context entered in `outer` for `B`'s handler. -/
-def inner : ScopeOccurrenceId := ⟨[{ element := ⟨"UndoB"⟩, ordinal := 0 }]⟩
+def inner : ScopeOccurrenceId := .ofSegments [{ element := ⟨"UndoB"⟩, ordinal := 0 }]
 
 def recordA : Compensable := { subject := subjectA, handler := some ⟨"UndoA"⟩, scope := outer, completion := 1 }
 def recordB : Compensable := { subject := subjectB, handler := some ⟨"UndoB"⟩, scope := outer, completion := 2 }
@@ -125,7 +126,7 @@ def recordC : Compensable := { subject := subjectC, handler := some ⟨"UndoC"�
 def secondTrigger : OccurrenceRef := { trigger with activation := 2 }
 def second : CompensationRun := { trigger := secondTrigger, scope := outer, pending := [recordC], leave := none, resume := none }
 def secondBegun : CompensationRun :=
-  { second with pending := [], running := [(⟨[{ element := ⟨"UndoC"⟩, ordinal := 0 }]⟩, recordC)] }
+  { second with pending := [], running := [(.ofSegments [{ element := ⟨"UndoC"⟩, ordinal := 0 }], recordC)] }
 def inProgress : Compensations := { retained := [recordC], runs := [afterFirst] }
 
 theorem in_progress_apart : ClaimsApart inProgress := by

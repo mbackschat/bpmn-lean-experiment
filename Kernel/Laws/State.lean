@@ -157,7 +157,7 @@ theorem recordEnd_scopes (state : State) (key : OccurrenceKey) (terminal : Termi
   simp only [State.recordEnd]
 
 /-- The operations that only append to or filter one field. -/
-theorem root_eq : State.root = ⟨[]⟩ := by
+theorem root_eq : State.root = .ofSegments [] := by
   simp only [State.root]
 
 theorem signal_eq (state : State) (signal : Signal) : state.signal signal = { state with signals := state.signals ++ [signal] } := by
@@ -370,45 +370,56 @@ private def rootWalk (state : State) : Nat → ScopeOccurrenceId → ScopeOccurr
 private theorem visibleWalk_none (state : State) (program : Program) (fuel : Nat) : visibleWalk state program fuel none = [] := by
   cases fuel <;> simp [visibleWalk]
 
+/-- A search's step at a key with no segment: the key is the root, which has no parent. -/
+private theorem root_of_nil {scope : ScopeOccurrenceId} (same : scope.segments = []) : scope = State.root :=
+  ScopeOccurrenceId.ext (by simp [same, State.root, ScopeOccurrenceId.ofSegments_segments])
+
 private theorem visible_walk (state : State) (program : Program) :
-    ∀ segments fuel, segments.length < fuel → State.visible.go state program segments = visibleWalk state program fuel (some ⟨segments⟩)
-  | [], fuel + 1, _ => by
+    ∀ segments (scope : ScopeOccurrenceId) (same : scope.segments = segments) fuel, segments.length < fuel →
+      State.visible.go state program segments scope same = visibleWalk state program fuel (some scope)
+  | [], scope, same, fuel + 1, _ => by
+    cases root_of_nil same
     simp [State.visible.go, visibleWalk, find_parent, visibleWalk_none, State.root]
-  | segment :: rest, fuel + 1, enough => by
-    simp only [State.visible.go, visibleWalk, find_parent]
-    by_cases stands : state.stands ⟨segment :: rest⟩ <;>
-      simp [stands, visible_walk state program rest fuel (by simp at enough; omega), visibleWalk_none]
+  | segment :: rest, scope, same, fuel + 1, enough => by
+    simp only [State.visible.go, visibleWalk, find_parent, ScopeOccurrenceId.parent?_up same]
+    by_cases stands : state.stands scope <;>
+      simp [stands, visible_walk state program rest (.ofSegments rest) (ScopeOccurrenceId.ofSegments_segments rest) fuel (by simp at enough; omega), visibleWalk_none]
 
 private theorem owner_walk (state : State) (name : String) :
-    ∀ segments fuel, segments.length < fuel → State.owner?.go state name segments = ownerWalk state name fuel ⟨segments⟩
-  | [], fuel + 1, _ => by
-    simp only [State.owner?.go, ownerWalk, find_parent, ScopeOccurrenceId.parent?]
-    by_cases d : state.bindsOwn ⟨[]⟩ name <;> by_cases c : state.calledRoot ⟨[]⟩ <;> simp [d, c, State.root]
-  | segment :: rest, fuel + 1, enough => by
-    simp only [State.owner?.go, ownerWalk, find_parent]
-    by_cases stands : state.stands ⟨segment :: rest⟩ <;>
-      simp [stands, owner_walk state name rest fuel (by simp at enough; omega)]
+    ∀ segments (scope : ScopeOccurrenceId) (same : scope.segments = segments) fuel, segments.length < fuel →
+      State.owner?.go state name segments scope same = ownerWalk state name fuel scope
+  | [], scope, same, fuel + 1, _ => by
+    cases root_of_nil same
+    simp only [State.owner?.go, ownerWalk, find_parent, State.root, ScopeOccurrenceId.parent?_nil]
+    by_cases d : state.bindsOwn (.ofSegments []) name <;> by_cases c : state.calledRoot (.ofSegments []) <;> simp [d, c]
+  | segment :: rest, scope, same, fuel + 1, enough => by
+    simp only [State.owner?.go, ownerWalk, find_parent, ScopeOccurrenceId.parent?_up same]
+    by_cases stands : state.stands scope <;>
+      simp [stands, owner_walk state name rest (.ofSegments rest) (ScopeOccurrenceId.ofSegments_segments rest) fuel (by simp at enough; omega)]
 
 private theorem declaring_walk (state : State) (element : ElementId) :
-    ∀ segments fuel, segments.length < fuel →
-      State.declaring?.go state element segments = declaringWalk state element fuel ⟨segments⟩
-  | [], fuel + 1, _ => by
-    simp only [State.declaring?.go, declaringWalk, find_parent, ScopeOccurrenceId.parent?]
-    by_cases c : state.calledRoot ⟨[]⟩ <;> simp [c, State.root]
-  | segment :: rest, fuel + 1, enough => by
-    simp only [State.declaring?.go, declaringWalk, find_parent]
-    by_cases stands : state.stands ⟨segment :: rest⟩ <;>
-      simp [stands, declaring_walk state element rest fuel (by simp at enough; omega)]
+    ∀ segments (scope : ScopeOccurrenceId) (same : scope.segments = segments) fuel, segments.length < fuel →
+      State.declaring?.go state element segments scope same = declaringWalk state element fuel scope
+  | [], scope, same, fuel + 1, _ => by
+    cases root_of_nil same
+    simp only [State.declaring?.go, declaringWalk, find_parent, State.root, ScopeOccurrenceId.parent?_nil]
+    by_cases c : state.calledRoot (.ofSegments []) <;> simp [c]
+  | segment :: rest, scope, same, fuel + 1, enough => by
+    simp only [State.declaring?.go, declaringWalk, find_parent, ScopeOccurrenceId.parent?_up same]
+    by_cases stands : state.stands scope <;>
+      simp [stands, declaring_walk state element rest (.ofSegments rest) (ScopeOccurrenceId.ofSegments_segments rest) fuel (by simp at enough; omega)]
 
 private theorem root_walk (state : State) :
-    ∀ segments fuel, segments.length < fuel → State.instanceRoot.go state segments = rootWalk state fuel ⟨segments⟩
-  | [], fuel + 1, _ => by
-    simp only [State.instanceRoot.go, rootWalk, find_parent]
-    cases fuel <;> by_cases stands : state.stands ⟨[]⟩ <;> simp [stands, rootWalk, State.root]
-  | segment :: rest, fuel + 1, enough => by
-    simp only [State.instanceRoot.go, rootWalk, find_parent]
-    by_cases stands : state.stands ⟨segment :: rest⟩ <;>
-      simp [stands, root_walk state rest fuel (by simp at enough; omega)]
+    ∀ segments (scope : ScopeOccurrenceId) (same : scope.segments = segments) fuel, segments.length < fuel →
+      State.instanceRoot.go state segments scope same = rootWalk state fuel scope
+  | [], scope, same, fuel + 1, _ => by
+    cases root_of_nil same
+    simp only [State.instanceRoot.go, rootWalk, find_parent, State.root, ScopeOccurrenceId.parent?_nil]
+    cases fuel <;> by_cases stands : state.stands (.ofSegments []) <;> simp [stands, rootWalk]
+  | segment :: rest, scope, same, fuel + 1, enough => by
+    simp only [State.instanceRoot.go, rootWalk, find_parent, ScopeOccurrenceId.parent?_up same]
+    by_cases stands : state.stands scope <;>
+      simp [stands, root_walk state rest (.ofSegments rest) (ScopeOccurrenceId.ofSegments_segments rest) fuel (by simp at enough; omega)]
 
 /-- `State.visible`: each frame's shown bindings, innermost first, up to and including a called root. -/
 theorem visible_go (state : State) (program : Program) :
@@ -417,7 +428,7 @@ theorem visible_go (state : State) (program : Program) :
       (∀ fuel, go (fuel + 1) none = []) ∧ ∀ fuel id, go (fuel + 1) (some id) =
         (((state.variables.find? (·.scope == id)).map (·.entries)).getD []).filter (state.shows program id ·.1) ++
           if state.calledRoot id then [] else go fuel ((state.scopes.find? (·.id == id)).bind (·.parent)) :=
-  ⟨visibleWalk state program, fun scope => visible_walk state program scope.segments _ (by omega),
+  ⟨visibleWalk state program, fun scope => visible_walk state program scope.segments scope rfl _ (by omega),
     fun _ => by simp [visibleWalk], fun _ => rfl, fun _ _ => by simp only [visibleWalk, State.frame]⟩
 
 /-- `State.owner?`: the first scope occurrence whose frame binds the name, up to and including a called root. -/
@@ -428,7 +439,7 @@ theorem owner?_go (state : State) (name : String) :
         if ((state.variables.find? (·.scope == current)).map (·.entries.any (·.1 == name))).getD false then some current
         else if state.calledRoot current then none
         else ((state.scopes.find? (·.id == current)).bind (·.parent)).bind (go fuel) :=
-  ⟨ownerWalk state name, fun scope => owner_walk state name scope.segments _ (by omega), fun _ => rfl,
+  ⟨ownerWalk state name, fun scope => owner_walk state name scope.segments scope rfl _ (by omega), fun _ => rfl,
     fun _ _ => rfl⟩
 
 /-- `State.declaring?`: the first occurrence of the element, up to and including a called root. -/
@@ -439,7 +450,7 @@ theorem declaring?_go (state : State) (element : ElementId) :
         if ((state.scopes.find? (·.id == current)).bind (·.element)) == some element then some current
         else if state.calledRoot current then none
         else ((state.scopes.find? (·.id == current)).bind (·.parent)).bind (go fuel) :=
-  ⟨declaringWalk state element, fun scope => declaring_walk state element scope.segments _ (by omega), fun _ => rfl,
+  ⟨declaringWalk state element, fun scope => declaring_walk state element scope.segments scope rfl _ (by omega), fun _ => rfl,
     fun _ _ => rfl⟩
 
 /-- `State.instanceOf`: the identifier its instance root's record calls, else the instance's own. -/
@@ -454,7 +465,7 @@ theorem instanceRoot_go (state : State) :
       ∀ fuel current, go (fuel + 1) current =
         if state.calledRoot current then current
         else ((state.scopes.find? (·.id == current)).bind (·.parent)).elim State.root (go fuel) :=
-  ⟨rootWalk state, fun scope => root_walk state scope.segments _ (by omega), fun _ => rfl, fun _ _ => rfl⟩
+  ⟨rootWalk state, fun scope => root_walk state scope.segments scope rfl _ (by omega), fun _ => rfl, fun _ _ => rfl⟩
 
 /-- A start's fresh instance, which `Kernel.Laws.State.Keeps` reads through this lemma alone. -/
 theorem initial_eq (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
@@ -476,15 +487,15 @@ private theorem within_root_stands {s : State} (formed : WellFormed program s) :
 /-- A standing scope occurrence's parent stands, in a rooted state. -/
 theorem parent_stands {s : State} (formed : WellFormed program s) {entry : ScopeOccurrence} (member : entry ∈ s.scopes)
     {segment : ScopeSegment} {rest : List ScopeSegment} (keyed : entry.id.segments = segment :: rest) :
-    (⟨rest⟩ : ScopeOccurrenceId) ∈ scopeIds s := by
+    (.ofSegments rest : ScopeOccurrenceId) ∈ scopeIds s := by
   suffices up : ∀ {x outer : ScopeOccurrenceId}, Within s x outer → outer = State.root → x = entry.id →
-      (⟨rest⟩ : ScopeOccurrenceId) ∈ scopeIds s from up (formed.rooted.2.2 entry member) rfl rfl
+      (.ofSegments rest : ScopeOccurrenceId) ∈ scopeIds s from up (formed.rooted.2.2 entry member) rfl rfl
   intro x outer within rooted named
   cases within with
   | refl => subst rooted; rw [root_eq] at named; rw [← named] at keyed; simp at keyed
   | parent child parent _ _ link above =>
-    have same : parent = ⟨rest⟩ := by
-      simp only [ScopeOccurrence.parent, ScopeOccurrenceId.parent?, named, keyed] at link
+    have same : parent = .ofSegments rest := by
+      simp only [ScopeOccurrence.parent, named, ScopeOccurrenceId.parent?_cons_eq keyed] at link
       exact (Option.some.inj link).symm
     exact same ▸ within_root_stands formed above rooted
 
@@ -503,22 +514,21 @@ theorem subtree_iff {s : State} (formed : WellFormed program s) {scope : ScopeOc
       | nil => intro _ _ _ below; simp [below_nil] at below
       | cons segment rest ih =>
         intro entry member keyed below
-        have link : entry.parent = some ⟨rest⟩ := by simp [ScopeOccurrence.parent, ScopeOccurrenceId.parent?, keyed]
+        have link : entry.parent = some (.ofSegments rest) := by
+          simp [ScopeOccurrence.parent, ScopeOccurrenceId.parent?_cons_eq keyed]
         rw [below_cons, Bool.or_eq_true, beq_iff_eq] at below
         rcases below with same | deeper
-        · have top : (⟨rest⟩ : ScopeOccurrenceId) = scope := by cases scope; simp_all
+        · have top : (.ofSegments rest : ScopeOccurrenceId) = scope := by rw [same, ScopeOccurrenceId.ofSegments_eta]
           exact .parent entry _ scope member link (top ▸ .refl _)
         · obtain ⟨parentEntry, parentMember, named⟩ := List.mem_map.mp (parent_stands formed member keyed)
-          exact .parent entry _ scope member link (named ▸ ih parentEntry parentMember (by rw [named]) deeper)
+          exact .parent entry _ scope member link
+            (named ▸ ih parentEntry parentMember (by rw [named, ScopeOccurrenceId.ofSegments_segments]) deeper)
   · intro within
     induction within with
     | refl => exact .inl rfl
     | parent child parent outer member link _ ih =>
-      have keyed : ∃ segment, child.id.segments = segment :: parent.segments := by
-        simp only [ScopeOccurrence.parent, ScopeOccurrenceId.parent?] at link
-        split at link
-        · simp at link
-        · rename_i segment rest same; simp at link; subst link; exact ⟨segment, same⟩
+      have keyed : ∃ segment, child.id.segments = segment :: parent.segments :=
+        ScopeOccurrenceId.parent?_eq_some.mp (by simpa only [ScopeOccurrence.parent] using link)
       obtain ⟨segment, keyed⟩ := keyed
       refine .inr ⟨child, member, rfl, ?_⟩
       rw [keyed, below_cons, Bool.or_eq_true, beq_iff_eq]
@@ -552,10 +562,8 @@ theorem instanceOf_eq {s : State} (nodup : (scopeIds s).Nodup)
     induction reading with
     | called => simp
     | up entry parent _ _ _ _ link _ ih =>
-      simp only [ScopeOccurrence.parent, ScopeOccurrenceId.parent?] at link
-      split at link
-      · simp at link
-      · rename_i same; simp at link; subst link; simp [same]; omega
+      obtain ⟨_, keyed⟩ := ScopeOccurrenceId.parent?_eq_some.mp (by simpa only [ScopeOccurrence.parent] using link)
+      simp [keyed]; omega
     | root => simp
   have go : ∀ fuel, chain.length ≤ fuel →
       ((s.scopes.find? (·.id == rootWalk s fuel x)).bind (·.calledInstance)).getD s.instanceId = name := by
@@ -579,7 +587,7 @@ theorem instanceOf_eq {s : State} (nodup : (scopeIds s).Nodup)
         Option.isSome_none, Bool.false_eq_true, ite_false, orphan, ← named]
       simp [find_entry nodup member, uncalled]
   simp only [State.instanceOf]
-  rw [show State.instanceRoot s x = rootWalk s (x.segments.length + 1) x from root_walk s x.segments _ (by omega)]
+  rw [show State.instanceRoot s x = rootWalk s (x.segments.length + 1) x from root_walk s x.segments x rfl _ (by omega)]
   exact go _ (bound reading)
 
 /-- A scope occurrence keeps its process instance through a change that keeps the instance identifier and the scope

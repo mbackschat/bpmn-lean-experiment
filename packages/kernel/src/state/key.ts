@@ -55,13 +55,16 @@ function compareSegment(left: ScopeSegment, right: ScopeSegment): number {
   return compareStrings(left.element, right.element) || left.ordinal - right.ordinal;
 }
 
-/** The order of Lean's `Ord ScopeOccurrenceId`: the segments innermost first, lexicographically. */
+/**
+ * The order of Lean's `Ord ScopeOccurrenceId`: the segments outermost first, lexicographically, so an ancestor comes
+ * before its descendants and a subtree is one range of keys.
+ */
 export function compareScopeOccurrenceId(left: ScopeOccurrenceId, right: ScopeOccurrenceId): number {
   if (left === right) return 0;
   const a = scopeSegments(left);
   const b = scopeSegments(right);
-  for (let index = 0; index < Math.min(a.length, b.length); index += 1) {
-    const order = compareSegment(a[index] as ScopeSegment, b[index] as ScopeSegment);
+  for (let index = 1; index <= Math.min(a.length, b.length); index += 1) {
+    const order = compareSegment(a[a.length - index] as ScopeSegment, b[b.length - index] as ScopeSegment);
     if (order !== 0) return order;
   }
   return a.length - b.length;
