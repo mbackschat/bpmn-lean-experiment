@@ -174,9 +174,12 @@ def chooseStart (named : Option ElementId) (fired : List ElementId) : Except Fai
   | none, [] => .error (.rejected "no-start-event")
   | none, _ :: _ :: _ => .error (.rejected "start-ambiguous")
 
-/-- Hold an occurrence whose InputSet is unavailable (`FeatureSlots.held`). -/
-def State.hold (state : State) (held : Held) : State :=
-  { state with slots := { state.slots with held := state.slots.held ++ [held] } }
+/-- Hold an occurrence whose InputSet is unavailable (`FeatureSlots.held`), and record it in the micro-step's Ready
+list: the one writer of `Transition.ready`, so the list names exactly the occurrences the micro-step holds. -/
+def State.hold (state : State) (occurrence : Occurrence) : State :=
+  { state with
+    slots := { state.slots with held := state.slots.held ++ [{ occurrence := occurrence.id, scope := occurrence.scope }] }
+    draft := { state.draft with ready := state.draft.ready ++ [state.keyOf occurrence] } }
 
 /-- What an expression evaluated from `scope` reads. -/
 def State.evalContext (state : State) (program : Program) (scope : ScopeOccurrenceId) : EvalContext :=

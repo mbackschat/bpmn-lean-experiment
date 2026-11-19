@@ -237,7 +237,7 @@ export function arriveActivity(hooks: WorkHooks, ctx: Ctx, header: Header, paylo
   const handler = ctx.scopeRole(state, occurrence.scope) === ScopeRole.CompensationHandler;
   const evaluated = ctxEvaluateMappings(ctx, evalContext(state, ctx.program, occurrence.scope), payload.envelope.inputs);
   if (!evaluated.ok) return failedWith(evaluated.failure);
-  if (evaluated.value === null) return committed(hold(state, { occurrence: occurrence.id, scope: occurrence.scope }));
+  if (evaluated.value === null) return committed(hold(state, occurrence));
   const inputs = evaluated.value;
   const entered = enterLocal(header, inputs, occurrence, state);
   // An instance of a Multi-Instance body, the only occurrence of a looping Activity this hook sees, follows the token

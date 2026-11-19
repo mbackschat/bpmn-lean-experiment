@@ -35,6 +35,19 @@ test("a committed input's journal becomes consecutive revisions with role = caus
   assert.equal(log.cursor.revision, 3);
 });
 
+test("a held occurrence's Ready list is carried into its occurrence transition, even on a step that starts nothing (PD2)", () => {
+  const task = { processInstanceId: views.instance, elementId: "Task_Probe", activation: 1, role: "element" };
+  const earlier = { ...task, activation: 2 };
+  const log = publication.appendJournal(publication.openLog(publication.initialCursor), "start", [
+    { cause: { kind: "input", input: "start" }, element: "Task_Probe", started: [{ occurrence: task, sourceType: "userTask" }], ended: [], ready: [task] },
+    { cause: { kind: "signal", signal: "armScope" }, element: null, started: [], ended: [], ready: [earlier] },
+  ]);
+  assert.deepEqual(log.occurrences[0]!.transitions, [
+    { revision: 1, started: [{ occurrence: task, sourceType: "userTask" }], ended: [], ready: [task] },
+    { revision: 2, started: [], ended: [], ready: [earlier] },
+  ]);
+});
+
 test("an element that began in an earlier input keeps the source type its start recorded", () => {
   const started = publication.appendJournal(publication.openLog(publication.initialCursor), "start", views.effectOpen.journal);
   const revisit = publication.appendJournal(started, "again", [

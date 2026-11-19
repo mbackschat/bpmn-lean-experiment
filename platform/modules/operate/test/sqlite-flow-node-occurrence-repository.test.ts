@@ -15,6 +15,7 @@ import type { FlowNodeOccurrencePage } from "@bpmn-lean/platform-contracts";
 
 import { firstPage, secondPage } from "./execution-publication-fixture.ts";
 import {
+  heldOccurrenceFirstPage,
   occurrenceFirstPage,
   occurrenceRegistration,
   occurrenceSecondPage,
@@ -96,6 +97,29 @@ test("reopen reconstructs exact rows and revision-zero replacement is atomic", a
     occurrences?.close();
     executions?.close();
     instances?.close();
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("retains a held occurrence's Ready list through storage and reopen (PD2)", async () => {
+  const root = await mkdtemp(join(tmpdir(), "bpmn-lean-occurrence-held-"));
+  const databaseFile = join(root, "operate.sqlite");
+  const instances = new SqliteProcessInstanceRepository(databaseFile);
+  const executions = new SqliteExecutionPublicationRepository(databaseFile);
+  let occurrences = new SqliteFlowNodeOccurrenceRepository(databaseFile, executions);
+  try {
+    const registration = await recordRegistration(instances);
+    await executions.applyPage(registration, firstPage());
+    await occurrences.applyPage(registration, heldOccurrenceFirstPage());
+    const stored = await occurrences.get(registration.instance.processInstanceId);
+    assert.deepEqual(stored?.batches, heldOccurrenceFirstPage().batches);
+    occurrences.close();
+    occurrences = new SqliteFlowNodeOccurrenceRepository(databaseFile, executions);
+    assert.deepEqual(await occurrences.get(registration.instance.processInstanceId), stored);
+  } finally {
+    occurrences.close();
+    executions.close();
+    instances.close();
     await rm(root, { recursive: true, force: true });
   }
 });

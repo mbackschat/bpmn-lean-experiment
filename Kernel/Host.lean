@@ -172,7 +172,8 @@ def publicTransition (program : Program) (transition : Transition) : Transition 
   { transition with
     element := transition.element.map program.publicId
     started := transition.started.map fun fact => { fact with occurrence := publicKey program fact.occurrence }
-    ended := transition.ended.map fun (key, terminal) => (publicKey program key, terminal) }
+    ended := transition.ended.map fun (key, terminal) => (publicKey program key, terminal)
+    ready := transition.ready.map (publicKey program) }
 
 def publicFailure (program : Program) (failure : InstanceFailure) : InstanceFailure :=
   { failure with
@@ -201,8 +202,9 @@ def publicJournal (program : Program) (journal : List Transition) : List Transit
   journal.filterMap fun transition =>
     let started := transition.started.filter (program.publishesOccurrences ·.occurrence.element)
     let ended := transition.ended.filter (program.publishesOccurrences ·.1.element)
-    if transition.element.all program.publishesOccurrences || !started.isEmpty || !ended.isEmpty then
-      some (publicTransition program { transition with started, ended })
+    let ready := transition.ready.filter (program.publishesOccurrences ·.element)
+    if transition.element.all program.publishesOccurrences || !started.isEmpty || !ended.isEmpty || !ready.isEmpty then
+      some (publicTransition program { transition with started, ended, ready })
     else none
 
 def hostView (program : Program) (state : State) : View :=

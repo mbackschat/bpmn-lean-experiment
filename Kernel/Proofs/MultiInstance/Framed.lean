@@ -619,7 +619,7 @@ theorem Snapshots.reserve {b s : State} (kept : Snapshots b s) (element : Elemen
 the draft's starts; the Multi-Instance ones as well, since it reads no body's record. -/
 theorem unstarted_alongside (b : State) (program : Program) : Alongside program (Unstarted b) where
   frame s _ moved kept := kept.move (.same moved.occurrences moved.scopes moved.instanceId
-    (.of_same (congrArg (List.map ScopeOccurrence.id) moved.scopes) moved.scopeOrdinals moved.occurrenceOrdinals) (by rw [moved.draft]))
+    (.of_same (congrArg (List.map ScopeOccurrence.id) moved.scopes) moved.scopeOrdinals moved.occurrenceOrdinals) (by rw [moved.started]))
   emit s _ _ _ _ _ kept := by
     rw [Laws.State.emit_eq]
     exact kept.move (.same rfl rfl rfl (.refl _) rfl)

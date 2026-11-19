@@ -51,6 +51,7 @@ import {
   failed,
   failedWith,
   instanceOf,
+  keyOf,
   keyed,
   leaveFlows,
   occurrenceOf,
@@ -350,9 +351,17 @@ export function chooseStart(named: ElementId | null, fired: readonly ElementId[]
   return others.length === 0 ? committed(only) : failed(FailureTag.Rejected, "start-ambiguous");
 }
 
-/** Hold an occurrence whose InputSet is unavailable (`FeatureSlots.held`). */
-export function hold(state: State, held: Held): State {
-  return { ...state, slots: { ...state.slots, held: [...state.slots.held, held] } };
+/**
+ * Hold an occurrence whose InputSet is unavailable (`FeatureSlots.held`), and record it in the micro-step's Ready list:
+ * the one writer of `Transition.ready`, so the list names exactly the occurrences the micro-step holds.
+ */
+export function hold(state: State, occurrence: Occurrence): State {
+  const held: Held = { occurrence: occurrence.id, scope: occurrence.scope };
+  return {
+    ...state,
+    slots: { ...state.slots, held: [...state.slots.held, held] },
+    draft: { ...state.draft, ready: [...state.draft.ready, keyOf(state, occurrence)] },
+  };
 }
 
 /** What an expression evaluated from `scope` reads. */

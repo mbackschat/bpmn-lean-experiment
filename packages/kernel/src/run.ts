@@ -395,6 +395,8 @@ function transitionJson(transition: Transition): JsonValue {
     element: transition.element,
     started: transition.started.map((fact) => ({ occurrence: keyJson(fact.occurrence), sourceType: fact.sourceType })),
     ended: transition.ended.map(([key, terminal]) => ({ occurrence: keyJson(key), terminal })),
+    // Absent when empty, so a run that holds nothing publishes what it published before PD2.
+    ...(transition.ready.length === 0 ? {} : { ready: transition.ready.map(keyJson) }),
   };
 }
 

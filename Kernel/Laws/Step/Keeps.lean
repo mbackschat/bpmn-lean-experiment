@@ -331,7 +331,7 @@ theorem conclude_keeps (contract : HookContract hooks inv) (phases : ClosurePhas
     {element : Option ElementId} {owner : ScopeOccurrenceId} {state after : State} (holds : inv ctx.program state)
     (ran : conclude hooks ctx cause element owner state = .ok after) : inv ctx.program after := by
   obtain ⟨notified, notifying, written⟩ := conclude_ok ran
-  have journalled := phases.journal _ state ⟨cause, element, owner, state.draft.started, state.draft.ended⟩ holds
+  have journalled := phases.journal _ state ⟨cause, element, owner, state.draft.started, state.draft.ended, state.draft.ready⟩ holds
     (by simp) (by simp)
   exact contract.written _ _ _ _ (foldlM_keeps (fun _ _ _ kept ran => contract.cancelled _ _ _ _ kept ran) _ _ _
     journalled notifying) written

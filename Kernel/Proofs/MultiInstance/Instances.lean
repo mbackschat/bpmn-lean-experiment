@@ -432,7 +432,7 @@ theorem Numbered.signalOther {program : Program} {s : State} {signal : Signal}
   · exact .inr (.inr resumed)
 
 /-- Holding an occurrence keeps `Numbered`. -/
-theorem Numbered.hold {program : Program} {s : State} (kept : Held) (held : Numbered program s) :
+theorem Numbered.hold {program : Program} {s : State} (kept : Occurrence) (held : Numbered program s) :
     Numbered program (s.hold kept) := by
   rw [Laws.Hooks.hold_eq]
   exact held.shrink (.same rfl (fun _ inside => inside) rfl rfl rfl fun _ pending => .inl pending)

@@ -48,10 +48,14 @@ function page() {
 test("validates the strict request, page, and five closed result arms", async () => {
   const validate = await validator();
   const validPage = page();
+  const [first] = validPage.batches;
+  const held = (ready: unknown) =>
+    ({ ...validPage, batches: [{ ...first, transitions: [{ revision: 1, started: [{ occurrence, sourceType: "userTask" }], ended: [], ready }] }] });
   for (const document of [
     { afterRevision: 0 },
     { afterRevision: Number.MAX_SAFE_INTEGER, limit: 100 },
     validPage,
+    held([occurrence]),
     { kind: "available", page: validPage },
     { kind: "notFound" },
     { kind: "unavailable" },
@@ -60,8 +64,10 @@ test("validates the strict request, page, and five closed result arms", async ()
   ]) {
     assert.equal(validate(document), true, JSON.stringify(validate.errors));
   }
-  const [first] = validPage.batches;
   for (const malformed of [
+    // PD2's Ready list has one representation: absent when a step holds nothing, never empty.
+    held([]),
+    held([{ ...occurrence, owner: 0 }]),
     { afterRevision: 0, limit: 0 },
     { afterRevision: 0, limit: 101 },
     { ...validPage, privateAnchor: "forbidden" },

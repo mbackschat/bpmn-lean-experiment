@@ -257,6 +257,7 @@ export function canonicalBatchText(batch: FlowNodeOccurrenceBatch): string {
         occurrence: keyValue(ended.occurrence),
         terminal: ended.terminal,
       })),
+      ...(transition.ready === undefined ? {} : { ready: transition.ready.map(keyValue) }),
     })),
   });
 }

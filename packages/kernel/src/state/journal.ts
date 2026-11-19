@@ -39,13 +39,17 @@ export interface StartedFact {
   readonly sourceType: string;
 }
 
-/** One micro-step's occurrence facts. */
+/**
+ * One micro-step's occurrence facts. `ready` names the occurrences the micro-step leaves in BPMN's Ready state (BPMN
+ * 2.0.2 §13.3.2, Fig. 13.2): begun, their InputSet unavailable (§10.4.2); `hooks.ts#hold` is its only writer.
+ */
 export interface Transition {
   readonly cause: Cause;
   readonly element: ElementId | null;
   readonly owner: ScopeOccurrenceId;
   readonly started: readonly StartedFact[];
   readonly ended: readonly (readonly [OccurrenceKey, Terminal])[];
+  readonly ready: readonly OccurrenceKey[];
 }
 
 /**

@@ -579,7 +579,7 @@ theorem endsKept_alongside (b : State) (x : Option (OccurrenceId × OccurrenceKe
     Alongside program (Laws.Step.EndsKept b x) srel where
   frame _ _ moved kept := kept.unmoved moved.occurrences moved.activations ⟨moved.scopes, moved.instanceId⟩
     (.of_same (congrArg (List.map ScopeOccurrence.id) moved.scopes) moved.scopeOrdinals moved.occurrenceOrdinals)
-    (.of_eq (by simp only [Laws.Step.endKeys, moved.journal, moved.draft]))
+    (.of_eq (by simp only [Laws.Step.endKeys, moved.journal, moved.ended]))
   emit s _ _ _ _ _ kept := by
     rw [Laws.State.emit_eq]
     exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (.refl _) (.refl _)
@@ -698,18 +698,17 @@ private theorem withdrawOccurrence_draft (s : State) (id : OccurrenceId) : (s.wi
     (((s.closeOwnItems id).disarm id).scopes.filter (·.occurrence == some id)) ((s.closeOwnItems id).disarm id)
   rw [Laws.State.withdrawOccurrence_eq, frame, Laws.State.disarm_eq, Laws.State.closeOwnItems_eq]
 
-/-- Opening a subscription keeps the draft's end facts: its reservation journals nothing (`Laws.State.Reserves`). -/
-private theorem openSubscription_ended (s : State) (kind : OpenKind)
+/-- Opening a subscription keeps the draft: its reservation journals nothing (`Laws.State.Reserves`). -/
+private theorem openSubscription_draft (s : State) (kind : OpenKind)
     (element : ElementId) (scope : ScopeOccurrenceId) (host : Option OccurrenceId) (passive : Bool) :
-    (s.openSubscription kind element scope host passive).1.draft.ended = s.draft.ended := by
+    (s.openSubscription kind element scope host passive).1.draft = s.draft := by
   rw [Laws.State.openSubscription_eq]
-  exact congrArg (·.ended) (Laws.State.reserve_reserves s element scope).draft
+  exact (Laws.State.reserve_reserves s element scope).draft
 
-/-- Subscriptions' operations keep the draft's end facts: they queue firings and completions, open, close, withdraw
-and rekind items and disarm hosts, and a subscription reserves its occurrence, which journals nothing. -/
-theorem subscriptionsOps_draft (program : Program)
-    (ended : List (OccurrenceKey × Terminal)) :
-    Laws.Subscriptions.SubscriptionsOps program fun s => s.draft.ended = ended where
+/-- Subscriptions' operations keep whatever holds of the draft: they queue firings and completions, open, close,
+withdraw and rekind items and disarm hosts, and a subscription reserves its occurrence, which journals nothing. -/
+theorem subscriptionsOps_draft (program : Program) (keeps : Draft → Prop) :
+    Laws.Subscriptions.SubscriptionsOps program fun s => keeps s.draft where
   fire s _ _ same := by rw [signal_draft]; exact same
   rekind _ _ same _ _ := same
   awaits := Laws.State.triggers_await
@@ -717,8 +716,9 @@ theorem subscriptionsOps_draft (program : Program)
   openItem s kind occurrence same _ _ _ _ := by
     rw [Laws.State.openItem_eq]
     exact same
-  openSubscription s kind element scope host passive same _ _ _ _ _ :=
-    (openSubscription_ended s kind element scope host passive).trans same
+  openSubscription s kind element scope host passive same _ _ _ _ _ := by
+    rw [openSubscription_draft]
+    exact same
   subscribed s kind element scope host passive _ := by
     have reserves := Laws.State.reserve_reserves s element scope
     rw [Laws.State.openSubscription_eq]
@@ -729,29 +729,45 @@ theorem subscriptionsOps_draft (program : Program)
   interruptComplete s _ _ _ _ same _ _ := by
     rw [signal_draft, signal_draft, withdrawOccurrence_draft, closeItem_draft]
     exact same
-  reopenComplete s _ _ _ _ same _ _ _ := by rw [signal_draft, openSubscription_ended, closeItem_draft]; exact same
+  reopenComplete s _ _ _ _ same _ _ _ := by rw [signal_draft, openSubscription_draft, closeItem_draft]; exact same
   occur s _ _ _ _ same _ _ _ _ := by rw [signal_draft]; exact same
   insideBegin s _ _ _ same _ _ _ := by rw [signal_draft, withdrawInside_draft, closeItem_draft]; exact same
   closeBegin s _ _ _ same _ _ _ := by rw [signal_draft, closeItem_draft]; exact same
-  reopenBegin s _ _ _ _ same _ _ _ _ := by rw [signal_draft, openSubscription_ended, closeItem_draft]; exact same
+  reopenBegin s _ _ _ _ same _ _ _ _ := by rw [signal_draft, openSubscription_draft, closeItem_draft]; exact same
   bareBegin s _ _ _ same _ _ := by rw [signal_draft]; exact same
 
 end Draft
 
-/-- The registered hooks journal no end when told of a cancellation, which no feature hears, or of variable writes,
-which Subscriptions offers to Conditional items by queueing the firings they decide (`Laws.Subscriptions`), so each
-micro-step leaves the draft without end facts (`Laws.Step.microStep_drafts`). -/
+/-- The registered hooks keep whatever holds of the draft when told of a cancellation, which no feature hears, or of
+variable writes, which Subscriptions offers to Conditional items by queueing the firings they decide
+(`Laws.Subscriptions`). -/
+theorem registered_keeps (keeps : Draft → Prop) :
+    (∀ ctx occurrence state after, keeps state.draft → Registry.hooks.cancelled ctx occurrence state = .ok after →
+      keeps after.draft) ∧
+    ∀ ctx writes state after, keeps state.draft → Registry.hooks.written ctx writes state = .ok after →
+      keeps after.draft :=
+  ⟨fun _ _ _ _ kept ran => by
+    rw [Laws.Registry.hooks_cancelled] at ran
+    cases ran
+    exact kept, fun ctx _ _ _ kept ran => by
+    rw [Laws.Registry.hooks_written] at ran
+    exact Laws.Subscriptions.offerWrites_keeps (subscriptionsOps_draft ctx.program keeps) kept ran⟩
+
+/-- The registered hooks journal no end when told of a cancellation or of variable writes (`registered_keeps`), so
+each micro-step leaves the draft without end facts (`Laws.Step.microStep_drafts`). -/
 theorem registered_quiet :
     (∀ ctx occurrence state after, state.draft.ended = [] → Registry.hooks.cancelled ctx occurrence state = .ok after →
       after.draft.ended = []) ∧
     ∀ ctx writes state after, state.draft.ended = [] → Registry.hooks.written ctx writes state = .ok after →
       after.draft.ended = [] :=
-  ⟨fun _ _ _ _ empty ran => by
-    rw [Laws.Registry.hooks_cancelled] at ran
-    cases ran
-    exact empty, fun ctx _ _ _ empty ran => by
-    rw [Laws.Registry.hooks_written] at ran
-    exact Laws.Subscriptions.offerWrites_keeps (subscriptionsOps_draft ctx.program []) empty ran⟩
+  registered_keeps (·.ended = [])
+
+/-- PD2: every committed micro-step of the registered hooks leaves the draft's Ready list empty, so the Ready list the
+next micro-step journals names only the occurrences it holds (`Laws.Hooks.hold_ready`). -/
+theorem registered_ready {ctx : Ctx} {cause : Cause} {element : Option ElementId} {owner : ScopeOccurrenceId}
+    {body : State → Outcome} {state after : State}
+    (ran : Step.microStep Registry.hooks ctx cause element owner body state = .ok after) : after.draft.ready = [] :=
+  Laws.Step.microStep_ready (registered_keeps (·.ready = [])).1 (registered_keeps (·.ready = [])).2 ran
 
 /-- `MicroStepsKeepEnds` of the registered hooks, from the records and phases of `WellFormed`; `removedEndOnce` then
 gives `RemovedEndOnce`. -/

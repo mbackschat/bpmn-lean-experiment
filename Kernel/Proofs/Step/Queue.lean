@@ -170,13 +170,19 @@ theorem effectRaise_wellFormed {state : State} (formed : Laws.State.WellFormed p
   rw [activation, ← placed.1, ← placed.2, ← named]
   exact raiseFrom_wellFormed formed present begun event (fun _ same => (Option.some.inj same).symm) patch
 
-/-- Holding an occurrence keeps `WellFormed`: no clause reads the held occurrences. -/
-theorem hold_wellFormed {state : State} (formed : Laws.State.WellFormed program state) (held : Held) :
-    Laws.State.WellFormed program (state.hold held) := by
+/-- Holding an occurrence keeps `WellFormed`: no clause reads the held occurrences or the Ready list. -/
+theorem hold_wellFormed {state : State} (formed : Laws.State.WellFormed program state) (occurrence : Occurrence) :
+    Laws.State.WellFormed program (state.hold occurrence) := by
   rw [Laws.Hooks.hold_eq]
-  exact Laws.State.slots_wellFormed formed
-    ⟨formed.settled.parked, formed.settled.bodies, formed.settled.resumed, formed.settled.queued, formed.settled.placed,
-      formed.settled.runsPlaced, formed.settled.grouped, formed.settled.raised⟩
+  have slotted : Laws.State.WellFormed program { state with slots := { state.slots with
+      held := state.slots.held ++ [{ occurrence := occurrence.id, scope := occurrence.scope }] } } :=
+    Laws.State.slots_wellFormed formed
+      ⟨formed.settled.parked, formed.settled.bodies, formed.settled.resumed, formed.settled.queued, formed.settled.placed,
+        formed.settled.runsPlaced, formed.settled.grouped, formed.settled.raised⟩
+  exact slotted.narrow {
+      scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
+      instances := fun _ => by apply Laws.State.instanceOf_congr <;> rfl, recorded := id, items := .refl _,
+      tokens := .refl _, signals := .refl _, starts := fun _ => id, slots := .same rfl } rfl slotted.startedOnce
 
 /-- The scope occurrence an occurrence runs in stands. -/
 theorem housed_of {state : State} (formed : Laws.State.WellFormed program state) {occurrence : Occurrence}

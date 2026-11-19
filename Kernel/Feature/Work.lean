@@ -140,7 +140,7 @@ def arriveActivity (hooks : WorkHooks) (ctx : Ctx) (header : Header) (payload : 
     (state : State) : Outcome := do
   let handler := ctx.scopeRole state occurrence.scope == .compensationHandler
   let some inputs ← ctx.evaluateMappings (state.evalContext ctx.program occurrence.scope) payload.envelope.inputs
-    | .ok (state.hold { occurrence := occurrence.id, scope := occurrence.scope })
+    | .ok (state.hold occurrence)
   let state := enterLocal header inputs occurrence state
   -- An instance of a Multi-Instance body, the only occurrence of a looping Activity this hook sees, follows the token
   -- its body began on; admission refuses a looping compensation handler (`compensation.handlerMultiInstance`).

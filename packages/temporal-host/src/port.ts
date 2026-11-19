@@ -80,12 +80,16 @@ export interface EndedView {
   readonly terminal: string;
 }
 
-/** One micro-step's occurrence facts (`Kernel.Run.transitionJson`). */
+/**
+ * One micro-step's occurrence facts (`Kernel.Run.transitionJson`); `ready`, absent when empty, names the occurrences the
+ * micro-step leaves in BPMN's Ready state (held, PD2).
+ */
 export interface TransitionView {
   readonly cause: CauseView;
   readonly element: string | null;
   readonly started: readonly StartedView[];
   readonly ended: readonly EndedView[];
+  readonly ready?: readonly OccurrenceKey[];
 }
 
 /** One open wait's address (`Kernel.Run.addressJson`): its Message channel and literal name, or its Signal address. */

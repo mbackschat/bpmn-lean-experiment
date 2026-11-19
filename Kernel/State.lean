@@ -183,6 +183,7 @@ structure Draft where
   started : List StartedFact := []
   ended : List (OccurrenceKey × Terminal) := []
   cancelled : List Occurrence := []
+  ready : List OccurrenceKey := []
   deriving Repr
 
 /-- One activation counter (R8: per process instance, element and role). -/

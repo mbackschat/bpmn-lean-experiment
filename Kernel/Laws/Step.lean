@@ -350,8 +350,8 @@ occurrence in order, then `Hooks.written` of the writes. -/
 theorem conclude_ok {hooks : Hooks} {ctx : Ctx} {cause : Cause} {element : Option ElementId}
     {owner : ScopeOccurrenceId} {state after : State} (ran : conclude hooks ctx cause element owner state = .ok after) :
     ∃ notified, state.draft.cancelled.foldlM (fun state occurrence => hooks.cancelled ctx occurrence state)
-        { state with journal := { cause, element, owner, started := state.draft.started, ended := state.draft.ended } ::
-            state.journal, draft := {}, writes := [] } = .ok notified ∧
+        { state with journal := { cause, element, owner, started := state.draft.started, ended := state.draft.ended
+                                  ready := state.draft.ready } :: state.journal, draft := {}, writes := [] } = .ok notified ∧
       hooks.written ctx state.writes notified = .ok after := by
   unfold conclude at ran
   rw [journalDraft_eq] at ran

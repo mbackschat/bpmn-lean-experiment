@@ -52,6 +52,14 @@ export function occurrenceFirstPage(
   };
 }
 
+/** `occurrenceFirstPage` with its task held: the step that starts it leaves it Ready (PD2). */
+export function heldOccurrenceFirstPage(producerHeadRevision: number = 2): FlowNodeOccurrencePage {
+  const page = occurrenceFirstPage(producerHeadRevision);
+  const [batch] = page.batches;
+  const [passed, started] = batch!.transitions;
+  return { ...page, batches: [{ ...batch!, transitions: [passed!, { ...started!, ready: [taskOccurrence] }] }] };
+}
+
 export function occurrenceSecondPage(): FlowNodeOccurrencePage {
   return {
     ...occurrenceIdentity,

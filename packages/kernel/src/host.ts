@@ -276,6 +276,7 @@ function publicTransition(program: Program, transition: Transition): Transition 
     element: transition.element === null ? null : programPublicId(program, transition.element),
     started: transition.started.map((fact) => ({ ...fact, occurrence: publicKey(program, fact.occurrence) })),
     ended: transition.ended.map(([key, terminal]) => [publicKey(program, key), terminal] as const),
+    ready: transition.ready.map((key) => publicKey(program, key)),
   };
 }
 
@@ -320,9 +321,10 @@ function publicJournal(program: Program, journal: readonly Transition[]): Transi
   return journal.flatMap((transition) => {
     const started = transition.started.filter((fact) => programPublishesOccurrences(program, fact.occurrence.element));
     const ended = transition.ended.filter(([key]) => programPublishesOccurrences(program, key.element));
+    const ready = transition.ready.filter((key) => programPublishesOccurrences(program, key.element));
     const kept = transition.element === null || programPublishesOccurrences(program, transition.element) ||
-      started.length > 0 || ended.length > 0;
-    return kept ? [publicTransition(program, { ...transition, started, ended })] : [];
+      started.length > 0 || ended.length > 0 || ready.length > 0;
+    return kept ? [publicTransition(program, { ...transition, started, ended, ready })] : [];
   });
 }
 

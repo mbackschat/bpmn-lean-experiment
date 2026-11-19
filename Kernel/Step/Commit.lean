@@ -16,7 +16,8 @@ namespace Kernel.Step
 
 /-- The draft as one `Transition` at the head of the journal, the draft and the write log emptied. -/
 def journalDraft (cause : Cause) (element : Option ElementId) (owner : ScopeOccurrenceId) (state : State) : State :=
-  let transition : Transition := { cause, element, owner, started := state.draft.started, ended := state.draft.ended }
+  let transition : Transition :=
+    { cause, element, owner, started := state.draft.started, ended := state.draft.ended, ready := state.draft.ready }
   -- Newest first while the input runs, reversed once by `orderJournal`: appending copied the journal on every micro-step,
   -- which made a closure quadratic in its length (measured 2026-11-10 on `automatic-loop-beyond-bound`).
   { state with journal := transition :: state.journal, draft := {}, writes := [] }

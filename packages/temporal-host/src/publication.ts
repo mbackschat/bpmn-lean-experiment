@@ -4,13 +4,13 @@
  *
  * Every micro-step of a committed input is one revision, numbered across the whole Workflow chain. Each input yields
  * an execution batch, one transition per micro-step with its cause as role, and a flow-node-occurrence batch over the
- * same revisions holding the micro-steps that started or ended occurrences, empty when none did, so both publications
- * page in step. Occurrences keep the kernel's `OccurrenceKey` as their identity; revisions only position them. A Run
+ * same revisions holding the micro-steps that started, ended or held (Ready) occurrences, empty when none did, so both
+ * publications page in step. Occurrences keep the kernel's `OccurrenceKey` as their identity; revisions only position them. A Run
  * retains the batches it published; the cursor alone crosses Continue-As-New, so a reader asking for a revision before
  * the Run's first is told it is a gap.
  */
 import { canonicalBytes, chainCapacity } from "./capacity.js";
-import type { CauseView, EndedView, StartedView, TransitionView } from "./port.js";
+import type { CauseView, EndedView, OccurrenceKey, StartedView, TransitionView } from "./port.js";
 
 /**
  * Where numbering stands, and the source type each published element began with: a micro-step can act on an element
@@ -30,10 +30,12 @@ export interface ExecutionTransition {
   readonly sourceType: string | null;
 }
 
+/** `ready` is absent when the micro-step held no occurrence, as the kernel's journal omits it. */
 export interface OccurrenceTransition {
   readonly revision: number;
   readonly started: readonly StartedView[];
   readonly ended: readonly EndedView[];
+  readonly ready?: readonly OccurrenceKey[];
 }
 
 export interface Batch<T> {
@@ -79,8 +81,9 @@ export function appendJournal(log: PublicationLog, commandId: string, journal: r
       element: transition.element,
       sourceType: transition.element === null ? null : sourceTypes.get(transition.element) ?? null,
     });
-    if (transition.started.length > 0 || transition.ended.length > 0) {
-      occurrences.push({ revision, started: transition.started, ended: transition.ended });
+    const ready = transition.ready ?? [];
+    if (transition.started.length > 0 || transition.ended.length > 0 || ready.length > 0) {
+      occurrences.push({ revision, started: transition.started, ended: transition.ended, ...(ready.length === 0 ? {} : { ready }) });
     }
   });
   const throughRevision = fromRevision + journal.length;

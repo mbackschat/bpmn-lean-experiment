@@ -48,13 +48,16 @@ structure StartedFact where
   sourceType : String
   deriving Repr
 
-/-- One micro-step's occurrence facts. -/
+/-- One micro-step's occurrence facts. `ready` names the occurrences the micro-step leaves in BPMN's Ready state
+([BPMN 2.0.2 §13.3.2](../../docs/reference/bpmn-2.0.2/README.md), Fig. 13.2): begun, their InputSet unavailable
+(§10.4.2); `State.hold` is its only writer. -/
 structure Transition where
   cause : Cause
   element : Option ElementId
   owner : ScopeOccurrenceId
   started : List StartedFact := []
   ended : List (OccurrenceKey × Terminal) := []
+  ready : List OccurrenceKey := []
   deriving Repr
 
 /-- The `asyncBefore` and `asyncAfter` marks of the occurrence `key`: a Multi-Instance Activity's envelope marks its

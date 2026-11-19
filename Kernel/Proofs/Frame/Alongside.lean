@@ -73,7 +73,8 @@ def ResumesPending (rel : State → Prop) (s : State) (compensation : Compensati
     OccurPending s element ∨ PendingIn rel element
 
 /-- `t` agrees with `s` on everything a property carried beside `WellFormed` may read: the scope occurrences and their
-counters, the occurrences, the issue and activation counters, the journal, the draft, the instance identity, the Multi-Instance runs,
+counters, the occurrences, the issue and activation counters, the journal, the draft's start and end facts (not its
+Ready list, which `State.hold` writes), the instance identity, the Multi-Instance runs,
 the compensation slot, the instance entries, the queued begins in queue order (`Laws.Step.beginsOf`,
 `Laws.Step.deferredOf`), the queued triggers (`Laws.Step.triggersOf`) and the queued compensations' resumes
 (`Laws.Step.resumesOf`), and `t` has no reservation pending (`Laws.Step.OccurPending`), flow token
@@ -86,7 +87,8 @@ structure Unmoved (s t : State) : Prop where
   nextPosition : t.nextPosition = s.nextPosition
   activations : t.activations = s.activations
   journal : t.journal = s.journal
-  draft : t.draft = s.draft
+  started : t.draft.started = s.draft.started
+  ended : t.draft.ended = s.draft.ended
   instanceId : t.instanceId = s.instanceId
   multiInstances : t.slots.multiInstances = s.slots.multiInstances
   compensation : t.slots.compensation = s.slots.compensation
@@ -108,7 +110,8 @@ theorem Unmoved.same {s t : State} (scopes : t.scopes = s.scopes := by exact rfl
     (occurrenceOrdinals : t.occurrenceOrdinals = s.occurrenceOrdinals := by exact rfl)
     (nextPosition : t.nextPosition = s.nextPosition := by exact rfl)
     (activations : t.activations = s.activations := by exact rfl) (journal : t.journal = s.journal := by exact rfl)
-    (draft : t.draft = s.draft := by exact rfl) (instanceId : t.instanceId = s.instanceId := by exact rfl)
+    (started : t.draft.started = s.draft.started := by exact rfl) (ended : t.draft.ended = s.draft.ended := by exact rfl)
+    (instanceId : t.instanceId = s.instanceId := by exact rfl)
     (multiInstances : t.slots.multiInstances = s.slots.multiInstances := by exact rfl)
     (compensation : t.slots.compensation = s.slots.compensation := by exact rfl)
     (begins : Laws.Step.beginsOf t.signals = Laws.Step.beginsOf s.signals := by exact rfl)
@@ -121,7 +124,7 @@ theorem Unmoved.same {s t : State} (scopes : t.scopes = s.scopes := by exact rfl
     (parked : ∀ waiting ∈ t.slots.parked, waiting ∈ s.slots.parked := by exact fun _ held => held)
     (placings : ∀ signal ∈ t.signals, Laws.Step.placing signal = true → signal ∈ s.signals :=
       by exact fun _ held _ => held) : Unmoved s t :=
-  ⟨scopes, scopeOrdinals, occurrences, occurrenceOrdinals, nextPosition, activations, journal, draft, instanceId, multiInstances, compensation, begins,
+  ⟨scopes, scopeOrdinals, occurrences, occurrenceOrdinals, nextPosition, activations, journal, started, ended, instanceId, multiInstances, compensation, begins,
     triggers, resumes, deferred, pending, instances, flows, parked, placings⟩
 
 /-- `scope` is the context of a handler or group a compensation run of `s` holds running. -/
@@ -446,7 +449,7 @@ section Items
 variable {rel : State → Prop}
 
 /-- Holding an occurrence moves nothing `rel` reads. -/
-theorem FrameAlongside.hold {program : Program} (side : FrameAlongside program rel) {s : State} (kept : rel s) (held : Held) :
+theorem FrameAlongside.hold {program : Program} (side : FrameAlongside program rel) {s : State} (kept : rel s) (held : Occurrence) :
     rel (s.hold held) := by
   rw [Laws.Hooks.hold_eq]
   exact side.frame s _ .same kept

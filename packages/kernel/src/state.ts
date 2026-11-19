@@ -314,9 +314,10 @@ export interface Draft {
   readonly started: readonly StartedFact[];
   readonly ended: readonly (readonly [OccurrenceKey, Terminal])[];
   readonly cancelled: readonly Occurrence[];
+  readonly ready: readonly OccurrenceKey[];
 }
 
-export const emptyDraft: Draft = { started: [], ended: [], cancelled: [] };
+export const emptyDraft: Draft = { started: [], ended: [], cancelled: [], ready: [] };
 
 /** One activation counter (R8: per process instance, element and role). */
 export interface ActivationCount {

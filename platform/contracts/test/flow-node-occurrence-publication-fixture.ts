@@ -49,6 +49,18 @@ export const startOccurrenceBatch = {
   ],
 } as const satisfies FlowNodeOccurrenceBatch;
 
+/**
+ * The start batch with its User Task held (PD2): its Data Input is unavailable, so the step that starts it leaves it in
+ * BPMN's Ready state and names it in `ready`.
+ */
+export const heldOccurrenceBatch = {
+  ...startOccurrenceBatch,
+  transitions: [
+    startOccurrenceBatch.transitions[0],
+    { ...startOccurrenceBatch.transitions[1], ready: [reviewTask] },
+  ],
+} as const satisfies FlowNodeOccurrenceBatch;
+
 /** An input that began and ended no occurrence still has its batch, with no transitions. */
 export const emptyOccurrenceBatch = {
   commandId: elementFreeBatch.commandId,
@@ -77,6 +89,11 @@ export function occurrencePage(): FlowNodeOccurrencePage {
     headRevision: 3,
     batches: [startOccurrenceBatch],
   };
+}
+
+/** `occurrencePage` with its User Task held. */
+export function heldOccurrencePage(): FlowNodeOccurrencePage {
+  return { ...occurrencePage(), batches: [heldOccurrenceBatch] };
 }
 
 /** A page after revision 3 that ends the task the page's cursor hid the start of. */

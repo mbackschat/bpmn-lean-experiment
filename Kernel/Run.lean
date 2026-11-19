@@ -257,13 +257,15 @@ def causeJson : Cause → Json
   | .arrive flow => Json.mkObj [("kind", "arrive"), ("flow", Json.str flow.value)]
   | .idle _ => Json.mkObj [("kind", "idle")]
 
+/-- `ready` is absent when empty, so a run that holds nothing publishes what it published before PD2. -/
 def transitionJson (transition : Transition) : Json :=
-  Json.mkObj [("cause", causeJson transition.cause),
+  Json.mkObj ([("cause", causeJson transition.cause),
     ("element", match transition.element with | some element => Json.str element.value | none => Json.null),
     ("started", Json.arr (transition.started.map fun fact =>
       Json.mkObj [("occurrence", keyJson fact.occurrence), ("sourceType", Json.str fact.sourceType)]).toArray),
     ("ended", Json.arr (transition.ended.map fun (key, terminal) =>
-      Json.mkObj [("occurrence", keyJson key), ("terminal", Json.str (terminalName terminal))]).toArray)]
+      Json.mkObj [("occurrence", keyJson key), ("terminal", Json.str (terminalName terminal))]).toArray)] ++
+    (if transition.ready.isEmpty then [] else [("ready", Json.arr (transition.ready.map keyJson).toArray)]))
 
 def waitJson (wait : Host.OpenWait) : Json :=
   let view := wait.view

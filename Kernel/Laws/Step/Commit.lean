@@ -20,7 +20,8 @@ open Kernel Kernel.Step
 /-- The draft journalled as one `Transition` at the head of the journal, the draft and the write log emptied. -/
 theorem journalDraft_eq {cause : Cause} {element : Option ElementId} {owner : ScopeOccurrenceId} {state : State} :
     journalDraft cause element owner state = { state with
-      journal := { cause, element, owner, started := state.draft.started, ended := state.draft.ended } :: state.journal,
+      journal := { cause, element, owner, started := state.draft.started, ended := state.draft.ended
+                   ready := state.draft.ready } :: state.journal,
       draft := {}, writes := [] } := by
   simp only [journalDraft]
 

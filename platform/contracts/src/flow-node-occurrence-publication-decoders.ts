@@ -161,7 +161,8 @@ function requireBatch(
   transitions.forEach((transition, index) => {
     const itemLabel = `${label}.transitions[${index}]`;
     requireObject(transition, itemLabel);
-    exact(transition, itemLabel, ["revision", "started", "ended"]);
+    const held = Object.hasOwn(transition, "ready");
+    exact(transition, itemLabel, held ? ["revision", "started", "ended", "ready"] : ["revision", "started", "ended"]);
     const revision = requirePositiveSafeInteger(readOwn(transition, "revision"), `${itemLabel}.revision`);
     if (revision <= prior || revision > through) {
       throw new TypeError(`${itemLabel}.revision is outside its batch or out of order`);
@@ -169,8 +170,8 @@ function requireBatch(
     prior = revision;
     const started = readOwn(transition, "started");
     const ended = readOwn(transition, "ended");
-    if (!isDenseFlowNodeArray(started) || !isDenseFlowNodeArray(ended) || started.length + ended.length === 0) {
-      throw new TypeError(`${itemLabel} must start or end at least one occurrence`);
+    if (!isDenseFlowNodeArray(started) || !isDenseFlowNodeArray(ended) || (started.length + ended.length === 0 && !held)) {
+      throw new TypeError(`${itemLabel} must start, end or make Ready at least one occurrence`);
     }
     started.forEach((start, startIndex) => {
       const startLabel = `${itemLabel}.started[${startIndex}]`;
@@ -186,17 +187,27 @@ function requireBatch(
       lifecycle.end(requireKey(readOwn(end, "occurrence"), `${endLabel}.occurrence`), endLabel);
       if (!terminals.has(readOwn(end, "terminal"))) throw new TypeError(`${endLabel}.terminal is unknown`);
     });
+    if (held) {
+      const ready = readOwn(transition, "ready");
+      // One current representation: a micro-step that holds nothing omits the list rather than publishing it empty.
+      if (!isDenseFlowNodeArray(ready) || ready.length === 0) throw new TypeError(`${itemLabel}.ready must be a nonempty dense array`);
+      ready.forEach((key, readyIndex) => {
+        const readyLabel = `${itemLabel}.ready[${readyIndex}]`;
+        lifecycle.ready(requireKey(key, readyLabel), readyLabel);
+      });
+    }
   });
   return value as FlowNodeOccurrenceBatch;
 }
 
 /**
- * The lifecycle facts one page shows: no occurrence starts or ends twice. A page may end an occurrence that began
- * before it, so an end needs no start in the page.
+ * The lifecycle facts one page shows: no occurrence starts, ends or becomes Ready twice, and none becomes Ready once it
+ * ended. A page may end an occurrence that began before it, so an end needs no start in the page.
  */
 class PageLifecycle {
   readonly #started = new Set<string>();
   readonly #ended = new Set<string>();
+  readonly #ready = new Set<string>();
 
   start(key: FlowNodeOccurrenceKey, label: string): void {
     const text = flowNodeOccurrenceKeyText(key);
@@ -208,6 +219,12 @@ class PageLifecycle {
     const text = flowNodeOccurrenceKeyText(key);
     if (this.#ended.has(text)) throw new TypeError(`${label} ends an occurrence again`);
     this.#ended.add(text);
+  }
+
+  ready(key: FlowNodeOccurrenceKey, label: string): void {
+    const text = flowNodeOccurrenceKeyText(key);
+    if (this.#ready.has(text) || this.#ended.has(text)) throw new TypeError(`${label} makes an occurrence Ready again`);
+    this.#ready.add(text);
   }
 }
 

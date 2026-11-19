@@ -442,7 +442,7 @@ export function arriveMultiInstance(
 ): Outcome {
   const read = entryRead(ctx, loop, state, occurrence.scope);
   if (!read.ok) return read;
-  if (read.value === null) return committed(hold(state, { occurrence: occurrence.id, scope: occurrence.scope }));
+  if (read.value === null) return committed(hold(state, occurrence));
   const [collection, items, count] = read.value;
   if (count === 0) {
     return committed(signal(state, completeSignal(occurrence.id, leaveOutgoing, written(ctx, loop, collection, []), WriteRule.Outward)));

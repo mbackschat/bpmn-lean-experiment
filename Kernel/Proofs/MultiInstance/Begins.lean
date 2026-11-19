@@ -462,7 +462,7 @@ end Walk
 /-- The state operations the hooks apply keep `BeginsKept`. -/
 theorem beginsKept_alongside (program : Program) : Alongside program (BeginsKept program) where
   frame _ _ moved held := held.frame (fun _ inside => moved.occurrences ▸ inside) moved.pending moved.journal
-    (congrArg (·.started) moved.draft)
+    moved.started
   emit _ _ _ _ _ _ held := by
     rw [Laws.State.emit_eq]
     exact held.frame (fun _ inside => inside) (fun _ named => named) rfl rfl

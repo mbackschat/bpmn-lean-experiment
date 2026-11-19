@@ -223,7 +223,7 @@ holds the occurrence whether or not a token began it, as `Work.arriveActivity` h
 def arriveMultiInstance (ctx : Ctx) (header : Header) (envelope : Envelope) (loop : MultiInstance)
     (occurrence : Occurrence) (state : State) : Outcome := do
   match ← entryRead ctx loop state occurrence.scope with
-  | none => .ok (state.hold { occurrence := occurrence.id, scope := occurrence.scope })
+  | none => .ok (state.hold occurrence)
   | some (collection, _, 0) =>
     .ok (state.signal (.complete occurrence.id .outgoing (written ctx loop collection []) .outward))
   | some (collection, items, count) =>
