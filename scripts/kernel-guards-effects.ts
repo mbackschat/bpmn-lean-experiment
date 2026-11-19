@@ -48,6 +48,7 @@ const stateFieldWriters: Readonly<Record<string, readonly string[]>> = {
   activations: ["state", "step"],
   variables: ["state"],
   writes: ["state", "step"],
+  draft: ["state", "step", "hooks"],
 };
 
 function moduleOf(source: Source): string {

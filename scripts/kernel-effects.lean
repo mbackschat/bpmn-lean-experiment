@@ -62,7 +62,7 @@ def pipelineHooks : List Name :=
 def fieldWriters : List (Name × List Name) :=
   let lifecycle := [`Kernel.State, `Kernel.Step]
   [(`tokens, lifecycle), (`occurrences, lifecycle), (`activations, lifecycle), (`variables, [`Kernel.State]),
-   (`writes, lifecycle)]
+   (`writes, lifecycle), (`draft, [`Kernel.State, `Kernel.Step, `Kernel.Hooks])]
 
 /-- Maximum match sites per guarded type across the kernel, codecs excluded (guard 18). Values measured 2026-11-08 on
 the mid-rewrite tree; the owner sets them once the W0.1 shape lands, and only by owner decision after. -/
