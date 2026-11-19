@@ -20,6 +20,7 @@ import { populationEvidenceDocument, populationEvidenceValidator } from "./cibse
 import type { CibPopulationResult, PopulationEvidenceCase } from "./cibseven-population-evidence.ts";
 import { resolveJavaHome } from "./java-home.ts";
 import { CommandTimeoutError, runCommand } from "./run-command.ts";
+import type { RunCommandOptions, RunCommandResult } from "./run-command.ts";
 import { parseWireJson, parseWireJsonBytes } from "./strict-json.ts";
 import { scenarioEvidenceValidator } from "./contract-artifacts.ts";
 import type { CibSevenEvidence, ScenarioDocument } from "./contract-artifacts.ts";
@@ -164,7 +165,7 @@ export function cibBridgeDeadlineMs(scenarioCount: number, environment: NodeJS.P
 }
 
 /** One requested scenario's answer: its result, its population result, or the harness failure that stopped it. */
-type BridgeAnswer =
+export type BridgeAnswer =
   | Readonly<{ kind: "result"; result: CibRunnerResult }>
   | Readonly<{ kind: "population"; result: CibPopulationResult }>
   | Readonly<{ kind: "failure"; failure: string }>;
@@ -174,7 +175,7 @@ type BridgeAnswer =
  * by scenario id: the scenario contract does not make ids unique, and in Verify run 43662533880 two `classification`
  * scenarios in one shard made an id-keyed pairing drop one of them.
  */
-type BatchOutcome = ReadonlyArray<BridgeAnswer>;
+export type BatchOutcome = ReadonlyArray<BridgeAnswer>;
 
 /**
  * Splits the export bridge's output into answers and harness failures. The bridge answers every requested scenario in
@@ -278,14 +279,62 @@ function logSplit(line: string): void {
   process.stdout.write(`${line}\n`);
 }
 
-async function runCibBatch(
+export type CibEffectSchedule = "plainSuccess" | "incidentReportRetrySuccess" | "incidentReportCancel";
+
+/**
+ * The one Maven invocation of a bridge call, shared by the evidence replacement and the single-scenario probe
+ * (`probe-cibseven-scenario.ts`) so the probe cannot drift from the evidence path: its command, arguments, environment
+ * and kill deadline.
+ */
+export function cibBridgeInvocation(
+  engineVersion: string,
+  inputPath: string,
+  outputPath: string,
+  effectSchedule: CibEffectSchedule,
+  scenarioCount: number,
+  environment: NodeJS.ProcessEnv,
+): Readonly<{ command: string; args: ReadonlyArray<string>; options: RunCommandOptions }> {
+  const runnerDirectory = path.join(projectRoot, "runners/cibseven");
+  const args = [
+    "-s",
+    environment.BPMN_MAVEN_SETTINGS ??
+      path.join(runnerDirectory, "maven-settings.xml"),
+    "-f",
+    path.join(runnerDirectory, "pom.xml"),
+    "--no-transfer-progress",
+    "-Dstyle.color=never",
+    "-Dtest=CibSevenPipelineExportBridge",
+    `-Dcibseven.version=${engineVersion}`,
+    `-Dbpmn.pipeline.projectRoot=${projectRoot}`,
+    `-Dbpmn.pipeline.input=${inputPath}`,
+    `-Dbpmn.pipeline.output=${outputPath}`,
+    `-Dbpmn.pipeline.effectSchedule=${effectSchedule}`,
+    "test",
+  ];
+  if (environment.BPMN_MAVEN_REPO_LOCAL !== undefined) {
+    args.unshift(`-Dmaven.repo.local=${environment.BPMN_MAVEN_REPO_LOCAL}`);
+  }
+  return {
+    command: path.join(runnerDirectory, "mvnw"),
+    args,
+    options: {
+      cwd: projectRoot,
+      env: { ...environment, JAVA_HOME: resolveJavaHome() },
+      timeoutMs: cibBridgeDeadlineMs(scenarioCount, environment),
+    },
+  };
+}
+
+/**
+ * Runs one bridge call in `temporaryDirectory`, which keeps its input and result files. `captureLog` receives the Maven
+ * output of a call that succeeded.
+ */
+export async function runCibBatch(
   scenarios: ReadonlyArray<Readonly<{ id: string }>>,
   temporaryDirectory: string,
   engineVersion: string,
-  effectSchedule:
-    | "plainSuccess"
-    | "incidentReportRetrySuccess"
-    | "incidentReportCancel",
+  effectSchedule: CibEffectSchedule,
+  captureLog?: (output: RunCommandResult) => Promise<void>,
 ): Promise<BatchOutcome> {
   batchInvocations += 1;
   const inputPath = path.join(
@@ -301,41 +350,11 @@ async function runCibBatch(
     `${scenarios.map((scenario) => JSON.stringify(scenario)).join("\n")}\n`,
     "utf8",
   );
-  const runnerDirectory = path.join(projectRoot, "runners/cibseven");
-  const args = [
-    "-s",
-    process.env.BPMN_MAVEN_SETTINGS ??
-      path.join(runnerDirectory, "maven-settings.xml"),
-    "-f",
-    path.join(runnerDirectory, "pom.xml"),
-    "--no-transfer-progress",
-    "-Dstyle.color=never",
-    "-Dtest=CibSevenPipelineExportBridge",
-    `-Dcibseven.version=${engineVersion}`,
-    `-Dbpmn.pipeline.projectRoot=${projectRoot}`,
-    `-Dbpmn.pipeline.input=${inputPath}`,
-    `-Dbpmn.pipeline.output=${outputPath}`,
-    `-Dbpmn.pipeline.effectSchedule=${effectSchedule}`,
-    "test",
-  ];
-  if (process.env.BPMN_MAVEN_REPO_LOCAL !== undefined) {
-    args.unshift(
-      `-Dmaven.repo.local=${process.env.BPMN_MAVEN_REPO_LOCAL}`,
-    );
-  }
+  const { command, args, options } = cibBridgeInvocation(
+    engineVersion, inputPath, outputPath, effectSchedule, scenarios.length, process.env,
+  );
   try {
-    await runCommand(
-      path.join(runnerDirectory, "mvnw"),
-      args,
-      {
-        cwd: projectRoot,
-        env: {
-          ...process.env,
-          JAVA_HOME: resolveJavaHome(),
-        },
-        timeoutMs: cibBridgeDeadlineMs(scenarios.length, process.env),
-      },
-    );
+    await captureLog?.(await runCommand(command, args, options));
   } catch (error) {
     const exhausted = error instanceof CommandTimeoutError ? undefined : exhaustedHeapScenario(await bridgeLines(outputPath));
     if (exhausted !== undefined) throw new CibHeapExhaustedError(exhausted, error);
@@ -363,7 +382,7 @@ async function bridgeLines(outputPath: string): Promise<ReadonlyArray<string>> {
  */
 export function cibEvidenceEffectSchedule(
   scenario: Pick<ScenarioDocument, "options" | "stimuli">,
-): "plainSuccess" | "incidentReportRetrySuccess" | "incidentReportCancel" {
+): CibEffectSchedule {
   if (scenario.options?.incidents === undefined) return "plainSuccess";
   const cancels = scenario.stimuli.some((stimulus) =>
     stimulus.kind === "command" &&
