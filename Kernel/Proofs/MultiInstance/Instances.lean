@@ -134,9 +134,9 @@ theorem Numbered.beginInstances {inv : State → Prop} {settled : State → Occu
   have aScopes : (Feature.MultiInstance.setRun queued { base with instances }).scopes = queued.scopes := by rw [aSame]
   have aOccs : (Feature.MultiInstance.setRun queued { base with instances }).occurrences = state.occurrences := by
     rw [aSame]; exact begun.occurrences
-  have aSignals : (Feature.MultiInstance.setRun queued { base with instances }).signals = queued.signals := by
+  have aSignals : (Feature.MultiInstance.setRun queued { base with instances }).batchSignals = queued.batchSignals := by
     rw [aSame]
-  have aTokens : (Feature.MultiInstance.setRun queued { base with instances }).tokens = queued.tokens := by rw [aSame]
+  have aTokens : (Feature.MultiInstance.setRun queued { base with instances }).batchTokens = queued.batchTokens := by rw [aSame]
   have aKeyed : (Feature.MultiInstance.setRun queued { base with instances }).queuedSignals = state.queuedSignals ∧
       (Feature.MultiInstance.setRun queued { base with instances }).queuedTokens = state.queuedTokens := by
     rw [aSame]; exact begun.keyed
@@ -175,17 +175,17 @@ theorem Numbered.beginInstances {inv : State → Prop} {settled : State → Occu
       rw [← same] at parts
       exact ⟨parts.1, parts.2.2.1, parts.2.2.2, ⟨i, opened, fields.2.2 ▸ slot⟩, quiet (List.ne_nil_of_mem opened)⟩
   -- Where the queued begins of `after` came from.
-  have queues : (Laws.Step.beginsOf after.signals = Laws.Step.beginsOf state.signals ++ requests ∧
-        Laws.Step.deferredOf after.tokens = Laws.Step.deferredOf state.tokens) ∨
+  have queues : (Laws.Step.beginsOf after.batchSignals = Laws.Step.beginsOf state.batchSignals ++ requests ∧
+        Laws.Step.deferredOf after.batchTokens = Laws.Step.deferredOf state.batchTokens) ∨
       (ctx.program.options.branchSchedule = .declarationDepthFirst ∧
-        Laws.Step.beginsOf after.signals = Laws.Step.beginsOf state.signals ∧
-        Laws.Step.deferredOf after.tokens = Laws.Step.deferredOf state.tokens ++ requests.reverse) := by
+        Laws.Step.beginsOf after.batchSignals = Laws.Step.beginsOf state.batchSignals ∧
+        Laws.Step.deferredOf after.batchTokens = Laws.Step.deferredOf state.batchTokens ++ requests.reverse) := by
     rw [aSignals, aTokens]
     rcases queuedAs with ⟨signals, tokens⟩ | ⟨schedule, _, signals, tokens⟩
     · exact .inl ⟨by rw [signals, Laws.Step.beginsOf_append, Laws.Step.beginsOf_map], by rw [tokens]⟩
     · exact .inr ⟨schedule, by rw [signals], by
         rw [tokens, Laws.Step.deferredOf_append, ← List.map_reverse, Laws.Step.deferredOf_map]⟩
-  have batchIn : ∀ signal ∈ after.signals, signal ∈ state.signals ∨ ∃ request ∈ requests, signal = .begin request :=
+  have batchIn : ∀ signal ∈ after.batchSignals, signal ∈ state.batchSignals ∨ ∃ request ∈ requests, signal = .begin request :=
     fun signal member => by
       rw [aSignals] at member
       rcases queuedAs with ⟨signals, _⟩ | ⟨_, _, signals, _⟩
@@ -347,17 +347,17 @@ theorem Numbered.beginInstances {inv : State → Prop} {settled : State → Occu
       · obtain ⟨run, member, rest⟩ := resumed
         exact .inr (.inr ⟨run, aComp ▸ member, rest⟩))
   · intro r member
-    have batchS : ∀ {request}, Signal.begin request ∈ state.signals → Laws.State.Queued state request :=
+    have batchS : ∀ {request}, Signal.begin request ∈ state.batchSignals → Laws.State.Queued state request :=
       fun member => .inl (List.mem_append_right _ member)
-    have batchT : ∀ {request}, Token.begin request ∈ state.tokens → Laws.State.Queued state request :=
+    have batchT : ∀ {request}, Token.begin request ∈ state.batchTokens → Laws.State.Queued state request :=
       fun member => .inr (List.mem_append_right _ member)
     have keyedS : ∀ (unit : UnitKey) signal, after.queuedSignals[unit]? = some signal →
         state.queuedSignals[unit]? = some signal := fun _ _ found => by rw [← aKeyed.1]; exact found
     have keyedT : ∀ (unit : UnitKey) token, after.queuedTokens[unit]? = some token →
         state.queuedTokens[unit]? = some token := fun _ _ found => by rw [← aKeyed.2]; exact found
     -- A begin of `after`'s batch is one of `state`'s batch or new.
-    have batchOf : ∀ request, (Signal.begin request ∈ after.signals ∨ Token.begin request ∈ after.tokens) →
-        (Signal.begin request ∈ state.signals ∨ Token.begin request ∈ state.tokens) ∨ request ∈ requests := by
+    have batchOf : ∀ request, (Signal.begin request ∈ after.batchSignals ∨ Token.begin request ∈ after.batchTokens) →
+        (Signal.begin request ∈ state.batchSignals ∨ Token.begin request ∈ state.batchTokens) ∨ request ∈ requests := by
       intro request batch
       rcases batch with signal | token
       · have inside := Laws.Step.mem_beginsOf.mpr signal
@@ -369,13 +369,13 @@ theorem Numbered.beginInstances {inv : State → Prop} {settled : State → Occu
         · exact .inl (.inr (Laws.Step.mem_deferredOf.mp inside))
         · exact (List.mem_append.mp inside).imp (fun old => .inr (Laws.Step.mem_deferredOf.mp old))
             List.mem_reverse.mp
-    have batchQueued : ∀ {request}, Signal.begin request ∈ state.signals ∨ Token.begin request ∈ state.tokens →
+    have batchQueued : ∀ {request}, Signal.begin request ∈ state.batchSignals ∨ Token.begin request ∈ state.batchTokens →
         Laws.State.Queued state request := fun batch => batch.elim batchS batchT
     refine ⟨?inSignals, ?inTokens, ?inQueues, ?inApart, ?inKeyedSignals, ?inKeyedTokens, ?inKeyedQueues⟩
     case inSignals =>
       exact fun first second first' second' precedes one two => by
         have inBegins := Laws.Step.precedes_beginsOf.mp precedes
-        have oldOrder : Precedes (Laws.Step.beginsOf state.signals) first second → first' < second' := fun old => by
+        have oldOrder : Precedes (Laws.Step.beginsOf state.batchSignals) first second → first' < second' := fun old => by
           have firstOld : Laws.State.Queued state first :=
             batchS (Laws.Step.mem_beginsOf.mp (old.subset (List.mem_cons_self ..)))
           obtain ⟨r', mine, conv⟩ := back r member first' first one firstOld
@@ -392,7 +392,7 @@ theorem Numbered.beginInstances {inv : State → Prop} {settled : State → Occu
     case inTokens =>
       exact fun first second first' second' precedes one two => by
         have inDeferred := Laws.Step.precedes_deferredOf.mp precedes
-        have oldOrder : Precedes (Laws.Step.deferredOf state.tokens) first second → second' < first' := fun old => by
+        have oldOrder : Precedes (Laws.Step.deferredOf state.batchTokens) first second → second' < first' := fun old => by
           have firstOld : Laws.State.Queued state first :=
             batchT (Laws.Step.mem_deferredOf.mp (old.subset (List.mem_cons_self ..)))
           obtain ⟨r', mine, conv⟩ := back r member first' first one firstOld
@@ -410,7 +410,7 @@ theorem Numbered.beginInstances {inv : State → Prop} {settled : State → Occu
       exact fun first second first' second' signal token one two => by
         have firstIn := Laws.Step.mem_beginsOf.mpr signal
         have secondIn := Laws.Step.mem_deferredOf.mpr token
-        have both : Signal.begin first ∈ state.signals → Token.begin second ∈ state.tokens → first' < second' :=
+        have both : Signal.begin first ∈ state.batchSignals → Token.begin second ∈ state.batchTokens → first' < second' :=
           fun signalOld tokenOld => by
             obtain ⟨r', mine, conv⟩ := back r member first' first one (batchS signalOld)
             exact (qs.ordered r' mine).queues first second first' second' signalOld tokenOld

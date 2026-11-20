@@ -285,7 +285,7 @@ theorem Numbered.signalPending {program : Program} {s : State} {signal : Signal}
     (unlooped : ∀ element ∈ Laws.Step.occursOf [signal], ∀ loop, ¬ LoopOf program element loop)
     (held : Numbered program s) : Numbered program (s.signal signal) := by
   rw [Laws.State.signal_eq]
-  have split : ∀ element, element ∈ Laws.Step.occursOf (Laws.State.allSignals { s with signals := s.signals ++ [signal] }) →
+  have split : ∀ element, element ∈ Laws.Step.occursOf (Laws.State.allSignals { s with batchSignals := s.batchSignals ++ [signal] }) →
       OccurPending s element ∨ ∀ loop, ¬ LoopOf program element loop := fun element inside => by
     rw [Laws.State.allSignals_append, Laws.Step.occursOf_append] at inside
     rcases List.mem_append.mp inside with old | new
@@ -445,7 +445,7 @@ theorem numbered_begin {program : Program} {s : State} {request : BeginRequest} 
 /-- A change that moves nothing the slot invariant and the numbering read keeps them. -/
 theorem framedNumbered_unmoved {program : Program} {s t : State} (kept : FramedNumbered program s)
     (scopes : t.scopes = s.scopes) (occurrences : t.occurrences = s.occurrences) (slots : t.slots = s.slots)
-    (signals : t.signals = s.signals) (tokens : t.tokens = s.tokens) (queuedSignals : t.queuedSignals = s.queuedSignals)
+    (signals : t.batchSignals = s.batchSignals) (tokens : t.batchTokens = s.batchTokens) (queuedSignals : t.queuedSignals = s.queuedSignals)
     (queuedTokens : t.queuedTokens = s.queuedTokens) : FramedNumbered program t :=
   ⟨kept.1.carry (.equal scopes occurrences (congrArg (·.multiInstances) slots)
     (congrArg (·.compensation.runs) slots)), fun apart => (kept.2 apart).unmoved scopes occurrences

@@ -374,14 +374,14 @@ theorem misplaced_scope_rejected :
 /-- A flow token of the root process inside a called instance breaks `PlacedLane.tokens`. -/
 theorem misplaced_token_rejected (flow : FlowId) (target : ElementId)
     (ends : ({ program with elements := [] } : Program).target? flow = some target) :
-    ¬ PlacedLane { program with elements := [] } { placedState definition with tokens := [.flow flow calledKey] } :=
+    ¬ PlacedLane { program with elements := [] } { placedState definition with batchTokens := [.flow flow calledKey] } :=
   fun lane => placed_misplaced (definition := definition) (lane.tokens _ _ _ (List.mem_singleton_self _) ends)
     (placed_calledRoot (definition := definition) rfl) (by simp [placedState])
 
 /-- A queued begin of the root process inside a called instance breaks `PlacedLane.begins`. -/
 theorem misplaced_begin_rejected :
     ¬ PlacedLane { program with elements := [] } { placedState definition with
-        signals := [.begin { element := ⟨"A"⟩, scope := calledKey }] } := fun lane =>
+        batchSignals := [.begin { element := ⟨"A"⟩, scope := calledKey }] } := fun lane =>
   placed_misplaced (definition := definition)
     (lane.begins _ (.inl (List.mem_singleton_self _)) (placed_present definition)).element
     (placed_calledRoot (definition := definition) rfl) (by simp [placedState])
@@ -391,7 +391,7 @@ theorem misplaced_begin_rejected :
 theorem misplaced_reserved_rejected :
     ¬ PlacedLane { program with elements := [] } { placedState definition with
         occurrences := [{ id := aIn State.root, element := ⟨"A"⟩, scope := State.root, activation := 1 }]
-        signals := [.begin { element := ⟨"A"⟩, scope := calledKey, reserved := some (aIn State.root) }] } := fun lane =>
+        batchSignals := [.begin { element := ⟨"A"⟩, scope := calledKey, reserved := some (aIn State.root) }] } := fun lane =>
   placed_misplaced (definition := definition)
     ((lane.begins _ (.inl (List.mem_singleton_self _)) (placed_present definition)).reserved _
       (List.mem_singleton_self _) rfl)
@@ -411,7 +411,7 @@ theorem misplaced_parked_rejected (flow : FlowId) (target : ElementId)
 /-- A queued reservation of the root process inside a called instance breaks `PlacedLane.occurs`. -/
 theorem misplaced_occur_rejected :
     ¬ PlacedLane { program with elements := [] } { placedState definition with
-        signals := [.occur ⟨"A"⟩ calledKey .outgoing [] .outward] } := fun lane =>
+        batchSignals := [.occur ⟨"A"⟩ calledKey .outgoing [] .outward] } := fun lane =>
   placed_misplaced (definition := definition)
     ((lane.occurs _ _ _ (.inl ⟨_, _, List.mem_singleton_self _⟩)).1 (placed_present definition))
     (placed_calledRoot (definition := definition) rfl) (by simp [placedState])
@@ -419,20 +419,20 @@ theorem misplaced_occur_rejected :
 /-- A queued reservation leaving by a flow its element does not list breaks `PlacedLane.occurs`. -/
 theorem unlisted_occur_rejected (flow : FlowId) :
     ¬ PlacedLane { program with elements := [] } { placedState definition with
-        signals := [.occur ⟨"A"⟩ State.root (.flows [flow]) [] .outward] } := fun lane =>
+        batchSignals := [.occur ⟨"A"⟩ State.root (.flows [flow]) [] .outward] } := fun lane =>
   empty_lists program _ flow
     ((lane.occurs _ _ _ (.inl ⟨_, _, List.mem_singleton_self _⟩)).2 _ rfl flow (List.mem_singleton_self _))
 
 /-- A queued arming of the root process inside a called instance breaks `PlacedLane.arms`. -/
 theorem misplaced_arm_rejected :
-    ¬ PlacedLane { program with elements := [] } { placedState definition with signals := [.arm (aIn calledKey) ⟨"A"⟩ calledKey] } :=
+    ¬ PlacedLane { program with elements := [] } { placedState definition with batchSignals := [.arm (aIn calledKey) ⟨"A"⟩ calledKey] } :=
   fun lane => placed_misplaced (definition := definition)
     (lane.arms _ _ _ (List.mem_singleton_self _) (placed_present definition)) (placed_calledRoot (definition := definition) rfl)
     (by simp [placedState])
 
 /-- A queued gateway arming of the root process inside a called instance breaks `PlacedLane.gateways`. -/
 theorem misplaced_gateway_rejected :
-    ¬ PlacedLane { program with elements := [] } { placedState definition with signals := [.armGateway ⟨calledKey, ⟨"G"⟩, 0⟩ ⟨"G"⟩ calledKey] } :=
+    ¬ PlacedLane { program with elements := [] } { placedState definition with batchSignals := [.armGateway ⟨calledKey, ⟨"G"⟩, 0⟩ ⟨"G"⟩ calledKey] } :=
   fun lane => placed_misplaced (definition := definition)
     (lane.gateways _ _ _ (List.mem_singleton_self _) (placed_present definition)) (placed_calledRoot (definition := definition) rfl)
     (by simp [placedState])
@@ -443,7 +443,7 @@ theorem misplaced_complete_rejected (flow : FlowId) (target : ElementId)
     (ends : ({ program with elements := [] } : Program).target? flow = some target) :
     ¬ PlacedLane { program with elements := [] } { placedState definition with
         occurrences := [{ id := aIn calledKey, element := ⟨"A"⟩, scope := calledKey, activation := 1 }]
-        signals := [.complete (aIn calledKey) (.flows [flow]) [] .outward] } := fun lane =>
+        batchSignals := [.complete (aIn calledKey) (.flows [flow]) [] .outward] } := fun lane =>
   placed_misplaced (definition := definition)
     (lane.completes (aIn calledKey) [flow] [] .outward (List.mem_singleton_self _) _ (List.mem_singleton_self _) rfl flow
       (List.mem_singleton_self _) target ends)
@@ -451,7 +451,7 @@ theorem misplaced_complete_rejected (flow : FlowId) (target : ElementId)
 
 /-- A reservation queued for a scope occurrence not yet issued breaks `PlacedLane.issued`. -/
 theorem unissued_occur_rejected :
-    ¬ PlacedLane program { placedState definition with signals := [.occur ⟨"A"⟩ strayKey .outgoing [] .outward] } :=
+    ¬ PlacedLane program { placedState definition with batchSignals := [.occur ⟨"A"⟩ strayKey .outgoing [] .outward] } :=
   fun lane => by
     have issued := lane.issued strayKey (.inl ⟨⟨"A"⟩, .outgoing, .inl ⟨[], .outward, List.mem_singleton_self _⟩⟩)
     rw [stray_child] at issued
@@ -472,7 +472,7 @@ theorem split_wait_rejected :
 /-- A queued compensation resuming a completion by a named flow breaks `PlacedLane.compensates`. -/
 theorem named_compensate_rejected (flow : FlowId) (thrown : OccurrenceRef) :
     ¬ PlacedLane program { placedState definition with
-        signals := [.compensate State.root none thrown none (some (.complete (aIn calledKey) (.flows [flow])))] } := fun lane => by
+        batchSignals := [.compensate State.root none thrown none (some (.complete (aIn calledKey) (.flows [flow])))] } := fun lane => by
   cases lane.compensates (aIn calledKey) (.flows [flow]) (Laws.Step.mem_resumesOf.mpr ⟨_, _, _, _, List.mem_singleton_self _⟩) _ rfl
 
 /-- The witnesses' compensation slot holding `compensation`. -/
@@ -654,7 +654,7 @@ theorem misplaced_run_rejected :
 /-- A raise from the root process inside a called instance breaks `PlacedLane.raises`. -/
 theorem misplaced_raise_rejected :
     ¬ PlacedLane { program with elements := [] } { placedState definition with
-        signals := [.raise .cancel { element := ⟨"A"⟩, scope := calledKey, activation := 1, thrower := aIn calledKey }] } := fun lane =>
+        batchSignals := [.raise .cancel { element := ⟨"A"⟩, scope := calledKey, activation := 1, thrower := aIn calledKey }] } := fun lane =>
   placed_misplaced (definition := definition) (lane.raises _ _ (List.mem_singleton_self _) (placed_present definition))
     (placed_calledRoot (definition := definition) rfl) (by simp [placedState])
 

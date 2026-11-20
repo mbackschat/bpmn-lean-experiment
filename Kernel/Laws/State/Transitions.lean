@@ -243,11 +243,11 @@ theorem counts_shrink_rejected (kind : OpenKind) :
 
 /-- A hook that queues one signal `Queues` it; dropping a queued signal does not. -/
 theorem queues_one (kind : OpenKind) :
-    Queues (sample kind) { sample kind with signals := [.armScope processRoot] } [.armScope processRoot] := by
+    Queues (sample kind) { sample kind with batchSignals := [.armScope processRoot] } [.armScope processRoot] := by
   simp [Queues, allSignals, sample]
 
 theorem dropped_signal_rejected (kind : OpenKind) :
-    ¬ Queues { sample kind with signals := [.armScope processRoot] } (sample kind) [] := by
+    ¬ Queues { sample kind with batchSignals := [.armScope processRoot] } (sample kind) [] := by
   simp [Queues, allSignals, sample]
 
 /-- Cancelling the begun occurrence `innerKey` with its end fact is a `CancelsWithEnds` transition; a cancelled fact without

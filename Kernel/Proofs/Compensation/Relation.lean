@@ -173,7 +173,7 @@ def pendingRun : CompensationRun := { trigger := thrownBy, scope := rootScope, p
 
 /-- A state holding `compensation` and queuing `signals`, its root scope occurrence and the counter of `T` at 1. -/
 def holdingState (compensation : Compensations) (signals : List Signal) : State :=
-  { instanceId := "p", scopes := [{ id := rootScope, element := none }], nextPosition := 8, signals,
+  { instanceId := "p", scopes := [{ id := rootScope, element := none }], nextPosition := 8, batchSignals := signals,
     activations := [{ processInstance := "p", element := thrower, role := .element, count := 1 }],
     slots := { compensation } }
 

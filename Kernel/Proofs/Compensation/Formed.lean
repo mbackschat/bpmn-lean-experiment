@@ -176,7 +176,7 @@ theorem Formed.signal {precedes : Compensable → Compensable → Prop} {s : Sta
     (resumes : Laws.Step.resumesOf [signal] = [] := by exact rfl) : Formed precedes (s.signal signal) := by
   rw [Laws.State.signal_eq]
   refine formed.shrink (fun x present _ => ⟨present, Laws.State.instanceOf_congr (s := s)
-      (t := { s with signals := s.signals ++ [signal] }) rfl rfl x⟩) (Nat.le_refl _) (.refl _)
+      (t := { s with batchSignals := s.batchSignals ++ [signal] }) rfl rfl x⟩) (Nat.le_refl _) (.refl _)
     (fun _ held => held) (.refl _) (.refl _) formed.retained ?_ (fun resume inside => ?_)
     (.same (fun _ held => held) rfl rfl)
   · rw [Laws.State.allSignals_append, Laws.Step.triggersOf_append, triggers, List.append_nil]
@@ -460,8 +460,8 @@ theorem formed_pipelinePhases (precedes : Program → Compensable → Compensabl
 
 /-- Queuing signals moves no occurrence's key. -/
 theorem key_signals (s : State) (more : List Signal) (o : Occurrence) :
-    Laws.State.key { s with signals := more } o = Laws.State.key s o := by
-  simp [Laws.State.key, Laws.State.instanceOf_congr (s := s) (t := { s with signals := more }) rfl rfl]
+    Laws.State.key { s with batchSignals := more } o = Laws.State.key s o := by
+  simp [Laws.State.key, Laws.State.instanceOf_congr (s := s) (t := { s with batchSignals := more }) rfl rfl]
 
 /-- `trigger` may be held next to what `s` holds: it is held nowhere yet, is no group's nested run's, was counted, and
 names no unbegun reservation. -/
@@ -478,15 +478,15 @@ theorem Formed.append {precedes : Compensable → Compensable → Prop} {s : Sta
     (fresh : ∀ trigger, queuedTrigger s held = some trigger → FreshTrigger s trigger) :
     Formed precedes (s.signal signal) := by
   rw [Laws.State.signal_eq]
-  have same : queuedTrigger { s with signals := s.signals ++ [signal] } = queuedTrigger s := by
+  have same : queuedTrigger { s with batchSignals := s.batchSignals ++ [signal] } = queuedTrigger s := by
     funext entry
     rcases entry with _ | origin
     · rfl
-    · have named := Laws.State.instanceOf_congr (s := s) (t := { s with signals := s.signals ++ [signal] }) rfl rfl
+    · have named := Laws.State.instanceOf_congr (s := s) (t := { s with batchSignals := s.batchSignals ++ [signal] }) rfl rfl
         origin.scope
       simp only [queuedTrigger, named]
       rfl
-  have queued : queuedTriggers { s with signals := s.signals ++ [signal] } =
+  have queued : queuedTriggers { s with batchSignals := s.batchSignals ++ [signal] } =
       queuedTriggers s ++ (queuedTrigger s held).toList := by
     unfold queuedTriggers
     rw [same, Laws.State.allSignals_append, Laws.Step.triggersOf_append, carries, List.filterMap_append]

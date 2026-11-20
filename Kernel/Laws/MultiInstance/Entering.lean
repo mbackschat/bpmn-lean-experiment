@@ -118,9 +118,9 @@ in order, or, under `declarationDepthFirst` for a parallel body, on the closure'
 (`MultiInstance.queueInstances`). -/
 def QueuedAs (program : Program) (mode : MultiInstanceMode) (state queued : State) (requests : List BeginRequest) :
     Prop :=
-  (queued.signals = state.signals ++ requests.map .begin ∧ queued.tokens = state.tokens) ∨
-    (program.options.branchSchedule = .declarationDepthFirst ∧ mode = .parallel ∧ queued.signals = state.signals ∧
-      queued.tokens = state.tokens ++ (requests.map Token.begin).reverse)
+  (queued.batchSignals = state.batchSignals ++ requests.map .begin ∧ queued.batchTokens = state.batchTokens) ∨
+    (program.options.branchSchedule = .declarationDepthFirst ∧ mode = .parallel ∧ queued.batchSignals = state.batchSignals ∧
+      queued.batchTokens = state.batchTokens ++ (requests.map Token.begin).reverse)
 
 /-- What queuing begins keeps of `state`: everything but the running batch's signals and tokens
 (`MultiInstance.queueInstances`). -/

@@ -62,6 +62,6 @@ test("a scope occurrence that is no called root is a semantic failure", async ()
   const decoded = decodeProgram(program);
   assert.ok(decoded.ok);
   const outcome = raisedOutputs!(context!(hooks, decoded.value), { id: 0, element: null, parent: null, occurrence: null, calledInstance: null },
-    { signals: [] }) as Json;
+    { batchSignals: [] }) as Json;
   assert.deepEqual(outcome, { ok: false, failure: { tag: "semanticFailure", code: "called-root-without-call", cause: "invariant" } });
 });

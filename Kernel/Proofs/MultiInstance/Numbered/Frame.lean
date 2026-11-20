@@ -120,8 +120,8 @@ adds only reservations pending of elements that do not loop keeps `Numbered`. -/
 theorem Numbered.unmoved {program : Program} {s t : State} (held : Numbered program s)
     (scopes : t.scopes = s.scopes) (occurrences : t.occurrences = s.occurrences)
     (runs : t.slots.multiInstances = s.slots.multiInstances)
-    (begins : Laws.Step.beginsOf t.signals = Laws.Step.beginsOf s.signals)
-    (deferred : Laws.Step.deferredOf t.tokens = Laws.Step.deferredOf s.tokens)
+    (begins : Laws.Step.beginsOf t.batchSignals = Laws.Step.beginsOf s.batchSignals)
+    (deferred : Laws.Step.deferredOf t.batchTokens = Laws.Step.deferredOf s.batchTokens)
     (queuedSignals : t.queuedSignals = s.queuedSignals) (queuedTokens : t.queuedTokens = s.queuedTokens)
     (pending : ∀ element, OccurPending t element → OccurPending s element ∨ ∀ loop, ¬ LoopOf program element loop) :
     Numbered program t :=
@@ -202,14 +202,14 @@ theorem Numbered.signalBegin {program : Program} {s : State} {request : BeginReq
     (held : Numbered program s) : Numbered program (s.signal (.begin request)) := by
   obtain ⟨each, queued⟩ := held
   rw [Laws.State.signal_eq]
-  have queuedIn : ∀ next, Laws.State.Queued { s with signals := s.signals ++ [.begin request] } next →
+  have queuedIn : ∀ next, Laws.State.Queued { s with batchSignals := s.batchSignals ++ [.begin request] } next →
       Laws.State.Queued s next ∨ next = request := fun next named => by
     rcases named with signal | token
     · rcases List.mem_append.mp (Laws.State.allSignals_append s _ ▸ signal) with old | new
       · exact .inl (.inl old)
       · exact .inr (Laws.Step.begin_inj (List.mem_singleton.mp new))
     · exact .inl (.inr token)
-  have instanceIn : ∀ next, Laws.State.Queued { s with signals := s.signals ++ [.begin request] } next → ∀ body,
+  have instanceIn : ∀ next, Laws.State.Queued { s with batchSignals := s.batchSignals ++ [.begin request] } next → ∀ body,
       next.continuation = .multiInstance body → Laws.State.Queued s next := fun next named body on =>
     (queuedIn next named).resolve_right fun same => other body (same ▸ on)
   refine ⟨each, { queued with
@@ -270,9 +270,9 @@ theorem Numbered.storeRuns {program : Program} {s : State} (compensation : Compe
 
 /-- Taking signals or tokens off the running batch keeps `Numbered`. -/
 theorem Numbered.dequeue {program : Program} {s : State} {signals : List Signal} {tokens : List Token}
-    (fewer : signals.Sublist s.signals) (fewerTokens : tokens.Sublist s.tokens) (held : Numbered program s) :
-    Numbered program { s with signals, tokens } :=
-  have kept : Laws.State.QueuesKept s { s with signals, tokens } :=
+    (fewer : signals.Sublist s.batchSignals) (fewerTokens : tokens.Sublist s.batchTokens) (held : Numbered program s) :
+    Numbered program { s with batchSignals := signals, batchTokens := tokens } :=
+  have kept : Laws.State.QueuesKept s { s with batchSignals := signals, batchTokens := tokens } :=
     ⟨fewer, fewerTokens, fun _ _ found => found, fun _ _ found => found⟩
   held.shrink ⟨.refl _, fun _ inside => inside, fun _ inside => .inl inside, fun _ _ outside => absurd ‹_› outside,
     .of_kept kept, fun _ pending => .inl (pending_of_sublist kept.signal_mem (fun _ member => member) pending)⟩

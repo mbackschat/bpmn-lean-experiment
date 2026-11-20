@@ -336,7 +336,7 @@ def secondBegin : BeginRequest := { element := review, scope := secondScope, con
 
 /-- The first instance begun, the second's begin queued. -/
 def queuing : State :=
-  { entered with occurrences := [firstInstance], signals := [.begin secondBegin] }
+  { entered with occurrences := [firstInstance], batchSignals := [.begin secondBegin] }
 
 theorem queuing_queued : QueuedFor running 1 secondBegin := ⟨rfl, rfl⟩
 
@@ -424,7 +424,7 @@ theorem begins_queued {program : Program} {loop : MultiInstance} (looping : Loop
 
 /-- A pending reservation of a looping element breaks `BeginsQueued`. -/
 theorem looping_occur_rejected {program : Program} {loop : MultiInstance} (looping : LoopOf program review loop) :
-    ¬ BeginsQueued program { queuing with signals := [.occur review firstScope .outgoing [] .outward] } :=
+    ¬ BeginsQueued program { queuing with batchSignals := [.occur review firstScope .outgoing [] .outward] } :=
   fun queued => queued.occurs review (.inl ⟨firstScope, .outgoing, [], .outward, List.mem_singleton_self _⟩) loop looping
 
 /-- Begun occurrences alone name no looping element unbegun. -/
@@ -440,7 +440,7 @@ theorem looping_reservation_rejected {program : Program} {loop : MultiInstance} 
 /-- Two begins queued out of slot order break `BeginsQueued`. -/
 theorem reversed_begins_rejected {program : Program} :
     ¬ BeginsQueued program
-      { entered with occurrences := [], signals := [.begin secondBegin, .begin { secondBegin with scope := firstScope }] } :=
+      { entered with occurrences := [], batchSignals := [.begin secondBegin, .begin { secondBegin with scope := firstScope }] } :=
     fun queued => by
   have := (queued.ordered running (by simp [entered])).signals secondBegin { secondBegin with scope := firstScope } 1 0
     (List.Sublist.refl _) ⟨rfl, rfl⟩ ⟨rfl, rfl⟩
@@ -449,7 +449,7 @@ theorem reversed_begins_rejected {program : Program} :
 /-- A begin queued below an instance that has begun breaks `BeginsQueued`. -/
 theorem begun_above_rejected {program : Program} :
     ¬ BeginsQueued program
-      { entered with occurrences := [secondInstance], signals := [.begin { secondBegin with scope := firstScope }] } :=
+      { entered with occurrences := [secondInstance], batchSignals := [.begin { secondBegin with scope := firstScope }] } :=
     fun queued => by
   have := queued.above running (by simp [entered]) { secondBegin with scope := firstScope } 1 0 secondScope
     (.inl (by simp [Laws.State.allSignals, entered])) ⟨rfl, rfl⟩ rfl ⟨secondInstance, by simp, rfl, rfl⟩

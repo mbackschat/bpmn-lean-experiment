@@ -201,7 +201,7 @@ theorem clearInside_ends {s : State} (formed : WellFormed program s) {scope : Sc
 the cancellations in `draft`: the one equation of the clearing the laws above this module read. -/
 theorem clearInside_eq (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) : ∃ draft, s.clearInside scope keep =
     { s with
-      tokens := s.tokens.filter (!(s.subtree scope).contains ·.busyScope)
+      batchTokens := s.batchTokens.filter (!(s.subtree scope).contains ·.busyScope)
       queuedTokens := s.queuedTokens.filter fun _ token => !(s.subtree scope).contains token.busyScope
       openItems := s.openItems.filter fun _ item => !(s.subtree scope).contains item.scope || keep.contains item.id.occurrence
       itemOrdinals := s.itemOrdinals.filter fun id _ => !((s.subtree scope).reverse.flatMap fun current =>

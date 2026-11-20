@@ -106,7 +106,7 @@ theorem BeginsKept.signal {program : Program} {s : State} (held : BeginsKept pro
     BeginsKept program T (s.signal signal) := by
   rw [Laws.State.signal_eq]
   refine held.carry fun apart => ⟨fun o inside _ => .inl inside, fun element named => ?_, rfl, rfl⟩
-  have queued : element ∈ Laws.Step.occursOf (Laws.State.allSignals { s with signals := s.signals ++ [signal] }) →
+  have queued : element ∈ Laws.Step.occursOf (Laws.State.allSignals { s with batchSignals := s.batchSignals ++ [signal] }) →
       OccurPending s element ∨
       ∀ loop, ¬ LoopOf program element loop := fun inside => by
     rw [Laws.State.allSignals_append, Laws.Step.occursOf_append] at inside
@@ -282,10 +282,10 @@ theorem BeginsKept.queueBatch {program : Program} {s : State} (unit : UnitKey) (
     (by rw [same]) (by rw [same])
 
 /-- Taking signals off the queue keeps `BeginsKept`. -/
-theorem BeginsKept.dequeue {program : Program} {s : State} {signals : List Signal} (fewer : signals.Sublist s.signals)
-    (held : BeginsKept program T s) : BeginsKept program T { s with signals } :=
-  held.frame (t := { s with signals }) (fun _ inside => inside) (fun _ named =>
-    pending_of_sublist (s := s) (t := { s with signals }) (fun _ inside =>
+theorem BeginsKept.dequeue {program : Program} {s : State} {signals : List Signal} (fewer : signals.Sublist s.batchSignals)
+    (held : BeginsKept program T s) : BeginsKept program T { s with batchSignals := signals } :=
+  held.frame (t := { s with batchSignals := signals }) (fun _ inside => inside) (fun _ named =>
+    pending_of_sublist (s := s) (t := { s with batchSignals := signals }) (fun _ inside =>
       (List.mem_append.mp inside).elim (List.mem_append_left _) fun batch => List.mem_append_right _ (fewer.subset batch))
     (fun _ member => member) named) rfl rfl
 

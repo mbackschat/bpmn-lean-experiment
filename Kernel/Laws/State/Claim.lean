@@ -76,7 +76,7 @@ theorem signal_claimed_named {s : State} {request : BeginRequest} (formed : Well
     (notComplete : ∀ id leave writes rule, Signal.begin request ≠ .complete id leave writes rule) :
     ReservationsClaimed (s.signal (.begin request)) := by
   rw [signal_eq]
-  have queued : ∀ other, Queued { s with signals := s.signals ++ [.begin request] } other →
+  have queued : ∀ other, Queued { s with batchSignals := s.batchSignals ++ [.begin request] } other →
       Queued s other ∨ other = request := fun other named => by
     rcases named with signal | token
     · rcases List.mem_append.mp (allSignals_append s _ ▸ signal) with old | new
@@ -127,7 +127,7 @@ theorem signal_settled_named {s : State} {request : BeginRequest} (formed : Well
     (notRaise : ∀ raised origin, Signal.begin request ≠ .raise raised origin) :
     SlotsSettled (s.signal (.begin request)) := by
   rw [signal_eq]
-  have queued : ∀ other, Queued { s with signals := s.signals ++ [.begin request] } other →
+  have queued : ∀ other, Queued { s with batchSignals := s.batchSignals ++ [.begin request] } other →
       Queued s other ∨ other = request := fun other named => by
     rcases named with signal | token
     · rcases List.mem_append.mp (allSignals_append s _ ▸ signal) with old | new
@@ -135,7 +135,7 @@ theorem signal_settled_named {s : State} {request : BeginRequest} (formed : Well
       · exact .inr (Signal.begin.inj (List.mem_singleton.mp new))
     · exact .inl (.inr token)
   have carry : ∀ id, Settled s id → SlotCompletes s id →
-      Settled { s with signals := s.signals ++ [.begin request] } id := fun id settled completes => by
+      Settled { s with batchSignals := s.batchSignals ++ [.begin request] } id := fun id settled completes => by
     obtain ⟨below, begun, unnamed⟩ := settled
     refine ⟨below, begun, fun other named inside => ?_⟩
     rcases queued other named with old | rfl

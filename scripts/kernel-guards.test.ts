@@ -62,7 +62,7 @@ const dispatchTable = `def owners : List (Name × List Name) := [
 def unowned : List Name := [\`Kernel.Value]
 `;
 
-const stateTs = `export function emit(state, flows) { return { ...state, tokens: flows }; }
+const stateTs = `export function emit(state, flows) { return { ...state, batchTokens: flows }; }
 export function setVariable(state, name) { return { ...state, variables: [name] }; }
 export function beginOccurrence(state) { return { ...state, occurrences: [1] }; }
 export function removeOccurrence(state) { return { ...state, occurrences: [] }; }
@@ -500,7 +500,7 @@ export function leak(state) { return emit(state, []); }
 }, /spread update writes State\.occurrences[\s\S]*pipeline hook outflow[\s\S]*emit called outside its writer|emit called outside its writer/u);
 
 test("guard 17 gives each Token case one writer: deferred begins are stacked only by MultiInstance", () => {
-  const deferring = `${stateTs}export function deferBegins(state, requests) { return { ...state, tokens: requests }; }\n`;
+  const deferring = `${stateTs}export function deferBegins(state, requests) { return { ...state, batchTokens: requests }; }\n`;
   assert.deepEqual(effectWriterFindings(fixture({
     "packages/kernel/src/state.ts": deferring,
     "packages/kernel/src/feature/multi-instance.ts": `import { deferBegins } from "../state.js";\nexport function begin(state) { return deferBegins(state, []); }\n`,

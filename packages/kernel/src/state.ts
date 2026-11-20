@@ -198,7 +198,7 @@ export interface BeginRequest {
 export enum TokenTag { Flow = "flow", Begin = "begin" }
 
 /**
- * One entry of a closure's work stack, `State.tokens`, which `step.ts` owns matching on: a token on a sequence flow
+ * One entry of a closure's work stack (`State.queuedTokens`, `State.batchTokens`), which `step.ts` owns matching on: a token on a sequence flow
  * inside a scope occurrence, or a deferred begin, the request of a `begin` signal moved onto the stack, which `step.ts`
  * dispatches as that signal, with its journal cause, when the closure reaches it. Both carry the scope occurrence they
  * keep busy, Lean's `Token.busyScope`: a deferred begin's is the one its request begins in, `request.scope`.
@@ -348,8 +348,11 @@ export interface State {
   readonly status: InstanceStatus;
   readonly scopes: readonly ScopeOccurrence[];
   readonly occurrences: readonly Occurrence[];
-  /** The tokens the running micro-step queued, in order; `queueBatch` moves them into `queuedTokens` (DC4). */
-  readonly tokens: readonly Token[];
+  /**
+   * The running micro-step's batch: the tokens it queued, in order; `queueBatch` moves them into `queuedTokens` (DC4).
+   * Named for the batch, so no read can take it for the closure's queue (`allTokens` reads both).
+   */
+  readonly batchTokens: readonly Token[];
   /** The closure's queued tokens, each keyed by the unit that queued it and its index in its batch; empty at commit. */
   readonly queuedTokens: OrderedMap<UnitKey, Token>;
   readonly variables: readonly ScopeVariables[];
@@ -364,14 +367,14 @@ export interface State {
   /** The next order position of an open item or a compensation record, read only by the sites that order them (K0.8). */
   readonly nextPosition: number;
   readonly logicalTimeMs: number;
-  /** The signals the running micro-step queued, in order; moved into `queuedSignals` like `tokens`. */
-  readonly signals: readonly Signal[];
+  /** The running micro-step's batch of signals, in order; moved into `queuedSignals` like `batchTokens`. */
+  readonly batchSignals: readonly Signal[];
   /** The closure's queued signal batches, each signal keyed like a queued token; empty at commit (DC2, DC4). */
   readonly queuedSignals: OrderedMap<UnitKey, Signal>;
   /** Every variable write since the last drain, same-value writes included: `Step` hands them to `Hooks.written`. */
   readonly writes: readonly WriteEvent[];
   /**
-   * The intents of the running micro-step while the closure runs, moved into `outboxes` like `tokens`; once the input
+   * The intents of the running micro-step while the closure runs, moved into `outboxes` like `batchTokens`; once the input
    * commits, the input's intents in run order (`orderJournal`), so a host publishes a committed input's own.
    */
   readonly outbox: readonly BroadcastIntent[];
@@ -427,7 +430,7 @@ export function initial(instanceId: string, variables: readonly Binding[], busin
     status: InstanceStatus.Running,
     scopes: [{ id: root, element: null, occurrence: null, calledInstance: null }],
     occurrences: [],
-    tokens: [],
+    batchTokens: [],
     queuedTokens: null,
     variables: [{ scope: root, entries: keyed(variables) }],
     openItems: [],
@@ -437,7 +440,7 @@ export function initial(instanceId: string, variables: readonly Binding[], busin
     activations: [],
     nextPosition: 1,
     logicalTimeMs: 0,
-    signals: [],
+    batchSignals: [],
     queuedSignals: null,
     writes: [],
     outbox: [],
@@ -457,7 +460,7 @@ export function initial(instanceId: string, variables: readonly Binding[], busin
 }
 
 export function emit(state: State, flows: readonly FlowId[], scope: ScopeOccurrenceId): State {
-  return { ...state, tokens: [...state.tokens, ...flows.map((flow): Token => ({ tag: TokenTag.Flow, flow, scope }))] };
+  return { ...state, batchTokens: [...state.batchTokens, ...flows.map((flow): Token => ({ tag: TokenTag.Flow, flow, scope }))] };
 }
 
 /**
@@ -466,7 +469,7 @@ export function emit(state: State, flows: readonly FlowId[], scope: ScopeOccurre
  */
 export function deferBegins(state: State, requests: readonly BeginRequest[]): State {
   const deferred = requests.map((request): Token => ({ tag: TokenTag.Begin, request, scope: request.scope }));
-  return { ...state, tokens: [...state.tokens, ...deferred.reverse()] };
+  return { ...state, batchTokens: [...state.batchTokens, ...deferred.reverse()] };
 }
 
 /** The next order position (`nextPosition`), counted up. */
@@ -482,14 +485,14 @@ export function issueOccurrence(state: State, scope: ScopeOccurrenceId, element:
   return [{ ...state, occurrenceOrdinals }, occurrenceId(scope, element, ordinal)];
 }
 
-export function signal(state: State, next: Signal): State { return { ...state, signals: [...state.signals, next] }; }
+export function signal(state: State, next: Signal): State { return { ...state, batchSignals: [...state.batchSignals, next] }; }
 
 /**
  * Lean's `State.allTokens`: every queued token, the closure's queued content and the running micro-step's batch. A
  * membership view, read only as a multiset: its order is the map's key order, which is no order of entry (KD7).
  */
 export function allTokens(state: State): readonly Token[] {
-  return [...orderedEntries(state.queuedTokens).map(([, token]) => token), ...state.tokens];
+  return [...orderedEntries(state.queuedTokens).map(([, token]) => token), ...state.batchTokens];
 }
 
 /**
@@ -499,12 +502,12 @@ export function allTokens(state: State): readonly Token[] {
 export function queueBatch(state: State, unit: UnitKey): State {
   return {
     ...state,
-    queuedSignals: state.signals.reduce((queued, next, index) => orderedInsert(queued, signalUnit(unit, index), next, compareUnitKey),
+    queuedSignals: state.batchSignals.reduce((queued, next, index) => orderedInsert(queued, signalUnit(unit, index), next, compareUnitKey),
       state.queuedSignals),
-    queuedTokens: state.tokens.reduce((queued, token, index) => orderedInsert(queued, tokenUnit(unit, index), token, compareUnitKey),
+    queuedTokens: state.batchTokens.reduce((queued, token, index) => orderedInsert(queued, tokenUnit(unit, index), token, compareUnitKey),
       state.queuedTokens),
     outboxes: state.outbox.length === 0 ? state.outboxes : orderedInsert(state.outboxes, unit, state.outbox, compareUnitKey),
-    signals: [], tokens: [], outbox: [],
+    batchSignals: [], batchTokens: [], outbox: [],
   };
 }
 
@@ -576,8 +579,8 @@ export function idle(state: State, scope: ScopeOccurrenceId): boolean {
  * `Step.closureWorkBound` sums it over a closure's micro-steps.
  */
 export function entryCount(state: State): number {
-  return state.tokens.length + orderedSize(state.queuedTokens) + state.occurrences.length + state.openItems.length +
-    state.scopes.length + state.signals.length + orderedSize(state.queuedSignals);
+  return state.batchTokens.length + orderedSize(state.queuedTokens) + state.occurrences.length + state.openItems.length +
+    state.scopes.length + state.batchSignals.length + orderedSize(state.queuedSignals);
 }
 
 /** The process instance identifier of `scope`. */

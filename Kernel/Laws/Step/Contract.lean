@@ -652,8 +652,8 @@ invariant that reads the order of the journal's facts cannot hold both before an
 structure BodyPhases (inv : Program → State → Prop) : Prop where
   clock : ∀ program state atMs, inv program state → inv program { state with logicalTimeMs := atMs }
   /-- Signals leave the running batch: a micro-step's sole completion that `Step.absorb` runs. -/
-  dequeue : ∀ program state signals, inv program state → signals.Sublist state.signals →
-    inv program { state with signals := signals }
+  dequeue : ∀ program state signals, inv program state → signals.Sublist state.batchSignals →
+    inv program { state with batchSignals := signals }
   /-- The closure's next signal leaves the queue. -/
   unqueue : ∀ program state unit, inv program state →
     inv program { state with queuedSignals := state.queuedSignals.erase unit }

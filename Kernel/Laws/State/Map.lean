@@ -19,11 +19,11 @@ open Kernel
 
 /-- Every queued signal: the closure's queued signals, keyed by unit, then the running micro-step's batch. A membership
 view, read only as a set: its order is the map's key order, which is no order of entry. -/
-def allSignals (s : State) : List Signal := s.queuedSignals.toList.map (·.2) ++ s.signals
+def allSignals (s : State) : List Signal := s.queuedSignals.toList.map (·.2) ++ s.batchSignals
 
 /-- Every queued token, the closure's keyed ones then the running micro-step's batch: `State.allTokens` as a law reads
 it (`Laws.State.allTokens_eq`), a membership view like `allSignals`. -/
-def allQueuedTokens (s : State) : List Token := s.queuedTokens.toList.map (·.2) ++ s.tokens
+def allQueuedTokens (s : State) : List Token := s.queuedTokens.toList.map (·.2) ++ s.batchTokens
 
 variable {β : Type}
 
@@ -289,15 +289,15 @@ theorem values_erase_fewer {m : TreeMap UnitKey β compare} {unit : UnitKey} :
 `before`'s, and every keyed entry `before`'s under its key. What an operation that queues nothing keeps, for an
 invariant that reads the split between the running batch and the keyed queues (`Laws.MultiInstance.BeginsQueued`). -/
 structure QueuesKept (before after : State) : Prop where
-  signals : after.signals.Sublist before.signals
-  tokens : after.tokens.Sublist before.tokens
+  signals : after.batchSignals.Sublist before.batchSignals
+  tokens : after.batchTokens.Sublist before.batchTokens
   queuedSignals : ∀ (unit : UnitKey) (signal : Signal), after.queuedSignals[unit]? = some signal →
     before.queuedSignals[unit]? = some signal
   queuedTokens : ∀ (unit : UnitKey) (token : Token), after.queuedTokens[unit]? = some token →
     before.queuedTokens[unit]? = some token
 
-theorem QueuesKept.of_eq {before after : State} (signals : after.signals = before.signals)
-    (tokens : after.tokens = before.tokens) (queuedSignals : after.queuedSignals = before.queuedSignals)
+theorem QueuesKept.of_eq {before after : State} (signals : after.batchSignals = before.batchSignals)
+    (tokens : after.batchTokens = before.batchTokens) (queuedSignals : after.queuedSignals = before.queuedSignals)
     (queuedTokens : after.queuedTokens = before.queuedTokens) : QueuesKept before after :=
   ⟨signals ▸ .refl _, tokens ▸ .refl _, fun _ _ found => by rw [← queuedSignals]; exact found,
     fun _ _ found => by rw [← queuedTokens]; exact found⟩
@@ -358,17 +358,17 @@ theorem allSignals_pop {s : State} {unit : UnitKey} {signal : Signal} (found : s
 
 /-- Queuing signals in the running batch adds them to the queued ones. -/
 theorem allSignals_append (s : State) (more : List Signal) :
-    allSignals { s with signals := s.signals ++ more } = allSignals s ++ more := by
+    allSignals { s with batchSignals := s.batchSignals ++ more } = allSignals s ++ more := by
   simp [allSignals, List.append_assoc]
 
 /-- Queuing tokens in the running batch adds them to the queued ones. -/
 theorem allQueuedTokens_append (s : State) (more : List Token) :
-    allQueuedTokens { s with tokens := s.tokens ++ more } = allQueuedTokens s ++ more := by
+    allQueuedTokens { s with batchTokens := s.batchTokens ++ more } = allQueuedTokens s ++ more := by
   simp [allQueuedTokens, List.append_assoc]
 
 /-- A smaller running batch keeps only queued signals. -/
-theorem allSignals_batch {s : State} {signals : List Signal} (sub : signals.Sublist s.signals) :
-    ∀ signal ∈ allSignals { s with signals := signals }, signal ∈ allSignals s := by
+theorem allSignals_batch {s : State} {signals : List Signal} (sub : signals.Sublist s.batchSignals) :
+    ∀ signal ∈ allSignals { s with batchSignals := signals }, signal ∈ allSignals s := by
   intro signal inside
   rcases List.mem_append.mp inside with keyed | batch
   · exact List.mem_append_left _ keyed

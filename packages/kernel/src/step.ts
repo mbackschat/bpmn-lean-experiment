@@ -273,9 +273,9 @@ function dispatchSignal(hooks: Hooks, ctx: Ctx, next: Signal): (state: State) =>
 
 /** Run a completion when it is the only signal the micro-step enqueued, inside the micro-step, as `dispatchSignal` runs it. */
 function absorb(hooks: Hooks, ctx: Ctx, before: number, state: State): Outcome {
-  const queued = state.signals.slice(before);
+  const queued = state.batchSignals.slice(before);
   const sole = queued.length === 1 && queued[0] !== undefined ? signalRun(hooks, ctx, queued[0]) : null;
-  return sole?.completion === true ? perform(sole, { ...state, signals: state.signals.slice(0, before) }) : committed(state);
+  return sole?.completion === true ? perform(sole, { ...state, batchSignals: state.batchSignals.slice(0, before) }) : committed(state);
 }
 
 /**
@@ -303,7 +303,7 @@ function microStep(
   hooks: Hooks, ctx: Ctx, unit: UnitKey, cause: Cause, element: ElementId | null, owner: ScopeOccurrenceId,
   body: (state: State) => Outcome, state: State,
 ): Outcome {
-  const before = state.signals.length;
+  const before = state.batchSignals.length;
   const next = deferred(ctx.program, state, body(state));
   if (!next.ok) return next;
   const absorbed = deferred(ctx.program, next.value, absorb(hooks, ctx, before, next.value));
@@ -433,7 +433,7 @@ function reoffer(hooks: Hooks, ctx: Ctx, state: State): Result<Reoffered | null>
     if (gateway === null || occurrence === null) return semanticFailure(SemanticCause.Invariant, "parked-without-gateway");
     const offered = hooks.arriveGateway(ctx, gateway[0], gateway[1], occurrence, state);
     if (!offered.ok) return offered;
-    if (offered.value.signals.length > 0) {
+    if (offered.value.batchSignals.length > 0) {
       return committed({ gateway: gateway[0].id, scope: waiting.scope, occurrence: occurrence.id, state: offered.value });
     }
   }

@@ -164,7 +164,7 @@ theorem recordEnd_scopes (state : State) (key : OccurrenceKey) (terminal : Termi
 theorem root_eq : State.root = .ofSegments [] := by
   simp only [State.root]
 
-theorem signal_eq (state : State) (signal : Signal) : state.signal signal = { state with signals := state.signals ++ [signal] } := by
+theorem signal_eq (state : State) (signal : Signal) : state.signal signal = { state with batchSignals := state.batchSignals ++ [signal] } := by
   simp only [State.signal]
 
 theorem takePosition_eq (state : State) :
@@ -275,12 +275,12 @@ theorem allTokens_eq (state : State) : state.allTokens = allQueuedTokens state :
 
 /-- A micro-step's batches move under its unit key, each entry keyed by its index in the batch (DC4). -/
 theorem queueBatch_eq (state : State) (unit : UnitKey) : state.queueBatch unit = { state with
-    queuedSignals := state.signals.zipIdx.foldl (fun queued (signal, index) => queued.insert (unit.signalUnit index) signal)
+    queuedSignals := state.batchSignals.zipIdx.foldl (fun queued (signal, index) => queued.insert (unit.signalUnit index) signal)
       state.queuedSignals
-    queuedTokens := state.tokens.zipIdx.foldl (fun queued (token, index) => queued.insert (unit.tokenUnit index) token)
+    queuedTokens := state.batchTokens.zipIdx.foldl (fun queued (token, index) => queued.insert (unit.tokenUnit index) token)
       state.queuedTokens
     outboxes := if state.outbox.isEmpty then state.outboxes else state.outboxes.insert unit state.outbox
-    signals := [], tokens := [], outbox := [] } := by
+    batchSignals := [], batchTokens := [], outbox := [] } := by
   simp only [State.queueBatch]
 
 /-- The busy scope occurrences: each queued token's, each live open item's, each begun occurrence's, each parent and
@@ -291,11 +291,11 @@ theorem busyScopes_eq (state : State) : state.busyScopes = (allQueuedTokens stat
   simp only [State.busyScopes, State.allTokens, allQueuedTokens]
 
 theorem deferBegins_eq (state : State) (requests : List BeginRequest) :
-    state.deferBegins requests = { state with tokens := state.tokens ++ (requests.map Token.begin).reverse } := by
+    state.deferBegins requests = { state with batchTokens := state.batchTokens ++ (requests.map Token.begin).reverse } := by
   simp only [State.deferBegins]
 
 theorem emit_eq (state : State) (flows : List FlowId) (scope : ScopeOccurrenceId) :
-    state.emit flows scope = { state with tokens := state.tokens ++ flows.map (Token.flow · scope) } := by
+    state.emit flows scope = { state with batchTokens := state.batchTokens ++ flows.map (Token.flow · scope) } := by
   simp only [State.emit]
 
 theorem closeItem_eq (state : State) (id : ItemKey) :

@@ -98,7 +98,7 @@ theorem clearInside_instanceId (s : State) (scope : ScopeOccurrenceId) (keep : L
 
 /-- Clearing a scope occurrence queues and drops no signal, whatever it clears. -/
 theorem clearInside_signals (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
-    (s.clearInside scope keep).signals = s.signals := by
+    (s.clearInside scope keep).batchSignals = s.batchSignals := by
   obtain ⟨_, made⟩ := clearInside_eq s scope keep
   rw [made]
 
@@ -110,7 +110,7 @@ theorem allSignals_clearInside (s : State) (scope : ScopeOccurrenceId) (keep : L
 
 /-- Clearing a scope occurrence only drops tokens, whatever it clears. -/
 theorem clearInside_tokens (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
-    (s.clearInside scope keep).tokens.Sublist s.tokens := by
+    (s.clearInside scope keep).batchTokens.Sublist s.batchTokens := by
   obtain ⟨_, made⟩ := clearInside_eq s scope keep
   rw [made]
   exact List.filter_sublist
@@ -164,7 +164,7 @@ theorem leaveScope_occurrences (s : State) (scope : ScopeOccurrenceId) :
   rw [made]
   exact List.filter_sublist
 
-theorem leaveScope_signals (s : State) (scope : ScopeOccurrenceId) : (s.leaveScope scope).signals = s.signals := by
+theorem leaveScope_signals (s : State) (scope : ScopeOccurrenceId) : (s.leaveScope scope).batchSignals = s.batchSignals := by
   rw [(leaveScope_eq s scope).1]
   exact clearInside_signals s scope []
 

@@ -107,12 +107,12 @@ def counter : ActivationCount := { processInstance := "p", element := exact, rol
 
 def running : State :=
   { instanceId := "p", scopes := [{ id := triggerScope, element := none }, { id := raising, element := some ⟨"Sub"⟩ }],
-    tokens := [.flow ⟨"Inner"⟩ raising], activations := [counter] }
+    batchTokens := [.flow ⟨"Inner"⟩ raising], activations := [counter] }
 
 def recovered : State :=
   { running with
     scopes := [{ id := triggerScope, element := none }]
-    tokens := [.flow boundaryFlow triggerScope] }
+    batchTokens := [.flow boundaryFlow triggerScope] }
 
 theorem catch_interrupts : InterruptingCatch true (· = raising) triggerScope [boundaryFlow] running recovered := fun _ =>
   ⟨by simp [recovered, triggerScope, raising], ⟨[], rfl, by simp⟩, fun counter' mem => ⟨counter', mem, rfl, rfl, rfl, Nat.le_refl _⟩⟩
@@ -124,7 +124,7 @@ theorem keeps_inner_scope_rejected :
 
 /-- Adding no token on the catcher's flow is rejected. -/
 theorem no_boundary_token_rejected :
-    ¬ InterruptingCatch true (· = raising) triggerScope [boundaryFlow] running { recovered with tokens := [] } := fun law => by
+    ¬ InterruptingCatch true (· = raising) triggerScope [boundaryFlow] running { recovered with batchTokens := [] } := fun law => by
   obtain ⟨_, ⟨kept, split, _⟩, _⟩ := law rfl
   have := congrArg List.length split
   simp [Laws.State.allQueuedTokens, recovered, running] at this
@@ -159,7 +159,7 @@ theorem uncaught_ends_path : UncaughtError .endsThrowingPath false (.ok recovere
 theorem ends_path_fails_rejected : ¬ UncaughtError .endsThrowingPath false (.ok failed) := fun law =>
   (law rfl).2 rfl failed rfl rfl
 
-def leaveThrower (state : State) : State := { state with tokens := [] }
+def leaveThrower (state : State) : State := { state with batchTokens := [] }
 
 theorem escalation_leaves_only : UncaughtEscalation false leaveThrower running (leaveThrower running) := fun _ => rfl
 

@@ -165,7 +165,7 @@ of `Outer` waiting for an effect result, which would complete it. -/
 theorem completed_start_rejected (kind : OpenKind) {program : Program}
     (outer : ((program.element? ⟨"Outer"⟩).bind (·.start?)).isSome = true) :
     ¬ Typed program
-      { armedState kind with openItems := ofItems [startItem kind], signals := [.complete timerKey .outgoing [] .outward] } :=
+      { armedState kind with openItems := ofItems [startItem kind], batchSignals := [.complete timerKey .outgoing [] .outward] } :=
   fun typed => (typed (startItem kind) (by simp [startItem]) (by simpa [startItem] using outer)).2.2.1 .outgoing [] .outward
     (by simp [startItem])
 

@@ -35,7 +35,7 @@ export function clearInside(state: State, scope: ScopeOccurrenceId, keep: readon
   const journalled = recordCancelled(state, removed);
   return {
     ...journalled,
-    tokens: journalled.tokens.filter((token) => !inside.includes(token.scope)),
+    batchTokens: journalled.batchTokens.filter((token) => !inside.includes(token.scope)),
     queuedTokens: orderedFilter(journalled.queuedTokens, (token) => !inside.includes(token.scope)),
     openItems: journalled.openItems.filter((item) => !inside.includes(item.scope) || keep.includes(item.id.occurrence)),
     itemOrdinals: journalled.itemOrdinals.filter(([id]) => !removed.some((occurrence) => occurrence.id === id)),

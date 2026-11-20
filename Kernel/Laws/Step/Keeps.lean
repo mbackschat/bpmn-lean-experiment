@@ -356,7 +356,7 @@ theorem absorb_keeps (phases : BodyPhases inv) (pipeline : PipelineKeeps hooks i
       List.mem_append_right _ (List.mem_of_mem_drop (i := before) (sole ▸ List.mem_singleton_self _))
     exact pipeline _ _ _ _ _ _ _ (phases.dequeue _ _ _ holds (List.take_sublist _ _))
       (fun request inQueue => phases.completeQueued _ _ _ _ _ _ holds queued request
-        (Laws.State.Queued.shrink (before := state) (after := { state with signals := state.signals.take before })
+        (Laws.State.Queued.shrink (before := state) (after := { state with batchSignals := state.batchSignals.take before })
           (Laws.State.allSignals_batch (List.take_sublist _ _)) (fun _ inside => inside) inQueue))
       (fun occurrence member named => ⟨state, holds, fun _ kept => kept, fun _ kept => kept,
         .inl ⟨⟨occurrence, member, rfl, rfl, rfl⟩, fun selected same flow inside => .inr ⟨selected, _, _, inside,

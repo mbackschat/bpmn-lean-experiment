@@ -71,7 +71,7 @@ def pipelineHooks : List Name :=
 /-- The `State` fields whose writes are ruled, and the modules that may write them through a structure update. -/
 def fieldWriters : List (Name × List Name) :=
   let lifecycle := [`Kernel.State, `Kernel.Step]
-  [(`tokens, lifecycle), (`occurrences, lifecycle), (`activations, lifecycle), (`variables, [`Kernel.State]),
+  [(`batchTokens, lifecycle), (`occurrences, lifecycle), (`activations, lifecycle), (`variables, [`Kernel.State]),
    (`writes, lifecycle), (`draft, [`Kernel.State, `Kernel.Step, `Kernel.Hooks])]
 
 /-- Maximum match sites per guarded type across the kernel, codecs excluded (guard 18). Values measured 2026-11-08 on
@@ -486,7 +486,7 @@ structure KeyMap (α β : Type) where
 def KeyMap.toList {α β : Type} (map : KeyMap α β) : List (α × β) := map.entries
 def KeyMap.size {α β : Type} (map : KeyMap α β) : Nat := map.entries.length
 structure State where
-  tokens : List Nat := []
+  batchTokens : List Nat := []
   occurrences : List Nat := []
   activations : List Nat := []
   variables : List Nat := []
@@ -505,8 +505,8 @@ structure Hooks where
   cancelled : State → State := id
   written : State → State := id
 namespace State
-def emit (state : State) : State := { state with tokens := 1 :: state.tokens }
-def deferBegins (state : State) : State := { state with tokens := 2 :: state.tokens }
+def emit (state : State) : State := { state with batchTokens := 1 :: state.batchTokens }
+def deferBegins (state : State) : State := { state with batchTokens := 2 :: state.batchTokens }
 def setVariable (state : State) : State := { state with variables := 1 :: state.variables, writes := [1] }
 def beginOccurrence (state : State) : State := { state with occurrences := 1 :: state.occurrences }
 def startReserved (state : State) : State := beginOccurrence state
@@ -548,7 +548,7 @@ end Feature.MultiInstance
 namespace Feature.Work
 def seededEmit (state : State) : State := state.emit
 def seededDefer (state : State) : State := state.deferBegins
-def seededWrite (state : State) : State := { state with tokens := [] }
+def seededWrite (state : State) : State := { state with batchTokens := [] }
 def seededHook (hooks : Hooks) (state : State) : State := hooks.outflow state
 end Feature.Work
 inductive Element where
@@ -564,7 +564,7 @@ namespace IL.Codec
 def codecOnly (used : Used) : Nat := used.unread
 end IL.Codec
 namespace Laws.State
-def lawWrite (state : State) : State := { state with tokens := [], occurrences := [] }
+def lawWrite (state : State) : State := { state with batchTokens := [], occurrences := [] }
 def lawRead (used : Used) : Nat := used.unread
 def lawLifecycle (state : State) : State := state.emit.beginOccurrence
 end Laws.State
@@ -630,7 +630,7 @@ def fixtureModuleOf (declaration : Name) : Option Name :=
 def expectedInFixture : List String := [
   "calls Kernel.State.emit (flow tokens are emitted only by Flow)",
   "calls Kernel.State.deferBegins (deferred begins are stacked only by MultiInstance)",
-  "writes State.tokens through a structure update",
+  "writes State.batchTokens through a structure update",
   "calls pipeline hook Kernel.Hooks.outflow outside Step",
   "Kernel.Used.unread: read by no non-codec declaration",
   "2 match sites on Kernel.Element, above its budget of 1",

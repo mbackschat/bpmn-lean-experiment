@@ -337,7 +337,7 @@ theorem leaveOffered_none {inv : State → Prop} {program : Program} {state : St
 /-- Completing occurrences by no flow queues their completions and moves nothing else. -/
 theorem completeAll_eq (ids : List OccurrenceId) (state : State) :
     ids.foldl (Feature.Flow.signalComplete · · (.flows [])) state =
-      { state with signals := state.signals ++ ids.map fun id => .complete id (.flows []) [] .outward } := by
+      { state with batchSignals := state.batchSignals ++ ids.map fun id => .complete id (.flows []) [] .outward } := by
   induction ids generalizing state with
   | nil => simp
   | cons id rest grows =>

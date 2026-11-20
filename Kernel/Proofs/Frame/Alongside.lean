@@ -93,10 +93,10 @@ structure Unmoved (s t : State) : Prop where
   instanceId : t.instanceId = s.instanceId
   multiInstances : t.slots.multiInstances = s.slots.multiInstances
   compensation : t.slots.compensation = s.slots.compensation
-  begins : Laws.Step.beginsOf t.signals = Laws.Step.beginsOf s.signals
+  begins : Laws.Step.beginsOf t.batchSignals = Laws.Step.beginsOf s.batchSignals
   triggers : Laws.Step.triggersOf (Laws.State.allSignals t) = Laws.Step.triggersOf (Laws.State.allSignals s)
   resumes : Laws.Step.resumesOf (Laws.State.allSignals t) = Laws.Step.resumesOf (Laws.State.allSignals s)
-  deferred : Laws.Step.deferredOf t.tokens = Laws.Step.deferredOf s.tokens
+  deferred : Laws.Step.deferredOf t.batchTokens = Laws.Step.deferredOf s.batchTokens
   queuedSignals : t.queuedSignals = s.queuedSignals
   queuedTokens : t.queuedTokens = s.queuedTokens
   pending : ∀ element, Laws.Step.OccurPending t element → Laws.Step.OccurPending s element
@@ -118,10 +118,10 @@ theorem Unmoved.same {s t : State} (scopes : t.scopes = s.scopes := by exact rfl
     (instanceId : t.instanceId = s.instanceId := by exact rfl)
     (multiInstances : t.slots.multiInstances = s.slots.multiInstances := by exact rfl)
     (compensation : t.slots.compensation = s.slots.compensation := by exact rfl)
-    (begins : Laws.Step.beginsOf t.signals = Laws.Step.beginsOf s.signals := by exact rfl)
+    (begins : Laws.Step.beginsOf t.batchSignals = Laws.Step.beginsOf s.batchSignals := by exact rfl)
     (triggers : Laws.Step.triggersOf (Laws.State.allSignals t) = Laws.Step.triggersOf (Laws.State.allSignals s) := by exact rfl)
     (resumes : Laws.Step.resumesOf (Laws.State.allSignals t) = Laws.Step.resumesOf (Laws.State.allSignals s) := by exact rfl)
-    (deferred : Laws.Step.deferredOf t.tokens = Laws.Step.deferredOf s.tokens := by exact rfl)
+    (deferred : Laws.Step.deferredOf t.batchTokens = Laws.Step.deferredOf s.batchTokens := by exact rfl)
     (queuedSignals : t.queuedSignals = s.queuedSignals := by exact rfl)
     (queuedTokens : t.queuedTokens = s.queuedTokens := by exact rfl)
     (pending : ∀ element, Laws.Step.OccurPending t element → Laws.Step.OccurPending s element :=
@@ -323,7 +323,7 @@ theorem FrameAlongside.signal {rel : State → Prop} {program : Program} (side :
     (unplacing : Laws.Step.placing signal = false := by exact rfl) :
     rel (s.signal signal) := by
   rw [Laws.State.signal_eq]
-  have pending := fun pending => Laws.Step.occurPending_of (s := s) (t := { s with signals := s.signals ++ [signal] })
+  have pending := fun pending => Laws.Step.occurPending_of (s := s) (t := { s with batchSignals := s.batchSignals ++ [signal] })
     (fun element inside => by rwa [Laws.State.allSignals_append, Laws.Step.occursOf_append, quiet.2.1, List.append_nil] at inside)
     (fun _ member => member) (element := pending)
   exact side.frame s _ (.same (begins := by rw [Laws.Step.beginsOf_append, quiet.1, List.append_nil])
@@ -445,7 +445,7 @@ state operations (`FrameAlongside`): beginning an admitted request in a scope oc
 occurrence; the others reserve, clear the root or move nothing `rel` may read. -/
 structure BodyAlongside (program : Program) (rel : State → Prop) : Prop extends FrameAlongside program rel where
   /-- Signals leave the running batch. -/
-  dequeue : ∀ s signals, WellFormed program s → signals.Sublist s.signals → rel s → rel { s with signals }
+  dequeue : ∀ s signals, WellFormed program s → signals.Sublist s.batchSignals → rel s → rel { s with batchSignals := signals }
   /-- The closure's next signal leaves the queue. -/
   unqueue : ∀ s unit, WellFormed program s → rel s → rel { s with queuedSignals := s.queuedSignals.erase unit }
   /-- The closure's next token leaves the queue. -/

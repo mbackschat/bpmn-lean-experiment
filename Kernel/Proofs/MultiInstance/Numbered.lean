@@ -47,8 +47,8 @@ theorem deferredOf_sublist {small large : List Token} (sub : small.Sublist large
 /-- `t` queues at most the begins `s` queues, each queue as it holds them: the running batch's begins and deferred
 begins in their order, and each keyed begin under its key. -/
 structure BeginsFewer (s t : State) : Prop where
-  begins : (Laws.Step.beginsOf t.signals).Sublist (Laws.Step.beginsOf s.signals)
-  deferred : (Laws.Step.deferredOf t.tokens).Sublist (Laws.Step.deferredOf s.tokens)
+  begins : (Laws.Step.beginsOf t.batchSignals).Sublist (Laws.Step.beginsOf s.batchSignals)
+  deferred : (Laws.Step.deferredOf t.batchTokens).Sublist (Laws.Step.deferredOf s.batchTokens)
   queuedSignals : ∀ (unit : UnitKey) request, t.queuedSignals[unit]? = some (Signal.begin request) →
     s.queuedSignals[unit]? = some (Signal.begin request)
   queuedTokens : ∀ (unit : UnitKey) request, t.queuedTokens[unit]? = some (Token.begin request) →
@@ -58,8 +58,8 @@ theorem BeginsFewer.of_kept {s t : State} (kept : Laws.State.QueuesKept s t) : B
   ⟨beginsOf_sublist kept.signals, deferredOf_sublist kept.tokens, fun unit _ found => kept.queuedSignals unit _ found,
     fun unit _ found => kept.queuedTokens unit _ found⟩
 
-theorem BeginsFewer.same {s t : State} (begins : Laws.Step.beginsOf t.signals = Laws.Step.beginsOf s.signals)
-    (deferred : Laws.Step.deferredOf t.tokens = Laws.Step.deferredOf s.tokens)
+theorem BeginsFewer.same {s t : State} (begins : Laws.Step.beginsOf t.batchSignals = Laws.Step.beginsOf s.batchSignals)
+    (deferred : Laws.Step.deferredOf t.batchTokens = Laws.Step.deferredOf s.batchTokens)
     (queuedSignals : t.queuedSignals = s.queuedSignals) (queuedTokens : t.queuedTokens = s.queuedTokens) :
     BeginsFewer s t :=
   ⟨begins ▸ .refl _, deferred ▸ .refl _, fun _ _ found => queuedSignals ▸ found, fun _ _ found => queuedTokens ▸ found⟩

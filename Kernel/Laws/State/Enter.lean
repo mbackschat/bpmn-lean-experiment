@@ -470,14 +470,14 @@ theorem signal_claimed_begin {s : State} {request : BeginRequest} (formed : Well
     (notComplete : ∀ id leave writes rule, Signal.begin request ≠ .complete id leave writes rule) :
     ReservationsClaimed (s.signal (.begin request)) := by
   rw [signal_eq]
-  have queued : ∀ other, Queued { s with signals := s.signals ++ [.begin request] } other →
+  have queued : ∀ other, Queued { s with batchSignals := s.batchSignals ++ [.begin request] } other →
       Queued s other ∨ other = request := fun other named => by
     rcases named with signal | token
     · rcases List.mem_append.mp (allSignals_append s _ ▸ signal) with old | new
       · exact .inl (.inl old)
       · exact .inr (Signal.begin.inj (List.mem_singleton.mp new))
     · exact .inl (.inr token)
-  have named : ∀ other, Queued { s with signals := s.signals ++ [.begin request] } other → ∀ id ∈ names other,
+  have named : ∀ other, Queued { s with batchSignals := s.batchSignals ++ [.begin request] } other → ∀ id ∈ names other,
       Queued s other := fun other queuedOther id inside => (queued other queuedOther).resolve_right fun same => by
     rw [same, bare] at inside
     simp at inside
@@ -547,7 +547,7 @@ theorem deferBegins_wellFormed {s : State} (formed : WellFormed program s) {requ
     rw [busyScope_begin]
     exact (bare request inside).2
   generalize (requests.map Token.begin).reverse = added at fresh housed
-  have queued : ∀ request, Queued { s with tokens := s.tokens ++ added } request →
+  have queued : ∀ request, Queued { s with batchTokens := s.batchTokens ++ added } request →
       Queued s request ∨ request ∈ requests := fun request named => by
     rcases named with signal | token
     · exact .inl (.inl signal)
@@ -557,9 +557,9 @@ theorem deferBegins_wellFormed {s : State} (formed : WellFormed program s) {requ
   have nameless : ∀ request ∈ requests, ∀ id, id ∉ names request := fun request inside id named => by
     rw [(bare request inside).1] at named
     simp at named
-  have keys : key { s with tokens := s.tokens ++ added } = key s :=
+  have keys : key { s with batchTokens := s.batchTokens ++ added } = key s :=
     funext fun _ => key_congr (by apply instanceOf_congr <;> rfl)
-  have claimed : ReservationsClaimed { s with tokens := s.tokens ++ added } := ⟨(fun item member attached reserved other inside same => formed.claimed.attached item
+  have claimed : ReservationsClaimed { s with batchTokens := s.batchTokens ++ added } := ⟨(fun item member attached reserved other inside same => formed.claimed.attached item
       (items_same member rfl) attached reserved other (items_same inside rfl) same),
     fun request named => by
       rcases queued request named with old | new
@@ -601,7 +601,7 @@ theorem deferBegins_wellFormed {s : State} (formed : WellFormed program s) {requ
     (fun item member => formed.owned.attachments item (items_same member rfl)), formed.owned.scopeOwners, formed.owned.variableScopes, fun token member =>
       (List.mem_append.mp (allQueuedTokens_append s _ ▸ member)).elim (formed.owned.tokenScopes token) (housed token)⟩
   rooted := ⟨formed.rooted.1, formed.rooted.2.1, fun scope member =>
-    Within.congr (s := s) (t := { s with tokens := s.tokens ++ added }) rfl (formed.rooted.2.2 scope member)⟩
+    Within.congr (s := s) (t := { s with batchTokens := s.batchTokens ++ added }) rfl (formed.rooted.2.2 scope member)⟩
   variables := ⟨formed.variables.scopes, formed.variables.names⟩
   failure := formed.failure
   queue := ⟨formed.queue.arm, formed.queue.armScope, formed.queue.armGateway, formed.queue.ends, formed.queue.completes⟩

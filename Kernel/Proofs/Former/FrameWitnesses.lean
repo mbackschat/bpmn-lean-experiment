@@ -114,7 +114,7 @@ def staleKey : OccurrenceId := { scope := State.root, element := ⟨"E"⟩, ordi
 def staleComplete (f : FlowId) : State :=
   { instanceId := "I", scopes := [{ id := State.root, element := none }]
     occurrenceOrdinals := (∅ : TreeMap ScopeSlot Nat compare).insert { parent := State.root, element := ⟨"E"⟩ } 1
-    signals := [.occur ⟨"E"⟩ State.root .outgoing [] .outward, .complete staleKey (.flows [f]) [] .outward]
+    batchSignals := [.occur ⟨"E"⟩ State.root .outgoing [] .outward, .complete staleKey (.flows [f]) [] .outward]
     slots := { instances := [{ root := State.root }] } }
 
 /-- The removed occurrence's number, the reservation's element and scope occurrence. -/
@@ -124,8 +124,8 @@ def staleOccurrence : Occurrence := { id := staleKey, element := ⟨"E"⟩, scop
 occurrence and the stale completion the flow `f` to `T`, and the token queued breaks `PlacedLane.tokens`. -/
 theorem unpaired_emit_rejected (f : FlowId) (ends : (topCalled program definition).target? f = some ⟨"T"⟩) :
     (∃ named writes rule, Signal.occur staleOccurrence.element staleOccurrence.scope named writes rule ∈
-        (staleComplete f).signals) ∧
-      (∃ writes rule, Signal.complete staleOccurrence.id (.flows [f]) writes rule ∈ (staleComplete f).signals) ∧
+        (staleComplete f).batchSignals) ∧
+      (∃ writes rule, Signal.complete staleOccurrence.id (.flows [f]) writes rule ∈ (staleComplete f).batchSignals) ∧
       ¬ PlacedLane (topCalled program definition) ((staleComplete f).emit [f] staleOccurrence.scope) := by
   refine ⟨⟨.outgoing, [], .outward, List.mem_cons_self ..⟩,
     ⟨[], .outward, List.mem_cons_of_mem _ (List.mem_singleton_self _)⟩,
@@ -144,7 +144,7 @@ def pendingFresh : State :=
   { instanceId := "I", scopes := [{ id := State.root, element := none }]
     occurrenceOrdinals := (∅ : TreeMap ScopeSlot Nat compare).insert { parent := State.root, element := ⟨"Y"⟩ } 1
     occurrences := [{ id := ⟨State.root, ⟨"Y"⟩, 0⟩, element := ⟨"Y"⟩, scope := State.root, activation := 1 }]
-    signals := [.occur ⟨"T"⟩ freshKey .outgoing [] .outward]
+    batchSignals := [.occur ⟨"T"⟩ freshKey .outgoing [] .outward]
     slots := { instances := [{ root := State.root }] } }
 
 /-- `Y` is anchored at the process root by its occurrence there. -/
@@ -387,7 +387,7 @@ theorem foreign_incoming_rejected (g : FlowId) (ends : (topCalled program defini
 `BeginPlaced.incoming` (`PlacedLane.begins`). -/
 theorem foreign_begin_rejected (g : FlowId) (ends : (topCalled program definition).target? g = some ⟨"T"⟩) :
     ¬ PlacedLane (topCalled program definition) { placedState definition with
-        signals := [.begin { element := ⟨"E"⟩, scope := State.root, incoming := some g }] } := fun lane => by
+        batchSignals := [.begin { element := ⟨"E"⟩, scope := State.root, incoming := some g }] } := fun lane => by
   have same := (lane.begins _ (.inl (List.mem_singleton_self _)) (by simp [Laws.State.scopeIds, placedState])).incoming g
     ⟨"T"⟩ rfl ends
   rw [topCalled_placed, topCalled_undeclared] at same

@@ -219,7 +219,7 @@ theorem failure_fails : FailsInstance .failsInstance false none failedState := f
 
 /-- Under `failsInstance`, a handler failure that leaves the run's tokens is rejected. -/
 theorem failure_continues_rejected :
-    ¬ FailsInstance .failsInstance false none { failedState with tokens := [.flow ⟨"F"⟩ outer] } := fun law => by
+    ¬ FailsInstance .failsInstance false none { failedState with batchTokens := [.flow ⟨"F"⟩ outer] } := fun law => by
   have := (law rfl rfl).2.2.2.1
   simp [Laws.State.allQueuedTokens, failedState] at this
 

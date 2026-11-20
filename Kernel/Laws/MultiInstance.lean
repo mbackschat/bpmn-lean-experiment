@@ -153,9 +153,9 @@ theorem queueInstances_frame (ctx : Ctx) (mode : MultiInstanceMode) (requests : 
       QueuedAs ctx.program mode state (Feature.MultiInstance.queueInstances ctx mode requests state) requests := by
   have signalled : ∀ (rest : List BeginRequest) (current : State),
       QueueKeeps current (rest.foldl (fun state request => state.signal (.begin request)) current) ∧
-      (rest.foldl (fun state request => state.signal (.begin request)) current).signals =
-        current.signals ++ rest.map .begin ∧
-      (rest.foldl (fun state request => state.signal (.begin request)) current).tokens = current.tokens := by
+      (rest.foldl (fun state request => state.signal (.begin request)) current).batchSignals =
+        current.batchSignals ++ rest.map .begin ∧
+      (rest.foldl (fun state request => state.signal (.begin request)) current).batchTokens = current.batchTokens := by
     intro rest
     induction rest with
     | nil => intro _; exact ⟨⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩, by simp, rfl⟩
@@ -226,8 +226,8 @@ structure Opening (inv : State → Prop) (settled : State → OccurrenceId → P
   grows : Laws.State.ScopeGrows start acc.1
   slots : acc.1.slots = start.slots
   occurrences : acc.1.occurrences = start.occurrences
-  signals : acc.1.signals = start.signals
-  tokens : acc.1.tokens = start.tokens
+  signals : acc.1.batchSignals = start.batchSignals
+  tokens : acc.1.batchTokens = start.batchTokens
   queuedSignals : acc.1.queuedSignals = start.queuedSignals
   queuedTokens : acc.1.queuedTokens = start.queuedTokens
   kept : ∀ entry ∈ start.scopes, entry ∈ acc.1.scopes
@@ -462,8 +462,8 @@ theorem beginInstances_spec (ops : MultiInstanceOps program inv settled) {ctx : 
   have scopes := keeps.scopes
   have slots := keeps.slots
   have variables := keeps.variables
-  have signals : current.signals = state.signals := opened.signals
-  have tokens : current.tokens = state.tokens := opened.tokens
+  have signals : current.batchSignals = state.batchSignals := opened.signals
+  have tokens : current.batchTokens = state.batchTokens := opened.tokens
   have scopeIds : Laws.State.scopeIds (Feature.MultiInstance.queueInstances ctx loop.mode requests current) =
       Laws.State.scopeIds current := by simp [Laws.State.scopeIds, scopes]
   refine ⟨_, instances, rfl, queueInstances_keeps ops opened.entering, ⟨rfl, opened.length, fun index outside =>
@@ -719,17 +719,17 @@ theorem finish_collects (ctx : Ctx) {loop : MultiInstance} (run : MultiInstanceR
 /-- Beginning a body's instances queues only signals that begin its instances (`instanceRequest`). -/
 theorem beginInstances_signals (ctx : Ctx) (loop : MultiInstance) (items : List Value) (run : MultiInstanceRun)
     (state : State) : ∃ begins : List BeginRequest,
-      (Feature.MultiInstance.beginInstances ctx loop items run state).signals = state.signals ++ begins.map .begin ∧
+      (Feature.MultiInstance.beginInstances ctx loop items run state).batchSignals = state.batchSignals ++ begins.map .begin ∧
         (Feature.MultiInstance.beginInstances ctx loop items run state).queuedSignals = state.queuedSignals ∧
         ∀ request ∈ begins, ∃ scope, request = instanceRequest run scope := by
   unfold Feature.MultiInstance.beginInstances
   split
   rename_i current instances requests folded
-  have kept : (fun acc : State × List Iteration × List BeginRequest => acc.1.signals = state.signals ∧
+  have kept : (fun acc : State × List Iteration × List BeginRequest => acc.1.batchSignals = state.batchSignals ∧
       acc.1.queuedSignals = state.queuedSignals ∧ ∀ request ∈ acc.2.2, ∃ scope, request = instanceRequest run scope)
       (current, instances, requests) := by
     rw [← folded]
-    refine Laws.State.foldl_keeps (fun acc : State × List Iteration × List BeginRequest => acc.1.signals = state.signals ∧
+    refine Laws.State.foldl_keeps (fun acc : State × List Iteration × List BeginRequest => acc.1.batchSignals = state.batchSignals ∧
       acc.1.queuedSignals = state.queuedSignals ∧ ∀ request ∈ acc.2.2, ∃ scope, request = instanceRequest run scope) _ _ _
       (fun acc _ _ held => ?_) ⟨rfl, rfl, fun _ none => by cases none⟩
     obtain ⟨s, _, _⟩ := acc

@@ -93,31 +93,31 @@ theorem misplaced_owner_rejected (kind : OpenKind) :
 
 /-- An arming of a scope occurrence never issued breaks `QueueSound`, and so `WellFormed`: queued work may name a scope
 occurrence that is gone, never one that was never issued. -/
-theorem unissued_arming (kind : OpenKind) : ¬ WellFormed program { sample kind with signals := [.armScope (.ofSegments [{ element := ⟨"Sub"⟩, ordinal := 9 }])] } := fun formed => by
+theorem unissued_arming (kind : OpenKind) : ¬ WellFormed program { sample kind with batchSignals := [.armScope (.ofSegments [{ element := ⟨"Sub"⟩, ordinal := 9 }])] } := fun formed => by
   exact sample_unissued (kind := kind) (formed.queue.armScope _ (by simp)) rfl rfl
 
 /-- So does a completion of an identity never issued: a reservation made later would be completed. -/
 theorem unissued_completion (kind : OpenKind) :
-    ¬ WellFormed program { sample kind with signals := [.complete ghostKey .outgoing [] .outward] } := fun formed => by
+    ¬ WellFormed program { sample kind with batchSignals := [.complete ghostKey .outgoing [] .outward] } := fun formed => by
   have := (formed.queue.completes ghostKey .outgoing [] .outward (by simp)).2 (by simp [sample, rootScope])
   simp [occurrenceCount, sample, sampleCounters, Std.ExtTreeMap.getD_insert] at this
 
 /-- An arming of the Sub-Process occurrence `subKey`'s boundaries in its own scope occurrence `Sub#0` breaks `QueueSound`: its host
 runs in the root, and an arming opens its items in its host's scope occurrence. -/
 theorem misplaced_arming_rejected (kind : OpenKind) :
-    ¬ QueueSound { sample kind with signals := [.arm subKey ⟨"Sub"⟩ subScope] } := fun queue => by
+    ¬ QueueSound { sample kind with batchSignals := [.arm subKey ⟨"Sub"⟩ subScope] } := fun queue => by
   have := ((queue.arm subKey ⟨"Sub"⟩ subScope (by simp)).2.2 subProcess (by simp [sample]) rfl).2
   simp [subProcess, processRoot, subScope] at this
 
 /-- An Event-Based Gateway arming whose gateway occurrence is the unbegun reservation `timerKey` breaks `QueueSound`. -/
 theorem reserved_gateway_rejected (kind : OpenKind) :
-    ¬ QueueSound { armedState kind with signals := [.armGateway timerKey ⟨"Timer"⟩ processRoot] } := fun queue => by
+    ¬ QueueSound { armedState kind with batchSignals := [.armGateway timerKey ⟨"Timer"⟩ processRoot] } := fun queue => by
   have := ((queue.armGateway timerKey ⟨"Timer"⟩ processRoot (by simp)).2.2 reservation (by simp [armedState]) rfl).1
   simp [reservation] at this
 
 /-- A queued failing instance end without a failure breaks `QueueSound`: it would leave `FailureRecorded` broken. -/
 theorem unrecorded_failure_rejected (kind : OpenKind) :
-    ¬ QueueSound { sample kind with signals := [.endInstance .failed none] } := fun queue => by
+    ¬ QueueSound { sample kind with batchSignals := [.endInstance .failed none] } := fun queue => by
   have := queue.ends .failed none (by simp)
   simp at this
 
@@ -151,7 +151,7 @@ theorem rekeyed_rejected (kind : OpenKind) :
 
 /-- A queued begin naming the begun occurrence `outerKey` breaks `ReservationsClaimed`: it would start it twice. -/
 theorem rebegin_rejected (kind : OpenKind) :
-    ¬ ReservationsClaimed { sample kind with signals := [.begin { element := ⟨"Outer"⟩, scope := processRoot, reserved := some outerKey }] } :=
+    ¬ ReservationsClaimed { sample kind with batchSignals := [.begin { element := ⟨"Outer"⟩, scope := processRoot, reserved := some outerKey }] } :=
   fun claimed => by
     obtain ⟨_, beginnable⟩ := claimed.named { element := ⟨"Outer"⟩, scope := processRoot, reserved := some outerKey }
       (.inl (by simp))
@@ -160,7 +160,7 @@ theorem rebegin_rejected (kind : OpenKind) :
 
 /-- Two queued begins naming the reservation `timerKey` break `ReservationsClaimed`. -/
 theorem claimed_twice_rejected (kind : OpenKind) :
-    ¬ ReservationsClaimed { armedState kind with signals :=
+    ¬ ReservationsClaimed { armedState kind with batchSignals :=
       [.begin { element := ⟨"Timer"⟩, scope := processRoot, reserved := some timerKey },
         .begin { element := ⟨"Timer"⟩, scope := processRoot, reserved := some timerKey }] } := fun claimed => by
   have := claimed.signalsApart { element := ⟨"Timer"⟩, scope := processRoot, reserved := some timerKey }
@@ -186,13 +186,13 @@ def reservedBegin : BeginRequest := { element := ⟨"Timer"⟩, scope := process
 
 /-- Two deferred begins of the reservation `timerKey` break `ReservationsClaimed`, as do a queued and a deferred one. -/
 theorem deferred_twice_rejected (kind : OpenKind) :
-    ¬ ReservationsClaimed { armedState kind with tokens := [.begin reservedBegin, .begin reservedBegin] } :=
+    ¬ ReservationsClaimed { armedState kind with batchTokens := [.begin reservedBegin, .begin reservedBegin] } :=
   fun claimed => by
     have := claimed.tokensApart reservedBegin reservedBegin (by simp [Precedes]) timerKey (by simp [names, reservedBegin])
     simp [names, reservedBegin] at this
 
 theorem queued_and_deferred_rejected (kind : OpenKind) :
-    ¬ ReservationsClaimed { armedState kind with signals := [.begin reservedBegin], tokens := [.begin reservedBegin] } :=
+    ¬ ReservationsClaimed { armedState kind with batchSignals := [.begin reservedBegin], batchTokens := [.begin reservedBegin] } :=
   fun claimed => by
     have := claimed.queuesApart reservedBegin reservedBegin (by simp) (by simp) timerKey
       (by simp [names, reservedBegin])
@@ -201,7 +201,7 @@ theorem queued_and_deferred_rejected (kind : OpenKind) :
 /-- A completion of the reservation `timerKey` queued beside its begin breaks `ReservationsClaimed`: it would complete the
 occurrence before it begins. -/
 theorem completed_reservation_rejected (kind : OpenKind) :
-    ¬ ReservationsClaimed { armedState kind with signals := [.begin reservedBegin, .complete timerKey .outgoing [] .outward] } :=
+    ¬ ReservationsClaimed { armedState kind with batchSignals := [.begin reservedBegin, .complete timerKey .outgoing [] .outward] } :=
   fun claimed => claimed.uncompleted reservedBegin timerKey .outgoing [] .outward
     (.inl (List.mem_append_right _ List.mem_cons_self)) (by simp [names, reservedBegin])
     (List.mem_append_right _ (List.mem_cons_of_mem _ List.mem_cons_self))
@@ -209,7 +209,7 @@ theorem completed_reservation_rejected (kind : OpenKind) :
 /-- A begin queued in the scope occurrence `Sub#9`, never issued, breaks `ReservationsClaimed`: a scope occurrence entered
 later would be the one it begins in. -/
 theorem unissued_begin_scope_rejected (kind : OpenKind) :
-    ¬ ReservationsClaimed { sample kind with signals := [.begin { element := ⟨"Outer"⟩, scope := (.ofSegments [{ element := ⟨"Sub"⟩, ordinal := 9 }]) }] } :=
+    ¬ ReservationsClaimed { sample kind with batchSignals := [.begin { element := ⟨"Outer"⟩, scope := (.ofSegments [{ element := ⟨"Sub"⟩, ordinal := 9 }]) }] } :=
   fun claimed => by
     exact sample_unissued (kind := kind) (claimed.scopesIssued { element := ⟨"Outer"⟩, scope := (.ofSegments [{ element := ⟨"Sub"⟩, ordinal := 9 }]) } (.inl (by simp))) rfl rfl
 
@@ -297,14 +297,14 @@ theorem reserved_resume_rejected (kind : OpenKind) :
 
 theorem queued_resume_rejected (kind : OpenKind) :
     ¬ SlotsSettled { armedState kind with
-      signals := [.compensate processRoot none subTrigger none (some (.complete timerKey .outgoing))] } := fun settled => by
+      batchSignals := [.compensate processRoot none subTrigger none (some (.complete timerKey .outgoing))] } := fun settled => by
   have := (settled.queued processRoot none subTrigger none timerKey .outgoing (by simp)).2.1 reservation
     (by simp [armedState]) rfl
   simp [reservation] at this
 
 theorem reserved_raise_host_rejected (kind : OpenKind) :
     ¬ SlotsSettled { armedState kind with
-      signals := [.raise .cancel
+      batchSignals := [.raise .cancel
         { element := ⟨"Timer"⟩, scope := processRoot, activation := 1, thrower := timerKey, host := some timerKey }] } :=
   fun settled => by
     have := (settled.raised .cancel _ timerKey (List.mem_singleton.mpr rfl) rfl).2.1 reservation (by simp [armedState]) rfl
@@ -322,7 +322,7 @@ theorem body_item_rejected (kind : OpenKind) :
 `SlotsSettled`. -/
 theorem foreign_group_rejected (kind : OpenKind) :
     ¬ SlotsSettled { sample kind with
-      signals := [.compensate subScope none subTrigger none (some (.group processRoot))] } := fun settled => by
+      batchSignals := [.compensate subScope none subTrigger none (some (.group processRoot))] } := fun settled => by
   have := settled.grouped subScope none subTrigger none processRoot (by simp)
   simp [processRoot, subScope] at this
 

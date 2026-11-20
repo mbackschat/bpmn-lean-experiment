@@ -88,8 +88,8 @@ theorem recordEnd_wellFormed {s : State} (formed : WellFormed program s) (key : 
       signals := .refl _, starts := fun _ => id, slots := .same rfl } rfl formed.startedOnce
 
 /-- A micro-step's sole completion leaves its running batch (`Step.absorb`). -/
-theorem dequeue_wellFormed {s : State} (formed : WellFormed program s) {signals : List Signal} (fewer : signals.Sublist s.signals) :
-    WellFormed program { s with signals } :=
+theorem dequeue_wellFormed {s : State} (formed : WellFormed program s) {signals : List Signal} (fewer : signals.Sublist s.batchSignals) :
+    WellFormed program { s with batchSignals := signals } :=
   formed.narrow {
       scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := fun _ => by apply instanceOf_congr <;> rfl, recorded := id, items := .refl _, tokens := .refl _,
@@ -116,14 +116,14 @@ theorem untoken_wellFormed {s : State} (formed : WellFormed program s) (unit : U
 most. -/
 theorem allSignals_queueBatch (s : State) (unit : UnitKey) : Fewer (allSignals (s.queueBatch unit)) (allSignals s) := by
   rw [queueBatch_eq]
-  simpa [allSignals, List.zipIdx_map_fst] using foldl_insert_fewer unit.signalUnit s.signals.zipIdx s.queuedSignals
+  simpa [allSignals, List.zipIdx_map_fst] using foldl_insert_fewer unit.signalUnit s.batchSignals.zipIdx s.queuedSignals
 
 /-- `Step.conclude` moves a micro-step's tokens under its unit key (`State.queueBatch`): the queue keeps them, at
 most. -/
 theorem allQueuedTokens_queueBatch (s : State) (unit : UnitKey) :
     Fewer (allQueuedTokens (s.queueBatch unit)) (allQueuedTokens s) := by
   rw [queueBatch_eq]
-  simpa [allQueuedTokens, List.zipIdx_map_fst] using foldl_insert_fewer unit.tokenUnit s.tokens.zipIdx s.queuedTokens
+  simpa [allQueuedTokens, List.zipIdx_map_fst] using foldl_insert_fewer unit.tokenUnit s.batchTokens.zipIdx s.queuedTokens
 
 /-- `Step.conclude` moves a micro-step's batches under its unit key (`State.queueBatch`): the queue views keep their
 entries, at most. -/
@@ -316,9 +316,9 @@ theorem signal_wellFormed {s : State} {signal : Signal} (formed : WellFormed pro
     (raisable : ∀ raised origin, signal = .raise raised origin → Raisable program s origin) :
     WellFormed program (s.signal signal) := by
   rw [signal_eq] at *
-  have keys : key { s with signals := s.signals ++ [signal] } = key s :=
+  have keys : key { s with batchSignals := s.batchSignals ++ [signal] } = key s :=
     funext fun _ => key_congr (by apply instanceOf_congr <;> rfl)
-  have sameItems : (itemList ({ s with signals := s.signals ++ [signal] } : State).openItems) = itemList s.openItems := items_congr rfl
+  have sameItems : (itemList ({ s with batchSignals := s.batchSignals ++ [signal] } : State).openItems) = itemList s.openItems := items_congr rfl
   exact {
   issued := ⟨formed.issued.occurrences, fun item member => formed.issued.items item (items_same member rfl),
     formed.issued.scopes⟩
@@ -330,7 +330,7 @@ theorem signal_wellFormed {s : State} {signal : Signal} (formed : WellFormed pro
     fun item member => formed.owned.itemOccurrences item (items_same member rfl),
     fun item member => formed.owned.attachments item (items_same member rfl), formed.owned.scopeOwners, formed.owned.variableScopes, formed.owned.tokenScopes⟩
   rooted := ⟨formed.rooted.1, formed.rooted.2.1, fun scope member =>
-    Within.congr (s := s) (t := { s with signals := s.signals ++ [signal] }) rfl (formed.rooted.2.2 scope member)⟩
+    Within.congr (s := s) (t := { s with batchSignals := s.batchSignals ++ [signal] }) rfl (formed.rooted.2.2 scope member)⟩
   variables := ⟨formed.variables.scopes, formed.variables.names⟩
   failure := formed.failure
   queue := queue
@@ -366,10 +366,10 @@ theorem signal_settled {s : State} {signal : Signal} (formed : WellFormed progra
     (raised : ∀ raised origin host, signal = .raise raised origin → origin.host = some host → Settled s host) :
     SlotsSettled (s.signal signal) := by
   rw [signal_eq]
-  have queuedOld : ∀ request, Queued { s with signals := s.signals ++ [signal] } request → Queued s request :=
+  have queuedOld : ∀ request, Queued { s with batchSignals := s.batchSignals ++ [signal] } request → Queued s request :=
     fun request queued => queued.elim (fun queued => .inl ((List.mem_append.mp (allSignals_append s _ ▸ queued)).resolve_right fun new =>
       notBegin request (List.mem_singleton.mp new).symm)) .inr
-  have carry : ∀ id, Settled s id → Settled { s with signals := s.signals ++ [signal] } id := fun _ settled =>
+  have carry : ∀ id, Settled s id → Settled { s with batchSignals := s.batchSignals ++ [signal] } id := fun _ settled =>
     settled.transport (.refl _) (fun _ member _ => .inl member) queuedOld
   refine ⟨fun waiting member => carry _ (formed.settled.parked waiting member),
     fun run member => carry _ (formed.settled.bodies run member),
@@ -445,11 +445,11 @@ theorem signal_claimed {s : State} {signal : Signal} (formed : WellFormed progra
       ∀ request, Queued s request → id ∉ names request) :
     ReservationsClaimed (s.signal signal) := by
   rw [signal_eq]
-  have old : ∀ request, Signal.begin request ∈ allSignals { s with signals := s.signals ++ [signal] } →
+  have old : ∀ request, Signal.begin request ∈ allSignals { s with batchSignals := s.batchSignals ++ [signal] } →
       Signal.begin request ∈ allSignals s :=
     fun request queued => (List.mem_append.mp (allSignals_append s _ ▸ queued)).resolve_right fun new =>
       notBegin request (List.mem_singleton.mp new).symm
-  have queuedOld : ∀ request, Queued { s with signals := s.signals ++ [signal] } request → Queued s request := fun request queued =>
+  have queuedOld : ∀ request, Queued { s with batchSignals := s.batchSignals ++ [signal] } request → Queued s request := fun request queued =>
     queued.elim (fun queued => .inl (old request queued)) .inr
   exact ⟨fun item member attached reserved other inside same => formed.claimed.attached item (items_same member rfl)
       attached reserved other (items_same inside rfl) same,
@@ -760,12 +760,12 @@ theorem emit_wellFormed {s : State} (formed : WellFormed program s) (flows : Lis
     (stands : scope ∈ scopeIds s) : WellFormed program (s.emit flows scope) := by
   rw [emit_eq]
   have flowsOnly : ∀ request, Token.begin request ∉ flows.map (Token.flow · scope) := by simp
-  have old : ∀ request, Token.begin request ∈ allQueuedTokens { s with tokens := s.tokens ++ flows.map (Token.flow · scope) } →
+  have old : ∀ request, Token.begin request ∈ allQueuedTokens { s with batchTokens := s.batchTokens ++ flows.map (Token.flow · scope) } →
       Token.begin request ∈ allQueuedTokens s := fun request queued =>
     (List.mem_append.mp (allQueuedTokens_append s _ ▸ queued)).resolve_right (flowsOnly request)
-  have queuedOld : ∀ request, Queued { s with tokens := s.tokens ++ flows.map (Token.flow · scope) } request →
+  have queuedOld : ∀ request, Queued { s with batchTokens := s.batchTokens ++ flows.map (Token.flow · scope) } request →
       Queued s request := fun request queued => queued.elim .inl fun queued => .inr (old request queued)
-  have keys : key { s with tokens := s.tokens ++ flows.map (Token.flow · scope) } = key s :=
+  have keys : key { s with batchTokens := s.batchTokens ++ flows.map (Token.flow · scope) } = key s :=
     funext fun _ => key_congr (by apply instanceOf_congr <;> rfl)
   refine ⟨⟨formed.issued.occurrences, (fun item member => formed.issued.items item (items_same member rfl)), formed.issued.scopes⟩,
     ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopes, keys ▸ formed.distinct.keys⟩,
@@ -774,7 +774,7 @@ theorem emit_wellFormed {s : State} (formed : WellFormed program s) (flows : Lis
     ⟨formed.owned.occurrenceScopes, (fun item member => formed.owned.itemScopes item (items_same member rfl)), (fun item member => formed.owned.itemOccurrences item (items_same member rfl)), (fun item member => formed.owned.attachments item (items_same member rfl)),
       formed.owned.scopeOwners, formed.owned.variableScopes, fun token member => ?_⟩,
     ⟨formed.rooted.1, formed.rooted.2.1, fun x member => Within.congr (s := s)
-      (t := { s with tokens := s.tokens ++ flows.map (Token.flow · scope) }) rfl (formed.rooted.2.2 x member)⟩,
+      (t := { s with batchTokens := s.batchTokens ++ flows.map (Token.flow · scope) }) rfl (formed.rooted.2.2 x member)⟩,
     ⟨formed.variables.scopes, formed.variables.names⟩, formed.failure,
     ⟨formed.queue.arm, formed.queue.armScope, formed.queue.armGateway, formed.queue.ends, formed.queue.completes⟩, formed.counted,
     by unfold OccurrencesCounted; rw [keys]; exact formed.occurrencesCounted, formed.ownedBelow,

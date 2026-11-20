@@ -167,7 +167,7 @@ function restore(before: State, after: State, scopes: ReadonlySet<ScopeOccurrenc
     ...after,
     scopes: back(before.scopes, after.scopes, (scope) => scope.id),
     occurrences: back(before.occurrences, after.occurrences, (occurrence) => occurrence.scope),
-    tokens: back(before.tokens, after.tokens, (token) => token.scope),
+    batchTokens: back(before.batchTokens, after.batchTokens, (token) => token.scope),
     variables: back(before.variables, after.variables, (entry) => entry.scope),
     openItems: back(before.openItems, after.openItems, (item) => item.scope),
   };

@@ -119,7 +119,7 @@ structure BeginRequest where
   trigger : StartTrigger := .none
   deriving Repr
 
-/-- One entry of a closure's queued work (`State.tokens`, `State.queuedTokens`), which `Kernel.Step` owns matching on: a
+/-- One entry of a closure's queued work (`State.queuedTokens`, `State.batchTokens`), which `Kernel.Step` owns matching on: a
 token on a sequence flow inside a scope occurrence, or a deferred begin, the request of a `begin` signal queued as a
 token, which `Kernel.Step` dispatches as that signal, with its journal cause, when the closure reaches it. -/
 inductive Token where
@@ -207,9 +207,10 @@ structure State where
   status : InstanceStatus := .running
   scopes : List ScopeOccurrence := []
   occurrences : List Occurrence := []
-  /-- The tokens the running micro-step queued, in the order it queued them; `Step.conclude` moves them into
-  `queuedTokens` under the micro-step's unit key (`queueBatch`), so this is empty between micro-steps (DC4). -/
-  tokens : List Token := []
+  /-- The running micro-step's batch: the tokens it queued, in the order it queued them; `Step.conclude` moves them into
+  `queuedTokens` under the micro-step's unit key (`queueBatch`), so this is empty between micro-steps (DC4). Named for
+  the batch, so no read can take it for the closure's queue, which `queuedTokens` holds (`allTokens` reads both). -/
+  batchTokens : List Token := []
   /-- The closure's queued tokens, each keyed by the unit that queued it and its index in that unit's batch: content, with
   no order of entry. Which runs next is `Step.nextToken`'s, through the run log; empty at commit (DC4). -/
   queuedTokens : TreeMap UnitKey Token compare := ∅
@@ -228,15 +229,16 @@ structure State where
   that order them read. It names no identity; the issue log replaces it (K0.8). -/
   nextPosition : Nat := 1
   logicalTimeMs : Nat := 0
-  /-- The signals the running micro-step queued, in order; moved into `queuedSignals` like `tokens`. -/
-  signals : List Signal := []
+  /-- The running micro-step's batch of signals, in the order it queued them; moved into `queuedSignals` like
+  `batchTokens`, and named for the batch like it. -/
+  batchSignals : List Signal := []
   /-- The closure's queued signal batches, one per micro-step, each signal keyed like a queued token, so a batch keeps
   its order in its index segment (DC2, DC10); the closure runs them in breadth-first key order (`UnitKey.breadth`).
   Empty at commit (DC4). -/
   queuedSignals : TreeMap UnitKey Signal compare := ∅
   /-- Every variable write since the last drain, same-value writes included: `Step` hands them to `Hooks.written`. -/
   writes : List WriteEvent := []
-  /-- The intents of the running micro-step while the closure runs, moved into `outboxes` like `tokens`; once the input
+  /-- The intents of the running micro-step while the closure runs, moved into `outboxes` like `batchTokens`; once the input
   commits, the input's intents in run order (`Step.orderJournal`), so a host publishes a committed input's own. -/
   outbox : List BroadcastIntent := []
   /-- The intents of the closure's micro-steps, keyed by the unit that made each batch; empty at commit (DC4). -/
@@ -282,12 +284,12 @@ def initial (instanceId : String) (variables : List (String × Value)) (business
     slots := { instances := [{ root, businessKey }] } }
 
 def emit (state : State) (flows : List FlowId) (scope : ScopeOccurrenceId) : State :=
-  { state with tokens := state.tokens ++ flows.map (Token.flow · scope) }
+  { state with batchTokens := state.batchTokens ++ flows.map (Token.flow · scope) }
 
 /-- Defer the begins `requests` onto the work stack, the first on top: above every token queued before them, so under
 `declarationDepthFirst` each begins, and runs to its next wait, join or end, before the next. -/
 def deferBegins (state : State) (requests : List BeginRequest) : State :=
-  { state with tokens := state.tokens ++ (requests.map Token.begin).reverse }
+  { state with batchTokens := state.batchTokens ++ (requests.map Token.begin).reverse }
 
 /-- The next order position (`nextPosition`), counted up. -/
 def takePosition (state : State) : State × Nat :=
@@ -301,25 +303,25 @@ def issueOccurrence (state : State) (scope : ScopeOccurrenceId) (element : Eleme
   ({ state with occurrenceOrdinals := state.occurrenceOrdinals.insert slot (ordinal + 1) }, { scope, element, ordinal })
 
 def signal (state : State) (signal : Signal) : State :=
-  { state with signals := state.signals ++ [signal] }
+  { state with batchSignals := state.batchSignals ++ [signal] }
 
 /-- Every queued token: the closure's queued content and the running micro-step's batch. A membership view, read only
 as a multiset (`busyScopes`, `Feature.Flow.positions`, `Feature.Propagation.busyCalledRoot`): its order is the map's key
 order, which is no order of entry (KD7). -/
 def allTokens (state : State) : List Token :=
-  state.queuedTokens.toList.map (·.2) ++ state.tokens
+  state.queuedTokens.toList.map (·.2) ++ state.batchTokens
 
 /-- Move the running micro-step's batches under its unit key `unit` (DC4): each signal and token keyed by its index in
 the batch (`UnitKey.signalUnit`, `UnitKey.tokenUnit`), the micro-step's intents as one entry, so every writer keeps appending to
 the running batch and the feature layer never sees a key. -/
 def queueBatch (state : State) (unit : UnitKey) : State :=
   { state with
-      queuedSignals := state.signals.zipIdx.foldl (fun queued (signal, index) => queued.insert (unit.signalUnit index) signal)
+      queuedSignals := state.batchSignals.zipIdx.foldl (fun queued (signal, index) => queued.insert (unit.signalUnit index) signal)
         state.queuedSignals
-      queuedTokens := state.tokens.zipIdx.foldl (fun queued (token, index) => queued.insert (unit.tokenUnit index) token)
+      queuedTokens := state.batchTokens.zipIdx.foldl (fun queued (token, index) => queued.insert (unit.tokenUnit index) token)
         state.queuedTokens
       outboxes := if state.outbox.isEmpty then state.outboxes else state.outboxes.insert unit state.outbox
-      signals := [], tokens := [], outbox := [] }
+      batchSignals := [], batchTokens := [], outbox := [] }
 
 /-- Whether `scope` is the root of a called process instance, which hides its caller's variables. -/
 def calledRoot (state : State) (scope : ScopeOccurrenceId) : Bool :=
@@ -365,8 +367,8 @@ def idle (state : State) (scope : ScopeOccurrenceId) : Bool :=
 /-- The entries a micro-step's scans run over: tokens, occurrences, open items, scope occurrences and queued signals.
 `Step.closureWorkBound` sums it over a closure's micro-steps. -/
 def entryCount (state : State) : Nat :=
-  state.tokens.length + state.queuedTokens.size + state.occurrences.length + state.openItems.size + state.scopes.length +
-    state.signals.length + state.queuedSignals.size
+  state.batchTokens.length + state.queuedTokens.size + state.occurrences.length + state.openItems.size + state.scopes.length +
+    state.batchSignals.length + state.queuedSignals.size
 
 /-- The process instance identifier of `scope`. -/
 def instanceOf (state : State) (scope : ScopeOccurrenceId) : String :=

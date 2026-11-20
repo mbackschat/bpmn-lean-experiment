@@ -85,8 +85,8 @@ theorem initial_bodies (instanceId : String) (variables : List (String × Value)
 /-- The fresh instance holds no occurrence, queued signal or token, and no compensation run. -/
 theorem initial_empty (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
     let s := State.initial instanceId variables businessKey
-    s.occurrences = [] ∧ s.signals = [] ∧ s.tokens = [] ∧ s.slots.compensation.runs = [] := by
-  simp [initial_eq]
+    s.occurrences = [] ∧ allSignals s = [] ∧ allQueuedTokens s = [] ∧ s.slots.compensation.runs = [] := by
+  simp [initial_eq, allSignals, allQueuedTokens]
 
 end Initial
 

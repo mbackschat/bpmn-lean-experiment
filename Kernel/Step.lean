@@ -202,10 +202,10 @@ def dispatchSignal (hooks : Hooks) (ctx : Ctx) (signal : Signal) (state : State)
 /-- Run a completion when it is the only signal the micro-step enqueued, inside the micro-step, as `dispatchSignal` runs
 it (`SignalWork.perform`). -/
 def absorb (hooks : Hooks) (ctx : Ctx) (before : Nat) (state : State) : Outcome :=
-  match state.signals.drop before with
+  match state.batchSignals.drop before with
   | [sole] =>
     let work := signalWork hooks ctx sole
-    if work.completion then work.perform { state with signals := state.signals.take before } else .ok state
+    if work.completion then work.perform { state with batchSignals := state.batchSignals.take before } else .ok state
   | _ => .ok state
 
 /-- Turn the draft into the transition of the unit `unit` (`journalDraft`), tell the features what the micro-step
@@ -223,7 +223,7 @@ def conclude (hooks : Hooks) (ctx : Ctx) (unit : UnitKey) (cause : Cause) (eleme
 `deferred` against the state it started from, so a boundary an earlier micro-step or stage crossed counts. -/
 def microStep (hooks : Hooks) (ctx : Ctx) (unit : UnitKey) (cause : Cause) (element : Option ElementId)
     (owner : ScopeOccurrenceId) (body : State → Outcome) (state : State) : Outcome := do
-  let before := state.signals.length
+  let before := state.batchSignals.length
   let next ← deferred ctx.program state (body state)
   let absorbed ← deferred ctx.program next (absorb hooks ctx before next)
   deferred ctx.program absorbed (conclude hooks ctx unit cause element owner absorbed)
@@ -324,7 +324,7 @@ def reoffer? (hooks : Hooks) (ctx : Ctx) (state : State) :
           ctx.program.target? other.flow == ctx.program.target? waiting.flow).getLast?).bind (state.occurrence? ·.occurrence) with
       | some (header, payload), some occurrence => do
         let offered ← hooks.arriveGateway ctx header payload occurrence state
-        .ok (if offered.signals.isEmpty then none else some (header.id, waiting.scope, occurrence.id, offered))
+        .ok (if offered.batchSignals.isEmpty then none else some (header.id, waiting.scope, occurrence.id, offered))
       | _, _ => .error (.semanticFailure .invariant "parked-without-gateway")
 
 /-- How many times the closure already offered the parked occurrence `occurrence` (`UnitRoot.offer`): the offer units

@@ -159,13 +159,13 @@ the batch, the higher first (`keyedTokens`), and every keyed begin signal below 
 (`keyedQueues`). The closure takes queued begins in that order: signals breadth-first (`Step.firstBreadth`) and deferred
 begins last queued first (`Step.latest`). -/
 structure BeginsOrdered (s : State) (run : MultiInstanceRun) : Prop where
-  signals : ∀ first second first' second', Laws.State.Precedes s.signals (.begin first) (.begin second) →
+  signals : ∀ first second first' second', Laws.State.Precedes s.batchSignals (.begin first) (.begin second) →
     QueuedFor run first' first → QueuedFor run second' second → first' < second'
-  tokens : ∀ first second first' second', Laws.State.Precedes s.tokens (.begin first) (.begin second) →
+  tokens : ∀ first second first' second', Laws.State.Precedes s.batchTokens (.begin first) (.begin second) →
     QueuedFor run first' first → QueuedFor run second' second → second' < first'
-  queues : ∀ first second first' second', Signal.begin first ∈ s.signals → Token.begin second ∈ s.tokens →
+  queues : ∀ first second first' second', Signal.begin first ∈ s.batchSignals → Token.begin second ∈ s.batchTokens →
     QueuedFor run first' first → QueuedFor run second' second → first' < second'
-  apart : ∀ first second first' second', (Signal.begin first ∈ s.signals ∨ Token.begin first ∈ s.tokens) →
+  apart : ∀ first second first' second', (Signal.begin first ∈ s.batchSignals ∨ Token.begin first ∈ s.batchTokens) →
     QueuedFor run first' first → ∀ unit : UnitKey,
     (s.queuedSignals[unit]? = some (Signal.begin second) ∨ s.queuedTokens[unit]? = some (Token.begin second)) →
     QueuedFor run second' second → False

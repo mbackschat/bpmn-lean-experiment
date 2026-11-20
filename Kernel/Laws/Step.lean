@@ -41,7 +41,7 @@ open Kernel Kernel.Step
 theorem microStep_ok {hooks : Hooks} {ctx : Ctx} {unit : UnitKey} {cause : Cause} {element : Option ElementId}
     {owner : ScopeOccurrenceId} {body : State → Outcome} {state after : State}
     (ran : microStep hooks ctx unit cause element owner body state = .ok after) :
-    ∃ next absorbed, body state = .ok next ∧ absorb hooks ctx state.signals.length next = .ok absorbed ∧
+    ∃ next absorbed, body state = .ok next ∧ absorb hooks ctx state.batchSignals.length next = .ok absorbed ∧
       conclude hooks ctx unit cause element owner absorbed = .ok after := by
   unfold microStep at ran
   obtain ⟨next, body_, ran⟩ := bind_ok ran
@@ -364,8 +364,8 @@ theorem admitChoices_error {hooks : Hooks} {ctx : Ctx} {failure : Failure}
 off the queue. -/
 theorem absorb_ok {hooks : Hooks} {ctx : Ctx} {before : Nat} {state after : State}
     (ran : absorb hooks ctx before state = .ok after) :
-    after = state ∨ ∃ occurrence leave writes rule, state.signals.drop before = [.complete occurrence leave writes rule] ∧
-      complete hooks ctx occurrence leave writes rule { state with signals := state.signals.take before } = .ok after := by
+    after = state ∨ ∃ occurrence leave writes rule, state.batchSignals.drop before = [.complete occurrence leave writes rule] ∧
+      complete hooks ctx occurrence leave writes rule { state with batchSignals := state.batchSignals.take before } = .ok after := by
   unfold absorb at ran
   split at ran
   · rename_i sole queued

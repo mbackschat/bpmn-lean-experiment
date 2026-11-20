@@ -43,7 +43,7 @@ const pipelineHooks = new Set(["leave", "writeOutputs", "completed", "outflow", 
   "completeScope", "completeCall", "completeBody", "cancelled", "written"]);
 
 const stateFieldWriters: Readonly<Record<string, readonly string[]>> = {
-  tokens: ["state", "step"],
+  batchTokens: ["state", "step"],
   occurrences: ["state", "step"],
   activations: ["state", "step"],
   variables: ["state"],

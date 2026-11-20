@@ -410,7 +410,7 @@ theorem clearsInside_signal {before after : State} {scope : ScopeOccurrenceId} {
     (clears : ClearsInside before after scope keep) (signal : Signal) :
     ClearsInside before (after.signal signal) scope keep := by
   rw [Laws.State.signal_eq]
-  have same : (itemList ({ after with signals := after.signals ++ [signal] } : State).openItems) = itemList after.openItems :=
+  have same : (itemList ({ after with batchSignals := after.batchSignals ++ [signal] } : State).openItems) = itemList after.openItems :=
     Laws.State.items_congr rfl
   cases clears
   constructor <;> (try rw [same]) <;> assumption
@@ -517,7 +517,7 @@ theorem idle_completes (kind : OpenKind) : CompletesWhenIdle (cleared kind) subS
 def outFlow : FlowId := ⟨"AfterSub"⟩
 
 def continued (kind : OpenKind) : State :=
-  { cleared kind with scopes := [rootScope], tokens := [Token.flow outFlow processRoot] }
+  { cleared kind with scopes := [rootScope], batchTokens := [Token.flow outFlow processRoot] }
 
 theorem continues_once (kind : OpenKind) : ContinuesOnce subScope processRoot [outFlow] (cleared kind) (continued kind) :=
   fun _ => ⟨by simp [continued, rootScope, processRoot, subScope], [], rfl, by simp⟩
@@ -530,7 +530,7 @@ theorem keeps_completed_rejected (kind : OpenKind) :
 /-- Continuing the parent twice is rejected. -/
 theorem continues_twice_rejected (kind : OpenKind) :
     ¬ ContinuesOnce subScope processRoot [outFlow] (cleared kind)
-      { continued kind with tokens := [Token.flow outFlow processRoot, Token.flow outFlow processRoot] } := fun law => by
+      { continued kind with batchTokens := [Token.flow outFlow processRoot, Token.flow outFlow processRoot] } := fun law => by
   obtain ⟨kept, split, keptOld⟩ := (law (cleared_idle kind)).2
   cases kept
   · simp [Laws.State.allQueuedTokens, continued, cleared, sample] at split
