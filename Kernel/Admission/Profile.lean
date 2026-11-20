@@ -47,6 +47,89 @@ def multiInstance (loops : Bool) (selected : ProfileOptions) : Option String :=
   else if selected.multiInstanceCounters == .cibLocals then some "profile.multiInstanceCounters.cibLocals"
   else none
 
+/-- One value a profile option can select other than its standards reading, classified by whether its meaning depends on
+the closure's run order: `needs` is the schedule its meaning needs and the stable code admission refuses it with under
+any other schedule, `none` where it means the same under every run order. Each enumerated `ProfileOptions` field's every
+non-default value is listed exactly once (the order-class guard in `scripts/kernel-guards-refusal.ts` reads this table
+against the option record), so a new option value is classified when it is added. -/
+structure OrderClass where
+  selects : ProfileOptions → Bool
+  needs : Option (BranchSchedule × String)
+
+/-- The profile option values by run-order dependence (DC28, probes P03, P09, P11 and P12 of K0.10b, KD3). The
+order-dependent ones:
+
+- `unhandledError = endsThrowingPath`: ending only the throwing path, `Kernel.Feature.Propagation.endsInstanceWithOutputs`
+  reads whether the origin's scope is idle, which the other branches' progress decides (P03). Admitting it under
+  `orderInvariant` needs more than this table: the IL's `Unhandled` region (`Kernel.Laws.Flow.Unhandled`,
+  `Kernel.Admission.Flow.unhandled`) has no issuer for an Error a failing compensation handler raises (P12 F1), so the
+  removal such an Error makes is outside every unit's account.
+- `raisedCallOutputs = atCalledRoot`: `Kernel.Feature.Propagation.busyCalledRoot` reads every occurrence and token of the
+  called instance (P03).
+- `messageNames` and `signalNames = addresses`: an address may be an expression over the variables the other branches
+  write, evaluated when the subscription opens or the throw runs (DC27; P09: the premise is not free).
+- `multiInstanceCounters = cibLocals`: each completion writes counters that carry the completed count, so the order of
+  completions shows (P11).
+- `inclusiveJoinReach = outgoingOnly`: a boundary token outside the reach fires the join a second time, so the join is
+  not confluent (KD3, T4a F6).
+
+`branchSchedule = declarationDepthFirst` is the run order itself. -/
+def orderClasses : List OrderClass := [
+  ⟨(·.evaluator == .juel), none⟩,
+  ⟨(·.submission == .installsVariables), none⟩,
+  ⟨(·.undeclaredWrite == .atInstanceRoot), none⟩,
+  ⟨(·.errorPathOutputs == .mapped), none⟩,
+  ⟨(·.raisedCallOutputs == .atCalledRoot), some (.declarationDepthFirst, "profile.raisedCallOutputs.atCalledRoot.orderInvariant")⟩,
+  ⟨(·.technicalFailure == .incident), none⟩,
+  ⟨(·.continuationFailure == .incident), none⟩,
+  ⟨(·.conditionOrder == .beforeOutputs), none⟩,
+  ⟨(·.messageCorrelation == .apiCriteria), none⟩,
+  ⟨(·.deliveryVariables == .installs), none⟩,
+  ⟨(·.multiInstanceFinalBody == .modeSpecific), none⟩,
+  ⟨(·.multiInstanceOutputs == .none), none⟩,
+  ⟨(·.compensationOrder == .allAtOnce), none⟩,
+  ⟨(·.compensationHandlerFailure matches .selected _), none⟩,
+  ⟨(·.compensationHandlerFailure == .propagatesFromHandler), none⟩,
+  ⟨(·.implicitCompensation == .everySubProcess), none⟩,
+  ⟨(·.errorExitCompensation == .compensatesContained), none⟩,
+  ⟨(·.multiInstanceCompensation == .perInstance), none⟩,
+  ⟨(·.transactionMethods == .compatibilityAsCompensate), none⟩,
+  ⟨(·.compensationReferenceScope == .eventSubProcessParent), none⟩,
+  ⟨(·.abnormalScopeEnd == .completesNormally), none⟩,
+  ⟨(·.unhandledError == .endsThrowingPath), some (.declarationDepthFirst, "profile.unhandledError.endsThrowingPath.orderInvariant")⟩,
+  ⟨(·.errorCatchVariables == .eventScope), none⟩,
+  ⟨(·.callBindingTime == .invocation), none⟩,
+  ⟨(·.multiInstanceBinding == .loopReferences), none⟩,
+  ⟨(·.effectResultValues == .activityLocals), none⟩,
+  ⟨(·.outputContext == .activityScope), none⟩,
+  ⟨(·.multiInstanceCounters == .cibLocals), some (.declarationDepthFirst, "profile.multiInstanceCounters.cibLocals.orderInvariant")⟩,
+  ⟨(·.multiInstanceInputFailure == .rollback), none⟩,
+  ⟨(·.multiInstanceCount == .javaInt), none⟩,
+  ⟨(·.multiInstanceCollection == .sequentialReread), none⟩,
+  ⟨(·.businessRuleTask == .decisionTable), none⟩,
+  ⟨(·.scriptTask == .javascript), none⟩,
+  ⟨(·.configuredTask == .refused), none⟩,
+  ⟨(·.inclusiveJoinReach == .outgoingOnly), some (.declarationDepthFirst, "profile.inclusiveJoinReach.outgoingOnly.orderInvariant")⟩,
+  ⟨(·.branchSchedule == .declarationDepthFirst), none⟩,
+  ⟨(·.conditionalRetrigger == .eachWrite), none⟩,
+  ⟨(·.malformedTimer == .rollsBackArming), none⟩,
+  ⟨(·.messageNames == .addresses), some (.declarationDepthFirst, "profile.messageNames.addresses.orderInvariant")⟩,
+  ⟨(·.scopeStart == .required), none⟩,
+  ⟨(·.signalNames == .addresses), some (.declarationDepthFirst, "profile.signalNames.addresses.orderInvariant")⟩,
+  ⟨(·.signalPayload == .variables), none⟩,
+  ⟨(·.signalDelivery == .occurrenceTargeted), none⟩,
+  ⟨(·.conditionalStart == .submittedContext), none⟩,
+  ⟨(·.calledElementResolution == .cibKey), none⟩,
+  ⟨(·.messageThrowForms == .cibForms), none⟩,
+  ⟨(·.deploymentErrors == .cibDeployment), none⟩,
+  ⟨(·.handlerEscalation == .reentersHandler), none⟩]
+
+/-- The first selected option value whose meaning needs another run order than `selected.branchSchedule`. -/
+def orderDependent (selected : ProfileOptions) : Option String :=
+  orderClasses.findSome? fun entry => match entry.needs with
+    | some (schedule, code) => if entry.selects selected && selected.branchSchedule != schedule then some code else none
+    | none => none
+
 def options (reach : Reach) (selected : ProfileOptions) : Option String :=
   (if selected.compensationOrder == .allAtOnce then some "profile.compensationOrder.allAtOnce" else none) <|>
   compensationHandlerFailure selected.compensationHandlerFailure <|>
@@ -61,6 +144,7 @@ def options (reach : Reach) (selected : ProfileOptions) : Option String :=
   (if selected.handlerEscalation == .reentersHandler then some "profile.handlerEscalation.reentersHandler" else none) <|>
   (if selected.defaultRetryCycle.isSome then some "profile.defaultRetryCycle" else none) <|>
   (if selected.inertExtensions.isEmpty then none else some "profile.inertExtensions") <|>
-  multiInstance reach.loops selected
+  multiInstance reach.loops selected <|>
+  orderDependent selected
 
 end Kernel.Admission.Profile

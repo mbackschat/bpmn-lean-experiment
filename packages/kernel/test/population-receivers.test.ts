@@ -101,7 +101,7 @@ test("reachOccurrence steps a waiting receiver's broadcast delivery and skips on
 });
 
 test("messageReceivers reaches a waiting catch by channel, by name only under name addressing, and only with its business key", () => {
-  const addressed = waiter({ messageNames: "addresses", evaluator: "juel" });
+  const addressed = waiter({ messageNames: "addresses", branchSchedule: "declarationDepthFirst", evaluator: "juel" });
   const names = (deployed: Json, businessKey: string | null, sent: Json): unknown[] =>
     (fixture("messageReceivers", [deployed], { stimuli: [begin(businessKey)], publication: sent }) as Json[])
       .map((found) => (found.occurrence as Json).elementId);
@@ -130,7 +130,7 @@ test("messageReceivers answers a reached catch's modeled key outside the key dom
 
 test("messageStartCandidates reaches a deployment's Message starts by channel, and by name only under name addressing", () => {
   const described = starter("Order", orderMessage);
-  const addressed = starter("Order", orderMessage, { messageNames: "addresses", evaluator: "juel" });
+  const addressed = starter("Order", orderMessage, { messageNames: "addresses", branchSchedule: "declarationDepthFirst", evaluator: "juel" });
   const starts = (deployed: Json, address: Json): unknown[] =>
     (fixture("messageStartCandidates", [deployed], { publication: publication(address) }) as Json[]).map((found) => found.startEvent);
   assert.deepEqual(starts(described, { channel: order }), ["S"]);
@@ -205,7 +205,7 @@ test("conditionalStartVerdict holds, does not hold, or fails over the start inpu
 });
 
 test("registerSummary numbers each key's versions and refuses another key's current Message start name", () => {
-  const addressing = { messageNames: "addresses", evaluator: "juel" };
+  const addressing = { messageNames: "addresses", branchSchedule: "declarationDepthFirst", evaluator: "juel" };
   const second = (later: Json): unknown => {
     const [, registered] = fixture("registerSummary", [starter("Order", orderMessage, addressing), later], { deploymentIds: [1, 2] }) as Json[];
     const { ordinal: _ordinal, ...answer } = registered as Json;

@@ -19,7 +19,7 @@ import {
 import type { Json } from "./admission-refusal-support.ts";
 
 const cib = {
-  errorCatchVariables: "eventScope", errorPathOutputs: "mapped", raisedCallOutputs: "atCalledRoot", undeclaredWrite: "atInstanceRoot",
+  errorCatchVariables: "eventScope", errorPathOutputs: "mapped", raisedCallOutputs: "atCalledRoot", branchSchedule: "declarationDepthFirst", undeclaredWrite: "atInstanceRoot",
   outputContext: "activityScope", unhandledError: "endsThrowingPath", effectResultValues: "activityLocals",
 };
 const text = (value: string): Json => literalValue({ kind: "string", value });

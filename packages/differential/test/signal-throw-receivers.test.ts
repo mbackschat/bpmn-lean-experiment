@@ -96,7 +96,7 @@ test("a name-addressed delivery never reaches a QName subscription, and does und
   const named = { kind: "signal", name: "order-shipped" };
   const standards = run(await program(withPayload(""), { signalDelivery: "occurrenceTargeted" }), [start, deliver("Catch_Shipped", named)]);
   assert.deepEqual(standards.last.ok ? null : standards.last.failure, { tag: "rejected", code: "unknown-signal-subscription" });
-  const names = run(await program(withPayload(""), { signalNames: "addresses", signalDelivery: "occurrenceTargeted" }),
+  const names = run(await program(withPayload(""), { signalNames: "addresses", branchSchedule: "declarationDepthFirst", signalDelivery: "occurrenceTargeted" }),
     [start, deliver("Catch_Shipped", named)]);
   assert.ok(names.last.ok, JSON.stringify(names.last));
   assert.deepEqual(waiting(names.state), ["Catch_Other", "Dispatch", "Notify"]);
@@ -113,14 +113,14 @@ test("a delivery to one Signal catch is rejected unless the profile selects occu
 });
 
 test("a Signal delivery carrying a payload is rejected rather than dropped", async () => {
-  const { last } = run(await program(withPayload(""), { signalNames: "addresses", signalDelivery: "occurrenceTargeted" }),
+  const { last } = run(await program(withPayload(""), { signalNames: "addresses", branchSchedule: "declarationDepthFirst", signalDelivery: "occurrenceTargeted" }),
     [start, deliver("Catch_Shipped", { kind: "signal", name: "order-shipped" }, { payload: { kind: "string", value: "x" } })]);
   assert.deepEqual(last.ok ? null : last.failure, { tag: "rejected", code: "signal-payload-not-accepted" });
 });
 
 test("a throw's camunda:in copies install where the catch writes, and travel with its intent", async () => {
   const target = await program(withPayload(`<bpmn:extensionElements><camunda:in source="customer" target="notified"/></bpmn:extensionElements>`),
-    { signalNames: "addresses", signalPayload: "variables", evaluator: "juel", undeclaredWrite: "atInstanceRoot" });
+    { signalNames: "addresses", branchSchedule: "declarationDepthFirst", signalPayload: "variables", evaluator: "juel", undeclaredWrite: "atInstanceRoot" });
   const { state, last } = run(target, [start, complete("Dispatch")]);
   assert.ok(last.ok, JSON.stringify(last));
   assert.deepEqual(waiting(state), ["Catch_Other", "Notify"]);

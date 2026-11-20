@@ -43,6 +43,8 @@ import {
 } from "./kernel-guards-placement.ts";
 import {
   coverageRows,
+  orderClassFindings,
+  orderTableFiles,
   refusalParityFindings,
   refusalTestFindings,
   rowFixtureFindings,
@@ -449,6 +451,19 @@ test("guard 15 puts the registry's Laws module and the proofs importing it or La
     /G15 Lean: editing Kernel\.Feature\.Flow rebuilds Kernel\.Proofs\.Later, outside its cone/u);
 });
 
+test("guard 15 puts an admission's own laws and the admission registry's laws in its cone, and no other admission's laws", () => {
+  const laws = {
+    "Kernel/Admission/Profile.lean": "module\npublic import Kernel.IL.Types\n",
+    "Kernel/Admission/Flow.lean": "module\npublic import Kernel.IL.Types\n",
+    "Kernel/AdmissionRegistry.lean": "module\npublic import Kernel.Admission.Profile\npublic import Kernel.Admission.Flow\n",
+    "Kernel/Laws/Admission/Profile.lean": "module\npublic import Kernel.Admission.Profile\nimport all Kernel.Admission.Profile\n",
+    "Kernel/Laws/AdmissionRegistry.lean": "module\npublic import Kernel.AdmissionRegistry\nimport all Kernel.AdmissionRegistry\n",
+  };
+  assert.deepEqual(rebuildFindings(fixture(laws)), []);
+  seeded(rebuildFindings, { ...laws, "Kernel/Laws/Admission/Flow.lean": "module\npublic import Kernel.Laws.Admission.Profile\n" },
+    /G15 Lean: editing Kernel\.Admission\.Profile rebuilds Kernel\.Laws\.Admission\.Flow, outside its cone/u);
+});
+
 test("guard 15 puts a feature's namesake laws submodule in its cone, and no other laws submodule", () => {
   const laws = {
     "Kernel/Feature/Flow/Gates.lean": "module\npublic import Kernel.Hooks\n",
@@ -761,6 +776,7 @@ for (const [name, guard] of [
   ["the run-log guard (KD7)", runLogFindings],
   ["guard 19", fieldLivenessFindings],
   ["guard 20", refusalParityFindings],
+  ["the run-order table guard (DC28)", orderClassFindings],
   ["guard 23 (structural inputs)", structureInputFindings],
   ["guard 11 (bounded wire numbers)", boundedNumberFindings],
   ["guard 24", justifiedRuleFindings],
@@ -789,6 +805,29 @@ test("the bound guards fail a copy that disagrees with Lean's Bounds defaults an
     "Kernel/Feature/Flow.lean": "module\ndef limit : Nat := 1024 -- 256 in a comment is no literal\n" },
     /G8 Kernel\/Feature\/Flow\.lean:2: literal 1024 restates the textBytes or instanceIdentityBytes bound[\s\S]*G8 packages\/kernel\/src\/feature\/data\.ts:1: literal 16_384 restates the canonicalBytes bound/u);
   assert.notDeepEqual(strayBoundLiteralFindings(emptyFixture()), [], "an empty tree must fail");
+});
+
+test("the run-order table guard (DC28) needs every non-default option value classified once, in both kernels alike", () => {
+  const real = (file: string): string => readFileSync(path.join(tree.root, file), "utf8");
+  const owners = ["Kernel/IL/Types/Options.lean", ...orderTableFiles, "packages/kernel/src/il/types/options.ts"];
+  const copies: Record<string, string> = Object.fromEntries(owners.map((file) => [file, real(file)]));
+  assert.deepEqual(orderClassFindings(fixture(copies)), []);
+  const [options = "", lean = "", typeScript = ""] = owners;
+  const edit = (file: string, from: string, to: string): Record<string, string> => {
+    assert.ok((copies[file] ?? "").includes(from), `${file} holds ${from}`);
+    return { ...copies, [file]: (copies[file] ?? "").replace(from, to) };
+  };
+  seeded(orderClassFindings, edit(options, "  | eachWrite\n", "  | eachWrite\n  | eachRead\n"),
+    /ProfileOptions\.conditionalRetrigger value eachRead is not classified by run-order dependence/u);
+  seeded(orderClassFindings, edit(lean, "  ⟨(·.signalPayload == .variables), none⟩,\n", ""),
+    /signalPayload value variables is not classified[\s\S]*entry 42 is signalPayload\.variables order-free, Lean's is signalDelivery/u);
+  seeded(orderClassFindings, edit(lean, "(·.scopeStart == .required)", "(·.scopeStart == .implicit)"),
+    /classifies scopeStart\.implicit, the standards reading/u);
+  seeded(orderClassFindings, edit(lean, "\"profile.signalNames.addresses.orderInvariant\"", "\"profile.signalNames.addresses\""),
+    /refuses signalNames\.addresses as profile\.signalNames\.addresses, not profile\.signalNames\.addresses\.orderInvariant/u);
+  seeded(orderClassFindings, edit(typeScript, "needs: { schedule: BranchSchedule.DeclarationDepthFirst, code: \"profile.messageNames.addresses.orderInvariant\" }", "needs: null"),
+    /entry 39 is messageNames\.addresses order-free, Lean's is messageNames\.addresses profile\.messageNames\.addresses\.orderInvariant/u);
+  assert.notDeepEqual(orderClassFindings(emptyFixture()), [], "an empty tree must fail");
 });
 
 test("the tree stays within the guard 18 site budgets and the commit-scope rule", () => {

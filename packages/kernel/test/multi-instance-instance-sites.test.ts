@@ -65,7 +65,7 @@ function program(mode: string, nested = false): Json {
   return {
     ...slice,
     options: { ...(slice["options"] as Json), evaluator: "juel", multiInstanceBinding: "loopReferences",
-      multiInstanceCounters: "cibLocals", multiInstanceInputFailure: "rollback", multiInstanceCount: "javaInt" },
+      multiInstanceCounters: "cibLocals", branchSchedule: "declarationDepthFirst", multiInstanceInputFailure: "rollback", multiInstanceCount: "javaInt" },
     elements: [
       { start: { header: header("Start", "startEvent", null), payload: { subscription: null, outgoing: ["To_S"], initiator: null, formRef: null } } },
       ...outer.elements,

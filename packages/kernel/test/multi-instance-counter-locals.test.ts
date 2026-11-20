@@ -19,7 +19,7 @@ const header = (id: string, sourceType: string): Json => ({ id, origin: { defini
 
 const cib: Json = {
   evaluator: "juel", multiInstanceBinding: "loopReferences", effectResultValues: "activityLocals",
-  multiInstanceCounters: "cibLocals", multiInstanceInputFailure: "rollback", multiInstanceCount: "javaInt",
+  multiInstanceCounters: "cibLocals", branchSchedule: "declarationDepthFirst", multiInstanceInputFailure: "rollback", multiInstanceCount: "javaInt",
 };
 
 /** `Start → T → End`, `T` a Service Task looping over `items` with the item local `item`. */

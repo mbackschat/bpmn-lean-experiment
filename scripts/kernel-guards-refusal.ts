@@ -11,14 +11,18 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 import {
+  closeOf,
   emptyInputFinding,
   finding,
   isJustified,
   isLeanExecutable,
+  leanDeclarations,
+  optionRecord,
   TokenKind,
   typeScriptEnums,
   type KernelTree,
   type Source,
+  type Token,
 } from "./kernel-guard-scan.ts";
 
 type RefusalCode = Readonly<{ code: string; source: Source; line: number }>;
@@ -126,6 +130,106 @@ export function refusalParityFindings(tree: KernelTree): string[] {
     admitted.has(normalizeCode(code)) || isDynamicOnly(source, line)
       ? []
       : [finding(20, source, line, `runtime unsupported "${code}" has no admission refusal and no dynamic-only mark`)]);
+}
+
+export const orderTableFiles: readonly [string, string] = ["Kernel/Admission/Profile.lean", "packages/kernel/src/admission/profile.ts"];
+
+/** One entry of the run-order table: the option field and value it selects, and its refusal code, `null` for an
+ * order-free value. */
+type OrderEntry = Readonly<{ field: string; value: string; code: string | null; line: number }>;
+
+/** The entries of `orderClasses` in the Lean admission module: each `⟨(·.<field> == .<value>), …⟩` (or `matches` for a
+ * value with arguments), its code the string it carries. */
+function leanOrderEntries(source: Source): OrderEntry[] | null {
+  const table = leanDeclarations(source.tokens).find((declaration) => declaration.name === "orderClasses");
+  if (table === undefined) return null;
+  const entries: OrderEntry[] = [];
+  const tokens = source.tokens.slice(table.tokenStart, table.tokenEnd);
+  for (let i = 0; i < tokens.length; i += 1) {
+    if (tokens[i]?.text !== "⟨") continue;
+    const close = closeOf(tokens, i);
+    const entry = tokens.slice(i, close);
+    const dotted = entry.filter((token) => token.kind === TokenKind.Word && token.text.startsWith("."));
+    const code = entry.find((token) => token.kind === TokenKind.String);
+    entries.push({ field: dotted[0]?.text.slice(1) ?? "", value: dotted[1]?.text.slice(1) ?? "", code: code?.text ?? null,
+      line: tokens[i]?.line ?? table.line });
+    i = close - 1;
+  }
+  return entries;
+}
+
+/** The entries of the TypeScript `orderClasses`: each `selected.<field>[.tag] === <Enum>.<Member>`, the member read as the
+ * enum's wire value. */
+function typeScriptOrderEntries(source: Source, tree: KernelTree): OrderEntry[] | null {
+  const tokens = source.tokens;
+  const at = tokens.findIndex((token, i) => token.text === "orderClasses" && tokens[i - 1]?.text === "const");
+  if (at < 0) return null;
+  const assign = tokens.findIndex((token, i) => i > at && token.text === "=");
+  const open = tokens.findIndex((token, i) => i > assign && token.text === "[");
+  const enums = typeScriptEnums(tree.typeScript);
+  const entries: OrderEntry[] = [];
+  const list: readonly Token[] = tokens.slice(open, closeOf(tokens, open));
+  for (let i = 1; i < list.length; i += 1) {
+    if (list[i]?.text !== "{") continue;
+    const close = closeOf(list, i);
+    const entry = list.slice(i, close);
+    const read = entry.findIndex((token, k) => token.text === "selected" && entry[k + 1]?.text === ".");
+    const compare = entry.findIndex((token) => token.text === "===");
+    const member = enums.get(entry[compare + 1]?.text ?? "")?.members.get(entry[compare + 3]?.text ?? "");
+    const code = entry.find((token) => token.kind === TokenKind.String);
+    entries.push({ field: entry[read + 2]?.text ?? "", value: member ?? "", code: code?.text ?? null, line: list[i]?.line ?? 0 });
+    i = close - 1;
+  }
+  return entries;
+}
+
+/**
+ * The run-order table guard (DC28; guard 12's admission refusals): the Lean `orderClasses` classifies every non-default
+ * value of every enumerated `ProfileOptions` field exactly once, names no field, value or default the option record does
+ * not have, gives each order-dependent value the code `profile.<field>.<value>.orderInvariant`, and the TypeScript table
+ * transcribes it entry by entry. So a new option value is classified by run-order dependence when it is added.
+ */
+export function orderClassFindings(tree: KernelTree): string[] {
+  const record = optionRecord(tree);
+  if (record.length === 0) return [emptyInputFinding(12, "ProfileOptions enumerated fields")];
+  const [leanFile, typeScriptFile] = orderTableFiles;
+  const lean = tree.lean.find((source) => source.file === leanFile);
+  const leanEntries = lean === undefined ? null : leanOrderEntries(lean);
+  if (lean === undefined || leanEntries === null || leanEntries.length === 0) return [emptyInputFinding(12, `orderClasses in ${leanFile}`)];
+  const typeScript = tree.typeScript.find((source) => source.file === typeScriptFile);
+  const typeScriptEntries = typeScript === undefined ? null : typeScriptOrderEntries(typeScript, tree);
+  if (typeScript === undefined || typeScriptEntries === null) return [emptyInputFinding(12, `orderClasses in ${typeScriptFile}`)];
+  const findings: string[] = [];
+  const fields = new Map(record.map((field) => [field.name, field]));
+  const seen = new Set<string>();
+  for (const entry of leanEntries) {
+    const field = fields.get(entry.field);
+    const key = `${entry.field}.${entry.value}`;
+    if (field === undefined) findings.push(finding(12, lean, entry.line, `orderClasses names ${entry.field}, no enumerated ProfileOptions field`));
+    else if (!field.values.includes(entry.value)) findings.push(finding(12, lean, entry.line, `orderClasses names ${key}, no value of ${entry.field}`));
+    else if (field.default === entry.value) findings.push(finding(12, lean, entry.line, `orderClasses classifies ${key}, the standards reading`));
+    if (seen.has(key)) findings.push(finding(12, lean, entry.line, `orderClasses classifies ${key} twice`));
+    seen.add(key);
+    if (entry.code !== null && entry.code !== `profile.${key}.orderInvariant`) {
+      findings.push(finding(12, lean, entry.line, `orderClasses refuses ${key} as ${entry.code}, not profile.${key}.orderInvariant`));
+    }
+  }
+  for (const field of record) {
+    for (const value of field.values) {
+      if (value !== field.default && !seen.has(`${field.name}.${value}`)) {
+        findings.push(finding(12, lean, field.line, `ProfileOptions.${field.name} value ${value} is not classified by run-order dependence in orderClasses`));
+      }
+    }
+  }
+  const render = (entry: OrderEntry): string => `${entry.field}.${entry.value} ${entry.code ?? "order-free"}`;
+  const width = Math.max(leanEntries.length, typeScriptEntries.length);
+  for (let i = 0; i < width; i += 1) {
+    const [want, got] = [leanEntries[i], typeScriptEntries[i]];
+    if (want !== undefined && got !== undefined && render(want) === render(got)) continue;
+    findings.push(finding(12, typeScript, got?.line ?? 0,
+      `orderClasses entry ${i + 1} is ${got === undefined ? "missing" : render(got)}, Lean's is ${want === undefined ? "absent" : render(want)}`));
+  }
+  return findings;
 }
 
 /** The stable row IDs of the coverage target, discovered from its table rows. */

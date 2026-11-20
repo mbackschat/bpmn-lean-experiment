@@ -126,7 +126,28 @@ export const rows: readonly Row[] = [
   },
 ];
 
+/** DC28: each option value whose meaning depends on run order, refused under `orderInvariant` and admitted under the
+ * schedule it needs. Each is a forged option set no catalog profile selects: the CIB profiles select every such value
+ * together with `declarationDepthFirst` (CIB-OP-0016), so selecting, say, CIB-INT-0028's Signal addresses without it is
+ * caught by admission, not by a guard over the catalog. */
+const orderDependent: ReadonlyArray<readonly [string, Json, string]> = [
+  ["profile.unhandledError.endsThrowingPath.orderInvariant", { unhandledError: "endsThrowingPath" }, "an uncaught Error that ends only its path"],
+  ["profile.raisedCallOutputs.atCalledRoot.orderInvariant", { raisedCallOutputs: "atCalledRoot" }, "Call outputs mapped at a raised called root"],
+  ["profile.signalNames.addresses.orderInvariant", { signalNames: "addresses" }, "Signals addressed by name (CIB-INT-0028)"],
+  ["profile.messageNames.addresses.orderInvariant", { messageNames: "addresses" }, "Messages addressed by name"],
+  ["profile.multiInstanceCounters.cibLocals.orderInvariant", { multiInstanceCounters: "cibLocals" }, "CIB's Multi-Instance counters"],
+  ["profile.inclusiveJoinReach.outgoingOnly.orderInvariant", { inclusiveJoinReach: "outgoingOnly" }, "an Inclusive join reach without boundaries"],
+];
+
+const orderRows: readonly Row[] = orderDependent.map(([code, selects, description]) => ({
+  code,
+  description: `${description} under an order-invariant schedule`,
+  mutate: option({ ...selects, branchSchedule: "orderInvariant" }),
+  control: option({ ...selects, branchSchedule: "declarationDepthFirst" }),
+}));
+
 refusalTests("profile", rows);
+refusalTests("profile order", orderRows);
 
 // BPMN 2.0.2 Table 10.87: `isInterrupting` "cannot be applied to … Compensation Events (where it doesn't apply)", so a
 // Compensation Event Sub-Process whose start carries the attribute's default, `true`, reaches no abnormal scope end.

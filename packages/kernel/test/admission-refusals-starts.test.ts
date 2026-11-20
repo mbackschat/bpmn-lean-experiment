@@ -34,7 +34,7 @@ const submitted = (placed: (program: Json) => Json) => (program: Json): Json =>
 
 /** The profile selection under which a Signal's name addresses its subscriptions (CIB-INT-0028). */
 const addressed = (placed: (program: Json) => Json) => (program: Json): Json =>
-  placed(withOptions(program, { signalNames: "addresses", evaluator: "juel" }));
+  placed(withOptions(program, { signalNames: "addresses", branchSchedule: "declarationDepthFirst", evaluator: "juel" }));
 
 /** A Timer whose `kind` value is the expression `${when}`, with `over` completing its schedule. */
 const timerExpression = (kind: string, over: Json = {}): Json =>

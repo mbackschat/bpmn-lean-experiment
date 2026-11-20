@@ -471,3 +471,29 @@ export function allowedByOwner(file: string, allowed: readonly string[]): boolea
   const key = file.replace(/\.ts$/u, "");
   return allowed.some((module) => key === module || key.startsWith(`${module}/`));
 }
+
+/** An enumerated field of the profile option record: its name, its inductive's constructors and its default (the
+ * standards reading). */
+export type OptionField = Readonly<{ name: string; values: readonly string[]; default: string; line: number }>;
+
+export const optionsFile = "Kernel/IL/Types/Options.lean";
+
+/** The `ProfileOptions` fields of `Kernel/IL/Types/Options.lean` typed by an inductive of that file, in declaration
+ * order; empty when the file or the structure is missing. */
+export function optionRecord(tree: KernelTree): OptionField[] {
+  const source = tree.lean.find((candidate) => candidate.file === optionsFile);
+  if (source === undefined) return [];
+  const inductives = leanInductives(source);
+  const structure = leanDeclarations(source.tokens).find((declaration) => declaration.name === "ProfileOptions");
+  if (structure === undefined) return [];
+  const fields: OptionField[] = [];
+  for (let i = structure.tokenStart; i + 2 < structure.tokenEnd; i += 1) {
+    const [name, colon, type] = [source.tokens[i], source.tokens[i + 1], source.tokens[i + 2]];
+    if (name?.kind !== TokenKind.Word || colon?.text !== ":" || type === undefined) continue;
+    const values = inductives.get(type.text);
+    if (values === undefined) continue;
+    const fallback = source.tokens[i + 3]?.text === ":=" ? (source.tokens[i + 4]?.text ?? "") : "";
+    fields.push({ name: name.text, values: values.map((value) => value.name), default: fallback.replace(/^\./u, ""), line: name.line });
+  }
+  return fields;
+}

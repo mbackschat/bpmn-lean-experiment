@@ -231,7 +231,7 @@ test("the Lean and TypeScript kernels refuse the same malformed inputs with the 
     ...program,
     identity: { ...(program.identity as Record<string, unknown>), namespace: "urn:example:root", deployment: 2 },
     options: {
-      ...(program.options as Record<string, unknown>), signalNames: "addresses", signalPayload: "variables",
+      ...(program.options as Record<string, unknown>), signalNames: "addresses", branchSchedule: "declarationDepthFirst", signalPayload: "variables",
       signalDelivery: "occurrenceTargeted", conditionalStart: "submittedContext", calledElementResolution: "cibKey",
       messageThrowForms: "cibForms",
     },

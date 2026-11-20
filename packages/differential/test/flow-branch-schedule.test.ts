@@ -27,7 +27,13 @@ async function run(name: string, branchSchedule: string): Promise<Json> {
   const read = await readSourceFor(scenarioPath, scenario.bpmn, scenario.profile);
   assert.equal(read.kind, "read", JSON.stringify(read));
   const program = (read as Extract<typeof read, { kind: "read" }>).program as Json;
-  return runScenario({ ...program, options: { ...program.options, branchSchedule } }, scenario) as Json;
+  // The witnesses are read under a CIB profile, whose order-dependent values admission refuses beside the standards
+  // schedule (DC28): that run takes their order-free readings, so the split itself is what it refuses.
+  const orderFree = branchSchedule === "orderInvariant" ? {
+    unhandledError: "failsInstance", raisedCallOutputs: "none", signalNames: "identifier", messageNames: "description",
+    multiInstanceCounters: "none", inclusiveJoinReach: "withBoundaries",
+  } : {};
+  return runScenario({ ...program, options: { ...program.options, ...orderFree, branchSchedule } }, scenario) as Json;
 }
 
 const witnesses = [

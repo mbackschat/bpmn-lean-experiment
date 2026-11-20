@@ -53,6 +53,8 @@ public import Kernel.IL.Types.MultiInstance
 public import Kernel.IL.Types.Options
 public import Kernel.IL.Types.Reference
 public import Kernel.IL.Types.Work
+public import Kernel.Laws.Admission.Profile
+public import Kernel.Laws.AdmissionRegistry
 public import Kernel.Laws.Compensation
 public import Kernel.Laws.Compensation.Kept
 public import Kernel.Laws.Compensation.Rules

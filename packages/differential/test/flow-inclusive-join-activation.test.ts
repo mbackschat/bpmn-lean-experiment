@@ -28,7 +28,9 @@ async function waits(scenarioPath: string, reach: Reach): Promise<string[][]> {
   const read = await readSourceFor(scenarioPath, scenario.bpmn, scenario.profile);
   assert.equal(read.kind, "read", JSON.stringify(read));
   const program = (read as Extract<typeof read, { kind: "read" }>).program as Json;
-  const result = runScenario({ ...program, options: { ...program.options, inclusiveJoinReach: reach } }, scenario) as Json;
+  // CIB's reach is admitted only beside CIB's schedule (DC28), as the catalog selects CIB-INT-0020 with CIB-OP-0016.
+  const schedule = reach === "outgoingOnly" ? { branchSchedule: "declarationDepthFirst" } : {};
+  const result = runScenario({ ...program, options: { ...program.options, inclusiveJoinReach: reach, ...schedule } }, scenario) as Json;
   assert.deepEqual(result.outcome, { kind: "semantic", outcome: "committed" }, JSON.stringify(result.trace));
   return result.trace.filter((entry: Json) => entry.kind === "state")
     .map((state: Json) => state.openWaits.map((wait: Json) => `${wait.id.elementId}#${wait.id.activation}`));

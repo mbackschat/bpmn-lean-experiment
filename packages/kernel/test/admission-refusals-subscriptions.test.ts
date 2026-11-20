@@ -61,11 +61,11 @@ const signalWith = (over: Json): Json => {
 
 /** The profile selection under which a Signal's name addresses it, read at the Events level (CIB-INT-0028, CIB-EXT-0041). */
 const signalAddresses = (placed: (program: Json) => Json) => (program: Json): Json =>
-  placed(withOptions(program, { signalNames: "addresses", evaluator: "juel" }));
+  placed(withOptions(program, { signalNames: "addresses", branchSchedule: "declarationDepthFirst", evaluator: "juel" }));
 
 /** The profile selection under which a Message's name addresses its subscriptions (CIB-LIM-0022). */
 const addresses = (placed: (program: Json) => Json) => (program: Json): Json =>
-  placed(withOptions(program, { messageNames: "addresses", evaluator: "juel" }));
+  placed(withOptions(program, { messageNames: "addresses", branchSchedule: "declarationDepthFirst", evaluator: "juel" }));
 
 /** A Conditional trigger with `over` replacing its predicate or filters. */
 const conditionWith = (over: Json): Json => {
@@ -76,7 +76,7 @@ const conditionWith = (over: Json): Json => {
 /** `addresses` with the options a Multi-Instance loop reads under JUEL. */
 const addressesLooping = (placed: (program: Json) => Json) => (program: Json): Json =>
   placed(withOptions(program, {
-    messageNames: "addresses", evaluator: "juel", multiInstanceBinding: "loopReferences", multiInstanceCounters: "cibLocals",
+    messageNames: "addresses", branchSchedule: "declarationDepthFirst", evaluator: "juel", multiInstanceBinding: "loopReferences", multiInstanceCounters: "cibLocals",
     multiInstanceInputFailure: "rollback", multiInstanceCount: "javaInt",
   }));
 
@@ -422,7 +422,7 @@ export const rows: readonly Row[] = [
   {
     code: "signal.nameExpression",
     description: "a catch Signal name expression outside the Events level, where names address Signals",
-    mutate: (program) => catching(signalWith({ name: computed(variable("x")) }))(withOptions(program, { signalNames: "addresses" })),
+    mutate: (program) => catching(signalWith({ name: computed(variable("x")) }))(withOptions(program, { signalNames: "addresses", branchSchedule: "declarationDepthFirst" })),
     control: signalAddresses(catching(signalWith({ name: computed(variable("x")) }))),
   },
   // One Signal name per document and per CIB event scope (CIB-LIM-0026): each refused pair's control drops `addresses`,

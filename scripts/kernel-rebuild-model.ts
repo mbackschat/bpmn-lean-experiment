@@ -97,7 +97,11 @@ const leanLanguage: Language = {
   inCone: (layer, family, module, graph) => {
     const own = layer === "feature" ? `Kernel.Feature.${family}` : `Kernel.Admission.${family}`;
     if (module === own || module.startsWith(`${own}.`) || module === "Kernel.Run" || module === "Kernel") return true;
-    if (layer === "admission") return module === "Kernel.AdmissionRegistry";
+    // `Laws.Admission.F` opens `Admission.F` and `Laws.AdmissionRegistry` the admission registry (module table).
+    if (layer === "admission") {
+      return module === "Kernel.AdmissionRegistry" || module === "Kernel.Laws.AdmissionRegistry" ||
+        module === `Kernel.Laws.Admission.${family}` || module.startsWith(`Kernel.Laws.Admission.${family}.`);
+    }
     // `Kernel.Laws.Registry` opens the registry, which imports every feature; the proofs that import it or `Laws.F`
     // compose the feature's lemmas (proposal, module table).
     if (module === "Kernel.Registry" || module === "Kernel.Laws.Registry" || module === `Kernel.Laws.${family}`) return true;

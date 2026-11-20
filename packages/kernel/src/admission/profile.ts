@@ -9,22 +9,15 @@
  * and `multiInstanceCompensation` are refused likewise only for the programs their alternative would change.
  */
 import {
-  AbnormalScopeEnd,
-  CallBindingTime,
-  CollectionRead,
-  CompensationHandlerFailureTag,
-  CompensationOrder,
-  DeploymentErrors,
-  ErrorExitCompensation,
-  Evaluator,
-  HandlerEscalation,
-  MultiInstanceCompensation,
-  MultiInstanceCounters,
-  MultiInstanceInputFailure,
-  MultiInstanceOutputs,
-  assertNever,
-  type CompensationHandlerFailure,
-  type ProfileOptions,
+  AbnormalScopeEnd, BranchSchedule, BusinessRuleTask, CallBindingTime, CalledElementResolution, CollectionRead,
+  CompensationHandlerFailureTag, CompensationOrder, CompensationReferenceScope, ConditionOrder, ConditionalRetrigger,
+  ConditionalStart, ConfiguredTask, ContinuationFailure, DeliveryVariables, DeploymentErrors, ErrorCatchVariables,
+  ErrorExitCompensation, ErrorPathOutputs, Evaluator, HandlerEscalation, ImplicitCompensation, InclusiveJoinReach,
+  MalformedTimer, MessageCorrelation, MessageNames, MessageThrowForms, MultiInstanceBinding, MultiInstanceCompensation,
+  MultiInstanceCount, MultiInstanceCounters, MultiInstanceFinalBody, MultiInstanceInputFailure, MultiInstanceOutputs,
+  OutputContext, RaisedCallOutputs, ResultValues, ScopeStart, ScriptTask, SignalDelivery, SignalNames, SignalPayload,
+  SubmissionRule, TechnicalFailure, TransactionMethods, UndeclaredWrite, UnhandledError, assertNever,
+  type CompensationHandlerFailure, type ProfileOptions,
 } from "../il/types.js";
 
 function compensationHandlerFailure(selected: CompensationHandlerFailure): string | null {
@@ -70,6 +63,90 @@ function multiInstance(loops: boolean, selected: ProfileOptions): string | null 
   return selected.multiInstanceCounters === MultiInstanceCounters.CibLocals ? "profile.multiInstanceCounters.cibLocals" : null;
 }
 
+/**
+ * One value a profile option can select other than its standards reading, classified by whether its meaning depends on
+ * the closure's run order: `needs` is the schedule its meaning needs and the stable code admission refuses it with under
+ * any other schedule, `null` where it means the same under every run order. Each enumerated `ProfileOptions` field's
+ * every non-default value is listed exactly once (the order-class guard in `scripts/kernel-guards-refusal.ts` reads this
+ * table against the option record), so a new option value is classified when it is added.
+ */
+export interface OrderClass {
+  readonly selects: (selected: ProfileOptions) => boolean;
+  readonly needs: { readonly schedule: BranchSchedule; readonly code: string } | null;
+}
+
+/**
+ * The profile option values by run-order dependence (DC28, probes P03, P09, P11 and P12 of K0.10b, KD3), transcribed
+ * from `Kernel.Admission.Profile.orderClasses`, whose comment gives each order-dependent value's reason.
+ */
+const orderClasses: readonly OrderClass[] = [
+  { selects: (selected) => selected.evaluator === Evaluator.Juel, needs: null },
+  { selects: (selected) => selected.submission === SubmissionRule.InstallsVariables, needs: null },
+  { selects: (selected) => selected.undeclaredWrite === UndeclaredWrite.AtInstanceRoot, needs: null },
+  { selects: (selected) => selected.errorPathOutputs === ErrorPathOutputs.Mapped, needs: null },
+  { selects: (selected) => selected.raisedCallOutputs === RaisedCallOutputs.AtCalledRoot,
+    needs: { schedule: BranchSchedule.DeclarationDepthFirst, code: "profile.raisedCallOutputs.atCalledRoot.orderInvariant" } },
+  { selects: (selected) => selected.technicalFailure === TechnicalFailure.Incident, needs: null },
+  { selects: (selected) => selected.continuationFailure === ContinuationFailure.Incident, needs: null },
+  { selects: (selected) => selected.conditionOrder === ConditionOrder.BeforeOutputs, needs: null },
+  { selects: (selected) => selected.messageCorrelation === MessageCorrelation.ApiCriteria, needs: null },
+  { selects: (selected) => selected.deliveryVariables === DeliveryVariables.Installs, needs: null },
+  { selects: (selected) => selected.multiInstanceFinalBody === MultiInstanceFinalBody.ModeSpecific, needs: null },
+  { selects: (selected) => selected.multiInstanceOutputs === MultiInstanceOutputs.None, needs: null },
+  { selects: (selected) => selected.compensationOrder === CompensationOrder.AllAtOnce, needs: null },
+  { selects: (selected) => selected.compensationHandlerFailure.tag === CompensationHandlerFailureTag.Selected,
+    needs: null },
+  { selects: (selected) => selected.compensationHandlerFailure.tag === CompensationHandlerFailureTag.PropagatesFromHandler,
+    needs: null },
+  { selects: (selected) => selected.implicitCompensation === ImplicitCompensation.EverySubProcess, needs: null },
+  { selects: (selected) => selected.errorExitCompensation === ErrorExitCompensation.CompensatesContained, needs: null },
+  { selects: (selected) => selected.multiInstanceCompensation === MultiInstanceCompensation.PerInstance, needs: null },
+  { selects: (selected) => selected.transactionMethods === TransactionMethods.CompatibilityAsCompensate, needs: null },
+  { selects: (selected) => selected.compensationReferenceScope === CompensationReferenceScope.EventSubProcessParent,
+    needs: null },
+  { selects: (selected) => selected.abnormalScopeEnd === AbnormalScopeEnd.CompletesNormally, needs: null },
+  { selects: (selected) => selected.unhandledError === UnhandledError.EndsThrowingPath,
+    needs: { schedule: BranchSchedule.DeclarationDepthFirst, code: "profile.unhandledError.endsThrowingPath.orderInvariant" } },
+  { selects: (selected) => selected.errorCatchVariables === ErrorCatchVariables.EventScope, needs: null },
+  { selects: (selected) => selected.callBindingTime === CallBindingTime.Invocation, needs: null },
+  { selects: (selected) => selected.multiInstanceBinding === MultiInstanceBinding.LoopReferences, needs: null },
+  { selects: (selected) => selected.effectResultValues === ResultValues.ActivityLocals, needs: null },
+  { selects: (selected) => selected.outputContext === OutputContext.ActivityScope, needs: null },
+  { selects: (selected) => selected.multiInstanceCounters === MultiInstanceCounters.CibLocals,
+    needs: { schedule: BranchSchedule.DeclarationDepthFirst, code: "profile.multiInstanceCounters.cibLocals.orderInvariant" } },
+  { selects: (selected) => selected.multiInstanceInputFailure === MultiInstanceInputFailure.Rollback, needs: null },
+  { selects: (selected) => selected.multiInstanceCount === MultiInstanceCount.JavaInt, needs: null },
+  { selects: (selected) => selected.multiInstanceCollection === CollectionRead.SequentialReread, needs: null },
+  { selects: (selected) => selected.businessRuleTask === BusinessRuleTask.DecisionTable, needs: null },
+  { selects: (selected) => selected.scriptTask === ScriptTask.Javascript, needs: null },
+  { selects: (selected) => selected.configuredTask === ConfiguredTask.Refused, needs: null },
+  { selects: (selected) => selected.inclusiveJoinReach === InclusiveJoinReach.OutgoingOnly,
+    needs: { schedule: BranchSchedule.DeclarationDepthFirst, code: "profile.inclusiveJoinReach.outgoingOnly.orderInvariant" } },
+  { selects: (selected) => selected.branchSchedule === BranchSchedule.DeclarationDepthFirst, needs: null },
+  { selects: (selected) => selected.conditionalRetrigger === ConditionalRetrigger.EachWrite, needs: null },
+  { selects: (selected) => selected.malformedTimer === MalformedTimer.RollsBackArming, needs: null },
+  { selects: (selected) => selected.messageNames === MessageNames.Addresses,
+    needs: { schedule: BranchSchedule.DeclarationDepthFirst, code: "profile.messageNames.addresses.orderInvariant" } },
+  { selects: (selected) => selected.scopeStart === ScopeStart.Required, needs: null },
+  { selects: (selected) => selected.signalNames === SignalNames.Addresses,
+    needs: { schedule: BranchSchedule.DeclarationDepthFirst, code: "profile.signalNames.addresses.orderInvariant" } },
+  { selects: (selected) => selected.signalPayload === SignalPayload.Variables, needs: null },
+  { selects: (selected) => selected.signalDelivery === SignalDelivery.OccurrenceTargeted, needs: null },
+  { selects: (selected) => selected.conditionalStart === ConditionalStart.SubmittedContext, needs: null },
+  { selects: (selected) => selected.calledElementResolution === CalledElementResolution.CibKey, needs: null },
+  { selects: (selected) => selected.messageThrowForms === MessageThrowForms.CibForms, needs: null },
+  { selects: (selected) => selected.deploymentErrors === DeploymentErrors.CibDeployment, needs: null },
+  { selects: (selected) => selected.handlerEscalation === HandlerEscalation.ReentersHandler, needs: null },
+];
+
+/** The first selected option value whose meaning needs another run order than `selected.branchSchedule`. */
+function orderDependent(selected: ProfileOptions): string | null {
+  for (const entry of orderClasses) {
+    if (entry.needs !== null && entry.selects(selected) && selected.branchSchedule !== entry.needs.schedule) return entry.needs.code;
+  }
+  return null;
+}
+
 export function options(reach: Reach, selected: ProfileOptions): string | null {
   if (selected.compensationOrder === CompensationOrder.AllAtOnce) return "profile.compensationOrder.allAtOnce";
   const handlerFailure = compensationHandlerFailure(selected.compensationHandlerFailure);
@@ -87,5 +164,7 @@ export function options(reach: Reach, selected: ProfileOptions): string | null {
   if (selected.handlerEscalation === HandlerEscalation.ReentersHandler) return "profile.handlerEscalation.reentersHandler";
   if (selected.defaultRetryCycle !== null) return "profile.defaultRetryCycle";
   if (selected.inertExtensions.length > 0) return "profile.inertExtensions";
-  return multiInstance(reach.loops, selected);
+  const loops = multiInstance(reach.loops, selected);
+  if (loops !== null) return loops;
+  return orderDependent(selected);
 }

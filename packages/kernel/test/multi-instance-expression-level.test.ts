@@ -21,7 +21,7 @@ const header = (id: string, sourceType: string): Json => ({ id, origin: { defini
 /** The CIB options this level reads; each test overrides what it separates. */
 const cib: Json = {
   evaluator: "juel", multiInstanceBinding: "loopReferences", effectResultValues: "activityLocals",
-  multiInstanceCounters: "cibLocals", multiInstanceInputFailure: "rollback", multiInstanceCount: "javaInt",
+  multiInstanceCounters: "cibLocals", branchSchedule: "declarationDepthFirst", multiInstanceInputFailure: "rollback", multiInstanceCount: "javaInt",
 };
 
 type Shape = Readonly<{ options?: Json; loop?: Json; user?: boolean }>;

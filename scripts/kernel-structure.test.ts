@@ -102,6 +102,11 @@ test("a Laws module is classified apart, imports only its own feature or dispatc
     module("Kernel.Laws.State", Layer.Laws, "state", ["Kernel.State"]),
     module("Kernel.Laws.Flow", Layer.Laws, "flow", ["Kernel.Feature.Flow", "Kernel.Laws.State", "Kernel.Feature.Data"]),
     module("Kernel.Laws.Population", Layer.Laws, "population", ["Kernel.Population.Contract", "Kernel.Step"]),
+    module("Kernel.Admission.Profile", Layer.Admission, "profile", []),
+    module("Kernel.AdmissionRegistry", Layer.AdmissionRegistry, "", ["Kernel.Admission.Profile"]),
+    module("Kernel.Laws.Admission.Profile", Layer.Laws, "admission", ["Kernel.Admission.Profile"]),
+    module("Kernel.Laws.AdmissionRegistry", Layer.Laws, "admissionregistry", ["Kernel.AdmissionRegistry", "Kernel.Laws.Admission.Profile"]),
+    module("Kernel.Laws.Data", Layer.Laws, "data", ["Kernel.Admission.Profile", "Kernel.AdmissionRegistry"]),
   ];
   assert.deepEqual(layeringFindings(modules, (name) => name === "Kernel" || name.startsWith("Kernel.")), [
     "Kernel/Feature/Flow.lean: feature module imports laws module Kernel.Laws.Flow",
@@ -109,6 +114,8 @@ test("a Laws module is classified apart, imports only its own feature or dispatc
     "Kernel/Run.lean: run module imports laws module Kernel.Laws.State",
     "Kernel/Laws/Flow.lean: laws module imports feature module Kernel.Feature.Data",
     "Kernel/Laws/Population.lean: laws module imports dispatch module Kernel.Step",
+    "Kernel/Laws/Data.lean: laws module imports admission module Kernel.Admission.Profile",
+    "Kernel/Laws/Data.lean: laws module imports admissionRegistry module Kernel.AdmissionRegistry",
   ]);
   // The TypeScript kernel transcribes only executable modules, so it has no laws layer and its index exports none.
   const typeScript = [

@@ -30,7 +30,7 @@ const signalThrow: Json = {
 /** The base program with every new field away from its default. */
 function referencing(): Json {
   const program = withOptions(base(), {
-    signalNames: "addresses", signalPayload: "variables", signalDelivery: "occurrenceTargeted",
+    signalNames: "addresses", branchSchedule: "declarationDepthFirst", signalPayload: "variables", signalDelivery: "occurrenceTargeted",
     conditionalStart: "submittedContext", calledElementResolution: "cibKey", messageThrowForms: "cibForms",
     deploymentErrors: "cibDeployment", handlerEscalation: "reentersHandler", defaultRetryCycle: "R3/PT5M",
     inertExtensions: [{ elementType: "bpmn:Process", name: qName("historyTimeToLive", "http://camunda.org/schema/1.0/bpmn") }],

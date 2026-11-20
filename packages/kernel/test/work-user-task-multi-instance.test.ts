@@ -25,7 +25,7 @@ import type { State } from "@bpmn-lean/kernel";
 import { activity, base, loop, task, userWork, withOptions, wired } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
 
-const installs = { submission: "installsVariables", undeclaredWrite: "atInstanceRoot", multiInstanceCounters: "cibLocals" };
+const installs = { submission: "installsVariables", undeclaredWrite: "atInstanceRoot", multiInstanceCounters: "cibLocals", branchSchedule: "declarationDepthFirst" };
 
 function program(options: Json, outputDataItem: string | null, mode = "parallel") {
   const decoded = decodeProgram(withOptions(wired(task(activity("T", userWork(), {

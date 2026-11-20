@@ -17,7 +17,7 @@ import {
 } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
 
-const cib = { unhandledError: "endsThrowingPath", errorPathOutputs: "mapped", undeclaredWrite: "atInstanceRoot" };
+const cib = { unhandledError: "endsThrowingPath", branchSchedule: "declarationDepthFirst", errorPathOutputs: "mapped", undeclaredWrite: "atInstanceRoot" };
 
 /** `T` is a Service Task with a `CAUGHT` boundary `B` leading to `End`, and `outputs` as its output mappings. */
 const thrower = (outputs: Json[]) => (program: Json): Json =>

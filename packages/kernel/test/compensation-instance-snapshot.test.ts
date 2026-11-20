@@ -20,7 +20,7 @@ const held = (value: string): Json => ({ tag: "string", value });
 const counter = (value: number): Json => ({ tag: "int", value });
 
 const standards: Json = {};
-const cib: Json = { multiInstanceBinding: "loopReferences", multiInstanceCounters: "cibLocals", evaluator: "juel" };
+const cib: Json = { multiInstanceBinding: "loopReferences", multiInstanceCounters: "cibLocals", branchSchedule: "declarationDepthFirst", evaluator: "juel" };
 const common: Json = { submission: "installsVariables", undeclaredWrite: "atInstanceRoot" };
 
 /** The loop over `items` binding each item to `item` under `binding`'s profile. */

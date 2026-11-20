@@ -33,7 +33,8 @@ export type Module = Readonly<{ name: string; layer: Layer; family: string; file
 
 /** Which layers a layer may import; a feature, admission or dispatch module may also import its own family's modules,
  * so a family splits into paired parts instead of outgrowing the size target, and the runner its own parts. A `Laws`
- * module may also import the executable family it states laws for, and a `Proofs` module reaches `Step` besides the
+ * module may also import the executable family it states laws for (`Laws.Admission` the admission modules,
+ * `Laws.AdmissionRegistry` the admission registry), and a `Proofs` module reaches `Step` besides the
  * `Laws` it composes; no executable layer imports `Laws` or `Proofs`. */
 const mayImport: Readonly<Record<Layer, readonly Layer[]>> = {
   [Layer.Il]: [Layer.Il],
@@ -142,7 +143,9 @@ export function layeringFindings(modules: readonly Module[], isKernel: (name: st
     // registry (proposal, module table).
     const ownLaws = module.layer === Layer.Laws && (target.family === module.family &&
       (target.layer === Layer.Feature || target.layer === Layer.Dispatch) ||
-      target.layer === Layer.Registry && module.family === "registry");
+      target.layer === Layer.Registry && module.family === "registry" ||
+      target.layer === Layer.Admission && module.family === "admission" ||
+      target.layer === Layer.AdmissionRegistry && module.family === "admissionregistry");
     // `Kernel.Proofs.*` reaches `Step` itself, and no other dispatch module (proposal, module table).
     const proofsStep = module.layer === Layer.Proofs && target.layer === Layer.Dispatch && target.family === "step";
     const typeScriptRootLaws = module.layer === Layer.Root && (target.layer === Layer.Laws || target.layer === Layer.Proofs) &&

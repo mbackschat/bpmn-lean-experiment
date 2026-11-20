@@ -20,7 +20,7 @@ function program(submission: string, mode: string): Json {
   return {
     ...slice,
     options: { ...(slice["options"] as Json), submission, undeclaredWrite: "atInstanceRoot", evaluator: "juel", multiInstanceBinding: "loopReferences",
-      multiInstanceCounters: "cibLocals", multiInstanceInputFailure: "rollback", multiInstanceCount: "javaInt" },
+      multiInstanceCounters: "cibLocals", branchSchedule: "declarationDepthFirst", multiInstanceInputFailure: "rollback", multiInstanceCount: "javaInt" },
     elements: [
       { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["To_T"], initiator: null, formRef: null } } },
       { activity: { header: header("T", "userTask"), payload: {

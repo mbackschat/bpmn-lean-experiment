@@ -21,7 +21,7 @@ import {
 } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
 
-const cib = { raisedCallOutputs: "atCalledRoot", undeclaredWrite: "atInstanceRoot" };
+const cib = { raisedCallOutputs: "atCalledRoot", branchSchedule: "declarationDepthFirst", undeclaredWrite: "atInstanceRoot" };
 const slot = [mapping("slot", literalValue({ kind: "string", value: "x" }))];
 
 /** An Intermediate throw Event `id` raising the Escalation `X`. */

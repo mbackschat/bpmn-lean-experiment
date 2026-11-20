@@ -540,10 +540,15 @@ test("flow fan-out: CIB's declaration-order schedule admits every fan-out (CIB-O
   for (const row of rows) assert.equal(refusalOf(cib(row.mutate)(base())), null, row.description);
 });
 
-test("flow fan-out: an uncaught Error ends the instance only under the profile that fails it", () => {
-  const ends = (shape: (program: Json) => Json) => (program: Json): Json => withOptions(shape(program), { unhandledError: "endsThrowingPath" });
-  assert.equal(refusalOf(ends(forkBeside([end("A", raiseError)], [], "A"))(base())), null);
-  assert.equal(refusalOf(ends(callBeside(false))(base())), null);
+// DC28: an uncaught Error that ends only its path reads whether its scope is idle, which the other branches decide, so
+// the profile refuses it under the order-invariant schedule before any fan-out is checked, and CIB's schedule admits it.
+test("flow fan-out: an uncaught Error that ends only its path is refused by the profile, never held against a sibling", () => {
+  const ends = (schedule: string, shape: (program: Json) => Json) => (program: Json): Json =>
+    withOptions(shape(program), { unhandledError: "endsThrowingPath", branchSchedule: schedule });
+  for (const shape of [forkBeside([end("A", raiseError)], [], "A"), callBeside(false)]) {
+    assert.equal(refusalOf(ends("orderInvariant", shape)(base())), "profile.unhandledError.endsThrowingPath.orderInvariant");
+    assert.equal(refusalOf(ends("declarationDepthFirst", shape)(base())), null);
+  }
 });
 
 test("flow fan-out: an arming's interrupting firing that removes the entry's begun work first is not held against it", () => {
