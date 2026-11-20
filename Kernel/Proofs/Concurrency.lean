@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Laws.Step
+public import Kernel.Laws.Step.Inputs
 public import Kernel.Laws.Data
 public import Kernel.Laws.Flow.Concurrent
 
@@ -8,8 +9,9 @@ public import Kernel.Laws.Flow.Concurrent
 
 The statement of the proof wave's concurrency lane ([PLAN, P6](../../docs/PLAN.md#proof-wave)): under
 `BranchSchedule.orderInvariant` and the order-invariance premise, two schedules of the enabled tokens and waking items
-of a closure a committed input runs commit results equal up to a bijection of issued identities, with journal and outbox compared at the
-canonical-result observation boundary: `Step.settle`'s fixed order is immaterial. A Conditional contest is not covered:
+of the closure an attempted input runs commit results equal up to a bijection of issued identities, with journal and outbox
+compared at the canonical-result observation boundary, or fail alike, with one outcome class: `Step.settle`'s fixed
+order is immaterial. A Conditional contest is not covered:
 the input's ranking decides it by design. Stated over a hooks parameter; the lane closes when `Kernel.Proofs.Step`
 proves it of `Registry.hooks`.
 
@@ -163,27 +165,98 @@ def Opens (hooks : Hooks) (program : Program) (input : Input) (start : State) : 
     Step.microStep hooks (Laws.Step.inputCtx hooks program input) (.ofRoot .input) (.input (Step.inputHead running).1)
       none State.root transition clocked = .ok start
 
-/-- P6: from a state the closure of a committed input reaches, any two schedules of its enabled work, each with its
-closure record (DC4), that both settle commit results alike up to a bijection of the identities and activations issued
-from that state on.
+/-- `start` is where the closure of `input` begins once `input` is attempted, whether or not it then commits: `Opens`
+without its two commit equalities (`Step.step … = .ok after`, `Step.onRunning … = .ok after`), with the running status
+`Step.onRunning` checks before it runs the transition. A law stated over `Opens` presupposes that the input commits in
+the schedule `Step.settle` takes, so it is vacuous for an input that fails there and silent on the failure's class
+(probe P01, 2026-11-20). -/
+def OpensAttempt (hooks : Hooks) (program : Program) (input : Input) (start : State) : Prop :=
+  (∃ payload fired element initial, input = .start payload ∧
+    hooks.startsFired (Laws.Step.inputCtx hooks program input) payload = .ok fired ∧
+    chooseStart payload.startEvent fired = .ok element ∧
+    Step.advanceClock payload.atMs
+      (((State.initial payload.instanceId payload.variables payload.businessKey).signal (.armScope State.root)).queueBatch
+        (.ofRoot .seed)) = .ok initial ∧
+    Step.microStep hooks (Laws.Step.inputCtx hooks program input) (.ofRoot .input) (.input .start) (some element)
+      State.root (Step.begin hooks (Laws.Step.inputCtx hooks program input)
+        { element, scope := State.root, trigger := payload.trigger }) initial = .ok start) ∨
+  ∃ before running transition clocked, Committed hooks program before ∧ before.status = .running ∧
+    Laws.Step.RunsTransition hooks (Laws.Step.inputCtx hooks program input) transition ∧
+    Step.advanceClock (Step.inputHead running).2.1 { before with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } =
+      .ok clocked ∧
+    Step.microStep hooks (Laws.Step.inputCtx hooks program input) (.ofRoot .input) (.input (Step.inputHead running).1)
+      none State.root transition clocked = .ok start
+
+/-- Every input `Opens` speaks of is attempted: drop its commit equalities, and read the running status off
+`Step.onRunning`'s success. -/
+theorem opensAttempt_of_opens {hooks : Hooks} {program : Program} {input : Input} {start : State}
+    (opens : Opens hooks program input start) : OpensAttempt hooks program input start := by
+  rcases opens with ⟨payload, _, rest⟩ | ⟨before, _, running, rest⟩
+  · obtain ⟨fired, element, initial, facts⟩ := rest
+    obtain ⟨starts, _, started⟩ := facts
+    exact .inl ⟨payload, fired, element, initial, starts, started⟩
+  · obtain ⟨transition, clocked, committed, facts⟩ := rest
+    obtain ⟨_, runs, ran, moved⟩ := facts
+    obtain ⟨state, _, _, ok⟩ := Laws.Step.onRunning_ok ran
+    obtain ⟨_, same, status, _⟩ := ok
+    cases same
+    exact .inr ⟨before, running, transition, clocked, committed, status, runs, moved⟩
+
+/-- Two settle outcomes have one outcome class: both commit, or both fail as one kind of failure (rejected, rolled back,
+semantic failure, unsupported), whatever their codes, a rejection's `stale` flag and a semantic failure's cause. -/
+def SameClass {α β : Type} : Except Failure α → Except Failure β → Prop
+  | .ok _, .ok _ => True
+  | .error (.rejected _ _), .error (.rejected _ _) => True
+  | .error (.rolledBack _), .error (.rolledBack _) => True
+  | .error (.semanticFailure _ _), .error (.semanticFailure _ _) => True
+  | .error (.unsupported _), .error (.unsupported _) => True
+  | _, _ => False
+
+/-- P6's commit side: from a state the closure of an attempted input reaches, any two schedules of its enabled work,
+each with its closure record (DC4), that both settle commit results alike up to a bijection of the identities and
+activations issued from that state on.
 
 P0 stated it from any `Laws.State.WellFormed` state, which is false: `WellFormed` admits queues no run produces, and
 two flow tokens queued in the root of a sequential `Start → User Task → Terminate End` process settle in one order
 beginning the User Task again before the End and in the other ending the instance first, with no renaming relating the
 two journals (P6 design, witness W1). The order-invariance argument rests on the queue having come from a run, so the
-start is now reachable (root decision D1, 2026-11-15): the state a committed input's transition micro-step leaves on a
-committed state of a run or the start's begin (`Opens`), under the run log that records the input's micro-step, and
-the closure context `Step.step` gives that input. The results are compared once committed (`Step.orderJournal`). -/
-def SchedulesAgree (hooks : Hooks) : Prop :=
+start is reachable (root decision D1, 2026-11-15): the state an attempted input's transition micro-step leaves on a
+committed state of a run, or the start's begin (`OpensAttempt`), under the run log that records the input's
+micro-step, and the closure context `Step.step` gives that input. The results are compared once committed
+(`Step.orderJournal`). -/
+def CommitsAgree (hooks : Hooks) : Prop :=
   ∀ (program : Program) (input : Input) (start state reordered left right : State) (log log' : Step.RunLog)
     (fuel work fuel' work' : Nat),
-    program.options.branchSchedule = .orderInvariant → Laws.Flow.Apart program → Opens hooks program input start →
+    program.options.branchSchedule = .orderInvariant → Laws.Flow.Apart program → OpensAttempt hooks program input start →
     Reaches hooks (Laws.Step.inputCtx hooks program input) (Step.RunLog.record {} (.ofRoot .input)) start log state →
     Reordered (log, state) (log', reordered) →
     Step.orderJournal (Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel work log state) = .ok left →
     Step.orderJournal (Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel' work' log' reordered) =
       .ok right →
     ∃ ids keys, ScopesRenamed state ids ∧ Activations state keys ∧ Alike ids keys left right
+
+/-- P6's failure side (KD8's settle-agreement, T42): under the same bounds, two schedules of the closure state of an
+attempted input settle with one outcome class (`SameClass`), so if one fails, the other fails too, as the same kind of
+failure; when both commit it says nothing `CommitsAgree` does not.
+
+Only the class: with two independently failing units in one closure, the command reports whichever ran first, so the
+failure code may differ between schedules; whether it must agree too is owner item P13 F4, open (2026-11-20). Not yet
+true of the kernel, which is why it is a statement: `Step.settle` charges each micro-step the size of the whole state,
+so one schedule can exceed the closure work bound where another commits (KD8 finding 1, until K3's created-entries
+measure), and `Step.deferred` reads `State.crossed`, so a failure's class depends on which boundary the schedule crossed
+first (probes P01 and P13; DC8, until J retires both). -/
+def FailureSideAgrees (hooks : Hooks) : Prop :=
+  ∀ (program : Program) (input : Input) (start state reordered : State) (log log' : Step.RunLog) (fuel work : Nat),
+    program.options.branchSchedule = .orderInvariant → Laws.Flow.Apart program → OpensAttempt hooks program input start →
+    Reaches hooks (Laws.Step.inputCtx hooks program input) (Step.RunLog.record {} (.ofRoot .input)) start log state →
+    Reordered (log, state) (log', reordered) →
+    SameClass (Step.orderJournal (Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel work log state))
+      (Step.orderJournal (Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel work log' reordered))
+
+/-- P6: under `orderInvariant` and the order-invariance premise, the schedules of the closure of every attempted input
+agree: those that commit commit results alike (`CommitsAgree`), and if one fails every one fails, with one outcome
+class (`FailureSideAgrees`). Statement only: open (#163). -/
+def SchedulesAgree (hooks : Hooks) : Prop := CommitsAgree hooks ∧ FailureSideAgrees hooks
 
 /-- PC-HUM-04 (`DTB-COMMUTE-01`): a token to a None End beside a token entering an embedded Sub-Process commute under
 `orderInvariant` (BPMN 2.0.2 §10.5.3, §13.5.6). The pair's two orders are one `Reordered` pair of a closure state, so
@@ -204,7 +277,7 @@ theorem endBesideEntry {hooks : Hooks} (agree : SchedulesAgree hooks)
     (settled' : Step.orderJournal (Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel' work' log'
       reordered) = .ok right) :
     ∃ ids keys, ScopesRenamed state ids ∧ Activations state keys ∧ Alike ids keys left right :=
-  agree program input start state reordered left right log log' fuel work fuel' work' invariant separate opens reached
-    swapped settled settled'
+  agree.1 program input start state reordered left right log log' fuel work fuel' work' invariant separate
+    (opensAttempt_of_opens opens) reached swapped settled settled'
 
 end Kernel.Proofs.Concurrency

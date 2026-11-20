@@ -10,9 +10,9 @@ of paths, the meeting point `meet` finds is the longest common prefix of two pat
 `compareOuter` is the outermost-first order of the full paths. None of it reads a fingerprint's value: a fingerprint only
 rejects. Then the scope occurrence key: one key per path (`ext`), so laws name a key by its segments (`ofSegments`), and
 its order is its reversed segments' (`compare_eq`). Then the unit key (DC4): one key per root and path (`ext`), `push`
-injective with the parent `parent?` reads back, its order the order of (depth, path fingerprint, root, path)
-(`compare_eq`) and its breadth-first order that of (depth, root, path read outermost first) (`breadth_eq`). Nothing
-executable imports this module.
+injective with the parent `parent?` reads back, so two distinct units' batch keys are apart (`signalUnit_apart`,
+`tokenUnit_apart`), its order the order of (depth, path fingerprint, root, path) (`compare_eq`) and its breadth-first
+order that of (depth, root, path read outermost first) (`breadth_eq`). Nothing executable imports this module.
 -/
 
 @[expose] public section
@@ -307,6 +307,26 @@ theorem breadth_total {a b : UnitKey} (apart : a ≠ b) :
   | lt => exact .inl rfl
   | eq => exact absurd (breadth_eq_eq.mp order) apart
   | gt => exact .inr (Std.OrientedCmp.gt_iff_lt.mp order)
+
+/-- A signal unit names the unit that queued it and its index in that unit's batch. -/
+theorem signalUnit_inj {u v : UnitKey} {i j : Nat} : u.signalUnit i = v.signalUnit j ↔ u = v ∧ i = j := by
+  simp only [UnitKey.signalUnit, push_inj, UnitStep.signal.injEq]
+
+/-- A token unit names the unit that queued it and its index in that unit's batch. -/
+theorem tokenUnit_inj {u v : UnitKey} {i j : Nat} : u.tokenUnit i = v.tokenUnit j ↔ u = v ∧ i = j := by
+  simp only [UnitKey.tokenUnit, push_inj, UnitStep.token.injEq]
+
+/-- A signal's batch key is never a token's, whatever units queued them and at whatever indexes. -/
+theorem signalUnit_ne_tokenUnit (u v : UnitKey) (i j : Nat) : u.signalUnit i ≠ v.tokenUnit j := fun same =>
+  UnitStep.noConfusion (push_inj.mp same).2
+
+/-- Batch-key apartness (probes P09 F6, P15 F8): two distinct units' batches share no key, at any indexes, so entries two
+units queued never overwrite each other in a unit-keyed map. -/
+theorem signalUnit_apart {u v : UnitKey} (apart : u ≠ v) (i j : Nat) : u.signalUnit i ≠ v.signalUnit j :=
+  fun same => apart (signalUnit_inj.mp same).1
+
+theorem tokenUnit_apart {u v : UnitKey} (apart : u ≠ v) (i j : Nat) : u.tokenUnit i ≠ v.tokenUnit j :=
+  fun same => apart (tokenUnit_inj.mp same).1
 
 end UnitKey
 
