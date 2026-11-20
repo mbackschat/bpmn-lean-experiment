@@ -165,4 +165,19 @@ def Work.receive? : Work → Option MessageTrigger
   | .rule _ => Option.none
   | .call _ => Option.none
 
+/-- The Script or Business Rule work a record names: the two work kinds whose run reads the instance's variables
+beside their element's mappings, a Script Task every visible variable (its effect opens with all of them,
+`Kernel.Feature.Work.scriptSnapshot`) and a Business Rule Task its decision's inputs
+(`Kernel.Feature.Decision.readInput`). -/
+def Work.reader? : Work → Option (ScriptWork ⊕ RuleWork)
+  | .script work => some (.inl work)
+  | .rule work => some (.inr work)
+  | Work.none => Option.none
+  | .manual => Option.none
+  | .user _ => Option.none
+  | .receive _ => Option.none
+  | .service _ => Option.none
+  | .send _ => Option.none
+  | .call _ => Option.none
+
 end Kernel

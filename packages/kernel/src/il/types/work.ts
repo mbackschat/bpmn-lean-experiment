@@ -112,6 +112,32 @@ export type Work =
   | { readonly tag: WorkTag.Rule; readonly payload: RuleWork }
   | { readonly tag: WorkTag.Call; readonly payload: CallWork };
 
+/** The Script or Business Rule work a record names, one of the two set, transcribed from Lean's `ScriptWork ⊕ RuleWork`. */
+export type WorkReader =
+  | { readonly script: ScriptWork; readonly rule: null }
+  | { readonly script: null; readonly rule: RuleWork };
+
+/**
+ * The Script or Business Rule work a record names: the two work kinds whose run reads the instance's variables beside
+ * their element's mappings, a Script Task every visible variable (its effect opens with all of them,
+ * `feature/work.ts#scriptSnapshot`) and a Business Rule Task its decision's inputs (`feature/decision.ts#readInput`).
+ */
+export function workReader(work: Work): WorkReader | null {
+  switch (work.tag) {
+    case WorkTag.Script: return { script: work.payload, rule: null };
+    case WorkTag.Rule: return { script: null, rule: work.payload };
+    case WorkTag.None:
+    case WorkTag.Manual:
+    case WorkTag.User:
+    case WorkTag.Receive:
+    case WorkTag.Service:
+    case WorkTag.Send:
+    case WorkTag.Call:
+      return null;
+  }
+  return assertNever(work);
+}
+
 /** The Call a work record names, if it is one. */
 export function workCall(work: Work): CallWork | null {
   switch (work.tag) {

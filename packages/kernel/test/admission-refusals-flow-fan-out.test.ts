@@ -12,7 +12,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  activity, append, base, boundary, callWork, catchEvent, compensationTrigger, definitionRef, elementId, end, errorTrigger,
+  activity, append, scriptWork, base, boundary, callWork, catchEvent, compensationTrigger, definitionRef, elementId, end, errorTrigger,
   escalationTrigger, eventSubProcess, flow, gateway, loop, mapping, model, refusalOf, refusalTests, replace, scope, signal,
   signalThrow, simpleBoolean, start, terminateThrow, text, throwing, userWork, variable, withOptions, writer,
 } from "./admission-refusal-support.ts";
@@ -572,4 +572,17 @@ test("flow fan-out: an Inclusive join a level entered twice at once parks twice 
   };
   assert.equal(refusalOf(shape(false)(base())), null);
   assert.equal(refusalOf(shape(true)(base())), "flow.concurrentWrite");
+});
+
+// Probe P14: a Script Task's effect opens with every visible variable, so the IL's account reads every name there and a
+// branch writing a name beside it races under the standards schedule; CIB's schedule admits the split.
+test("flow fan-out: a Script Task reads every name, so a branch beside it that writes one is held against it", () => {
+  const shape = (schedule: string) => (program: Json): Json => {
+    const [written, inner] = writer("W", "outcome", "branch");
+    return withOptions(model([start("S"), gateway("F", "parallel"), activity("X", scriptWork()), end("XE"), ...written, end("WD")],
+      [flow("f1", "S", "F"), flow("fx", "F", "X"), flow("x", "X", "XE"), flow("fw", "F", "W"), flow("w", "W", "WD"), ...inner])(program),
+    { scriptTask: "javascript", branchSchedule: schedule });
+  };
+  assert.equal(refusalOf(shape("orderInvariant")(base())), "flow.concurrentWrite");
+  assert.equal(refusalOf(shape("declarationDepthFirst")(base())), null);
 });

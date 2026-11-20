@@ -410,7 +410,7 @@ def closureWalk (reading : Reading) (program : Program) (walk : Walk) (begun : L
               begun := element.header.id :: found.begun, withdraws := removal reading element ++ found.withdraws
               wakes := found.wakes ++ opened program element stops }
             if stops then
-              ({ found with footprint := found.footprint.union { reads := beginReads element } },
+              ({ found with footprint := found.footprint.union { reads := beginReads program element } },
                 entering reading program element)
             else
               let onward := continuing program element ++

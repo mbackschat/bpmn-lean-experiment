@@ -174,7 +174,8 @@ def conditionalOutflow (program : Program) (flow : Flow) : Option String :=
 Gateway. -/
 def awaitsStimulus (element : Element) : Bool :=
   (element.activity?.any fun (_, payload) =>
-    payload.work.isUser || payload.work.isService || payload.work.receive?.isSome) ||
+    payload.work.isUser || payload.work.isService || payload.work.receive?.isSome ||
+      payload.work.reader?.any (·.isLeft)) ||
   (element.event?.any fun (_, payload) => payload.catch?.isSome) ||
   element.gateway?.any fun (_, payload) => (routing payload).waits
 

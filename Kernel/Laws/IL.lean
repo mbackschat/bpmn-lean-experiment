@@ -408,4 +408,35 @@ theorem source?_target? {program : Program} {flow : FlowId} {source target : Ele
     simp only [found, Option.map_some, Option.some.injEq] at leaves ends
     exact ⟨declared, List.mem_of_find?_eq_some found, leaves, ends⟩
 
+/-- **`script_il_reads_all`** (probe P14's witness, restated as the account's law): a Script Task's run reads every name
+in the IL's one account, as its effect opens with every visible variable (`Kernel.Feature.Work.scriptSnapshot`); P14's
+`script_il_reads_nothing` showed the account reading none. -/
+theorem script_il_reads_all (program : Program) (header : Header) (work : ScriptWork) (envelope : Envelope) :
+    (footprint program (.activity header { work := .script work, envelope })).reads.all = true := by
+  simp [footprint, beginReads, workReads, Work.reader?, NameSet.union, Element.activity?, Element.envelope?]
+
+/-- **`rule_il_reads_inputs`** (probe P14's witness, restated): a Business Rule Task whose literal key names a decision
+table reads, in the IL's one account, each variable input of that table, as its decision does
+(`Kernel.Feature.Decision.readInput`); P14's `rule_il_reads_nothing` showed the account reading none. -/
+theorem rule_il_reads_inputs (program : Program) (header : Header) (work : RuleWork) (envelope : Envelope)
+    {key : String} {decision : Decision} {table : DecisionTable} (keyed : work.decision.literal? = some key)
+    (found : program.decision? key = some decision) (logic : decision.logic = .table table) {input : DecisionInput}
+    {name : String} (listed : input ∈ table.inputs) (reads : input.expression = .variable name) :
+    (footprint program (.activity header { work := .rule work, envelope })).reads.all = true ∨
+      name ∈ (footprint program (.activity header { work := .rule work, envelope })).reads.names := by
+  have named : name ∈ table.inputs.filterMap fun input => match input.expression with
+      | .variable name => some name
+      | .foreign _ => none :=
+    List.mem_filterMap.mpr ⟨input, listed, by simp [reads]⟩
+  rcases inputs : decisionInputs program work with _ | names
+  · left
+    simp [footprint, beginReads, workReads, Work.reader?, Element.activity?, Element.envelope?, inputs, NameSet.union]
+  · right
+    have mem : name ∈ names := by
+      simp only [decisionInputs, keyed, found, logic, Option.bind_eq_bind, Option.bind_some] at inputs
+      split at inputs
+      · cases inputs; exact named
+      · cases inputs
+    simp [footprint, beginReads, workReads, Work.reader?, Element.activity?, Element.envelope?, inputs, NameSet.union, mem]
+
 end Kernel.Laws.IL

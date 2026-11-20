@@ -115,20 +115,22 @@ def interior (ctx : Ctx) (element : Element) : List Element :=
       | none => []
   go ctx.program.elements.length ((element.scope?.map (·.2.children)).getD [])
 
-/-- What `element` itself reads and writes over its whole run, over-approximated: its envelope and outgoing conditions
-(`footprint`), what it writes when it runs (`writes`) and what its boundaries write when they fire (`catchWrites`), a
-Multi-Instance element's output data item, every name a User Task installs under `SubmissionRule.installsVariables`,
-and every name for a task kind this feature cannot inspect (none of User, Service, Call or Receive work). -/
+/-- What `element` itself reads and writes over its whole run, over-approximated: the IL's one account of its run
+(`footprint`, with its work's own reads, `workReads`), what it writes when it runs (`writes`) and what its boundaries
+write when they fire (`catchWrites`), a Multi-Instance element's output data item, every name a User Task installs under
+`SubmissionRule.installsVariables`, and every name for work whose data the model does not show, a plain or Manual Task
+(none of User, Service, Call, Receive, Script or Business Rule work), as COMPENSATION-SEMANTICS-SPEC D1 (c) reads it:
+the account says such work touches no name, which holds for the closure, not for §13.5.5's dependency. -/
 def ownData (ctx : Ctx) (element : Element) : Footprint :=
   let boundaries := ((element.envelope?.map (·.boundaries)).getD []).flatMap (catchWrites ·.subscription)
   let item := ((element.envelope?.bind (·.multiInstance)).bind (·.outputDataItem)).toList
   let caught : Footprint := { writes := (writes element).union { names := boundaries ++ item } }
   let work : Footprint := match element.activity? with
     | some (_, payload) =>
-      let uninspected := !(payload.work.isUser || payload.work.isService || payload.work.call?.isSome ||
-        payload.work.receive?.isSome)
+      let abstract := !(payload.work.isUser || payload.work.isService || payload.work.call?.isSome ||
+        payload.work.receive?.isSome || payload.work.reader?.isSome)
       let installs := payload.work.isUser && ctx.program.options.submission == .installsVariables
-      { reads := { all := uninspected }, writes := { all := uninspected || installs } }
+      { reads := { all := abstract }, writes := { all := abstract || installs } }
     | none => {}
   ((footprint ctx.program element).union caught).union work
 

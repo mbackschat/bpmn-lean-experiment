@@ -611,7 +611,7 @@ export function closureWalk(reading: Reading, program: Program, walk: Walk, begu
         withdraws.unshift(...removal(reading, element));
         wakes.push(...opened(program, element, stops));
         if (stops) {
-          found = joined(found, { reads: beginReads(element), writes: noNames });
+          found = joined(found, { reads: beginReads(program, element), writes: noNames });
           return entering(reading, program, element);
         }
         const scope = elementScope(element);

@@ -1,7 +1,8 @@
 /**
  * Read and write footprints, transcribed from `Kernel/IL/Footprint.lean`: what an expression, a mapping list or an
  * element reads and writes, over-approximated where the text cannot show it: a JUEL or foreign expression reads every
- * name, and a Multi-Instance definition reads every name when its element begins. `admission/flow.ts` compares branch
+ * name, a Multi-Instance definition reads every name when its element begins, and so does a Script Task, whose effect
+ * opens with every visible variable. `admission/flow.ts` compares branch
  * footprints for `BranchSchedule.OrderInvariant`, and `writes` is the one account of what an element writes, which that
  * closure walk and `feature/compensation.ts`'s data dependency both read. The mechanisms whose units those comparisons
  * pair (`QueuingMechanism`) are listed here once.
@@ -20,18 +21,23 @@ import {
   elementStart,
   eventPayloadCatch,
   eventPayloadThrow,
+  programDecision,
   programFlow,
   scopeKindStart,
   throwView,
   triggerView,
   workCall,
   workResults,
+  valueSourceLiteral,
   type Element,
   type Expression,
   type Mapping,
   type Program,
+  type RuleWork,
   type Subscription,
 } from "./types.js";
+import { DecisionLogicTag, InputExpressionTag, type InputExpression } from "./types/decision.js";
+import { workReader } from "./types/work.js";
 
 /** A set of variable names, or every name. */
 export type NameSet = Readonly<{ names: readonly string[]; all: boolean }>;
@@ -80,9 +86,58 @@ export const mappingReads = (mappings: readonly Mapping[]): NameSet =>
  * What `element` reads when it begins: its input mappings, and every name for a Multi-Instance definition, whose count,
  * collection and condition it evaluates then or later in the closure.
  */
-export function beginReads(element: Element): NameSet {
+/**
+ * The variable inputs of the decision table a Business Rule Task's work names, or `null` where a name cannot be told: a
+ * decision key that is an expression or names no decision, a decision without a table, an input that is no variable.
+ * Admission refuses each (`work.rule.decisionExpression`, `work.rule.decisionMissing`, `decision.logic`,
+ * `decision.inputExpression`), so `workReads` counts every name for them only to stay an over-approximation.
+ */
+export function decisionInputs(program: Program, work: RuleWork): readonly string[] | null {
+  const key = valueSourceLiteral(work.decision);
+  const decision = key === null ? null : programDecision(program, key);
+  if (decision === null) return null;
+  switch (decision.logic.tag) {
+    case DecisionLogicTag.Table: {
+      const names = decision.logic.value.inputs.map((input) => inputVariable(input.expression));
+      return names.every((name) => name !== null) ? names : null;
+    }
+    case DecisionLogicTag.Foreign: return null;
+  }
+  return assertNever(decision.logic);
+}
+
+/** The variable a decision input reads, `null` for an expression. */
+function inputVariable(expression: InputExpression): string | null {
+  switch (expression.tag) {
+    case InputExpressionTag.Variable: return expression.name;
+    case InputExpressionTag.Foreign: return null;
+  }
+  return assertNever(expression);
+}
+
+/**
+ * What `element`'s work reads beside its mappings (`workReader`): every name for a Script Task, whose effect opens with
+ * every visible variable (`feature/work.ts#scriptSnapshot`), and a Business Rule Task's decision table's variable inputs
+ * (`decisionInputs`, `feature/decision.ts#readInput`).
+ */
+export function workReads(program: Program, element: Element): NameSet {
+  const activity = elementActivity(element);
+  const reader = activity === null ? null : workReader(activity[1].work);
+  if (reader === null) return noNames;
+  if (reader.rule === null) return { names: [], all: true };
+  const names = decisionInputs(program, reader.rule);
+  return names === null ? { names: [], all: true } : { names, all: false };
+}
+
+/**
+ * What `element` reads when it begins: its input mappings, every name for a Multi-Instance definition, whose count,
+ * collection and condition it evaluates then or later in the closure, and what its work reads (`workReads`), which a
+ * Script Task's effect and a Business Rule Task's decision read as it begins.
+ */
+export function beginReads(program: Program, element: Element): NameSet {
   const envelope = elementEnvelope(element);
-  return envelope === null ? noNames : union(mappingReads(envelope.inputs), { names: [], all: envelope.multiInstance !== null });
+  const own = envelope === null ? noNames : union(mappingReads(envelope.inputs), { names: [], all: envelope.multiInstance !== null });
+  return union(own, workReads(program, element));
 }
 
 /**
@@ -114,7 +169,7 @@ export function footprint(program: Program, element: Element): Footprint {
     return condition === null ? [] : [condition];
   }).reduce((found, condition) => union(found, expressionReads(condition)), noNames);
   return {
-    reads: union(union(beginReads(element), mappingReads(outputs)), union(call === null ? noNames : mappingReads(call.inputs), conditions)),
+    reads: union(union(beginReads(program, element), mappingReads(outputs)), union(call === null ? noNames : mappingReads(call.inputs), conditions)),
     writes: {
       names: [...outputs.map((mapping) => mapping.target), ...(call?.outputs ?? []).map((mapping) => mapping.target)],
       all: call?.propagateAllOutputs === true || deliveredWrites(program, element),

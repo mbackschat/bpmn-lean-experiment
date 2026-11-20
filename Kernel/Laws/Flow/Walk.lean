@@ -77,11 +77,12 @@ def Forking (kind : GatewayKind) : Prop :=
 def WaitsGateway (element : Element) : Prop :=
   ∃ header payload instantiation, element.gateway? = some (header, payload) ∧ payload.kind = .eventBased instantiation
 
-/-- An element a token waits at for a stimulus: a User, Service or Receive Task, a catch Event, an Event-Based
-Gateway. -/
+/-- An element a token waits at for a stimulus: a User, Service, Receive or Script Task (a Script Task waits for its
+effect's result, `Kernel.Feature.Work.arrive`), a catch Event, an Event-Based Gateway. -/
 def AwaitsStimulus (element : Element) : Prop :=
   (∃ header payload, element.activity? = some (header, payload) ∧
-    (payload.work.isUser = true ∨ payload.work.isService = true ∨ payload.work.receive?.isSome = true)) ∨
+    (payload.work.isUser = true ∨ payload.work.isService = true ∨ payload.work.receive?.isSome = true ∨
+      ∃ script, payload.work.reader? = some (.inl script))) ∨
   (∃ header payload subscription, element.event? = some (header, payload) ∧ payload.catch? = some subscription) ∨
   WaitsGateway element
 
@@ -409,7 +410,7 @@ def VisitFootprint (program : Program) (walk : Walk) : Visit → Footprint → P
   | .fires boundary, found => found = { writes := { names := catchWrites boundary.subscription } }
   | .passes element, found => found = runFootprint program element
   | .completes element, found => found = runFootprint program element
-  | .enters element, found => (Stops walk element ∧ found = { reads := beginReads element }) ∨
+  | .enters element, found => (Stops walk element ∧ found = { reads := beginReads program element }) ∨
       (¬ Stops walk element ∧ found = runFootprint program element)
 
 /-- A unit of work: a walk from its start visits. -/

@@ -5,7 +5,8 @@ public import Kernel.IL.Types
 /-! # Read and write footprints
 
 What an expression, a mapping list or an element reads and writes, over-approximated where the text cannot show it: a
-JUEL or foreign expression reads every name, and a Multi-Instance definition reads every name when its element begins.
+JUEL or foreign expression reads every name, a Multi-Instance definition reads every name when its element begins, and
+so does a Script Task, whose effect opens with every visible variable.
 `Kernel.Admission.Flow` compares branch footprints for `BranchSchedule.orderInvariant`, and `writes` is the one account of
 what an element writes, which that closure walk and `Kernel.Feature.Compensation`'s data dependency both read. The
 mechanisms whose units those comparisons pair (`QueuingMechanism`) are listed here once, for admission's checks and
@@ -54,10 +55,36 @@ def expressionReads : Expression → NameSet
 def mappingReads (mappings : List Mapping) : NameSet :=
   mappings.foldl (fun found mapping => found.union (expressionReads mapping.source)) {}
 
-/-- What `element` reads when it begins: its input mappings, and every name for a Multi-Instance definition, whose
-count, collection and condition it evaluates then or later in the closure. -/
-def beginReads (element : Element) : NameSet :=
-  (element.envelope?.map fun envelope => (mappingReads envelope.inputs).union { all := envelope.multiInstance.isSome }).getD {}
+/-- The variable inputs of the decision table a Business Rule Task's work names, or `none` where a name cannot be told:
+a decision key that is an expression or names no decision, a decision without a table, an input that is no variable.
+Admission refuses each (`work.rule.decisionExpression`, `work.rule.decisionMissing`, `decision.logic`,
+`decision.inputExpression`), so `workReads` counts every name for them only to stay an over-approximation. -/
+def decisionInputs (program : Program) (work : RuleWork) : Option (List String) := do
+  let key ← work.decision.literal?
+  let decision ← program.decision? key
+  match decision.logic with
+  | .table table =>
+    let names := table.inputs.filterMap fun input => match input.expression with
+      | .variable name => some name
+      | .foreign _ => none
+    if names.length == table.inputs.length then some names else none
+  | .foreign _ => none
+
+/-- What `element`'s work reads beside its mappings (`Work.reader?`): every name for a Script Task, whose effect opens
+with every visible variable (`Kernel.Feature.Work.scriptSnapshot`), and a Business Rule Task's decision table's
+variable inputs (`decisionInputs`, `Kernel.Feature.Decision.readInput`). -/
+def workReads (program : Program) (element : Element) : NameSet :=
+  match element.activity?.bind fun (_, payload) => payload.work.reader? with
+  | some (.inl _) => { all := true }
+  | some (.inr work) => ((decisionInputs program work).map fun names => { names }).getD { all := true }
+  | none => {}
+
+/-- What `element` reads when it begins: its input mappings, every name for a Multi-Instance definition, whose count,
+collection and condition it evaluates then or later in the closure, and what its work reads (`workReads`), which a
+Script Task's effect and a Business Rule Task's decision read as it begins. -/
+def beginReads (program : Program) (element : Element) : NameSet :=
+  ((element.envelope?.map fun envelope =>
+    (mappingReads envelope.inputs).union { all := envelope.multiInstance.isSome }).getD {}).union (workReads program element)
 
 /-- Whether an Event Sub-Process writes every name when its start begins it: a delivery's own variables are input
 data, unknown at admission, which the begin writes outward from the new occurrence (`Step.writeStart`) under
@@ -69,7 +96,7 @@ def deliveredWrites (program : Program) (element : Element) : Bool :=
     (view.message.isSome && program.options.deliveryVariables == .installs) ||
       (view.signal.isSome && program.options.signalPayload == .variables)
 
-/-- What `element` reads and writes when it runs through in the closure: it begins, its outputs read their sources
+/-- What `element` reads and writes when it runs through in the closure: it begins (`beginReads`), its outputs read their sources
 and write their targets, a Call maps its inputs and outputs, its outgoing conditions are evaluated, and an Event
 Sub-Process whose start carries a delivery's variables writes every name (`deliveredWrites`). -/
 def footprint (program : Program) (element : Element) : Footprint :=
@@ -78,7 +105,7 @@ def footprint (program : Program) (element : Element) : Footprint :=
   let conditions := (element.outgoing.filterMap fun flow => (program.flow? flow).bind (·.condition)).foldl
     (fun found condition => found.union (expressionReads condition)) {}
   let callOutputs := (call.map fun work => work.outputs.map (·.target)).getD []
-  { reads := ((beginReads element).union (mappingReads outputs)).union
+  { reads := ((beginReads program element).union (mappingReads outputs)).union
       (((call.map fun work => mappingReads work.inputs).getD {}).union conditions),
     writes := { names := outputs.map (·.target) ++ callOutputs,
                 all := call.any (·.propagateAllOutputs) || deliveredWrites program element } }

@@ -44,6 +44,7 @@ import {
   type Element,
   type ElementId,
 } from "../il/types.js";
+import { workReader } from "../il/types/work.js";
 import { catchWrites, footprint, joined, meets, noNames, union, writes, type Footprint } from "../il/footprint.js";
 import { flowReaches } from "../il/paths.js";
 import {
@@ -176,10 +177,12 @@ function interior(ctx: Ctx, element: Element): Element[] {
 }
 
 /**
- * What `element` itself reads and writes over its whole run, over-approximated: its envelope and outgoing conditions
- * (`footprint`), what it writes when it runs (`writes`) and what its boundaries write when they fire (`catchWrites`), a
- * Multi-Instance element's output data item, every name a User Task installs under `SubmissionRule.InstallsVariables`,
- * and every name for a task kind this feature cannot inspect (none of User, Service, Call or Receive work).
+ * What `element` itself reads and writes over its whole run, over-approximated: the IL's one account of its run
+ * (`footprint`, with its work's own reads, `workReads`), what it writes when it runs (`writes`) and what its boundaries
+ * write when they fire (`catchWrites`), a Multi-Instance element's output data item, every name a User Task installs
+ * under `SubmissionRule.InstallsVariables`, and every name for work whose data the model does not show, a plain or
+ * Manual Task (none of User, Service, Call, Receive, Script or Business Rule work), as COMPENSATION-SEMANTICS-SPEC D1 (c)
+ * reads it: the account says such work touches no name, which holds for the closure, not for §13.5.5's dependency.
  */
 function ownData(ctx: Ctx, element: Element): Footprint {
   const boundaries = (elementEnvelope(element)?.boundaries ?? []).flatMap((boundary) => catchWrites(boundary.subscription));
@@ -189,9 +192,9 @@ function ownData(ctx: Ctx, element: Element): Footprint {
   let work: Footprint = { reads: noNames, writes: noNames };
   if (activity !== null) {
     const kind = activity[1].work;
-    const uninspected = !(workIsUser(kind) || workIsService(kind) || workCall(kind) !== null || workReceive(kind) !== null);
+    const abstract = !(workIsUser(kind) || workIsService(kind) || workCall(kind) !== null || workReceive(kind) !== null || workReader(kind) !== null);
     const installs = workIsUser(kind) && ctx.program.options.submission === SubmissionRule.InstallsVariables;
-    work = { reads: { names: [], all: uninspected }, writes: { names: [], all: uninspected || installs } };
+    work = { reads: { names: [], all: abstract }, writes: { names: [], all: abstract || installs } };
   }
   return joined(joined(footprint(ctx.program, element), caught), work);
 }

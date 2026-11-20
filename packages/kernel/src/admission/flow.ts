@@ -40,6 +40,7 @@ import {
   type Program,
   type StartPayload,
 } from "../il/types.js";
+import { workReader } from "../il/types/work.js";
 
 function distinct<T>(list: readonly T[]): boolean {
   return distinctCount(list) === list.length;
@@ -272,12 +273,15 @@ export function conditionalOutflow(program: Program, flow: Flow): string | null 
 
 // Concurrent footprints.
 
-/** An element a token waits at for a stimulus: a User, Service or Receive Task, a catch Event or an Event-Based Gateway. */
+/**
+ * An element a token waits at for a stimulus: a User, Service, Receive or Script Task (a Script Task waits for its
+ * effect's result, `feature/work.ts#arrive`), a catch Event or an Event-Based Gateway.
+ */
 export function awaitsStimulus(element: Element): boolean {
   const activity = elementActivity(element);
   if (activity !== null) {
     const work = activity[1].work;
-    return workIsUser(work) || workIsService(work) || workReceive(work) !== null;
+    return workIsUser(work) || workIsService(work) || workReceive(work) !== null || (workReader(work)?.script ?? null) !== null;
   }
   const event = elementEvent(element);
   if (event !== null) return eventPayloadCatch(event[1]) !== null;
