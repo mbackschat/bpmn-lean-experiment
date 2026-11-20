@@ -9,7 +9,7 @@ public import Kernel.Laws.Flow.Concurrent
 
 The statement of the proof wave's concurrency lane ([PLAN, P6](../../docs/PLAN.md#proof-wave)): under
 `BranchSchedule.orderInvariant` and the order-invariance premise, two schedules of the enabled tokens and waking items
-of the closure an attempted input runs commit results equal up to a bijection of issued identities, with journal and outbox
+of the closure an attempted input runs commit results equal up to a bijection of issued identities, with journal and intents
 compared at the canonical-result observation boundary, or fail alike, with one outcome class: `Step.settle`'s fixed
 order is immaterial. A Conditional contest is not covered:
 the input's ranking decides it by design. Stated over a hooks parameter; the lane closes when `Kernel.Proofs.Step`
@@ -121,7 +121,7 @@ def openKeys (state : State) : List (OccurrenceKey × OpenKind) :=
 
 /-- Equal at the canonical-result observation boundary up to `ids` and `keys`: status and failure, the variable sets
 by renamed scope occurrence, each set's bindings as a multiset, the journal's start and end facts and the open waits by
-renamed key, and the outbox, each as a multiset. -/
+renamed key, and the intents, each as a multiset. -/
 structure Alike (ids : ScopeOccurrenceId → ScopeOccurrenceId) (keys : OccurrenceKey → OccurrenceKey) (left right : State) : Prop where
   status : left.status = right.status
   failure : left.failure = right.failure
@@ -131,8 +131,8 @@ structure Alike (ids : ScopeOccurrenceId → ScopeOccurrenceId) (keys : Occurren
     ((right.journal.flatMap (·.started)).map (·.occurrence))
   ended : ((left.journal.flatMap (·.ended)).map fun fact => (keys fact.1, fact.2)).Perm (right.journal.flatMap (·.ended))
   waits : ((openKeys left).map fun entry => (keys entry.1, entry.2)).Perm (openKeys right)
-  outbox : (left.outbox.map fun intent => (intent.address, intent.variables, intent.businessKey)).Perm
-    (right.outbox.map fun intent => (intent.address, intent.variables, intent.businessKey))
+  intents : (left.intents.map fun intent => (intent.address, intent.variables, intent.businessKey)).Perm
+    (right.intents.map fun intent => (intent.address, intent.variables, intent.businessKey))
 
 /-- A committed state of a run of `program`: what a committed start leaves, or what a committed input leaves on a
 committed state of a run. -/
@@ -160,7 +160,7 @@ def Opens (hooks : Hooks) (program : Program) (input : Input) (start : State) : 
     Step.step hooks program (some before) input = .ok after ∧
     Laws.Step.RunsTransition hooks (Laws.Step.inputCtx hooks program input) transition ∧
     Step.onRunning hooks (Laws.Step.inputCtx hooks program input) running (some before) transition = .ok after ∧
-    Step.advanceClock (Step.inputHead running).2.1 { before with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } =
+    Step.advanceClock (Step.inputHead running).2.1 { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } =
       .ok clocked ∧
     Step.microStep hooks (Laws.Step.inputCtx hooks program input) (.ofRoot .input) (.input (Step.inputHead running).1)
       none State.root transition clocked = .ok start
@@ -182,7 +182,7 @@ def OpensAttempt (hooks : Hooks) (program : Program) (input : Input) (start : St
         { element, scope := State.root, trigger := payload.trigger }) initial = .ok start) ∨
   ∃ before running transition clocked, Committed hooks program before ∧ before.status = .running ∧
     Laws.Step.RunsTransition hooks (Laws.Step.inputCtx hooks program input) transition ∧
-    Step.advanceClock (Step.inputHead running).2.1 { before with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } =
+    Step.advanceClock (Step.inputHead running).2.1 { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } =
       .ok clocked ∧
     Step.microStep hooks (Laws.Step.inputCtx hooks program input) (.ofRoot .input) (.input (Step.inputHead running).1)
       none State.root transition clocked = .ok start

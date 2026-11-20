@@ -779,9 +779,9 @@ theorem callsFormed_stepAlongside (program : Program) : StepAlongside program (C
 def Formed (program : Program) (s : State) : Prop :=
   WellFormed program s ∧ CallsFormed program s
 
-/-- An input starts from an empty journal, outbox, draft and write log (`Step.onRunning`), which keeps `Formed`. -/
+/-- An input starts from an empty journal, intents, draft and write log (`Step.onRunning`), which keeps `Formed`. -/
 theorem formed_reset {s : State} (holds : Formed program s) :
-    Formed program { s with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } :=
+    Formed program { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } :=
   ⟨Laws.State.reset_wellFormed holds.1, holds.2.same rfl (fun _ inside => inside) rfl⟩
 
 /-- The completion pipeline's own phases keep the lane invariant where they keep `WellFormed`. -/

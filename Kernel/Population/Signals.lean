@@ -219,7 +219,7 @@ def Fanning.entries (fanning : Fanning) : List FanOutEntry :=
 
 /-- The intents a committed step of `state`, an instance of `program`, left, origins by public identifier. -/
 def publicIntents (program : Program) (state : State) : List BroadcastIntent :=
-  state.outbox.map fun intent => { intent with origin := { intent.origin with element := program.publicId intent.origin.element } }
+  state.intents.map fun intent => { intent with origin := { intent.origin with element := program.publicId intent.origin.element } }
 
 /-- What reaching one receiver did: the instances, the receiver's entry, none when it records nothing, and, when it
 committed, its State and program, whose intents cascade. -/

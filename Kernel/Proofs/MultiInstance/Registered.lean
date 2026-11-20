@@ -190,9 +190,9 @@ theorem framed_contract : Laws.Step.HookContract Registry.hooks Framed :=
 theorem framed_phases : Laws.Step.Phases Framed :=
   phases_alongside Proofs.Step.phases runsFramed_stepAlongside
 
-/-- Clearing an input's journal, outbox, draft and writes keeps `Framed`. -/
+/-- Clearing an input's journal, intents, draft and writes keeps `Framed`. -/
 theorem framed_reset {program : Program} {s : State} (holds : Framed program s) :
-    Framed program { s with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } :=
+    Framed program { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } :=
   ⟨Laws.State.reset_wellFormed holds.1, holds.2.carry (.equal rfl rfl rfl rfl)⟩
 
 /-- A start's fresh instance runs no body. -/
@@ -569,9 +569,9 @@ theorem composed_contract : Laws.Step.HookContract Registry.hooks Composed :=
       framedNumbered_occursAlongside)
     Proofs.State.stateFacts
 
-/-- Clearing an input's journal, outbox, draft and writes keeps `Composed`. -/
+/-- Clearing an input's journal, intents, draft and writes keeps `Composed`. -/
 theorem composed_reset {program : Program} {s : State} (holds : Composed program s) :
-    Composed program { s with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } :=
+    Composed program { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } :=
   ⟨Laws.State.reset_wellFormed holds.1, holds.2.1.carry (.equal rfl rfl rfl rfl), fun apart =>
     (holds.2.2 apart).unmoved rfl rfl rfl rfl rfl rfl rfl fun _ pending => .inl pending⟩
 
@@ -840,10 +840,10 @@ theorem since_contract (b : State) : Laws.Step.HookContract Registry.hooks (Sinc
 theorem since_phases (b : State) : Laws.Step.Phases (Since b) :=
   phases_alongside Proofs.Step.phases (since_stepAlongside b)
 
-/-- An input's start: the well-formed `b` with its journal, outbox, draft and writes cleared keeps `Since b`, since
+/-- An input's start: the well-formed `b` with its journal, intents, draft and writes cleared keeps `Since b`, since
 every body's occurrence has settled (`Laws.State.SlotsSettled.bodies`) and one record per body occurrence is held. -/
 theorem since_reset {program : Program} {b : State} (formed : WellFormed program b) (keyed : RunsKeyed b) :
-    Since b program { b with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } := by
+    Since b program { b with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } := by
   refine ⟨Laws.State.reset_wellFormed formed, ⟨fun earlier member => (formed.settled.bodies earlier member).1,
     fun earlier member o inside same => (formed.settled.bodies earlier member).2.1 o inside same,
     fun _ _ _ _ _ => by simp⟩, ⟨fun earlier member run inside same => ?_, fun run inside apart => absurd rfl

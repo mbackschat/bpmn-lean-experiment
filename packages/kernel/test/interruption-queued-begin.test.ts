@@ -136,7 +136,7 @@ test("the standards schedule refuses the fork whose Event Sub-Process may throw 
 test("an interruption never commits without the Signal an earlier-ordered handler throws before its first wait", () => {
   const caught = run(thrower(false), [begin, write("W", ["a"])]);
   assert.deepEqual(open(caught), ["BO", "SN", "T2", "W", "WC"], "the handler alone throws, and the catch takes it");
-  assert.ok(caught.ok && caught.value.outbox.length === 1, "the throw is published");
+  assert.ok(caught.ok && caught.value.intents.length === 1, "the throw is published");
   assert.deepEqual(run(thrower(false), [begin, write("W", ["a", "b"])]), interrupted, "the write order");
   assert.deepEqual(run(thrower(true), [begin, write("W", ["a"], ranked("SN", "BO"))]), interrupted, "the ranking");
   assert.deepEqual(open(run(thrower(true), [begin, write("W", ["a"], ranked("BO"))])), ["C", "HO", "W"], "the interruption first");

@@ -91,7 +91,7 @@ theorem arriveThrow_keeps {inv : State → Prop} {ctx : Ctx} (ops : PropagationO
     repeat' split at ran
     all_goals try cases ran
     obtain ⟨fired, same⟩ := fireAll_keeps ops _ (Feature.Propagation.ownReceivers state _) state holds
-    exact ops.complete _ _ _ _ _ (ops.outbox _ _ fired) (same ▸ member) begun (throwLeave_unnamed payload)
+    exact ops.complete _ _ _ _ _ (ops.batchIntents _ _ fired) (same ▸ member) begun (throwLeave_unnamed payload)
   | compensation record =>
     dsimp only at ran
     unfold Feature.Propagation.throwCompensation at ran

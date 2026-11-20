@@ -430,9 +430,9 @@ theorem registeredFormed_phases : Laws.Step.Phases RegisteredFormed :=
   phases_alongside Proofs.Step.phases fun program =>
     formed_stepAlongside (DependsIn Registry.hooks footprintReads footprintWrites program) program
 
-/-- Clearing an input's journal, outbox, draft and writes keeps `RegisteredFormed`. -/
+/-- Clearing an input's journal, intents, draft and writes keeps `RegisteredFormed`. -/
 theorem registeredFormed_reset {program : Program} {s : State} (holds : RegisteredFormed program s) :
-    RegisteredFormed program { s with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } :=
+    RegisteredFormed program { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } :=
   ⟨Laws.State.reset_wellFormed holds.1, holds.2.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)⟩
 
 /-- A start's fresh instance holds no record, run or trigger. -/

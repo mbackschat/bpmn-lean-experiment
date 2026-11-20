@@ -373,11 +373,8 @@ export interface State {
   readonly queuedSignals: OrderedMap<UnitKey, Signal>;
   /** Every variable write since the last drain, same-value writes included: `Step` hands them to `Hooks.written`. */
   readonly writes: readonly WriteEvent[];
-  /**
-   * The intents of the running micro-step while the closure runs, moved into `outboxes` like `batchTokens`; once the input
-   * commits, the input's intents in run order (`orderJournal`), so a host publishes a committed input's own.
-   */
-  readonly outbox: readonly BroadcastIntent[];
+  /** The running micro-step's broadcast intents, in the order it made them; moved into `outboxes` like `batchTokens`. */
+  readonly batchIntents: readonly BroadcastIntent[];
   /** The intents of the closure's micro-steps, keyed by the unit that made each batch; empty at commit (DC4). */
   readonly outboxes: OrderedMap<UnitKey, readonly BroadcastIntent[]>;
   readonly slots: FeatureSlots;
@@ -385,6 +382,11 @@ export interface State {
   readonly failure: InstanceFailure | null;
   /** The occurrence facts of a committed input, in run order (`orderJournal`); empty while the closure runs. */
   readonly journal: readonly Transition[];
+  /**
+   * A committed input's broadcast intents in run order (`orderJournal`), which a host publishes as the input's own; empty
+   * while the closure runs.
+   */
+  readonly intents: readonly BroadcastIntent[];
   /** The transitions of the closure in progress, each keyed by the unit that ran it; empty at commit (DC4). */
   readonly transitions: OrderedMap<UnitKey, Transition>;
   readonly draft: Draft;
@@ -443,7 +445,7 @@ export function initial(instanceId: string, variables: readonly Binding[], busin
     batchSignals: [],
     queuedSignals: null,
     writes: [],
-    outbox: [],
+    batchIntents: [],
     outboxes: null,
     slots: {
       parked: [],
@@ -454,6 +456,7 @@ export function initial(instanceId: string, variables: readonly Binding[], busin
     },
     failure: null,
     journal: [],
+    intents: [],
     transitions: null,
     draft: emptyDraft,
   };
@@ -506,8 +509,8 @@ export function queueBatch(state: State, unit: UnitKey): State {
       state.queuedSignals),
     queuedTokens: state.batchTokens.reduce((queued, token, index) => orderedInsert(queued, tokenUnit(unit, index), token, compareUnitKey),
       state.queuedTokens),
-    outboxes: state.outbox.length === 0 ? state.outboxes : orderedInsert(state.outboxes, unit, state.outbox, compareUnitKey),
-    batchSignals: [], batchTokens: [], outbox: [],
+    outboxes: state.batchIntents.length === 0 ? state.outboxes : orderedInsert(state.outboxes, unit, state.batchIntents, compareUnitKey),
+    batchSignals: [], batchTokens: [], batchIntents: [],
   };
 }
 

@@ -250,7 +250,7 @@ export function addressesOf(waits: readonly OpenWait[]): readonly WaitAddress[] 
 }
 
 /**
- * `broadcasts` are the Signals the input threw to the population (`State.outbox`), which the host publishes once the
+ * `broadcasts` are the Signals the input threw to the population (`State.intents`), which the host publishes once the
  * input commits (PC-SIGNAL-01); `addresses` are the open waits' addresses (`addressesOf`).
  */
 export interface View {
@@ -336,6 +336,6 @@ export function hostView(program: Program, state: State): View {
     openWaits,
     addresses: addressesOf(openWaits),
     journal: publicJournal(program, state.journal),
-    broadcasts: state.outbox.map((intent) => ({ ...intent, origin: publicRef(program, intent.origin) })),
+    broadcasts: state.intents.map((intent) => ({ ...intent, origin: publicRef(program, intent.origin) })),
   };
 }

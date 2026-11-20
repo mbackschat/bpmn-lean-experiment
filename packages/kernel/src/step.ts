@@ -450,7 +450,7 @@ function offerRound(state: State, occurrence: OccurrenceId): number {
  * Signals first, in breadth-first key order (`firstBreadth`), then tokens (`nextToken`), then idle scope occurrences,
  * then the parked joins a quiescent closure offers again (`reoffer`, journalled with the `idle` cause of the join's scope
  * occurrence), then the instance's completion, once no signal is queued (DC5). Each unit runs under its unit key, and
- * the run log records when it ran; the committed closure's journal and outbox are put in run order (`orderJournal`).
+ * the run log records when it ran; the committed closure's journal and intents are put in run order (`orderJournal`).
  */
 function settle(hooks: Hooks, ctx: Ctx, bound: number, start: State, unit: UnitKey): Outcome {
   let state = start;
@@ -502,7 +502,7 @@ function settle(hooks: Hooks, ctx: Ctx, bound: number, start: State, unit: UnitK
 /**
  * Run an input's transition on a running instance at its logical time `atMs`, then settle. A Timer firing without its own
  * time happens at the deadline it names; a host that wakes later states the later time. The input starts from an empty
- * per-input record (journal, outbox, draft and write log); a committed state holds no draft or write log, since every
+ * per-input record (journal, intents, draft and write log); a committed state holds no draft or write log, since every
  * micro-step's `conclude` empties them and the registered `cancelled` and `written` hooks it then runs refill neither,
  * so emptying them here changes no run.
  */
@@ -511,7 +511,7 @@ function onRunning(
 ): Outcome {
   if (before === null) return failed(FailureTag.Rejected, "instance-not-started");
   if (before.status !== InstanceStatus.Running) return failed(FailureTag.Rejected, "instance-not-running");
-  const advanced = advanceClock(atMs, { ...before, journal: [], outbox: [], transitions: null, outboxes: null, draft: emptyDraft, writes: [] });
+  const advanced = advanceClock(atMs, { ...before, journal: [], intents: [], transitions: null, outboxes: null, draft: emptyDraft, writes: [] });
   if (!advanced.ok) return advanced;
   const unit = unitRoot({ tag: UnitRootTag.Input });
   const started = admitChoicesThen(hooks, ctx, () => microStep(hooks, ctx, unit, { tag: CauseTag.Input, input: tag }, null, root, transition, advanced.value));

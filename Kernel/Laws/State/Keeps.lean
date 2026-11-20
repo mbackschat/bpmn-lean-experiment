@@ -25,12 +25,12 @@ That each phase `Step` runs itself keeps `WellFormed` (`Laws.Step.Phases`, which
 
 /-- An input's reset keeps no start fact: it empties the journal, the transitions and the draft. -/
 theorem starts_reset (s : State) :
-    (starts { s with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] }).Sublist (starts s) := by
+    (starts { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] }).Sublist (starts s) := by
   simp [starts]
 
-/-- `Step.onRunning` starts an input from an empty journal, outbox, transitions and draft. -/
+/-- `Step.onRunning` starts an input from an empty journal, intents, transitions and draft. -/
 theorem reset_wellFormed {s : State} (formed : WellFormed program s) :
-    WellFormed program { s with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } :=
+    WellFormed program { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } :=
   formed.narrow {
       scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := fun _ => by apply instanceOf_congr <;> rfl, recorded := id, items := .refl _, tokens := .refl _,
@@ -47,13 +47,13 @@ theorem clock_wellFormed {s : State} (formed : WellFormed program s) (atMs : Nat
 /-- `Step.orderJournal` journals the closure's transitions in run order, any order of them (`journal`), and empties
 every family keyed by a unit key: it keeps fewer start facts, the transitions' and the draft's. -/
 theorem runOrder_wellFormed {s : State} (formed : WellFormed program s) {journal : List Transition}
-    (ordered : journal.Perm (s.transitions.toList.map (·.2))) (outbox : List BroadcastIntent) :
-    WellFormed program { s with journal, outbox, transitions := ∅, outboxes := ∅, queuedTokens := ∅, queuedSignals := ∅ } :=
-  have fewer : Fewer (starts { s with journal, outbox, transitions := ∅, outboxes := ∅, queuedTokens := ∅, queuedSignals := ∅ }) (starts s) := by
+    (ordered : journal.Perm (s.transitions.toList.map (·.2))) (intents : List BroadcastIntent) :
+    WellFormed program { s with journal, intents, transitions := ∅, outboxes := ∅, queuedTokens := ∅, queuedSignals := ∅ } :=
+  have fewer : Fewer (starts { s with journal, intents, transitions := ∅, outboxes := ∅, queuedTokens := ∅, queuedSignals := ∅ }) (starts s) := by
     simp only [starts, toList_empty, List.map_nil, List.flatMap_nil, List.append_nil]
     exact Fewer.trans (.of_perm ((ordered.flatMap_right _).append_right _))
       (.of_sublist ((List.sublist_append_right _ _).append_right _))
-  have once : StartedOnce { s with journal, outbox, transitions := ∅, outboxes := ∅, queuedTokens := ∅, queuedSignals := ∅ } := by
+  have once : StartedOnce { s with journal, intents, transitions := ∅, outboxes := ∅, queuedTokens := ∅, queuedSignals := ∅ } := by
     obtain ⟨kept, same, sub⟩ := fewer
     exact ((formed.startedOnce.sublist (sub.map _)).perm (same.map _).symm)
   formed.narrow {

@@ -87,7 +87,7 @@ test("a throw reaches the catch of its own Signal by QName under the standards r
   const { state, last } = run(await program(withPayload(""), {}), [start, complete("Dispatch")]);
   assert.ok(last.ok, JSON.stringify(last));
   assert.deepEqual(waiting(state), ["Catch_Other", "Notify"]);
-  assert.deepEqual(state!.outbox.map((intent) => [intent.address, intent.variables, intent.businessKey]), [
+  assert.deepEqual(state!.intents.map((intent) => [intent.address, intent.variables, intent.businessKey]), [
     [{ tag: "qualified", ref: { namespace, localName: "Signal_Shipped" } }, [], null],
   ]);
 });
@@ -126,7 +126,7 @@ test("a throw's camunda:in copies install where the catch writes, and travel wit
   assert.deepEqual(waiting(state), ["Catch_Other", "Notify"]);
   const root = state!.variables.find((scope) => scope.scope === rootScope)?.entries ?? [];
   assert.deepEqual(root.find(([name]) => name === "notified"), ["notified", { tag: "string", value: "ACME" }]);
-  assert.deepEqual(state!.outbox.map((intent) => [intent.address, intent.variables]), [
+  assert.deepEqual(state!.intents.map((intent) => [intent.address, intent.variables]), [
     [{ tag: "named", name: "order-shipped" }, [["notified", { tag: "string", value: "ACME" }]]],
   ]);
 });

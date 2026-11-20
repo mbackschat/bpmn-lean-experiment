@@ -453,7 +453,7 @@ conclusion commits, under the run log that records the input's unit, and the com
 unit journalled a transition walks the closure from here (`settle_induction_log`). -/
 theorem running_concludes (contract : HookContract hooks inv) (phases : BodyPhases inv)
     (pipeline : PipelineKeeps hooks inv) {program : Program} {before : State} {input : Input} {after : State}
-    (holds : inv program { before with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] })
+    (holds : inv program { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] })
     (ran : step hooks program (some before) input = .ok after) :
     ∃ mid cause element owner moved settled, inv (inputCtx hooks program input).program mid ∧
       conclude hooks (inputCtx hooks program input) (.ofRoot .input) cause element owner mid = .ok moved ∧
@@ -466,7 +466,7 @@ theorem running_concludes (contract : HookContract hooks inv) (phases : BodyPhas
     obtain ⟨clocked, stepped, settling, made⟩ := rest
     obtain rfl := Option.some.inj present
     have entered : inv (inputCtx hooks program input).program
-        { before with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } := by
+        { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } := by
       rw [inputCtx_program]
       exact holds
     have started := advanceClock_keeps phases entered clocked
@@ -480,7 +480,7 @@ when the input's start keeps it. It needs no `Phases.runOrder`, so an invariant 
 there. -/
 theorem running_settles (contract : HookContract hooks inv) (phases : ClosurePhases inv) (facts : StateFacts)
     (pipeline : PipelineKeeps hooks inv) {program : Program} {before : State} {input : Input} {after : State}
-    (holds : inv program { before with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] })
+    (holds : inv program { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] })
     (ran : step hooks program (some before) input = .ok after) :
     ∃ settled : State × RunLog, inv program settled.1 ∧ orderJournal (.ok settled) = .ok after := by
   obtain ⟨mid, _, _, rest₁⟩ :=
@@ -493,12 +493,12 @@ theorem running_settles (contract : HookContract hooks inv) (phases : ClosurePha
   exact ⟨settled, done, made⟩
 
 /-- `Step.step` on a running instance keeps `inv` of the program it runs for hooks that keep their contract, when the
-input's start keeps it: the before-state with an empty journal, outbox, draft and write log. An invariant relative to
+input's start keeps it: the before-state with an empty journal, intents, draft and write log. An invariant relative to
 the before-state may hold there though not of the before-state itself. A start never runs here, so `inv` need not hold
 of a fresh instance. -/
 theorem running_keeps (contract : HookContract hooks inv) (phases : Phases inv) (facts : StateFacts)
     (pipeline : PipelineKeeps hooks inv) {program : Program} {before : State} {input : Input} {after : State}
-    (holds : inv program { before with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] })
+    (holds : inv program { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] })
     (ran : step hooks program (some before) input = .ok after) : inv program after := by
   obtain ⟨settled, kept, made⟩ := running_settles contract phases.toClosurePhases facts pipeline holds ran
   exact phases.runOrder _ _ settled.2 kept _ made
@@ -544,7 +544,7 @@ with its root's Event Sub-Process starts queued for arming keeps it. -/
 theorem step_settles (contract : HookContract hooks inv) (phases : ClosurePhases inv) (facts : StateFacts)
     (pipeline : PipelineKeeps hooks inv)
     (reset : ∀ program state, inv program state →
-      inv program { state with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] }) {program : Program}
+      inv program { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] }) {program : Program}
     (initial : ∀ instanceId variables businessKey,
       inv program ((State.initial instanceId variables businessKey).signal (.armScope State.root)))
     {before : Option State} {input : Input} {after : State} (entry : ∀ state, before = some state → inv program state)
@@ -567,7 +567,7 @@ it, or, for a start, when a fresh instance with its root's Event Sub-Process sta
 theorem step_keeps (contract : HookContract hooks inv) (phases : Phases inv) (facts : StateFacts)
     (pipeline : PipelineKeeps hooks inv)
     (reset : ∀ program state, inv program state →
-      inv program { state with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] }) {program : Program}
+      inv program { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] }) {program : Program}
     (initial : ∀ instanceId variables businessKey,
       inv program ((State.initial instanceId variables businessKey).signal (.armScope State.root)))
     {before : Option State} {input : Input} {after : State} (entry : ∀ state, before = some state → inv program state)

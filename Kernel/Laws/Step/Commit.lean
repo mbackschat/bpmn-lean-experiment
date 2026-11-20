@@ -6,7 +6,7 @@ import all Kernel.Step.Commit
 /-! # Laws of the step function: commit
 
 What `Kernel.Step.Commit` does, read from its bodies: a micro-step's draft is journalled as the transition of its unit
-(`journalDraft_eq`), and a committed closure's journal and outbox are put in run order, every unit-keyed family emptied
+(`journalDraft_eq`), and a committed closure's journal and intents are put in run order, every unit-keyed family emptied
 (`orderJournal_ok`, `orderJournal_closed`). This is the one module
 that sees `Kernel.Step.Commit`'s bodies ([module table](../../../docs/kernel/ARCHITECTURE-SPEC.md#modules-and-build-shape));
 `Kernel.Laws.Step` composes these facts with `Kernel.Step`'s bodies. Nothing executable imports this module.
@@ -31,7 +31,7 @@ theorem journalDraft_eq {unit : UnitKey} {cause : Cause} {element : Option Eleme
 key outlives its closure (DC4). -/
 theorem orderJournal_ok {outcome : Except Failure (State × RunLog)} {after : State} (ran : orderJournal outcome = .ok after) :
     ∃ settled log, outcome = .ok (settled, log) ∧ after = { settled with
-      journal := byRun log settled.transitions, outbox := (byRun log settled.outboxes).flatten
+      journal := byRun log settled.transitions, intents := (byRun log settled.outboxes).flatten
       transitions := ∅, outboxes := ∅, queuedTokens := ∅, queuedSignals := ∅ } := by
   cases outcome with
   | error failure => simp [orderJournal, Except.map] at ran
@@ -40,7 +40,7 @@ theorem orderJournal_ok {outcome : Except Failure (State × RunLog)} {after : St
 /-- What a settled closure commits, given its settled state and run log. -/
 theorem orderJournal_of {state : State} {log : RunLog} {after : State} (made : orderJournal (.ok (state, log)) = .ok after) :
     after = { state with
-      journal := byRun log state.transitions, outbox := (byRun log state.outboxes).flatten
+      journal := byRun log state.transitions, intents := (byRun log state.outboxes).flatten
       transitions := ∅, outboxes := ∅, queuedTokens := ∅, queuedSignals := ∅ } :=
   (Except.ok.inj made).symm
 

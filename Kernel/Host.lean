@@ -151,7 +151,7 @@ def addressesOf (waits : List OpenWait) : List WaitAddress :=
     | none, some signal => some { occurrence := wait.id, signal := some signal.address }
     | none, none => none
 
-/-- `broadcasts` are the Signals the input threw to the population (`State.outbox`), which the host publishes once the
+/-- `broadcasts` are the Signals the input threw to the population (`State.intents`), which the host publishes once the
 input commits (PC-SIGNAL-01); `addresses` are the open waits' addresses (`addressesOf`). -/
 structure View where
   status : InstanceStatus
@@ -212,6 +212,6 @@ def hostView (program : Program) (state : State) : View :=
   { status := state.status, failure := state.failure.map (publicFailure program), openWaits
     addresses := addressesOf openWaits
     journal := publicJournal program state.journal
-    broadcasts := state.outbox.map fun intent => { intent with origin := publicRef program intent.origin } }
+    broadcasts := state.intents.map fun intent => { intent with origin := publicRef program intent.origin } }
 
 end Kernel.Host

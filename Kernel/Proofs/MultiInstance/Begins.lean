@@ -551,7 +551,7 @@ theorem LogOrder.byRun {program : Program} {log : Step.RunLog} {element : Elemen
 theorem beginsKept_reset {program : Program} {s : State} (unbegun : IdsUnique program → UnbegunUnlooped program s)
     (occurs : IdsUnique program → ∀ element, OccurPending s element → ∀ loop, ¬ LoopOf program element loop) :
     BeginsKept program ∅
-      { s with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } := fun apart =>
+      { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } := fun apart =>
   ⟨unbegun apart, occurs apart, rfl, fun _ _ _ _ => by simp [BeginsInOrder],
     fun _ _ _ _ _ _ _ inside => by simp at inside⟩
 

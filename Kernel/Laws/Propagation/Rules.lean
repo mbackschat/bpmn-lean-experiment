@@ -157,7 +157,7 @@ structure PropagationOps (program : Program) (inv : State → Prop) : Prop where
   /-- An item's firing. -/
   fire : ∀ state item fired, inv state → inv (state.signal (.fire item fired))
   /-- A Signal throw's broadcast intent. -/
-  outbox : ∀ state outbox, inv state → inv { state with outbox }
+  batchIntents : ∀ state batchIntents, inv state → inv { state with batchIntents }
   /-- The compensation a begun occurrence's throw queues, which completes it once it ends by no named flow; the
   occurrence was begun from a state that kept `inv`, and is the trigger. -/
   compensate : ∀ state occurrence scope activity trigger leave, inv state → occurrence ∈ state.occurrences →

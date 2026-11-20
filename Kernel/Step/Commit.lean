@@ -28,13 +28,13 @@ def byRun {α : Type} (log : RunLog) (entries : TreeMap UnitKey α compare) : Li
   ((entries.toList.map fun (unit, value) => (log.runPosition unit, unit, value)).mergeSort fun a b =>
     a.1 < b.1 || a.1 == b.1 && compare a.2.1 b.2.1 != .gt).map (·.2.2)
 
-/-- Commit a settled closure: its transitions as the journal and its intents as the outbox, each in the order its units
+/-- Commit a settled closure: its transitions as the journal and its batches' intents as the input's intents, each in the order its units
 ran, and every family keyed by a unit key emptied, so no unit key outlives its closure (DC4). Queued work an instance
 that ended mid-closure left behind is dropped with them: no input runs on an ended instance (`Step.onRunning`). -/
 def orderJournal (outcome : Except Failure (State × RunLog)) : Outcome :=
   outcome.map fun (state, log) =>
     { state with
-        journal := byRun log state.transitions, outbox := (byRun log state.outboxes).flatten
+        journal := byRun log state.transitions, intents := (byRun log state.outboxes).flatten
         transitions := ∅, outboxes := ∅, queuedTokens := ∅, queuedSignals := ∅ }
 
 end Kernel.Step

@@ -281,8 +281,8 @@ theorem queueBatch_eq (state : State) (unit : UnitKey) : state.queueBatch unit =
       state.queuedSignals
     queuedTokens := state.batchTokens.zipIdx.foldl (fun queued (token, index) => queued.insert (unit.tokenUnit index) token)
       state.queuedTokens
-    outboxes := if state.outbox.isEmpty then state.outboxes else state.outboxes.insert unit state.outbox
-    batchSignals := [], batchTokens := [], outbox := [] } := by
+    outboxes := if state.batchIntents.isEmpty then state.outboxes else state.outboxes.insert unit state.batchIntents
+    batchSignals := [], batchTokens := [], batchIntents := [] } := by
   simp only [State.queueBatch]
 
 /-- The busy scope occurrences: each queued token's, each live open item's, each begun occurrence's, each parent and

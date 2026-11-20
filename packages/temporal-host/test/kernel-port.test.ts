@@ -173,8 +173,8 @@ test("a business Map keyed `$` round-trips through the interned continuation cod
     const encoded = kernelPort.encodeState(started.state);
     const carried = kernelPort.decodeState(JSON.parse(JSON.stringify(encoded)));
     assert.equal(JSON.stringify(kernelPort.encodeState(carried)), JSON.stringify(encoded), `map ${String(index)} re-encodes byte-identically`);
-    assert.deepEqual(carried, { ...started.state, journal: [], outbox: [] });
-    assert.doesNotMatch(JSON.stringify(encoded), /batchTokens|batchSignals/u, "a committed state's running batches, always empty, are not encoded");
+    assert.deepEqual(carried, { ...started.state, journal: [], intents: [] });
+    assert.doesNotMatch(JSON.stringify(encoded), /batchTokens|batchSignals|batchIntents/u, "a committed state's running batches, always empty, are not encoded");
     assert.throws(() => kernelPort.encodeState({ ...started.state, batchSignals: [{}] } as never), /running batch/u);
     assert.ok((encoded as { strings: string[] }).strings.includes("repeated-business-text"), "the text is interned");
   }

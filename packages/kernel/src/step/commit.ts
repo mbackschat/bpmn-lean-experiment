@@ -26,13 +26,13 @@ function byRun<T>(log: RunLog, entries: OrderedMap<UnitKey, T>): T[] {
 }
 
 /**
- * Lean's `orderJournal`: commit a settled closure, its transitions as the journal and its intents as the outbox, each in
+ * Lean's `orderJournal`: commit a settled closure, its transitions as the journal and its batches' intents as the input's intents, each in
  * the order its units ran, and every family keyed by a unit key emptied. Queued work an instance that ended mid-closure
  * left behind is dropped with them: no input runs on an ended instance.
  */
 export function orderJournal(state: State, log: RunLog): State {
   return {
-    ...state, journal: byRun(log, state.transitions), outbox: byRun<readonly BroadcastIntent[]>(log, state.outboxes).flat(),
+    ...state, journal: byRun(log, state.transitions), intents: byRun<readonly BroadcastIntent[]>(log, state.outboxes).flat(),
     transitions: null, outboxes: null, queuedTokens: null, queuedSignals: null,
   };
 }

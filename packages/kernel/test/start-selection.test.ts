@@ -3,7 +3,7 @@
  * ambiguous, a named one starts the start it names among those fired; a Conditional start fires on its predicate over
  * the submitted variables, a Signal start on its address, and a Message start writes its payload by the catch rule;
  * a delivery carrying variables is not admitted;
- * the outbox of Signals an input threw to the population holds only that input's broadcasts, which the host view
+ * the intents of the Signals an input threw to the population holds only that input's broadcasts, which the host view
  * publishes with public origins.
  */
 import assert from "node:assert/strict";
@@ -110,15 +110,15 @@ const throwing = admitted({ ...append(replace(base(), "T", activity("T", userWor
   },
 }), flows: [flow("f0", "S", "Th"), flow("f1", "Th", "T"), flow("f2", "T", "E")] });
 
-test("an input starts with an empty outbox, and the host view publishes a broadcast with its public origin", () => {
+test("an input starts with no intents, and the host view publishes a broadcast with its public origin", () => {
   const thrown = committed(run(throwing, null, { kind: "start", commandId: "start", instanceId: "I", variables: [] }));
-  assert.deepEqual(thrown.outbox.map((intent) => intent.address), [{ tag: SignalAddressTag.Qualified, ref: { namespace: null, localName: "Sig" } }]);
+  assert.deepEqual(thrown.intents.map((intent) => intent.address), [{ tag: SignalAddressTag.Qualified, ref: { namespace: null, localName: "Sig" } }]);
   assert.deepEqual(hostView(throwing, thrown).broadcasts.map((intent) => intent.origin),
     [{ processInstanceId: "I", element: "Th", activation: 1 }]);
   const completed = committed(run(throwing, thrown, {
     kind: "command", commandId: "c", occurrence: userTask, action: { kind: "completeUserTask", values: [] },
   }));
-  assert.deepEqual(completed.outbox, []);
+  assert.deepEqual(completed.intents, []);
 });
 
 /** `S -> T -> E` whose start `S` waits for `trigger`, with `T` a User Task, under `options`. */

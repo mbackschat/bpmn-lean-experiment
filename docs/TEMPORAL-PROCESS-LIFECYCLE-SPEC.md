@@ -92,7 +92,7 @@ The owner-approved table of 2026-08-17 ([archived proposal](https://github.com/m
 | Program | 192 KiB | start or deployment refused before any Workflow starts | `host.capacity.program` |
 | Start stimulus | 64 KiB | start refused before any Workflow starts | `host.capacity.start` |
 | Caller, population or derived stimulus | 64 KiB | refused before it is applied | `host.capacity.stimulus` |
-| Committed kernel state, without the last input's journal and outbox, counted as the interned encoding's canonical bytes (each String of 8 or more UTF-16 units occurring twice or more written once, [`wire-codec.ts`](../packages/temporal-host/src/wire-codec.ts)) | 256 KiB (raised 2026-11-13) | candidate refused | `host.capacity.state` |
+| Committed kernel state, without the last input's journal and intents, counted as the interned encoding's canonical bytes (each String of 8 or more UTF-16 units occurring twice or more written once, [`wire-codec.ts`](../packages/temporal-host/src/wire-codec.ts)) | 256 KiB (raised 2026-11-13) | candidate refused | `host.capacity.state` |
 | One input's execution and occurrence publication batches together | 64 KiB | candidate refused | `host.capacity.publicationBatch` |
 | Query answer | 192 KiB | paged: a publication page is the largest complete batch prefix that fits; the observation, state, host-view, pending-intent and start-outcome answers travel as the largest whole-code-point prefixes of their canonical JSON text; the population ingress's result and deployment Queries are not paged | — |
 | Effect Activity request | 64 KiB | candidate refused | `host.capacity.effectRequest` |
@@ -104,7 +104,7 @@ The owner-approved table of 2026-08-17 ([archived proposal](https://github.com/m
 Two values were raised on 2026-11-13 on measured numbers, and the owner ratified both the same day ([owner decisions](kernel/ARCHITECTURE-SPEC.md#owner-decisions-on-the-path)):
 
 - Pending Activities 1 to 32: the 1 preserved the deleted adapter's single-effect invariant, while the generic host runs concurrent effects; it would have refused 68 accepted witnesses of 18 done rows, and the realistic sixteen-body parallel Multi-Instance journey needs 16. 32 is the value the embedded Sub-Process profile already admitted.
-- Committed state 64 KiB to 256 KiB, now measured without the per-input journal and outbox, which the publication batch and effect request rows bound: the realistic sixteen-body journey peaks at 231,458 bytes in the interned encoding (measured 2026-11-19; about 250,000 before the kernel's scope keys grew and the encoding interned), and its continuation still fits the unchanged 448 KiB.
+- Committed state 64 KiB to 256 KiB, now measured without the per-input journal and intents, which the publication batch and effect request rows bound: the realistic sixteen-body journey peaks at 231,458 bytes in the interned encoding (measured 2026-11-19; about 250,000 before the kernel's scope keys grew and the encoding interned), and its continuation still fits the unchanged 448 KiB.
 
 Four rows of the approved table were retired on 2026-11-13 because their object does not exist in the generic host:
 

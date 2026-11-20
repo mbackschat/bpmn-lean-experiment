@@ -156,22 +156,22 @@ export const kernelPort: KernelPort<Program, State, HostInput> = {
   // The rendering is `Kernel.Run.hostViewJson`'s, which `HostView` types field by field.
   hostView: (program, state) => hostViewJson(hostView(program, state)) as unknown as HostView,
   observation: (program, state) => observationJson(program, state) as JsonValue,
-  // Without the last input's journal and outbox: the host published them when it committed the input, and `step` empties
+  // Without the last input's journal and intents: the host published them when it committed the input, and `step` empties
   // both before every input (`onRunning`, `initial`), so no later input reads them; carried, they would charge the state
   // and continuation bounds with a second copy of the publication (2,066,022 of long-burst's 2,067,466 bytes, 2026-11-13).
   // Nor the closure's unit-keyed families and the running micro-step's batches: every committed state holds them empty
   // (`orderJournal`, DC4; `queueBatch`), and a unit key is never a wire value.
   encodeState: (state) => {
-    const { queuedTokens, queuedSignals, outboxes, transitions, batchTokens, batchSignals, ...committed } = state;
+    const { queuedTokens, queuedSignals, outboxes, transitions, batchTokens, batchSignals, batchIntents, ...committed } = state;
     if (queuedTokens !== null || queuedSignals !== null || outboxes !== null || transitions !== null) {
       throw new Error("a committed state holds a unit key");
     }
-    if (batchTokens.length > 0 || batchSignals.length > 0) throw new Error("a committed state holds a running batch");
-    return internStrings(toWire({ ...committed, journal: [], outbox: [] }));
+    if (batchTokens.length > 0 || batchSignals.length > 0 || batchIntents.length > 0) throw new Error("a committed state holds a running batch");
+    return internStrings(toWire({ ...committed, journal: [], intents: [] }));
   },
   // The host decodes only what `encodeState` produced for this program.
   decodeState: (json): State => ({
-    ...(fromWire(expandStrings(json)) as State), batchTokens: [], batchSignals: [], queuedTokens: null, queuedSignals: null,
+    ...(fromWire(expandStrings(json)) as State), batchTokens: [], batchSignals: [], batchIntents: [], queuedTokens: null, queuedSignals: null,
     outboxes: null, transitions: null,
   }),
   scriptOf,

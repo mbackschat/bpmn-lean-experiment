@@ -373,7 +373,7 @@ def settle (hooks : Hooks) (ctx : Ctx) : Nat → Nat → RunLog → State → Ex
               else .ok (state, log)
 
 /-- Run an input's transition on a running instance, then settle. The input starts from an empty per-input record
-(journal, outbox, draft and write log). A committed state holds no draft or write log, since every micro-step's
+(journal, intents, draft and write log). A committed state holds no draft or write log, since every micro-step's
 `conclude` empties them and the registered `Hooks.cancelled` and `Hooks.written` it then runs refill neither (the
 cancellation lane proves it of the draft's end facts, `Proofs.Cancellation.registered_quiet`), so emptying them here
 changes no run; it makes the input's journal its own by the step's construction rather than by a property of every
@@ -385,7 +385,7 @@ def onRunning (hooks : Hooks) (ctx : Ctx) (input : Input) (before : Option State
     if state.status != .running then .error (.rejected "instance-not-running")
     else do
       let (tag, at?, _) := inputHead input
-      let start ← advanceClock at? { state with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] }
+      let start ← advanceClock at? { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] }
       admitChoices hooks ctx
       let unit := UnitKey.ofRoot .input
       orderJournal (settle hooks ctx closureBound closureWorkBound (RunLog.record {} unit)

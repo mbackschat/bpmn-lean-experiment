@@ -243,8 +243,8 @@ theorem propagationOps_alongside {program : Program} (side : FrameAlongside prog
     ⟨ops.raise s raised occurrence holds.1 member begun (raises.imp fun _ => And.left),
       occurs.raise s raised occurrence holds.1 raises holds.2⟩
   fire s item fired holds := ⟨ops.fire s item fired holds.1, side.signal holds.2 _⟩
-  outbox s outbox holds :=
-    ⟨ops.outbox s outbox holds.1, side.frame s _ .same holds.2⟩
+  batchIntents s batchIntents holds :=
+    ⟨ops.batchIntents s batchIntents holds.1, side.frame s _ .same holds.2⟩
   compensate s occurrence scope activity trigger leave holds member begun begunFrom unnamed named :=
     ⟨ops.compensate s occurrence scope activity trigger leave holds.1 member begun (begunFrom.imp fun _ => And.left)
       unnamed named, occurs.throwCompensate s occurrence scope activity trigger leave holds.1 begunFrom named unnamed

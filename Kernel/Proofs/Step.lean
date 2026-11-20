@@ -368,7 +368,7 @@ theorem propagationOps : Laws.Propagation.PropagationOps program (Laws.State.Wel
   complete _ _ leave writes rule formed member begun _ := complete_wellFormed formed member begun leave writes rule
   raise _ event _ formed member begun _ := raiseFrom_wellFormed formed member begun event (fun _ same => by cases same) []
   fire _ _ _ formed := queue_wellFormed formed trivial
-  outbox _ _ formed := formed.narrow {
+  batchIntents _ _ formed := formed.narrow {
       scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := fun _ => by apply Laws.State.instanceOf_congr <;> rfl, recorded := id, items := .refl _,
       tokens := .refl _, signals := .refl _, starts := fun _ => id, slots := .same rfl } rfl formed.startedOnce

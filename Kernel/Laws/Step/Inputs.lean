@@ -17,12 +17,12 @@ namespace Kernel.Laws.Step
 open Kernel Kernel.Step
 
 /-- A committed input on a running instance ran its transition as one micro-step, from the instance's state with an
-empty journal and outbox and the clock advanced to the input's time; then the closure settled, and the journal was put
+empty journal and intents and the clock advanced to the input's time; then the closure settled, and the journal was put
 in run order. -/
 theorem onRunning_ok {hooks : Hooks} {ctx : Ctx} {input : Input} {before : Option State}
     {transition : State → Outcome} {after : State} (ran : onRunning hooks ctx input before transition = .ok after) :
     ∃ state start moved settled, before = some state ∧ state.status = .running ∧
-      advanceClock (inputHead input).2.1 { state with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } = .ok start ∧
+      advanceClock (inputHead input).2.1 { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } = .ok start ∧
       microStep hooks ctx (.ofRoot .input) (.input (inputHead input).1) none State.root transition start = .ok moved ∧
       settle hooks ctx closureBound closureWorkBound (RunLog.record {} (.ofRoot .input)) moved = .ok settled ∧
       orderJournal (.ok settled) = .ok after := by
@@ -99,7 +99,7 @@ theorem onRunning_rejects {hooks : Hooks} {ctx : Ctx} {input : Input} {state : S
   simp only [onRunning_eq]
   split
   · exact ⟨_, rfl⟩
-  · cases clock : advanceClock (inputHead input).2.1 { state with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } with
+  · cases clock : advanceClock (inputHead input).2.1 { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } with
     | error failure =>
       obtain ⟨code, rfl⟩ := advanceClock_error clock
       exact ⟨code, by simp [bind, Except.bind]⟩

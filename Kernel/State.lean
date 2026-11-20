@@ -238,9 +238,9 @@ structure State where
   queuedSignals : TreeMap UnitKey Signal compare := ∅
   /-- Every variable write since the last drain, same-value writes included: `Step` hands them to `Hooks.written`. -/
   writes : List WriteEvent := []
-  /-- The intents of the running micro-step while the closure runs, moved into `outboxes` like `batchTokens`; once the input
-  commits, the input's intents in run order (`Step.orderJournal`), so a host publishes a committed input's own. -/
-  outbox : List BroadcastIntent := []
+  /-- The running micro-step's broadcast intents, in the order it made them; moved into `outboxes` like `batchTokens`, and
+  named for the batch like it. -/
+  batchIntents : List BroadcastIntent := []
   /-- The intents of the closure's micro-steps, keyed by the unit that made each batch; empty at commit (DC4). -/
   outboxes : TreeMap UnitKey (List BroadcastIntent) compare := ∅
   slots : FeatureSlots := {}
@@ -249,6 +249,9 @@ structure State where
   /-- The occurrence facts of a committed input, its transitions in run order (`Step.orderJournal`); empty while the
   closure runs. -/
   journal : List Transition := []
+  /-- A committed input's broadcast intents in run order (`Step.orderJournal`), which a host publishes as the input's own;
+  empty while the closure runs. -/
+  intents : List BroadcastIntent := []
   /-- The transitions of the closure in progress, each keyed by the unit that ran it: content, ordered into `journal` by
   the run log at commit, then emptied (DC4). -/
   transitions : TreeMap UnitKey Transition compare := ∅
@@ -320,8 +323,8 @@ def queueBatch (state : State) (unit : UnitKey) : State :=
         state.queuedSignals
       queuedTokens := state.batchTokens.zipIdx.foldl (fun queued (token, index) => queued.insert (unit.tokenUnit index) token)
         state.queuedTokens
-      outboxes := if state.outbox.isEmpty then state.outboxes else state.outboxes.insert unit state.outbox
-      batchSignals := [], batchTokens := [], outbox := [] }
+      outboxes := if state.batchIntents.isEmpty then state.outboxes else state.outboxes.insert unit state.batchIntents
+      batchSignals := [], batchTokens := [], batchIntents := [] }
 
 /-- Whether `scope` is the root of a called process instance, which hides its caller's variables. -/
 def calledRoot (state : State) (scope : ScopeOccurrenceId) : Bool :=

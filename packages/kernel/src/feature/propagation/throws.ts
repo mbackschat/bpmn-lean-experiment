@@ -270,7 +270,7 @@ function throwSignal(ctx: Ctx, payload: EventPayload, record: SignalThrow, origi
   const intent: BroadcastIntent = {
     address: address.value, variables: variables.value, businessKey: businessKey.value, origin: throwerRef(state, origin),
   };
-  return committed(signal({ ...fired, outbox: [...fired.outbox, intent] },
+  return committed(signal({ ...fired, batchIntents: [...fired.batchIntents, intent] },
     completeSignal(occurrence.id, throwLeave(payload), [], WriteRule.Outward)));
 }
 

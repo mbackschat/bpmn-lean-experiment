@@ -79,7 +79,7 @@ def ActsIn (signal : Signal) (scope : ScopeOccurrenceId) : Prop :=
 
 /-- Nothing a later micro-step or the observation boundary reads changed but the journal: the scope tree, occurrences,
 open items, tokens, variables, queued signals, feature slots, occurrence and position counters, activation counters,
-status, failure and outbox are as they were. -/
+status, failure and the running batch's intents are as they were. -/
 structure Inert (before after : State) : Prop where
   scopes : after.scopes = before.scopes
   occurrences : after.occurrences = before.occurrences
@@ -93,7 +93,7 @@ structure Inert (before after : State) : Prop where
   activations : after.activations = before.activations
   status : after.status = before.status
   failure : after.failure = before.failure
-  outbox : after.outbox = before.outbox
+  batchIntents : after.batchIntents = before.batchIntents
 
 /-- Queued work naming a scope occurrence that was issued and has since been removed has no effect: the closure
 micro-step that runs it either fails the input or changes nothing but the journal (`Kernel/Step/Stale.lean`). Under

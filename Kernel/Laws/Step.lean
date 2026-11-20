@@ -292,7 +292,7 @@ theorem onRunning_eq {hooks : Hooks} {ctx : Ctx} {input : Input} {before : Optio
         if state.status != .running then .error (.rejected "instance-not-running")
         else do
           let (tag, at?, _) := inputHead input
-          let start ← advanceClock at? { state with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] }
+          let start ← advanceClock at? { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] }
           admitChoices hooks ctx
           let unit := UnitKey.ofRoot .input
           orderJournal (settle hooks ctx closureBound closureWorkBound (RunLog.record {} unit)

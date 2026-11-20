@@ -531,9 +531,9 @@ theorem placedStepAlongside (program : Program) : StepAlongside program (Placing
 def PlacedForm (program : Program) (s : State) : Prop :=
   WellFormed program s ∧ Placing program s
 
-/-- An input starts from an empty journal, outbox, draft and write log (`Step.onRunning`), which keeps `PlacedForm`. -/
+/-- An input starts from an empty journal, intents, draft and write log (`Step.onRunning`), which keeps `PlacedForm`. -/
 theorem placed_reset {program : Program} {s : State} (holds : PlacedForm program s) :
-    PlacedForm program { s with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } :=
+    PlacedForm program { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } :=
   ⟨Laws.State.reset_wellFormed holds.1, fun refs => (holds.2 refs).queue rfl rfl rfl (fun _ member => member)
     rfl rfl listKept⟩
 

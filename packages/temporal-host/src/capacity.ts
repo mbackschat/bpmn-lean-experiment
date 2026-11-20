@@ -27,7 +27,7 @@ export const chainCapacity = {
   startBytes: 64 * KiB,
   /** A caller's input, a population command, or a delivery or start the population derived. */
   stimulusBytes: 64 * KiB,
-  /** The encoded kernel state without the last input's journal and outbox (`kernel-port.ts`, `encodeState`). */
+  /** The encoded kernel state without the last input's journal and intents (`kernel-port.ts`, `encodeState`). */
   stateBytes: 256 * KiB,
   /** One input's execution and occurrence batches together. */
   publicationBatchBytes: 64 * KiB,

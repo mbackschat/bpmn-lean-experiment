@@ -81,7 +81,7 @@ Each cell is a comma-separated token list; `-` means empty. A token is a Lean na
 | `P.correlate` | `Hooks.correlates` through `Kernel.Population` | present |
 | `P.correlateCriteria+` | Population match over `CorrelationMatch` | NEW |
 | `P.start+` | start selection by trigger and definition version | NEW |
-| `P.broadcast+` | Population drain of `State.outbox` | NEW |
+| `P.broadcast+` | Population drain of `State.intents` | NEW |
 | `P.bind+` | called-definition version binding | NEW |
 
 ## Row table
@@ -154,10 +154,10 @@ Each cell is a comma-separated token list; `-` means empty. A token is a Lean na
 | PC-MESSAGE-07 | PC-MESSAGE-07.json | ScopeKind.eventSubProcess, MultiInstance.mode | Occurrence.begun, OpenItem.passive, State.scopes | Input.deliver, Input.command | OpenKind.message, OpenKind.userTask | L.ownerSubscription+, L.entry+, L.completeScope, X.eventStart | - | - | no |
 | PC-MESSAGE-08 | PC-MESSAGE-08.json | MessageTrigger.correlation, CorrelationCriterion.key, CorrelationCriterion.value | MessageWaitDetail.criteria+, InstanceData.businessKey+ | Input.deliver, DeliveryInput.correlation~ | OpenKind.message | P.correlate, P.correlateCriteria+, L.writeOutputs | O.messageCorrelation+ | message.correlation, message.correlation.keys, message.correlation.value | no |
 | PC-MESSAGE-09 | PC-MESSAGE-09.json | Throw.message, MessageThrow.binding~, MessageThrow.payload | EffectDetail.send+ | Input.effectResult | OpenKind.effect | L.begin, L.effectAtEvent+, L.complete.outgoing | - | throw.message | no |
-| PC-SIGNAL-01 | PC-SIGNAL-01.json | Throw.signal, SignalThrow.name, SignalThrow.payload, SignalThrow.propagateAll+, SignalThrow.localOnly+, SignalThrow.businessKey+, SignalThrow.asynchronous+ | State.outbox+ | - | - | L.begin, L.complete.outgoing, P.broadcast+ | - | throw.signal, throw.signal.asynchronous+, expression.outsideSimpleBoolean+ | yes: selected expression-derived Signal names |
-| PC-SIGNAL-02 | PC-SIGNAL-02.json | StartPayload.subscription, EventRole.catch, SignalTrigger.name, GatewayKind.eventBased | Occurrence.begun, SignalWaitDetail.name+, State.outbox+ | Input.start, StartInput.trigger+, Input.deliver | OpenKind.signal+ | L.ownerSubscription+, L.entry+, L.leave, P.broadcast+, P.start+ | - | event.catch.signal, start.signal | no |
+| PC-SIGNAL-01 | PC-SIGNAL-01.json | Throw.signal, SignalThrow.name, SignalThrow.payload, SignalThrow.propagateAll+, SignalThrow.localOnly+, SignalThrow.businessKey+, SignalThrow.asynchronous+ | State.intents+ | - | - | L.begin, L.complete.outgoing, P.broadcast+ | - | throw.signal, throw.signal.asynchronous+, expression.outsideSimpleBoolean+ | yes: selected expression-derived Signal names |
+| PC-SIGNAL-02 | PC-SIGNAL-02.json | StartPayload.subscription, EventRole.catch, SignalTrigger.name, GatewayKind.eventBased | Occurrence.begun, SignalWaitDetail.name+, State.intents+ | Input.start, StartInput.trigger+, Input.deliver | OpenKind.signal+ | L.ownerSubscription+, L.entry+, L.leave, P.broadcast+, P.start+ | - | event.catch.signal, start.signal | no |
 | PC-SIGNAL-03 | PC-SIGNAL-03.json | Envelope.boundaries, ScopeKind.eventSubProcess, SignalTrigger.name, MultiInstance.mode | Occurrence.begun, OpenItem.passive, SignalWaitDetail.name+ | Input.deliver, DeliveryInput.trigger+ | OpenKind.signal+ | L.ownerSubscription+, L.entry+, L.armBody+, L.stale+, L.clearInside | - | boundary.signal | no |
-| PC-SIGNAL-04 | PC-SIGNAL-04.json | SignalThrow.name, SignalThrow.payload, StartPayload.subscription | State.outbox+, BroadcastIntent.name+ | Input.deliver, DeliveryInput.trigger+ | OpenKind.signal+ | P.broadcast+, P.start+ | - | - | no |
+| PC-SIGNAL-04 | PC-SIGNAL-04.json | SignalThrow.name, SignalThrow.payload, StartPayload.subscription | State.intents+, BroadcastIntent.name+ | Input.deliver, DeliveryInput.trigger+ | OpenKind.signal+ | P.broadcast+, P.start+ | - | - | no |
 | PC-CONDITION-01 | PC-CONDITION-01.json | ConditionTrigger.condition, ConditionTrigger.variableName, ConditionTrigger.variableEvents | State.writes~, WriteEvent.kind+, ConditionalWaitDetail.lastValue+ | CommandAction.setVariables+, CommandAction.removeVariables+, CommandAction.completeUserTask, EffectOutcome.success | OpenKind.conditional+ | L.write+, L.written, L.writeOutputs | - | expression.outsideSimpleBoolean+ | yes: evaluation failure |
 | PC-CONDITION-02 | PC-CONDITION-02.json | StartPayload.subscription, ConditionTrigger.condition | State.instanceId | Input.start, StartInput.trigger+, StartInput.variables | - | L.begin, P.start+ | - | start.condition | no |
 | PC-CONDITION-03 | PC-CONDITION-03.json | EventRole.catch, ConditionTrigger.condition, ConditionTrigger.variableName, ConditionTrigger.variableEvents, GatewayKind.eventBased | Occurrence.begun, ConditionalWaitDetail.lastValue+, State.writes~ | CommandAction.setVariables+, CommandAction.completeUserTask, StartInput.conditionChoices+, CommandInput.conditionChoices+ | OpenKind.conditional+ | L.begin, L.ownerSubscription+, L.entry+, L.written, L.leave, X.competes+ | O.conditionalRetrigger+ | event.condition.filter+, event.condition.variableEvents+, event.condition.foreign+ | no |
@@ -635,7 +635,7 @@ structure FeatureSlots where
 structure State where
   activations : List ActivationCount := []
   writes : List WriteEvent := []
-  outbox : List BroadcastIntent := []
+  intents : List BroadcastIntent := []
   deriving Repr
 ```
 

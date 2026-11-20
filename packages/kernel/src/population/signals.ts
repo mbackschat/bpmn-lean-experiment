@@ -389,7 +389,7 @@ export function fanningEntries(fanning: Fanning): readonly FanOutEntry[] {
 
 /** The intents a committed step of `state`, an instance of `program`, left, origins by public identifier. */
 export function publicIntents(program: Program, state: State): readonly BroadcastIntent[] {
-  return state.outbox.map((intent) => ({ ...intent, origin: { ...intent.origin, element: programPublicId(program, intent.origin.element) } }));
+  return state.intents.map((intent) => ({ ...intent, origin: { ...intent.origin, element: programPublicId(program, intent.origin.element) } }));
 }
 
 /**

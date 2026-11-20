@@ -121,7 +121,7 @@ def throwSignal (ctx : Ctx) (payload : EventPayload) (record : SignalThrow) (ori
   let fired := (ownReceivers state address).foldl (fun state item =>
     state.signal (.fire item.id (.signal (thrownDelivery ctx state address variables item)))) state
   let intent : BroadcastIntent := { address, variables, businessKey, origin := throwerRef state origin }
-  .ok ({ fired with outbox := fired.outbox ++ [intent] }.signal (.complete occurrence.id (throwLeave payload) [] .outward))
+  .ok ({ fired with batchIntents := fired.batchIntents ++ [intent] }.signal (.complete occurrence.id (throwLeave payload) [] .outward))
 
 /-- A Message throw under `MessageThrowForms.cibForms` (PC-MESSAGE-09): unbound, it passes its token on, as CIB's
 `IntermediateThrowNoneEventActivityBehavior` does (CIB-INT-0027); bound, it opens one effect item, as CIB runs its
