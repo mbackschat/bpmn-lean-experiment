@@ -24,7 +24,13 @@ import {
   tsMatchSiteCounts,
 } from "./kernel-guards-dispatch.ts";
 import { boundAgreementFindings, boundCopies, strayBoundLiteralFindings } from "./kernel-guards-bounds.ts";
-import { effectWriterFindings, fieldLivenessFindings, hookDefaultFindings, unitKeyFindings } from "./kernel-guards-effects.ts";
+import {
+  effectWriterFindings,
+  fieldLivenessFindings,
+  hookDefaultFindings,
+  runLogFindings,
+  unitKeyFindings,
+} from "./kernel-guards-effects.ts";
 import {
   boundedNumberFindings,
   discoveryFindings,
@@ -570,6 +576,19 @@ test("the unit-key guard (KD7) holds a node to its two builders and each compara
   assert.notDeepEqual(unitKeyFindings(emptyFixture()), [], "an empty tree must fail");
 });
 
+test("the run-log guard (KD7) holds the log to its one reader and a unit-keyed map's order to its owners, and fails on an empty tree", () => {
+  const owners = ["packages/kernel/src/step/order.ts", "packages/kernel/src/step/commit.ts", "packages/kernel/src/state.ts"];
+  const real: Record<string, string> = Object.fromEntries(owners.map((file) => [file, readFileSync(path.join(tree.root, file), "utf8")]));
+  assert.deepEqual(runLogFindings(fixture(real)), []);
+  seeded(runLogFindings, { ...real, "packages/kernel/src/feature/work.ts": "export function peek(log, key) { return runPosition(log, key); }\n" },
+    /KD7 run log packages\/kernel\/src\/feature\/work\.ts:1: reads the run log through runPosition outside orderKey and byRun/u);
+  seeded(runLogFindings, { ...real, "packages/kernel/src/step/peek.ts": "export function size(log) { return log.positions; }\n" },
+    /KD7 run log packages\/kernel\/src\/step\/peek\.ts:1: reads the run log's positions outside runRecord and runPosition/u);
+  seeded(runLogFindings, { ...real, "packages/kernel/src/step/first.ts": "export function first(state) { return orderedEntries(state.queuedSignals)[0]; }\n" },
+    /KD7 run log packages\/kernel\/src\/step\/first\.ts:1: reads the iteration order of a unit-keyed map/u);
+  assert.notDeepEqual(runLogFindings(emptyFixture()), [], "an empty tree must fail");
+});
+
 holdsItsGround("guard 19 (field liveness)", fieldLivenessFindings, {
   "packages/kernel/src/feature/data.ts": `import { setVariable } from "../state.js";\nexport function store(state) { return setVariable(state, "x"); }\n`,
 }, /IL field assignee is read by no non-codec module/u);
@@ -739,6 +758,7 @@ for (const [name, guard] of [
   ["guard 17", effectWriterFindings],
   ["the hook-defaults guard (KD7)", hookDefaultFindings],
   ["the unit-key guard (KD7)", unitKeyFindings],
+  ["the run-log guard (KD7)", runLogFindings],
   ["guard 19", fieldLivenessFindings],
   ["guard 20", refusalParityFindings],
   ["guard 23 (structural inputs)", structureInputFindings],

@@ -19,6 +19,11 @@ passed guards 1 and 2 (hence guard 17), so this scan reads calls and writes rath
   contract: each comparator in `orderContracts` reads its key's fixed-size cached fields, in the listed order, before any
   variable-length component, and reads one of those last, so the full path decides. A `DecidableEq`, `Ord` or `BEq`
   instance of a type holding a `Spine` must reach a contracted comparator, so a new key type cannot skip the contract.
+- The run log (KD7, DC4 of [the rewrite-2 proposal](../docs/REWRITE-2-PROPOSAL.md)): its position is read only through
+  its one reader, which only the token order and the commit call, and its positions only by its reader and writer, so
+  no unit's body reads when another ran. No iteration-order read of a unit-keyed map: an operation that reads a map's
+  iteration order, which is its key order and no order of entry, applied at the unit key, only in the choices that break
+  every tie by the key itself, the commit's sort by position then key, and the queued tokens' multiset view.
 - No pairwise proof estate (KD8 of [the rewrite-2 proposal](../docs/REWRITE-2-PROPOSAL.md)): no theorem, in any kernel
   module, states one claim about two distinct `QueuingMechanism` constructors or two distinct wait kinds (`OpenKind`).
 
@@ -201,11 +206,66 @@ def contractFindings (env : Environment) (contract : OrderContract) : List Strin
       [s!"KD7 {contract.comparator}: reads no variable-length component of {contract.decisive} last"]
     else []
 
+/-- The run log's one reader (KD7, DC4): `reader` is called only by `readers`, and the log structure's fields are read only
+by `fieldOwners`, its reader and its writer. -/
+structure RunLogRule where
+  reader : Name
+  readers : List Name
+  log : Name
+  fieldOwners : List Name
+
+def runLogRule : RunLogRule :=
+  ⟨`Kernel.Step.RunLog.runPosition, [`Kernel.Step.orderKey, `Kernel.Step.byRun], `Kernel.Step.RunLog,
+    [`Kernel.Step.RunLog.record, `Kernel.Step.RunLog.runPosition]⟩
+
+/-- No iteration-order read of a unit-keyed map (KD7): an operation of `map` applied at the key type `key` that is not
+in `orderFree` reads the map's iteration order, which is its key order and no order of entry, so only `owners` may
+apply one, each ordering by an explicit key or reading the result as a multiset. -/
+structure KeyedMapRule where
+  map : Name
+  key : Name
+  orderFree : List String
+  owners : List Name
+
+def keyedMapRule : KeyedMapRule :=
+  ⟨`Std.ExtTreeMap, `Kernel.UnitKey,
+    ["insert", "insertIfNew", "erase", "get?", "getD", "get!", "get", "getKey?", "contains", "size", "isEmpty", "filter",
+      "any", "all", "alter", "modify", "empty", "emptyc"],
+    [`Kernel.Step.earliest, `Kernel.Step.latest, `Kernel.Step.firstBreadth, `Kernel.Step.byRun, `Kernel.State.allTokens]⟩
+
+/-- The operations of `rule.map` that `root` applies at `rule.key` and that read the map's iteration order. -/
+partial def keyedOrderReads (rule : KeyedMapRule) (root : Expr) : NameSet := Id.run do
+  let mut reads : NameSet := {}
+  let mut visited : Std.HashSet Expr := {}
+  let mut stack := [root]
+  while !stack.isEmpty do
+    let expr := stack.head!
+    stack := stack.tail!
+    if visited.contains expr then continue
+    visited := visited.insert expr
+    match expr with
+    | .app .. =>
+      let function := expr.getAppFn
+      let arguments := expr.getAppArgs
+      if let .const name _ := function then
+        if let .str parent last := name then
+          if parent == rule.map && !rule.orderFree.contains last && !last.startsWith "inst" &&
+              arguments[0]?.any (·.isConstOf rule.key) then
+            reads := reads.insert name
+      stack := function :: arguments.toList ++ stack
+    | .lam _ type body _ | .forallE _ type body _ => stack := type :: body :: stack
+    | .letE _ type value body _ => stack := type :: value :: body :: stack
+    | .mdata _ body | .proj _ _ body => stack := body :: stack
+    | _ => pure ()
+  return reads
+
 structure Config where
   /-- The module a declaration belongs to; the fixture maps by namespace, a real scan by the module table. -/
   moduleOf : Name → Option Name
   budgets : List (Name × Nat)
   orderContracts : List OrderContract
+  runLog : RunLogRule := runLogRule
+  keyedMaps : KeyedMapRule := keyedMapRule
   /-- A real scan requires each guarded type to have at least one site, so a renamed type empties no budget silently. -/
   requireEveryGuardedType : Bool
 
@@ -243,6 +303,9 @@ def scan (config : Config) : MetaM Report := do
   let mut matcherCache : Std.HashMap Name (List Name) := {}
   let mut siteCounts : Std.HashMap Name Nat := {}
   let mut sawSpineBuilder := false
+  let mut sawLogReader := false
+  let mut sawLogField := false
+  let mut sawKeyedOwner := false
   let mut usesOf : Std.HashMap Name NameSet := {}
   for (declaration, module, info) in declarations do
     if (Match.Extension.getMatcherInfo? env declaration).isSome then continue
@@ -253,6 +316,22 @@ def scan (config : Config) : MetaM Report := do
       if declaration == spineBuilder then sawSpineBuilder := true
       else if !isGenerated env declaration then
         findings := findings.push s!"KD7 {module} {declaration}: builds a {spineNode} outside {spineBuilder}"
+    let log := config.runLog
+    if uses.constants.contains log.reader && declaration != log.reader then
+      if log.readers.any (·.isPrefixOf declaration) then sawLogReader := true
+      else findings := findings.push s!"KD7 {module} {declaration}: reads the run log through {log.reader} outside {log.readers}"
+    let fields := if isStructure env log.log then getStructureFields env log.log else #[]
+    let readsField := fields.any (fun field => uses.constants.contains (log.log ++ field)) ||
+      uses.projections.toList.any (·.1 == log.log)
+    if readsField && !isGenerated env declaration && !(log.log.isPrefixOf declaration && (← isInstance declaration)) then
+      if log.fieldOwners.contains declaration then sawLogField := true
+      else findings := findings.push s!"KD7 {module} {declaration}: reads the run log's positions outside {log.fieldOwners}"
+    let keyedReads := keyedOrderReads config.keyedMaps value
+    unless keyedReads.isEmpty do
+      if config.keyedMaps.owners.any (·.isPrefixOf declaration) then sawKeyedOwner := true
+      else if !isGenerated env declaration then
+        findings := findings.push
+          s!"KD7 {module} {declaration}: reads the iteration order of a unit-keyed map ({keyedReads.toList})"
     for rule in callRules do
       if uses.constants.contains rule.primitive && declaration != rule.primitive then
         if allowedFor config module rule.writers rule.primitive then
@@ -304,6 +383,12 @@ def scan (config : Config) : MetaM Report := do
       findings := findings.push s!"G17: State.{field} has no permitted writer, so its rule read nothing"
   unless sawSpineBuilder do
     findings := findings.push s!"KD7: {spineBuilder} builds no {spineNode}, so its rule read nothing"
+  unless sawLogReader do
+    findings := findings.push s!"KD7: {config.runLog.reader} has no permitted caller, so the run-log rule read nothing"
+  unless sawLogField do
+    findings := findings.push s!"KD7: {config.runLog.log} is read by none of its owners, so the run-log rule read nothing"
+  unless sawKeyedOwner do
+    findings := findings.push "KD7: no owner reads a unit-keyed map's order, so the keyed-map rule read nothing"
   for contract in config.orderContracts do
     findings := findings ++ (contractFindings env contract).toArray
   -- A type holding a spine is a key: each of its equality and order instances reaches a contracted comparator through
@@ -394,6 +479,12 @@ def run (env : Environment) (config : Config) : IO Report :=
 /-- A self-contained kernel that keeps every rule's permitted caller and seeds each violation once. -/
 def fixture : String := "
 namespace Kernel
+structure UnitKey where
+  index : Nat
+structure KeyMap (α β : Type) where
+  entries : List (α × β)
+def KeyMap.toList {α β : Type} (map : KeyMap α β) : List (α × β) := map.entries
+def KeyMap.size {α β : Type} (map : KeyMap α β) : Nat := map.entries.length
 structure State where
   tokens : List Nat := []
   occurrences : List Nat := []
@@ -433,6 +524,17 @@ def idle (hooks : Hooks) (state : State) : State :=
 def lifecycle (state : State) : State :=
   state.beginOccurrence.startReserved.reserve.removeOccurrence.cancelOccurrence.activate
 def run (hooks : Hooks) (state : State) : State := complete hooks state
+structure RunLog where
+  positions : List Nat := []
+def RunLog.record (log : RunLog) (unit : Nat) : RunLog := ⟨log.positions ++ [unit]⟩
+def RunLog.runPosition (log : RunLog) (unit : Nat) : Nat := log.positions.getD unit 0
+def orderKey (log : RunLog) (unit : Nat) : Nat := log.runPosition unit
+def seededPosition (log : RunLog) : Nat := log.runPosition 0
+def seededPositions (log : RunLog) : Nat := log.positions.length
+def byRun (map : KeyMap UnitKey Nat) : List Nat := map.toList.map (·.2)
+def seededKeyOrder (map : KeyMap UnitKey Nat) : Option Nat := (map.toList.map (·.2)).head?
+def keyFree (map : KeyMap UnitKey Nat) : Nat := map.size
+def otherKeyOrder (map : KeyMap Nat Nat) : List Nat := map.toList.map (·.2)
 end Step
 namespace Feature.Flow
 def good (state : State) : State := state.emit
@@ -535,7 +637,14 @@ def expectedInFixture : List String := [
   "Kernel.Spine.seededNode: builds a Kernel.Spine.node outside Kernel.Spine.push",
   "KD7 Kernel.Spine.seededPathFirst: reads [Kernel.Spine.path, Kernel.Spine.depth, Kernel.Spine.fingerprint]",
   "KD7 Kernel.Spine.seededCachedOnly: reads no variable-length component",
-  "Kernel.seededUncontracted: an instance on the spine key Kernel.Unkeyed reaches no key-order contract"]
+  "Kernel.seededUncontracted: an instance on the spine key Kernel.Unkeyed reaches no key-order contract",
+  "Kernel.Step.seededPosition: reads the run log through Kernel.Step.RunLog.runPosition outside",
+  "Kernel.Step.seededPositions: reads the run log's positions outside",
+  "Kernel.Step.seededKeyOrder: reads the iteration order of a unit-keyed map ([Kernel.KeyMap.toList])"]
+
+/-- The fixture's unit-keyed map: its own stand-in for `Std.ExtTreeMap`, which the fixture does not import. -/
+def fixtureKeyedMaps : KeyedMapRule :=
+  { keyedMapRule with map := `Kernel.KeyMap, owners := [`Kernel.Step.byRun] }
 
 /-- The fixture's comparators: one keeps the contract and two break it. -/
 def fixtureContracts : List OrderContract :=
@@ -556,7 +665,7 @@ def selfTest : IO UInt32 := do
     return 1
   let config : Config :=
     { moduleOf := fixtureModuleOf, budgets := [(`Kernel.Element, 1)], orderContracts := fixtureContracts
-      requireEveryGuardedType := false }
+      keyedMaps := fixtureKeyedMaps, requireEveryGuardedType := false }
   let report ← run env config
   let joined := "\n".intercalate report.findings.toList
   let mut failed := false
@@ -564,7 +673,8 @@ def selfTest : IO UInt32 := do
     unless (joined.splitOn expected).length > 1 do
       IO.eprintln s!"self-test: the seeded violation was not reported: {expected}"
       failed := true
-  for clean in ["Kernel.Spine.same", "Kernel.instBEqKeyed", "Kernel.Spine.push"] do
+  for clean in ["Kernel.Spine.same", "Kernel.instBEqKeyed", "Kernel.Spine.push", "Kernel.Step.orderKey",
+      "Kernel.Step.RunLog.record", "Kernel.Step.byRun", "Kernel.Step.keyFree", "Kernel.Step.otherKeyOrder"] do
     if (joined.splitOn (clean ++ ":")).length > 1 then
       IO.eprintln s!"self-test: {clean}, which keeps the spine rules, was reported"
       failed := true

@@ -343,3 +343,71 @@ export function unitKeyFindings(tree: KernelTree): string[] {
   }
   return findings;
 }
+
+/** A use of the run log or of a unit-keyed map's order that only the named functions of one module may make. */
+type OwnedUse = Readonly<{ what: string; owners: Readonly<Record<string, readonly string[]>>; at: (tokens: readonly Token[], index: number) => boolean }>;
+
+const ownedUses: readonly OwnedUse[] = [
+  {
+    what: "reads the run log through runPosition outside orderKey and byRun",
+    owners: { "step/order": ["orderKey"], "step/commit": ["byRun"] },
+    at: (tokens, index) => tokens[index]?.text === "runPosition" && tokens[index + 1]?.text === "(" &&
+      tokens[index - 1]?.text !== "function",
+  },
+  {
+    what: "reads the run log's positions outside runRecord and runPosition",
+    owners: { "step/order": ["runRecord", "runPosition"] },
+    at: (tokens, index) => tokens[index]?.text === "positions" && tokens[index - 1]?.text === ".",
+  },
+  {
+    // `OrderedMap` holds only the closure's unit-keyed families, whose entry order is their key order, no order of entry.
+    what: "reads the iteration order of a unit-keyed map outside the choices, the commit and allTokens",
+    owners: { "step/order": ["earliest", "latest", "firstBreadth"], "step/commit": ["byRun"], state: ["allTokens"] },
+    at: (tokens, index) => tokens[index]?.text === "orderedEntries" && tokens[index + 1]?.text === "(" &&
+      tokens[index - 1]?.text !== "function",
+  },
+];
+
+/** The innermost top-level function of `bodies` whose body holds token `index`. */
+function enclosing(bodies: Map<string, readonly [number, number]>, index: number): string | undefined {
+  let found: string | undefined;
+  let width = Number.POSITIVE_INFINITY;
+  for (const [name, [open, close]] of bodies) {
+    if (open < index && index < close && close - open < width) {
+      found = name;
+      width = close - open;
+    }
+  }
+  return found;
+}
+
+/**
+ * The TypeScript halves of KD7's run-log rules (DC4; `scripts/kernel-effects.lean` holds the Lean halves): the run log is
+ * read only through `runPosition`, which only the token order (`orderKey`) and the commit (`byRun`) call, and its
+ * positions only by its reader and writer, so no unit's body reads when another ran; and no function but the choices
+ * that break every tie by the key, the commit's sort by position then key and the queued tokens' multiset view reads
+ * the iteration order of a unit-keyed map.
+ */
+export function runLogFindings(tree: KernelTree): string[] {
+  const label = "KD7 run log";
+  const findings: string[] = [];
+  const owned = ownedUses.map(() => 0);
+  for (const source of tree.typeScript) {
+    if (!source.file.startsWith(kernelPrefix) || source.file === `${kernelPrefix}state/map.ts`) continue;
+    const module = moduleOf(source);
+    const bodies = functionBodies(source);
+    const { tokens } = source;
+    for (let i = 0; i < tokens.length; i += 1) {
+      ownedUses.forEach((use, rule) => {
+        if (!use.at(tokens, i)) return;
+        const within = enclosing(bodies, i);
+        if (within !== undefined && (use.owners[module] ?? []).includes(within)) owned[rule] = (owned[rule] ?? 0) + 1;
+        else findings.push(`${label} ${source.file}:${tokens[i]?.line}: ${use.what}`);
+      });
+    }
+  }
+  ownedUses.forEach((use, rule) => {
+    if (owned[rule] === 0) findings.push(`${label}: no owner ${use.what.replace(/ outside .*$/u, "")}, so the rule read nothing`);
+  });
+  return findings;
+}
