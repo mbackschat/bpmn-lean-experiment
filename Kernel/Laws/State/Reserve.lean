@@ -35,10 +35,12 @@ structure Reserves (before after : State) (element : ElementId) (scope : ScopeOc
   instances : ∀ x, after.instanceOf x = before.instanceOf x
   instanceId : after.instanceId = before.instanceId
   itemMap : after.openItems = before.openItems ∧ after.itemOrdinals = before.itemOrdinals
-  tokens : after.tokens = before.tokens
-  signals : after.signals = before.signals
+  tokens : allQueuedTokens after = allQueuedTokens before
+  signals : allSignals after = allSignals before
+  queues : QueuesKept before after
   variables : after.variables = before.variables
   journal : after.journal = before.journal
+  transitions : after.transitions = before.transitions
   draft : after.draft = before.draft
   status : after.status = before.status
   failure : after.failure = before.failure
@@ -79,7 +81,7 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
       · exact .inl (List.mem_singleton.mp new)
   have above : ∀ occurrence ∈ before.occurrences, occurrence.id ≠ reserved.id := fun occurrence member same =>
     fresh (same ▸ formed.issued.occurrences occurrence member)
-  have startsAfter : starts after = starts before := by simp [starts, reserves.journal, reserves.draft]
+  have startsAfter : starts after = starts before := by simp [starts, reserves.journal, reserves.transitions, reserves.draft]
   have keyFresh : ∀ k, Counted before k → k ≠ key before reserved := fun k counted => by
     rw [keyed]
     exact activated.fresh counted
@@ -269,10 +271,12 @@ structure StartsReserved (before after : State) (occurrence : Occurrence) (sourc
   activations : after.activations = before.activations
   occurrenceOrdinals : after.occurrenceOrdinals = before.occurrenceOrdinals
   itemMap : after.openItems = before.openItems ∧ after.itemOrdinals = before.itemOrdinals
-  tokens : after.tokens = before.tokens
-  signals : after.signals = before.signals
+  tokens : allQueuedTokens after = allQueuedTokens before
+  signals : allSignals after = allSignals before
+  queues : QueuesKept before after
   variables : after.variables = before.variables
   journal : after.journal = before.journal
+  transitions : after.transitions = before.transitions
   ended : after.draft.ended = before.draft.ended
   status : after.status = before.status
   failure : after.failure = before.failure
@@ -316,7 +320,7 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
     nodup_map_eq formed.distinct.occurrences held member same
   have startsAfter : starts after =
       starts before ++ [{ occurrence := key before occurrence, owner := occurrence.scope, sourceType }] := by
-    simp [starts, starts_.journal, starts_.started, keys]
+    simp [starts, starts_.journal, starts_.transitions, starts_.started, keys]
   have keysOther : ∀ old ∈ before.occurrences, old.id ≠ occurrence.id → key before old ≠ key before occurrence :=
     fun old held other same => other (by rw [nodup_map_eq formed.distinct.keys held member same])
   refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,

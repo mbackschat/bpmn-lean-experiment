@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Laws.State.History
+public import Kernel.Laws.State.Map
 public import Kernel.State
 
 /-! # Laws of flow: where queued work comes from
@@ -75,8 +76,8 @@ def LeavesFrom (inv : State → Prop) (program : Program) (state : State) (occur
     (((∃ kept ∈ held.occurrences, kept.id = occurrence.id ∧ kept.element = occurrence.element ∧
         kept.scope = occurrence.scope) ∧
       ∀ selected, leave = .flows selected → ∀ flow ∈ selected, Lists program occurrence.element flow ∨
-        ∃ named writes rule, flow ∈ named ∧ Signal.complete occurrence.id (.flows named) writes rule ∈ held.signals) ∨
-      ∃ named writes rule, Signal.occur occurrence.element occurrence.scope named writes rule ∈ held.signals ∧
+        ∃ named writes rule, flow ∈ named ∧ Signal.complete occurrence.id (.flows named) writes rule ∈ Laws.State.allSignals held) ∨
+      ∃ named writes rule, Signal.occur occurrence.element occurrence.scope named writes rule ∈ Laws.State.allSignals held ∧
         ∀ selected, leave = .flows selected → ∀ flow ∈ selected, Lists program occurrence.element flow ∨
           ∃ flows, named = .flows flows ∧ flow ∈ flows)
 
@@ -133,9 +134,9 @@ def Anchored (inv : State → Prop) (program : Program) (state : State) (element
   ∃ anchor, Linked program anchor element ∧ (AnchoredBy program state anchor scope ∨
     ∃ held, inv held ∧ Laws.State.ScopeGrows held state ∧ (∀ entry ∈ state.scopes, entry ∈ held.scopes) ∧
       (∀ entry ∈ state.slots.instances, entry ∈ held.slots.instances) ∧ (AnchoredBy program held anchor scope ∨
-        (∃ host, Signal.arm host anchor scope ∈ held.signals) ∨
-        (∃ occurrence, Signal.armGateway occurrence anchor scope ∈ held.signals) ∨
-        ∃ raised origin, Signal.raise raised origin ∈ held.signals ∧ origin.element = anchor ∧ origin.scope = scope))
+        (∃ host, Signal.arm host anchor scope ∈ Laws.State.allSignals held) ∨
+        (∃ occurrence, Signal.armGateway occurrence anchor scope ∈ Laws.State.allSignals held) ∨
+        ∃ raised origin, Signal.raise raised origin ∈ Laws.State.allSignals held ∧ origin.element = anchor ∧ origin.scope = scope))
 
 /-- An anchor read under `inv` is one read under anything `inv` implies. -/
 theorem Anchored.mono {inv weaker : State → Prop} {program : Program} {state : State} {element : ElementId}
@@ -154,9 +155,9 @@ and instance entries, places or queued an arming for, is anchored in `state`. -/
 theorem Anchored.held {inv : State → Prop} {program : Program} {held state : State} {anchor element : ElementId}
     {scope : ScopeOccurrenceId} (holds : inv held) (issued : Laws.State.ScopeGrows held state) (scopes : ∀ entry ∈ state.scopes, entry ∈ held.scopes)
     (instances : ∀ entry ∈ state.slots.instances, entry ∈ held.slots.instances) (linked : Linked program anchor element)
-    (source : AnchoredBy program held anchor scope ∨ (∃ host, Signal.arm host anchor scope ∈ held.signals) ∨
-      (∃ occurrence, Signal.armGateway occurrence anchor scope ∈ held.signals) ∨
-      ∃ raised origin, Signal.raise raised origin ∈ held.signals ∧ origin.element = anchor ∧ origin.scope = scope) :
+    (source : AnchoredBy program held anchor scope ∨ (∃ host, Signal.arm host anchor scope ∈ Laws.State.allSignals held) ∨
+      (∃ occurrence, Signal.armGateway occurrence anchor scope ∈ Laws.State.allSignals held) ∨
+      ∃ raised origin, Signal.raise raised origin ∈ Laws.State.allSignals held ∧ origin.element = anchor ∧ origin.scope = scope) :
     Anchored inv program state element scope :=
   ⟨anchor, linked, .inr ⟨held, holds, issued, scopes, instances, source⟩⟩
 

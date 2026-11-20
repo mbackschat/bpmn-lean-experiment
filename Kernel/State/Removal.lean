@@ -33,6 +33,7 @@ def clearInside (state : State) (scope : ScopeOccurrenceId) (keep : List Occurre
   let journalled := recordCancelled state removed
   { journalled with
       tokens := journalled.tokens.filter (!inside.contains ·.busyScope)
+      queuedTokens := journalled.queuedTokens.filter fun _ token => !inside.contains token.busyScope
       openItems := journalled.openItems.filter fun _ item => !inside.contains item.scope || keep.contains item.id.occurrence
       itemOrdinals := journalled.itemOrdinals.filter fun id _ => !removed.any (·.id == id)
       occurrences := journalled.occurrences.filter fun occurrence => !inside.contains occurrence.scope || keep.contains occurrence.id

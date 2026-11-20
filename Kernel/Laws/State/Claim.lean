@@ -39,7 +39,7 @@ theorem head_of_append {α : Type} {a b c : α} {l : List α} (pair : [a, b].Sub
 
 /-- What slots that only shrink complete, with fewer queued signals, they completed before. -/
 theorem SlotCompletes.within {before after : State} (slots : SlotsWithin before after)
-    (signals : ∀ signal ∈ after.signals, signal ∈ before.signals) {id : OccurrenceId} (completes : SlotCompletes after id) :
+    (signals : ∀ signal ∈ allSignals after, signal ∈ allSignals before) {id : OccurrenceId} (completes : SlotCompletes after id) :
     SlotCompletes before id := by
   rcases completes with ⟨waiting, member, named⟩ | ⟨run, member, named⟩ | ⟨run, member, rest⟩ |
     ⟨scope, activity, trigger, rest⟩ | ⟨raised, origin, member, host⟩
@@ -79,7 +79,7 @@ theorem signal_claimed_named {s : State} {request : BeginRequest} (formed : Well
   have queued : ∀ other, Queued { s with signals := s.signals ++ [.begin request] } other →
       Queued s other ∨ other = request := fun other named => by
     rcases named with signal | token
-    · rcases List.mem_append.mp signal with old | new
+    · rcases List.mem_append.mp (allSignals_append s _ ▸ signal) with old | new
       · exact .inl (.inl old)
       · exact .inr (Signal.begin.inj (List.mem_singleton.mp new))
     · exact .inl (.inr token)
@@ -98,14 +98,14 @@ theorem signal_claimed_named {s : State} {request : BeginRequest} (formed : Well
         (admitted id inside).1.congr (.refl _) rfl (Laws.State.items_congr rfl) rfl fun _ => by apply instanceOf_congr <;> rfl⟩
   · by_cases same : second = request
     · subst same
-      exact apart first (.inl (head_of_append pair)) id inside
-    · exact formed.claimed.signalsApart first second (pair_of_append pair fun equal => same (Signal.begin.inj equal))
+      exact apart first (.inl (head_of_append (allSignals_append s _ ▸ pair))) id inside
+    · exact formed.claimed.signalsApart first second (pair_of_append (allSignals_append s _ ▸ pair) fun equal => same (Signal.begin.inj equal))
         id inside
-  · rcases List.mem_append.mp signal with old | new
+  · rcases List.mem_append.mp (allSignals_append s _ ▸ signal) with old | new
     · exact formed.claimed.queuesApart first second old token id inside
     · obtain rfl := Signal.begin.inj (List.mem_singleton.mp new)
       exact fun named => apart second (.inr token) id named inside
-  · rcases List.mem_append.mp completed with old | new
+  · rcases List.mem_append.mp (allSignals_append s _ ▸ completed) with old | new
     · rcases queued other queuedOther with earlier | rfl
       · exact formed.claimed.uncompleted other id leave writes rule earlier inside old
       · exact (admitted id inside).2.2.1 leave writes rule old
@@ -130,7 +130,7 @@ theorem signal_settled_named {s : State} {request : BeginRequest} (formed : Well
   have queued : ∀ other, Queued { s with signals := s.signals ++ [.begin request] } other →
       Queued s other ∨ other = request := fun other named => by
     rcases named with signal | token
-    · rcases List.mem_append.mp signal with old | new
+    · rcases List.mem_append.mp (allSignals_append s _ ▸ signal) with old | new
       · exact .inl (.inl old)
       · exact .inr (Signal.begin.inj (List.mem_singleton.mp new))
     · exact .inl (.inr token)
@@ -149,14 +149,14 @@ theorem signal_settled_named {s : State} {request : BeginRequest} (formed : Well
     fun run member => (formed.settled.placed run member).transport (.refl _) fun _ inside => .inl inside,
     fun run member => (formed.settled.runsPlaced run member).transport (.refl _) fun _ inside => .inl inside,
     fun scope activity trigger leave context member => ?_, fun raised origin host member named => ?_⟩
-  · rcases List.mem_append.mp member with old | new
+  · rcases List.mem_append.mp (allSignals_append s _ ▸ member) with old | new
     · exact carry _ (formed.settled.queued scope activity trigger leave occurrence resume old)
         (.inr (.inr (.inr (.inl ⟨scope, activity, trigger, leave, resume, old⟩))))
     · exact absurd (List.mem_singleton.mp new).symm (notCompensate scope activity trigger leave _)
-  · rcases List.mem_append.mp member with old | new
+  · rcases List.mem_append.mp (allSignals_append s _ ▸ member) with old | new
     · exact formed.settled.grouped scope activity trigger leave context old
     · exact absurd (List.mem_singleton.mp new).symm (notCompensate scope activity trigger leave _)
-  · rcases List.mem_append.mp member with old | new
+  · rcases List.mem_append.mp (allSignals_append s _ ▸ member) with old | new
     · exact carry _ (formed.settled.raised raised origin host old named)
         (.inr (.inr (.inr (.inr ⟨raised, origin, old, named⟩))))
     · exact absurd (List.mem_singleton.mp new).symm (notRaise raised origin)
@@ -192,11 +192,11 @@ theorem Claimable.signal {s : State} {scope : ScopeOccurrenceId} {inner : Option
   refine ⟨beginnable.congr (.refl _) rfl (Laws.State.items_congr rfl) rfl fun _ => by apply instanceOf_congr <;> rfl, fun request queued => ?_,
     fun leave writes rule completed => ?_, fun completes => unslotted ?_⟩
   · rcases queued with signal_ | token
-    · rcases List.mem_append.mp signal_ with old | new
+    · rcases List.mem_append.mp (allSignals_append s _ ▸ signal_) with old | new
       · exact unnamed request (.inl old)
       · exact absurd (List.mem_singleton.mp new).symm (notBegin request)
     · exact unnamed request (.inr token)
-  · rcases List.mem_append.mp completed with old | new
+  · rcases List.mem_append.mp (allSignals_append s _ ▸ completed) with old | new
     · exact uncompleted leave writes rule old
     · exact absurd (List.mem_singleton.mp new).symm (notComplete id leave writes rule)
   · rcases completes with parked | bodies | runs | ⟨scope, activity, trigger, rest⟩ | ⟨raised, origin, member, host⟩
@@ -204,10 +204,10 @@ theorem Claimable.signal {s : State} {scope : ScopeOccurrenceId} {inner : Option
     · exact .inr (.inl bodies)
     · exact .inr (.inr (.inl runs))
     · obtain ⟨leave, resume, member⟩ := rest
-      rcases List.mem_append.mp member with old | new
+      rcases List.mem_append.mp (allSignals_append s _ ▸ member) with old | new
       · exact .inr (.inr (.inr (.inl ⟨scope, activity, trigger, leave, resume, old⟩)))
       · exact absurd (List.mem_singleton.mp new).symm (notCompensate scope activity trigger leave id resume)
-    · rcases List.mem_append.mp member with old | new
+    · rcases List.mem_append.mp (allSignals_append s _ ▸ member) with old | new
       · exact .inr (.inr (.inr (.inr ⟨raised, origin, old, host⟩)))
       · exact absurd (List.mem_singleton.mp new).symm (notRaise raised origin)
 
@@ -261,7 +261,7 @@ theorem clearInside_inner {s : State} (formed : WellFormed program s) {occurrenc
     refine ⟨unbegun, fun item held => free item ((cleared.items item).mp held).1, fun stands => ?_⟩
     rw [cleared.instances _ stands, cleared.instances _ (formedAfter.owned.occurrenceScopes found inside)]
     exact instance_ present
-  · exact unnamed request (queued.shrink (by rw [cleared.signals]; exact .refl _) cleared.tokensSublist)
+  · exact unnamed request (queued.shrink (fun _ member => cleared.signals ▸ member) (fun _ member => cleared.tokensSublist.subset member))
   · exact uncompleted leave writes rule (cleared.signals ▸ completed)
   · exact SlotCompletes.within cleared.slots (fun _ member => cleared.signals ▸ member) completes
 

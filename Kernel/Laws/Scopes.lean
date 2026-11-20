@@ -58,7 +58,7 @@ def NextActivation (processInstance : String) (element : ElementId) (counts : Li
 occurrence and no parked join or held wait (`SUBPROC-QUIESCE-01`); a passive item, a dormant Event Sub-Process start,
 keeps nothing alive. -/
 def Idle (s : State) (scope : ScopeOccurrenceId) : Prop :=
-  (∀ token ∈ s.tokens, token.busyScope ≠ scope) ∧
+  (∀ token ∈ Laws.State.allQueuedTokens s, token.busyScope ≠ scope) ∧
   (∀ item ∈ itemList s.openItems, item.passive = false → item.scope ≠ scope) ∧
   (∀ occurrence ∈ s.occurrences, occurrence.begun = true → occurrence.scope ≠ scope) ∧
   (∀ child ∈ s.scopes, child.parent ≠ some scope) ∧
@@ -74,7 +74,7 @@ in `parent`, every other token kept (`SCPH-EXIT-01`, `NSC-QUIESCE-01`). -/
 def ContinuesOnce (scope parent : ScopeOccurrenceId) (outgoing : List FlowId) (before after : State) : Prop :=
   Idle before scope →
     (∀ left ∈ after.scopes, left.id ≠ scope) ∧
-    ∃ kept, after.tokens = kept ++ outgoing.map (Token.flow · parent) ∧ ∀ token ∈ kept, token ∈ before.tokens
+    ∃ kept, Laws.State.allQueuedTokens after = kept ++ outgoing.map (Token.flow · parent) ∧ ∀ token ∈ kept, token ∈ Laws.State.allQueuedTokens before
 
 /-- A command addressed to an occurrence that is no longer live (`live = false`), a completed Scope's or an earlier
 iteration's, is rejected (`SUBPROC-REFUSE-01`, `SRE-STALE-01`). -/
@@ -505,7 +505,7 @@ theorem reused_activation_rejected : ¬ NextActivation "p" ⟨"Sub"⟩ counts 1 
 theorem first_traversal : NextActivation "p" ⟨"Sub"⟩ [] 1 := ⟨by simp, fun _ => rfl⟩
 
 theorem cleared_idle (kind : OpenKind) : Idle (cleared kind) subScope := by
-  simp [Idle, cleared, sample, outerTask, subProcess, outerItem, rootScope, childScope, processRoot, subScope]
+  simp [Idle, Laws.State.allQueuedTokens, cleared, sample, outerTask, subProcess, outerItem, rootScope, childScope, processRoot, subScope]
 
 /-- Completing a scope occurrence whose task still waits is rejected. -/
 theorem busy_completes_rejected (kind : OpenKind) : ¬ CompletesWhenIdle (sample kind) subScope true := fun law =>
@@ -533,9 +533,9 @@ theorem continues_twice_rejected (kind : OpenKind) :
       { continued kind with tokens := [Token.flow outFlow processRoot, Token.flow outFlow processRoot] } := fun law => by
   obtain ⟨kept, split, keptOld⟩ := (law (cleared_idle kind)).2
   cases kept
-  · simp at split
+  · simp [Laws.State.allQueuedTokens, continued, cleared, sample] at split
   · rename_i token _
-    exact absurd (keptOld token (by simp)) (by simp [cleared, sample])
+    exact absurd (keptOld token (by simp)) (by simp [Laws.State.allQueuedTokens, cleared, sample])
 
 theorem stale_rejected : StaleRejected false (.error (.rejected "unknown-user-task")) := fun _ => ⟨_, rfl⟩
 

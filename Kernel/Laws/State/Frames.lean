@@ -38,13 +38,13 @@ theorem ReservationsClaimed.shrink {before after : State} (claimed : Reservation
     (scopes : ∀ x ∈ scopeIds after, x ∈ scopeIds before)
     (instances : ∀ x ∈ scopeIds after, after.instanceOf x = before.instanceOf x)
     (issued : OccurrenceGrows before after) (grows : ScopeGrows before after)
-    (signals : after.signals.Sublist before.signals) (tokens : after.tokens.Sublist before.tokens) :
+    (signals : Fewer (allSignals after) (allSignals before)) (tokens : Fewer (allQueuedTokens after) (allQueuedTokens before)) :
     ReservationsClaimed after where
   attached item member attached reserved other inside same :=
     have ⟨found, held, rest⟩ := reserved
     claimed.attached item (items item member) attached ⟨found, occurrences found held, rest⟩ other (items other inside) same
   named request queued := by
-    obtain ⟨nodup, beginnable⟩ := claimed.named request (queued.shrink signals tokens)
+    obtain ⟨nodup, beginnable⟩ := claimed.named request (queued.shrink signals.subset tokens.subset)
     refine ⟨nodup, fun id named => ?_⟩
     obtain ⟨below, facts⟩ := beginnable id named
     refine ⟨issued _ below, fun occurrence member same => ?_⟩
@@ -52,15 +52,15 @@ theorem ReservationsClaimed.shrink {before after : State} (claimed : Reservation
     refine ⟨unbegun, fun item inside => free item (items item inside), fun present => ?_⟩
     rw [instances _ present, instances _ (housed occurrence member)]
     exact instance_ (scopes _ present)
-  signalsApart first second pair := claimed.signalsApart first second (List.Sublist.trans pair signals)
-  tokensApart first second pair := claimed.tokensApart first second (List.Sublist.trans pair tokens)
+  signalsApart := apart_fewer signals claimed.signalsApart
+  tokensApart := apart_fewer tokens claimed.tokensApart
   queuesApart first second signal token :=
     claimed.queuesApart first second (signals.subset signal) (tokens.subset token)
   uncompleted request id leave writes rule queued named completed :=
-    claimed.uncompleted request id leave writes rule (queued.shrink signals tokens) named (signals.subset completed)
-  scopesIssued request queued := grows.issued (claimed.scopesIssued request (queued.shrink signals tokens))
+    claimed.uncompleted request id leave writes rule (queued.shrink signals.subset tokens.subset) named (signals.subset completed)
+  scopesIssued request queued := grows.issued (claimed.scopesIssued request (queued.shrink signals.subset tokens.subset))
   innerPlaced request queued id named occurrence member :=
-    claimed.innerPlaced request (queued.shrink signals tokens) id named occurrence (occurrences occurrence member)
+    claimed.innerPlaced request (queued.shrink signals.subset tokens.subset) id named occurrence (occurrences occurrence member)
 
 /-- `after`'s slots hold no join wait, Multi-Instance body or compensation run `before`'s do not. -/
 structure SlotsWithin (before after : State) : Prop where
@@ -119,7 +119,7 @@ theorem SlotsSettled.transport {before after : State} (settled : SlotsSettled be
     (occurrences : ∀ occurrence ∈ after.occurrences, occurrence.begun = false →
       occurrence ∈ before.occurrences ∨ ¬ OccurrenceIssued before occurrence.id)
     (queued : ∀ request, Queued after request → Queued before request)
-    (signals : ∀ signal ∈ after.signals, signal ∈ before.signals)
+    (signals : ∀ signal ∈ allSignals after, signal ∈ allSignals before)
     (scopes : ∀ entry ∈ after.scopes, entry ∈ before.scopes ∨ ¬ ScopeIssued before entry.id) : SlotsSettled after where
   parked waiting member := (settled.parked waiting (slots.parked waiting member)).transport issued occurrences queued
   bodies run member := (settled.bodies run (slots.bodies run member)).transport issued occurrences queued
@@ -247,7 +247,7 @@ theorem Typed.transport {program : Program} {before after : State} (typed : Type
     (items : ∀ item ∈ itemList after.openItems, item ∈ itemList before.openItems)
     (begun : ∀ item ∈ itemList after.openItems, ∀ occurrence ∈ after.occurrences, occurrence.id = item.id.occurrence →
       occurrence.begun = true → occurrence ∈ before.occurrences)
-    (signals : ∀ signal ∈ after.signals, signal ∈ before.signals) : Typed program after := fun item member started =>
+    (signals : ∀ signal ∈ allSignals after, signal ∈ allSignals before) : Typed program after := fun item member started =>
   have ⟨unbegun, alone, uncompleted, waits⟩ := typed item (items item member) started
   ⟨unbegun.transport (begun item member), fun other inside same => alone other (items other inside) same,
     fun leave writes rule queued => uncompleted leave writes rule (signals _ queued), waits⟩
@@ -260,7 +260,7 @@ theorem AttachedReserved.shrink {before after : State} (reserved : AttachedReser
 theorem Typed.shrink {program : Program} {before after : State} (typed : Typed program before)
     (items : ∀ item ∈ itemList after.openItems, item ∈ itemList before.openItems)
     (begun : ∀ occurrence ∈ after.occurrences, occurrence.begun = true → occurrence ∈ before.occurrences)
-    (signals : ∀ signal ∈ after.signals, signal ∈ before.signals) :
+    (signals : ∀ signal ∈ allSignals after, signal ∈ allSignals before) :
     Typed program after := typed.transport items (fun _ _ occurrence member _ flag => begun occurrence member flag) signals
 
 /-- What an open item of a well-formed state waits on was issued. -/
@@ -346,7 +346,8 @@ theorem ItemRoles.shrink {before after : State} (roles : ItemRoles before)
 /-- The queued raises stay sound through a change that queues no raise, issues nothing back and adds no unbegun
 occurrence. -/
 theorem RaisesSound.transport {program : Program} {before after : State} (raises : RaisesSound program before)
-    (signals : ∀ raised origin, Signal.raise raised origin ∈ after.signals → Signal.raise raised origin ∈ before.signals)
+    (signals : ∀ raised origin, Signal.raise raised origin ∈ allSignals after →
+      Signal.raise raised origin ∈ allSignals before)
     (grows : ScopeGrows before after) (issued : OccurrenceGrows before after)
     (occurrences : ∀ occurrence ∈ after.occurrences, occurrence.begun = false → occurrence ∈ before.occurrences) :
     RaisesSound program after := fun raised origin queued event => by
@@ -358,7 +359,7 @@ theorem RaisesSound.transport {program : Program} {before after : State} (raises
 
 /-- `RaisesSound` reads the queue, the scope occurrences, the counters and the occurrences. -/
 theorem RaisesSound.same {program : Program} {s t : State} (raises : RaisesSound program s)
-    (signals : t.signals = s.signals) (ordinals : t.scopeOrdinals = s.scopeOrdinals) (scopes : t.scopes = s.scopes)
+    (signals : allSignals t = allSignals s) (ordinals : t.scopeOrdinals = s.scopeOrdinals) (scopes : t.scopes = s.scopes)
     (counters : t.occurrenceOrdinals = s.occurrenceOrdinals) (occurrences : t.occurrences = s.occurrences) :
     RaisesSound program t :=
   raises.transport (fun _ _ queued => signals ▸ queued) (.of_same (congrArg (List.map ScopeOccurrence.id) scopes) ordinals)
@@ -378,8 +379,8 @@ structure Narrows (before after : State) : Prop where
   instances : ∀ scope, after.instanceOf scope = before.instanceOf scope
   recorded : FailureRecorded before → FailureRecorded after
   items : ItemsNarrow after.openItems before.openItems after.itemOrdinals before.itemOrdinals
-  tokens : after.tokens.Sublist before.tokens
-  signals : after.signals.Sublist before.signals
+  tokens : Fewer (allQueuedTokens after) (allQueuedTokens before)
+  signals : Fewer (allSignals after) (allSignals before)
   starts : ∀ fact ∈ starts after, fact ∈ starts before
   slots : SlotsWithin before after
 
@@ -395,7 +396,8 @@ theorem WellFormed.reshape {before after : State} (formed : WellFormed program b
   have issued : OccurrenceGrows before after :=
     .of_same (congrArg (List.map ScopeOccurrence.id) narrows.scopes) narrows.scopeOrdinals narrows.occurrenceOrdinals
   have settled := formed.settled.transport narrows.slots issued grows
-    (fun _ member _ => .inl (narrows.occurrences ▸ member)) (fun _ queued => queued.shrink narrows.signals narrows.tokens)
+    (fun _ member _ => .inl (narrows.occurrences ▸ member))
+    (fun _ queued => queued.shrink narrows.signals.subset narrows.tokens.subset)
     (fun _ member => narrows.signals.subset member) (fun _ member => .inl (narrows.scopes ▸ member))
   have queue : QueueSound after := {
     arm := fun host element scope queued => by
@@ -497,14 +499,16 @@ structure SameButVariables (before after : State) : Prop where
   occurrences : after.occurrences = before.occurrences
   items : after.openItems = before.openItems
   ordinals : after.itemOrdinals = before.itemOrdinals
-  tokens : after.tokens = before.tokens
+  tokens : allQueuedTokens after = allQueuedTokens before
   activations : after.activations = before.activations
   occurrenceOrdinals : after.occurrenceOrdinals = before.occurrenceOrdinals
   journal : after.journal = before.journal
+  transitions : after.transitions = before.transitions
   draft : after.draft = before.draft
   status : after.status = before.status
   failure : after.failure = before.failure
-  signals : after.signals = before.signals
+  signals : allSignals after = allSignals before
+  queues : QueuesKept before after
   instances : ∀ scope, after.instanceOf scope = before.instanceOf scope
   instanceId : after.instanceId = before.instanceId
   slots : after.slots = before.slots
@@ -519,9 +523,10 @@ theorem WellFormed.ofVariables {before after : State} (formed : WellFormed progr
       occurrenceOrdinals := same.occurrenceOrdinals, instances := same.instances,
       recorded := by simp [FailureRecorded, same.failure, same.status],
       items := by rw [same.items, same.ordinals]; exact .refl _, tokens := by rw [same.tokens]; exact .refl _,
-      signals := by rw [same.signals]; exact .refl _, starts := by simp [starts, same.journal, same.draft],
+      signals := by rw [same.signals]; exact .refl _,
+      starts := by simp [starts, same.journal, same.transitions, same.draft],
       slots := .same same.slots }
-    (by simpa [StartedOnce, starts, same.journal, same.draft] using formed.startedOnce) located keyed
+    (by simpa [StartedOnce, starts, same.journal, same.transitions, same.draft] using formed.startedOnce) located keyed
 
 /-! ## Where a queued trigger comes from
 
@@ -549,7 +554,7 @@ structure Steady (before after : State) : Prop where
   instances : ∀ scope, after.instanceOf scope = before.instanceOf scope
   activations : after.activations = before.activations
   runs : ∀ run ∈ after.slots.compensation.runs, run ∈ before.slots.compensation.runs
-  signals : ∃ more, after.signals = before.signals ++ more ∧ ∀ signal ∈ more, Untriggered signal
+  signals : ∃ more, allSignals after = allSignals before ++ more ∧ ∀ signal ∈ more, Untriggered signal
 
 theorem Steady.refl (state : State) : Steady state state :=
   ⟨rfl, rfl, .refl _, rfl, fun _ => id, fun _ => rfl, rfl, fun _ => id, [], by simp, by simp⟩
@@ -590,9 +595,10 @@ state with the occurrence's completion queued. -/
 def RaisesFrom (inv : State → Prop) (occurrence : Occurrence) (state : State) : Prop :=
   ∃ base, BegunFrom inv base occurrence ∧ (state = base ∨ ∃ leave, state = base.signal (.complete occurrence.id leave [] .outward))
 
-/-- `state` is what taking `signal` off the head of a queue that kept `inv` left. -/
+/-- `state` is what taking `signal`, queued under `unit`, off a queue that kept `inv` left. -/
 def Popped (inv : State → Prop) (signal : Signal) (state : State) : Prop :=
-  ∃ queue, inv queue ∧ queue.signals = signal :: state.signals ∧ state = { queue with signals := state.signals }
+  ∃ queue unit, inv queue ∧ queue.queuedSignals[unit]? = some signal ∧
+    state = { queue with queuedSignals := queue.queuedSignals.erase unit }
 
 /-- `trigger` is the thrower of a Cancel raise taken off a queue that kept `inv` (`Popped`), whose search reached
 `state`, or `state` with a host disarmed, by `Steady` steps: the trigger a caught Cancel's compensation takes
@@ -622,8 +628,9 @@ theorem RaisesFrom.imp {occurrence : Occurrence} {state : State} (raises : Raise
   exact ⟨base, begun.imp weakens, at_⟩
 
 theorem Popped.imp {signal : Signal} {state : State} (popped : Popped inv signal state) : Popped weaker signal state := by
-  obtain ⟨queue, holds, heads, same⟩ := popped
-  exact ⟨queue, weakens _ holds, heads, same⟩
+  obtain ⟨queue, unit, holds, rest₁⟩ := popped
+  obtain ⟨found, same⟩ := rest₁
+  exact ⟨queue, unit, weakens _ holds, found, same⟩
 
 theorem RollsBack.imp {trigger : OccurrenceRef} {state : State} (rolls : RollsBack inv trigger state) :
     RollsBack weaker trigger state := by

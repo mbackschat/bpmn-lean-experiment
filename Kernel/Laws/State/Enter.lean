@@ -35,10 +35,11 @@ structure ScopeAppended (before after : State) (entry : ScopeOccurrence) (locals
   variables : after.variables = before.variables ++ [{ scope := entry.id, entries := keyed locals }]
   occurrences : after.occurrences = before.occurrences
   itemMap : after.openItems = before.openItems ∧ after.itemOrdinals = before.itemOrdinals
-  tokens : after.tokens = before.tokens
-  signals : after.signals = before.signals
+  tokens : allQueuedTokens after = allQueuedTokens before
+  signals : allSignals after = allSignals before
   activations : after.activations = before.activations
   journal : after.journal = before.journal
+  transitions : after.transitions = before.transitions
   draft : after.draft = before.draft
   status : after.status = before.status
   failure : after.failure = before.failure
@@ -102,7 +103,7 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
   have hTokens := enters.tokens
   have hSignals := enters.signals
   have hVars := enters.variables
-  have startsEq : starts after = starts s := by simp [starts, enters.journal, enters.draft]
+  have startsEq : starts after = starts s := by simp [starts, enters.journal, enters.transitions, enters.draft]
   have countedEq : ∀ k, Counted after k ↔ Counted s k := by simp [Counted, enters.activations]
   have queuedEq : ∀ request, Queued after request ↔ Queued s request := by simp [Queued, hSignals, hTokens]
   have parentless : ∀ found ∈ after.scopes, found.parent = none → found.id = State.root := fun found inside orphan => by
@@ -289,7 +290,7 @@ theorem enterScope_wellFormed {s : State} (formed : WellFormed program s) (eleme
   rw [enterScope_eq] at grows entered ⊢
   exact Enters.wellFormed formed {
       unissued := entered_unissued stands element, scopeGrows := grows, entered, occurrenceOrdinals := rfl, scopes := rfl,
-      variables := rfl, occurrences := rfl, itemMap := ⟨rfl, rfl⟩, tokens := rfl, signals := rfl, activations := rfl, journal := rfl, draft := rfl, status := rfl, failure := rfl,
+      variables := rfl, occurrences := rfl, itemMap := ⟨rfl, rfl⟩, tokens := rfl, signals := rfl, activations := rfl, journal := rfl, transitions := rfl, draft := rfl, status := rfl, failure := rfl,
       instanceId := rfl, slots := .same rfl }
     stands (ScopeOccurrenceId.parent?_child _ _ _) ownerBegun
 
@@ -353,7 +354,7 @@ theorem enterCalled_wellFormed {s : State} (formed : WellFormed program s) (call
   rw [enterCalled_eq _ _ _ _ _ (scopes_fresh formed)] at grows entered ⊢
   exact Enters.wellFormed formed {
       unissued := entered_unissued stands call.element, scopeGrows := grows, entered, occurrenceOrdinals := rfl, scopes := rfl,
-      variables := rfl, occurrences := rfl, itemMap := ⟨rfl, rfl⟩, tokens := rfl, signals := rfl, activations := rfl, journal := rfl, draft := rfl, status := rfl, failure := rfl,
+      variables := rfl, occurrences := rfl, itemMap := ⟨rfl, rfl⟩, tokens := rfl, signals := rfl, activations := rfl, journal := rfl, transitions := rfl, draft := rfl, status := rfl, failure := rfl,
       instanceId := rfl, slots := ⟨fun _ inside => inside, fun _ inside => inside, fun _ inside => inside⟩ } stands
     (ScopeOccurrenceId.parent?_child _ _ _) fun id named => ⟨call, member, Option.some.inj named, begun, rfl⟩
 
@@ -409,7 +410,7 @@ theorem Settled.begin {s : State} {id : OccurrenceId} (settled : Settled s id) {
   rw [signal_eq]
   refine settled.bare (.refl _) rfl fun other named => ?_
   rcases named with signal | token
-  · rcases List.mem_append.mp signal with old | new
+  · rcases List.mem_append.mp (allSignals_append s _ ▸ signal) with old | new
     · exact .inl (.inl old)
     · rw [Signal.begin.inj (List.mem_singleton.mp new)]
       exact .inr bare
@@ -422,7 +423,7 @@ theorem Settled.defer {s : State} {id : OccurrenceId} (settled : Settled s id) {
   refine settled.bare (.refl _) rfl fun other named => ?_
   rcases named with signal | token
   · exact .inl (.inl signal)
-  · rcases List.mem_append.mp token with old | new
+  · rcases List.mem_append.mp (allQueuedTokens_append s _ ▸ token) with old | new
     · exact .inl (.inr old)
     · exact .inr (bare other (by simpa using new))
 
@@ -441,9 +442,10 @@ theorem SlotsSettled.bare {s t : State} (settled : SlotsSettled s) (slots : t.sl
     (scopes : t.scopes = s.scopes) (ordinals : t.scopeOrdinals = s.scopeOrdinals) (issued : OccurrenceGrows s t)
     (occurrences : t.occurrences = s.occurrences)
     (queued : ∀ request, Queued t request → Queued s request ∨ names request = [])
-    (compensations : ∀ scope activity trigger leave resume, Signal.compensate scope activity trigger leave resume ∈ t.signals →
-      Signal.compensate scope activity trigger leave resume ∈ s.signals)
-    (raises : ∀ raised origin, Signal.raise raised origin ∈ t.signals → Signal.raise raised origin ∈ s.signals) :
+    (compensations : ∀ scope activity trigger leave resume,
+      Signal.compensate scope activity trigger leave resume ∈ allSignals t →
+        Signal.compensate scope activity trigger leave resume ∈ allSignals s)
+    (raises : ∀ raised origin, Signal.raise raised origin ∈ allSignals t → Signal.raise raised origin ∈ allSignals s) :
     SlotsSettled t where
   parked waiting member := (settled.parked waiting (slots ▸ member)).bare issued occurrences queued
   bodies run member := (settled.bodies run (slots ▸ member)).bare issued occurrences queued
@@ -471,7 +473,7 @@ theorem signal_claimed_begin {s : State} {request : BeginRequest} (formed : Well
   have queued : ∀ other, Queued { s with signals := s.signals ++ [.begin request] } other →
       Queued s other ∨ other = request := fun other named => by
     rcases named with signal | token
-    · rcases List.mem_append.mp signal with old | new
+    · rcases List.mem_append.mp (allSignals_append s _ ▸ signal) with old | new
       · exact .inl (.inl old)
       · exact .inr (Signal.begin.inj (List.mem_singleton.mp new))
     · exact .inl (.inr token)
@@ -492,13 +494,13 @@ theorem signal_claimed_begin {s : State} {request : BeginRequest} (formed : Well
   · by_cases same : second = request
     · rw [same, bare]
       exact List.not_mem_nil
-    · exact formed.claimed.signalsApart first second (pair_of_append pair fun equal => same (Signal.begin.inj equal))
+    · exact formed.claimed.signalsApart first second (pair_of_append (allSignals_append s _ ▸ pair) fun equal => same (Signal.begin.inj equal))
         id inside
-  · rcases List.mem_append.mp signal with old | new
+  · rcases List.mem_append.mp (allSignals_append s _ ▸ signal) with old | new
     · exact formed.claimed.queuesApart first second old token id inside
     · rw [Signal.begin.inj (List.mem_singleton.mp new), bare] at inside
       simp at inside
-  · rcases List.mem_append.mp completed with old | new
+  · rcases List.mem_append.mp (allSignals_append s _ ▸ completed) with old | new
     · exact formed.claimed.uncompleted other id leave writes rule (named other queuedOther id inside) inside old
     · exact notComplete id leave writes rule (List.mem_singleton.mp new).symm
   · rcases queued other queuedOther with old | rfl
@@ -521,15 +523,15 @@ theorem signal_settled_begin {s : State} {request : BeginRequest} (formed : Well
   refine formed.settled.bare rfl rfl rfl (.refl _) rfl (fun other named => ?_)
     (fun scope activity trigger leave resume member => ?_) fun raised origin member => ?_
   · rcases named with signal | token
-    · rcases List.mem_append.mp signal with old | new
+    · rcases List.mem_append.mp (allSignals_append s _ ▸ signal) with old | new
       · exact .inl (.inl old)
       · rw [Signal.begin.inj (List.mem_singleton.mp new)]
         exact .inr bare
     · exact .inl (.inr token)
-  · rcases List.mem_append.mp member with old | new
+  · rcases List.mem_append.mp (allSignals_append s _ ▸ member) with old | new
     · exact old
     · exact absurd (List.mem_singleton.mp new).symm (notCompensate scope activity trigger leave resume)
-  · rcases List.mem_append.mp member with old | new
+  · rcases List.mem_append.mp (allSignals_append s _ ▸ member) with old | new
     · exact old
     · exact absurd (List.mem_singleton.mp new).symm (notRaise raised origin)
 
@@ -549,7 +551,7 @@ theorem deferBegins_wellFormed {s : State} (formed : WellFormed program s) {requ
       Queued s request ∨ request ∈ requests := fun request named => by
     rcases named with signal | token
     · exact .inl (.inl signal)
-    · rcases List.mem_append.mp token with old | new
+    · rcases List.mem_append.mp (allQueuedTokens_append s _ ▸ token) with old | new
       · exact .inl (.inr old)
       · exact .inr (fresh request new)
   have nameless : ∀ request ∈ requests, ∀ id, id ∉ names request := fun request inside id named => by
@@ -570,10 +572,10 @@ theorem deferBegins_wellFormed {s : State} (formed : WellFormed program s) {requ
       by_cases late : second ∈ requests
       · exact nameless second late id
       · have early : first ∉ requests := fun named => nameless first named id inside
-        exact formed.claimed.tokensApart first second (pair_of_append_absent pair (fun member => early (fresh _ member))
+        exact formed.claimed.tokensApart first second (pair_of_append_absent (allQueuedTokens_append s _ ▸ pair) (fun member => early (fresh _ member))
           fun member => late (fresh _ member)) id inside,
     fun first second signal token id inside => by
-      rcases List.mem_append.mp token with old | new
+      rcases List.mem_append.mp (allQueuedTokens_append s _ ▸ token) with old | new
       · exact formed.claimed.queuesApart first second signal old id inside
       · exact nameless second (fresh second new) id,
     fun request id leave writes rule named inside => by
@@ -597,7 +599,7 @@ theorem deferBegins_wellFormed {s : State} (formed : WellFormed program s) {requ
   reservations := by unfold ReservationsUnstarted; rw [keys]; exact formed.reservations
   owned := ⟨formed.owned.occurrenceScopes, (fun item member => formed.owned.itemScopes item (items_same member rfl)), (fun item member => formed.owned.itemOccurrences item (items_same member rfl)),
     (fun item member => formed.owned.attachments item (items_same member rfl)), formed.owned.scopeOwners, formed.owned.variableScopes, fun token member =>
-      (List.mem_append.mp member).elim (formed.owned.tokenScopes token) (housed token)⟩
+      (List.mem_append.mp (allQueuedTokens_append s _ ▸ member)).elim (formed.owned.tokenScopes token) (housed token)⟩
   rooted := ⟨formed.rooted.1, formed.rooted.2.1, fun scope member =>
     Within.congr (s := s) (t := { s with tokens := s.tokens ++ added }) rfl (formed.rooted.2.2 scope member)⟩
   variables := ⟨formed.variables.scopes, formed.variables.names⟩

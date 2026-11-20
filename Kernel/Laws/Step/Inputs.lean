@@ -22,10 +22,10 @@ in run order. -/
 theorem onRunning_ok {hooks : Hooks} {ctx : Ctx} {input : Input} {before : Option State}
     {transition : State → Outcome} {after : State} (ran : onRunning hooks ctx input before transition = .ok after) :
     ∃ state start moved settled, before = some state ∧ state.status = .running ∧
-      advanceClock (inputHead input).2.1 { state with journal := [], outbox := [], draft := {}, writes := [] } = .ok start ∧
-      microStep hooks ctx (.input (inputHead input).1) none State.root transition start = .ok moved ∧
-      settle hooks ctx closureBound closureWorkBound moved = .ok settled ∧
-      after = { settled with journal := settled.journal.reverse } := by
+      advanceClock (inputHead input).2.1 { state with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } = .ok start ∧
+      microStep hooks ctx (.ofRoot .input) (.input (inputHead input).1) none State.root transition start = .ok moved ∧
+      settle hooks ctx closureBound closureWorkBound (RunLog.record {} (.ofRoot .input)) moved = .ok settled ∧
+      orderJournal (.ok settled) = .ok after := by
   rw [onRunning_eq] at ran
   split at ran
   · simp at ran
@@ -38,7 +38,7 @@ theorem onRunning_ok {hooks : Hooks} {ctx : Ctx} {input : Input} {before : Optio
       obtain ⟨start, clocked, ran⟩ := bind_ok ran
       obtain ⟨_, _, ran⟩ := bind_ok ran
       obtain ⟨moved, stepped, ran⟩ := bind_ok ran
-      obtain ⟨final, settled, made⟩ := orderJournal_ok ran
+      obtain ⟨final, settled, made⟩ := orderJournal_settled ran
       exact ⟨state, start, moved, final, by simp, by simpa using running, by simpa [head] using clocked,
         by simpa [head] using stepped, settled, made⟩
 
@@ -59,7 +59,7 @@ theorem step_ok {hooks : Hooks} {program : Program} {before : Option State} {inp
       obtain ⟨initial, clocked, ran⟩ := bind_ok ran
       obtain ⟨_, _, ran⟩ := bind_ok ran
       obtain ⟨moved, stepped, ran⟩ := bind_ok ran
-      obtain ⟨final, settled, made⟩ := orderJournal_ok ran
+      obtain ⟨final, settled, made⟩ := orderJournal_settled ran
       exact ⟨payload, by simp, by simp, ⟨start, initial, moved, final, clocked, stepped, settled, made, fired, admitted,
         chosen⟩⟩
   · exact .inr ⟨_, _, .inl ⟨_, rfl⟩, ran⟩
@@ -74,18 +74,12 @@ theorem step_ok {hooks : Hooks} {program : Program} {before : Option State} {inp
     exact .inr ⟨_, _, .inr (.inl ⟨reported, rfl⟩), ran⟩
   · simp at ran
 
-theorem nextToken_rest {ctx : Ctx} {state : State} {token : Token} {rest : List Token}
-    (next : nextToken ctx state = some (token, rest)) : rest.Sublist state.tokens := by
-  rcases nextToken_shape next with ⟨_, queued⟩ | queued <;> rw [queued]
-  · exact List.sublist_cons_self token rest
-  · exact List.sublist_append_left rest [token]
-
 /-- Queued work whose scope occurrence is gone fails its closure micro-step with `queued-work-scope-gone`, after a
 transaction boundary too: the input's outcome is that invariant failure, never `unsupported` (#121, #148). -/
-theorem microStep_scope_gone {hooks : Hooks} {ctx : Ctx} {signal : Signal} {state : State}
+theorem microStep_scope_gone {hooks : Hooks} {ctx : Ctx} {unit : UnitKey} {signal : Signal} {state : State}
     (fresh : stale state (signalWork hooks ctx signal) = false)
     (absent : gone state (signalWork hooks ctx signal) = some "queued-work-scope-gone") :
-    microStep hooks ctx (.signal (signalName signal)) none State.root (dispatchSignal hooks ctx signal) state =
+    microStep hooks ctx unit (.signal (signalName signal)) none State.root (dispatchSignal hooks ctx signal) state =
       .error (.semanticFailure .invariant "queued-work-scope-gone") :=
   microStep_invariant (dispatchSignal_eq ▸ perform_gone fresh absent)
 
@@ -105,7 +99,7 @@ theorem onRunning_rejects {hooks : Hooks} {ctx : Ctx} {input : Input} {state : S
   simp only [onRunning_eq]
   split
   · exact ⟨_, rfl⟩
-  · cases clock : advanceClock (inputHead input).2.1 { state with journal := [], outbox := [], draft := {}, writes := [] } with
+  · cases clock : advanceClock (inputHead input).2.1 { state with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } with
     | error failure =>
       obtain ⟨code, rfl⟩ := advanceClock_error clock
       exact ⟨code, by simp [bind, Except.bind]⟩

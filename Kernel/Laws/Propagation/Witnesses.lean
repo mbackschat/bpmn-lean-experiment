@@ -127,7 +127,7 @@ theorem no_boundary_token_rejected :
     ¬ InterruptingCatch true (· = raising) triggerScope [boundaryFlow] running { recovered with tokens := [] } := fun law => by
   obtain ⟨_, ⟨kept, split, _⟩, _⟩ := law rfl
   have := congrArg List.length split
-  simp at this
+  simp [Laws.State.allQueuedTokens, recovered, running] at this
 
 /-- Resetting an activation counter is rejected. -/
 theorem counter_reset_rejected :

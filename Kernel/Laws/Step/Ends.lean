@@ -340,18 +340,27 @@ theorem complete_ends {hooks : Hooks} {b : State} {src : Program → State → P
 
 /-! ### The draft a micro-step leaves -/
 
+/-- A moved token's micro-step is its arrival's or its deferred begin's. -/
+theorem moveToken_microStep {hooks : Hooks} {ctx : Ctx} {unit : UnitKey} {token : Token} {state after : State}
+    (ran : moveToken hooks ctx unit token state = .ok after) :
+    ∃ cause element owner body, microStep hooks ctx unit cause element owner body state = .ok after := by
+  cases token with
+  | flow => exact ⟨_, _, _, _, moveToken_flow ran⟩
+  | begin => exact ⟨_, _, _, _, moveToken_begin ran⟩
+
 /-- Every closure micro-step is a micro-step: a moved token's is its arrival's or its deferred begin's. -/
-theorem ClosureStep.microStep {hooks : Hooks} {ctx : Ctx} {state after : State} (step : ClosureStep hooks ctx state after) :
-    ∃ cause element owner body start, microStep hooks ctx cause element owner body start = .ok after := by
+theorem ClosureStep.microStep {hooks : Hooks} {ctx : Ctx} {log : RunLog} {unit : UnitKey} {state after : State}
+    (step : ClosureStep hooks ctx log unit state after) :
+    ∃ cause element owner body start, microStep hooks ctx unit cause element owner body start = .ok after := by
   cases step with
   | signal _ _ ran => exact ⟨_, _, _, _, _, ran⟩
-  | @token token _ _ _ _ ran =>
-    cases token with
-    | flow => exact ⟨_, _, _, _, _, moveToken_flow ran⟩
-    | begin => exact ⟨_, _, _, _, _, moveToken_begin ran⟩
+  | token _ _ _ ran =>
+    obtain ⟨cause, element, owner, rest₁⟩ := moveToken_microStep ran
+    obtain ⟨body, moved⟩ := rest₁
+    exact ⟨cause, element, owner, body, _, moved⟩
   | idle _ _ _ _ ran => exact ⟨_, _, _, _, _, ran⟩
   | reoffer _ _ _ _ _ ran => exact ⟨_, _, _, _, _, ran⟩
-  | finish _ _ _ _ _ _ ran => exact ⟨_, _, _, _, _, ran⟩
+  | finish _ _ _ _ _ _ _ ran => exact ⟨_, _, _, _, _, ran⟩
 
 /-- A committed micro-step leaves a draft `keeps` holds of when it holds of the empty draft and the hooks
 `Step.conclude` runs once it has journalled the draft, `Hooks.cancelled` and `Hooks.written`, keep it. -/
@@ -360,10 +369,11 @@ theorem microStep_draft {hooks : Hooks} {keeps : Draft → Prop} (empty : keeps 
       keeps after.draft)
     (written : ∀ ctx writes state after, keeps state.draft → hooks.written ctx writes state = .ok after →
       keeps after.draft)
-    {ctx : Ctx} {cause : Cause} {element : Option ElementId} {owner : ScopeOccurrenceId} {body : State → Outcome}
-    {state after : State} (ran : microStep hooks ctx cause element owner body state = .ok after) : keeps after.draft := by
+    {ctx : Ctx} {unit : UnitKey} {cause : Cause} {element : Option ElementId} {owner : ScopeOccurrenceId}
+    {body : State → Outcome} {state after : State} (ran : microStep hooks ctx unit cause element owner body state = .ok after) : keeps after.draft := by
   obtain ⟨_, _, _, ⟨_, concluded⟩⟩ := microStep_ok ran
-  obtain ⟨notified, notifying, writing⟩ := conclude_ok concluded
+  obtain ⟨_, notified, written', rest₁⟩ := conclude_ok concluded
+  obtain ⟨notifying, writing, rfl⟩ := rest₁
   have fold : ∀ (occurrences : List Occurrence) (start finish : State), keeps start.draft →
       occurrences.foldlM (fun state occurrence => hooks.cancelled ctx occurrence state) start = .ok finish →
       keeps finish.draft := by
@@ -378,7 +388,8 @@ theorem microStep_draft {hooks : Hooks} {keeps : Draft → Prop} (empty : keeps 
       simp only [List.foldlM_cons] at folded
       obtain ⟨mid, told, folded⟩ := bind_ok folded
       exact ih mid finish (cancelled _ _ _ _ kept told) folded
-  exact written _ _ _ _ (fold _ _ _ empty notifying) writing
+  rw [Laws.State.queueBatch_eq]
+  exact (show keeps written'.draft from written _ _ _ _ (fold _ _ _ empty notifying) writing)
 
 /-- A committed micro-step leaves no end fact in the draft when the hooks `Step.conclude` runs once it has journalled the
 draft, `Hooks.cancelled` and `Hooks.written`, add none to a draft without any. -/
@@ -387,8 +398,8 @@ theorem microStep_drafts {hooks : Hooks}
       after.draft.ended = [])
     (written : ∀ ctx writes state after, state.draft.ended = [] → hooks.written ctx writes state = .ok after →
       after.draft.ended = [])
-    {ctx : Ctx} {cause : Cause} {element : Option ElementId} {owner : ScopeOccurrenceId} {body : State → Outcome}
-    {state after : State} (ran : microStep hooks ctx cause element owner body state = .ok after) : after.draft.ended = [] :=
+    {ctx : Ctx} {unit : UnitKey} {cause : Cause} {element : Option ElementId} {owner : ScopeOccurrenceId}
+    {body : State → Outcome} {state after : State} (ran : microStep hooks ctx unit cause element owner body state = .ok after) : after.draft.ended = [] :=
   microStep_draft (keeps := (·.ended = [])) rfl cancelled written ran
 
 /-- PD2: a committed micro-step leaves the draft's Ready list empty when `Hooks.cancelled` and `Hooks.written` hold
@@ -399,8 +410,8 @@ theorem microStep_ready {hooks : Hooks}
       after.draft.ready = [])
     (written : ∀ ctx writes state after, state.draft.ready = [] → hooks.written ctx writes state = .ok after →
       after.draft.ready = [])
-    {ctx : Ctx} {cause : Cause} {element : Option ElementId} {owner : ScopeOccurrenceId} {body : State → Outcome}
-    {state after : State} (ran : microStep hooks ctx cause element owner body state = .ok after) : after.draft.ready = [] :=
+    {ctx : Ctx} {unit : UnitKey} {cause : Cause} {element : Option ElementId} {owner : ScopeOccurrenceId}
+    {body : State → Outcome} {state after : State} (ran : microStep hooks ctx unit cause element owner body state = .ok after) : after.draft.ready = [] :=
   microStep_draft (keeps := (·.ready = [])) rfl cancelled written ran
 
 end Kernel.Laws.Step

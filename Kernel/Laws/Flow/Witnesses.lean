@@ -160,7 +160,7 @@ theorem nothing_upstream_ready : InclusiveReady diagram (fun _ _ => False) [flow
   refine ⟨⟨flowA, by simp, arrivedA, by simp [doneAtC, waitingAtC], rfl, rfl⟩, ?_⟩
   intro flow _ _ reach
   rcases reach with ⟨_, token, _⟩ | ⟨element, _, position⟩
-  · simp [doneAtC, waitingAtC] at token
+  · simp [Laws.State.allQueuedTokens, doneAtC, waitingAtC] at token
   obtain ⟨⟨other, holds⟩, _, _⟩ := position
   rcases holds with ⟨occurrence, member, facts⟩ | ⟨child, member, parent, _⟩ | ⟨_, token, _⟩
   · obtain ⟨_, _, same⟩ := facts
@@ -170,7 +170,7 @@ theorem nothing_upstream_ready : InclusiveReady diagram (fun _ _ => False) [flow
   · simp only [doneAtC, waitingAtC, List.mem_singleton] at member
     subst member
     simp [root, ScopeOccurrence.parent] at parent
-  · simp [doneAtC, waitingAtC] at token
+  · simp [Laws.State.allQueuedTokens, doneAtC, waitingAtC] at token
 
 /-! ## Link Events -/
 

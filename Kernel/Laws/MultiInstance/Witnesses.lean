@@ -357,19 +357,19 @@ theorem begins_queued {program : Program} {loop : MultiInstance} (looping : Loop
     exact ⟨rfl, rfl⟩
   targets request queued body continued _ := by
     rcases queued with signal | token
-    · simp only [queuing, List.mem_singleton] at signal
+    · simp only [Laws.State.allSignals, queuing, entered, Laws.State.toList_empty, List.map_nil, List.nil_append, List.mem_singleton] at signal
       have := Signal.begin.inj signal
       subst this
       obtain rfl := Continuation.multiInstance.inj continued
       exact ⟨running, by simp [queuing, entered], rfl, rfl, rfl, by simp [running, secondBegin]⟩
-    · simp [queuing, entered] at token
+    · simp [Laws.State.allQueuedTokens, queuing, entered] at token
   reserved request queued _ _ _ id reserved := by
     rcases queued with signal | token
-    · simp only [queuing, List.mem_singleton] at signal
+    · simp only [Laws.State.allSignals, queuing, entered, Laws.State.toList_empty, List.map_nil, List.nil_append, List.mem_singleton] at signal
       have := Signal.begin.inj signal
       subst this
       simp [secondBegin] at reserved
-    · simp [queuing, entered] at token
+    · simp [Laws.State.allQueuedTokens, queuing, entered] at token
   reservations o inside unbegun := by
     simp only [queuing, List.mem_singleton] at inside
     subst inside
@@ -384,14 +384,19 @@ theorem begins_queued {program : Program} {loop : MultiInstance} (looping : Loop
       exact absurd (List.mem_singleton.mp member) Laws.Step.compensate_ne_begin
     · obtain ⟨_, member, _⟩ := resumed
       simp [queuing, entered] at member
-  signalsOrdered _ _ first second _ _ precedes _ _ := by
-    have := precedes.length_le
-    simp [queuing] at this
-  tokensOrdered _ _ _ _ _ _ precedes _ _ := by
-    have := precedes.length_le
-    simp [queuing, entered] at this
-  queuesOrdered _ _ _ _ _ _ _ token _ _ := by simp [queuing, entered] at token
-  deferred _ _ token := by simp [queuing, entered] at token
+  ordered _ _ := {
+    signals := fun first second _ _ precedes _ _ => by
+      have := precedes.length_le
+      simp [queuing] at this
+    tokens := fun _ _ _ _ precedes _ _ => by
+      have := precedes.length_le
+      simp [queuing, entered] at this
+    queues := fun _ _ _ _ _ token _ _ => by simp [queuing, entered] at token
+    apart := fun _ _ _ _ _ _ _ keyed _ => by simp [queuing, entered] at keyed
+    keyedSignals := fun _ _ _ _ _ _ one _ _ _ _ => by simp [queuing, entered] at one
+    keyedTokens := fun _ _ _ _ _ _ one _ _ _ => by simp [queuing, entered] at one
+    keyedQueues := fun _ _ _ _ _ _ one _ _ _ => by simp [queuing, entered] at one }
+  deferred _ _ token := by simp [Laws.State.allQueuedTokens, queuing, entered] at token
   above run member request index queued scope inQueue for_ slot begun := by
     simp only [queuing, entered, List.mem_singleton] at member
     subst member
@@ -399,7 +404,7 @@ theorem begins_queued {program : Program} {loop : MultiInstance} (looping : Loop
     simp only [queuing, List.mem_singleton] at inside
     subst inside
     rcases inQueue with signal | token
-    · simp only [queuing, List.mem_singleton] at signal
+    · simp only [Laws.State.allSignals, queuing, entered, Laws.State.toList_empty, List.map_nil, List.nil_append, List.mem_singleton] at signal
       have := Signal.begin.inj signal
       subst this
       obtain ⟨_, queuedSlot⟩ := for_
@@ -415,7 +420,7 @@ theorem begins_queued {program : Program} {loop : MultiInstance} (looping : Loop
         | 1, slotted => simp [running, firstInstance, firstScope, secondScope] at slotted
         | _ + 2, slotted => simp [running] at slotted
       omega
-    · simp [queuing, entered] at token
+    · simp [Laws.State.allQueuedTokens, queuing, entered] at token
 
 /-- A pending reservation of a looping element breaks `BeginsQueued`. -/
 theorem looping_occur_rejected {program : Program} {loop : MultiInstance} (looping : LoopOf program review loop) :
@@ -437,7 +442,7 @@ theorem reversed_begins_rejected {program : Program} :
     ¬ BeginsQueued program
       { entered with occurrences := [], signals := [.begin secondBegin, .begin { secondBegin with scope := firstScope }] } :=
     fun queued => by
-  have := queued.signalsOrdered running (by simp [entered]) secondBegin { secondBegin with scope := firstScope } 1 0
+  have := (queued.ordered running (by simp [entered])).signals secondBegin { secondBegin with scope := firstScope } 1 0
     (List.Sublist.refl _) ⟨rfl, rfl⟩ ⟨rfl, rfl⟩
   omega
 
@@ -447,7 +452,7 @@ theorem begun_above_rejected {program : Program} :
       { entered with occurrences := [secondInstance], signals := [.begin { secondBegin with scope := firstScope }] } :=
     fun queued => by
   have := queued.above running (by simp [entered]) { secondBegin with scope := firstScope } 1 0 secondScope
-    (.inl (by simp)) ⟨rfl, rfl⟩ rfl ⟨secondInstance, by simp, rfl, rfl⟩
+    (.inl (by simp [Laws.State.allSignals, entered])) ⟨rfl, rfl⟩ rfl ⟨secondInstance, by simp, rfl, rfl⟩
   omega
 
 end Kernel.Laws.MultiInstance

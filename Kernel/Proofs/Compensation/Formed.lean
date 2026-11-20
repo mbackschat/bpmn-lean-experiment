@@ -100,12 +100,12 @@ theorem Formed.shrink {precedes : Compensable → Compensable → Prop} {s t : S
     (counted : ∀ key, Counted s key → Counted t key)
     (retained : t.slots.compensation.retained.Sublist s.slots.compensation.retained)
     (runs : t.slots.compensation.runs.Sublist s.slots.compensation.runs) (present : RetainedPresent t)
-    (triggers : (Laws.Step.triggersOf t.signals).Sublist (Laws.Step.triggersOf s.signals))
-    (resumes : ∀ resume ∈ Laws.Step.resumesOf t.signals, resume ∈ Laws.Step.resumesOf s.signals)
+    (triggers : Laws.State.Fewer (Laws.Step.triggersOf (Laws.State.allSignals t)) (Laws.Step.triggersOf (Laws.State.allSignals s)))
+    (resumes : ∀ resume ∈ Laws.Step.resumesOf (Laws.State.allSignals t), resume ∈ Laws.Step.resumesOf (Laws.State.allSignals s))
     (reserves : ReservesFresh s t) : Formed precedes t := by
-  have queued : (queuedTriggers t).Sublist (queuedTriggers s) := by
+  have queued : Laws.State.Fewer (queuedTriggers t) (queuedTriggers s) := by
     unfold queuedTriggers
-    refine List.Sublist.trans (filterMap_sublist_of fun held inside => ?_) (triggers.filterMap _)
+    refine Laws.State.Fewer.trans (.of_sublist (filterMap_sublist_of fun held inside => ?_)) (triggers.filterMap _)
     rcases held with trigger | origin
     · exact .inl rfl
     · have below := formed.triggers.issued origin (triggers.subset inside)
@@ -121,12 +121,13 @@ theorem Formed.shrink {precedes : Compensable → Compensable → Prop} {s t : S
     fun completion member => Nat.lt_of_lt_of_le (formed.issued completion (completed.subset member)) issued,
     fun run member => formed.settled run (runs.subset member), formed.keyed.sublist (runs.map _),
     fun run member => grows.issued (formed.runsIssued run (runs.subset member)), ?_, ?_⟩
-  · refine ⟨formed.triggers.apart.sublist (((runs.filter _).map _).append queued), fun run member grouped held =>
+  · refine ⟨((Laws.State.Fewer.of_sublist ((runs.filter _).map _)).append queued).nodup formed.triggers.apart,
+      fun run member grouped held =>
       formed.triggers.grouped run (runs.subset member) grouped (queued.subset held), fun trigger member => ?_,
       fun origin inside => ?_, fun o inside unbegun trigger member => ?_⟩
-    · exact counted _ (formed.triggers.counted trigger ((((runs.map _).append queued)).subset member))
+    · exact counted _ (formed.triggers.counted trigger (((Laws.State.Fewer.of_sublist (runs.map _)).append queued).subset member))
     · exact grows.issued (formed.triggers.issued origin (triggers.subset inside))
-    · have held := ((runs.map _).append queued).subset member
+    · have held := ((Laws.State.Fewer.of_sublist (runs.map _)).append queued).subset member
       rcases reserves o inside unbegun with ⟨prior, was, waiting, same⟩ | fresh
       · rw [same]
         exact formed.triggers.unreserved prior was waiting trigger held
@@ -157,15 +158,15 @@ issues only upward and keeps a sublist of the queue. -/
 theorem Formed.same {precedes : Compensable → Compensable → Prop} {s t : State} (formed : Formed precedes s)
     (scopes : t.scopes = s.scopes) (instanceId : t.instanceId = s.instanceId) (issued : s.nextPosition ≤ t.nextPosition)
     (activations : t.activations = s.activations) (compensation : t.slots.compensation = s.slots.compensation)
-    (signals : t.signals.Sublist s.signals)
+    (signals : Laws.State.Fewer (Laws.State.allSignals t) (Laws.State.allSignals s))
     (occurrences : ∀ o ∈ t.occurrences, o ∈ s.occurrences := by exact fun _ held => held)
     (ordinals : t.scopeOrdinals = s.scopeOrdinals := by exact rfl) : Formed precedes t := by
   have ids : scopeIds t = scopeIds s := by rw [scopeIds, scopes]; rfl
   refine formed.shrink (fun x present _ => ⟨ids ▸ present, Laws.State.instanceOf_congr scopes instanceId x⟩) issued
     (.of_same (congrArg (List.map ScopeOccurrence.id) scopes) ordinals)
     (fun _ held => Laws.State.Counted.congr activations held) (by rw [compensation]; exact .refl _)
-    (by rw [compensation]; exact .refl _) (fun record member => ?_) (Laws.Step.triggersOf_sublist signals)
-    (fun _ inside => (Laws.Step.resumesOf_sublist signals).subset inside) (.same occurrences scopes instanceId)
+    (by rw [compensation]; exact .refl _) (fun record member => ?_) (Laws.Step.triggersOf_fewer signals)
+    (fun _ inside => (Laws.Step.resumesOf_fewer signals).subset inside) (.same occurrences scopes instanceId)
   rw [compensation] at member
   exact ids ▸ formed.retained record member
 
@@ -178,9 +179,9 @@ theorem Formed.signal {precedes : Compensable → Compensable → Prop} {s : Sta
       (t := { s with signals := s.signals ++ [signal] }) rfl rfl x⟩) (Nat.le_refl _) (.refl _)
     (fun _ held => held) (.refl _) (.refl _) formed.retained ?_ (fun resume inside => ?_)
     (.same (fun _ held => held) rfl rfl)
-  · rw [Laws.Step.triggersOf_append, triggers, List.append_nil]
+  · rw [Laws.State.allSignals_append, Laws.Step.triggersOf_append, triggers, List.append_nil]
     exact .refl _
-  · rwa [Laws.Step.resumesOf_append, resumes, List.append_nil] at inside
+  · rwa [Laws.State.allSignals_append, Laws.Step.resumesOf_append, resumes, List.append_nil] at inside
 
 /-- Entering a scope occurrence under a fresh key, below a parent, keeps `Formed` when it keeps the slot, the counts,
 the instance identity and the queue: no queued Cancel raise names the new key, never issued before, and the others
@@ -190,7 +191,7 @@ theorem Formed.enter {precedes : Compensable → Compensable → Prop} {program 
     (scopes : t.scopes = s.scopes ++ [entry]) (fresh : Laws.State.ScopeFresh s t entry.id) (placed : entry.parent.isSome)
     (nextPosition : t.nextPosition = s.nextPosition) (activations : t.activations = s.activations)
     (instanceId : t.instanceId = s.instanceId) (compensation : t.slots.compensation = s.slots.compensation)
-    (signals : t.signals = s.signals) (occurrences : t.occurrences = s.occurrences) : Formed precedes t := by
+    (signals : Laws.State.allSignals t = Laws.State.allSignals s) (occurrences : t.occurrences = s.occurrences) : Formed precedes t := by
   have ids : scopeIds t = scopeIds s ++ [entry.id] := by simp [scopeIds, scopes]
   have nodup : (scopeIds t).Nodup := by
     rw [ids]
@@ -368,10 +369,17 @@ the journal change nothing it reads but the queue, which they shorten, and a beg
 theorem formed_stepAlongside (precedes : Compensable → Compensable → Prop) (program : Program) :
     StepAlongside program (Formed precedes) where
   toFrameAlongside := formed_frameAlongside precedes program
-  journal _ _ _ kept _ _ := kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
-  runOrder _ _ kept := kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
-  dequeue _ _ _ fewer kept := kept.same rfl rfl (Nat.le_refl _) rfl rfl fewer
-  untoken _ _ _ _ kept := kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
+  journal _ _ _ _ kept _ _ _ := kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
+  queueBatch s unit _ kept := by
+    have fewer := Laws.State.allSignals_queueBatch s unit
+    rw [Laws.State.queueBatch_eq] at fewer ⊢
+    exact kept.same rfl rfl (Nat.le_refl _) rfl rfl fewer
+  runOrder _ _ _ kept after made := by
+    obtain rfl := Laws.Step.orderJournal_of made
+    exact kept.same rfl rfl (Nat.le_refl _) rfl rfl (.of_sublist (List.sublist_append_right _ _))
+  dequeue _ _ _ fewer kept := kept.same rfl rfl (Nat.le_refl _) rfl rfl ((Laws.State.Fewer.of_sublist fewer).append_left _)
+  unqueue _ _ _ kept := kept.same rfl rfl (Nat.le_refl _) rfl rfl (Laws.State.values_erase_fewer.append_right _)
+  untoken _ _ _ kept := kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
   begin s request role sourceType well _ _ _ _ kept := by
     have begins := Laws.State.beginOccurrence_begins well.activations request role sourceType
     have counters : ∀ key, Counted s key → Counted (s.beginOccurrence request role sourceType).1 key := by
@@ -481,7 +489,7 @@ theorem Formed.append {precedes : Compensable → Compensable → Prop} {s : Sta
   have queued : queuedTriggers { s with signals := s.signals ++ [signal] } =
       queuedTriggers s ++ (queuedTrigger s held).toList := by
     unfold queuedTriggers
-    rw [same, Laws.Step.triggersOf_append, carries, List.filterMap_append]
+    rw [same, Laws.State.allSignals_append, Laws.Step.triggersOf_append, carries, List.filterMap_append]
     cases found : queuedTrigger s held <;> simp [found]
   have extra : ∀ trigger ∈ (queuedTrigger s held).toList, FreshTrigger s trigger := fun trigger inside =>
     fresh trigger (by simpa using inside)
@@ -501,7 +509,7 @@ theorem Formed.append {precedes : Compensable → Compensable → Prop} {s : Sta
     rcases List.mem_append.mp member with old | named
     · exact formed.triggers.counted trigger old
     · exact (extra trigger named).2.2.1
-  · rw [Laws.Step.triggersOf_append, carries] at inside
+  · rw [Laws.State.allSignals_append, Laws.Step.triggersOf_append, carries] at inside
     rcases List.mem_append.mp inside with old | named
     · exact formed.triggers.issued origin old
     · exact issued origin (List.mem_singleton.mp named).symm
@@ -511,7 +519,7 @@ theorem Formed.append {precedes : Compensable → Compensable → Prop} {s : Sta
     · exact formed.triggers.unreserved o inside unbegun trigger old
     · exact (extra trigger named).2.2.2 o inside unbegun
   · have carried := Laws.Step.mem_resumesOf.mpr ⟨_, _, _, _, member⟩
-    rw [Laws.Step.resumesOf_append] at carried
+    rw [Laws.State.allSignals_append, Laws.Step.resumesOf_append] at carried
     rcases List.mem_append.mp carried with old | named
     · obtain ⟨scope', activity', trigger', rest⟩ := Laws.Step.mem_resumesOf.mp old
       obtain ⟨leave', inside⟩ := rest
@@ -553,7 +561,8 @@ boundaries changes only items and occurrences. -/
 theorem rolledBack_frame {before searched : State}
     (terminated : before = searched ∨ ∃ host, before = searched.disarm host) :
     before.scopes = searched.scopes ∧ before.instanceId = searched.instanceId ∧
-      before.activations = searched.activations ∧ before.slots = searched.slots ∧ before.signals = searched.signals := by
+      before.activations = searched.activations ∧ before.slots = searched.slots ∧
+        Laws.State.allSignals before = Laws.State.allSignals searched := by
   rcases terminated with rfl | ⟨host, rfl⟩
   · exact ⟨rfl, rfl, rfl, rfl, rfl⟩
   · rw [Laws.State.disarm_eq]
@@ -575,7 +584,8 @@ theorem formed_compensate (program : Program) (precedes : Compensable → Compen
   obtain ⟨base, raised, origin, rest⟩ := rolls
   obtain ⟨searched, popped, standing, rest⟩ := rest
   obtain ⟨cancels, steady, terminated, named⟩ := rest
-  obtain ⟨queue, holds, heads, made⟩ := popped
+  obtain ⟨queue, unit, holds, rest₁⟩ := popped
+  obtain ⟨found, made⟩ := rest₁
   have formedQueue := holds.2
   have baseScopes : base.scopes = queue.scopes := by rw [made]
   have baseId : base.instanceId = queue.instanceId := by rw [made]
@@ -591,16 +601,22 @@ theorem formed_compensate (program : Program) (precedes : Compensable → Compen
     rw [cleared.instances _ inside, Laws.State.instanceOf_congr frame.1 frame.2.1, steady.instances,
       Laws.State.instanceOf_congr baseScopes baseId]
   -- the trigger is the queue's first queued one
-  have first : queuedTriggers queue = trigger :: (Laws.Step.triggersOf base.signals).filterMap (queuedTrigger queue) := by
+  have first : (queuedTriggers queue).Perm
+      (trigger :: (Laws.Step.triggersOf (Laws.State.allSignals base)).filterMap (queuedTrigger queue)) := by
     have stood : origin.scope ∈ scopeIds queue := by rwa [scopeIds, ← baseScopes]
     unfold queuedTriggers
-    rw [heads, ← List.singleton_append, Laws.Step.triggersOf_append, Laws.Step.triggersOf_raise, cancels,
-      List.filterMap_append]
+    have popped : (Laws.Step.triggersOf (Laws.State.allSignals queue)).Perm
+        (Laws.Step.triggersOf ([Signal.raise raised origin] ++ Laws.State.allSignals base)) := by
+      rw [made]
+      exact Laws.Step.triggersOf_perm (Laws.State.allSignals_pop found)
+    refine (popped.filterMap _).trans ?_
+    rw [Laws.Step.triggersOf_append, Laws.Step.triggersOf_raise, cancels, List.filterMap_append]
     simp only [↓reduceIte, List.filterMap_cons, List.filterMap_nil, queuedTrigger, stood, named,
       ← Laws.State.instanceOf_congr baseScopes baseId, ← steady.instances, List.singleton_append]
+    rfl
   have apart := formedQueue.triggers.apart
   unfold heldTriggers at apart
-  rw [first] at apart
+  replace apart := (first.append_left _).nodup_iff.mp apart
   obtain ⟨-, unrepeated, disjoint⟩ := List.nodup_append.mp apart
   have notLater := (List.nodup_cons.mp unrepeated).1
   have baseSlots : base.slots = queue.slots := by rw [made]
@@ -611,9 +627,7 @@ theorem formed_compensate (program : Program) (precedes : Compensable → Compen
       rw [frame.2.2.2.1] at inside
       have earlier := steady.runs run inside
       rwa [baseSlots] at earlier
-  have headed : trigger ∈ queuedTriggers queue := by
-    rw [first]
-    exact List.mem_cons_self ..
+  have headed : trigger ∈ queuedTriggers queue := first.mem_iff.mpr (List.mem_cons_self ..)
   -- an unbegun reservation of the cleared state stood unbegun in the queue, under the same key
   have heldBack : ∀ o ∈ (before.clearInside scope).occurrences, o ∈ queue.occurrences := fun o inside => by
     have was := ((cleared.occurrences o).mp inside).1
@@ -648,7 +662,7 @@ theorem formed_compensate (program : Program) (precedes : Compensable → Compen
     · unfold queuedTriggers at inQueued
       obtain ⟨held, inside, carried⟩ := List.mem_filterMap.mp inQueued
       obtain ⟨more, appended, quiet⟩ := steady.signals
-      rw [Laws.State.clearInside_signals, frame.2.2.2.2, appended, Laws.Step.triggersOf_append,
+      rw [Laws.State.allSignals_clearInside, frame.2.2.2.2, appended, Laws.Step.triggersOf_append,
         Laws.Step.triggersOf_untriggered quiet, List.append_nil] at inside
       exact notLater (List.mem_filterMap.mpr ⟨held, inside, queuedTrigger_back chain carried⟩)
   · exact formedQueue.triggers.grouped run (runsBack run member) grouped (same ▸ headed)
@@ -664,7 +678,8 @@ theorem queuedTrigger_congr {s t : State} (scopes : t.scopes = s.scopes) (named 
 
 /-- A state with another's scope occurrences, instance identity and queued triggers names the same ones. -/
 theorem queuedTriggers_congr {s t : State} (scopes : t.scopes = s.scopes) (instanceId : t.instanceId = s.instanceId)
-    (triggers : Laws.Step.triggersOf t.signals = Laws.Step.triggersOf s.signals) : queuedTriggers t = queuedTriggers s := by
+    (triggers : Laws.Step.triggersOf (Laws.State.allSignals t) = Laws.Step.triggersOf (Laws.State.allSignals s)) :
+    queuedTriggers t = queuedTriggers s := by
   unfold queuedTriggers
   rw [triggers, queuedTrigger_congr scopes instanceId]
 
@@ -678,7 +693,7 @@ theorem thrower_fresh {program : Program} {precedes : Compensable → Compensabl
     (well : WellFormed program t) (occurrences : t.occurrences = base.occurrences)
     (scopes : t.scopes = base.scopes)
     (instanceId : t.instanceId = base.instanceId) (compensation : t.slots.compensation = base.slots.compensation)
-    (triggers : Laws.Step.triggersOf t.signals = Laws.Step.triggersOf base.signals) :
+    (triggers : Laws.Step.triggersOf (Laws.State.allSignals t) = Laws.Step.triggersOf (Laws.State.allSignals base)) :
     occurrence ∈ t.occurrences ∧ FreshTrigger t { processInstanceId := t.instanceOf occurrence.scope,
                                                   element := occurrence.element, activation := occurrence.activation } := by
   obtain ⟨before, request, rest⟩ := begun
@@ -753,7 +768,7 @@ theorem formed_occursAlongside (program : Program) (precedes : Compensable → C
       · exact thrower_fresh begun well rfl rfl rfl rfl rfl
       · rw [Laws.State.signal_eq] at well ⊢
         exact thrower_fresh begun well rfl rfl rfl rfl (by
-          rw [Laws.Step.triggersOf_append, show Laws.Step.triggersOf [Signal.complete occurrence.id leave [] .outward] = []
+          rw [Laws.State.allSignals_append, Laws.Step.triggersOf_append, show Laws.Step.triggersOf [Signal.complete occurrence.id leave [] .outward] = []
             from rfl, List.append_nil])
     cases cancels : raised.isCancel
     · exact kept.signal _ (by rw [Laws.Step.triggersOf_raise, cancels]; rfl)

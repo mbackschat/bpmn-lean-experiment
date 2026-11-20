@@ -73,6 +73,7 @@ import {
   type State,
   SemanticCause,
   semanticFailure,
+  allTokens,
 } from "../state.js";
 import {
   ScopeRole, boundaryFire, clearInside, ctxOutputReads, ctxRequireMappingsWith, ctxRunsAsInstance, idleWithout, lastWrites,
@@ -370,7 +371,7 @@ function busyCalledRoot(ctx: Ctx, origin: Origin, occurrence: ScopeOccurrence, s
   const work = activity === null ? null : workCall(activity[1].work);
   const mapsOutputs = work !== null && (work.outputs.length > 0 || work.propagateAllOutputs);
   const otherPath = state.occurrences.some((standing) => standing.scope === occurrence.id && standing.id !== origin.thrower) ||
-    state.tokens.some((token) => token.scope === occurrence.id);
+    allTokens(state).some((token) => token.scope === occurrence.id);
   return origin.scope === occurrence.id && mapsOutputs && otherPath;
 }
 

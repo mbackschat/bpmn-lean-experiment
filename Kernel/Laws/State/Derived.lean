@@ -102,12 +102,25 @@ theorem clearInside_signals (s : State) (scope : ScopeOccurrenceId) (keep : List
   obtain ⟨_, made⟩ := clearInside_eq s scope keep
   rw [made]
 
+theorem allSignals_clearInside (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
+    allSignals (s.clearInside scope keep) = allSignals s := by
+  obtain ⟨_, made⟩ := clearInside_eq s scope keep
+  rw [made]
+  rfl
+
 /-- Clearing a scope occurrence only drops tokens, whatever it clears. -/
 theorem clearInside_tokens (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
     (s.clearInside scope keep).tokens.Sublist s.tokens := by
   obtain ⟨_, made⟩ := clearInside_eq s scope keep
   rw [made]
   exact List.filter_sublist
+
+theorem allQueuedTokens_clearInside (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
+    (allQueuedTokens (s.clearInside scope keep)).Sublist (allQueuedTokens s) := by
+  obtain ⟨_, made⟩ := clearInside_eq s scope keep
+  rw [made]
+  simp only [allQueuedTokens, Std.ExtTreeMap.toList_filter]
+  exact ((List.filter_sublist).map _).append List.filter_sublist
 
 /-- Clearing drops scope occurrences and takes no position, whatever it clears. -/
 theorem clearInside_shrinks (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
@@ -154,6 +167,11 @@ theorem leaveScope_occurrences (s : State) (scope : ScopeOccurrenceId) :
 theorem leaveScope_signals (s : State) (scope : ScopeOccurrenceId) : (s.leaveScope scope).signals = s.signals := by
   rw [(leaveScope_eq s scope).1]
   exact clearInside_signals s scope []
+
+theorem allSignals_leaveScope (s : State) (scope : ScopeOccurrenceId) :
+    allSignals (s.leaveScope scope) = allSignals s := by
+  rw [(leaveScope_eq s scope).1]
+  exact allSignals_clearInside s scope []
 
 /-- Leaving a scope occurrence removes it and the scope occurrences below it, with the records they retain and the runs
 in its subtree, and keeps the counters: what a compensation run's release changes, read without a well-formed state. -/

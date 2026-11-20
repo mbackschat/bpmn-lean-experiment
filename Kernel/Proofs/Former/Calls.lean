@@ -73,7 +73,7 @@ def ReturnContinuesCaller (hooks : Hooks) : Prop :=
     (∃ new, Queues state after new ∧ ∀ queued ∈ new, ∀ id leave writes rule, queued = .complete id leave writes rule →
       id = occurrence.id) ∧
     (∀ other ∈ state.scopes, other.id ≠ root.id → other ∈ after.scopes) ∧
-    (∀ item ∈ itemList state.openItems, ¬ Within state item.scope root.id → item ∈ itemList after.openItems) ∧ after.tokens = state.tokens
+    (∀ item ∈ itemList state.openItems, ¬ Within state item.scope root.id → item ∈ itemList after.openItems) ∧ Laws.State.allQueuedTokens after = Laws.State.allQueuedTokens state
 
 /-! ## The identities of called instances -/
 
@@ -465,7 +465,8 @@ theorem returnContinuesCaller {hooks : Hooks} (call : hooks.completeCall = Featu
   rw [call] at ran
   obtain ⟨outputs, rfl⟩ := Laws.Work.completeCall_queues ran
   rw [Laws.State.signal_eq]
-  refine ⟨⟨[.complete occurrence.id .outgoing outputs .outward], rfl, fun queued member id leave writes rule same => ?_⟩,
+  refine ⟨⟨[.complete occurrence.id .outgoing outputs .outward], Laws.State.allSignals_append _ _,
+    fun queued member id leave writes rule same => ?_⟩,
     fun other inside _ => inside, fun item inside _ => Laws.State.items_same inside rfl, rfl⟩
   rw [List.mem_singleton.mp member] at same
   exact (Laws.Step.complete_inj same).1.symm
@@ -759,14 +760,20 @@ theorem callsFormed_occursAlongside (program : Program) : OccursAlongside progra
 /-- `Step`'s own phases keep the lane invariant; cancelling is `Proofs.Frame.FrameAlongside.cancelOccurrence`. -/
 theorem callsFormed_stepAlongside (program : Program) : StepAlongside program (CallsFormed program) where
   toFrameAlongside := (callsFormed_alongside program).toFrameAlongside
-  journal _ _ _ held _ _ := held.same rfl (fun _ member => member) rfl
+  journal _ _ _ _ held _ _ _ := held.same rfl (fun _ member => member) rfl
+  queueBatch _ _ _ held := by
+    rw [Laws.State.queueBatch_eq]
+    exact held.same rfl (fun _ member => member) rfl
   dequeue _ _ _ _ held := held.same rfl (fun _ member => member) rfl
-  untoken _ _ _ _ held := held.same rfl (fun _ member => member) rfl
+  unqueue _ _ _ held := held.same rfl (fun _ member => member) rfl
+  untoken _ _ _ held := held.same rfl (fun _ member => member) rfl
   begin _ request role sourceType formed stands admitted _ _ held :=
     held.begun formed request role sourceType stands.mem admitted.2.1
   cancel _ _ formed held := (callsFormed_alongside program).toFrameAlongside.cancelOccurrence
     (fun _ id _ kept => kept.withoutRecord id) (fun _ _ _ kept => kept.same rfl (fun _ member => member) rfl) formed held
-  runOrder _ _ held := held.same rfl (fun _ member => member) rfl
+  runOrder _ _ _ held after made := by
+    obtain rfl := Laws.Step.orderJournal_of made
+    exact held.same rfl (fun _ member => member) rfl
 
 /-- `WellFormed` and the lane invariant of called instances. -/
 def Formed (program : Program) (s : State) : Prop :=
@@ -774,7 +781,7 @@ def Formed (program : Program) (s : State) : Prop :=
 
 /-- An input starts from an empty journal, outbox, draft and write log (`Step.onRunning`), which keeps `Formed`. -/
 theorem formed_reset {s : State} (holds : Formed program s) :
-    Formed program { s with journal := [], outbox := [], draft := {}, writes := [] } :=
+    Formed program { s with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } :=
   ⟨Laws.State.reset_wellFormed holds.1, holds.2.same rfl (fun _ inside => inside) rfl⟩
 
 /-- The completion pipeline's own phases keep the lane invariant where they keep `WellFormed`. -/

@@ -159,8 +159,17 @@ export const kernelPort: KernelPort<Program, State, HostInput> = {
   // Without the last input's journal and outbox: the host published them when it committed the input, and `step` empties
   // both before every input (`onRunning`, `initial`), so no later input reads them; carried, they would charge the state
   // and continuation bounds with a second copy of the publication (2,066,022 of long-burst's 2,067,466 bytes, 2026-11-13).
-  encodeState: (state) => internStrings(toWire({ ...state, journal: [], outbox: [] })),
+  // Nor the closure's unit-keyed families: every committed state holds them empty (`orderJournal`, DC4), and a unit key
+  // is never a wire value.
+  encodeState: (state) => {
+    const { queuedTokens, queuedSignals, outboxes, transitions, ...committed } = state;
+    if (queuedTokens !== null || queuedSignals !== null || outboxes !== null || transitions !== null) {
+      throw new Error("a committed state holds a unit key");
+    }
+    return internStrings(toWire({ ...committed, journal: [], outbox: [] }));
+  },
   // The host decodes only what `encodeState` produced for this program.
-  decodeState: (json) => fromWire(expandStrings(json)) as State,
+  decodeState: (json) =>
+    ({ ...(fromWire(expandStrings(json)) as object), queuedTokens: null, queuedSignals: null, outboxes: null, transitions: null }) as State,
   scriptOf,
 };

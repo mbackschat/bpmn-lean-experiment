@@ -1,7 +1,7 @@
 module
 
 public import Kernel.Laws.MultiInstance
-public import Kernel.Proofs.MultiInstance.Numbered
+public import Kernel.Proofs.MultiInstance.Numbered.Frame
 public import Kernel.Proofs.MultiInstance.Hooks
 
 /-! # Proofs: the numbering through a body's instances
@@ -137,13 +137,16 @@ theorem Numbered.beginInstances {inv : State → Prop} {settled : State → Occu
   have aSignals : (Feature.MultiInstance.setRun queued { base with instances }).signals = queued.signals := by
     rw [aSame]
   have aTokens : (Feature.MultiInstance.setRun queued { base with instances }).tokens = queued.tokens := by rw [aSame]
+  have aKeyed : (Feature.MultiInstance.setRun queued { base with instances }).queuedSignals = state.queuedSignals ∧
+      (Feature.MultiInstance.setRun queued { base with instances }).queuedTokens = state.queuedTokens := by
+    rw [aSame]; exact begun.keyed
   have aComp : (Feature.MultiInstance.setRun queued { base with instances }).slots.compensation.runs =
       state.slots.compensation.runs := by
     rw [aSame]; exact congrArg (·.compensation.runs) begun.slots
   clear aSame
-  revert aRuns aNext aKeep aScopes aOccs aSignals aTokens aComp
+  revert aRuns aNext aKeep aScopes aOccs aSignals aTokens aKeyed aComp
   generalize Feature.MultiInstance.setRun queued { base with instances } = after
-  intro aRuns aNext aKeep aScopes aOccs aSignals aTokens aComp
+  intro aRuns aNext aKeep aScopes aOccs aSignals aTokens aKeyed aComp
   revert aRuns aNext fields opens
   generalize ({ base with instances } : MultiInstanceRun) = next
   intro fields opens aRuns aNext
@@ -182,7 +185,7 @@ theorem Numbered.beginInstances {inv : State → Prop} {settled : State → Occu
     · exact .inl ⟨by rw [signals, Laws.Step.beginsOf_append, Laws.Step.beginsOf_map], by rw [tokens]⟩
     · exact .inr ⟨schedule, by rw [signals], by
         rw [tokens, Laws.Step.deferredOf_append, ← List.map_reverse, Laws.Step.deferredOf_map]⟩
-  have signalsIn : ∀ signal ∈ after.signals, signal ∈ state.signals ∨ ∃ request ∈ requests, signal = .begin request :=
+  have batchIn : ∀ signal ∈ after.signals, signal ∈ state.signals ∨ ∃ request ∈ requests, signal = .begin request :=
     fun signal member => by
       rw [aSignals] at member
       rcases queuedAs with ⟨signals, _⟩ | ⟨_, _, signals, _⟩
@@ -192,18 +195,28 @@ theorem Numbered.beginInstances {inv : State → Prop} {settled : State → Occu
         · obtain ⟨request, inside, same⟩ := List.mem_map.mp new
           exact .inr ⟨request, inside, same.symm⟩
       · exact .inl (signals ▸ member)
+  have signalsIn : ∀ signal ∈ Laws.State.allSignals after,
+      signal ∈ Laws.State.allSignals state ∨ ∃ request ∈ requests, signal = .begin request := fun signal member => by
+    rcases List.mem_append.mp member with keyed | batch
+    · exact .inl (List.mem_append_left _ (aKeyed.1 ▸ keyed))
+    · exact (batchIn signal batch).imp_left (List.mem_append_right _)
   have queuedAfter : ∀ request, Laws.State.Queued after request → Laws.State.Queued state request ∨ request ∈ requests :=
     fun request inQueue => by
       rcases inQueue with signal | token
-      · have inside := Laws.Step.mem_beginsOf.mpr signal
-        rcases queues with ⟨begins, _⟩ | ⟨_, begins, _⟩ <;> rw [begins] at inside
-        · exact (List.mem_append.mp inside).imp_left fun old => .inl (Laws.Step.mem_beginsOf.mp old)
-        · exact .inl (.inl (Laws.Step.mem_beginsOf.mp inside))
-      · have inside := Laws.Step.mem_deferredOf.mpr token
-        rcases queues with ⟨_, deferred⟩ | ⟨_, _, deferred⟩ <;> rw [deferred] at inside
-        · exact .inl (.inr (Laws.Step.mem_deferredOf.mp inside))
-        · exact (List.mem_append.mp inside).imp (fun old => .inr (Laws.Step.mem_deferredOf.mp old))
-            List.mem_reverse.mp
+      · rcases List.mem_append.mp signal with keyed | batch
+        · exact .inl (.inl (List.mem_append_left _ (aKeyed.1 ▸ keyed)))
+        · have inside := Laws.Step.mem_beginsOf.mpr batch
+          rcases queues with ⟨begins, _⟩ | ⟨_, begins, _⟩ <;> rw [begins] at inside
+          · exact (List.mem_append.mp inside).imp_left fun old =>
+              .inl (List.mem_append_right _ (Laws.Step.mem_beginsOf.mp old))
+          · exact .inl (.inl (List.mem_append_right _ (Laws.Step.mem_beginsOf.mp inside)))
+      · rcases List.mem_append.mp token with keyed | batch
+        · exact .inl (.inr (List.mem_append_left _ (aKeyed.2 ▸ keyed)))
+        · have inside := Laws.Step.mem_deferredOf.mpr batch
+          rcases queues with ⟨_, deferred⟩ | ⟨_, _, deferred⟩ <;> rw [deferred] at inside
+          · exact .inl (.inr (List.mem_append_right _ (Laws.Step.mem_deferredOf.mp inside)))
+          · exact (List.mem_append.mp inside).imp
+              (fun old => .inr (List.mem_append_right _ (Laws.Step.mem_deferredOf.mp old))) List.mem_reverse.mp
   -- A run of `after` a begin queued before is for is one of `state`, or the body's, which ran in `state`.
   have back : ∀ r ∈ after.slots.multiInstances, ∀ i request, QueuedFor r i request → Laws.State.Queued state request →
       ∃ r' ∈ state.slots.multiInstances, ∀ j other, QueuedFor r j other → Laws.State.Queued state other →
@@ -257,7 +270,7 @@ theorem Numbered.beginInstances {inv : State → Prop} {settled : State → Occu
         have slot' := oldSlot i scope slot (at_ ▸ occBelow o inside)
         exact fields.1 ▸ (each base (baseIn _ _ slot')).2 scope (List.mem_of_getElem? slot') o inside at_
           (fields.2.1 ▸ named) role
-  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · exact fun r member => by
       rcases aRuns r member with mine | same
       · exact qs.looped r mine.1
@@ -333,64 +346,124 @@ theorem Numbered.beginInstances {inv : State → Prop} {settled : State → Occu
         · exact absurd same Laws.Step.compensate_ne_begin
       · obtain ⟨run, member, rest⟩ := resumed
         exact .inr (.inr ⟨run, aComp ▸ member, rest⟩))
-  · exact fun r member first second first' second' precedes one two => by
-      have inBegins := Laws.Step.precedes_beginsOf.mp precedes
-      have oldOrder : Precedes (Laws.Step.beginsOf state.signals) first second → first' < second' := fun old => by
-        have firstOld : Laws.State.Queued state first :=
-          .inl (Laws.Step.mem_beginsOf.mp (old.subset (List.mem_cons_self ..)))
-        obtain ⟨r', mine, conv⟩ := back r member first' first one firstOld
-        exact qs.signalsOrdered r' mine first second first' second' (Laws.Step.precedes_beginsOf.mpr old)
-          (conv _ _ one firstOld) (conv _ _ two
-            (.inl (Laws.Step.mem_beginsOf.mp (old.subset (List.mem_cons_of_mem _ (List.mem_singleton_self _))))))
-      rcases queues with ⟨begins, _⟩ | ⟨_, begins, _⟩ <;> rw [begins] at inBegins
-      · rcases precedes_split inBegins with old | ⟨firstOld, secondNew⟩ | new
-        · exact oldOrder old
-        · exact (mixed r member first' second' first second one (.inl (Laws.Step.mem_beginsOf.mp firstOld)) two
-            secondNew).elim
-        · exact pair r member first' second' first second one two new
-      · exact oldOrder inBegins
-  · exact fun r member first second first' second' precedes one two => by
-      have inDeferred := Laws.Step.precedes_deferredOf.mp precedes
-      have oldOrder : Precedes (Laws.Step.deferredOf state.tokens) first second → second' < first' := fun old => by
-        have firstOld : Laws.State.Queued state first :=
-          .inr (Laws.Step.mem_deferredOf.mp (old.subset (List.mem_cons_self ..)))
-        obtain ⟨r', mine, conv⟩ := back r member first' first one firstOld
-        exact qs.tokensOrdered r' mine first second first' second' (Laws.Step.precedes_deferredOf.mpr old)
-          (conv _ _ one firstOld) (conv _ _ two
-            (.inr (Laws.Step.mem_deferredOf.mp (old.subset (List.mem_cons_of_mem _ (List.mem_singleton_self _))))))
-      rcases queues with ⟨_, deferred⟩ | ⟨_, _, deferred⟩ <;> rw [deferred] at inDeferred
-      · exact oldOrder inDeferred
-      · rcases precedes_split inDeferred with old | ⟨firstOld, secondNew⟩ | new
-        · exact oldOrder old
-        · exact (mixed r member first' second' first second one (.inr (Laws.Step.mem_deferredOf.mp firstOld)) two
-            (List.mem_reverse.mp secondNew)).elim
-        · exact pair r member second' first' second first two one (precedes_reverse new)
-  · exact fun r member first second first' second' signal token one two => by
-      have firstIn := Laws.Step.mem_beginsOf.mpr signal
-      have secondIn := Laws.Step.mem_deferredOf.mpr token
-      have both : Laws.State.Queued state first → Laws.State.Queued state second →
-          Signal.begin first ∈ state.signals → Token.begin second ∈ state.tokens → first' < second' :=
-        fun firstOld _ signalOld tokenOld => by
+  · intro r member
+    have batchS : ∀ {request}, Signal.begin request ∈ state.signals → Laws.State.Queued state request :=
+      fun member => .inl (List.mem_append_right _ member)
+    have batchT : ∀ {request}, Token.begin request ∈ state.tokens → Laws.State.Queued state request :=
+      fun member => .inr (List.mem_append_right _ member)
+    have keyedS : ∀ (unit : UnitKey) signal, after.queuedSignals[unit]? = some signal →
+        state.queuedSignals[unit]? = some signal := fun _ _ found => by rw [← aKeyed.1]; exact found
+    have keyedT : ∀ (unit : UnitKey) token, after.queuedTokens[unit]? = some token →
+        state.queuedTokens[unit]? = some token := fun _ _ found => by rw [← aKeyed.2]; exact found
+    -- A begin of `after`'s batch is one of `state`'s batch or new.
+    have batchOf : ∀ request, (Signal.begin request ∈ after.signals ∨ Token.begin request ∈ after.tokens) →
+        (Signal.begin request ∈ state.signals ∨ Token.begin request ∈ state.tokens) ∨ request ∈ requests := by
+      intro request batch
+      rcases batch with signal | token
+      · have inside := Laws.Step.mem_beginsOf.mpr signal
+        rcases queues with ⟨begins, _⟩ | ⟨_, begins, _⟩ <;> rw [begins] at inside
+        · exact (List.mem_append.mp inside).imp_left fun old => .inl (Laws.Step.mem_beginsOf.mp old)
+        · exact .inl (.inl (Laws.Step.mem_beginsOf.mp inside))
+      · have inside := Laws.Step.mem_deferredOf.mpr token
+        rcases queues with ⟨_, deferred⟩ | ⟨_, _, deferred⟩ <;> rw [deferred] at inside
+        · exact .inl (.inr (Laws.Step.mem_deferredOf.mp inside))
+        · exact (List.mem_append.mp inside).imp (fun old => .inr (Laws.Step.mem_deferredOf.mp old))
+            List.mem_reverse.mp
+    have batchQueued : ∀ {request}, Signal.begin request ∈ state.signals ∨ Token.begin request ∈ state.tokens →
+        Laws.State.Queued state request := fun batch => batch.elim batchS batchT
+    refine ⟨?inSignals, ?inTokens, ?inQueues, ?inApart, ?inKeyedSignals, ?inKeyedTokens, ?inKeyedQueues⟩
+    case inSignals =>
+      exact fun first second first' second' precedes one two => by
+        have inBegins := Laws.Step.precedes_beginsOf.mp precedes
+        have oldOrder : Precedes (Laws.Step.beginsOf state.signals) first second → first' < second' := fun old => by
+          have firstOld : Laws.State.Queued state first :=
+            batchS (Laws.Step.mem_beginsOf.mp (old.subset (List.mem_cons_self ..)))
           obtain ⟨r', mine, conv⟩ := back r member first' first one firstOld
-          exact qs.queuesOrdered r' mine first second first' second' signalOld tokenOld (conv _ _ one firstOld)
-            (conv _ _ two (.inr tokenOld))
-      rcases queues with ⟨begins, deferred⟩ | ⟨_, begins, deferred⟩ <;> rw [begins] at firstIn <;>
-        rw [deferred] at secondIn
-      · have tokenOld := Laws.Step.mem_deferredOf.mp secondIn
-        rcases List.mem_append.mp firstIn with old | new
-        · have signalOld := Laws.Step.mem_beginsOf.mp old
-          exact both (.inl signalOld) (.inr tokenOld) signalOld tokenOld
-        · exact (mixed r member second' first' second first two (.inr tokenOld) one new).elim
-      · have signalOld := Laws.Step.mem_beginsOf.mp firstIn
-        rcases List.mem_append.mp secondIn with old | new
-        · have tokenOld := Laws.Step.mem_deferredOf.mp old
-          exact both (.inl signalOld) (.inr tokenOld) signalOld tokenOld
-        · exact (mixed r member first' second' first second one (.inl signalOld) two (List.mem_reverse.mp new)).elim
+          exact (qs.ordered r' mine).signals first second first' second' (Laws.Step.precedes_beginsOf.mpr old)
+            (conv _ _ one firstOld) (conv _ _ two
+              (batchS (Laws.Step.mem_beginsOf.mp (old.subset (List.mem_cons_of_mem _ (List.mem_singleton_self _))))))
+        rcases queues with ⟨begins, _⟩ | ⟨_, begins, _⟩ <;> rw [begins] at inBegins
+        · rcases precedes_split inBegins with old | ⟨firstOld, secondNew⟩ | new
+          · exact oldOrder old
+          · exact (mixed r member first' second' first second one (batchS (Laws.Step.mem_beginsOf.mp firstOld)) two
+              secondNew).elim
+          · exact pair r member first' second' first second one two new
+        · exact oldOrder inBegins
+    case inTokens =>
+      exact fun first second first' second' precedes one two => by
+        have inDeferred := Laws.Step.precedes_deferredOf.mp precedes
+        have oldOrder : Precedes (Laws.Step.deferredOf state.tokens) first second → second' < first' := fun old => by
+          have firstOld : Laws.State.Queued state first :=
+            batchT (Laws.Step.mem_deferredOf.mp (old.subset (List.mem_cons_self ..)))
+          obtain ⟨r', mine, conv⟩ := back r member first' first one firstOld
+          exact (qs.ordered r' mine).tokens first second first' second' (Laws.Step.precedes_deferredOf.mpr old)
+            (conv _ _ one firstOld) (conv _ _ two
+              (batchT (Laws.Step.mem_deferredOf.mp (old.subset (List.mem_cons_of_mem _ (List.mem_singleton_self _))))))
+        rcases queues with ⟨_, deferred⟩ | ⟨_, _, deferred⟩ <;> rw [deferred] at inDeferred
+        · exact oldOrder inDeferred
+        · rcases precedes_split inDeferred with old | ⟨firstOld, secondNew⟩ | new
+          · exact oldOrder old
+          · exact (mixed r member first' second' first second one (batchT (Laws.Step.mem_deferredOf.mp firstOld)) two
+              (List.mem_reverse.mp secondNew)).elim
+          · exact pair r member second' first' second first two one (precedes_reverse new)
+    case inQueues =>
+      exact fun first second first' second' signal token one two => by
+        have firstIn := Laws.Step.mem_beginsOf.mpr signal
+        have secondIn := Laws.Step.mem_deferredOf.mpr token
+        have both : Signal.begin first ∈ state.signals → Token.begin second ∈ state.tokens → first' < second' :=
+          fun signalOld tokenOld => by
+            obtain ⟨r', mine, conv⟩ := back r member first' first one (batchS signalOld)
+            exact (qs.ordered r' mine).queues first second first' second' signalOld tokenOld
+              (conv _ _ one (batchS signalOld)) (conv _ _ two (batchT tokenOld))
+        rcases queues with ⟨begins, deferred⟩ | ⟨_, begins, deferred⟩ <;> rw [begins] at firstIn <;>
+          rw [deferred] at secondIn
+        · have tokenOld := Laws.Step.mem_deferredOf.mp secondIn
+          rcases List.mem_append.mp firstIn with old | new
+          · exact both (Laws.Step.mem_beginsOf.mp old) tokenOld
+          · exact (mixed r member second' first' second first two (batchT tokenOld) one new).elim
+        · have signalOld := Laws.Step.mem_beginsOf.mp firstIn
+          rcases List.mem_append.mp secondIn with old | new
+          · exact both signalOld (Laws.Step.mem_deferredOf.mp old)
+          · exact (mixed r member first' second' first second one (batchS signalOld) two
+              (List.mem_reverse.mp new)).elim
+    case inApart =>
+      exact fun first second first' second' batch one unit keyed two => by
+        have secondOld : Laws.State.Queued state second := keyed.elim
+          (fun found => .inl (Laws.State.mem_allSignals_of (keyedS _ _ found)))
+          (fun found => .inr (Laws.State.mem_allQueuedTokens_of (keyedT _ _ found)))
+        rcases batchOf first batch with firstOld | firstNew
+        · obtain ⟨r', mine, conv⟩ := back r member first' first one (batchQueued firstOld)
+          exact (qs.ordered r' mine).apart first second first' second' firstOld (conv _ _ one (batchQueued firstOld))
+            unit (keyed.imp (keyedS _ _) (keyedT _ _)) (conv _ _ two secondOld)
+        · exact mixed r member second' first' second first two secondOld one firstNew
+    case inKeyedSignals =>
+      exact fun one two first second first' second' found found' a b order => by
+        have firstOld : Laws.State.Queued state first := .inl (Laws.State.mem_allSignals_of (keyedS _ _ found))
+        obtain ⟨r', mine, conv⟩ := back r member first' first a firstOld
+        exact (qs.ordered r' mine).keyedSignals one two first second first' second' (keyedS _ _ found)
+          (keyedS _ _ found') (conv _ _ a firstOld)
+          (conv _ _ b (.inl (Laws.State.mem_allSignals_of (keyedS _ _ found')))) order
+    case inKeyedTokens =>
+      exact fun one two first second first' second' found found' a b => by
+        have firstOld : Laws.State.Queued state first := .inr (Laws.State.mem_allQueuedTokens_of (keyedT _ _ found))
+        obtain ⟨r', mine, conv⟩ := back r member first' first a firstOld
+        exact (qs.ordered r' mine).keyedTokens one two first second first' second' (keyedT _ _ found)
+          (keyedT _ _ found') (conv _ _ a firstOld)
+          (conv _ _ b (.inr (Laws.State.mem_allQueuedTokens_of (keyedT _ _ found'))))
+    case inKeyedQueues =>
+      exact fun one two first second first' second' found found' a b => by
+        have firstOld : Laws.State.Queued state first := .inl (Laws.State.mem_allSignals_of (keyedS _ _ found))
+        obtain ⟨r', mine, conv⟩ := back r member first' first a firstOld
+        exact (qs.ordered r' mine).keyedQueues one two first second first' second' (keyedS _ _ found)
+          (keyedT _ _ found') (conv _ _ a firstOld)
+          (conv _ _ b (.inr (Laws.State.mem_allQueuedTokens_of (keyedT _ _ found'))))
   · exact fun schedule request token => by
-      have inside := Laws.Step.mem_deferredOf.mpr token
+      rcases List.mem_append.mp token with keyed | batch
+      · exact qs.deferred schedule request (List.mem_append_left _ (aKeyed.2 ▸ keyed))
+      have inside := Laws.Step.mem_deferredOf.mpr batch
       rcases queues with ⟨_, deferred⟩ | ⟨depthFirst, _, _⟩
       · rw [deferred] at inside
-        exact qs.deferred schedule request (Laws.Step.mem_deferredOf.mp inside)
+        exact qs.deferred schedule request (List.mem_append_right _ (Laws.Step.mem_deferredOf.mp inside))
       · exact schedule_ne (schedule.symm.trans depthFirst)
   · exact fun r member request index queued' scope inQueue for_ slot begun' => by
       obtain ⟨o, inside, at_, on⟩ := begun'
@@ -417,17 +490,18 @@ theorem Numbered.signalOther {program : Program} {s : State} {signal : Signal}
   rw [Laws.State.signal_eq]
   have none : Laws.Step.beginsOf [signal] = [] := List.eq_nil_iff_forall_not_mem.mpr fun request inside =>
     apart.1 request (List.mem_singleton.mp (Laws.Step.mem_beginsOf.mp inside))
-  refine held.unmoved rfl rfl rfl (by rw [Laws.Step.beginsOf_append, none, List.append_nil]) rfl
+  refine held.unmoved rfl rfl rfl (by rw [Laws.Step.beginsOf_append, none, List.append_nil]) rfl rfl rfl
     fun element pending => .inl ?_
   rcases pending with occur | compensate | resumed
   · obtain ⟨scope, rest⟩ := occur
     obtain ⟨leave, writes, rule, member⟩ := rest
-    refine .inl ⟨scope, leave, writes, rule, (List.mem_append.mp member).resolve_right fun new => ?_⟩
+    refine .inl ⟨scope, leave, writes, rule,
+      (List.mem_append.mp (Laws.State.allSignals_append s _ ▸ member)).resolve_right fun new => ?_⟩
     exact apart.2.1 element scope leave writes rule (List.mem_singleton.mp new)
   · obtain ⟨scope, activity, trigger, rest⟩ := compensate
     obtain ⟨leave, at_, resumed, member⟩ := rest
     refine .inr (.inl ⟨scope, activity, trigger, leave, at_, resumed,
-      (List.mem_append.mp member).resolve_right fun new => ?_⟩)
+      (List.mem_append.mp (Laws.State.allSignals_append s _ ▸ member)).resolve_right fun new => ?_⟩)
     exact apart.2.2 scope activity trigger leave _ (List.mem_singleton.mp new)
   · exact .inr (.inr resumed)
 
@@ -435,7 +509,8 @@ theorem Numbered.signalOther {program : Program} {s : State} {signal : Signal}
 theorem Numbered.hold {program : Program} {s : State} (kept : Occurrence) (held : Numbered program s) :
     Numbered program (s.hold kept) := by
   rw [Laws.Hooks.hold_eq]
-  exact held.shrink (.same rfl (fun _ inside => inside) rfl rfl rfl fun _ pending => .inl pending)
+  exact held.shrink (.same rfl (fun _ inside => inside) rfl (.of_kept (.of_eq rfl rfl rfl rfl)) fun _ pending =>
+    .inl pending)
 
 /-- Setting a body's record to one of fewer active slots keeps `Numbered` when every active slot whose scope occurrence
 stands stays active. -/
@@ -498,21 +573,10 @@ theorem Numbered.narrow {program : Program} {t : State} {run next : MultiInstanc
       obtain ⟨r', mine, parts⟩ := toOld r inside
       obtain ⟨slots, _, same⟩ := parts
       exact qs.reserved request inQueue r' mine (act r r' slots _ active) id named o present xid (same ▸ xelement) xrole
-    signalsOrdered := fun r inside first second first' second' precedes one two => by
+    ordered := fun r inside => by
       obtain ⟨r', mine, parts⟩ := toOld r inside
       obtain ⟨slots, same, _⟩ := parts
-      exact qs.signalsOrdered r' mine first second first' second' precedes (forOf r r' slots same _ _ one)
-        (forOf r r' slots same _ _ two)
-    tokensOrdered := fun r inside first second first' second' precedes one two => by
-      obtain ⟨r', mine, parts⟩ := toOld r inside
-      obtain ⟨slots, same, _⟩ := parts
-      exact qs.tokensOrdered r' mine first second first' second' precedes (forOf r r' slots same _ _ one)
-        (forOf r r' slots same _ _ two)
-    queuesOrdered := fun r inside first second first' second' signal token one two => by
-      obtain ⟨r', mine, parts⟩ := toOld r inside
-      obtain ⟨slots, same, _⟩ := parts
-      exact qs.queuesOrdered r' mine first second first' second' signal token (forOf r r' slots same _ _ one)
-        (forOf r r' slots same _ _ two)
+      exact ordered_fewer (qs.ordered r' mine) (.of_kept (.of_eq rfl rfl rfl rfl)) (forOf r r' slots same)
     above := fun r inside request index queued' scope inQueue for_ slot begun => by
       obtain ⟨r', mine, parts⟩ := toOld r inside
       obtain ⟨slots, same, _⟩ := parts

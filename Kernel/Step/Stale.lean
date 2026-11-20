@@ -48,7 +48,15 @@ structure SignalWork where
   occurrences : List OccurrenceId := []
   requires : List ScopeOccurrenceId := []
   acts : List OccurrenceId := []
+  /-- What else the signal keeps busy while it is queued (DC5): a firing its item's scope occurrence, a raise its
+  origin's, the instance's end every one. -/
+  holds : State → List ScopeOccurrenceId := fun _ => []
   run : State → Outcome
+
+/-- The scope occurrences a queued signal names, each of which stays busy, with every scope occurrence enclosing it,
+while the signal is queued (DC5, `Step.idleScope?`). -/
+def SignalWork.names (work : SignalWork) (state : State) : List ScopeOccurrenceId :=
+  work.scopes ++ work.requires ++ (work.occurrences ++ work.acts).map (·.scope) ++ work.holds state
 
 /-- Whether `work` names a scope occurrence or an occurrence that was issued and has since been removed. Signals run
 first in, first out, and an interruption removes in two steps: its firing withdraws the open items at once, its queued

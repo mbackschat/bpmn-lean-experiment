@@ -28,7 +28,7 @@ structure Cleared (before after : State) (scope : ScopeOccurrenceId) (keep : Lis
     occurrence ∈ before.occurrences ∧ (¬ Within before occurrence.scope scope ∨ occurrence.id ∈ keep)
   items : ∀ item, item ∈ itemList after.openItems ↔
     item ∈ itemList before.openItems ∧ (¬ Within before item.scope scope ∨ item.id.occurrence ∈ keep)
-  tokens : ∀ token, token ∈ after.tokens ↔ token ∈ before.tokens ∧ ¬ Within before token.busyScope scope
+  tokens : ∀ token, token ∈ allQueuedTokens after ↔ token ∈ allQueuedTokens before ∧ ¬ Within before token.busyScope scope
   variables : ∀ variables, variables ∈ after.variables ↔
     variables ∈ before.variables ∧ ¬ StrictlyWithin before variables.scope scope
   scopesSublist : after.scopes.Sublist before.scopes
@@ -36,7 +36,7 @@ structure Cleared (before after : State) (scope : ScopeOccurrenceId) (keep : Lis
   openItemsSub : ItemsSub after.openItems before.openItems
   ordinals : ∀ occurrence ∈ after.occurrences,
     after.itemOrdinals.getD occurrence.id 0 = before.itemOrdinals.getD occurrence.id 0
-  tokensSublist : after.tokens.Sublist before.tokens
+  tokensSublist : (allQueuedTokens after).Sublist (allQueuedTokens before)
   variablesSublist : after.variables.Sublist before.variables
   instances : ∀ x ∈ scopeIds after, after.instanceOf x = before.instanceOf x
   activations : after.activations = before.activations
@@ -44,10 +44,12 @@ structure Cleared (before after : State) (scope : ScopeOccurrenceId) (keep : Lis
   counters : ∀ x ∈ scopeIds after, ∀ element, occurrenceCount after x element = occurrenceCount before x element
   /-- Only the counters of the scope occurrences removed go. -/
   scopeGrows : ScopeGrows before after
-  signals : after.signals = before.signals
+  signals : allSignals after = allSignals before
+  queues : QueuesKept before after
   status : after.status = before.status
   failure : after.failure = before.failure
   journal : after.journal = before.journal
+  transitions : after.transitions = before.transitions
   started : after.draft.started = before.draft.started
   slots : SlotsWithin before after
   /-- The Multi-Instance bodies that stay are those whose scope occurrence does not lie within `scope`. -/
@@ -85,7 +87,7 @@ theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {k
       item.attachedTo = some host → ∀ occurrence ∈ before.occurrences, occurrence.id = host →
         ¬ Within before occurrence.scope scope ∨ host ∈ keep) :
     WellFormed program after := by
-  have sameStarts : starts after = starts before := by simp [starts, cleared.journal, cleared.started]
+  have sameStarts : starts after = starts before := by simp [starts, cleared.journal, cleared.transitions, cleared.started]
   -- A scope occurrence of `before` that is no strict descendant of `scope` stands after the clearing.
   have stays : ∀ id, id ∈ scopeIds before → ¬ StrictlyWithin before id scope → id ∈ scopeIds after := fun id member outside => by
     obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
@@ -199,10 +201,10 @@ theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {k
         obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
         exact List.mem_map.mpr ⟨entry, cleared.scopesSublist.subset inside, named⟩)
       cleared.instances (cleared.occurrenceGrows) cleared.scopeGrows (by rw [cleared.signals]; exact .refl _)
-      cleared.tokensSublist
+      (.of_sublist cleared.tokensSublist)
   · exact formed.settled.transport cleared.slots (cleared.occurrenceGrows) cleared.scopeGrows
       (fun _ member _ => .inl (cleared.occurrencesSublist.subset member))
-      (fun _ queued => queued.shrink (by rw [cleared.signals]; exact .refl _) cleared.tokensSublist)
+      (fun _ queued => queued.shrink (fun _ member => cleared.signals ▸ member) (fun _ member => cleared.tokensSublist.subset member))
       (fun _ member => cleared.signals ▸ member) (fun _ member => .inl (cleared.scopesSublist.subset member))
   · exact formed.attachedReserved.shrink (fun _ member => cleared.openItemsSub.items member)
       fun _ member _ => cleared.occurrencesSublist.subset member
@@ -230,12 +232,13 @@ structure Prunes (before after : State) : Prop where
   items : ItemsSub after.openItems before.openItems
   ordinals : ∀ occurrence ∈ after.occurrences,
     after.itemOrdinals.getD occurrence.id 0 = before.itemOrdinals.getD occurrence.id 0
-  tokens : after.tokens = before.tokens
-  signals : after.signals = before.signals
+  tokens : allQueuedTokens after = allQueuedTokens before
+  signals : allSignals after = allSignals before
   variables : after.variables = before.variables
   activations : after.activations = before.activations
   occurrenceGrows : OccurrenceGrows before after
   journal : after.journal = before.journal
+  transitions : after.transitions = before.transitions
   started : after.draft.started = before.draft.started
   status : after.status = before.status
   failure : after.failure = before.failure
@@ -250,7 +253,7 @@ theorem Prunes.wellFormed {before after : State} (formed : WellFormed program be
   have keys : ∀ occurrence, key after occurrence = key before occurrence := fun _ => key_congr (prunes.instances _)
   have grows : ScopeGrows before after :=
     .of_same (congrArg (List.map ScopeOccurrence.id) prunes.scopes) prunes.scopeOrdinals
-  have sameStarts : starts after = starts before := by simp [starts, prunes.journal, prunes.started]
+  have sameStarts : starts after = starts before := by simp [starts, prunes.journal, prunes.transitions, prunes.started]
   have kept := prunes.occurrences.subset
   have items : itemList after.openItems ⊆ itemList before.openItems := by exact prunes.items.subset
   have housed : ∀ occurrence ∈ after.occurrences, occurrence.scope ∈ scopeIds after := fun occurrence member => by
@@ -322,7 +325,7 @@ theorem Prunes.wellFormed {before after : State} (formed : WellFormed program be
   case settled =>
     exact formed.settled.transport (.same prunes.slots) (prunes.occurrenceGrows) grows
       (fun _ member _ => .inl (kept member))
-      (fun _ queued => queued.shrink (by rw [prunes.signals]; exact .refl _) (by rw [prunes.tokens]; exact .refl _))
+      (fun _ queued => queued.shrink (fun _ member => prunes.signals ▸ member) (fun _ member => prunes.tokens ▸ member))
       (fun _ member => prunes.signals ▸ member) (fun _ member => .inl (prunes.scopes ▸ member))
   case attachedReserved => exact formed.attachedReserved.shrink (fun _ member => items member) fun _ member _ => kept member
   case typed =>
@@ -349,7 +352,7 @@ structure Left (before after : State) (scope : ScopeOccurrenceId) : Prop where
   occurrences : ∀ occurrence, occurrence ∈ after.occurrences ↔
     occurrence ∈ before.occurrences ∧ ¬ Within before occurrence.scope scope
   items : ∀ item, item ∈ itemList after.openItems ↔ item ∈ itemList before.openItems ∧ ¬ Within before item.scope scope
-  tokens : ∀ token, token ∈ after.tokens ↔ token ∈ before.tokens ∧ ¬ Within before token.busyScope scope
+  tokens : ∀ token, token ∈ allQueuedTokens after ↔ token ∈ allQueuedTokens before ∧ ¬ Within before token.busyScope scope
   variables : ∀ variables, variables ∈ after.variables ↔
     variables ∈ before.variables ∧ ¬ Within before variables.scope scope
   scopesSublist : after.scopes.Sublist before.scopes
@@ -357,17 +360,19 @@ structure Left (before after : State) (scope : ScopeOccurrenceId) : Prop where
   openItemsSub : ItemsSub after.openItems before.openItems
   ordinals : ∀ occurrence ∈ after.occurrences,
     after.itemOrdinals.getD occurrence.id 0 = before.itemOrdinals.getD occurrence.id 0
-  tokensSublist : after.tokens.Sublist before.tokens
+  tokensSublist : (allQueuedTokens after).Sublist (allQueuedTokens before)
   variablesSublist : after.variables.Sublist before.variables
   instances : ∀ x ∈ scopeIds after, after.instanceOf x = before.instanceOf x
   activations : after.activations = before.activations
   occurrenceGrows : OccurrenceGrows before after
   /-- Only the counters of the scope occurrences removed go. -/
   scopeGrows : ScopeGrows before after
-  signals : after.signals = before.signals
+  signals : allSignals after = allSignals before
+  queues : QueuesKept before after
   status : after.status = before.status
   failure : after.failure = before.failure
   journal : after.journal = before.journal
+  transitions : after.transitions = before.transitions
   started : after.draft.started = before.draft.started
   slots : SlotsWithin before after
 
@@ -389,7 +394,7 @@ and a scope occurrence lies directly below its owner's. -/
 theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (formed : WellFormed program before)
     (left : Left before after scope) (present : scope ∈ scopeIds before) (notRoot : scope ≠ State.root) :
     WellFormed program after := by
-  have sameStarts : starts after = starts before := by simp [starts, left.journal, left.started]
+  have sameStarts : starts after = starts before := by simp [starts, left.journal, left.transitions, left.started]
   have grows := left.scopeGrows
   have stays : ∀ id, id ∈ scopeIds before → ¬ Within before id scope → id ∈ scopeIds after := fun id member outside => by
     obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
@@ -474,10 +479,10 @@ theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (form
       housed (fun x member => by
         obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
         exact List.mem_map.mpr ⟨entry, left.scopesSublist.subset inside, named⟩)
-      left.instances (left.occurrenceGrows) grows (by rw [left.signals]; exact .refl _) left.tokensSublist
+      left.instances (left.occurrenceGrows) grows (by rw [left.signals]; exact .refl _) (.of_sublist left.tokensSublist)
   case settled =>
     exact formed.settled.transport left.slots (left.occurrenceGrows) grows (fun _ member _ => .inl (kept member))
-      (fun _ queued => queued.shrink (by rw [left.signals]; exact .refl _) left.tokensSublist)
+      (fun _ queued => queued.shrink (fun _ member => left.signals ▸ member) (fun _ member => left.tokensSublist.subset member))
       (fun _ member => left.signals ▸ member) (fun _ member => .inl (left.scopesSublist.subset member))
   case attachedReserved =>
     exact formed.attachedReserved.shrink (fun _ member => left.openItemsSub.items member) fun _ member _ => kept member

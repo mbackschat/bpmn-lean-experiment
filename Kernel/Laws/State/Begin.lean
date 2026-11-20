@@ -148,7 +148,8 @@ theorem startReserved_closeOwnItems_wellFormed {state : State} (formed : WellFor
         instanceId := starts_.instanceId, activations := starts_.activations,
         occurrenceOrdinals := starts_.occurrenceOrdinals,
         itemMap := ⟨by simp [starts_.itemMap.1], starts_.itemMap.2⟩, tokens := starts_.tokens,
-        signals := starts_.signals, variables := starts_.variables, journal := starts_.journal, ended := starts_.ended,
+        signals := starts_.signals, queues := ⟨starts_.queues.signals, starts_.queues.tokens, starts_.queues.queuedSignals,
+          starts_.queues.queuedTokens⟩, variables := starts_.variables, journal := starts_.journal, transitions := starts_.transitions, ended := starts_.ended,
         status := starts_.status, failure := starts_.failure, slots := starts_.slots } member begun (fun request queued => unnamed request queued)
       fun item inside => by simpa using (mem_itemList_filter_val.mp (inside)).2
     have filtered : State.instanceOf { state with openItems := state.openItems.filter fun _ item => item.id.occurrence != occurrence.id }
@@ -158,86 +159,89 @@ theorem startReserved_closeOwnItems_wellFormed {state : State} (formed : WellFor
   · rw [startReserved_begun state sourceType begun]
     exact closed
 
-/-- The begin at the head of the signal queue may begin once it leaves the queue: what it names is beginnable, and
-nothing left queued claims it. -/
-theorem admitted_signal {state : State} (formed : WellFormed program state) {request : BeginRequest} {rest : List Signal}
-    (head : state.signals = .begin request :: rest) :
+/-- A queued begin may begin once it leaves the queue: what it names is beginnable, and nothing left queued claims it. -/
+theorem admitted_signal {state : State} (formed : WellFormed program state) {request : BeginRequest} {unit : UnitKey}
+    (found : state.queuedSignals[unit]? = some (.begin request)) :
     (names request).Nodup ∧ (∀ id ∈ names request,
-      Beginnable { state with signals := rest } request.scope id ∧ Unclaimed { state with signals := rest } id) ∧
-      InnerPlaced { state with signals := rest } request := by
-  have queued : Queued state request := .inl (head ▸ List.mem_cons_self ..)
+      Beginnable { state with queuedSignals := state.queuedSignals.erase unit } request.scope id ∧
+        Unclaimed { state with queuedSignals := state.queuedSignals.erase unit } id) ∧
+      InnerPlaced { state with queuedSignals := state.queuedSignals.erase unit } request := by
+  have queued : Queued state request := .inl (mem_allSignals_of found)
+  have taken : (allSignals state).Perm
+      (.begin request :: allSignals { state with queuedSignals := state.queuedSignals.erase unit }) :=
+    (values_erase_perm found).append_right _
   obtain ⟨nodup, beginnable⟩ := formed.claimed.named request queued
   refine ⟨nodup, fun id named => ⟨(beginnable id named).congr (.refl _) rfl (Laws.State.items_congr rfl) rfl (instanceOf_congr rfl rfl), ?_, ?_,
     fun completes => formed.settled.free queued named (SlotCompletes.shrink (before := state)
-      (after := { state with signals := rest }) rfl
-      (fun _ member => by rw [head]; exact List.mem_cons_of_mem _ member) completes)⟩,
+      (after := { state with queuedSignals := state.queuedSignals.erase unit }) rfl allSignals_unqueue completes)⟩,
     formed.claimed.innerPlaced request queued⟩
-  · intro other (claimed : Signal.begin other ∈ rest ∨ Token.begin other ∈ state.tokens)
+  · intro other (claimed : Signal.begin other ∈ allSignals { state with queuedSignals := state.queuedSignals.erase unit } ∨
+      Token.begin other ∈ allQueuedTokens state)
     rcases claimed with signal | token
-    · exact formed.claimed.signalsApart request other (head ▸ List.cons_sublist_cons.mpr (List.singleton_sublist.mpr signal))
-        id named
-    · exact formed.claimed.queuesApart request other (head ▸ List.mem_cons_self ..) token id named
+    · exact apart_fewer (.of_perm taken.symm) formed.claimed.signalsApart request other
+        (List.cons_sublist_cons.mpr (List.singleton_sublist.mpr signal)) id named
+    · exact formed.claimed.queuesApart request other (mem_allSignals_of found) token id named
   · intro leave writes rule completed
-    exact formed.claimed.uncompleted request id leave writes rule queued named (head ▸ List.mem_cons_of_mem _ completed)
+    exact formed.claimed.uncompleted request id leave writes rule queued named (allSignals_unqueue _ completed)
 
-/-- The begin the closure takes from the work stack, from its top or its bottom, may begin once it leaves the stack. -/
-theorem admitted_token {state : State} (formed : WellFormed program state) {request : BeginRequest} {rest : List Token}
-    (taken : state.tokens = .begin request :: rest ∨ state.tokens = rest ++ [.begin request]) :
+/-- A queued deferred begin may begin once it leaves the queue. -/
+theorem admitted_token {state : State} (formed : WellFormed program state) {request : BeginRequest} {unit : UnitKey}
+    (found : state.queuedTokens[unit]? = some (.begin request)) :
     (names request).Nodup ∧ (∀ id ∈ names request,
-      Beginnable { state with tokens := rest } request.scope id ∧ Unclaimed { state with tokens := rest } id) ∧
-      InnerPlaced { state with tokens := rest } request := by
-  have member : Token.begin request ∈ state.tokens := by
-    rcases taken with top | bottom
-    · exact top ▸ List.mem_cons_self ..
-    · exact bottom ▸ List.mem_append_right _ (List.mem_singleton_self _)
+      Beginnable { state with queuedTokens := state.queuedTokens.erase unit } request.scope id ∧
+        Unclaimed { state with queuedTokens := state.queuedTokens.erase unit } id) ∧
+      InnerPlaced { state with queuedTokens := state.queuedTokens.erase unit } request := by
+  have member : Token.begin request ∈ allQueuedTokens state := mem_allQueuedTokens_of found
   have queued : Queued state request := .inr member
+  have taken : (allQueuedTokens state).Perm
+      (.begin request :: allQueuedTokens { state with queuedTokens := state.queuedTokens.erase unit }) :=
+    (values_erase_perm found).append_right _
   obtain ⟨nodup, beginnable⟩ := formed.claimed.named request queued
   refine ⟨nodup, fun id named => ⟨(beginnable id named).congr (.refl _) rfl (Laws.State.items_congr rfl) rfl (instanceOf_congr rfl rfl), ?_, ?_,
     fun completes => formed.settled.free queued named
-      (SlotCompletes.shrink (before := state) (after := { state with tokens := rest }) rfl (fun _ member => member)
-        completes)⟩,
+      (SlotCompletes.shrink (before := state) (after := { state with queuedTokens := state.queuedTokens.erase unit }) rfl
+        (fun _ member => member) completes)⟩,
     formed.claimed.innerPlaced request queued⟩
-  · intro other (claimed : Signal.begin other ∈ state.signals ∨ Token.begin other ∈ rest) inOther
+  · intro other (claimed : Signal.begin other ∈ allSignals state ∨
+      Token.begin other ∈ allQueuedTokens { state with queuedTokens := state.queuedTokens.erase unit }) inOther
     rcases claimed with signal | token
     · exact formed.claimed.queuesApart other request signal member id inOther named
-    · rcases taken with top | bottom
-      · exact formed.claimed.tokensApart request other
-          (top ▸ List.cons_sublist_cons.mpr (List.singleton_sublist.mpr token)) id named inOther
-      · exact formed.claimed.tokensApart other request
-          (by rw [bottom]; exact (List.singleton_sublist.mpr token).append (.refl [_])) id inOther named
+    · exact apart_fewer (.of_perm taken.symm) formed.claimed.tokensApart request other
+        (List.cons_sublist_cons.mpr (List.singleton_sublist.mpr token)) id named inOther
   · intro leave writes rule completed
     exact formed.claimed.uncompleted request id leave writes rule queued named completed
 
 /-- A queued completion completes nothing a queued begin names. -/
 theorem complete_unnamed {state : State} (formed : WellFormed program state) {id : OccurrenceId} {leave : Leave}
     {writes : List (String × Value)} {rule : WriteRule}
-    (completed : Signal.complete id leave writes rule ∈ state.signals) :
+    (completed : Signal.complete id leave writes rule ∈ allSignals state) :
     ∀ request, Queued state request → id ∉ names request :=
   fun request queued named => formed.claimed.uncompleted request id leave writes rule queued named completed
 
-/-- The closure's next signal, a compensation, may end as it asks once it leaves the queue. -/
+/-- A queued compensation may end as it asks once it leaves the queue. -/
 theorem resumable_signal {state : State} (formed : WellFormed program state) {scope : ScopeOccurrenceId}
-    {activity : Option ElementId} {trigger : OccurrenceRef} {leave : Option OccurrenceId} {resume : Resume} {rest : List Signal}
-    (head : state.signals = .compensate scope activity trigger leave (some resume) :: rest) :
-    Resumable { state with signals := rest } scope resume :=
+    {activity : Option ElementId} {trigger : OccurrenceRef} {leave : Option OccurrenceId} {resume : Resume} {unit : UnitKey}
+    (found : state.queuedSignals[unit]? = some (.compensate scope activity trigger leave (some resume))) :
+    Resumable { state with queuedSignals := state.queuedSignals.erase unit } scope resume :=
   ⟨fun occurrence _ same => by
     subst same
-    exact (formed.settled.queued scope activity trigger leave occurrence _ (head ▸ List.mem_cons_self ..)).transport
+    exact (formed.settled.queued scope activity trigger leave occurrence _ (mem_allSignals_of found)).transport
       (.refl _) (fun _ member _ => .inl member) fun _ queued =>
-        queued.shrink (before := state) (after := { state with signals := rest })
-          (by rw [head]; exact List.sublist_cons_self _ _) (.refl _),
+        queued.shrink (before := state) (after := { state with queuedSignals := state.queuedSignals.erase unit })
+          allSignals_unqueue (fun _ member => member),
     fun context same => formed.settled.grouped scope activity trigger leave context
-      (same ▸ head ▸ List.mem_cons_self ..)⟩
+      (same ▸ mem_allSignals_of found)⟩
 
-/-- The closure's next signal, a raise, finds what its origin names and a settled host once it leaves the queue. -/
+/-- A queued raise finds what its origin names and a settled host once it leaves the queue. -/
 theorem raisable_signal {state : State} (formed : WellFormed program state) {raised : Raised} {origin : Origin}
-    {rest : List Signal} (head : state.signals = .raise raised origin :: rest) :
-    Raisable program { state with signals := rest } origin ∧
-      ∀ host, origin.host = some host → Settled { state with signals := rest } host := by
-  have member : Signal.raise raised origin ∈ state.signals := head ▸ List.mem_cons_self ..
-  have queued : ∀ request, Queued { state with signals := rest } request → Queued state request := fun _ queued =>
-    queued.shrink (before := state) (after := { state with signals := rest }) (by rw [head]; exact List.sublist_cons_self _ _)
-      (.refl _)
+    {unit : UnitKey} (found : state.queuedSignals[unit]? = some (.raise raised origin)) :
+    Raisable program { state with queuedSignals := state.queuedSignals.erase unit } origin ∧
+      ∀ host, origin.host = some host → Settled { state with queuedSignals := state.queuedSignals.erase unit } host := by
+  have member : Signal.raise raised origin ∈ allSignals state := mem_allSignals_of found
+  have queued : ∀ request, Queued { state with queuedSignals := state.queuedSignals.erase unit } request →
+      Queued state request := fun _ queued =>
+    queued.shrink (before := state) (after := { state with queuedSignals := state.queuedSignals.erase unit })
+      allSignals_unqueue (fun _ member => member)
   refine ⟨fun event => ?_, fun host named => (formed.settled.raised raised origin host member named).transport
     (.refl _) (fun _ present _ => .inl present) queued⟩
   exact formed.raises raised origin member event

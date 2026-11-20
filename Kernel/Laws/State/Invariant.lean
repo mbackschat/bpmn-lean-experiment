@@ -3,6 +3,7 @@ module
 public import Kernel.State.Tree
 public import Kernel.Laws.State.Items
 public import Kernel.Laws.State.History
+public import Kernel.Laws.State.Map
 
 /-! # Laws of the kernel state: the invariant
 
@@ -78,8 +79,10 @@ def key (s : State) (occurrence : Occurrence) : OccurrenceKey :=
   { processInstanceId := s.instanceOf occurrence.scope, element := occurrence.element,
     activation := occurrence.activation, role := occurrence.role }
 
-/-- The start facts of the input in progress. -/
-def starts (s : State) : List StartedFact := s.journal.flatMap (·.started) ++ s.draft.started
+/-- The start facts of the input in progress: a committed input's journal, the transitions of the closure in progress,
+keyed by unit (DC4), and the draft. -/
+def starts (s : State) : List StartedFact :=
+  s.journal.flatMap (·.started) ++ (s.transitions.toList.map (·.2)).flatMap (·.started) ++ s.draft.started
 
 /-- Every identifier the state holds was issued (`OccurrenceIssued`, `ScopeIssued`), so a counter names only fresh
 identities: an occurrence's identity is never reused ([scopes, SRE-FRESH-01](../../../docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md#concurrent-activations-and-re-entry)). -/
@@ -140,7 +143,7 @@ structure Owned (s : State) : Prop where
   scopeOwners : ∀ scope ∈ s.scopes, ∀ owner, scope.occurrence = some owner → ∃ occurrence ∈ s.occurrences,
     occurrence.id = owner ∧ occurrence.begun = true
   variableScopes : ∀ variables ∈ s.variables, variables.scope ∈ scopeIds s
-  tokenScopes : ∀ token ∈ s.tokens, token.busyScope ∈ scopeIds s
+  tokenScopes : ∀ token ∈ allQueuedTokens s, token.busyScope ∈ scopeIds s
 
 /-- The scope occurrences form one tree rooted at `State.root`: it is present, it is the only one without a parent, and
 every one reaches it, so no parent chain cycles. The root is named, not merely unique, because `State.initial` is the
@@ -172,14 +175,14 @@ what it names itself (`Step.requireScope`, `Step.gone`) or does nothing to what 
 issued identity, so a reservation made later is never one it completes (`Typed`). Queued work naming a scope
 occurrence an interruption removed (`Kernel/Step/Stale.lean`) keeps this clause: what it names was issued. -/
 structure QueueSound (s : State) : Prop where
-  arm : ∀ host element scope, Signal.arm host element scope ∈ s.signals → OccurrenceIssued s host ∧ ScopeIssued s scope ∧
+  arm : ∀ host element scope, Signal.arm host element scope ∈ allSignals s → OccurrenceIssued s host ∧ ScopeIssued s scope ∧
     ∀ occurrence ∈ s.occurrences, occurrence.id = host → occurrence.begun = true ∧ occurrence.scope = scope
-  armScope : ∀ scope, Signal.armScope scope ∈ s.signals → ScopeIssued s scope
-  armGateway : ∀ occurrence gateway scope, Signal.armGateway occurrence gateway scope ∈ s.signals →
+  armScope : ∀ scope, Signal.armScope scope ∈ allSignals s → ScopeIssued s scope
+  armGateway : ∀ occurrence gateway scope, Signal.armGateway occurrence gateway scope ∈ allSignals s →
     OccurrenceIssued s occurrence ∧ ScopeIssued s scope ∧
       ∀ found ∈ s.occurrences, found.id = occurrence → found.begun = true ∧ found.scope = scope
-  ends : ∀ status failure, Signal.endInstance status failure ∈ s.signals → (failure.isSome = true ↔ status = .failed)
-  completes : ∀ id leave writes rule, Signal.complete id leave writes rule ∈ s.signals → OccurrenceIssued s id
+  ends : ∀ status failure, Signal.endInstance status failure ∈ allSignals s → (failure.isSome = true ↔ status = .failed)
+  completes : ∀ id leave writes rule, Signal.complete id leave writes rule ∈ allSignals s → OccurrenceIssued s id
 
 /-- Every start fact of the input in progress counts an activation its counter has issued, so a fresh activation never
 repeats one (`StartedOnce`, R8). -/
@@ -204,17 +207,18 @@ def OwnedBelow (s : State) : Prop :=
 (`inner`). -/
 def names (request : BeginRequest) : List OccurrenceId := request.reserved.toList ++ request.inner.toList
 
-/-- A begin request is queued: as a `begin` signal or as a deferred begin on the work stack. -/
+/-- A begin request is queued: as a `begin` signal or as a deferred begin, keyed by the closure or in the running
+micro-step's batch. -/
 def Queued (s : State) (request : BeginRequest) : Prop :=
-  Signal.begin request ∈ s.signals ∨ Token.begin request ∈ s.tokens
+  Signal.begin request ∈ allSignals s ∨ Token.begin request ∈ allQueuedTokens s
 
 /-- A queued request of a state with fewer queued entries was queued before. -/
-theorem Queued.shrink {before after : State} (signals : after.signals.Sublist before.signals)
-    (tokens : after.tokens.Sublist before.tokens) {request : BeginRequest} (queued : Queued after request) :
+theorem Queued.shrink {before after : State} (signals : ∀ signal ∈ allSignals after, signal ∈ allSignals before)
+    (tokens : ∀ token ∈ allQueuedTokens after, token ∈ allQueuedTokens before) {request : BeginRequest} (queued : Queued after request) :
     Queued before request := by
   rcases queued with signal | token
-  · exact .inl (signals.subset signal)
-  · exact .inr (tokens.subset token)
+  · exact .inl (signals _ signal)
+  · exact .inr (tokens _ token)
 
 /-- The reservation `id` may begin in the scope occurrence `scope`: it was issued, and while it stands it is unbegun, no
 item waits for it or hangs on it, and it lies in `scope`'s process instance, so its key is the one its begin journals
@@ -231,12 +235,13 @@ def SlotCompletes (s : State) (id : OccurrenceId) : Prop :=
   (∃ waiting ∈ s.slots.parked, waiting.occurrence = id) ∨ (∃ run ∈ s.slots.multiInstances, run.occurrence = id) ∨
     (∃ run ∈ s.slots.compensation.runs, ∃ leave, run.resume = some (.complete id leave)) ∨
     (∃ scope activity trigger leave resume,
-      Signal.compensate scope activity trigger leave (some (.complete id resume)) ∈ s.signals) ∨
-    ∃ raised origin, Signal.raise raised origin ∈ s.signals ∧ origin.host = some id
+      Signal.compensate scope activity trigger leave (some (.complete id resume)) ∈ allSignals s) ∨
+    ∃ raised origin, Signal.raise raised origin ∈ allSignals s ∧ origin.host = some id
 
 /-- What a slot completes in a state with the same slots and fewer queued signals, it completes in the other. -/
 theorem SlotCompletes.shrink {before after : State} (slots : after.slots = before.slots)
-    (signals : ∀ signal ∈ after.signals, signal ∈ before.signals) {id : OccurrenceId} (completes : SlotCompletes after id) :
+    (signals : ∀ signal ∈ allSignals after, signal ∈ allSignals before) {id : OccurrenceId}
+    (completes : SlotCompletes after id) :
     SlotCompletes before id := by
   rw [SlotCompletes, ← slots]
   rcases completes with parked | bodies | runs | ⟨scope, activity, trigger, rest⟩ | ⟨raised, origin, member, host⟩
@@ -251,7 +256,7 @@ theorem SlotCompletes.shrink {before after : State} (slots : after.slots = befor
 it. -/
 def Unclaimed (s : State) (id : OccurrenceId) : Prop :=
   (∀ request, Queued s request → id ∉ names request) ∧
-    (∀ leave writes rule, Signal.complete id leave writes rule ∉ s.signals) ∧ ¬ SlotCompletes s id
+    (∀ leave writes rule, Signal.complete id leave writes rule ∉ allSignals s) ∧ ¬ SlotCompletes s id
 
 /-- The Event Sub-Process start reservation a begin request names (`BeginRequest.inner`) lies, while it stands, in the
 scope occurrence the request begins in. -/
@@ -260,6 +265,20 @@ def InnerPlaced (s : State) (request : BeginRequest) : Prop :=
 
 /-- `first` occurs in `l` before `second`. -/
 def Precedes {α : Type} (l : List α) (first second : α) : Prop := [first, second].Sublist l
+
+/-- Begins apart in some order are apart in every order: apartness is symmetric, so it survives taking entries off a
+queue view and reordering it (`Fewer`). -/
+theorem apart_fewer {β : Type} {begin : BeginRequest → β} {l l' : List β} (fewer : Fewer l' l)
+    (apart : ∀ first second, Precedes l (begin first) (begin second) → ∀ id ∈ names first, id ∉ names second) :
+    ∀ first second, Precedes l' (begin first) (begin second) → ∀ id ∈ names first, id ∉ names second := by
+  let R : β → β → Prop := fun x y => ∀ first second, x = begin first → y = begin second →
+    ∀ id ∈ names first, id ∉ names second
+  have symm : ∀ {x y}, R x y → R y x := fun r first second same same' id inFirst inSecond =>
+    r second first same' same id inSecond inFirst
+  have holds : l.Pairwise R := List.pairwise_iff_forall_sublist.mpr fun pair first second same same' => by
+    subst same; subst same'; exact apart first second pair
+  intro first second pair
+  exact List.pairwise_iff_forall_sublist.mp (fewer.pairwise symm holds) pair first second rfl rfl
 
 /-- Each reservation has one claimant, so it begins once: an item attached to a host holds its unbegun reservation
 alone, as `State.openSubscription` reserves afresh for each subscription; a queued begin names distinct beginnable reservations,
@@ -270,14 +289,14 @@ structure ReservationsClaimed (s : State) : Prop where
     (∃ occurrence ∈ s.occurrences, occurrence.id = item.id.occurrence ∧ occurrence.begun = false) → ∀ other ∈ itemList s.openItems,
       other.id.occurrence = item.id.occurrence → other = item
   named : ∀ request, Queued s request → (names request).Nodup ∧ ∀ id ∈ names request, Beginnable s request.scope id
-  signalsApart : ∀ first second, Precedes s.signals (.begin first) (.begin second) →
+  signalsApart : ∀ first second, Precedes (allSignals s) (.begin first) (.begin second) →
     ∀ id ∈ names first, id ∉ names second
-  tokensApart : ∀ first second, Precedes s.tokens (.begin first) (.begin second) →
+  tokensApart : ∀ first second, Precedes (allQueuedTokens s) (.begin first) (.begin second) →
     ∀ id ∈ names first, id ∉ names second
-  queuesApart : ∀ first second, Signal.begin first ∈ s.signals → Token.begin second ∈ s.tokens →
+  queuesApart : ∀ first second, Signal.begin first ∈ allSignals s → Token.begin second ∈ allQueuedTokens s →
     ∀ id ∈ names first, id ∉ names second
   uncompleted : ∀ request id leave writes rule, Queued s request → id ∈ names request →
-    Signal.complete id leave writes rule ∉ s.signals
+    Signal.complete id leave writes rule ∉ allSignals s
   /-- A queued begin names an issued scope occurrence, so a scope occurrence entered later is never the one it
   begins in. -/
   scopesIssued : ∀ request, Queued s request → ScopeIssued s request.scope
@@ -328,14 +347,14 @@ structure SlotsSettled (s : State) : Prop where
   resumed : ∀ run ∈ s.slots.compensation.runs, ∀ occurrence leave, run.resume = some (.complete occurrence leave) →
     Settled s occurrence
   queued : ∀ scope activity trigger leave occurrence resume,
-    Signal.compensate scope activity trigger leave (some (.complete occurrence resume)) ∈ s.signals → Settled s occurrence
+    Signal.compensate scope activity trigger leave (some (.complete occurrence resume)) ∈ allSignals s → Settled s occurrence
   placed : ∀ run ∈ s.slots.multiInstances, Placed s run
   runsPlaced : ∀ run ∈ s.slots.compensation.runs, RunPlaced s run
   /-- A queued compensation releases no group context but its own scope occurrence: `Propagation` queues none that
   resumes a group. -/
   grouped : ∀ scope activity trigger leave context,
-    Signal.compensate scope activity trigger leave (some (.group context)) ∈ s.signals → context = scope
-  raised : ∀ raised origin host, Signal.raise raised origin ∈ s.signals → origin.host = some host → Settled s host
+    Signal.compensate scope activity trigger leave (some (.group context)) ∈ allSignals s → context = scope
+  raised : ∀ raised origin host, Signal.raise raised origin ∈ allSignals s → origin.host = some host → Settled s host
 
 /-- What a slot completes no queued begin names. -/
 theorem SlotsSettled.free {s : State} (settled : SlotsSettled s) {request : BeginRequest} (queued : Queued s request)
@@ -374,7 +393,7 @@ such an item is completed while it waits or given an effect or an incident (`Fea
 def Typed (program : Program) (s : State) : Prop :=
   ∀ item ∈ itemList s.openItems, ((program.element? item.element).bind (·.start?)).isSome = true →
     Unbegun s item.id.occurrence ∧ (∀ other ∈ itemList s.openItems, other.id.occurrence = item.id.occurrence → other = item) ∧
-      (∀ leave writes rule, Signal.complete item.id.occurrence leave writes rule ∉ s.signals) ∧ AwaitsTrigger item.kind
+      (∀ leave writes rule, Signal.complete item.id.occurrence leave writes rule ∉ allSignals s) ∧ AwaitsTrigger item.kind
 
 /-- An item that waits for work, an effect or an incident, waits on a begun occurrence: `State.openItem` opens it for
 one and `Feature.Work` turns only such an item into another of them, while a subscription's item, the one that holds a
@@ -401,7 +420,7 @@ def Raisable (program : Program) (s : State) (origin : Origin) : Prop :=
 
 /-- Every queued raise is `Raisable`. -/
 def RaisesSound (program : Program) (s : State) : Prop :=
-  ∀ raised origin, Signal.raise raised origin ∈ s.signals → Raisable program s origin
+  ∀ raised origin, Signal.raise raised origin ∈ allSignals s → Raisable program s origin
 
 /-- An occurrence numbered as a Multi-Instance body is of an element the program declares a Multi-Instance envelope:
 `Step.roleOf` numbers a body only for such an element, a reservation numbers under the element's own counter

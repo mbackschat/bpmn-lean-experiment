@@ -110,7 +110,7 @@ structure Moves (s t : State) : Prop where
   scopes : ∀ entry ∈ t.scopes, entry ∈ s.scopes ∨ ¬ Laws.State.ScopeIssued s entry.id
   activations : t.activations = s.activations
   named : t.instanceId = s.instanceId
-  signals : ∃ more, t.signals = s.signals ++ more ∧ ∀ signal ∈ more, Untriggered signal
+  signals : ∃ more, Laws.State.allSignals t = Laws.State.allSignals s ++ more ∧ ∀ signal ∈ more, Untriggered signal
   ungrouped : ∀ trigger, (ungroupedTriggers t).count trigger ≤ (ungroupedTriggers s).count trigger
   sources : ∀ run ∈ t.slots.compensation.runs, ∃ source ∈ s.slots.compensation.runs, source.trigger = run.trigger
   occurrences : ∀ o ∈ t.occurrences, o ∈ s.occurrences
@@ -142,7 +142,7 @@ theorem Moves.trans {s t u : State} (first : Moves s t) (second : Moves t u) : M
 /-- Queuing an untriggered signal moves nothing else. -/
 theorem moves_signal (s : State) {signal : Signal} (quiet : Untriggered signal) : Moves s (s.signal signal) := by
   rw [Laws.State.signal_eq]
-  exact ⟨Nat.le_refl _, .of_same rfl rfl, fun _ member => .inl member, rfl, rfl, ⟨[signal], rfl, by simpa using quiet⟩,
+  exact ⟨Nat.le_refl _, .of_same rfl rfl, fun _ member => .inl member, rfl, rfl, ⟨[signal], Laws.State.allSignals_append _ _, by simpa using quiet⟩,
     fun _ => Nat.le_refl _, fun run member => ⟨run, member, rfl⟩, fun _ inside => inside⟩
 
 theorem tame_signal {s : State} (tame : Tame s) (signal : Signal) : Tame (s.signal signal) := by
@@ -186,7 +186,7 @@ theorem entered_eq (s : State) (element : ElementId) (parent : ScopeOccurrenceId
                        occurrence := none }] ∧
       (s.enterScope element parent locals none).1.activations = s.activations ∧
       (s.enterScope element parent locals none).1.instanceId = s.instanceId ∧
-      (s.enterScope element parent locals none).1.signals = s.signals := by
+      Laws.State.allSignals (s.enterScope element parent locals none).1 = Laws.State.allSignals s := by
   rw [Laws.State.enterScope_eq]
   exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
@@ -352,7 +352,7 @@ theorem moves_withRun {s : State} (tame : Tame s) (element : ElementId) {parent 
   obtain ⟨scopes, activations, named, signals⟩ := rest
   obtain ⟨unissued, -, grows⟩ := entered_fresh tame element stands locals
   refine ⟨by simp only [withRun, stored, next]; exact Nat.le_refl _, grows, fun entry inside => ?_, activations, named,
-    ⟨[], by simp [withRun, stored, signals], by simp⟩, fun trigger => ?_, fun other inside => ?_,
+    ⟨[], by rw [List.append_nil]; exact signals, by simp⟩, fun trigger => ?_, fun other inside => ?_,
     fun _ inside => by simpa [withRun, stored, Laws.State.enterScope_eq] using inside⟩
   · simp only [withRun, stored, scopes, List.mem_append, List.mem_singleton] at inside
     rcases inside with old | rfl
@@ -408,7 +408,7 @@ theorem moves_withRetained {s : State} (tame : Tame s) (element : ElementId) {pa
   obtain ⟨scopes, activations, named, signals⟩ := rest
   obtain ⟨unissued, -, grows⟩ := entered_fresh tame element stands locals
   refine ⟨by simp only [withRetained, stored, next]; exact Nat.le_refl _, grows, fun entry inside => ?_, activations, named,
-    ⟨[], by simp [withRetained, stored, signals], by simp⟩, fun trigger => ?_, fun other inside => ?_,
+    ⟨[], by rw [List.append_nil]; exact signals, by simp⟩, fun trigger => ?_, fun other inside => ?_,
     fun _ inside => by simpa [withRetained, stored, Laws.State.enterScope_eq] using inside⟩
   · simp only [withRetained, stored, scopes, List.mem_append, List.mem_singleton] at inside
     rcases inside with old | rfl
@@ -429,7 +429,7 @@ theorem tame_fewer {s : State} (tame : Tame s) {runs : List CompensationRun}
 
 theorem moves_fewer (s : State) {runs : List CompensationRun} (fewer : runs.Sublist s.slots.compensation.runs) :
     Moves s (stored s { s.slots.compensation with runs }) :=
-  ⟨Nat.le_refl _, .of_same rfl rfl, fun _ inside => .inl inside, rfl, rfl, ⟨[], by simp [stored], by simp⟩,
+  ⟨Nat.le_refl _, .of_same rfl rfl, fun _ inside => .inl inside, rfl, rfl, ⟨[], by simp [stored, Laws.State.allSignals], by simp⟩,
     ungrouped_sublist (t := stored s { s.slots.compensation with runs }) fewer,
     fun run inside => ⟨run, fewer.subset inside, rfl⟩, fun _ inside => inside⟩
 
@@ -543,7 +543,8 @@ theorem moves_trimmed (s : State) (context : ScopeOccurrenceId) {f : Compensatio
     fun entry inside => .inl ((left_scopes s context).subset inside), (Laws.State.leaveScope_compensation s context).2.2.2.1,
     (Laws.State.leaveScope_eq s context).2, ⟨[], ?_, by simp⟩, fun trigger => ?_, fun run inside => ?_,
     fun _ inside => (Laws.State.leaveScope_occurrences s context).subset inside⟩
-  · simp only [trimmed, stored, Laws.State.leaveScope_signals, List.append_nil]
+  · rw [List.append_nil]
+    exact Laws.State.allSignals_leaveScope s context
   · simp only [ungroupedTriggers, trimmed, stored]
     rw [trims_ungrouped trims]
     exact ((runsSub.filter _).map _).count_le _

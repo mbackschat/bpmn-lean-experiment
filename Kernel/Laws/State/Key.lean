@@ -273,6 +273,41 @@ theorem breadth_push (parent : UnitKey) (step : UnitStep) : UnitKey.breadth.val 
   rw [breadth_eq]
   simp [compareLex, compareOn, Ordering.then, compare, compareOfLessAndEq]
 
+/-- Two steps of one batch compare as their kinds, then their indexes. -/
+theorem compare_signal (a b : Nat) : compare (UnitStep.signal a) (UnitStep.signal b) = compare a b := by
+  show compareLex (compareOn fun step : UnitStep => step.stepRank.1) (compareOn fun step : UnitStep => step.stepRank.2)
+    _ _ = _
+  simp [compareLex, compareOn, UnitStep.stepRank, Ordering.then]
+
+/-- Two units one unit queued run in breadth-first order as their steps compare: their paths differ only there. -/
+theorem breadth_siblings (parent : UnitKey) (a b : UnitStep) :
+    UnitKey.breadth.val (parent.push a) (parent.push b) = compare a b := by
+  rw [breadth_eq]
+  simp only [compareLex, compareOn, List.length_cons, List.reverse_cons, Std.ReflCmp.compare_self, Ordering.eq_then]
+  generalize parent.path.reverse = path
+  induction path with
+  | nil => simp [List.compare_cons_cons]
+  | cons x xs ih => simpa [List.compare_cons_cons, Std.ReflCmp.compare_self, Ordering.eq_then] using ih
+
+@[simp] theorem batchIndex_token (index : Nat) : (UnitStep.token index).batchIndex = index := by
+  simp [UnitStep.batchIndex, UnitStep.stepRank]
+
+instance breadth_trans : Std.TransCmp UnitKey.breadth.val := by
+  rw [UnitKey.breadth.property]
+  exact inferInstanceAs <| Std.TransCmp (compareLex _ _)
+
+/-- Breadth-first order is a strict total order on unit keys. -/
+theorem breadth_lt_trans {a b c : UnitKey} (one : UnitKey.breadth.val a b = .lt) (two : UnitKey.breadth.val b c = .lt) :
+    UnitKey.breadth.val a c = .lt :=
+  Std.TransCmp.lt_trans one two
+
+theorem breadth_total {a b : UnitKey} (apart : a ≠ b) :
+    UnitKey.breadth.val a b = .lt ∨ UnitKey.breadth.val b a = .lt := by
+  cases order : UnitKey.breadth.val a b with
+  | lt => exact .inl rfl
+  | eq => exact absurd (breadth_eq_eq.mp order) apart
+  | gt => exact .inr (Std.OrientedCmp.gt_iff_lt.mp order)
+
 end UnitKey
 
 end Kernel.Laws.State

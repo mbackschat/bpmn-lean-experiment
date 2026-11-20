@@ -34,10 +34,8 @@ import {
   SignalTag,
   WriteRule,
   beginRequest,
-  calledInstanceId,
   committed,
   completeSignal,
-  enterCalled,
   failed,
   instanceOf,
   instanceRoot,
@@ -54,6 +52,7 @@ import {
   SemanticCause,
   semanticFailure,
 } from "../../state.js";
+import { calledInstanceId, enterCalled } from "../../state/called.js";
 import { ctxEvaluateMappings, evalContext, type Ctx } from "../../hooks.js";
 
 /**

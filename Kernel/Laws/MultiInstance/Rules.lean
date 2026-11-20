@@ -149,6 +149,37 @@ running state queues nothing, so these are inductive strengthening (root decisio
 def QueuedFor (run : MultiInstanceRun) (index : Nat) (request : BeginRequest) : Prop :=
   request.continuation = .multiInstance run.occurrence ∧ run.instances[index]? = some (.active request.scope)
 
+/-- The order of the begins of `run` still queued (DC4, root decision 2026-11-19), which reads no run log: the
+Multi-Instance feature queues a body's begins in one micro-step, as one batch (`deferBegins` is the one queuer of deferred
+begins, guard 17), so the running batch lists them in slot order, signals in increasing slots and deferred begins in
+decreasing ones (`signals`, `tokens`, `queues`, facts of the batch alone); a body's begins are never both in the running
+batch and keyed (`apart`); and once keyed they are siblings under the unit that queued them, so their keys order them:
+begin signals in breadth-first key order (`keyedSignals`), which is their index order, deferred begins by their index in
+the batch, the higher first (`keyedTokens`), and every keyed begin signal below every keyed deferred begin
+(`keyedQueues`). The closure takes queued begins in that order: signals breadth-first (`Step.firstBreadth`) and deferred
+begins last queued first (`Step.latest`). -/
+structure BeginsOrdered (s : State) (run : MultiInstanceRun) : Prop where
+  signals : ∀ first second first' second', Laws.State.Precedes s.signals (.begin first) (.begin second) →
+    QueuedFor run first' first → QueuedFor run second' second → first' < second'
+  tokens : ∀ first second first' second', Laws.State.Precedes s.tokens (.begin first) (.begin second) →
+    QueuedFor run first' first → QueuedFor run second' second → second' < first'
+  queues : ∀ first second first' second', Signal.begin first ∈ s.signals → Token.begin second ∈ s.tokens →
+    QueuedFor run first' first → QueuedFor run second' second → first' < second'
+  apart : ∀ first second first' second', (Signal.begin first ∈ s.signals ∨ Token.begin first ∈ s.tokens) →
+    QueuedFor run first' first → ∀ unit : UnitKey,
+    (s.queuedSignals[unit]? = some (Signal.begin second) ∨ s.queuedTokens[unit]? = some (Token.begin second)) →
+    QueuedFor run second' second → False
+  keyedSignals : ∀ (one two : UnitKey) first second first' second',
+    s.queuedSignals[one]? = some (Signal.begin first) → s.queuedSignals[two]? = some (Signal.begin second) →
+    QueuedFor run first' first → QueuedFor run second' second → UnitKey.breadth.val one two = .lt → first' < second'
+  keyedTokens : ∀ (one two : UnitKey) first second first' second',
+    s.queuedTokens[one]? = some (Token.begin first) → s.queuedTokens[two]? = some (Token.begin second) →
+    QueuedFor run first' first → QueuedFor run second' second →
+    ∃ (unit : UnitKey) (a b : Nat), one = unit.tokenUnit a ∧ two = unit.tokenUnit b ∧ (a < b → second' < first')
+  keyedQueues : ∀ (one two : UnitKey) first second first' second',
+    s.queuedSignals[one]? = some (Signal.begin first) → s.queuedTokens[two]? = some (Token.begin second) →
+    QueuedFor run first' first → QueuedFor run second' second → first' < second'
+
 /-- What the instances' begins still queued need for the numbering: every body's element loops, and its instances'
 scope occurrences belong to no called instance, so they share one activation counter; an occurrence continuing into a
 body in one of its active instances' scope occurrences is an occurrence of the body's element under the element role
@@ -157,9 +188,9 @@ in yet and so needs no fact of occurrences elsewhere; a queued instance begin ta
 while that slot's scope occurrence stands, with the body's element and no reservation (`targets`); no queued begin into
 an instance's scope occurrence begins a reservation of the body's element under the element role, and every reservation
 continues by its flows (`reserved`, `reservations`), and no reservation still to be made names a looping element, as a
-boundary's or an Event's never does under `IdsUnique` (`occurs`); the closure takes queued begins in slot order: begin signals first
-in, first out, deferred begins last in, first out, and only under `declarationDepthFirst` (`Step.nextToken`); and every
-instance that has begun lies in a slot below every one still queued (`above`). -/
+boundary's or an Event's never does under `IdsUnique` (`occurs`); each body's queued begins are in slot order
+(`ordered`), and begins are deferred only under `declarationDepthFirst` (`deferred`); and every instance that has begun
+lies in a slot below every one still queued (`above`). -/
 structure BeginsQueued (program : Program) (s : State) : Prop where
   looped : ∀ run ∈ s.slots.multiInstances, ∃ loop, LoopOf program run.element loop
   uncalled : ∀ run ∈ s.slots.multiInstances, ∀ scope, Iteration.active scope ∈ run.instances →
@@ -174,15 +205,8 @@ structure BeginsQueued (program : Program) (s : State) : Prop where
       o.id = id → o.element = run.element → o.role = .element → False
   reservations : ∀ o ∈ s.occurrences, o.begun = false → o.continuation = .flow
   occurs : ∀ element, OccurPending s element → ∀ loop, ¬ LoopOf program element loop
-  signalsOrdered : ∀ run ∈ s.slots.multiInstances, ∀ first second first' second',
-    Laws.State.Precedes s.signals (.begin first) (.begin second) → QueuedFor run first' first →
-    QueuedFor run second' second → first' < second'
-  tokensOrdered : ∀ run ∈ s.slots.multiInstances, ∀ first second first' second',
-    Laws.State.Precedes s.tokens (.begin first) (.begin second) → QueuedFor run first' first →
-    QueuedFor run second' second → second' < first'
-  queuesOrdered : ∀ run ∈ s.slots.multiInstances, ∀ first second first' second', Signal.begin first ∈ s.signals →
-    Token.begin second ∈ s.tokens → QueuedFor run first' first → QueuedFor run second' second → first' < second'
-  deferred : program.options.branchSchedule = .orderInvariant → ∀ request, Token.begin request ∉ s.tokens
+  ordered : ∀ run ∈ s.slots.multiInstances, BeginsOrdered s run
+  deferred : program.options.branchSchedule = .orderInvariant → ∀ request, Token.begin request ∉ Laws.State.allQueuedTokens s
   above : ∀ run ∈ s.slots.multiInstances, ∀ request (index queued : Nat) scope, Laws.State.Queued s request →
     QueuedFor run queued request → run.instances[index]? = some (.active scope) →
     (∃ o ∈ s.occurrences, o.scope = scope ∧ o.continuation = .multiInstance run.occurrence) → index < queued

@@ -3,9 +3,11 @@ module
 public import Kernel.Laws.State.Reserve
 public import Kernel.Laws.State.Transitions
 public import Kernel.State.Removal
+public import Kernel.State.Called
 public import Kernel.Laws.State.Slots
 public import Kernel.Laws.State.Tree
 import all Kernel.State
+import all Kernel.State.Called
 import all Kernel.State.Raise
 import all Kernel.State.Wait
 
@@ -85,8 +87,9 @@ theorem setVariable_same (state : State) (target : ScopeOccurrenceId) (name : St
   dsimp only
   split <;> split <;> exact {
       scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, items := rfl, ordinals := rfl, tokens := rfl, activations := rfl,
-      occurrenceOrdinals := rfl, journal := rfl, draft := rfl, status := rfl, failure := rfl, signals := rfl,
-      instances := fun _ => by apply instanceOf_congr <;> rfl, instanceId := rfl, slots := rfl }
+      occurrenceOrdinals := rfl, journal := rfl, transitions := rfl, draft := rfl, status := rfl, failure := rfl, signals := rfl,
+      queues := .of_eq rfl rfl rfl rfl, instances := fun _ => by apply instanceOf_congr <;> rfl, instanceId := rfl,
+      slots := rfl }
 
 /-- The variable sets after `setVariable`: the target's set rebinds or appends the name, or a new set holds it. -/
 theorem setVariable_variables (state : State) (target : ScopeOccurrenceId) (name : String) (value : Value) :
@@ -106,8 +109,9 @@ theorem removeVariable_same (state : State) (target : ScopeOccurrenceId) (name :
     SameButVariables state (state.removeVariable target name) :=
   {
       scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, items := rfl, ordinals := rfl, tokens := rfl, activations := rfl,
-      occurrenceOrdinals := rfl, journal := rfl, draft := rfl, status := rfl, failure := rfl, signals := rfl,
-      instances := fun _ => by apply instanceOf_congr <;> rfl, instanceId := rfl, slots := rfl }
+      occurrenceOrdinals := rfl, journal := rfl, transitions := rfl, draft := rfl, status := rfl, failure := rfl, signals := rfl,
+      queues := .of_eq rfl rfl rfl rfl, instances := fun _ => by apply instanceOf_congr <;> rfl, instanceId := rfl,
+      slots := rfl }
 
 /-- `keyed` keeps the last binding of each name: a binding enters unless a binding after it has its name. -/
 theorem keyed_eq : keyed [] = [] ∧ ∀ (binding : String × Value) (rest : List (String × Value)),
@@ -265,12 +269,26 @@ theorem busyScope_flow (flow : FlowId) (scope : ScopeOccurrenceId) : (Token.flow
 theorem busyScope_begin (request : BeginRequest) : (Token.begin request).busyScope = request.scope := by
   simp only [Token.busyScope]
 
-/-- The busy scope occurrences: each token's, each live open item's, each begun occurrence's, each parent and each one
-a feature slot keeps alive. -/
-theorem busyScopes_eq (state : State) : state.busyScopes = state.tokens.map (·.busyScope) ++
+/-- Every queued token: the closure's queued content and the running micro-step's batch, a membership view (DC4). -/
+theorem allTokens_eq (state : State) : state.allTokens = allQueuedTokens state := by
+  simp only [State.allTokens, allQueuedTokens]
+
+/-- A micro-step's batches move under its unit key, each entry keyed by its index in the batch (DC4). -/
+theorem queueBatch_eq (state : State) (unit : UnitKey) : state.queueBatch unit = { state with
+    queuedSignals := state.signals.zipIdx.foldl (fun queued (signal, index) => queued.insert (unit.signalUnit index) signal)
+      state.queuedSignals
+    queuedTokens := state.tokens.zipIdx.foldl (fun queued (token, index) => queued.insert (unit.tokenUnit index) token)
+      state.queuedTokens
+    outboxes := if state.outbox.isEmpty then state.outboxes else state.outboxes.insert unit state.outbox
+    signals := [], tokens := [], outbox := [] } := by
+  simp only [State.queueBatch]
+
+/-- The busy scope occurrences: each queued token's, each live open item's, each begun occurrence's, each parent and
+each one a feature slot keeps alive. -/
+theorem busyScopes_eq (state : State) : state.busyScopes = (allQueuedTokens state).map (·.busyScope) ++
     ((itemList state.openItems).filter fun item => !item.passive).map (·.scope) ++ (state.occurrences.filter (·.begun)).map (·.scope) ++
       state.scopes.filterMap (·.parent) ++ state.slots.keptAlive := by
-  simp only [State.busyScopes]
+  simp only [State.busyScopes, State.allTokens, allQueuedTokens]
 
 theorem deferBegins_eq (state : State) (requests : List BeginRequest) :
     state.deferBegins requests = { state with tokens := state.tokens ++ (requests.map Token.begin).reverse } := by
@@ -652,10 +670,14 @@ theorem reserve_reserves (state : State) (element : ElementId) (scope : ScopeOcc
       activated := fun keyed => ?_, scopes := by simp [State.reserve, State.activate, State.issueOccurrence],
       instances := instances, instanceId := by simp [State.reserve, State.activate, State.issueOccurrence],
       itemMap := by simp [State.reserve, State.activate, State.issueOccurrence],
-      tokens := by simp [State.reserve, State.activate, State.issueOccurrence],
-      signals := by simp [State.reserve, State.activate, State.issueOccurrence],
+      tokens := by simp [State.reserve, State.activate, State.issueOccurrence, allQueuedTokens],
+      signals := by simp [State.reserve, State.activate, State.issueOccurrence, allSignals],
+      queues := .of_eq (by simp [State.reserve, State.activate, State.issueOccurrence])
+        (by simp [State.reserve, State.activate, State.issueOccurrence])
+        (by simp [State.reserve, State.activate, State.issueOccurrence])
+        (by simp [State.reserve, State.activate, State.issueOccurrence]),
       variables := by simp [State.reserve, State.activate, State.issueOccurrence],
-      journal := by simp [State.reserve, State.activate, State.issueOccurrence],
+      journal := by simp [State.reserve, State.activate, State.issueOccurrence], transitions := by simp [State.reserve, State.activate, State.issueOccurrence],
       draft := by simp [State.reserve, State.activate, State.issueOccurrence],
       status := by simp [State.reserve, State.activate, State.issueOccurrence],
       failure := by simp [State.reserve, State.activate, State.issueOccurrence],
@@ -688,8 +710,10 @@ theorem startReserved_starts (state : State) {occurrence : Occurrence} (sourceTy
       scopes := by simp [State.recordStart], instances := instances, scopeOrdinals := by simp [State.recordStart],
       instanceId := by simp [State.recordStart], activations := by simp [State.recordStart],
       occurrenceOrdinals := by simp [State.recordStart], itemMap := by simp [State.recordStart],
-      tokens := by simp [State.recordStart], signals := by simp [State.recordStart],
-      variables := by simp [State.recordStart], journal := by simp [State.recordStart],
+      tokens := by simp [State.recordStart, allQueuedTokens], signals := by simp [State.recordStart, allSignals],
+      queues := .of_eq (by simp [State.recordStart]) (by simp [State.recordStart]) (by simp [State.recordStart])
+        (by simp [State.recordStart]),
+      variables := by simp [State.recordStart], journal := by simp [State.recordStart], transitions := by simp [State.recordStart],
       ended := by simp [State.recordStart], status := by simp [State.recordStart],
       failure := by simp [State.recordStart], slots := by simp [State.recordStart] }
   rw [recordStart_started]
@@ -724,9 +748,11 @@ theorem beginOccurrence_begins {state : State} (keyed : ActivationsKeyed state) 
         source := .inl ⟨reserved, member, same ▸ named, rfl, rfl, rfl, rfl, by simp [State.recordStart], by simp [State.recordStart]⟩,
         scopes := keeps.1, instances := instances, instanceId := by simp [State.recordStart],
         scopeOrdinals := by simp [State.recordStart],
-        itemMap := by simp [State.recordStart], tokens := by simp [State.recordStart],
-        signals := by simp [State.recordStart], variables := keeps.2.1,
-        journal := by simp [State.recordStart], ended := by simp [State.recordStart],
+        itemMap := by simp [State.recordStart], tokens := by simp [State.recordStart, allQueuedTokens],
+        signals := by simp [State.recordStart, allSignals], variables := keeps.2.1,
+        queues := .of_eq (by simp [State.recordStart]) (by simp [State.recordStart]) (by simp [State.recordStart])
+          (by simp [State.recordStart]),
+        journal := by simp [State.recordStart], transitions := by simp [State.recordStart], ended := by simp [State.recordStart],
         status := by simp [State.recordStart], failure := by simp [State.recordStart],
         slots := by simp [State.recordStart], continued := rfl }
   · rename_i found
@@ -750,9 +776,12 @@ theorem beginOccurrence_begins {state : State} (keyed : ActivationsKeyed state) 
         scopes := keeps.1, instances := instances, instanceId := by simp [State.recordStart, State.issueOccurrence],
         scopeOrdinals := by simp [State.recordStart, State.issueOccurrence],
         itemMap := by simp [State.recordStart, State.issueOccurrence],
-        tokens := by simp [State.recordStart, State.issueOccurrence],
-        signals := by simp [State.recordStart, State.issueOccurrence], variables := keeps.2.1,
-        journal := by simp [State.recordStart, State.issueOccurrence],
+        tokens := by simp [State.recordStart, State.issueOccurrence, allQueuedTokens],
+        signals := by simp [State.recordStart, State.issueOccurrence, allSignals], variables := keeps.2.1,
+        queues := .of_eq (by simp [State.recordStart, State.issueOccurrence])
+          (by simp [State.recordStart, State.issueOccurrence]) (by simp [State.recordStart, State.issueOccurrence])
+          (by simp [State.recordStart, State.issueOccurrence]),
+        journal := by simp [State.recordStart, State.issueOccurrence], transitions := by simp [State.recordStart, State.issueOccurrence],
         ended := by simp [State.recordStart, State.issueOccurrence],
         status := by simp [State.recordStart, State.issueOccurrence],
         failure := by simp [State.recordStart, State.issueOccurrence],

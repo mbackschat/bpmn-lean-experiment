@@ -20,6 +20,9 @@ namespace Kernel.Laws.State
 
 open Kernel
 
+/- The witnesses' states queue nothing under a unit key, so their queue views are their batches. -/
+attribute [local simp] allSignals allQueuedTokens
+
 /-- Identities are never reused: every key issued stays issued, and an identifier present after a transition but not
 before was never issued before it
 ([scopes, SRE-FRESH-01](../../../docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md#concurrent-activations-and-re-entry)). -/
@@ -56,14 +59,14 @@ structure ClearsInside (before after : State) (scope : ScopeOccurrenceId) (keep 
   variablesOutside : ∀ variables ∈ before.variables, ¬ Within before variables.scope scope →
     variables ∈ after.variables
   variablesOwn : ∀ variables ∈ before.variables, variables.scope = scope → variables ∈ after.variables
-  tokensOutside : ∀ token ∈ before.tokens, ¬ Within before token.busyScope scope → token ∈ after.tokens
+  tokensOutside : ∀ token ∈ allQueuedTokens before, ¬ Within before token.busyScope scope → token ∈ allQueuedTokens after
   scopesInside : ∀ inner ∈ after.scopes, StrictlyWithin before inner.id scope →
     ∃ owner ∈ keep, inner.occurrence = some owner
   occurrencesInside : ∀ occurrence ∈ after.occurrences, Within before occurrence.scope scope → occurrence.id ∈ keep
   itemsInside : ∀ item ∈ itemList after.openItems, Within before item.scope scope → item.id.occurrence ∈ keep
   variablesInside : ∀ variables ∈ after.variables, StrictlyWithin before variables.scope scope →
     ∃ owner ∈ keep, ∃ inner ∈ after.scopes, inner.id = variables.scope ∧ inner.occurrence = some owner
-  tokensInside : ∀ token ∈ after.tokens, ¬ Within before token.busyScope scope
+  tokensInside : ∀ token ∈ allQueuedTokens after, ¬ Within before token.busyScope scope
   noNewScopes : ∀ inner ∈ after.scopes, inner ∈ before.scopes
   noNewOccurrences : ∀ occurrence ∈ after.occurrences, occurrence ∈ before.occurrences
   noNewItems : ∀ item ∈ itemList after.openItems, item ∈ itemList before.openItems
@@ -74,7 +77,7 @@ structure ClearsInside (before after : State) (scope : ScopeOccurrenceId) (keep 
 /-- A transition queued exactly the signals `new` after those already queued, and removed none: what a hook statement
 says of the work it leaves to `Step`. -/
 def Queues (before after : State) (new : List Signal) : Prop :=
-  after.signals = before.signals ++ new
+  allSignals after = allSignals before ++ new
 
 /-- `after`'s draft adds the cancelled facts `begun` and the cancelled end facts `keys`, one each, to `before`'s. -/
 def CancelledWith (before after : State) (begun : List Occurrence) (keys : List OccurrenceKey) : Prop :=
@@ -241,11 +244,11 @@ theorem counts_shrink_rejected (kind : OpenKind) :
 /-- A hook that queues one signal `Queues` it; dropping a queued signal does not. -/
 theorem queues_one (kind : OpenKind) :
     Queues (sample kind) { sample kind with signals := [.armScope processRoot] } [.armScope processRoot] := by
-  simp [Queues, sample]
+  simp [Queues, allSignals, sample]
 
 theorem dropped_signal_rejected (kind : OpenKind) :
     ¬ Queues { sample kind with signals := [.armScope processRoot] } (sample kind) [] := by
-  simp [Queues, sample]
+  simp [Queues, allSignals, sample]
 
 /-- Cancelling the begun occurrence `innerKey` with its end fact is a `CancelsWithEnds` transition; a cancelled fact without
 its end is not. -/

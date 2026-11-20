@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Hooks
+public import Kernel.Laws.State.Map
 
 /-! # Laws of compensation and Transaction cancellation: the rules
 
@@ -274,12 +275,12 @@ def EndsOnce (run : CompensationRun) (continuation : ElementId) (continued : Lis
 def DropBeginsNothing (interrupts : Bool) (inside : ScopeOccurrenceId → Prop) (before after : State) : Prop :=
   interrupts = true →
     (∀ run, run ∈ after.slots.compensation.runs ↔ run ∈ before.slots.compensation.runs ∧ ¬ inside run.scope) ∧
-      after.scopes = before.scopes ∧ after.tokens = before.tokens
+      after.scopes = before.scopes ∧ Laws.State.allQueuedTokens after = Laws.State.allQueuedTokens before
 
 /-- The instance has failed with a published failure, and nothing is left to continue: no token, open item or
 occurrence. -/
 def Failed (state : State) : Prop :=
-  state.status = .failed ∧ state.failure.isSome = true ∧ state.tokens = [] ∧ state.openItems = ∅ ∧ state.occurrences = []
+  state.status = .failed ∧ state.failure.isSome = true ∧ Laws.State.allQueuedTokens state = [] ∧ state.openItems = ∅ ∧ state.occurrences = []
 
 /-- Under `compensationHandlerFailure = failsInstance` (COMPH-FAIL-01), an Error that no catcher inside the handler's
 context takes (`caughtInside = false`) is searched no further (`searchedFrom = none`) and fails the instance. -/

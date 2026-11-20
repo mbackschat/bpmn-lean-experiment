@@ -209,7 +209,7 @@ def positions (ctx : Ctx) (state : State) (gateway : ElementId) (scope : ScopeOc
     List FlowId :=
   let program := ctx.program
   let continuing (element : ElementId) := ((program.element? element).map (successors ctx)).getD []
-  let queued := (state.tokens.filter (·.busyScope == scope)).filterMap (·.arrivalFlow?)
+  let queued := (state.allTokens.filter (·.busyScope == scope)).filterMap (·.arrivalFlow?)
   let items := ((itemList state.openItems).filter fun item => item.scope == scope && !item.passive)
     |>.flatMap (continuing ·.element)
   let children := (state.scopes.filter (·.parent == some scope)).flatMap fun child =>

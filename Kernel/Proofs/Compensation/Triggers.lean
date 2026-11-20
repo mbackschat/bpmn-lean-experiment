@@ -188,15 +188,20 @@ theorem apart_of_fresh {s t : State}
 
 /-! ## A trigger's new run -/
 
-/-- The queued triggers of a queue whose head is a compensation: its trigger, then those the rest names. -/
-theorem queuedTriggers_cons {s : State} {scope : ScopeOccurrenceId} {activity : Option ElementId}
-    {trigger : OccurrenceRef} {leave : Option OccurrenceId} {resume : Option Resume} {rest : List Signal}
-    (queued : s.signals = .compensate scope activity trigger leave resume :: rest) :
-    queuedTriggers s = trigger :: (Laws.Step.triggersOf rest).filterMap (queuedTrigger s) := by
+/-- The queued triggers of a queue holding a compensation under `unit`: its trigger, and those the rest names. -/
+theorem queuedTriggers_pop {s : State} {scope : ScopeOccurrenceId} {activity : Option ElementId}
+    {trigger : OccurrenceRef} {leave : Option OccurrenceId} {resume : Option Resume} {unit : UnitKey}
+    (found : s.queuedSignals[unit]? = some (.compensate scope activity trigger leave resume)) :
+    (queuedTriggers s).Perm (trigger :: (Laws.Step.triggersOf (Laws.State.allSignals { s with queuedSignals := s.queuedSignals.erase unit })).filterMap
+      (queuedTrigger s)) := by
   unfold queuedTriggers
-  rw [queued, show Signal.compensate scope activity trigger leave resume :: rest =
-    [.compensate scope activity trigger leave resume] ++ rest from rfl, Laws.Step.triggersOf_append,
-    Laws.Step.triggersOf_compensate]
+  have popped : (Laws.Step.triggersOf (Laws.State.allSignals s)).Perm (Laws.Step.triggersOf
+      (Signal.compensate scope activity trigger leave resume :: Laws.State.allSignals { s with queuedSignals := s.queuedSignals.erase unit })) :=
+    Laws.Step.triggersOf_perm (Laws.State.allSignals_pop found)
+  refine (popped.filterMap _).trans ?_
+  rw [show Signal.compensate scope activity trigger leave resume :: Laws.State.allSignals { s with queuedSignals := s.queuedSignals.erase unit } =
+    [.compensate scope activity trigger leave resume] ++ Laws.State.allSignals { s with queuedSignals := s.queuedSignals.erase unit } from rfl,
+    Laws.Step.triggersOf_append, Laws.Step.triggersOf_compensate]
   rfl
 
 /-- `s` with `others` retained and `run` added after its runs: what a trigger's new run advances from. -/
@@ -250,23 +255,24 @@ apart: the trigger moves from the queued ones to the runs'. -/
 theorem triggers_opened {queue s : State} {scope : ScopeOccurrenceId} {activity : Option ElementId}
     {trigger : OccurrenceRef} {leave : Option OccurrenceId} {resume : Option Resume} {others : List Compensable}
     {run : CompensationRun} (apart : TriggersApart queue) (ungrouped : QueuedUngrouped queue)
-    (queued : queue.signals = .compensate scope activity trigger leave resume :: s.signals)
-    (shape : s = { queue with signals := s.signals }) (named : run.trigger = trigger) (free : resumesGroup run.resume = false) :
+    {unit : UnitKey} (found : queue.queuedSignals[unit]? = some (.compensate scope activity trigger leave resume))
+    (shape : s = { queue with queuedSignals := queue.queuedSignals.erase unit }) (named : run.trigger = trigger)
+    (free : resumesGroup run.resume = false) :
     TriggersApart (opened s others run) ∧ QueuedUngrouped (opened s others run) := by
   have slots : s.slots = queue.slots := by rw [shape]
   have scopes : s.scopes = queue.scopes := by rw [shape]
   have instance_ : s.instanceId = queue.instanceId := by rw [shape]
   have next : s.nextPosition = queue.nextPosition := by rw [shape]
   have activations : s.activations = queue.activations := by rw [shape]
-  have queuedEq : queuedTriggers queue = trigger :: queuedTriggers (opened s others run) := by
-    rw [queuedTriggers_cons queued, queuedTriggers, queuedTrigger_congr (t := opened s others run) (s := queue) scopes
-      instance_]
+  have queuedEq : (queuedTriggers queue).Perm (trigger :: queuedTriggers (opened s others run)) := by
+    refine (queuedTriggers_pop found).trans ?_
+    rw [queuedTriggers, queuedTrigger_congr (t := opened s others run) (s := queue) scopes instance_, shape]
     rfl
   have ungroupedEq : ungroupedTriggers (opened s others run) = ungroupedTriggers queue ++ [trigger] := by
     simp only [ungroupedTriggers, opened, stored, List.filter_append, List.map_append, slots]
     simp [free, named]
-  have later : ∀ signal ∈ s.signals, signal ∈ queue.signals := fun signal inside => by
-    rw [queued]; exact List.mem_cons_of_mem _ inside
+  have later : ∀ signal ∈ Laws.State.allSignals s, signal ∈ Laws.State.allSignals queue := fun signal inside => by
+    rw [shape] at inside; exact Laws.State.allSignals_unqueue _ inside
   have counted : ∀ key, Counted queue key → Counted (opened s others run) key := fun key old => by
     unfold Counted at old ⊢
     simp only [opened, stored, activations]
@@ -276,12 +282,13 @@ theorem triggers_opened {queue s : State} {scope : ScopeOccurrenceId} {activity 
   refine ⟨⟨?_, fun other inside grouped queuedIn => ?_, fun key inside => ?_, fun origin inside => ?_,
     fun o inside unbegun held member => ?_⟩,
     fun scope activity trigger leave resume inside => ungrouped scope activity trigger leave resume (later _ inside)⟩
-  · have held : heldTriggers (opened s others run) = heldTriggers queue := by
-      rw [heldTriggers_eq, heldTriggers_eq, ungroupedEq, queuedEq, List.append_assoc, List.singleton_append]
-    rw [held]; exact apart.apart
+  · have held : (heldTriggers (opened s others run)).Perm (heldTriggers queue) := by
+      rw [heldTriggers_eq, heldTriggers_eq, ungroupedEq, List.append_assoc, List.singleton_append]
+      exact (queuedEq.append_left _).symm
+    exact held.nodup_iff.mpr apart.apart
   · simp only [opened, stored, List.mem_append, List.mem_singleton] at inside
     rcases inside with old | rfl
-    · exact apart.grouped other (runs other old) grouped (by rw [queuedEq]; exact List.mem_cons_of_mem _ queuedIn)
+    · exact apart.grouped other (runs other old) grouped (queuedEq.mem_iff.mpr (List.mem_cons_of_mem _ queuedIn))
     · rw [free] at grouped; cases grouped
   · simp only [opened, stored, List.map_append, List.map_cons, List.map_nil, List.mem_append, List.mem_singleton]
       at inside
@@ -289,12 +296,10 @@ theorem triggers_opened {queue s : State} {scope : ScopeOccurrenceId} {activity 
     · obtain ⟨other, member, rfl⟩ := List.mem_map.mp old
       exact counted _ (apart.counted _ (List.mem_append_left _ (List.mem_map.mpr ⟨other, runs other member, rfl⟩)))
     · rw [named]
-      exact counted _ (apart.counted _ (List.mem_append_right _ (by rw [queuedEq]; exact List.mem_cons_self ..)))
-    · exact counted _ (apart.counted _ (List.mem_append_right _ (by rw [queuedEq]; exact List.mem_cons_of_mem _ queuedIn)))
-  · have old : .inr origin ∈ Laws.Step.triggersOf queue.signals := by
-      rw [queued, show Signal.compensate scope activity trigger leave resume :: s.signals =
-        [.compensate scope activity trigger leave resume] ++ s.signals from rfl, Laws.Step.triggersOf_append]
-      exact List.mem_append_right _ inside
+      exact counted _ (apart.counted _ (List.mem_append_right _ (queuedEq.mem_iff.mpr (List.mem_cons_self ..))))
+    · exact counted _ (apart.counted _ (List.mem_append_right _ (queuedEq.mem_iff.mpr (List.mem_cons_of_mem _ queuedIn))))
+  · have old : .inr origin ∈ Laws.Step.triggersOf (Laws.State.allSignals queue) :=
+      Laws.Step.triggersOf_subset later _ inside
     have ordinals : s.scopeOrdinals = queue.scopeOrdinals := by rw [shape]
     exact (Laws.State.ScopeGrows.of_same (congrArg (List.map (·.id)) scopes) ordinals).issued (apart.issued origin old)
   · have occurrences : s.occurrences = queue.occurrences := by rw [shape]
@@ -309,7 +314,7 @@ theorem triggers_opened {queue s : State} {scope : ScopeOccurrenceId} {activity 
     · obtain ⟨other, member, rfl⟩ := List.mem_map.mp old
       exact List.mem_append_left _ (List.mem_map.mpr ⟨other, runs other member, rfl⟩)
     · rw [named]
-      exact List.mem_append_right _ (by rw [queuedEq]; exact List.mem_cons_self ..)
-    · exact List.mem_append_right _ (by rw [queuedEq]; exact List.mem_cons_of_mem _ queuedIn)
+      exact List.mem_append_right _ (queuedEq.mem_iff.mpr (List.mem_cons_self ..))
+    · exact List.mem_append_right _ (queuedEq.mem_iff.mpr (List.mem_cons_of_mem _ queuedIn))
 
 end Kernel.Proofs.Compensation

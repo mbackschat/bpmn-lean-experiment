@@ -13,8 +13,8 @@
  * (guard 17).
  */
 import {
-  VariableEvent, assertNever, definitionRefEquals, programChildren, programItemScope, programProcessChildren, programPublicId, utf8ByteSize,
-  type DefinitionRef, type Element, type ElementId, type FlowId, type Program, type Value,
+  VariableEvent, assertNever, definitionRefEquals, programChildren, programItemScope, programProcessChildren,
+  type Element, type ElementId, type FlowId, type Program, type Value,
 } from "./il/types.js";
 import {
   type Binding, type ConditionalWaitDetail, type EffectDetail, type IncidentDetail, InputTag, type MessageChannel,
@@ -66,7 +66,8 @@ export {
 };
 
 import {
-  childScope, compareOccurrenceId, compareScopeSlot, occurrenceId, type OccurrenceId, rootScope, scopeParent, type ScopeSlot,
+  childScope, compareOccurrenceId, compareScopeSlot, compareUnitKey, occurrenceId, type OccurrenceId, rootScope, scopeParent,
+  type ScopeSlot, signalUnit, tokenUnit, type UnitKey,
 } from "./state/key.js";
 export { type OccurrenceId };
 import {
@@ -75,8 +76,15 @@ import {
 export {
   compareItemKey, insertItem, type ItemKey, itemAt, itemKeyText, ItemRole, itemsByPosition, type OpenItem, type OpenItems, sameItemKey,
 };
-import { type TreeMap, treeMapGetD, treeMapInsert } from "./state/map.js";
+import {
+  type OrderedMap, orderedAny, orderedEntries, orderedInsert, orderedSize, type TreeMap, treeMapGetD, treeMapInsert,
+} from "./state/map.js";
 export { type TreeMap };
+// The closure's unit keys and keyed maps reach the step through this hub, as `Kernel.State` re-exports them (guard 15).
+export { breadthUnitKey, compareUnitKey, occurrenceIdParts, scopeEncloses, type UnitKey, unitRoot, UnitRootTag } from "./state/key.js";
+export {
+  type OrderedMap, orderedAny, orderedCount, orderedEntries, orderedErase, orderedGet, orderedHas, orderedInsert, orderedSize,
+} from "./state/map.js";
 import {
   committed, type Failure, failed, failedWith, FailureTag, type RecordedFailure, recorded, type Result, SemanticCause, semanticFailure,
 } from "./state/failure.js";
@@ -340,8 +348,10 @@ export interface State {
   readonly status: InstanceStatus;
   readonly scopes: readonly ScopeOccurrence[];
   readonly occurrences: readonly Occurrence[];
-  /** The closure's work stack (`nextToken` in `step.ts`), empty once a closure settles. */
+  /** The tokens the running micro-step queued, in order; `queueBatch` moves them into `queuedTokens` (DC4). */
   readonly tokens: readonly Token[];
+  /** The closure's queued tokens, each keyed by the unit that queued it and its index in its batch; empty at commit. */
+  readonly queuedTokens: OrderedMap<UnitKey, Token>;
   readonly variables: readonly ScopeVariables[];
   readonly openItems: OpenItems;
   /** The next item ordinal of each occurrence that opened an item, in occurrence key order, pruned with the occurrence. */
@@ -354,29 +364,40 @@ export interface State {
   /** The next order position of an open item or a compensation record, read only by the sites that order them (K0.8). */
   readonly nextPosition: number;
   readonly logicalTimeMs: number;
+  /** The signals the running micro-step queued, in order; moved into `queuedSignals` like `tokens`. */
   readonly signals: readonly Signal[];
+  /** The closure's queued signal batches, each signal keyed like a queued token; empty at commit (DC2, DC4). */
+  readonly queuedSignals: OrderedMap<UnitKey, Signal>;
   /** Every variable write since the last drain, same-value writes included: `Step` hands them to `Hooks.written`. */
   readonly writes: readonly WriteEvent[];
-  /** The intents of the input in progress; `step` empties it first, so a host publishes a committed input's own. */
+  /**
+   * The intents of the running micro-step while the closure runs, moved into `outboxes` like `tokens`; once the input
+   * commits, the input's intents in run order (`orderJournal`), so a host publishes a committed input's own.
+   */
   readonly outbox: readonly BroadcastIntent[];
+  /** The intents of the closure's micro-steps, keyed by the unit that made each batch; empty at commit (DC4). */
+  readonly outboxes: OrderedMap<UnitKey, readonly BroadcastIntent[]>;
   readonly slots: FeatureSlots;
   /** Present exactly when `status` is `failed`. */
   readonly failure: InstanceFailure | null;
-  /** The occurrence facts of the input in progress; `step` empties it first. */
+  /** The occurrence facts of a committed input, in run order (`orderJournal`); empty while the closure runs. */
   readonly journal: readonly Transition[];
+  /** The transitions of the closure in progress, each keyed by the unit that ran it; empty at commit (DC4). */
+  readonly transitions: OrderedMap<UnitKey, Transition>;
   readonly draft: Draft;
 }
 
 /**
  * Whether the input in progress has crossed a transaction boundary: begun an occurrence marked `asyncBefore`, or
- * completed one marked `asyncAfter`, in the journal or the micro-step's draft. The kernel's one reader of the marks.
+ * completed one marked `asyncAfter`, in a transition of the closure or the micro-step's draft. The kernel's one reader
+ * of the marks.
  */
 export function crossed(program: Program, state: State): boolean {
-  const facts = [...state.journal.map((transition) => [transition.started, transition.ended] as const),
-    [state.draft.started, state.draft.ended] as const];
-  return facts.some(([started, ended]) =>
+  const marked = (started: readonly StartedFact[], ended: readonly (readonly [OccurrenceKey, Terminal])[]): boolean =>
     started.some((fact) => marks(program, fact.occurrence)[0]) ||
-      ended.some(([key, terminal]) => terminal === Terminal.Completed && marks(program, key)[1]));
+      ended.some(([key, terminal]) => terminal === Terminal.Completed && marks(program, key)[1]);
+  return orderedAny(state.transitions, (_, transition) => marked(transition.started, transition.ended)) ||
+    marked(state.draft.started, state.draft.ended);
 }
 
 export type Outcome = Result<State>;
@@ -407,6 +428,7 @@ export function initial(instanceId: string, variables: readonly Binding[], busin
     scopes: [{ id: root, element: null, occurrence: null, calledInstance: null }],
     occurrences: [],
     tokens: [],
+    queuedTokens: null,
     variables: [{ scope: root, entries: keyed(variables) }],
     openItems: [],
     itemOrdinals: [],
@@ -416,8 +438,10 @@ export function initial(instanceId: string, variables: readonly Binding[], busin
     nextPosition: 1,
     logicalTimeMs: 0,
     signals: [],
+    queuedSignals: null,
     writes: [],
     outbox: [],
+    outboxes: null,
     slots: {
       parked: [],
       held: [],
@@ -427,6 +451,7 @@ export function initial(instanceId: string, variables: readonly Binding[], busin
     },
     failure: null,
     journal: [],
+    transitions: null,
     draft: emptyDraft,
   };
 }
@@ -458,6 +483,30 @@ export function issueOccurrence(state: State, scope: ScopeOccurrenceId, element:
 }
 
 export function signal(state: State, next: Signal): State { return { ...state, signals: [...state.signals, next] }; }
+
+/**
+ * Lean's `State.allTokens`: every queued token, the closure's queued content and the running micro-step's batch. A
+ * membership view, read only as a multiset: its order is the map's key order, which is no order of entry (KD7).
+ */
+export function allTokens(state: State): readonly Token[] {
+  return [...orderedEntries(state.queuedTokens).map(([, token]) => token), ...state.tokens];
+}
+
+/**
+ * Lean's `State.queueBatch`: move the running micro-step's batches under its unit key `unit` (DC4), each signal and token
+ * keyed by its index in the batch, the micro-step's intents as one entry.
+ */
+export function queueBatch(state: State, unit: UnitKey): State {
+  return {
+    ...state,
+    queuedSignals: state.signals.reduce((queued, next, index) => orderedInsert(queued, signalUnit(unit, index), next, compareUnitKey),
+      state.queuedSignals),
+    queuedTokens: state.tokens.reduce((queued, token, index) => orderedInsert(queued, tokenUnit(unit, index), token, compareUnitKey),
+      state.queuedTokens),
+    outboxes: state.outbox.length === 0 ? state.outboxes : orderedInsert(state.outboxes, unit, state.outbox, compareUnitKey),
+    signals: [], tokens: [], outbox: [],
+  };
+}
 
 function scopeOf(state: State, id: ScopeOccurrenceId): ScopeOccurrence | null {
   return state.scopes.find((scope) => scope.id === id) ?? null;
@@ -502,13 +551,14 @@ export function instanceRoot(state: State, scope: ScopeOccurrenceId): ScopeOccur
 }
 
 /**
- * The scope occurrences in which something remains: a token, an open item that keeps it alive, a begun occurrence, a
- * child scope occurrence or a feature slot entry. One pass over the state, so that `Step`'s search for an idle scope
- * occurrence stays linear in a state the closure can grow at every micro-step.
+ * The scope occurrences in which something remains: a queued token, an open item that keeps it alive, a begun
+ * occurrence, a child scope occurrence or a feature slot entry. One pass over the state, so that `Step`'s search for an
+ * idle scope occurrence stays linear in a state the closure can grow at every micro-step. The queued signals that keep a
+ * scope occurrence busy are `idleScope`'s in `step.ts`, which alone builds a signal's work (DC5).
  */
 export function busyScopes(state: State): ReadonlySet<ScopeOccurrenceId> {
   return new Set<ScopeOccurrenceId>([
-    ...state.tokens.map((token) => token.scope),
+    ...allTokens(state).map((token) => token.scope),
     ...state.openItems.flatMap((item) => item.passive ? [] : [item.scope]),
     ...state.occurrences.flatMap((occurrence) => occurrence.begun ? [occurrence.scope] : []),
     ...state.scopes.flatMap((candidate) => scopeOccurrenceParent(candidate) ?? []),
@@ -526,7 +576,8 @@ export function idle(state: State, scope: ScopeOccurrenceId): boolean {
  * `Step.closureWorkBound` sums it over a closure's micro-steps.
  */
 export function entryCount(state: State): number {
-  return state.tokens.length + state.occurrences.length + state.openItems.length + state.scopes.length + state.signals.length;
+  return state.tokens.length + orderedSize(state.queuedTokens) + state.occurrences.length + state.openItems.length +
+    state.scopes.length + state.signals.length + orderedSize(state.queuedSignals);
 }
 
 /** The process instance identifier of `scope`. */
@@ -718,40 +769,6 @@ export function enterScope(
       scopeOrdinals: treeMapInsert(state.scopeOrdinals, slot, ordinal + 1, compareScopeSlot),
       scopes: [...state.scopes, { id, element, occurrence, calledInstance: null }],
       variables: [...state.variables, { scope: id, entries: keyed(locals) }],
-    },
-    id,
-  ];
-}
-
-/**
- * The identifier of the process instance a Call Activity's `activation` calls from the instance `caller`: each part
- * prefixed by its UTF-8 byte length, so that nested identifiers never collide.
- */
-export function calledInstanceId(caller: string, call: ElementId, activation: number): string {
-  return `call:${utf8ByteSize(caller)}:${caller}:${utf8ByteSize(call)}:${call}:${activation}`;
-}
-
-/**
- * Enter the called process instance of the Call occurrence `call`, with the given variables: a scope occurrence that
- * is the called instance's root, recording the definition the Call bound for this instance. The instance is named by the
- * Call's authored identifier (`programPublicId`), so a Call in another deployment's process that a program carries as a
- * renamed copy names its instance as that process's own deployment does (PC-SCOPE-03).
- */
-export function enterCalled(
-  state: State,
-  program: Program,
-  call: Occurrence,
-  variables: readonly Binding[],
-  definition: DefinitionRef,
-): readonly [State, ScopeOccurrenceId] {
-  const caller = instanceOf(state, call.scope);
-  const [entered, id] = enterScope(state, call.element, call.scope, variables, call.id);
-  const calledInstance = calledInstanceId(caller, programPublicId(program, call.element), call.activation);
-  return [
-    {
-      ...entered,
-      scopes: entered.scopes.map((occurrence) => (occurrence.id === id ? { ...occurrence, calledInstance } : occurrence)),
-      slots: { ...entered.slots, instances: [...entered.slots.instances, { root: id, businessKey: null, definition }] },
     },
     id,
   ];

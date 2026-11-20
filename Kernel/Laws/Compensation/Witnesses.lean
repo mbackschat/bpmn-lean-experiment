@@ -221,7 +221,7 @@ theorem failure_fails : FailsInstance .failsInstance false none failedState := f
 theorem failure_continues_rejected :
     ¬ FailsInstance .failsInstance false none { failedState with tokens := [.flow ⟨"F"⟩ outer] } := fun law => by
   have := (law rfl rfl).2.2.2.1
-  simp at this
+  simp [Laws.State.allQueuedTokens, failedState] at this
 
 /-- Under `failsInstance`, searching on from the trigger's scope occurrence is rejected. -/
 theorem failure_searches_on_rejected : ¬ FailsInstance .failsInstance false (some outer) failedState := fun law => by

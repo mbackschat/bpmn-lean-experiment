@@ -2,6 +2,7 @@ module
 
 public import Kernel.Hooks
 public import Kernel.Step.Commit
+public import Kernel.Step.Order
 public import Kernel.Step.Jobs
 public import Kernel.Step.Stale
 public import Kernel.Step.Inputs
@@ -170,7 +171,7 @@ def signalWork (hooks : Hooks) (ctx : Ctx) : Signal → SignalWork
   | .armScope scope => { scopes := [scope], run := hooks.armScope ctx scope }
   | .armGateway occurrence gateway scope =>
     { scopes := [scope], occurrences := [occurrence], run := hooks.armGateway ctx occurrence gateway scope }
-  | .raise event origin => { run := hooks.raise ctx event origin }
+  | .raise event origin => { holds := fun _ => [origin.scope], run := hooks.raise ctx event origin }
   | .begin request => { scopes := [request.scope], run := begin hooks ctx request }
   | .complete occurrence leave writes rule =>
     { completion := true, acts := [occurrence], run := complete hooks ctx occurrence leave writes rule }
@@ -181,11 +182,14 @@ def signalWork (hooks : Hooks) (ctx : Ctx) : Signal → SignalWork
     let (state, occurrence) := state.reserve element scope
     complete hooks ctx occurrence.id leave writes rule state }
   | .cancel occurrence => { acts := [occurrence], run := fun state => .ok (state.cancelOccurrence occurrence) }
-  | .fire item fired => { run := fun state =>
-    match state.openItems[item]? with
-    | some open_ => fireItem hooks ctx open_ fired state
-    | none => .ok state }
-  | .endInstance status failure => { run := fun state => .ok (endInstance status failure state) }
+  | .fire item fired =>
+    { holds := fun state => [((state.openItems[item]?).map (·.scope)).getD item.occurrence.scope]
+      run := fun state =>
+        match state.openItems[item]? with
+        | some open_ => fireItem hooks ctx open_ fired state
+        | none => .ok state }
+  | .endInstance status failure =>
+    { holds := fun state => state.scopes.map (·.id), run := fun state => .ok (endInstance status failure state) }
   | .compensate scope activity trigger leave resume =>
     { requires := [scope], run := hooks.compensate ctx scope activity trigger leave resume }
   | .compensationFailed handler code message origin =>
@@ -204,21 +208,25 @@ def absorb (hooks : Hooks) (ctx : Ctx) (before : Nat) (state : State) : Outcome 
     if work.completion then work.perform { state with signals := state.signals.take before } else .ok state
   | _ => .ok state
 
-/-- Turn the draft into one `Transition` (`journalDraft`) and tell the features what the micro-step removed and wrote. -/
-def conclude (hooks : Hooks) (ctx : Ctx) (cause : Cause) (element : Option ElementId) (owner : ScopeOccurrenceId)
-    (state : State) : Outcome := do
-  let journalled := journalDraft cause element owner state
+/-- Turn the draft into the transition of the unit `unit` (`journalDraft`), tell the features what the micro-step
+removed and wrote, and queue the micro-step's batches under `unit` (`State.queueBatch`). A unit key the closure already
+ran is an invariant failure, never a second transition under one key: no admitted closure runs a unit twice (DC4). -/
+def conclude (hooks : Hooks) (ctx : Ctx) (unit : UnitKey) (cause : Cause) (element : Option ElementId)
+    (owner : ScopeOccurrenceId) (state : State) : Outcome := do
+  if state.transitions.contains unit then .error (.semanticFailure .invariant "unit-key-reused") else
+  let journalled := journalDraft unit cause element owner state
   let journalled ← state.draft.cancelled.foldlM (fun state occurrence => hooks.cancelled ctx occurrence state) journalled
-  hooks.written ctx state.writes journalled
+  let written ← hooks.written ctx state.writes journalled
+  .ok (written.queueBatch unit)
 
 /-- One micro-step: run `body`, absorb its sole completion and record the transition. Each stage's failure is
 `deferred` against the state it started from, so a boundary an earlier micro-step or stage crossed counts. -/
-def microStep (hooks : Hooks) (ctx : Ctx) (cause : Cause) (element : Option ElementId) (owner : ScopeOccurrenceId)
-    (body : State → Outcome) (state : State) : Outcome := do
+def microStep (hooks : Hooks) (ctx : Ctx) (unit : UnitKey) (cause : Cause) (element : Option ElementId)
+    (owner : ScopeOccurrenceId) (body : State → Outcome) (state : State) : Outcome := do
   let before := state.signals.length
   let next ← deferred ctx.program state (body state)
   let absorbed ← deferred ctx.program next (absorb hooks ctx before next)
-  deferred ctx.program absorbed (conclude hooks ctx cause element owner absorbed)
+  deferred ctx.program absorbed (conclude hooks ctx unit cause element owner absorbed)
 
 /-- Route a token on `flow` to the element at the end of it. -/
 def arrive (hooks : Hooks) (ctx : Ctx) (flow : FlowId) (scope : ScopeOccurrenceId) (state : State) : Outcome :=
@@ -228,13 +236,13 @@ def arrive (hooks : Hooks) (ctx : Ctx) (flow : FlowId) (scope : ScopeOccurrenceI
 
 /-- Move one token in its own micro-step: route a flow token to the element at the end of its flow; dispatch a deferred
 begin as the `begin` signal it was, with that signal's journal cause. -/
-def moveToken (hooks : Hooks) (ctx : Ctx) (token : Token) (state : State) : Outcome :=
+def moveToken (hooks : Hooks) (ctx : Ctx) (unit : UnitKey) (token : Token) (state : State) : Outcome :=
   match token with
   | .flow flow scope =>
-    microStep hooks ctx (.arrive flow) (ctx.program.target? flow) scope (arrive hooks ctx flow scope) state
+    microStep hooks ctx unit (.arrive flow) (ctx.program.target? flow) scope (arrive hooks ctx flow scope) state
   | .begin request =>
     let next := Signal.begin request
-    microStep hooks ctx (.signal (signalName next)) none State.root (dispatchSignal hooks ctx next) state
+    microStep hooks ctx unit (.signal (signalName next)) none State.root (dispatchSignal hooks ctx next) state
 
 /-- An Activity's local-variable scope occurrence: owned by an Activity that is no Multi-Instance body and calls no
 instance. -/
@@ -273,13 +281,21 @@ in the TypeScript kernel (measured 2026-11-10). The longest closure of the retai
 (`automatic-loop-long-burst`); a closure of constant small size still meets `closureBound` first. -/
 def closureWorkBound : Nat := 10000000
 
-/-- The next scope occurrence other than the root that is idle, which the closure completes through its owner. The
-busy scope occurrences are computed once per search (`State.busyScopes`). -/
-def idleScope? (ctx : Ctx) (state : State) : Option ScopeOccurrence :=
+/-- Whether a queued signal names `scope` or a scope occurrence inside it (`SignalWork.names`), which keeps `scope` busy
+(DC5): an idle check never completes a scope occurrence that queued work still names. -/
+def signalsHold (hooks : Hooks) (ctx : Ctx) (state : State) (scope : ScopeOccurrenceId) : Bool :=
+  state.queuedSignals.any fun _ signal => ((signalWork hooks ctx signal).names state).any fun named =>
+    named.segments.drop (named.segments.length - scope.segments.length) == scope.segments
+
+/-- The next scope occurrence other than the root that is idle, which the closure completes through its owner: no queued
+work names it or a scope occurrence inside it (DC5). The busy scope occurrences are computed once per search
+(`State.busyScopes`). -/
+def idleScope? (hooks : Hooks) (ctx : Ctx) (state : State) : Option ScopeOccurrence :=
   if !state.scopes.any (·.id != State.root) then none
   else
     let busy := state.busyScopes
-    state.scopes.find? fun scope => scope.id != State.root && !busy.contains scope.id && !activityLocal ctx state scope
+    state.scopes.find? fun scope => scope.id != State.root && !busy.contains scope.id && !activityLocal ctx state scope &&
+      !signalsHold hooks ctx state scope.id
 
 /-- The token the closure moves next, and the rest: the oldest under `BranchSchedule.orderInvariant`, whose admitted
 models no order changes (`flow.concurrentWrite`); the newest under `declarationDepthFirst` (CIB-OP-0016), where `Flow`
@@ -287,21 +303,18 @@ queues a split's flows reversed and `Feature.MultiInstance` a parallel body's in
 instance runs to its next wait, join or end before the next one starts. Under `declarationDepthFirst` an idle scope
 occurrence completes before any token moves, as CIB ends a Sub-Process in the operation that ends its last execution,
 before its LIFO queue reaches a sibling branch (`PvmAtomicOperationActivityEnd:105`). -/
-def nextToken (ctx : Ctx) (state : State) : Option (Token × List Token) :=
-  let queue := state.tokens
+def nextToken (hooks : Hooks) (ctx : Ctx) (log : RunLog) (state : State) : Option (UnitKey × Token) :=
   match ctx.program.options.branchSchedule with
-  | .orderInvariant => match queue with
-    | [] => none
-    | token :: rest => some (token, rest)
-  | .declarationDepthFirst =>
-    if (idleScope? ctx state).isSome then none else queue.getLast?.map (·, queue.dropLast)
+  | .orderInvariant => earliest log state.queuedTokens
+  | .declarationDepthFirst => if (idleScope? hooks ctx state).isSome then none else latest log state.queuedTokens
 
 /-- The first parked join that fires when it is offered again, as the gateway, its scope occurrence and the state it
 leaves. Table 13.3 activates an Inclusive join by the state, not by an arrival, and `settle` offers the parked joins
 only once no signal, token or idle scope occurrence is left, so `Feature.Flow.positions` sees every position: a
 completion still queued is no position it can see. Each join is offered its latest parked occurrence, in parking
 order; a Parallel join is ready only on an arrival, so offering it never fires it. -/
-def reoffer? (hooks : Hooks) (ctx : Ctx) (state : State) : Except Failure (Option (ElementId × ScopeOccurrenceId × State)) :=
+def reoffer? (hooks : Hooks) (ctx : Ctx) (state : State) :
+    Except Failure (Option (ElementId × ScopeOccurrenceId × OccurrenceId × State)) :=
   state.slots.parked.foldlM (init := none) fun found waiting =>
     match found, (ctx.program.target? waiting.flow).bind ctx.program.element? with
     | some _, _ => .ok found
@@ -311,38 +324,53 @@ def reoffer? (hooks : Hooks) (ctx : Ctx) (state : State) : Except Failure (Optio
           ctx.program.target? other.flow == ctx.program.target? waiting.flow).getLast?).bind (state.occurrence? ·.occurrence) with
       | some (header, payload), some occurrence => do
         let offered ← hooks.arriveGateway ctx header payload occurrence state
-        .ok (if offered.signals.isEmpty then none else some (header.id, waiting.scope, offered))
+        .ok (if offered.signals.isEmpty then none else some (header.id, waiting.scope, occurrence.id, offered))
       | _, _ => .error (.semanticFailure .invariant "parked-without-gateway")
 
-/-- Signals first, then tokens, then idle scope occurrences, then the parked joins a quiescent closure offers again
-(`reoffer?`, journalled with the `idle` cause of the join's scope occurrence), then the instance's completion. -/
-def settle (hooks : Hooks) (ctx : Ctx) : Nat → Nat → State → Outcome
-  | 0, _, _ => .error (.unsupported "closure-bound") -- dynamic-only: a closure's length depends on the run
-  | fuel + 1, work, state =>
+/-- How many times the closure already offered the parked occurrence `occurrence` (`UnitRoot.offer`): the offer units
+among its transitions, a count, which reads no order. -/
+def offerRound (state : State) (occurrence : OccurrenceId) : Nat :=
+  (state.transitions.filter fun unit _ => unit.path.isEmpty && unit.root.offerOf? == some occurrence).size
+
+/-- Signals first, in breadth-first key order (`firstBreadth`), then tokens (`nextToken`), then idle scope occurrences,
+then the parked joins a quiescent closure offers again (`reoffer?`, journalled with the `idle` cause of the join's scope
+occurrence), then the instance's completion, once no signal is queued (DC5). Each unit runs under its unit key, and the
+run log `log` records when it ran; the closure's queued work and transitions are content keyed by unit (DC4). -/
+def settle (hooks : Hooks) (ctx : Ctx) : Nat → Nat → RunLog → State → Except Failure (State × RunLog)
+  | 0, _, _, _ => .error (.unsupported "closure-bound") -- dynamic-only: a closure's length depends on the run
+  | fuel + 1, work, log, state =>
     if work < state.entryCount then .error (.unsupported "closure-bound") -- dynamic-only: so does its size
-    else if state.status != .running then .ok state
+    else if state.status != .running then .ok (state, log)
     else
       let work := work - state.entryCount
-      match state.signals, nextToken ctx state with
-      | next :: rest, _ => do
+      match firstBreadth state.queuedSignals with
+      | some (unit, next) => do
         let cause := Cause.signal (signalName next)
-        settle hooks ctx fuel work (← microStep hooks ctx cause none State.root (dispatchSignal hooks ctx next) { state with signals := rest })
-      | [], some (token, rest) => do
-        settle hooks ctx fuel work (← moveToken hooks ctx token { state with tokens := rest })
-      | [], none =>
-        match idleScope? ctx state with
-        | some scope => do
-          settle hooks ctx fuel work (← microStep hooks ctx (.idle scope.id) scope.element scope.id
-            (completeIdleScope hooks ctx scope) state)
-        | none => do
-          match ← reoffer? hooks ctx state with
-          | some (gateway, scope, offered) =>
-            settle hooks ctx fuel work (← microStep hooks ctx (.idle scope) (some gateway) scope (fun _ => .ok offered) state)
-          | none =>
-            if state.idle State.root then
-              microStep hooks ctx (.idle State.root) none State.root
-                (fun state => .ok (endInstance .completed none state)) state
-            else .ok state
+        settle hooks ctx fuel work (log.record unit) (← microStep hooks ctx unit cause none State.root
+          (dispatchSignal hooks ctx next) { state with queuedSignals := state.queuedSignals.erase unit })
+      | none =>
+        match nextToken hooks ctx log state with
+        | some (unit, token) => do
+          settle hooks ctx fuel work (log.record unit)
+            (← moveToken hooks ctx unit token { state with queuedTokens := state.queuedTokens.erase unit })
+        | none =>
+          match idleScope? hooks ctx state with
+          | some scope => do
+            let unit := UnitKey.ofRoot (.idle scope.id)
+            settle hooks ctx fuel work (log.record unit) (← microStep hooks ctx unit (.idle scope.id) scope.element scope.id
+              (completeIdleScope hooks ctx scope) state)
+          | none => do
+            match ← reoffer? hooks ctx state with
+            | some (gateway, scope, occurrence, offered) =>
+              let unit := UnitKey.ofRoot (.offer occurrence (offerRound state occurrence))
+              settle hooks ctx fuel work (log.record unit) (← microStep hooks ctx unit (.idle scope) (some gateway) scope
+                (fun _ => .ok offered) state)
+            | none =>
+              if state.idle State.root && state.queuedSignals.isEmpty then
+                let unit := UnitKey.ofRoot (.idle State.root)
+                return (← microStep hooks ctx unit (.idle State.root) none State.root
+                  (fun state => .ok (endInstance .completed none state)) state, log.record unit)
+              else .ok (state, log)
 
 /-- Run an input's transition on a running instance, then settle. The input starts from an empty per-input record
 (journal, outbox, draft and write log). A committed state holds no draft or write log, since every micro-step's
@@ -357,9 +385,11 @@ def onRunning (hooks : Hooks) (ctx : Ctx) (input : Input) (before : Option State
     if state.status != .running then .error (.rejected "instance-not-running")
     else do
       let (tag, at?, _) := inputHead input
-      let start ← advanceClock at? { state with journal := [], outbox := [], draft := {}, writes := [] }
+      let start ← advanceClock at? { state with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] }
       admitChoices hooks ctx
-      orderJournal (settle hooks ctx closureBound closureWorkBound (← microStep hooks ctx (.input tag) none State.root transition start))
+      let unit := UnitKey.ofRoot .input
+      orderJournal (settle hooks ctx closureBound closureWorkBound (RunLog.record {} unit)
+        (← microStep hooks ctx unit (.input tag) none State.root transition start))
 
 /-- `Ctx.scopeRole`: read from the slots, since the occurrences that ended there may be gone when an event arrives. -/
 def scopeRole (state : State) (scope : ScopeOccurrenceId) : ScopeRole :=
@@ -397,10 +427,13 @@ def step (hooks : Hooks) (program : Program) (before : Option State) (input : In
     | none => do
       let start ← chooseStart payload.startEvent (← admittedStartsFired hooks ctx payload)
       let initial ← advanceClock payload.atMs
-        ((State.initial payload.instanceId payload.variables payload.businessKey).signal (.armScope State.root))
+        (((State.initial payload.instanceId payload.variables payload.businessKey).signal (.armScope State.root)).queueBatch
+          (.ofRoot .seed))
       admitChoices hooks ctx
-      orderJournal <| settle hooks ctx closureBound closureWorkBound (← microStep hooks ctx (.input .start) (some start) State.root
-        (begin hooks ctx { element := start, scope := State.root, trigger := payload.trigger }) initial)
+      let unit := UnitKey.ofRoot .input
+      orderJournal <| settle hooks ctx closureBound closureWorkBound (RunLog.record {} unit) (← microStep hooks ctx unit
+        (.input .start) (some start) State.root (begin hooks ctx { element := start, scope := State.root, trigger := payload.trigger })
+        initial)
   | .command data => onRunning hooks ctx input before (command hooks ctx data)
   | .deliver data => onRunning hooks ctx input before fun state => do
     let (item, fired) ← hooks.delivered ctx data state

@@ -273,7 +273,7 @@ theorem dropWithin_steady {inv : State → Prop} {program : Program} (ops : Laws
       fail := fun t _ kept => by rw [Laws.State.signal_eq]; exact kept } ctx scope (state := state) (fun _ => id)
   rw [same] at kept ⊢
   exact ⟨rfl, rfl, .refl _, rfl, fun _ queued => queued, Laws.State.instanceOf_congr rfl rfl, rfl, kept, [],
-    by simp, by simp⟩
+    by simp [Laws.State.allSignals], by simp⟩
 
 /-- `Hooks.failCompensation` keeps `inv`. -/
 theorem failCompensation_keeps {inv : State → Prop} {program : Program} (ops : Laws.Compensation.CompensationOps program inv)
@@ -344,10 +344,10 @@ theorem compensationKeeps_of (compensation : ∀ program, Laws.Compensation.Comp
     obtain ⟨entry, inside, named⟩ := stands
     refine compensate_keeps (runs _) holds (List.mem_map.mpr ⟨entry, inside, named⟩) resumable pending
       (fun next same => ?_) ran
-    obtain ⟨queue, kept, signals, same'⟩ := popped
+    obtain ⟨queue, _, kept, rest₁⟩ := popped
+    obtain ⟨found, same'⟩ := rest₁
     refine ⟨queue, kept, by rw [same']; exact .of_same rfl rfl, ?_, by rw [same'], by rw [same']⟩
-    rw [signals, same]
-    simp [Laws.Step.resumesOf]
+    exact Laws.Step.mem_resumesOf.mpr ⟨_, _, _, _, same ▸ Laws.State.mem_allSignals_of found⟩
   handlerCompleted _ _ _ _ holds stands ran := by
     obtain ⟨entry, inside, named⟩ := stands
     exact handlerCompleted_keeps (runs _) holds (List.mem_map.mpr ⟨entry, inside, named⟩) ran
@@ -406,8 +406,9 @@ theorem registeredSearch (ops : FeatureOps inv) (compensation : CompensationKeep
           (fun _ same => by cases same), steady.trans ?_, by rw [Laws.State.signal_eq]; exact instances⟩
         rw [Laws.State.signal_eq]
         exact ⟨rfl, rfl, .refl _, rfl, fun request named => named.elim (fun named =>
-          .inl ((List.mem_append.mp named).resolve_right (by simp))) .inr, Laws.State.instanceOf_congr rfl rfl, rfl,
-          fun _ => id, [_], rfl, fun signal inside => List.mem_singleton.mp inside ▸ untriggered_complete _ _ _ _⟩
+          .inl ((List.mem_append.mp (Laws.State.allSignals_append _ _ ▸ named)).resolve_right (by simp))) .inr,
+          Laws.State.instanceOf_congr rfl rfl, rfl, fun _ => id, [_], Laws.State.allSignals_append _ _,
+          fun signal inside => List.mem_singleton.mp inside ▸ untriggered_complete _ _ _ _⟩
     writeCaught := fun _ _ _ _ holds ran => outward _ _ _ _ holds (caught _ _ _ ▸ ran)
     callOutputs := fun _ _ _ holds ran => by
       rw [call] at ran
@@ -429,7 +430,8 @@ theorem raise_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.Propagat
   rcases Laws.Propagation.raise_spec ran with ⟨boundary, writes, left, rest⟩ | searched
   · obtain ⟨⟨-, inside⟩, leaves, rfl⟩ := rest
     obtain ⟨kept, steady, instances⟩ := search.mappedErrorOutputs _ _ _ _ holds settled leaves
-    obtain ⟨queue, queued, heads, shape⟩ := popped
+    obtain ⟨queue, _, queued, rest₁⟩ := popped
+    obtain ⟨heads, shape⟩ := rest₁
     have scopes : state.scopes = queue.scopes := by rw [shape]
     have entries : state.slots.instances = queue.slots.instances := by rw [shape]
     obtain ⟨linked, listed⟩ := Laws.Propagation.boundariesOf_sourced inside
@@ -438,7 +440,7 @@ theorem raise_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.Propagat
         ((show Laws.State.ScopeGrows queue state by rw [shape]; exact .of_same rfl rfl).trans steady.grows)
         (fun _ member => by rw [steady.scopes, scopes] at member; exact member)
         (fun _ member => by rw [instances, entries] at member; exact member) linked
-        (.inr (.inr (.inr ⟨raised, origin, by rw [heads]; exact List.mem_cons_self .., rfl, rfl⟩)))) listed).1
+        (.inr (.inr (.inr ⟨raised, origin, Laws.State.mem_allSignals_of heads, rfl, rfl⟩)))) listed).1
   · exact Laws.Propagation.searchScopes_keeps ops search popped _ _ _ _ _ holds settled thrown (.refl _) (.inl rfl)
       searched
 

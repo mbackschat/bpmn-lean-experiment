@@ -112,10 +112,12 @@ structure Begins (before after : State) (request : BeginRequest) (role : Activat
   instances : ∀ x, after.instanceOf x = before.instanceOf x
   instanceId : after.instanceId = before.instanceId
   itemMap : after.openItems = before.openItems ∧ after.itemOrdinals = before.itemOrdinals
-  tokens : after.tokens = before.tokens
-  signals : after.signals = before.signals
+  tokens : allQueuedTokens after = allQueuedTokens before
+  signals : allSignals after = allSignals before
+  queues : QueuesKept before after
   variables : after.variables = before.variables
   journal : after.journal = before.journal
+  transitions : after.transitions = before.transitions
   ended : after.draft.ended = before.draft.ended
   status : after.status = before.status
   failure : after.failure = before.failure
@@ -230,7 +232,7 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
     · exact .inr (kept occurrence member same)
   have begunIn : begun ∈ after.occurrences := by simp [begins.occurrences]
   have startsAfter : starts after = starts before ++ [{ occurrence := key after begun, owner := begun.scope, sourceType }] := by
-    simp [starts, begins.journal, begins.started]
+    simp [starts, begins.journal, begins.transitions, begins.started]
   -- An occurrence `before` held that is not the begun one stands after it.
   have stays : ∀ occurrence ∈ before.occurrences, occurrence.id ≠ begun.id → occurrence ∈ after.occurrences :=
     fun occurrence member differs => by

@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Proofs.Cancellation
+public import Kernel.Proofs.Cancellation.Draft
 public import Kernel.Proofs.Step.Contract
 public import Kernel.Proofs.State
 public import Kernel.Laws.State.Fire
@@ -579,7 +580,7 @@ theorem endsKept_alongside (b : State) (x : Option (OccurrenceId × OccurrenceKe
     Alongside program (Laws.Step.EndsKept b x) srel where
   frame _ _ moved kept := kept.unmoved moved.occurrences moved.activations ⟨moved.scopes, moved.instanceId⟩
     (.of_same (congrArg (List.map ScopeOccurrence.id) moved.scopes) moved.scopeOrdinals moved.occurrenceOrdinals)
-    (.of_eq (by simp only [Laws.Step.endKeys, moved.journal, moved.ended]))
+    (.of_eq (by simp only [Laws.Step.endKeys, moved.transitions, moved.ended]))
   emit s _ _ _ _ _ kept := by
     rw [Laws.State.emit_eq]
     exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (.refl _) (.refl _)
@@ -625,18 +626,24 @@ theorem endsKept_stores (b : State) (x : Option (OccurrenceId × OccurrenceKey))
   { (endsKept_alongside b x program).toFrameAlongside with
     storeRuns := fun _ _ _ _ _ _ kept => kept.unmoved rfl rfl ⟨rfl, rfl⟩ (.refl _) (.refl _) }
 
-/-- `Step`'s phases keep an input's end facts from its start: journalling the draft and ordering the journal permute
-them, and beginning and cancelling frame them (`Kernel.Laws.Step.EndsFrames`). -/
-theorem endsKept_stepAlongside (b : State) (program : Program) :
-    StepAlongside program (Laws.Step.EndsKept b none) where
+/-- The closure's phases keep an input's end facts from its start: journalling the draft as its unit's transition
+permutes them, and beginning and cancelling frame them (`Kernel.Laws.Step.EndsFrames`). Ordering the journal at the
+commit is no closure phase: it moves the end facts out of the input in progress, so `removedEndOnce` reads them off the
+settled closure. -/
+theorem endsKept_closureAlongside (b : State) (program : Program) :
+    ClosureAlongside program (Laws.Step.EndsKept b none) where
   toFrameAlongside := (endsKept_alongside b none program).toFrameAlongside
-  journal s transition _ kept _ ended := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (.refl _) (by
-    simp only [Laws.Step.endKeys, List.flatMap_cons, ended, List.map_append]
+  journal s _ transition _ kept fresh _ ended := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (.refl _) (by
+    simp only [Laws.Step.endKeys]
+    refine List.Perm.map _ ((List.Perm.append_right _ ((Laws.State.values_insert_perm fresh).flatMap_right _)).trans ?_)
+    simp only [List.flatMap_cons, ended]
     simpa using List.perm_append_comm)
-  runOrder s _ kept := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (.refl _)
-    ((((List.reverse_perm s.journal).flatMap_right _).append_right _).map _)
+  queueBatch s unit _ kept := by
+    rw [Laws.State.queueBatch_eq]
+    exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (.refl _) (.refl _)
   dequeue _ _ _ _ kept := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (.refl _) (.refl _)
-  untoken _ _ _ _ kept := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (.refl _) (.refl _)
+  unqueue _ _ _ kept := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (.refl _) (.refl _)
+  untoken _ _ _ kept := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (.refl _) (.refl _)
   begin _ _ role sourceType formed stands admitted _ _ kept :=
     kept.step formed (Laws.Step.beginOccurrence_frame formed stands admitted role sourceType)
   cancel _ id formed kept := kept.step formed (Laws.Step.cancelOccurrence_frame formed id)
@@ -679,65 +686,6 @@ theorem endsInv_sourced (ops : Proofs.Step.RegisteredOps WellFormed) (b : State)
 
 /-! ## The draft the registered hooks leave -/
 
-section Draft
-
-private theorem signal_draft (s : State) (signal : Signal) : (s.signal signal).draft = s.draft := by
-  rw [Laws.State.signal_eq]
-
-private theorem closeItem_draft (s : State) (id : ItemKey) : (s.closeItem id).draft = s.draft := by
-  rw [Laws.State.closeItem_eq]
-
-private theorem disarm_draft (s : State) (host : OccurrenceId) : (s.disarm host).draft = s.draft := by
-  rw [Laws.State.disarm_eq]
-
-private theorem withdrawInside_draft (s : State) (scope : ScopeOccurrenceId) : (s.withdrawInside scope).draft = s.draft := by
-  rw [Laws.State.withdrawInside_eq]
-
-private theorem withdrawOccurrence_draft (s : State) (id : OccurrenceId) : (s.withdrawOccurrence id).draft = s.draft := by
-  obtain ⟨items, frame⟩ := Laws.State.withdrawAll_frame
-    (((s.closeOwnItems id).disarm id).scopes.filter (·.occurrence == some id)) ((s.closeOwnItems id).disarm id)
-  rw [Laws.State.withdrawOccurrence_eq, frame, Laws.State.disarm_eq, Laws.State.closeOwnItems_eq]
-
-/-- Opening a subscription keeps the draft: its reservation journals nothing (`Laws.State.Reserves`). -/
-private theorem openSubscription_draft (s : State) (kind : OpenKind)
-    (element : ElementId) (scope : ScopeOccurrenceId) (host : Option OccurrenceId) (passive : Bool) :
-    (s.openSubscription kind element scope host passive).1.draft = s.draft := by
-  rw [Laws.State.openSubscription_eq]
-  exact (Laws.State.reserve_reserves s element scope).draft
-
-/-- Subscriptions' operations keep whatever holds of the draft: they queue firings and completions, open, close,
-withdraw and rekind items and disarm hosts, and a subscription reserves its occurrence, which journals nothing. -/
-theorem subscriptionsOps_draft (program : Program) (keeps : Draft → Prop) :
-    Laws.Subscriptions.SubscriptionsOps program fun s => keeps s.draft where
-  fire s _ _ same := by rw [signal_draft]; exact same
-  rekind _ _ same _ _ := same
-  awaits := Laws.State.triggers_await
-  disarm s host same := by rw [disarm_draft]; exact same
-  openItem s kind occurrence same _ _ _ _ := by
-    rw [Laws.State.openItem_eq]
-    exact same
-  openSubscription s kind element scope host passive same _ _ _ _ _ := by
-    rw [openSubscription_draft]
-    exact same
-  subscribed s kind element scope host passive _ := by
-    have reserves := Laws.State.reserve_reserves s element scope
-    rw [Laws.State.openSubscription_eq]
-    exact ⟨reserves.scopes, fun o inside => reserves.occurrences ▸ List.mem_append_left _ inside,
-      by rw [Laws.State.reserve_slots]⟩
-  closeComplete s _ _ _ same _ _ := by rw [signal_draft, closeItem_draft]; exact same
-  gatewayComplete s _ _ _ _ same _ _ _ := by rw [signal_draft, signal_draft, disarm_draft, closeItem_draft]; exact same
-  interruptComplete s _ _ _ _ same _ _ := by
-    rw [signal_draft, signal_draft, withdrawOccurrence_draft, closeItem_draft]
-    exact same
-  reopenComplete s _ _ _ _ same _ _ _ := by rw [signal_draft, openSubscription_draft, closeItem_draft]; exact same
-  occur s _ _ _ _ same _ _ _ _ := by rw [signal_draft]; exact same
-  insideBegin s _ _ _ same _ _ _ := by rw [signal_draft, withdrawInside_draft, closeItem_draft]; exact same
-  closeBegin s _ _ _ same _ _ _ := by rw [signal_draft, closeItem_draft]; exact same
-  reopenBegin s _ _ _ _ same _ _ _ _ := by rw [signal_draft, openSubscription_draft, closeItem_draft]; exact same
-  bareBegin s _ _ _ same _ _ := by rw [signal_draft]; exact same
-
-end Draft
-
 /-- The registered hooks keep whatever holds of the draft when told of a cancellation, which no feature hears, or of
 variable writes, which Subscriptions offers to Conditional items by queueing the firings they decide
 (`Laws.Subscriptions`). -/
@@ -753,6 +701,20 @@ theorem registered_keeps (keeps : Draft → Prop) :
     rw [Laws.Registry.hooks_written] at ran
     exact Laws.Subscriptions.offerWrites_keeps (subscriptionsOps_draft ctx.program keeps) kept ran⟩
 
+/-- The registered hooks keep the transitions when told of a cancellation or of variable writes: only `Step.conclude`
+journals one (`Kernel.Proofs.MultiInstance.Begins` reads which unit's). -/
+theorem registered_transitions (transitions : TreeMap UnitKey Transition compare) :
+    (∀ ctx occurrence state after, state.transitions = transitions →
+      Registry.hooks.cancelled ctx occurrence state = .ok after → after.transitions = transitions) ∧
+    ∀ ctx writes state after, state.transitions = transitions → Registry.hooks.written ctx writes state = .ok after →
+      after.transitions = transitions :=
+  ⟨fun _ _ _ _ kept ran => by
+    rw [Laws.Registry.hooks_cancelled] at ran
+    cases ran
+    exact kept, fun ctx _ _ _ kept ran => by
+    rw [Laws.Registry.hooks_written] at ran
+    exact Laws.Subscriptions.offerWrites_keeps (subscriptionsOps_transitions ctx.program transitions) kept ran⟩
+
 /-- The registered hooks journal no end when told of a cancellation or of variable writes (`registered_keeps`), so
 each micro-step leaves the draft without end facts (`Laws.Step.microStep_drafts`). -/
 theorem registered_quiet :
@@ -764,9 +726,9 @@ theorem registered_quiet :
 
 /-- PD2: every committed micro-step of the registered hooks leaves the draft's Ready list empty, so the Ready list the
 next micro-step journals names only the occurrences it holds (`Laws.Hooks.hold_ready`). -/
-theorem registered_ready {ctx : Ctx} {cause : Cause} {element : Option ElementId} {owner : ScopeOccurrenceId}
+theorem registered_ready {ctx : Ctx} {unit : UnitKey} {cause : Cause} {element : Option ElementId} {owner : ScopeOccurrenceId}
     {body : State → Outcome} {state after : State}
-    (ran : Step.microStep Registry.hooks ctx cause element owner body state = .ok after) : after.draft.ready = [] :=
+    (ran : Step.microStep Registry.hooks ctx unit cause element owner body state = .ok after) : after.draft.ready = [] :=
   Laws.Step.microStep_ready (registered_keeps (·.ready = [])).1 (registered_keeps (·.ready = [])).2 ran
 
 /-- `MicroStepsKeepEnds` of the registered hooks, from the records and phases of `WellFormed`; `removedEndOnce` then
@@ -775,13 +737,13 @@ theorem microStepsKeepEnds_registered (ops : Proofs.Step.RegisteredOps WellForme
     (phases : Laws.Step.Phases WellFormed) (pipeline : Laws.Step.PipelinePhases WellFormed) :
     MicroStepsKeepEnds Registry.hooks := by
   have kept := fun b => microStepsKeep_alongside (rel := fun _ => Laws.Step.EndsKept b none) (endsInv_contract ops b none)
-    phases.toClosurePhases (fun program => (endsKept_stepAlongside b program).toClosureAlongside) Proofs.State.stateFacts
+    phases.toClosurePhases (endsKept_closureAlongside b) Proofs.State.stateFacts
     (Laws.Step.complete_ends (endsInv_sourced ops b) (fun _ _ holds => ⟨holds.1, trivial⟩) phases pipeline
       Proofs.State.stateFacts)
   obtain ⟨cancelled, written⟩ := registered_quiet
-  refine ⟨fun ctx cause transition b state after runs holds ran =>
-    ⟨(kept b).1 ctx cause transition state after runs holds ran, Laws.Step.microStep_drafts cancelled written ran⟩,
-    fun ctx b state after holds step => ⟨(kept b).2 ctx state after holds step, ?_⟩⟩
+  refine ⟨fun ctx unit cause transition b state after runs holds ran =>
+    ⟨(kept b).1 ctx unit cause transition state after runs holds ran, Laws.Step.microStep_drafts cancelled written ran⟩,
+    fun ctx log unit b state after holds step => ⟨(kept b).2 ctx log unit state after holds step, ?_⟩⟩
   obtain ⟨_, _, _, ⟨_, _, ran⟩⟩ := step.microStep
   exact Laws.Step.microStep_drafts cancelled written ran
 

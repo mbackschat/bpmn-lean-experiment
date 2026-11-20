@@ -73,7 +73,7 @@ import {
   type State,
   type Suspended,
   SemanticCause,
-  semanticFailure, type OccurrenceId,
+  semanticFailure, type OccurrenceId, allTokens,
 } from "../state.js";
 import { EvaluationTag, evalContext, type Ctx } from "../hooks.js";
 
@@ -343,7 +343,7 @@ function positions(ctx: Ctx, state: State, gateway: ElementId, scope: ScopeOccur
     const found = programElement(program, element);
     return found === null ? [] : successors(ctx, found);
   };
-  const queued = state.tokens.filter((token) => token.scope === scope).flatMap((token) => tokenArrivalFlow(token) ?? []);
+  const queued = allTokens(state).filter((token) => token.scope === scope).flatMap((token) => tokenArrivalFlow(token) ?? []);
   const items = state.openItems.filter((item) => item.scope === scope && !item.passive).flatMap((item) => continuing(item.element));
   const children = state.scopes.filter((child) => scopeOccurrenceParent(child) === scope)
     .flatMap((child) => (child.element === null ? [] : continuing(child.element)));

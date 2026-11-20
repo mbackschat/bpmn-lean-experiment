@@ -4,6 +4,7 @@ public import Kernel.Step
 public import Kernel.Laws.Hooks
 public import Kernel.Laws.Step.Ran
 public import Kernel.Laws.Step.Commit
+public import Kernel.Laws.Step.Order
 public import Kernel.Laws.Step.Jobs
 public import Kernel.Laws.Step.Stale
 import all Kernel.Step
@@ -37,11 +38,11 @@ open Kernel Kernel.Step
 /-! ## Micro-steps -/
 
 /-- A committed micro-step ran its body, absorbed the body's sole completion, if any, and concluded its transition. -/
-theorem microStep_ok {hooks : Hooks} {ctx : Ctx} {cause : Cause} {element : Option ElementId}
+theorem microStep_ok {hooks : Hooks} {ctx : Ctx} {unit : UnitKey} {cause : Cause} {element : Option ElementId}
     {owner : ScopeOccurrenceId} {body : State → Outcome} {state after : State}
-    (ran : microStep hooks ctx cause element owner body state = .ok after) :
+    (ran : microStep hooks ctx unit cause element owner body state = .ok after) :
     ∃ next absorbed, body state = .ok next ∧ absorb hooks ctx state.signals.length next = .ok absorbed ∧
-      conclude hooks ctx cause element owner absorbed = .ok after := by
+      conclude hooks ctx unit cause element owner absorbed = .ok after := by
   unfold microStep at ran
   obtain ⟨next, body_, ran⟩ := bind_ok ran
   obtain ⟨absorbed, absorbed_, ran⟩ := bind_ok ran
@@ -49,17 +50,19 @@ theorem microStep_ok {hooks : Hooks} {ctx : Ctx} {cause : Cause} {element : Opti
 
 /-! ## The closure -/
 
-/-- The induction principle of a closure: an invariant that every closure micro-step preserves is preserved by
-`Step.settle`, whatever its fuel and work bounds; a closure that stops on either bound commits nothing. -/
-theorem settle_induction {hooks : Hooks} {ctx : Ctx} (invariant : State → Prop)
-    (preserved : ∀ before after, invariant before → ClosureStep hooks ctx before after → invariant after) :
-    ∀ (fuel work : Nat) (state after : State), invariant state → settle hooks ctx fuel work state = .ok after →
-      invariant after := by
+/-- The induction principle of a closure over its run log: an invariant of the run log and the state that every closure
+micro-step preserves, the log gaining the unit it ran, is preserved by `Step.settle`, whatever its fuel and work bounds;
+a closure that stops on either bound commits nothing. -/
+theorem settle_induction_log {hooks : Hooks} {ctx : Ctx} (invariant : RunLog → State → Prop)
+    (preserved : ∀ log unit before after, invariant log before → ClosureStep hooks ctx log unit before after →
+      invariant (log.record unit) after) :
+    ∀ (fuel work : Nat) (log : RunLog) (state : State) (after : State × RunLog), invariant log state →
+      settle hooks ctx fuel work log state = .ok after → invariant after.2 after.1 := by
   intro fuel
   induction fuel with
-  | zero => intro work state after _ ran; simp [settle] at ran
+  | zero => intro work log state after _ ran; simp [settle] at ran
   | succ fuel ih =>
-    intro work state after holds ran
+    intro work log state after holds ran
     unfold settle at ran
     split at ran
     · simp at ran
@@ -68,35 +71,53 @@ theorem settle_induction {hooks : Hooks} {ctx : Ctx} (invariant : State → Prop
     have running : state.status = .running := by simpa using ‹¬(state.status != .running) = true›
     split at ran
     · obtain ⟨mid, stepped, ran⟩ := bind_ok ran
-      exact ih _ _ _ (preserved _ _ holds (.signal running (by assumption) stepped)) ran
-    · obtain ⟨mid, stepped, ran⟩ := bind_ok ran
-      exact ih _ _ _ (preserved _ _ holds (.token running (by assumption) (by assumption) stepped)) ran
+      exact ih _ _ _ _ (preserved _ _ _ _ holds (.signal running (by assumption) stepped)) ran
     · split at ran
       · obtain ⟨mid, stepped, ran⟩ := bind_ok ran
-        exact ih _ _ _ (preserved _ _ holds (.idle running (by assumption) (by assumption) (by assumption) stepped)) ran
-      · obtain ⟨found, offered, ran⟩ := bind_ok ran
-        split at ran
+        exact ih _ _ _ _ (preserved _ _ _ _ holds (.token running (by assumption) (by assumption) stepped)) ran
+      · split at ran
         · obtain ⟨mid, stepped, ran⟩ := bind_ok ran
-          exact ih _ _ _ (preserved _ _ holds
-            (.reoffer running (by assumption) (by assumption) (by assumption) offered stepped)) ran
-        · split at ran
-          · exact preserved _ _ holds
-              (.finish running (by assumption) (by assumption) (by assumption) offered (by assumption) ran)
-          · cases ran; exact holds
+          exact ih _ _ _ _ (preserved _ _ _ _ holds
+            (.idle running (by assumption) (by assumption) (by assumption) stepped)) ran
+        · obtain ⟨found, offered, ran⟩ := bind_ok ran
+          split at ran
+          · obtain ⟨mid, stepped, ran⟩ := bind_ok ran
+            exact ih _ _ _ _ (preserved _ _ _ _ holds
+              (.reoffer running (by assumption) (by assumption) (by assumption) offered stepped)) ran
+          · split at ran
+            · obtain ⟨mid, stepped, ran⟩ := bind_ok ran
+              cases ran
+              have quiet := ‹(state.idle State.root && state.queuedSignals.isEmpty) = true›
+              simp only [Bool.and_eq_true] at quiet
+              exact preserved _ _ _ _ holds
+                (.finish running (by assumption) (by assumption) (by assumption) offered quiet.1 quiet.2 stepped)
+            · cases ran; exact holds
+
+/-- The induction principle of a closure: an invariant that every closure micro-step preserves is preserved by
+`Step.settle`, whatever its run log, fuel and work bounds; a closure that stops on either bound commits nothing. -/
+theorem settle_induction {hooks : Hooks} {ctx : Ctx} (invariant : State → Prop)
+    (preserved : ∀ log unit before after, invariant before → ClosureStep hooks ctx log unit before after → invariant after) :
+    ∀ (fuel work : Nat) (log : RunLog) (state : State) (after : State × RunLog), invariant state →
+      settle hooks ctx fuel work log state = .ok after → invariant after.1 :=
+  settle_induction_log (fun _ state => invariant state) fun log unit before after holds step =>
+    preserved log unit before after holds step
 
 /-- A committed closure stopped where `Step.settle` stops: at a state that is not running, at a quiescent state whose
-root is busy, or with the instance's completion micro-step from a quiescent state whose root is idle. Which hooks
-`Step.conclude` then runs decides the completed state's status, so it is not stated here. -/
-theorem settle_ok_settled {hooks : Hooks} {ctx : Ctx} : ∀ {fuel work : Nat} {state after : State},
-    settle hooks ctx fuel work state = .ok after → after.status ≠ .running ∨
-      (Quiescent hooks ctx after ∧ after.idle State.root = false) ∨ ∃ last, Quiescent hooks ctx last ∧
-        last.idle State.root = true ∧ microStep hooks ctx (.idle State.root) none State.root
-          (fun state => .ok (endInstance .completed none state)) last = .ok after := by
+root is busy or that still queues a signal, or with the instance's completion micro-step from a quiescent state whose
+root is idle and that queues no signal, the log gaining that unit. Which hooks `Step.conclude` then runs decides the
+completed state's status, so it is not stated here. -/
+theorem settle_ok_settled {hooks : Hooks} {ctx : Ctx} : ∀ {fuel work : Nat} {log : RunLog} {state : State}
+    {after : State × RunLog}, settle hooks ctx fuel work log state = .ok after → after.1.status ≠ .running ∨
+      (Quiescent hooks ctx after.2 after.1 ∧ (after.1.idle State.root && after.1.queuedSignals.isEmpty) = false) ∨
+      ∃ last earlier, Quiescent hooks ctx earlier last ∧ last.idle State.root = true ∧ last.queuedSignals.isEmpty = true ∧
+        microStep hooks ctx (.ofRoot (.idle State.root)) (.idle State.root) none State.root
+          (fun state => .ok (endInstance .completed none state)) last = .ok after.1 ∧
+        after.2 = earlier.record (.ofRoot (.idle State.root)) := by
   intro fuel
   induction fuel with
-  | zero => intro _ _ _ ran; simp [settle] at ran
+  | zero => intro _ _ _ _ ran; simp [settle] at ran
   | succ fuel ih =>
-    intro work state after ran
+    intro work log state after ran
     unfold settle at ran
     split at ran
     · simp at ran
@@ -104,30 +125,37 @@ theorem settle_ok_settled {hooks : Hooks} {ctx : Ctx} : ∀ {fuel work : Nat} {s
     · cases ran; exact .inl (by simpa using ‹(state.status != .running) = true›)
     split at ran
     · obtain ⟨_, _, ran⟩ := bind_ok ran; exact ih ran
-    · obtain ⟨_, _, ran⟩ := bind_ok ran; exact ih ran
     · split at ran
       · obtain ⟨_, _, ran⟩ := bind_ok ran; exact ih ran
-      · obtain ⟨found, offered, ran⟩ := bind_ok ran
-        split at ran
+      · split at ran
         · obtain ⟨_, _, ran⟩ := bind_ok ran; exact ih ran
-        · have quiet : Quiescent hooks ctx state := ⟨by assumption, by assumption, by assumption, offered⟩
+        · obtain ⟨found, offered, ran⟩ := bind_ok ran
           split at ran
-          · exact .inr (.inr ⟨state, quiet, by assumption, ran⟩)
-          · cases ran; exact .inr (.inl ⟨quiet, by simpa using ‹¬state.idle State.root = true›⟩)
+          · obtain ⟨_, _, ran⟩ := bind_ok ran; exact ih ran
+          · have quiet : Quiescent hooks ctx log state := ⟨by assumption, by assumption, by assumption, offered⟩
+            split at ran
+            · obtain ⟨_, stepped, ran⟩ := bind_ok ran
+              cases ran
+              have idle := ‹(state.idle State.root && state.queuedSignals.isEmpty) = true›
+              simp only [Bool.and_eq_true] at idle
+              exact .inr (.inr ⟨state, log, quiet, idle.1, idle.2, stepped, rfl⟩)
+            · cases ran
+              exact .inr (.inl ⟨quiet, by simpa using ‹¬(state.idle State.root && state.queuedSignals.isEmpty) = true›⟩)
 
 /-! ## Routing a flow token -/
 
 /-- A committed move of a flow token is one micro-step whose body routes the token along its flow. -/
-theorem moveToken_flow {hooks : Hooks} {ctx : Ctx} {flow : FlowId} {scope : ScopeOccurrenceId} {state after : State}
-    (ran : moveToken hooks ctx (.flow flow scope) state = .ok after) :
-    microStep hooks ctx (.arrive flow) (ctx.program.target? flow) scope (arrive hooks ctx flow scope) state = .ok after := by
+theorem moveToken_flow {hooks : Hooks} {ctx : Ctx} {unit : UnitKey} {flow : FlowId} {scope : ScopeOccurrenceId}
+    {state after : State} (ran : moveToken hooks ctx unit (.flow flow scope) state = .ok after) :
+    microStep hooks ctx unit (.arrive flow) (ctx.program.target? flow) scope (arrive hooks ctx flow scope) state =
+      .ok after := by
   simpa [moveToken] using ran
 
 /-- A committed move of a deferred begin is one micro-step whose body begins it, as its `begin` signal would, unless
 what it begins in is gone (`perform_stale`). -/
-theorem moveToken_begin {hooks : Hooks} {ctx : Ctx} {request : BeginRequest} {state after : State}
-    (ran : moveToken hooks ctx (.begin request) state = .ok after) :
-    microStep hooks ctx (.signal (signalName (.begin request))) none State.root
+theorem moveToken_begin {hooks : Hooks} {ctx : Ctx} {unit : UnitKey} {request : BeginRequest} {state after : State}
+    (ran : moveToken hooks ctx unit (.begin request) state = .ok after) :
+    microStep hooks ctx unit (.signal (signalName (.begin request))) none State.root
       (dispatchSignal hooks ctx (.begin request)) state = .ok after := by
   simpa [moveToken] using ran
 
@@ -228,10 +256,12 @@ theorem step_eq {hooks : Hooks} {program : Program} {before : Option State} {inp
         | none => do
           let start ← chooseStart payload.startEvent (← admittedStartsFired hooks ctx payload)
           let initial ← advanceClock payload.atMs
-            ((State.initial payload.instanceId payload.variables payload.businessKey).signal (.armScope State.root))
+            (((State.initial payload.instanceId payload.variables payload.businessKey).signal (.armScope State.root)).queueBatch
+              (.ofRoot .seed))
           admitChoices hooks ctx
-          orderJournal <| settle hooks ctx closureBound closureWorkBound (← microStep hooks ctx (.input .start)
-            (some start) State.root (begin hooks ctx { element := start, scope := State.root, trigger := payload.trigger })
+          let unit := UnitKey.ofRoot .input
+          orderJournal <| settle hooks ctx closureBound closureWorkBound (RunLog.record {} unit) (← microStep hooks ctx unit
+            (.input .start) (some start) State.root (begin hooks ctx { element := start, scope := State.root, trigger := payload.trigger })
             initial)
       | .command data => onRunning hooks ctx input before (command hooks ctx data)
       | .deliver data => onRunning hooks ctx input before fun state => do
@@ -262,10 +292,11 @@ theorem onRunning_eq {hooks : Hooks} {ctx : Ctx} {input : Input} {before : Optio
         if state.status != .running then .error (.rejected "instance-not-running")
         else do
           let (tag, at?, _) := inputHead input
-          let start ← advanceClock at? { state with journal := [], outbox := [], draft := {}, writes := [] }
+          let start ← advanceClock at? { state with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] }
           admitChoices hooks ctx
-          orderJournal (settle hooks ctx closureBound closureWorkBound
-            (← microStep hooks ctx (.input tag) none State.root transition start))) := by
+          let unit := UnitKey.ofRoot .input
+          orderJournal (settle hooks ctx closureBound closureWorkBound (RunLog.record {} unit)
+            (← microStep hooks ctx unit (.input tag) none State.root transition start))) := by
   unfold onRunning; rfl
 
 /-- `Step.command` restated, with `Step.atActivity` unfolded. -/
@@ -303,17 +334,17 @@ theorem deliverEffectResult_eq {hooks : Hooks} {ctx : Ctx} {data : EffectInput} 
 
 /-- A micro-step whose body rejects rejects: no transaction boundary turns a rejection into another failure
 (`Step.deferred`). -/
-theorem microStep_rejected {hooks : Hooks} {ctx : Ctx} {cause : Cause} {element : Option ElementId}
+theorem microStep_rejected {hooks : Hooks} {ctx : Ctx} {unit : UnitKey} {cause : Cause} {element : Option ElementId}
     {owner : ScopeOccurrenceId} {body : State → Outcome} {state : State} {code : String}
     (rejected : body state = .error (.rejected code)) :
-    microStep hooks ctx cause element owner body state = .error (.rejected code) := by
+    microStep hooks ctx unit cause element owner body state = .error (.rejected code) := by
   simp [microStep, bind, Except.bind, rejected, deferred_rejected]
 
 /-- A micro-step whose body fails with an invariant failure fails with it, after a transaction boundary too (#148). -/
-theorem microStep_invariant {hooks : Hooks} {ctx : Ctx} {cause : Cause} {element : Option ElementId}
+theorem microStep_invariant {hooks : Hooks} {ctx : Ctx} {unit : UnitKey} {cause : Cause} {element : Option ElementId}
     {owner : ScopeOccurrenceId} {body : State → Outcome} {state : State} {code : String}
     (faulted : body state = .error (.semanticFailure .invariant code)) :
-    microStep hooks ctx cause element owner body state = .error (.semanticFailure .invariant code) := by
+    microStep hooks ctx unit cause element owner body state = .error (.semanticFailure .invariant code) := by
   simp [microStep, bind, Except.bind, faulted, deferred_invariant]
 
 /-- The clock fails only by rejecting the input's time. -/
@@ -348,15 +379,23 @@ theorem absorb_ok {hooks : Hooks} {ctx : Ctx} {before : Nat} {state after : Stat
 
 /-- A committed transition journalled the draft, emptied it and the write log, told `Hooks.cancelled` of each cancelled
 occurrence in order, then `Hooks.written` of the writes. -/
-theorem conclude_ok {hooks : Hooks} {ctx : Ctx} {cause : Cause} {element : Option ElementId}
-    {owner : ScopeOccurrenceId} {state after : State} (ran : conclude hooks ctx cause element owner state = .ok after) :
-    ∃ notified, state.draft.cancelled.foldlM (fun state occurrence => hooks.cancelled ctx occurrence state)
-        { state with journal := { cause, element, owner, started := state.draft.started, ended := state.draft.ended
-                                  ready := state.draft.ready } :: state.journal, draft := {}, writes := [] } = .ok notified ∧
-      hooks.written ctx state.writes notified = .ok after := by
+theorem conclude_ok {hooks : Hooks} {ctx : Ctx} {unit : UnitKey} {cause : Cause} {element : Option ElementId}
+    {owner : ScopeOccurrenceId} {state after : State} (ran : conclude hooks ctx unit cause element owner state = .ok after) :
+    state.transitions.contains unit = false ∧ ∃ notified written,
+      state.draft.cancelled.foldlM (fun state occurrence => hooks.cancelled ctx occurrence state)
+        { state with
+          transitions := state.transitions.insert unit
+            { cause, element, owner, started := state.draft.started, ended := state.draft.ended, ready := state.draft.ready },
+          draft := {}, writes := [] } = .ok notified ∧
+      hooks.written ctx state.writes notified = .ok written ∧ after = written.queueBatch unit := by
   unfold conclude at ran
-  rw [journalDraft_eq] at ran
-  exact bind_ok ran
+  split at ran
+  · simp at ran
+  · rw [journalDraft_eq] at ran
+    obtain ⟨notified, folded, ran⟩ := bind_ok ran
+    obtain ⟨written, wrote, ran⟩ := bind_ok ran
+    exact ⟨Bool.eq_false_iff.mpr ‹¬state.transitions.contains unit = true›, notified, written, folded, wrote,
+      (Except.ok.inj ran).symm⟩
 
 /-- How a completed occurrence goes on (`Step.continueAfter`): by its continuation's hook, or, raised away, not at all
 unless it was a compensation handler. -/
@@ -553,28 +592,21 @@ theorem completeIdleScope_ok {hooks : Hooks} {ctx : Ctx} {scope : ScopeOccurrenc
   obtain ⟨id, occurrence, owned, ⟨found, completed⟩⟩ := completeIdleScope_owner ran
   exact ⟨id, occurrence, owned, found, completed.imp_right (.imp_left fun ⟨header, payload, _, ran⟩ => ⟨header, payload, ran⟩)⟩
 
-/-- The closure takes the oldest token or the newest. -/
-theorem nextToken_shape {ctx : Ctx} {state : State} {token : Token} {rest : List Token}
-    (next : nextToken ctx state = some (token, rest)) : (ctx.program.options.branchSchedule = .orderInvariant ∧
-      state.tokens = token :: rest) ∨ state.tokens = rest ++ [token] := by
+/-- The closure moves a queued token: the one queued first under `orderInvariant`, the one queued last otherwise, by
+the run log (`Step.earliest`, `Step.latest`). -/
+theorem nextToken_mem {hooks : Hooks} {ctx : Ctx} {log : RunLog} {state : State} {unit : UnitKey} {token : Token}
+    (next : nextToken hooks ctx log state = some (unit, token)) : state.queuedTokens[unit]? = some token ∧
+      ((ctx.program.options.branchSchedule = .orderInvariant ∧ earliest log state.queuedTokens = some (unit, token)) ∨
+        latest log state.queuedTokens = some (unit, token)) := by
   unfold nextToken at next
-  dsimp only at next
   split at next
+  · exact ⟨earliest_mem next, .inl ⟨by assumption, next⟩⟩
   · split at next
     · simp at next
-    · rename_i head tail queued
-      obtain ⟨first, same⟩ := Prod.mk.inj (Option.some.inj next)
-      exact .inl ⟨by assumption, by rw [queued, first, same]⟩
-  · split at next
-    · simp at next
-    · obtain ⟨last, found, made⟩ := Option.map_eq_some_iff.mp next
-      obtain ⟨first, same⟩ := Prod.mk.inj made
-      subst first same
-      obtain ⟨front, split⟩ := List.getLast?_eq_some_iff.mp found
-      exact .inr (by rw [split, List.dropLast_concat])
+    · exact ⟨latest_mem next, .inr next⟩
 
-theorem idleScope_mem {ctx : Ctx} {state : State} {scope : ScopeOccurrence}
-    (idle : idleScope? ctx state = some scope) : scope ∈ state.scopes := by
+theorem idleScope_mem {hooks : Hooks} {ctx : Ctx} {state : State} {scope : ScopeOccurrence}
+    (idle : idleScope? hooks ctx state = some scope) : scope ∈ state.scopes := by
   unfold idleScope? at idle
   split at idle
   · simp at idle
@@ -582,8 +614,8 @@ theorem idleScope_mem {ctx : Ctx} {state : State} {scope : ScopeOccurrence}
 
 /-- The idle scope occurrence the closure completes has no child scope occurrence, since a parent is busy
 (`StateFacts.parentBusy`): a nested Call's root keeps the scope occurrence it lies in from completing. -/
-theorem idleScope?_childless (facts : StateFacts) {ctx : Ctx} {state : State} {scope : ScopeOccurrence}
-    (idle : idleScope? ctx state = some scope) : ∀ child ∈ state.scopes, child.parent ≠ some scope.id := by
+theorem idleScope?_childless (facts : StateFacts) {hooks : Hooks} {ctx : Ctx} {state : State} {scope : ScopeOccurrence}
+    (idle : idleScope? hooks ctx state = some scope) : ∀ child ∈ state.scopes, child.parent ≠ some scope.id := by
   intro child member linked
   unfold idleScope? at idle
   split at idle
@@ -608,7 +640,7 @@ theorem completeIdleScope_called (facts : StateFacts) {hooks : Hooks} {ctx : Ctx
 
 /-- A parked join offered again ran its gateway's hook on the state the closure reached, for an occurrence it found. -/
 theorem reoffer_ok {hooks : Hooks} {ctx : Ctx} {state : State} {gateway : ElementId} {scope : ScopeOccurrenceId}
-    {offered : State} (ran : reoffer? hooks ctx state = .ok (some (gateway, scope, offered))) :
+    {named : OccurrenceId} {offered : State} (ran : reoffer? hooks ctx state = .ok (some (gateway, scope, named, offered))) :
     ∃ id occurrence header payload, (∃ waiting ∈ state.slots.parked, waiting.occurrence = id ∧ ∃ element,
       (ctx.program.target? waiting.flow).bind ctx.program.element? = some element ∧
         element.gateway? = some (header, payload)) ∧
@@ -617,7 +649,7 @@ theorem reoffer_ok {hooks : Hooks} {ctx : Ctx} {state : State} {gateway : Elemen
   refine foldlM_finds (fun found => ∃ id occurrence header payload, (∃ waiting ∈ state.slots.parked,
     waiting.occurrence = id ∧ ∃ element, (ctx.program.target? waiting.flow).bind ctx.program.element? = some element ∧
       element.gateway? = some (header, payload)) ∧ state.occurrence? id = some occurrence ∧
-      hooks.arriveGateway ctx header payload occurrence state = .ok found.2.2)
+      hooks.arriveGateway ctx header payload occurrence state = .ok found.2.2.2)
     (fun found waiting result kept stepped => ?_) _ none _ (by simp) ran _ rfl
   split at stepped
   · exact (Except.ok.inj stepped) ▸ kept

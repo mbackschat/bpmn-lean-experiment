@@ -499,7 +499,7 @@ theorem advance_formed {precedes : Compensable → Compensable → Prop} {ctx : 
         · show entry.id.parent? = some run.scope
           rw [named, post.parented context begun', first.1.1]
     · refine post.moves.trans ⟨Nat.le_refl _, .of_same rfl rfl, fun entry inside => .inl inside, rfl, rfl,
-        ⟨[], by simp [stored], by simp⟩,
+        ⟨[], by simp [stored, Laws.State.allSignals], by simp⟩,
         fun key => ?_, fun other inside => ?_, fun _ inside => inside⟩
       · have same := ((split.filter (!resumesGroup ·.resume)).map (·.trigger)).count_eq key
         simp only [ungroupedTriggers, stored, List.filter_append, List.map_append, List.count_append] at same ⊢
@@ -687,7 +687,7 @@ theorem failCompensation_formed (hooks : Hooks) {ctx : Ctx} {handler : ScopeOccu
 /-- Retaining other records in place of `s`'s, the counter stepped by `issued`, moves nothing else. -/
 theorem moves_retained (s : State) (retained : List Compensable) {next : Nat} (issued : s.nextPosition ≤ next) :
     Moves s (stored { s with nextPosition := next } { s.slots.compensation with retained }) :=
-  ⟨issued, .of_same rfl rfl, fun _ inside => .inl inside, rfl, rfl, ⟨[], by simp [stored], by simp⟩, fun _ => Nat.le_refl _,
+  ⟨issued, .of_same rfl rfl, fun _ inside => .inl inside, rfl, rfl, ⟨[], by simp [stored, Laws.State.allSignals], by simp⟩, fun _ => Nat.le_refl _,
     fun run inside => ⟨run, inside, rfl⟩, fun _ inside => inside⟩
 
 theorem completed_formed (hooks : Hooks) {ctx : Ctx} {occurrence : Occurrence} {s t : State}
@@ -747,11 +747,11 @@ theorem completed_formed (hooks : Hooks) {ctx : Ctx} {occurrence : Occurrence} {
 (`TriggersApart.apart`) and no group's does (`TriggersApart.grouped`), and it resumes no group (`QueuedUngrouped`).
 `WellFormed` is not needed. -/
 theorem compensationsFresh : CompensationsFresh := by
-  intro precedes program queue scope activity trigger leave resume rest _ formed queued
+  intro precedes program queue scope activity trigger leave resume unit _ formed found
   have split : (ungroupedTriggers queue ++ queuedTriggers queue).Nodup := formed.triggers.apart
-  have head : trigger ∈ queuedTriggers queue := by rw [queuedTriggers_cons queued]; exact List.mem_cons_self ..
+  have head : trigger ∈ queuedTriggers queue := (queuedTriggers_pop found).mem_iff.mpr (List.mem_cons_self ..)
   refine ⟨fun run inside _ same => ?_,
-    formed.ungrouped scope activity trigger leave resume (by rw [queued]; exact List.mem_cons_self ..)⟩
+    formed.ungrouped scope activity trigger leave resume (Laws.State.mem_allSignals_of found)⟩
   cases grouped : resumesGroup run.resume
   · exact (List.nodup_append.mp split).2.2 _
       (List.mem_map.mpr ⟨run, List.mem_filter.mpr ⟨inside, by simp [grouped]⟩, rfl⟩) _ head same
@@ -767,8 +767,9 @@ theorem compensate_formed (hooks : Hooks) {ctx : Ctx} {scope : ScopeOccurrenceId
     (after : WellFormed ctx.program t)
     (ran : Feature.Compensation.compensate ctx scope activity trigger leave resume s = .ok t) :
     Formed (DependsIn hooks footprintReads footprintWrites ctx.program) t := by
-  obtain ⟨queue, ⟨queueFormed, queueRelation⟩, queued, shape⟩ := popped
-  have fresh := compensationsFresh _ _ _ _ _ _ _ _ _ queueFormed queueRelation queued
+  obtain ⟨queue, unit, ⟨queueFormed, queueRelation⟩, rest₁⟩ := popped
+  obtain ⟨found, shape⟩ := rest₁
+  have fresh := compensationsFresh _ _ _ _ _ _ _ _ _ queueFormed queueRelation found
   rw [← shape] at fresh
   obtain ⟨taken, others, rest⟩ := Laws.Compensation.compensate_spec ran
   obtain ⟨_, perm, advanced⟩ := rest
@@ -783,7 +784,7 @@ theorem compensate_formed (hooks : Hooks) {ctx : Ctx} {scope : ScopeOccurrenceId
     (fun record inside => perm.subset (List.mem_append_right _ inside)) fresh.1 below rfl fresh.2
   have post := (runs_form (precedes_dependsIn hooks ctx) (less + 1)).1 _ _ _ _ opening (List.mem_map.mpr stands) advanced
   have triggers := triggers_opened (others := others) (run := { trigger, scope, pending := taken, leave, resume })
-    queueRelation.triggers queueRelation.ungrouped queued shape rfl fresh.2
+    queueRelation.triggers queueRelation.ungrouped found shape rfl fresh.2
   refine formed_of formed post.tame.retained post.tame.keyed post.tame.runsIssued
     (apart_of_counts (fun n => Nat.le_trans (post.counted n) (Nat.le_of_eq (count_opened perm rfl rfl n))) formed.completions
       formed.issued post.moves.issued) (fun run inside => ?_)

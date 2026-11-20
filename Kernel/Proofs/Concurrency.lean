@@ -38,15 +38,33 @@ namespace Kernel.Proofs.Concurrency
 
 open Kernel
 
-/-- `after` is reached from `before` by closure micro-steps (`Laws.Step.ClosureStep`). -/
-inductive Reaches (hooks : Hooks) (ctx : Ctx) : State → State → Prop where
-  | refl (state : State) : Reaches hooks ctx state state
-  | step {before middle after : State} : Laws.Step.ClosureStep hooks ctx before middle → Reaches hooks ctx middle after →
-      Reaches hooks ctx before after
+/-- `after` under the run log `log'` is reached from `before` under `log` by closure micro-steps
+(`Laws.Step.ClosureStep`), the log recording each unit as it runs. -/
+inductive Reaches (hooks : Hooks) (ctx : Ctx) : Step.RunLog → State → Step.RunLog → State → Prop where
+  | refl (log : Step.RunLog) (state : State) : Reaches hooks ctx log state log state
+  | step {log log' : Step.RunLog} {unit : UnitKey} {before middle after : State} :
+      Laws.Step.ClosureStep hooks ctx log unit before middle → Reaches hooks ctx (log.record unit) middle log' after →
+      Reaches hooks ctx log before log' after
 
-/-- Two schedules of one closure state: the same state with its queued tokens, a split's branches, in another order,
-and one contiguous block of Signal firings, the receivers one Signal throw queues, in another order, every other queued
-signal in place, the ones before the block included.
+/-- `right` records the units `left` records, in another order: a run log of the same closure run in another schedule. -/
+structure LogReordered (left right : Step.RunLog) : Prop where
+  units : ∀ unit, unit ∈ right.positions ↔ unit ∈ left.positions
+  size : right.positions.size = left.positions.size
+  distinct : ∀ first second, first ∈ right.positions → second ∈ right.positions →
+    right.runPosition first = right.runPosition second → first = second
+  below : ∀ unit, unit ∈ right.positions → right.runPosition unit < right.positions.size
+
+/-- Two schedules of one closure state, each with its closure record (DC4): the same state with the units its run log
+records in another order (`log`), its queued tokens moved among their keys by any bijection of the key set (`tokens`),
+and one interval, in breadth order, of its queued signals that are all Signal firings, the receivers one Signal throw
+queues, moved among their keys by any bijection of the interval, every other queued signal in place (`firings`).
+
+DC4 restates P0's form, the queued token list in any order and one contiguous block of the signal list in any order, over
+the unit-keyed queues, without weakening it: a queue lists no order of its own, its keys order it (`Step.orderKey`,
+`UnitKey.breadth`). Over a fixed key set, moving the contents by any bijection of the keys lets the closure's order read
+any permutation of them, so `tokens` is P0's token permutation, cross-batch interleavings included; a contiguous block
+of the signal list is an interval of the queued signal keys in breadth order, the order the closure runs signals in, so
+`firings` is P0's block. Statement only: open (#163).
 
 It does not vary the `begin` signals of a parallel body's instances (under `orderInvariant` no begin is deferred onto
 the tokens), of a Scope's implicitly begun children, whose tokens `tokens` reorders, the begins of the handlers one
@@ -59,12 +77,23 @@ followed as its thrower's continuation, the joins' continuations of `flow.concur
 `continuationOf`. The Conditional firings one write or one arming offers stay in place too: admission refuses a write
 whose firings race a sibling unit, and an uncontested firing's effects reach the other units only through the tokens it
 emits, which `tokens` reorders. -/
-structure Reordered (left right : State) : Prop where
-  tokens : right.tokens.Perm left.tokens
-  firings : ∃ before block block' after, left.signals = before ++ block ++ after ∧
-    right.signals = before ++ block' ++ after ∧ block'.Perm block ∧
-    ∀ queued ∈ block, ∃ item delivery, queued = .fire item (.signal delivery)
-  rest : { right with tokens := left.tokens, signals := left.signals } = left
+structure Reordered (left right : Step.RunLog × State) : Prop where
+  log : LogReordered left.1 right.1
+  tokens : ∃ σ : UnitKey → UnitKey,
+    (∀ first second, first ∈ left.2.queuedTokens → second ∈ left.2.queuedTokens → σ first = σ second → first = second) ∧
+    (∀ key, key ∈ left.2.queuedTokens → σ key ∈ left.2.queuedTokens) ∧
+    (∀ key, key ∈ left.2.queuedTokens → ∃ source, source ∈ left.2.queuedTokens ∧ σ source = key) ∧
+    (∀ key, key ∈ right.2.queuedTokens ↔ key ∈ left.2.queuedTokens) ∧
+    ∀ key, key ∈ left.2.queuedTokens → right.2.queuedTokens[σ key]? = left.2.queuedTokens[key]?
+  firings : ∃ (block : UnitKey → Prop) (σ : UnitKey → UnitKey),
+    (∀ key, block key → ∃ item delivery, left.2.queuedSignals[key]? = some (.fire item (.signal delivery))) ∧
+    (∀ first middle last, block first → block last → middle ∈ left.2.queuedSignals →
+      UnitKey.breadth.val first middle = .lt → UnitKey.breadth.val middle last = .lt → block middle) ∧
+    (∀ first second, block first → block second → σ first = σ second → first = second) ∧
+    (∀ key, block key → block (σ key)) ∧ (∀ key, block key → ∃ source, block source ∧ σ source = key) ∧
+    (∀ key, block key → right.2.queuedSignals[σ key]? = left.2.queuedSignals[key]?) ∧
+    ∀ key, ¬ block key → right.2.queuedSignals[key]? = left.2.queuedSignals[key]?
+  rest : { right.2 with queuedTokens := left.2.queuedTokens, queuedSignals := left.2.queuedSignals } = left.2
 
 /-- A bijection of scope keys fixing every key `state` issued (`Laws.State.ScopeIssued`), so only the scope occurrences
 entered from `state` on are renamed. -/
@@ -120,35 +149,40 @@ def Opens (hooks : Hooks) (program : Program) (input : Input) (start : State) : 
     hooks.startsFired (Laws.Step.inputCtx hooks program input) payload = .ok fired ∧
     chooseStart payload.startEvent fired = .ok element ∧
     Step.advanceClock payload.atMs
-      ((State.initial payload.instanceId payload.variables payload.businessKey).signal (.armScope State.root)) =
-      .ok initial ∧
-    Step.microStep hooks (Laws.Step.inputCtx hooks program input) (.input .start) (some element) State.root
-      (Step.begin hooks (Laws.Step.inputCtx hooks program input)
+      (((State.initial payload.instanceId payload.variables payload.businessKey).signal (.armScope State.root)).queueBatch
+        (.ofRoot .seed)) = .ok initial ∧
+    Step.microStep hooks (Laws.Step.inputCtx hooks program input) (.ofRoot .input) (.input .start) (some element)
+      State.root (Step.begin hooks (Laws.Step.inputCtx hooks program input)
         { element, scope := State.root, trigger := payload.trigger }) initial = .ok start) ∨
   ∃ before after running transition clocked, Committed hooks program before ∧
     Step.step hooks program (some before) input = .ok after ∧
     Laws.Step.RunsTransition hooks (Laws.Step.inputCtx hooks program input) transition ∧
     Step.onRunning hooks (Laws.Step.inputCtx hooks program input) running (some before) transition = .ok after ∧
-    Step.advanceClock (Step.inputHead running).2.1 { before with journal := [], outbox := [], draft := {}, writes := [] } =
+    Step.advanceClock (Step.inputHead running).2.1 { before with journal := [], outbox := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } =
       .ok clocked ∧
-    Step.microStep hooks (Laws.Step.inputCtx hooks program input) (.input (Step.inputHead running).1) none State.root
-      transition clocked = .ok start
+    Step.microStep hooks (Laws.Step.inputCtx hooks program input) (.ofRoot .input) (.input (Step.inputHead running).1)
+      none State.root transition clocked = .ok start
 
-/-- P6: from a state the closure of a committed input reaches, any two schedules of its enabled work that both
-settle commit results alike up to a bijection of the identities and activations issued from that state on.
+/-- P6: from a state the closure of a committed input reaches, any two schedules of its enabled work, each with its
+closure record (DC4), that both settle commit results alike up to a bijection of the identities and activations issued
+from that state on.
 
 P0 stated it from any `Laws.State.WellFormed` state, which is false: `WellFormed` admits queues no run produces, and
 two flow tokens queued in the root of a sequential `Start → User Task → Terminate End` process settle in one order
 beginning the User Task again before the End and in the other ending the instance first, with no renaming relating the
 two journals (P6 design, witness W1). The order-invariance argument rests on the queue having come from a run, so the
 start is now reachable (root decision D1, 2026-11-15): the state a committed input's transition micro-step leaves on a
-committed state of a run or the start's begin (`Opens`), and the closure context `Step.step` gives that input. -/
+committed state of a run or the start's begin (`Opens`), under the run log that records the input's micro-step, and
+the closure context `Step.step` gives that input. The results are compared once committed (`Step.orderJournal`). -/
 def SchedulesAgree (hooks : Hooks) : Prop :=
-  ∀ (program : Program) (input : Input) (start state reordered left right : State) (fuel work fuel' work' : Nat),
+  ∀ (program : Program) (input : Input) (start state reordered left right : State) (log log' : Step.RunLog)
+    (fuel work fuel' work' : Nat),
     program.options.branchSchedule = .orderInvariant → Laws.Flow.Apart program → Opens hooks program input start →
-    Reaches hooks (Laws.Step.inputCtx hooks program input) start state → Reordered state reordered →
-    Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel work state = .ok left →
-    Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel' work' reordered = .ok right →
+    Reaches hooks (Laws.Step.inputCtx hooks program input) (Step.RunLog.record {} (.ofRoot .input)) start log state →
+    Reordered (log, state) (log', reordered) →
+    Step.orderJournal (Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel work log state) = .ok left →
+    Step.orderJournal (Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel' work' log' reordered) =
+      .ok right →
     ∃ ids keys, ScopesRenamed state ids ∧ Activations state keys ∧ Alike ids keys left right
 
 /-- PC-HUM-04 (`DTB-COMMUTE-01`): a token to a None End beside a token entering an embedded Sub-Process commute under
@@ -156,16 +190,21 @@ def SchedulesAgree (hooks : Hooks) : Prop :=
 the former theorem is this lane under `Laws.Flow.Apart` at a state queuing the two tokens that the closure of a
 committed input reaches, with no premise about the pair's elements. -/
 theorem endBesideEntry {hooks : Hooks} (agree : SchedulesAgree hooks)
-    (program : Program) (input : Input) (start state reordered left right : State) (fuel work fuel' work' : Nat)
-    (toEnd toEntry : FlowId) (scope : ScopeOccurrenceId) (_pair : state.tokens = [.flow toEnd scope, .flow toEntry scope])
+    (program : Program) (input : Input) (start state reordered left right : State) (log log' : Step.RunLog)
+    (fuel work fuel' work' : Nat) (toEnd toEntry : FlowId) (scope : ScopeOccurrenceId) (split : UnitKey)
+    (_pair : state.queuedTokens[split.tokenUnit 0]? = some (.flow toEnd scope) ∧
+      state.queuedTokens[split.tokenUnit 1]? = some (.flow toEntry scope))
     (invariant : program.options.branchSchedule = .orderInvariant) (separate : Laws.Flow.Apart program)
     (opens : Opens hooks program input start)
-    (reached : Reaches hooks (Laws.Step.inputCtx hooks program input) start state)
-    (swapped : Reordered state reordered)
-    (settled : Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel work state = .ok left)
-    (settled' : Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel' work' reordered = .ok right) :
+    (reached : Reaches hooks (Laws.Step.inputCtx hooks program input) (Step.RunLog.record {} (.ofRoot .input)) start log
+      state)
+    (swapped : Reordered (log, state) (log', reordered))
+    (settled : Step.orderJournal (Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel work log state) =
+      .ok left)
+    (settled' : Step.orderJournal (Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel' work' log'
+      reordered) = .ok right) :
     ∃ ids keys, ScopesRenamed state ids ∧ Activations state keys ∧ Alike ids keys left right :=
-  agree program input start state reordered left right fuel work fuel' work' invariant separate opens reached swapped
-    settled settled'
+  agree program input start state reordered left right log log' fuel work fuel' work' invariant separate opens reached
+    swapped settled settled'
 
 end Kernel.Proofs.Concurrency

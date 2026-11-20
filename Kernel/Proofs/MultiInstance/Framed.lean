@@ -382,10 +382,12 @@ beginning replaces a reservation by its begun record or adds a fresh occurrence,
 removes an occurrence (`FrameAlongside.cancelOccurrence`). -/
 theorem runsFramed_stepAlongside (program : Program) : StepAlongside program (RunsFramed program) where
   toFrameAlongside := (runsFramed_frameAlongside program).toFrameAlongside
-  journal _ _ _ kept _ _ := kept.carry (.equal rfl rfl rfl rfl)
-  runOrder _ _ kept := kept.carry (.equal rfl rfl rfl rfl)
+  journal _ _ _ _ kept _ _ _ := kept.carry (.equal rfl rfl rfl rfl)
+  queueBatch _ _ _ kept := by rw [Laws.State.queueBatch_eq]; exact kept.carry (.equal rfl rfl rfl rfl)
+  runOrder _ _ _ kept _ made := by obtain rfl := Laws.Step.orderJournal_of made; exact kept.carry (.equal rfl rfl rfl rfl)
   dequeue _ _ _ _ kept := kept.carry (.equal rfl rfl rfl rfl)
-  untoken _ _ _ _ kept := kept.carry (.equal rfl rfl rfl rfl)
+  unqueue _ _ _ kept := kept.carry (.equal rfl rfl rfl rfl)
+  untoken _ _ _ kept := kept.carry (.equal rfl rfl rfl rfl)
   begin s request role sourceType formed stands _ _ _ kept := by
     have begins := Laws.State.beginOccurrence_begins formed.activations request role sourceType
     refine kept.carry ⟨by rw [begins.slots]; exact .refl _, fun run _ o present named => ?_,
@@ -805,10 +807,16 @@ or a fresh occurrence, and cancelling withdraws items and removes an occurrence 
 theorem since_stepAlongside (b : State) (program : Program) :
     StepAlongside program fun s => Unstarted b s ∧ Snapshots b s where
   toFrameAlongside := (since_frameAlongside b program).toFrameAlongside
-  journal _ _ _ kept _ _ := ⟨⟨kept.1.below, kept.1.begun, fun _ _ _ _ _ => by simp⟩, kept.2.same rfl⟩
-  runOrder _ _ kept := ⟨kept.1.move (.same rfl rfl rfl (.refl _) rfl), kept.2.same rfl⟩
+  journal _ _ _ _ kept _ _ _ := ⟨⟨kept.1.below, kept.1.begun, fun _ _ _ _ _ => by simp⟩, kept.2.same rfl⟩
+  queueBatch _ _ _ kept := by
+    rw [Laws.State.queueBatch_eq]
+    exact ⟨kept.1.move (.same rfl rfl rfl (.refl _) rfl), kept.2.same rfl⟩
+  runOrder _ _ _ kept after made := by
+    obtain rfl := Laws.Step.orderJournal_of made
+    exact ⟨kept.1.move (.same rfl rfl rfl (.refl _) rfl), kept.2.same rfl⟩
   dequeue _ _ _ _ kept := ⟨kept.1.move (.same rfl rfl rfl (.refl _) rfl), kept.2.same rfl⟩
-  untoken _ _ _ _ kept := ⟨kept.1.move (.same rfl rfl rfl (.refl _) rfl), kept.2.same rfl⟩
+  unqueue _ _ _ kept := ⟨kept.1.move (.same rfl rfl rfl (.refl _) rfl), kept.2.same rfl⟩
+  untoken _ _ _ kept := ⟨kept.1.move (.same rfl rfl rfl (.refl _) rfl), kept.2.same rfl⟩
   begin s request role sourceType formed stands admitted _ _ kept := by
     have begins := Laws.State.beginOccurrence_begins formed.activations request role sourceType
     have present : (s.beginOccurrence request role sourceType).2 ∈ (s.beginOccurrence request role sourceType).1.occurrences := by

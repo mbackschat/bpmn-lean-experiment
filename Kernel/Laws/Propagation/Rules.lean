@@ -88,8 +88,8 @@ def InterruptingCatch (interrupting : Bool) (inside : ScopeOccurrenceId → Prop
     (flows : List FlowId) (before after : State) : Prop :=
   interrupting = true →
     (∀ scope ∈ after.scopes, ¬ inside scope.id) ∧
-    (∃ kept, after.tokens = kept ++ flows.map (Token.flow · parent) ∧
-      ∀ token ∈ kept, token ∈ before.tokens ∧ ¬ inside token.busyScope) ∧
+    (∃ kept, Laws.State.allQueuedTokens after = kept ++ flows.map (Token.flow · parent) ∧
+      ∀ token ∈ kept, token ∈ Laws.State.allQueuedTokens before ∧ ¬ inside token.busyScope) ∧
     ∀ counter ∈ before.activations, ∃ later ∈ after.activations, later.processInstance = counter.processInstance ∧
       later.element = counter.element ∧ later.role = counter.role ∧ counter.count ≤ later.count
 
@@ -99,7 +99,7 @@ def InterruptingCatch (interrupting : Bool) (inside : ScopeOccurrenceId → Prop
 left (Table 10.88); under `endsThrowingPath` (CIB-INT-0013) a committed input never fails the instance. -/
 def UncaughtError (policy : UnhandledError) (caught : Bool) (result : Except Failure State) : Prop :=
   caught = false →
-    (policy = .failsInstance → ∃ after, result = .ok after ∧ after.status = .failed ∧ after.tokens = []) ∧
+    (policy = .failsInstance → ∃ after, result = .ok after ∧ after.status = .failed ∧ Laws.State.allQueuedTokens after = []) ∧
       (policy = .endsThrowingPath → ∀ after, result = .ok after → after.status ≠ .failed)
 
 /-- An Escalation no catcher takes changes nothing beyond its thrower's own leave (`leave`), under every profile
@@ -227,9 +227,9 @@ appends to the queue (`Appends`) and which signals a raise's own steps queue (`Q
 appended, the clearing and the disarming a caught Cancel applies queue nothing, and a Cancel is one
 (`Raised.isCancel`). -/
 structure RaiseFacts : Prop where
-  signal : ∀ (state : State) signal, (state.signal signal).signals = state.signals ++ [signal]
-  cleared : ∀ (state : State) scope, (state.clearInside scope).signals = state.signals
-  disarmed : ∀ (state : State) host, (state.disarm host).signals = state.signals
+  signal : ∀ (state : State) signal, Laws.State.allSignals (state.signal signal) = Laws.State.allSignals state ++ [signal]
+  cleared : ∀ (state : State) scope, Laws.State.allSignals (state.clearInside scope) = Laws.State.allSignals state
+  disarmed : ∀ (state : State) host, Laws.State.allSignals (state.disarm host) = Laws.State.allSignals state
   cancel : Raised.cancel.isCancel = true
 
 /-- No Event Sub-Process a scope occurrence declares starts on a trigger that catches a Cancel: what `start.cancel`
@@ -267,12 +267,12 @@ def CancelTaken (ctx : Ctx) (origin : Origin) (passed after : State) : Prop :=
 
 /-- `after` holds `before`'s queued signals followed only by signals `allowed` admits. -/
 def Appends (allowed : Signal → Prop) (before after : State) : Prop :=
-  ∃ new, after.signals = before.signals ++ new ∧ ∀ signal ∈ new, allowed signal
+  ∃ new, Laws.State.allSignals after = Laws.State.allSignals before ++ new ∧ ∀ signal ∈ new, allowed signal
 
 theorem Appends.refl {allowed : Signal → Prop} (state : State) : Appends allowed state state :=
   ⟨[], by simp, by simp⟩
 
-theorem Appends.same {allowed : Signal → Prop} {before after : State} (signals : after.signals = before.signals) :
+theorem Appends.same {allowed : Signal → Prop} {before after : State} (signals : Laws.State.allSignals after = Laws.State.allSignals before) :
     Appends allowed before after :=
   ⟨[], by simp [signals], by simp⟩
 

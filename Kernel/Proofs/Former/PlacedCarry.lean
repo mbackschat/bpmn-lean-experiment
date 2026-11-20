@@ -124,7 +124,7 @@ theorem instanceRoot_issued {program : Program} {s : State} (formed : WellFormed
 
 /-- The scope occurrence a flow token of a well-formed state lies in stands. -/
 theorem flow_present {program : Program} {s : State} (formed : WellFormed program s) {flow : FlowId}
-    {scope : ScopeOccurrenceId} (member : Token.flow flow scope ∈ s.tokens) : scope ∈ scopeIds s :=
+    {scope : ScopeOccurrenceId} (member : Token.flow flow scope ∈ (Laws.State.allQueuedTokens s)) : scope ∈ scopeIds s :=
   Laws.State.busyScope_flow flow scope ▸ formed.owned.tokenScopes _ member
 
 /-- A scope occurrence of a well-formed state was issued. -/
@@ -138,7 +138,7 @@ section Carry
 variable {program : Program} {s t : State}
 
 /-- A reservation still to be made in `t` is one `s` held or one `t` places. -/
-theorem occurAt_carry (signals : ∀ signal ∈ t.signals, signal ∈ s.signals ∨ SignalPlaced program t signal)
+theorem occurAt_carry (signals : ∀ signal ∈ (Laws.State.allSignals t), signal ∈ (Laws.State.allSignals s) ∨ SignalPlaced program t signal)
     (runs : ∀ run ∈ t.slots.compensation.runs, run ∈ s.slots.compensation.runs ∨ RunHeldPlaced program t run)
     {element : ElementId} {scope : ScopeOccurrenceId} {leave : Leave} (pending : OccurAt t element scope leave) :
     OccurAt s element scope leave ∨ OccurPlaced program t element scope leave := by
@@ -152,8 +152,8 @@ theorem occurAt_carry (signals : ∀ signal ∈ t.signals, signal ∈ s.signals 
 
 /-- A completion resume queued in `t` names no flow, when `s`'s and the ones `t` adds do not. -/
 theorem compensates_carry (lane : PlacedLane program s)
-    (signals : ∀ signal ∈ t.signals, signal ∈ s.signals ∨ SignalPlaced program t signal) {id : OccurrenceId} {leave : Leave}
-    (resumed : some (Resume.complete id leave) ∈ Laws.Step.resumesOf t.signals) : Unnamed leave := by
+    (signals : ∀ signal ∈ (Laws.State.allSignals t), signal ∈ (Laws.State.allSignals s) ∨ SignalPlaced program t signal) {id : OccurrenceId} {leave : Leave}
+    (resumed : some (Resume.complete id leave) ∈ Laws.Step.resumesOf (Laws.State.allSignals t)) : Unnamed leave := by
   obtain ⟨scope, rest⟩ := Laws.Step.mem_resumesOf.mp resumed
   obtain ⟨activity, trigger, leave', queued⟩ := rest
   rcases signals _ queued with old | placed
@@ -169,10 +169,10 @@ theorem PlacedLane.carry (formed : WellFormed program s) (lane : PlacedLane prog
     (instances : ∀ entry ∈ t.slots.instances, entry ∈ s.slots.instances ∨ ¬ Laws.State.ScopeIssued s entry.root)
     (occurrences : ∀ o ∈ t.occurrences, o ∈ s.occurrences ∨ OccurrenceFits program s t o)
     (lying : ∀ o ∈ t.occurrences, o.scope ∈ scopeIds t)
-    (flowScopes : ∀ flow scope, Token.flow flow scope ∈ t.tokens → Token.flow flow scope ∈ s.tokens →
+    (flowScopes : ∀ flow scope, Token.flow flow scope ∈ (Laws.State.allQueuedTokens t) → Token.flow flow scope ∈ (Laws.State.allQueuedTokens s) →
       scope ∈ scopeIds t)
-    (signals : ∀ signal ∈ t.signals, signal ∈ s.signals ∨ SignalPlaced program t signal)
-    (tokens : ∀ token ∈ t.tokens, token ∈ s.tokens ∨ TokenPlaced program t token)
+    (signals : ∀ signal ∈ (Laws.State.allSignals t), signal ∈ (Laws.State.allSignals s) ∨ SignalPlaced program t signal)
+    (tokens : ∀ token ∈ (Laws.State.allQueuedTokens t), token ∈ (Laws.State.allQueuedTokens s) ∨ TokenPlaced program t token)
     (runs : ∀ run ∈ t.slots.compensation.runs, run ∈ s.slots.compensation.runs ∨ RunHeldPlaced program t run)
     (retained : ∀ record ∈ t.slots.compensation.retained,
       record ∈ s.slots.compensation.retained ∨ RecordPlaced program t record)
@@ -318,8 +318,8 @@ records and work `s` holds or `t` places. -/
 theorem PlacedLane.within (formed : WellFormed program s) (lane : PlacedLane program s) (scopes : t.scopes = s.scopes)
     (instances : t.slots.instances = s.slots.instances) (ordinals : t.scopeOrdinals = s.scopeOrdinals)
     (occurrences : ∀ o ∈ t.occurrences, o ∈ s.occurrences ∨ OccurrenceFits program s t o)
-    (signals : ∀ signal ∈ t.signals, signal ∈ s.signals ∨ SignalPlaced program t signal)
-    (tokens : ∀ token ∈ t.tokens, token ∈ s.tokens ∨ TokenPlaced program t token)
+    (signals : ∀ signal ∈ (Laws.State.allSignals t), signal ∈ (Laws.State.allSignals s) ∨ SignalPlaced program t signal)
+    (tokens : ∀ token ∈ (Laws.State.allQueuedTokens t), token ∈ (Laws.State.allQueuedTokens s) ∨ TokenPlaced program t token)
     (runs : ∀ run ∈ t.slots.compensation.runs, run ∈ s.slots.compensation.runs ∨ RunHeldPlaced program t run)
     (retained : ∀ record ∈ t.slots.compensation.retained,
       record ∈ s.slots.compensation.retained ∨ RecordPlaced program t record)
@@ -367,8 +367,8 @@ theorem PlacedLane.shrink (formed : WellFormed program s) (lane : PlacedLane pro
     (instances : t.slots.instances.Sublist s.slots.instances)
     (entries : ∀ entry ∈ s.slots.instances, ¬ out entry.root → entry ∈ t.slots.instances)
     (grows : Laws.State.ScopeGrows s t) (occurrences : ∀ o ∈ t.occurrences, o ∈ s.occurrences ∧ ¬ out o.scope)
-    (tokens : ∀ token ∈ t.tokens, token ∈ s.tokens ∧ ¬ out token.busyScope)
-    (signals : ∀ signal ∈ t.signals, signal ∈ s.signals)
+    (tokens : ∀ token ∈ (Laws.State.allQueuedTokens t), token ∈ (Laws.State.allQueuedTokens s) ∧ ¬ out token.busyScope)
+    (signals : ∀ signal ∈ (Laws.State.allSignals t), signal ∈ (Laws.State.allSignals s))
     (runs : ∀ run ∈ t.slots.compensation.runs, run ∈ s.slots.compensation.runs)
     (retained : ∀ record ∈ t.slots.compensation.retained, record ∈ s.slots.compensation.retained)
     (bodies : ∀ run ∈ t.slots.multiInstances, run ∈ s.slots.multiInstances)
@@ -426,7 +426,7 @@ theorem PlacedLane.grown (formed : WellFormed program s) (lane : PlacedLane prog
         ∀ owner ∈ s.occurrences, entry.occurrence = some owner.id →
           ((program.element? owner.element).bind (·.scope?)).isNone)
     (bareNew : entry.element = none ↔ entry.parent = none) (occurrences : t.occurrences = s.occurrences)
-    (signals : t.signals = s.signals) (tokens : t.tokens = s.tokens)
+    (signals : Laws.State.allSignals t = Laws.State.allSignals s) (tokens : Laws.State.allQueuedTokens t = Laws.State.allQueuedTokens s)
     (compensation : t.slots.compensation = s.slots.compensation)
     (bodies : t.slots.multiInstances = s.slots.multiInstances) (parked : t.slots.parked = s.slots.parked) :
     PlacedLane program t := by
@@ -583,8 +583,8 @@ less, holds some of its occurrence records, and queues `s`'s signals or ones it 
 an identifier and dropping a record do, read without `WellFormed`. -/
 theorem PlacedLane.queue (lane : PlacedLane program s) (scopes : t.scopes = s.scopes)
     (instances : t.slots.instances = s.slots.instances) (ordinals : t.scopeOrdinals = s.scopeOrdinals)
-    (occurrences : ∀ o ∈ t.occurrences, o ∈ s.occurrences) (tokens : t.tokens = s.tokens) (slots : t.slots = s.slots)
-    (signals : ∀ signal ∈ t.signals, signal ∈ s.signals ∨ SignalPlaced program t signal) : PlacedLane program t := by
+    (occurrences : ∀ o ∈ t.occurrences, o ∈ s.occurrences) (tokens : Laws.State.allQueuedTokens t = Laws.State.allQueuedTokens s) (slots : t.slots = s.slots)
+    (signals : ∀ signal ∈ (Laws.State.allSignals t), signal ∈ (Laws.State.allSignals s) ∨ SignalPlaced program t signal) : PlacedLane program t := by
   have place : ∀ {element x}, PlacedIn program s element x → PlacedIn program t element x :=
     fun placed => placed.same scopes fun _ inside => instances ▸ inside
   have ids : scopeIds t = scopeIds s := by unfold scopeIds; rw [scopes]
@@ -677,8 +677,10 @@ theorem SignalPlaced.same {signal : Signal} (placed : SignalPlaced program s sig
 theorem PlacedLane.signalled {signal : Signal} (lane : PlacedLane program s) (placed : SignalPlaced program s signal) :
     PlacedLane program (s.signal signal) := by
   rw [Laws.State.signal_eq]
-  exact lane.queue rfl rfl rfl (fun _ member => member) rfl rfl
-    (listExtended fun x member => by rw [List.mem_singleton.mp member]; exact placed.same rfl rfl rfl rfl)
+  exact lane.queue rfl rfl rfl (fun _ member => member) rfl rfl fun x member =>
+    listExtended (list := Laws.State.allSignals s)
+      (fun x member => by rw [List.mem_singleton.mp member]; exact placed.same rfl rfl rfl rfl) x
+      (by rwa [Laws.State.allSignals_append] at member)
 
 /-- Issuing an identifier keeps the lane. -/
 theorem PlacedLane.takePosition (lane : PlacedLane program s) : PlacedLane program s.takePosition.1 := by

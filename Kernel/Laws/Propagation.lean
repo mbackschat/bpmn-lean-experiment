@@ -598,7 +598,7 @@ structure QuietHooks (ctx : Ctx) (quiet : Signal → Prop) (hooks : Feature.Prop
   writeCaught : ∀ scope writes state after,
     hooks.writeCaught ctx scope writes state = .ok after → Appends quiet state after
   callOutputs : ∀ root state after, hooks.callOutputs ctx root state = .ok after → Appends quiet state after
-  dropRuns : ∀ scope state, (hooks.dropRuns ctx scope state).signals = state.signals
+  dropRuns : ∀ scope state, Laws.State.allSignals (hooks.dropRuns ctx scope state) = Laws.State.allSignals state
 
 /-- `signal` is the failure of a compensation handler's context that a search stopping there queues: only when the
 profile does not select `propagatesFromHandler`, and only at a scope occurrence `ctx.scopeRole` calls a compensation

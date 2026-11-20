@@ -4,6 +4,7 @@ public import Kernel.Step
 public import Kernel.Laws.State.Frames
 public import Kernel.Laws.IL
 public import Kernel.Laws.Flow.Sources
+public import Kernel.Laws.Step.Order
 
 /-! # Laws of the step function: the preservation contract
 
@@ -162,9 +163,9 @@ compensations that resume by one, each in queue order, which with the compensati
 /-- A reservation of `element` still to be made: a queued `Signal.occur`, or the resume of a queued compensation or of a
 compensation run that ends by reserving it (`Compensation.advance`). -/
 def OccurPending (s : State) (element : ElementId) : Prop :=
-  (∃ scope leave writes rule, Signal.occur element scope leave writes rule ∈ s.signals) ∨
+  (∃ scope leave writes rule, Signal.occur element scope leave writes rule ∈ Laws.State.allSignals s) ∨
     (∃ scope activity trigger leave at_ resumed,
-      Signal.compensate scope activity trigger leave (some (.occur element at_ resumed)) ∈ s.signals) ∨
+      Signal.compensate scope activity trigger leave (some (.occur element at_ resumed)) ∈ Laws.State.allSignals s) ∨
     ∃ run ∈ s.slots.compensation.runs, ∃ at_ leave, run.resume = some (.occur element at_ leave)
 
 /-- `element` is a reservation still to be made in a state that keeps `rel`: where a queued `Signal.occur`, a queued
@@ -211,7 +212,8 @@ theorem occursOf_append (signals more : List Signal) : occursOf (signals ++ more
 
 /-- A reservation pending in `t` is pending in `s` when `t`'s queued reservations and compensation runs are among
 `s`'s. -/
-theorem occurPending_of {s t : State} (occurs : ∀ element ∈ occursOf t.signals, element ∈ occursOf s.signals)
+theorem occurPending_of {s t : State}
+    (occurs : ∀ element ∈ occursOf (Laws.State.allSignals t), element ∈ occursOf (Laws.State.allSignals s))
     (runs : ∀ run ∈ t.slots.compensation.runs, run ∈ s.slots.compensation.runs) {element : ElementId}
     (pending : OccurPending t element) : OccurPending s element := by
   rcases pending with queued | resumed | ⟨run, member, rest⟩
@@ -318,6 +320,25 @@ theorem resumesOf_sublist {signals more : List Signal} (fewer : signals.Sublist 
     (resumesOf signals).Sublist (resumesOf more) :=
   fewer.filterMap _
 
+theorem triggersOf_fewer {signals more : List Signal} (fewer : Laws.State.Fewer signals more) :
+    Laws.State.Fewer (triggersOf signals) (triggersOf more) :=
+  fewer.filterMap _
+
+/-- A queue in another order carries its triggers in another order. -/
+theorem triggersOf_perm {signals more : List Signal} (same : signals.Perm more) :
+    (triggersOf signals).Perm (triggersOf more) :=
+  same.filterMap _
+
+/-- The triggers of a queue whose signals are among another's are among that one's. -/
+theorem triggersOf_subset {signals more : List Signal} (among : ∀ signal ∈ signals, signal ∈ more) :
+    ∀ trigger ∈ triggersOf signals, trigger ∈ triggersOf more := fun _ inside =>
+  have ⟨signal, member, carries⟩ := List.mem_filterMap.mp inside
+  List.mem_filterMap.mpr ⟨signal, among _ member, carries⟩
+
+theorem resumesOf_fewer {signals more : List Signal} (fewer : Laws.State.Fewer signals more) :
+    Laws.State.Fewer (resumesOf signals) (resumesOf more) :=
+  fewer.filterMap _
+
 /-- A resume is queued exactly when a queued compensation carries it. -/
 theorem mem_resumesOf {signals : List Signal} {resume : Option Resume} :
     resume ∈ resumesOf signals ↔
@@ -399,17 +420,41 @@ theorem multiInstance_inj {body other : OccurrenceId} (same : Continuation.multi
     body = other := by
   injection same
 
-/-- With no signal queued, the closure took `token` off `queue`'s work stack, leaving `popped`: the oldest under
-`orderInvariant` and the newest otherwise (`Step.nextToken`). -/
+/-- With no signal queued, the closure took the queued `token` off `queue`, leaving `popped`: the one queued first under
+`orderInvariant` and the one queued last otherwise, by the closure's run log (`Step.nextToken`). -/
 def TokenTaken (program : Program) (queue : State) (token : Token) (popped : State) : Prop :=
-  queue.signals = [] ∧ ∃ rest, ((program.options.branchSchedule = .orderInvariant ∧ queue.tokens = token :: rest) ∨
-    queue.tokens = rest ++ [token]) ∧ popped = { queue with tokens := rest }
+  firstBreadth queue.queuedSignals = none ∧ ∃ unit log,
+    ((program.options.branchSchedule = .orderInvariant ∧ earliest log queue.queuedTokens = some (unit, token)) ∨
+      latest log queue.queuedTokens = some (unit, token)) ∧
+    popped = { queue with queuedTokens := queue.queuedTokens.erase unit }
 
 /-- The closure took the queued begin `request` off `queue`, leaving `popped`: the head `begin` signal, or the deferred
 begin it took off the work stack (`TokenTaken`). -/
 def Dequeued (program : Program) (queue : State) (request : BeginRequest) (popped : State) : Prop :=
-  (∃ rest, queue.signals = .begin request :: rest ∧ popped = { queue with signals := rest }) ∨
+  (∃ unit, firstBreadth queue.queuedSignals = some (unit, .begin request) ∧
+    popped = { queue with queuedSignals := queue.queuedSignals.erase unit }) ∨
     TokenTaken program queue (.begin request) popped
+
+/-- A token the closure took was queued under the unit it erased. -/
+theorem TokenTaken.found {program : Program} {queue : State} {token : Token} {popped : State}
+    (taken : TokenTaken program queue token popped) :
+    ∃ unit, queue.queuedTokens[unit]? = some token ∧ popped = { queue with queuedTokens := queue.queuedTokens.erase unit } := by
+  obtain ⟨-, unit, _, rest₁⟩ := taken
+  obtain ⟨chosen, same⟩ := rest₁
+  rcases chosen with ⟨-, first⟩ | last
+  · exact ⟨unit, earliest_mem first, same⟩
+  · exact ⟨unit, latest_mem last, same⟩
+
+/-- A begin the closure took off a queue was queued there: as a signal or as a deferred token. -/
+theorem Dequeued.queued {program : Program} {queue : State} {request : BeginRequest} {popped : State}
+    (dequeued : Dequeued program queue request popped) :
+    (∃ unit, queue.queuedSignals[unit]? = some (.begin request) ∧
+      popped = { queue with queuedSignals := queue.queuedSignals.erase unit }) ∨
+    ∃ unit, queue.queuedTokens[unit]? = some (.begin request) ∧
+      popped = { queue with queuedTokens := queue.queuedTokens.erase unit } := by
+  rcases dequeued with ⟨unit, first, same⟩ | taken
+  · exact .inl ⟨unit, firstBreadth_mem first, same⟩
+  · exact .inr taken.found
 
 /-- Where a fresh begin's request comes from: the arrival of a flow token the closure took off a queue that keeps `inv`,
 which begins the element the token's flow ends at in the token's scope occurrence, arriving by that flow
@@ -595,59 +640,59 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) (src :
   startsFired : ∀ ctx input fired, hooks.startsFired ctx input = .ok fired →
     ∀ id ∈ fired, ∃ element ∈ ctx.program.children none, element.header.id = id
 
-/-- What each phase `Step` runs itself must keep of `inv`, and what the closure reads of `inv`: the arming a queued
-signal asks for names issued identities, so one that `Step.stale` lets run finds them standing, and a host that stands
-begun in the scope occurrence it names; a queued begin is
-`Admitted` once it leaves the queue, and a queued completion completes no reservation a queued begin names; and a queued
-instance end records a failure exactly when it fails. The state operations' obligations are `Laws.State`'s. The phases
-only the completion pipeline runs are apart (`PipelinePhases`), and so is the reset that starts an input
+/-- What each phase `Step` runs itself in a micro-step's body, before `Step.conclude`, must keep of `inv`, and what the
+closure reads of `inv`: the arming a queued signal asks for names issued identities, so one that `Step.stale` lets run
+finds them standing, and a host that stands begun in the scope occurrence it names; a queued begin is `Admitted` once it
+leaves the queue, and a queued completion completes no reservation a queued begin names; and a queued instance end
+records a failure exactly when it fails. The state operations' obligations are `Laws.State`'s. The phases only the
+completion pipeline runs are apart (`PipelinePhases`), and so is the reset that starts an input
 (`Laws.Step.running_keeps`): an invariant that counts an input's end facts holds across the pipeline only as a unit and
-from the input's start only (`Kernel.Laws.Step.Ends`), and so is ordering the journal at the input's end (`Phases`):
-an invariant that reads the order of the journal's facts cannot hold both before and after it. -/
-structure ClosurePhases (inv : Program → State → Prop) : Prop where
+from the input's start only (`Kernel.Laws.Step.Ends`), and so is ordering the journal at the input's end (`Phases`): an
+invariant that reads the order of the journal's facts cannot hold both before and after it. -/
+structure BodyPhases (inv : Program → State → Prop) : Prop where
   clock : ∀ program state atMs, inv program state → inv program { state with logicalTimeMs := atMs }
-  /-- `Step.conclude` journals the draft and empties it and the write log. -/
-  journal : ∀ program state (transition : Transition), inv program state → transition.started = state.draft.started →
-    transition.ended = state.draft.ended →
-    inv program { state with journal := transition :: state.journal, draft := {}, writes := [] }
-  /-- Signals leave the queue: the closure's next, or a micro-step's sole completion that `Step.absorb` runs. -/
+  /-- Signals leave the running batch: a micro-step's sole completion that `Step.absorb` runs. -/
   dequeue : ∀ program state signals, inv program state → signals.Sublist state.signals →
     inv program { state with signals := signals }
-  /-- The closure's next token leaves the work stack. -/
-  untoken : ∀ program state tokens, inv program state → tokens.Sublist state.tokens →
-    inv program { state with tokens := tokens }
+  /-- The closure's next signal leaves the queue. -/
+  unqueue : ∀ program state unit, inv program state →
+    inv program { state with queuedSignals := state.queuedSignals.erase unit }
+  /-- The closure's next token leaves the queue. -/
+  untoken : ∀ program state unit, inv program state →
+    inv program { state with queuedTokens := state.queuedTokens.erase unit }
   /-- A variable command queues its write or its removal. -/
   queueWrite : ∀ program state scope writes rule, inv program state →
     inv program (state.signal (.write scope writes rule))
   queueRemove : ∀ program state scope names, inv program state → inv program (state.signal (.remove scope names))
-  armIssued : ∀ program state host element scope, inv program state → Signal.arm host element scope ∈ state.signals →
+  armIssued : ∀ program state host element scope, inv program state → Signal.arm host element scope ∈ Laws.State.allSignals state →
     Laws.State.OccurrenceIssued state host ∧ Laws.State.ScopeIssued state scope ∧
       ∀ occurrence ∈ state.occurrences, occurrence.id = host → occurrence.begun = true ∧ occurrence.scope = scope
-  armScopeIssued : ∀ program state scope, inv program state → Signal.armScope scope ∈ state.signals →
+  armScopeIssued : ∀ program state scope, inv program state → Signal.armScope scope ∈ Laws.State.allSignals state →
     Laws.State.ScopeIssued state scope
   armGatewayIssued : ∀ program state occurrence gateway scope, inv program state →
-    Signal.armGateway occurrence gateway scope ∈ state.signals →
+    Signal.armGateway occurrence gateway scope ∈ Laws.State.allSignals state →
     Laws.State.OccurrenceIssued state occurrence ∧ Laws.State.ScopeIssued state scope ∧
       ∀ found ∈ state.occurrences, found.id = occurrence → found.begun = true ∧ found.scope = scope
-  endRecorded : ∀ program state status failure, inv program state → Signal.endInstance status failure ∈ state.signals →
+  endRecorded : ∀ program state status failure, inv program state → Signal.endInstance status failure ∈ Laws.State.allSignals state →
     (failure.isSome = true ↔ status = .failed)
   /-- The closure's next signal or token, a begin, may begin once it leaves the queue. -/
-  admittedSignal : ∀ program state request rest, inv program state → state.signals = .begin request :: rest →
-    Admitted { state with signals := rest } request
-  admittedToken : ∀ program state request rest, inv program state →
-    (state.tokens = .begin request :: rest ∨ state.tokens = rest ++ [.begin request]) →
-    Admitted { state with tokens := rest } request
+  admittedSignal : ∀ program state unit request, inv program state →
+    firstBreadth state.queuedSignals = some (unit, .begin request) →
+    Admitted { state with queuedSignals := state.queuedSignals.erase unit } request
+  admittedToken : ∀ program state request popped, inv program state → TokenTaken program state (.begin request) popped →
+    Admitted popped request
   completeQueued : ∀ program state id leave writes rule, inv program state →
-    Signal.complete id leave writes rule ∈ state.signals →
+    Signal.complete id leave writes rule ∈ Laws.State.allSignals state →
     ∀ request, Laws.State.Queued state request → id ∉ Laws.State.names request
   /-- The closure's next signal, a compensation, may end as it asks once it leaves the queue. -/
-  resumable : ∀ program state scope activity trigger leave resume rest, inv program state →
-    state.signals = .compensate scope activity trigger leave (some resume) :: rest →
-    Laws.State.Resumable { state with signals := rest } scope resume
+  resumable : ∀ program state scope activity trigger leave resume unit, inv program state →
+    firstBreadth state.queuedSignals = some (unit, .compensate scope activity trigger leave (some resume)) →
+    Laws.State.Resumable { state with queuedSignals := state.queuedSignals.erase unit } scope resume
   /-- The closure's next signal, a raise, finds what its origin names and a settled host once it leaves the queue. -/
-  raisable : ∀ program state raised origin rest, inv program state → state.signals = .raise raised origin :: rest →
-    Laws.State.Raisable program { state with signals := rest } origin ∧
-      ∀ host, origin.host = some host → Laws.State.Settled { state with signals := rest } host
+  raisable : ∀ program state raised origin unit, inv program state →
+    firstBreadth state.queuedSignals = some (unit, .raise raised origin) →
+    Laws.State.Raisable program { state with queuedSignals := state.queuedSignals.erase unit } origin ∧
+      ∀ host, origin.host = some host → Laws.State.Settled { state with queuedSignals := state.queuedSignals.erase unit } host
   /-- An occurrence's scope occurrence stands. -/
   housed : ∀ program state occurrence, inv program state → occurrence ∈ state.occurrences →
     ScopeStands state occurrence.scope
@@ -711,11 +756,24 @@ structure ClosurePhases (inv : Program → State → Prop) : Prop where
       (state.reserve element scope).2.id ∉ Laws.State.names request
   cancel : ∀ program state id, inv program state → inv program (state.cancelOccurrence id)
 
+/-- `BodyPhases` and what `Step.conclude` does once a micro-step's body has run: journal the draft and move the batches.
+Apart, so a micro-step's body is known to journal nothing (`Laws.Step.closureStep_concludes`), which an invariant that
+reads which unit journalled a transition needs (`Kernel.Proofs.MultiInstance.Begins`). -/
+structure ClosurePhases (inv : Program → State → Prop) : Prop extends BodyPhases inv where
+  /-- `Step.conclude` journals the draft as the transition of a unit the closure has not run (DC4), and empties it
+  and the write log. -/
+  journal : ∀ program state unit (transition : Transition), inv program state → state.transitions[unit]? = none →
+    transition.started = state.draft.started → transition.ended = state.draft.ended →
+    inv program { state with transitions := state.transitions.insert unit transition, draft := {}, writes := [] }
+  /-- `Step.conclude` moves the micro-step's batches under its unit key (`State.queueBatch`). -/
+  queueBatch : ∀ program state unit, inv program state → inv program (state.queueBatch unit)
+
 /-- The phases of `ClosurePhases` and ordering the journal once the closure has settled (`Step.orderJournal`): what
 `Laws.Step.running_keeps` needs for an invariant of the committed state, while `Laws.Step.running_settles` gives the
 settled state before the ordering. -/
 structure Phases (inv : Program → State → Prop) : Prop extends ClosurePhases inv where
-  runOrder : ∀ program state, inv program state → inv program { state with journal := state.journal.reverse }
+  runOrder : ∀ program state log, inv program state → ∀ after, orderJournal (.ok (state, log)) = .ok after →
+    inv program after
 
 /-- What the completion pipeline's own phases must keep of `inv` (`Step.complete`): starting the completing reservation
 and closing its items, removing its record and journalling its end. -/

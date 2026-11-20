@@ -122,8 +122,11 @@ def QueuedAs (program : Program) (mode : MultiInstanceMode) (state queued : Stat
     (program.options.branchSchedule = .declarationDepthFirst ∧ mode = .parallel ∧ queued.signals = state.signals ∧
       queued.tokens = state.tokens ++ (requests.map Token.begin).reverse)
 
-/-- What queuing begins keeps of `state`: everything but the queued signals and tokens (`MultiInstance.queueInstances`). -/
+/-- What queuing begins keeps of `state`: everything but the running batch's signals and tokens
+(`MultiInstance.queueInstances`). -/
 structure QueueKeeps (state queued : State) : Prop where
+  queuedSignals : queued.queuedSignals = state.queuedSignals
+  queuedTokens : queued.queuedTokens = state.queuedTokens
   scopes : queued.scopes = state.scopes
   occurrences : queued.occurrences = state.occurrences
   variables : queued.variables = state.variables

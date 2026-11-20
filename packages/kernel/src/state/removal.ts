@@ -6,6 +6,7 @@
 import {
   closeOwnItems, disarm, idle, keyOf, type OccurrenceId, occurrenceOf, type Occurrence, type State,
 } from "../state.js";
+import { orderedFilter } from "./map.js";
 import { subtree } from "./tree.js";
 import { Terminal } from "./journal.js";
 import { featureSlotsClear, type ScopeOccurrenceId } from "./slots.js";
@@ -35,6 +36,7 @@ export function clearInside(state: State, scope: ScopeOccurrenceId, keep: readon
   return {
     ...journalled,
     tokens: journalled.tokens.filter((token) => !inside.includes(token.scope)),
+    queuedTokens: orderedFilter(journalled.queuedTokens, (token) => !inside.includes(token.scope)),
     openItems: journalled.openItems.filter((item) => !inside.includes(item.scope) || keep.includes(item.id.occurrence)),
     itemOrdinals: journalled.itemOrdinals.filter(([id]) => !removed.some((occurrence) => occurrence.id === id)),
     occurrences: journalled.occurrences.filter((occurrence) =>

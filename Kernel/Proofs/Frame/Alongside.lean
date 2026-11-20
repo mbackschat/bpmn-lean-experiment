@@ -87,20 +87,23 @@ structure Unmoved (s t : State) : Prop where
   nextPosition : t.nextPosition = s.nextPosition
   activations : t.activations = s.activations
   journal : t.journal = s.journal
+  transitions : t.transitions = s.transitions
   started : t.draft.started = s.draft.started
   ended : t.draft.ended = s.draft.ended
   instanceId : t.instanceId = s.instanceId
   multiInstances : t.slots.multiInstances = s.slots.multiInstances
   compensation : t.slots.compensation = s.slots.compensation
   begins : Laws.Step.beginsOf t.signals = Laws.Step.beginsOf s.signals
-  triggers : Laws.Step.triggersOf t.signals = Laws.Step.triggersOf s.signals
-  resumes : Laws.Step.resumesOf t.signals = Laws.Step.resumesOf s.signals
+  triggers : Laws.Step.triggersOf (Laws.State.allSignals t) = Laws.Step.triggersOf (Laws.State.allSignals s)
+  resumes : Laws.Step.resumesOf (Laws.State.allSignals t) = Laws.Step.resumesOf (Laws.State.allSignals s)
   deferred : Laws.Step.deferredOf t.tokens = Laws.Step.deferredOf s.tokens
+  queuedSignals : t.queuedSignals = s.queuedSignals
+  queuedTokens : t.queuedTokens = s.queuedTokens
   pending : ∀ element, Laws.Step.OccurPending t element → Laws.Step.OccurPending s element
   instances : t.slots.instances = s.slots.instances
-  flows : ∀ token ∈ Laws.Step.flowsOf t.tokens, token ∈ Laws.Step.flowsOf s.tokens
+  flows : ∀ token ∈ Laws.Step.flowsOf (Laws.State.allQueuedTokens t), token ∈ Laws.Step.flowsOf (Laws.State.allQueuedTokens s)
   parked : ∀ waiting ∈ t.slots.parked, waiting ∈ s.slots.parked
-  placings : ∀ signal ∈ t.signals, Laws.Step.placing signal = true → signal ∈ s.signals
+  placings : ∀ signal ∈ Laws.State.allSignals t, Laws.Step.placing signal = true → signal ∈ Laws.State.allSignals s
 
 /-- `Unmoved` stating only the fields a change moves: every other field holds by definition, so a field added to
 `Unmoved` is one edit here. -/
@@ -110,22 +113,36 @@ theorem Unmoved.same {s t : State} (scopes : t.scopes = s.scopes := by exact rfl
     (occurrenceOrdinals : t.occurrenceOrdinals = s.occurrenceOrdinals := by exact rfl)
     (nextPosition : t.nextPosition = s.nextPosition := by exact rfl)
     (activations : t.activations = s.activations := by exact rfl) (journal : t.journal = s.journal := by exact rfl)
+    (transitions : t.transitions = s.transitions := by exact rfl)
     (started : t.draft.started = s.draft.started := by exact rfl) (ended : t.draft.ended = s.draft.ended := by exact rfl)
     (instanceId : t.instanceId = s.instanceId := by exact rfl)
     (multiInstances : t.slots.multiInstances = s.slots.multiInstances := by exact rfl)
     (compensation : t.slots.compensation = s.slots.compensation := by exact rfl)
     (begins : Laws.Step.beginsOf t.signals = Laws.Step.beginsOf s.signals := by exact rfl)
-    (triggers : Laws.Step.triggersOf t.signals = Laws.Step.triggersOf s.signals := by exact rfl)
-    (resumes : Laws.Step.resumesOf t.signals = Laws.Step.resumesOf s.signals := by exact rfl)
+    (triggers : Laws.Step.triggersOf (Laws.State.allSignals t) = Laws.Step.triggersOf (Laws.State.allSignals s) := by exact rfl)
+    (resumes : Laws.Step.resumesOf (Laws.State.allSignals t) = Laws.Step.resumesOf (Laws.State.allSignals s) := by exact rfl)
     (deferred : Laws.Step.deferredOf t.tokens = Laws.Step.deferredOf s.tokens := by exact rfl)
+    (queuedSignals : t.queuedSignals = s.queuedSignals := by exact rfl)
+    (queuedTokens : t.queuedTokens = s.queuedTokens := by exact rfl)
     (pending : ∀ element, Laws.Step.OccurPending t element → Laws.Step.OccurPending s element :=
       by exact fun _ held => held) (instances : t.slots.instances = s.slots.instances := by exact rfl)
-    (flows : ∀ token ∈ Laws.Step.flowsOf t.tokens, token ∈ Laws.Step.flowsOf s.tokens := by exact fun _ held => held)
+    (flows : ∀ token ∈ Laws.Step.flowsOf (Laws.State.allQueuedTokens t), token ∈ Laws.Step.flowsOf (Laws.State.allQueuedTokens s) := by exact fun _ held => held)
     (parked : ∀ waiting ∈ t.slots.parked, waiting ∈ s.slots.parked := by exact fun _ held => held)
-    (placings : ∀ signal ∈ t.signals, Laws.Step.placing signal = true → signal ∈ s.signals :=
+    (placings : ∀ signal ∈ Laws.State.allSignals t, Laws.Step.placing signal = true → signal ∈ Laws.State.allSignals s :=
       by exact fun _ held _ => held) : Unmoved s t :=
-  ⟨scopes, scopeOrdinals, occurrences, occurrenceOrdinals, nextPosition, activations, journal, started, ended, instanceId, multiInstances, compensation, begins,
-    triggers, resumes, deferred, pending, instances, flows, parked, placings⟩
+  ⟨scopes, scopeOrdinals, occurrences, occurrenceOrdinals, nextPosition, activations, journal, transitions, started, ended, instanceId, multiInstances, compensation, begins,
+    triggers, resumes, deferred, queuedSignals, queuedTokens, pending, instances, flows, parked, placings⟩
+
+/-- What `Unmoved` keeps of the queued begins, in both queues. -/
+theorem Unmoved.allBegins {s t : State} (moved : Unmoved s t) :
+    Laws.Step.beginsOf (Laws.State.allSignals t) = Laws.Step.beginsOf (Laws.State.allSignals s) := by
+  rw [Laws.State.allSignals, Laws.State.allSignals, Laws.Step.beginsOf_append, Laws.Step.beginsOf_append, moved.begins,
+    moved.queuedSignals]
+
+theorem Unmoved.allDeferred {s t : State} (moved : Unmoved s t) :
+    Laws.Step.deferredOf (Laws.State.allQueuedTokens t) = Laws.Step.deferredOf (Laws.State.allQueuedTokens s) := by
+  rw [Laws.State.allQueuedTokens, Laws.State.allQueuedTokens, Laws.Step.deferredOf_append, Laws.Step.deferredOf_append,
+    moved.deferred, moved.queuedTokens]
 
 /-- `scope` is the context of a handler or group a compensation run of `s` holds running. -/
 def RunningContext (s : State) (scope : ScopeOccurrenceId) : Prop :=
@@ -307,13 +324,13 @@ theorem FrameAlongside.signal {rel : State → Prop} {program : Program} (side :
     rel (s.signal signal) := by
   rw [Laws.State.signal_eq]
   have pending := fun pending => Laws.Step.occurPending_of (s := s) (t := { s with signals := s.signals ++ [signal] })
-    (fun element inside => by rwa [Laws.Step.occursOf_append, quiet.2.1, List.append_nil] at inside)
+    (fun element inside => by rwa [Laws.State.allSignals_append, Laws.Step.occursOf_append, quiet.2.1, List.append_nil] at inside)
     (fun _ member => member) (element := pending)
   exact side.frame s _ (.same (begins := by rw [Laws.Step.beginsOf_append, quiet.1, List.append_nil])
-    (triggers := by rw [Laws.Step.triggersOf_append, quiet.2.2, List.append_nil])
-    (resumes := by rw [Laws.Step.resumesOf_append, unresumed, List.append_nil]) (pending := pending)
+    (triggers := by rw [Laws.State.allSignals_append, Laws.Step.triggersOf_append, quiet.2.2, List.append_nil])
+    (resumes := by rw [Laws.State.allSignals_append, Laws.Step.resumesOf_append, unresumed, List.append_nil]) (pending := pending)
     (placings := fun queued member placed => by
-      rcases List.mem_append.mp member with old | new
+      rcases List.mem_append.mp (Laws.State.allSignals_append _ _ ▸ member) with old | new
       · exact old
       · rw [List.mem_singleton.mp new, unplacing] at placed
         cases placed)) kept
@@ -423,16 +440,16 @@ theorem FrameAlongside.cancelOccurrence {rel : State → Prop} {program : Progra
     rw [cancels]
     exact ends _ ended cancelled (side.removeOccurrence without withdrawn (side.withdrawOccurrence formed kept id))
 
-/-- What the phases a closure runs keep of a property `rel` carried beside `WellFormed`, besides the hooks' state
-operations (`FrameAlongside`): journalling the draft, beginning an admitted request in a scope occurrence that stands
-and cancelling an occurrence; the others reserve, clear the root or move nothing `rel` may read. -/
-structure ClosureAlongside (program : Program) (rel : State → Prop) : Prop extends FrameAlongside program rel where
-  journal : ∀ s (transition : Transition), WellFormed program s → rel s → transition.started = s.draft.started →
-    transition.ended = s.draft.ended → rel { s with journal := transition :: s.journal, draft := {}, writes := [] }
-  /-- Signals leave the queue. -/
+/-- What the phases a micro-step's body runs keep of a property `rel` carried beside `WellFormed`, besides the hooks'
+state operations (`FrameAlongside`): beginning an admitted request in a scope occurrence that stands and cancelling an
+occurrence; the others reserve, clear the root or move nothing `rel` may read. -/
+structure BodyAlongside (program : Program) (rel : State → Prop) : Prop extends FrameAlongside program rel where
+  /-- Signals leave the running batch. -/
   dequeue : ∀ s signals, WellFormed program s → signals.Sublist s.signals → rel s → rel { s with signals }
-  /-- Tokens leave the work stack. -/
-  untoken : ∀ s tokens, WellFormed program s → tokens.Sublist s.tokens → rel s → rel { s with tokens }
+  /-- The closure's next signal leaves the queue. -/
+  unqueue : ∀ s unit, WellFormed program s → rel s → rel { s with queuedSignals := s.queuedSignals.erase unit }
+  /-- The closure's next token leaves the queue. -/
+  untoken : ∀ s unit, WellFormed program s → rel s → rel { s with queuedTokens := s.queuedTokens.erase unit }
   /-- A begin of the request's role, fresh or taken off a queue that kept `rel` (`Laws.Step.BeginOrigin`). -/
   begin : ∀ s request role sourceType, WellFormed program s → Laws.Step.ScopeStands s request.scope →
     Laws.Step.Admitted s request → role = Step.roleOf program request →
@@ -440,9 +457,18 @@ structure ClosureAlongside (program : Program) (rel : State → Prop) : Prop ext
     rel (s.beginOccurrence request role sourceType).1
   cancel : ∀ s id, WellFormed program s → rel s → rel (s.cancelOccurrence id)
 
+/-- `BodyAlongside` and what `Step.conclude` does once the body has run: journalling the draft and moving the batches
+under the unit key. -/
+structure ClosureAlongside (program : Program) (rel : State → Prop) : Prop extends BodyAlongside program rel where
+  journal : ∀ s unit (transition : Transition), WellFormed program s → rel s → s.transitions[unit]? = none →
+    transition.started = s.draft.started → transition.ended = s.draft.ended →
+    rel { s with transitions := s.transitions.insert unit transition, draft := {}, writes := [] }
+  /-- A micro-step's batches move under its unit key. -/
+  queueBatch : ∀ s unit, WellFormed program s → rel s → rel (s.queueBatch unit)
+
 /-- What `Step`'s own phases keep of `rel` (`ClosureAlongside`) and ordering the journal once the closure settles. -/
 structure StepAlongside (program : Program) (rel : State → Prop) : Prop extends ClosureAlongside program rel where
-  runOrder : ∀ s, WellFormed program s → rel s → rel { s with journal := s.journal.reverse }
+  runOrder : ∀ s log, WellFormed program s → rel s → ∀ after, Step.orderJournal (.ok (s, log)) = .ok after → rel after
 
 section Items
 

@@ -132,7 +132,7 @@ theorem unpaired_emit_rejected (f : FlowId) (ends : (topCalled program definitio
     fun lane => ?_⟩
   rw [Laws.State.emit_eq] at lane
   exact rootOnly_misplaced program definition
-    (lane.tokens f State.root ⟨"T"⟩ (by simp [staleComplete, staleOccurrence]) ends)
+    (lane.tokens f State.root ⟨"T"⟩ (by simp [Laws.State.allQueuedTokens, staleComplete, staleOccurrence]) ends)
     (rootOnly_root (by simp [staleComplete])) (by simp [staleComplete]) (topCalled_placed program definition)
 
 /-- The key a first scope occurrence of `Y` takes below the process root. -/
@@ -164,7 +164,7 @@ theorem unissued_enter_rejected :
   have scopes : (pendingFresh.enterScope ⟨"Y"⟩ State.root [] none).1.scopes =
       [{ id := State.root, element := none }, freshEntry] := by
     rw [entered]; simp [freshEntry, pendingFresh, Laws.State.slotCount, Std.ExtTreeMap.getD_empty]
-  have placed := (lane.occurs ⟨"T"⟩ freshKey .outgoing (.inl ⟨[], .outward, by rw [entered]; simp [pendingFresh]⟩)).1
+  have placed := (lane.occurs ⟨"T"⟩ freshKey .outgoing (.inl ⟨[], .outward, by rw [entered]; simp [Laws.State.allSignals, pendingFresh]⟩)).1
     (by simp [Laws.State.scopeIds, scopes, freshEntry])
   have reading : Laws.State.InstanceIn (pendingFresh.enterScope ⟨"Y"⟩ State.root [] none).1 freshKey
       (pendingFresh.enterScope ⟨"Y"⟩ State.root [] none).1.instanceId
@@ -189,8 +189,8 @@ theorem occur_apart {signal : Signal} {element : ElementId} {scope : ScopeOccurr
 stand and Multi-Instance runs held in such, keeps the lane: each clause reads its work only where it stands. -/
 theorem rootOnly_lane {s : State} (scopes : s.scopes = [{ id := State.root, element := none }])
     (instances : s.slots.instances = [{ root := State.root }]) (occurrences : s.occurrences = [])
-    (tokens : s.tokens = []) (parked : s.slots.parked = []) (compensation : s.slots.compensation = {})
-    (signals : ∀ signal ∈ s.signals, ∃ element scope, signal = .occur element scope .outgoing [] .outward ∧
+    (tokens : Laws.State.allQueuedTokens s = []) (parked : s.slots.parked = []) (compensation : s.slots.compensation = {})
+    (signals : ∀ signal ∈ (Laws.State.allSignals s), ∃ element scope, signal = .occur element scope .outgoing [] .outward ∧
       scope ≠ State.root ∧ Laws.State.ScopeIssued s scope)
     (runs : ∀ run ∈ s.slots.multiInstances, run.scope ≠ State.root ∧ Laws.State.ScopeIssued s run.scope) :
     PlacedLane (topCalled program definition) s := by
@@ -282,33 +282,37 @@ theorem leftKey_issued {s : State} (scopes : s.scopes = [{ id := State.root, ele
 def leftReservation : State :=
   { instanceId := "I", scopes := [{ id := State.root, element := none }]
     scopeOrdinals := leftOrdinals
-    signals := [.occur ⟨"T"⟩ leftKey .outgoing [] .outward]
+    queuedSignals := (∅ : TreeMap UnitKey Signal compare).insert (.ofRoot .input) (.occur ⟨"T"⟩ leftKey .outgoing [] .outward)
     slots := { instances := [{ root := State.root }] } }
+
+/-- `leftReservation` with its reservation taken off the queue. -/
+def leftTaken : State := { leftReservation with queuedSignals := leftReservation.queuedSignals.erase (.ofRoot .input) }
 
 /-- Taken off `leftReservation`'s queue, the reservation of `T` in the left `leftKey` places an occurrence of the called
 process under the process root, although the lane held, the reservation was pending and the queue kept the lane. -/
 theorem unstood_reserve_rejected :
     PlacedLane (topCalled program definition) leftReservation ∧ ¬ Laws.Step.ScopeStands leftReservation leftKey ∧
       Laws.State.Popped (PlacedLane (topCalled program definition)) (.occur ⟨"T"⟩ leftKey .outgoing [] .outward)
-        { leftReservation with signals := [] } ∧
-      ¬ PlacedLane (topCalled program definition) ({ leftReservation with signals := [] }.reserve ⟨"T"⟩ leftKey).1 := by
+        leftTaken ∧
+      ¬ PlacedLane (topCalled program definition) (leftTaken.reserve ⟨"T"⟩ leftKey).1 := by
   have lane : PlacedLane (topCalled program definition) leftReservation :=
     rootOnly_lane program definition rfl rfl rfl rfl rfl rfl
-      (fun signal member => ⟨_, _, by simpa [leftReservation] using member, by simp [Laws.State.root_eq, Laws.State.child_eq],
+      (fun signal member => ⟨_, _, by simpa [Laws.State.allSignals, leftReservation] using member, by simp [Laws.State.root_eq, Laws.State.child_eq],
         leftKey_issued rfl rfl⟩)
       (by simp [leftReservation])
-  refine ⟨lane, fun ⟨entry, member, named⟩ => ?_, ⟨leftReservation, lane, rfl, rfl⟩, fun after => ?_⟩
+  refine ⟨lane, fun ⟨entry, member, named⟩ => ?_,
+    ⟨leftReservation, .ofRoot .input, lane, by simp [leftReservation], rfl⟩, fun after => ?_⟩
   · simp [leftReservation] at member; subst member; simp [Laws.State.root_eq, Laws.State.child_eq] at named
-  · have reserves := Laws.State.reserve_reserves { leftReservation with signals := [] } ⟨"T"⟩ leftKey
-    have root : ({ leftReservation with signals := [] }.reserve ⟨"T"⟩ leftKey).1.instanceRoot leftKey = State.root := by
+  · have reserves := Laws.State.reserve_reserves leftTaken ⟨"T"⟩ leftKey
+    have root : (leftTaken.reserve ⟨"T"⟩ leftKey).1.instanceRoot leftKey = State.root := by
       obtain ⟨go, start, _, step⟩ :=
-        Laws.State.instanceRoot_go ({ leftReservation with signals := [] }.reserve ⟨"T"⟩ leftKey).1
+        Laws.State.instanceRoot_go (leftTaken.reserve ⟨"T"⟩ leftKey).1
       rw [start, show leftKey.segments.length + 1 = 0 + 1 + 1 by simp [Laws.State.root_eq], step,
         Laws.State.calledRoot_eq, reserves.scopes]
-      simp [leftReservation, Laws.State.root_eq, Laws.State.child_eq]
+      simp [leftTaken, leftReservation, Laws.State.root_eq, Laws.State.child_eq]
     exact rootOnly_misplaced program definition
       (reserves.placed ▸ reserves.kind ▸ after.placed.occurrences _ (by rw [reserves.occurrences]; simp))
-      (reserves.placed ▸ root) (by rw [reserves.slots]; simp [leftReservation]) (topCalled_placed program definition)
+      (reserves.placed ▸ root) (by rw [reserves.slots]; simp [leftTaken, leftReservation]) (topCalled_placed program definition)
 
 /-- A Multi-Instance run of `T`'s boundary held in `leftKey`. -/
 def leftRunRecord : MultiInstanceRun :=
@@ -327,7 +331,7 @@ theorem unstood_subscription_rejected :
       Laws.Flow.Anchored (PlacedLane (topCalled program definition)) (topCalled program definition) leftRun sharedX.id leftKey ∧
       ¬ PlacedLane (topCalled program definition) (leftRun.reserve sharedX.id leftKey).1 := by
   have lane : PlacedLane (topCalled program definition) leftRun :=
-    rootOnly_lane program definition rfl rfl rfl rfl rfl rfl (by simp [leftRun])
+    rootOnly_lane program definition rfl rfl rfl rfl rfl rfl (by simp [Laws.State.allSignals, leftRun])
       (fun run member => by
         simp only [leftRun, List.mem_singleton] at member
         exact member ▸ ⟨by simp [leftRunRecord, Laws.State.root_eq, Laws.State.child_eq], leftKey_issued rfl rfl⟩)

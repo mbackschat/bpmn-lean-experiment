@@ -158,13 +158,14 @@ theorem queueInstances_frame (ctx : Ctx) (mode : MultiInstanceMode) (requests : 
       (rest.foldl (fun state request => state.signal (.begin request)) current).tokens = current.tokens := by
     intro rest
     induction rest with
-    | nil => intro _; exact ⟨⟨rfl, rfl, rfl, rfl, rfl⟩, by simp, rfl⟩
+    | nil => intro _; exact ⟨⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩, by simp, rfl⟩
     | cons request rest held =>
       intro current
       rw [List.foldl_cons]
       obtain ⟨keeps, signals, tokens⟩ := held (current.signal (.begin request))
       have same := Laws.State.signal_eq current (.begin request)
-      exact ⟨⟨keeps.scopes.trans (by rw [same]), keeps.occurrences.trans (by rw [same]),
+      exact ⟨⟨keeps.queuedSignals.trans (by rw [same]), keeps.queuedTokens.trans (by rw [same]),
+        keeps.scopes.trans (by rw [same]), keeps.occurrences.trans (by rw [same]),
         keeps.variables.trans (by rw [same]), keeps.slots.trans (by rw [same]), keeps.occurrenceOrdinals.trans (by rw [same])⟩,
         by rw [signals, same]; simp, tokens.trans (by rw [same])⟩
   unfold Feature.MultiInstance.queueInstances
@@ -175,7 +176,7 @@ theorem queueInstances_frame (ctx : Ctx) (mode : MultiInstanceMode) (requests : 
     split
     · rename_i parallel
       rw [Laws.State.deferBegins_eq]
-      exact ⟨⟨rfl, rfl, rfl, rfl, rfl⟩, .inr ⟨schedule, beq_iff_eq.mp parallel, rfl, rfl⟩⟩
+      exact ⟨⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩, .inr ⟨schedule, beq_iff_eq.mp parallel, rfl, rfl⟩⟩
     · obtain ⟨keeps, signals, tokens⟩ := signalled requests state
       exact ⟨keeps, .inl ⟨signals, tokens⟩⟩
 
@@ -227,6 +228,8 @@ structure Opening (inv : State → Prop) (settled : State → OccurrenceId → P
   occurrences : acc.1.occurrences = start.occurrences
   signals : acc.1.signals = start.signals
   tokens : acc.1.tokens = start.tokens
+  queuedSignals : acc.1.queuedSignals = start.queuedSignals
+  queuedTokens : acc.1.queuedTokens = start.queuedTokens
   kept : ∀ entry ∈ start.scopes, entry ∈ acc.1.scopes
   scopes : ∀ entry ∈ acc.1.scopes, entry ∈ start.scopes ∨
     ¬ Laws.State.ScopeIssued start entry.id ∧ entry.parent = some run.scope ∧ entry.occurrence = none ∧
@@ -317,7 +320,7 @@ theorem enterInstance_opening (ops : MultiInstanceOps program inv settled) {ctx 
   have requested := opening.requested
   dsimp only at requested
   refine ⟨entering, counters, opening.grows.trans grows, opening.slots, opening.occurrences, opening.signals, opening.tokens,
-    fun entry member => List.mem_append_left _ (opening.kept entry member), fun entry member => ?_,
+    opening.queuedSignals, opening.queuedTokens, fun entry member => List.mem_append_left _ (opening.kept entry member), fun entry member => ?_,
     by simp [opening.length], fun other outside => ?_, fun other inside => ?_, fun first inside second scope one two => ?_,
     ?_⟩
   · rcases List.mem_append.mp member with old | new
@@ -419,6 +422,8 @@ structure Begun (inv : State → Prop) (settled : State → OccurrenceId → Pro
   counted : ∀ index scope, instances[index]? = some (.active scope) → run.instances[index]? = some (.active scope) ∨
     ¬ Laws.State.ScopeIssued state scope ∧ CounterIn ctx loop queued index scope
   uncalled : ∀ entry ∈ queued.scopes, entry ∉ state.scopes → entry.calledInstance = none
+  /-- It queues into the running batch only, so the keyed queues stay. -/
+  keyed : queued.queuedSignals = state.queuedSignals ∧ queued.queuedTokens = state.queuedTokens
 
 /-- Beginning a body's instances, from a state where it keeps what it keeps while it enters, queues their begins in a
 state it then sets the body's slot record in, as `Begun` says. -/
@@ -438,7 +443,7 @@ theorem beginInstances_spec (ops : MultiInstanceOps program inv settled) {ctx : 
     rw [← folded]
     refine foldl_prefix (fun pre acc => Opening inv settled ctx loop state run acc pre) _ _ _ [] _ (by simp)
       (fun pre index post acc whole held => ?_)
-      ⟨entering, rfl, .refl _, rfl, rfl, rfl, rfl, fun _ member => member, fun entry member => .inl member, rfl,
+      ⟨entering, rfl, .refl _, rfl, rfl, rfl, rfl, rfl, rfl, fun _ member => member, fun entry member => .inl member, rfl,
         fun _ _ => rfl, fun _ none => (by cases none), fun _ none => (by cases none),
         ⟨[], rfl, rfl, fun _ none => by cases none⟩⟩
     obtain ⟨s, held_instances, held_requests⟩ := acc
@@ -467,7 +472,7 @@ theorem beginInstances_spec (ops : MultiInstanceOps program inv settled) {ctx : 
     keeps.occurrences.trans opened.occurrences, fun entry member => scopes ▸ opened.kept entry member,
     fun entry member => ?_, keeps.occurrenceOrdinals.trans opened.counters, ⟨requests, opened.requested, ?_⟩, ?_,
     fun entry member outside => (opened.scopes entry (scopes ▸ member)).elim (fun old => absurd old outside)
-      fun fresh => fresh.2.2.2⟩
+      fun fresh => fresh.2.2.2, ⟨keeps.queuedSignals.trans opened.queuedSignals, keeps.queuedTokens.trans opened.queuedTokens⟩⟩
   · obtain ⟨scope, slot, bounds, rest⟩ := opened.entered index inside
     refine ⟨scope, slot, scopeIds ▸ rest.1, fun entry member named => ?_, fun other held context => ?_, fun active => ?_⟩
     · rcases opened.scopes entry (scopes ▸ member) with old | new
@@ -715,28 +720,30 @@ theorem finish_collects (ctx : Ctx) {loop : MultiInstance} (run : MultiInstanceR
 theorem beginInstances_signals (ctx : Ctx) (loop : MultiInstance) (items : List Value) (run : MultiInstanceRun)
     (state : State) : ∃ begins : List BeginRequest,
       (Feature.MultiInstance.beginInstances ctx loop items run state).signals = state.signals ++ begins.map .begin ∧
+        (Feature.MultiInstance.beginInstances ctx loop items run state).queuedSignals = state.queuedSignals ∧
         ∀ request ∈ begins, ∃ scope, request = instanceRequest run scope := by
   unfold Feature.MultiInstance.beginInstances
   split
   rename_i current instances requests folded
   have kept : (fun acc : State × List Iteration × List BeginRequest => acc.1.signals = state.signals ∧
-      ∀ request ∈ acc.2.2, ∃ scope, request = instanceRequest run scope) (current, instances, requests) := by
+      acc.1.queuedSignals = state.queuedSignals ∧ ∀ request ∈ acc.2.2, ∃ scope, request = instanceRequest run scope)
+      (current, instances, requests) := by
     rw [← folded]
     refine Laws.State.foldl_keeps (fun acc : State × List Iteration × List BeginRequest => acc.1.signals = state.signals ∧
-      ∀ request ∈ acc.2.2, ∃ scope, request = instanceRequest run scope) _ _ _ (fun acc _ _ held => ?_)
-      ⟨rfl, fun _ none => by cases none⟩
+      acc.1.queuedSignals = state.queuedSignals ∧ ∀ request ∈ acc.2.2, ∃ scope, request = instanceRequest run scope) _ _ _
+      (fun acc _ _ held => ?_) ⟨rfl, rfl, fun _ none => by cases none⟩
     obtain ⟨s, _, _⟩ := acc
     dsimp only at held ⊢
     rw [Laws.State.enterScope_eq]
-    refine ⟨held.1, fun request member => ?_⟩
+    refine ⟨held.1, held.2.1, fun request member => ?_⟩
     rcases List.mem_append.mp member with old | new
-    · exact held.2 request old
+    · exact held.2.2 request old
     · exact ⟨_, List.mem_singleton.mp new⟩
-  obtain ⟨_, queuedAs⟩ := queueInstances_frame ctx loop.mode requests current
+  obtain ⟨keeps, queuedAs⟩ := queueInstances_frame ctx loop.mode requests current
   rw [setRun_eq]
   rcases queuedAs with ⟨queued, _⟩ | ⟨_, _, queued, _⟩
-  · exact ⟨requests, queued.trans (by rw [kept.1]), kept.2⟩
-  · exact ⟨[], queued.trans (by rw [kept.1]; simp), fun _ none => by cases none⟩
+  · exact ⟨requests, queued.trans (by rw [kept.1]), keeps.queuedSignals.trans kept.2.1, kept.2.2⟩
+  · exact ⟨[], queued.trans (by rw [kept.1]; simp), keeps.queuedSignals.trans kept.2.1, fun _ none => by cases none⟩
 
 /-! ## Counters
 

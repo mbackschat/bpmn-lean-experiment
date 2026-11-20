@@ -422,7 +422,8 @@ theorem arm_keeps {inv : State → Prop} {ctx : Ctx} (ops : SubscriptionsOps ctx
     {element : ElementId} {scope : ScopeOccurrenceId} {state after : State} (holds : inv state)
     (hosted : Hosted scope (some host) state) (popped : Laws.State.Popped inv (.arm host element scope) state)
     (ran : Feature.Subscriptions.arm ctx host element scope state = .ok after) : inv after := by
-  obtain ⟨queue, queued, heads, shape⟩ := popped
+  obtain ⟨queue, _, queued, rest₁⟩ := popped
+  obtain ⟨heads, shape⟩ := rest₁
   unfold Feature.Subscriptions.arm at ran
   split at ran
   · cases ran
@@ -437,7 +438,7 @@ theorem arm_keeps {inv : State → Prop} {ctx : Ctx} (ops : SubscriptionsOps ctx
           (Laws.Flow.Anchored.held queued kept.2.2 (fun _ held => kept.2.1.2.1 ▸ held)
             (fun _ held => kept.2.1.2.2 ▸ held)
             (.inr (.inr (.inr (.inl ⟨located, envelope, locatedIs, has, boundary, inside, rfl⟩))))
-            (.inr (.inl ⟨host, by rw [heads]; exact List.mem_cons_self ..⟩))) subscribing
+            (.inr (.inl ⟨host, Laws.State.mem_allSignals_of heads⟩))) subscribing
         ⟨next.1, next.2, kept.2.2.trans (subscribe_grows subscribing)⟩) ran
 
 /-- `Hooks.armGateway` keeps `inv` for a gateway occurrence begun in a scope occurrence that stands, its arming taken
@@ -447,7 +448,8 @@ theorem armGateway_keeps {inv : State → Prop} {ctx : Ctx} (ops : Subscriptions
     (hosted : Hosted scope (some occurrence) state)
     (popped : Laws.State.Popped inv (.armGateway occurrence gateway scope) state)
     (ran : Feature.Subscriptions.armGateway ctx occurrence gateway scope state = .ok after) : inv after := by
-  obtain ⟨queue, queued, heads, shape⟩ := popped
+  obtain ⟨queue, _, queued, rest₁⟩ := popped
+  obtain ⟨heads, shape⟩ := rest₁
   unfold Feature.Subscriptions.armGateway at ran
   split at ran
   · cases ran
@@ -467,7 +469,7 @@ theorem armGateway_keeps {inv : State → Prop} {ctx : Ctx} (ops : Subscriptions
           (fun _ held => kept.2.1.2.2 ▸ held)
           (.inr (.inr (.inr (.inr (.inl ⟨flow, .inl ⟨located, locatedIs, .inr (.inr ⟨_, payload, typed, .inl inside⟩)⟩,
             gatewayArm_target arm⟩)))))
-          (.inr (.inr (.inl ⟨occurrence, by rw [heads]; exact List.mem_cons_self ..⟩)))
+          (.inr (.inr (.inl ⟨occurrence, Laws.State.mem_allSignals_of heads⟩)))
     · cases subscribing
 
 /-- The Conditional boundaries evaluated at a scope's arming keep `inv` and the scope occurrences and occurrences. -/

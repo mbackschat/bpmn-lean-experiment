@@ -119,8 +119,8 @@ def OutputsAtDeclaringOccurrence (hooks : Hooks) : Prop :=
 /-- PC-SCOPE-05 (`CALLN-NEST-01`): a scope occurrence with a live child, a nested Call's root among them, is never the
 idle scope occurrence the closure completes (`Laws.Scopes.Idle`). -/
 def NestedCallKeepsRootBusy : Prop :=
-  ∀ (ctx : Ctx) (state : State) (scope child : ScopeOccurrence),
-    Step.idleScope? ctx state = some scope → child ∈ state.scopes → child.parent ≠ some scope.id
+  ∀ (hooks : Hooks) (ctx : Ctx) (state : State) (scope child : ScopeOccurrence),
+    Step.idleScope? hooks ctx state = some scope → child ∈ state.scopes → child.parent ≠ some scope.id
 
 /-! ## Proofs
 
@@ -287,6 +287,6 @@ theorem outputsAtDeclaringOccurrence {hooks : Hooks} (data : hooks.writeOutputs 
   exact fun _ => setVariable_writes state target name value
 
 theorem nestedCallKeepsRootBusy (facts : Laws.Step.StateFacts) : NestedCallKeepsRootBusy :=
-  fun _ _ _ child idle member => Laws.Step.idleScope?_childless facts idle child member
+  fun _ _ _ _ child idle member => Laws.Step.idleScope?_childless facts idle child member
 
 end Kernel.Proofs.Former

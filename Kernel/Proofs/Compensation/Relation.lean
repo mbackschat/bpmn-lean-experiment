@@ -91,7 +91,7 @@ def queuedTrigger (s : State) : OccurrenceRef ⊕ Origin → Option OccurrenceRe
 
 /-- The triggers `s`'s queued compensations and Cancel raises name (`queuedTrigger`). -/
 def queuedTriggers (s : State) : List OccurrenceRef :=
-  (Laws.Step.triggersOf s.signals).filterMap (queuedTrigger s)
+  (Laws.Step.triggersOf (Laws.State.allSignals s)).filterMap (queuedTrigger s)
 
 /-- The triggers `s` keeps apart: its runs' but a group's nested runs', which share their outer run's, and the queued
 ones. -/
@@ -116,7 +116,7 @@ structure TriggersApart (s : State) : Prop where
   apart : (heldTriggers s).Nodup
   grouped : ∀ run ∈ s.slots.compensation.runs, resumesGroup run.resume = true → run.trigger ∉ queuedTriggers s
   counted : ∀ trigger ∈ s.slots.compensation.runs.map (·.trigger) ++ queuedTriggers s, Counted s (triggerKey trigger)
-  issued : ∀ origin, .inr origin ∈ Laws.Step.triggersOf s.signals → Laws.State.ScopeIssued s origin.scope
+  issued : ∀ origin, .inr origin ∈ Laws.Step.triggersOf (Laws.State.allSignals s) → Laws.State.ScopeIssued s origin.scope
   unreserved : ∀ occurrence ∈ s.occurrences, occurrence.begun = false →
     ∀ trigger ∈ s.slots.compensation.runs.map (·.trigger) ++ queuedTriggers s,
       triggerKey trigger ≠ Laws.State.key s occurrence
@@ -124,7 +124,7 @@ structure TriggersApart (s : State) : Prop where
 /-- No queued compensation resumes a group: `Propagation` queues those that complete or occur an occurrence, and a
 group's nested run resumes its outer run directly (`Compensation.advance`). -/
 def QueuedUngrouped (s : State) : Prop :=
-  ∀ scope activity trigger leave resume, Signal.compensate scope activity trigger leave resume ∈ s.signals →
+  ∀ scope activity trigger leave resume, Signal.compensate scope activity trigger leave resume ∈ Laws.State.allSignals s →
     resumesGroup resume = false
 
 /-- The lane relation: no record is claimed twice (`ClaimsApart`), every retained record lies in a present scope
@@ -204,7 +204,7 @@ theorem unissued_run_rejected : ¬ RunsIssued (holdingState { runs := [{ pending
 theorem shared_trigger_rejected :
     ¬ TriggersApart (holdingState { runs := [pendingRun] } [.compensate rootScope none thrownBy none none]) := fun apart => by
   have nodup := apart.apart
-  simp [heldTriggers, queuedTriggers, holdingState, pendingRun, resumesGroup, Laws.Step.triggersOf_compensate,
+  simp [heldTriggers, queuedTriggers, Laws.State.allSignals, holdingState, pendingRun, resumesGroup, Laws.Step.triggersOf_compensate,
     queuedTrigger] at nodup
 
 /-- `pendingRun` as a group's nested run. -/
@@ -215,7 +215,7 @@ the trigger. -/
 theorem queued_group_trigger_rejected :
     ¬ TriggersApart (holdingState { runs := [groupRun] } [.compensate rootScope none thrownBy none none]) := fun apart => by
   refine apart.grouped groupRun (by simp [holdingState]) (by simp [groupRun, resumesGroup]) ?_
-  simp [queuedTriggers, holdingState, groupRun, pendingRun, Laws.Step.triggersOf_compensate, queuedTrigger]
+  simp [queuedTriggers, Laws.State.allSignals, holdingState, groupRun, pendingRun, Laws.Step.triggersOf_compensate, queuedTrigger]
 
 /-- A trigger whose activation its counter has not issued breaks `TriggersApart`. -/
 theorem uncounted_trigger_rejected :
@@ -241,7 +241,7 @@ theorem unissued_raise_rejected :
   fun apart => Laws.State.unissued_of_count (parent := rootScope) (element := thrower) (ordinal := 0)
     (by simp [holdingState]) (by simp [Laws.State.slotCount, holdingState])
     (apart.issued { element := thrower, scope := unissuedScope, activation := 1, thrower := throwerIn unissuedScope }
-      (by simp [holdingState, Laws.Step.triggersOf_raise, Laws.State.isCancel_cancel]))
+      (by simp [Laws.State.allSignals, holdingState, Laws.Step.triggersOf_raise, Laws.State.isCancel_cancel]))
 
 /-- An unbegun reservation of the first occurrence of `T` in the root scope occurrence, with a Cancel raise queued from
 that occurrence. -/
@@ -255,7 +255,7 @@ theorem reserved_trigger_rejected : ¬ TriggersApart reservedRaise := fun apart 
   apart.unreserved _ (List.mem_singleton_self _) rfl
     { processInstanceId := reservedRaise.instanceOf rootScope, element := thrower, activation := 1 }
     (List.mem_append_right _ (by
-      simp [queuedTriggers, reservedRaise, holdingState, Laws.Step.triggersOf_raise, Laws.State.isCancel_cancel,
+      simp [queuedTriggers, Laws.State.allSignals, reservedRaise, holdingState, Laws.Step.triggersOf_raise, Laws.State.isCancel_cancel,
         queuedTrigger, scopeIds]))
     rfl
 
@@ -263,7 +263,7 @@ theorem reserved_trigger_rejected : ¬ TriggersApart reservedRaise := fun apart 
 theorem queued_group_rejected :
     ¬ QueuedUngrouped (holdingState {} [.compensate rootScope none thrownBy none (some (.group rootScope))]) :=
   fun ungrouped => by
-    have := ungrouped rootScope none thrownBy none (some (.group rootScope)) (by simp [holdingState])
+    have := ungrouped rootScope none thrownBy none (some (.group rootScope)) (by simp [Laws.State.allSignals, holdingState])
     simp [resumesGroup] at this
 
 end Kernel.Proofs.Compensation

@@ -27,39 +27,47 @@ theorem bind_ok {α β ε : Type} {x : Except ε α} {f : α → Except ε β} {
   | error failure => exact absurd ran (by simp [bind, Except.bind])
   | ok a => exact ⟨a, by simp, by simpa [bind, Except.bind] using ran⟩
 
-/-- `ClosureStep hooks ctx before after`: `after` is what one micro-step of `Step.settle` commits from `before`, in the
-order `settle` picks it: the next queued signal; else the next token (`Step.nextToken`); else an idle scope occurrence
-(`Step.idleScope?`); else a parked join offered again (`Step.reoffer?`); else, once the root is idle, the instance's
-completion. Each constructor names the micro-step's body, so a lane proves an invariant of the closure one body at a
-time (`settle_induction`). -/
-inductive ClosureStep (hooks : Hooks) (ctx : Ctx) : State → State → Prop where
-  | signal {state after : State} {next : Signal} {rest : List Signal} :
-      state.status = .running → state.signals = next :: rest →
-      microStep hooks ctx (.signal (signalName next)) none State.root (dispatchSignal hooks ctx next)
-        { state with signals := rest } = .ok after → ClosureStep hooks ctx state after
-  | token {state after : State} {token : Token} {rest : List Token} :
-      state.status = .running → state.signals = [] → nextToken ctx state = some (token, rest) →
-      moveToken hooks ctx token { state with tokens := rest } = .ok after → ClosureStep hooks ctx state after
-  | idle {state after : State} {scope : ScopeOccurrence} :
-      state.status = .running → state.signals = [] → nextToken ctx state = none → idleScope? ctx state = some scope →
-      microStep hooks ctx (.idle scope.id) scope.element scope.id (completeIdleScope hooks ctx scope) state = .ok after →
-      ClosureStep hooks ctx state after
-  | reoffer {state after offered : State} {gateway : ElementId} {scope : ScopeOccurrenceId} :
-      state.status = .running → state.signals = [] → nextToken ctx state = none → idleScope? ctx state = none →
-      reoffer? hooks ctx state = .ok (some (gateway, scope, offered)) →
-      microStep hooks ctx (.idle scope) (some gateway) scope (fun _ => .ok offered) state = .ok after →
-      ClosureStep hooks ctx state after
-  | finish {state after : State} :
-      state.status = .running → state.signals = [] → nextToken ctx state = none → idleScope? ctx state = none →
-      reoffer? hooks ctx state = .ok none → state.idle State.root = true →
-      microStep hooks ctx (.idle State.root) none State.root (fun state => .ok (endInstance .completed none state))
-        state = .ok after → ClosureStep hooks ctx state after
+/-- `ClosureStep hooks ctx log unit before after`: `after` is what one micro-step of `Step.settle` commits from `before`,
+running as the unit `unit` after the units the run log `log` records, in the order `settle` picks it: the queued signal
+first in breadth-first key order (`Step.firstBreadth`); else the next token (`Step.nextToken`); else an idle scope
+occurrence (`Step.idleScope?`); else a parked join offered again (`Step.reoffer?`); else, once the root is idle and no
+signal is queued, the instance's completion. Each constructor names the micro-step's body, so a lane proves an
+invariant of the closure one body at a time (`settle_induction`). -/
+inductive ClosureStep (hooks : Hooks) (ctx : Ctx) : RunLog → UnitKey → State → State → Prop where
+  | signal {log : RunLog} {unit : UnitKey} {state after : State} {next : Signal} :
+      state.status = .running → firstBreadth state.queuedSignals = some (unit, next) →
+      microStep hooks ctx unit (.signal (signalName next)) none State.root (dispatchSignal hooks ctx next)
+        { state with queuedSignals := state.queuedSignals.erase unit } = .ok after → ClosureStep hooks ctx log unit state after
+  | token {log : RunLog} {unit : UnitKey} {state after : State} {token : Token} :
+      state.status = .running → firstBreadth state.queuedSignals = none → nextToken hooks ctx log state = some (unit, token) →
+      moveToken hooks ctx unit token { state with queuedTokens := state.queuedTokens.erase unit } = .ok after →
+      ClosureStep hooks ctx log unit state after
+  | idle {log : RunLog} {state after : State} {scope : ScopeOccurrence} :
+      state.status = .running → firstBreadth state.queuedSignals = none → nextToken hooks ctx log state = none →
+      idleScope? hooks ctx state = some scope →
+      microStep hooks ctx (.ofRoot (.idle scope.id)) (.idle scope.id) scope.element scope.id (completeIdleScope hooks ctx scope)
+        state = .ok after → ClosureStep hooks ctx log (.ofRoot (.idle scope.id)) state after
+  | reoffer {log : RunLog} {state after offered : State} {gateway : ElementId} {scope : ScopeOccurrenceId}
+      {occurrence : OccurrenceId} :
+      state.status = .running → firstBreadth state.queuedSignals = none → nextToken hooks ctx log state = none →
+      idleScope? hooks ctx state = none → reoffer? hooks ctx state = .ok (some (gateway, scope, occurrence, offered)) →
+      microStep hooks ctx (.ofRoot (.offer occurrence (offerRound state occurrence))) (.idle scope) (some gateway) scope
+        (fun _ => .ok offered) state = .ok after →
+      ClosureStep hooks ctx log (.ofRoot (.offer occurrence (offerRound state occurrence))) state after
+  | finish {log : RunLog} {state after : State} :
+      state.status = .running → firstBreadth state.queuedSignals = none → nextToken hooks ctx log state = none →
+      idleScope? hooks ctx state = none → reoffer? hooks ctx state = .ok none → state.idle State.root = true →
+      state.queuedSignals.isEmpty = true →
+      microStep hooks ctx (.ofRoot (.idle State.root)) (.idle State.root) none State.root
+        (fun state => .ok (endInstance .completed none state)) state = .ok after →
+      ClosureStep hooks ctx log (.ofRoot (.idle State.root)) state after
 
-
-/-- The closure has nothing left to run in `state` but, once its root is idle, the instance's completion: no queued
-signal, no token to move, no idle scope occurrence and no parked join that fires when it is offered again. -/
-def Quiescent (hooks : Hooks) (ctx : Ctx) (state : State) : Prop :=
-  state.signals = [] ∧ nextToken ctx state = none ∧ idleScope? ctx state = none ∧ reoffer? hooks ctx state = .ok none
+/-- The closure has nothing left to run in `state` after the units `log` records but, once its root is idle and no
+signal is queued, the instance's completion: no queued signal, no token to move, no idle scope occurrence and no parked
+join that fires when it is offered again. -/
+def Quiescent (hooks : Hooks) (ctx : Ctx) (log : RunLog) (state : State) : Prop :=
+  firstBreadth state.queuedSignals = none ∧ nextToken hooks ctx log state = none ∧ idleScope? hooks ctx state = none ∧
+    reoffer? hooks ctx state = .ok none
 
 /-- The context `Step.step` gives every hook of `input`'s closure. -/
 def inputCtx (hooks : Hooks) (program : Program) (input : Input) : Ctx :=
@@ -72,13 +80,14 @@ one `chooseStart` picked among the starts the input fired (`admittedStartsFired`
 structure StartRan (hooks : Hooks) (program : Program) (payload : StartInput) (after : State) : Prop where
   ran : ∃ start initial moved settled,
     advanceClock payload.atMs
-      ((State.initial payload.instanceId payload.variables payload.businessKey).signal (.armScope State.root)) =
-        .ok initial ∧
-    microStep hooks (inputCtx hooks program (.start payload)) (.input .start) (some start) State.root
+      (((State.initial payload.instanceId payload.variables payload.businessKey).signal (.armScope State.root)).queueBatch
+        (.ofRoot .seed)) = .ok initial ∧
+    microStep hooks (inputCtx hooks program (.start payload)) (.ofRoot .input) (.input .start) (some start) State.root
       (begin hooks (inputCtx hooks program (.start payload)) { element := start, scope := State.root, trigger := payload.trigger })
       initial = .ok moved ∧
-    settle hooks (inputCtx hooks program (.start payload)) closureBound closureWorkBound moved = .ok settled ∧
-    after = { settled with journal := settled.journal.reverse } ∧
+    settle hooks (inputCtx hooks program (.start payload)) closureBound closureWorkBound (RunLog.record {} (.ofRoot .input))
+      moved = .ok settled ∧
+    orderJournal (.ok settled) = .ok after ∧
     ∃ fired, admittedStartsFired hooks (inputCtx hooks program (.start payload)) payload = .ok fired ∧
       chooseStart payload.startEvent fired = .ok start
 

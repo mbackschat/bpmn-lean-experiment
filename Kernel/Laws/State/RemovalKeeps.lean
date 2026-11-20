@@ -71,9 +71,11 @@ theorem leaveScope_left {s : State} (formed : WellFormed program s) {scope : Sco
       variablesSublist := by rw [shape]; exact List.filter_sublist.trans cleared.variablesSublist,
       instances := fun x member => ?_, activations := by rw [shape]; exact cleared.activations,
       occurrenceGrows := leaveScope_occurrenceGrows s scope, scopeGrows := leaveScope_grows s scope,
-      signals := by rw [shape]; exact cleared.signals,
+      signals := by rw [shape]; exact cleared.signals, queues := by
+        rw [shape]
+        exact ⟨cleared.queues.signals, cleared.queues.tokens, cleared.queues.queuedSignals, cleared.queues.queuedTokens⟩,
       status := by rw [shape]; exact cleared.status, failure := by rw [shape]; exact cleared.failure,
-      journal := by rw [shape]; exact cleared.journal, started := by rw [shape]; exact cleared.started, slots := ?_ }
+      journal := by rw [shape]; exact cleared.journal, transitions := by rw [shape]; exact cleared.transitions, started := by rw [shape]; exact cleared.started, slots := ?_ }
   rotate_right
   · obtain ⟨parked, bodies, runs⟩ := leaveScope_slots s scope
     exact ⟨fun _ member => cleared.slots.parked _ (parked ▸ member),
@@ -147,7 +149,7 @@ theorem withoutRecord_wellFormed {s : State} (formed : WellFormed program s) {id
   refine Prunes.wellFormed formed {
       scopes := rfl, scopeOrdinals := rfl, instances := instanceOf_congr rfl rfl, occurrences := List.filter_sublist,
       items := ItemsSub.refl _, ordinals := ordinals, tokens := rfl, signals := rfl, variables := rfl,
-      activations := rfl, occurrenceGrows := .refl _, journal := rfl, started := rfl, status := rfl, failure := rfl,
+      activations := rfl, occurrenceGrows := .refl _, journal := rfl, transitions := rfl, started := rfl, status := rfl, failure := rfl,
       slots := rfl, waited := fun item member occurrence inside link => ?_,
       owners := fun entry member occurrence inside owned => ?_ }
   · refine kept occurrence inside fun same => ?_
@@ -240,7 +242,7 @@ theorem disarm_wellFormed {s : State} (formed : WellFormed program s) (host : Oc
   refine Prunes.wellFormed formed {
       scopes := rfl, scopeOrdinals := rfl, instances := instanceOf_congr rfl rfl, occurrences := List.filter_sublist,
       items := ItemsSub.filter _ _, ordinals := fun occurrence member => getD_filter_keep fun _ => ?_, tokens := rfl,
-      signals := rfl, variables := rfl, activations := rfl, occurrenceGrows := .refl _, journal := rfl, started := rfl,
+      signals := rfl, variables := rfl, activations := rfl, occurrenceGrows := .refl _, journal := rfl, transitions := rfl, started := rfl,
       status := rfl, failure := rfl, slots := rfl, waited := fun item member occurrence inside link => ?_,
       owners := fun entry _ occurrence inside owned => ?_ }
   · obtain ⟨present, kept⟩ := List.mem_filter.mp member

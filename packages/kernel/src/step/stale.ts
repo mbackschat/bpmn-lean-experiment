@@ -52,7 +52,14 @@ function occurrenceIssued(state: State, id: OccurrenceId): boolean {
 export type SignalRun = Readonly<{
   completion: boolean; run: (state: State) => Outcome; scopes: readonly ScopeOccurrenceId[]; occurrences: readonly OccurrenceId[];
   requires: readonly ScopeOccurrenceId[]; acts: readonly OccurrenceId[];
+  /** What else the signal keeps busy while it is queued (DC5): a firing its item's scope, a raise its origin's, the end all. */
+  holds: (state: State) => readonly ScopeOccurrenceId[];
 }>;
+
+/** Lean's `SignalWork.names`: the scope occurrences a queued signal names, each busy, with every enclosing one (DC5). */
+export function queuedNames(work: SignalRun, state: State): readonly ScopeOccurrenceId[] {
+  return [...work.scopes, ...work.requires, ...[...work.occurrences, ...work.acts].map((id) => occurrenceIdParts(id).scope), ...work.holds(state)];
+}
 
 /**
  * `Kernel.Step.stale`: whether a queued signal names a scope occurrence or an occurrence issued and since removed, which

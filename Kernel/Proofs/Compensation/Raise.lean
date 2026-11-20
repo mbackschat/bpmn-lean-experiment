@@ -67,20 +67,20 @@ structure RaiseRegistered (hooks : Hooks) (propagation : Feature.Propagation.Pro
   cancelCatches : ∀ trigger, (hooks.catches .cancel trigger).isSome = true → trigger = .cancel
   /-- A Call output pass is `Steady` and writes only variables. -/
   callOutputs : ∀ ctx root state after, propagation.callOutputs ctx root state = .ok after →
-    Laws.State.Steady state after ∧ after.tokens = state.tokens ∧ after.signals = state.signals ∧
+    Laws.State.Steady state after ∧ Laws.State.allQueuedTokens after = Laws.State.allQueuedTokens state ∧ Laws.State.allSignals after = Laws.State.allSignals state ∧
       after.slots = state.slots
   writeCaught : ∀ ctx scope writes state after, propagation.writeCaught ctx scope writes state = .ok after →
-    after.signals = state.signals
+    Laws.State.allSignals after = Laws.State.allSignals state
   mappedErrorOutputs : ∀ ctx origin installed state after,
     propagation.mappedErrorOutputs ctx origin installed state = .ok after →
       Laws.Propagation.Appends (fun signal => ∃ id leave writes rule, signal = .complete id leave writes rule) state after
-  dropRuns : ∀ ctx scope state, (propagation.dropRuns ctx scope state).signals = state.signals
+  dropRuns : ∀ ctx scope state, Laws.State.allSignals (propagation.dropRuns ctx scope state) = Laws.State.allSignals state
 
 /-- The state operations' facts a raise's search reads. -/
 theorem raiseFacts : Laws.Propagation.RaiseFacts where
-  signal state signal := by rw [Laws.State.signal_eq]
-  cleared state scope := Laws.State.clearInside_signals state scope _
-  disarmed state host := by rw [Laws.State.disarm_eq]
+  signal state signal := by rw [Laws.State.signal_eq]; exact Laws.State.allSignals_append _ _
+  cleared state scope := Laws.State.allSignals_clearInside state scope _
+  disarmed state host := by rw [Laws.State.disarm_eq]; rfl
   cancel := Laws.State.isCancel_cancel
 
 /-- A signal other than a compensation handler's failure. -/
@@ -154,13 +154,13 @@ theorem cancelCompensatesFirst_of {hooks : Hooks} {propagation : Feature.Propaga
     ran => ?_⟩
   · rw [registered.arriveThrow, Laws.Propagation.arriveThrow_cancel] at ran
     cases ran
-    refine ⟨by simp only [Laws.State.signal_eq], Feature.Propagation.throwLeave payload,
+    refine ⟨by simp only [Laws.State.signal_eq, Laws.State.allQueuedTokens], Feature.Propagation.throwLeave payload,
       { element := header.id, scope := occurrence.scope, activation := occurrence.activation, thrower := occurrence.id }, ?_,
       rfl, rfl, rfl, rfl⟩
-    simp only [Queues, Laws.State.signal_eq, List.append_assoc]
+    simp only [Queues, Laws.State.signal_eq, Laws.State.allSignals_append, List.append_assoc]
   · rw [registered.raise] at ran
     obtain ⟨passed, steady, kept, taken⟩ := raise_cancel
-      (motive := fun s => s.tokens = state.tokens ∧ s.signals = state.signals) raiseFacts
+      (motive := fun s => Laws.State.allQueuedTokens s = Laws.State.allQueuedTokens state ∧ Laws.State.allSignals s = Laws.State.allSignals state) raiseFacts
       (fun root s next pass => have frame := registered.callOutputs ctx root s next pass
         ⟨frame.1, fun held => ⟨frame.2.1.trans held.1, frame.2.2.1.trans held.2⟩⟩)
       (noCancelStart_of registered queries catchers) ⟨rfl, rfl⟩ hostless ran
@@ -169,7 +169,7 @@ theorem cancelCompensatesFirst_of {hooks : Hooks} {propagation : Feature.Propaga
     obtain ⟨rolledBack, terminating, -, rest⟩ := rest
     obtain ⟨terminated, made⟩ := rest
     subst made
-    have frame : terminating.tokens = passed.tokens ∧ terminating.signals = passed.signals := by
+    have frame : Laws.State.allQueuedTokens terminating = Laws.State.allQueuedTokens passed ∧ Laws.State.allSignals terminating = Laws.State.allSignals passed := by
       rcases terminated with same | ⟨_, _, disarmed⟩
       · exact same ▸ ⟨rfl, rfl⟩
       · rw [disarmed, Laws.State.disarm_eq]
@@ -177,9 +177,10 @@ theorem cancelCompensatesFirst_of {hooks : Hooks} {propagation : Feature.Propaga
     refine ⟨fun token member => ?_, rolledBack, occurrence.occurrence, boundary.id, parent, .flows boundary.outgoing, ?_,
       cancelBoundary_of registered queries catchers caught⟩
     · rw [Laws.State.signal_eq] at member
-      have cleared := (Laws.State.clearInside_tokens terminating rolledBack _).subset member
+      have cleared := (Laws.State.allQueuedTokens_clearInside terminating rolledBack _).subset member
       rwa [frame.1, kept.1] at cleared
-    · simp only [Queues, Laws.State.signal_eq, Laws.State.clearInside_signals, frame.2, kept.2, steady.instances]
+    · simp only [Queues, Laws.State.signal_eq, Laws.State.allSignals_append, Laws.State.allSignals_clearInside, frame.2,
+        kept.2, steady.instances]
 
 /-- Failure holds of every hooks record that registers a raise (`RaiseRegistered`). -/
 theorem handlerFailure_of {hooks : Hooks} {propagation : Feature.Propagation.PropagationHooks}
@@ -193,7 +194,8 @@ theorem handlerFailure_of {hooks : Hooks} {propagation : Feature.Propagation.Pro
     obtain ⟨-, -, made⟩ := rest
     subst made
     rw [Laws.State.signal_eq]
-    exact ⟨_, owner, rfl, rfl, rfl, first.mem, first.1, by simp, _, List.mem_cons_of_mem _ (List.mem_singleton.mpr rfl)⟩
+    exact ⟨_, owner, Laws.State.allSignals_append _ _, rfl, rfl, first.mem, first.1, by simp, _,
+      List.mem_cons_of_mem _ (List.mem_singleton.mpr rfl)⟩
   · refine ⟨fun _ _ _ _ _ _ _ _ found role read unhandled =>
       Laws.Propagation.searchScopes_context found role (Laws.Propagation.propagatesFromHandler_selected selected) read
         unhandled, fun after ran => ?_⟩

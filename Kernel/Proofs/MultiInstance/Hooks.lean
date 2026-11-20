@@ -365,9 +365,9 @@ theorem instanceCompleted_counted {ctx : Ctx} (ops : MultiInstanceOps ctx.progra
 
 /-- Recording an instance's slot queues nothing. -/
 theorem leftWith_signals (state : State) (scope : ScopeOccurrenceId) (next : MultiInstanceRun) :
-    (leftWith state scope next).signals = state.signals := by
+    Laws.State.allSignals (leftWith state scope next) = Laws.State.allSignals state := by
   rw [leftWith, setRun_eq]
-  exact Laws.State.leaveScope_signals state scope
+  exact Laws.State.allSignals_leaveScope state scope
 
 /-- A body's slot record whose filled slots fit its loop still does once one slot is filled with an output that fits. -/
 theorem recorded_fits {program : Program} {run : MultiInstanceRun} {loop : MultiInstance} {index : Nat}
@@ -384,12 +384,12 @@ theorem recorded_fits {program : Program} {run : MultiInstanceRun} {loop : Multi
 over the slot record `leftWith` sets (`Laws.MultiInstance.Counted`). -/
 theorem counted_signals {state counted : State} {scope : ScopeOccurrenceId} {next : MultiInstanceRun}
     (left : Laws.MultiInstance.Counted state scope next counted) :
-    ∃ counts : List Signal, counted.signals = state.signals ++ counts ∧
+    ∃ counts : List Signal, Laws.State.allSignals counted = Laws.State.allSignals state ++ counts ∧
       (∀ signal ∈ counts, ∃ target counts rule, signal = .write target counts rule) ∧
       counted.slots = (leftWith state scope next).slots := by
   rcases left with rfl | ⟨target, counts, rule, rfl⟩
   · exact ⟨[], by rw [leftWith_signals, List.append_nil], fun _ none => (by cases none), rfl⟩
-  · exact ⟨[.write target counts rule], by rw [Laws.State.signal_eq, leftWith_signals],
+  · exact ⟨[.write target counts rule], by rw [Laws.State.signal_eq, Laws.State.allSignals_append, leftWith_signals],
       fun _ inside => ⟨target, counts, rule, List.mem_singleton.mp inside⟩, by rw [Laws.State.signal_eq]⟩
 
 /-- What a committed `Hooks.instanceCompleted` newly queues: writes of its body's counters, begins of its next
@@ -398,7 +398,7 @@ it recorded, the one record of the body the after-state holds. -/
 theorem instanceCompleted_queues {ctx : Ctx} {body : OccurrenceId} {occurrence : Occurrence} {writes : List (String × Value)}
     {state after : State} (ran : Feature.MultiInstance.instanceCompleted ctx body occurrence writes state = .ok after) :
     ∃ run loop index output, Completes ctx body occurrence.scope state after run loop index output ∧
-      ∃ results new, after.signals = state.signals ++ new ∧ ∀ signal ∈ new,
+      ∃ results new, Laws.State.allSignals after = Laws.State.allSignals state ++ new ∧ ∀ signal ∈ new,
         (∃ target counts rule, signal = .write target counts rule) ∨ (∃ request, signal = .begin request) ∨
         ∃ written, signal = .complete body .outgoing written .outward ∧
           Laws.MultiInstance.WritesCollection ctx.program loop (recorded run index output results) written ∧
@@ -413,7 +413,7 @@ theorem instanceCompleted_queues {ctx : Ctx} {body : OccurrenceId} {occurrence :
   rcases ended with rfl | ⟨items, rfl⟩
   · obtain ⟨written, same, collects⟩ := finish_spec ctx loop (recorded run index output results) counted
     refine ⟨counts ++ [.complete run.occurrence .outgoing written .outward], ?_, fun signal inside => ?_⟩
-    · rw [same, Laws.State.signal_eq, queued, List.append_assoc]
+    · rw [same, Laws.State.signal_eq, Laws.State.allSignals_append, queued, List.append_assoc]
       rfl
     · rcases List.mem_append.mp inside with old | new
       · exact .inl (counters signal old)
@@ -424,9 +424,11 @@ theorem instanceCompleted_queues {ctx : Ctx} {body : OccurrenceId} {occurrence :
         rcases mem_setRun member with ⟨_, differs⟩ | same
         · exact absurd named differs
         · exact same
-  · obtain ⟨begins, same, _⟩ := Laws.MultiInstance.beginInstances_signals ctx loop items
+  · obtain ⟨begins, same, kept, _⟩ := Laws.MultiInstance.beginInstances_signals ctx loop items
       (recorded run index output results) counted
-    refine ⟨counts ++ begins.map .begin, by rw [same, queued, List.append_assoc], fun signal inside => ?_⟩
+    refine ⟨counts ++ begins.map .begin, ?_, fun signal inside => ?_⟩
+    · rw [← List.append_assoc, ← queued]
+      simp only [Laws.State.allSignals, same, kept, List.append_assoc]
     rcases List.mem_append.mp inside with old | new
     · exact .inl (counters signal old)
     · obtain ⟨request, _, rfl⟩ := List.mem_map.mp new
@@ -467,7 +469,7 @@ theorem instanceCompleted_collects {ctx : Ctx} {body : OccurrenceId} {occurrence
   subst finished
   refine ⟨counts ++ [.complete found.occurrence .outgoing written .outward], ?_, written, value,
     List.mem_append_right _ (List.mem_singleton_self _), present⟩
-  rw [Laws.State.Queues, same, Laws.State.signal_eq, queued, List.append_assoc]
+  rw [Laws.State.Queues, same, Laws.State.signal_eq, Laws.State.allSignals_append, queued, List.append_assoc]
   rfl
 
 /-! ## Counters read -/

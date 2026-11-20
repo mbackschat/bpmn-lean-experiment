@@ -238,7 +238,7 @@ def busyCalledRoot (ctx : Ctx) (origin : Origin) (occurrence : ScopeOccurrence) 
   let mapsOutputs := (((occurrence.element.bind ctx.program.element?).bind (·.activity?)).bind (·.2.work.call?)).any
     fun work => !work.outputs.isEmpty || work.propagateAllOutputs
   let otherPath := state.occurrences.any (fun standing => standing.scope == occurrence.id && standing.id != origin.thrower) ||
-    state.tokens.any (·.busyScope == occurrence.id)
+    state.allTokens.any (·.busyScope == occurrence.id)
   origin.scope == occurrence.id && mapsOutputs && otherPath
 
 /-- Under `RaisedCallOutputs.atCalledRoot` (CIB-EXT-0034) a called root the search visits passes its Call's outputs.

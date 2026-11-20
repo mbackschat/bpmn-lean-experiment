@@ -119,9 +119,9 @@ structure BeginRequest where
   trigger : StartTrigger := .none
   deriving Repr
 
-/-- One entry of a closure's work stack, `State.tokens`, which `Kernel.Step` owns matching on: a token on a sequence
-flow inside a scope occurrence, or a deferred begin, the request of a `begin` signal moved onto the stack, which
-`Kernel.Step` dispatches as that signal, with its journal cause, when the closure reaches it. -/
+/-- One entry of a closure's queued work (`State.tokens`, `State.queuedTokens`), which `Kernel.Step` owns matching on: a
+token on a sequence flow inside a scope occurrence, or a deferred begin, the request of a `begin` signal queued as a
+token, which `Kernel.Step` dispatches as that signal, with its journal cause, when the closure reaches it. -/
 inductive Token where
   | flow (flow : FlowId) (scope : ScopeOccurrenceId)
   | begin (request : BeginRequest)
@@ -207,8 +207,12 @@ structure State where
   status : InstanceStatus := .running
   scopes : List ScopeOccurrence := []
   occurrences : List Occurrence := []
-  /-- The closure's work stack (`Step.nextToken`), empty once a closure settles. -/
+  /-- The tokens the running micro-step queued, in the order it queued them; `Step.conclude` moves them into
+  `queuedTokens` under the micro-step's unit key (`queueBatch`), so this is empty between micro-steps (DC4). -/
   tokens : List Token := []
+  /-- The closure's queued tokens, each keyed by the unit that queued it and its index in that unit's batch: content, with
+  no order of entry. Which runs next is `Step.nextToken`'s, through the run log; empty at commit (DC4). -/
+  queuedTokens : TreeMap UnitKey Token compare := ∅
   variables : List ScopeVariables := []
   openItems : OpenItems := ∅
   /-- The next item ordinal of each occurrence that opened an item, pruned with the occurrence (KD1). -/
@@ -224,26 +228,39 @@ structure State where
   that order them read. It names no identity; the issue log replaces it (K0.8). -/
   nextPosition : Nat := 1
   logicalTimeMs : Nat := 0
+  /-- The signals the running micro-step queued, in order; moved into `queuedSignals` like `tokens`. -/
   signals : List Signal := []
+  /-- The closure's queued signal batches, one per micro-step, each signal keyed like a queued token, so a batch keeps
+  its order in its index segment (DC2, DC10); the closure runs them in breadth-first key order (`UnitKey.breadth`).
+  Empty at commit (DC4). -/
+  queuedSignals : TreeMap UnitKey Signal compare := ∅
   /-- Every variable write since the last drain, same-value writes included: `Step` hands them to `Hooks.written`. -/
   writes : List WriteEvent := []
-  /-- The intents of the input in progress; `Step.step` empties it first, so a host publishes a committed input's own. -/
+  /-- The intents of the running micro-step while the closure runs, moved into `outboxes` like `tokens`; once the input
+  commits, the input's intents in run order (`Step.orderJournal`), so a host publishes a committed input's own. -/
   outbox : List BroadcastIntent := []
+  /-- The intents of the closure's micro-steps, keyed by the unit that made each batch; empty at commit (DC4). -/
+  outboxes : TreeMap UnitKey (List BroadcastIntent) compare := ∅
   slots : FeatureSlots := {}
   /-- Present exactly when `status` is `failed`. -/
   failure : Option InstanceFailure := none
-  /-- The occurrence facts of the input in progress; `Step.step` empties it first. -/
+  /-- The occurrence facts of a committed input, its transitions in run order (`Step.orderJournal`); empty while the
+  closure runs. -/
   journal : List Transition := []
+  /-- The transitions of the closure in progress, each keyed by the unit that ran it: content, ordered into `journal` by
+  the run log at commit, then emptied (DC4). -/
+  transitions : TreeMap UnitKey Transition compare := ∅
   draft : Draft := {}
 
 /-- Whether the input in progress has crossed a transaction boundary: begun an occurrence marked `asyncBefore`, or
-completed one marked `asyncAfter`, in the journal or the micro-step's draft. The kernel's one reader of the marks. -/
+completed one marked `asyncAfter`, in a transition of the closure or the micro-step's draft. The kernel's one reader of
+the marks. -/
 def crossed (program : Program) (state : State) : Bool :=
-  let facts := state.journal.map (fun transition => (transition.started, transition.ended)) ++
-    [(state.draft.started, state.draft.ended)]
-  facts.any fun (started, ended) =>
+  let marked (started : List StartedFact) (ended : List (OccurrenceKey × Terminal)) :=
     started.any (fun fact => (marks program fact.occurrence).1) ||
       ended.any fun (key, terminal) => terminal == .completed && (marks program key).2
+  state.transitions.any (fun _ transition => marked transition.started transition.ended) ||
+    marked state.draft.started state.draft.ended
 
 abbrev Outcome := Except Failure State
 
@@ -286,6 +303,24 @@ def issueOccurrence (state : State) (scope : ScopeOccurrenceId) (element : Eleme
 def signal (state : State) (signal : Signal) : State :=
   { state with signals := state.signals ++ [signal] }
 
+/-- Every queued token: the closure's queued content and the running micro-step's batch. A membership view, read only
+as a multiset (`busyScopes`, `Feature.Flow.positions`, `Feature.Propagation.busyCalledRoot`): its order is the map's key
+order, which is no order of entry (KD7). -/
+def allTokens (state : State) : List Token :=
+  state.queuedTokens.toList.map (·.2) ++ state.tokens
+
+/-- Move the running micro-step's batches under its unit key `unit` (DC4): each signal and token keyed by its index in
+the batch (`UnitKey.signalUnit`, `UnitKey.tokenUnit`), the micro-step's intents as one entry, so every writer keeps appending to
+the running batch and the feature layer never sees a key. -/
+def queueBatch (state : State) (unit : UnitKey) : State :=
+  { state with
+      queuedSignals := state.signals.zipIdx.foldl (fun queued (signal, index) => queued.insert (unit.signalUnit index) signal)
+        state.queuedSignals
+      queuedTokens := state.tokens.zipIdx.foldl (fun queued (token, index) => queued.insert (unit.tokenUnit index) token)
+        state.queuedTokens
+      outboxes := if state.outbox.isEmpty then state.outboxes else state.outboxes.insert unit state.outbox
+      signals := [], tokens := [], outbox := [] }
+
 /-- Whether `scope` is the root of a called process instance, which hides its caller's variables. -/
 def calledRoot (state : State) (scope : ScopeOccurrenceId) : Bool :=
   ((state.scopes.find? (·.id == scope)).bind (·.calledInstance)).isSome
@@ -315,10 +350,11 @@ def instanceRoot (state : State) (scope : ScopeOccurrenceId) : ScopeOccurrenceId
       else root
   go scope.segments scope rfl
 
-/-- The scope occurrences in which something remains: a token, an open item that keeps it alive, a begun occurrence, a
-child scope occurrence or a feature slot entry, in one pass over the state. -/
+/-- The scope occurrences in which something remains: a queued token, an open item that keeps it alive, a begun
+occurrence, a child scope occurrence or a feature slot entry, in one pass over the state. The queued signals that keep a
+scope occurrence busy are `Step.idleScope?`'s, which alone builds a signal's work (DC5). -/
 def busyScopes (state : State) : List ScopeOccurrenceId :=
-  state.tokens.map (·.busyScope) ++ ((itemList state.openItems).filter fun item => !item.passive).map (·.scope) ++
+  state.allTokens.map (·.busyScope) ++ ((itemList state.openItems).filter fun item => !item.passive).map (·.scope) ++
     (state.occurrences.filter (·.begun)).map (·.scope) ++ state.scopes.filterMap (·.parent) ++ state.slots.keptAlive
 
 /-- Whether nothing remains in `scope`: no token, no open item that keeps it alive, no begun occurrence, no child
@@ -329,7 +365,8 @@ def idle (state : State) (scope : ScopeOccurrenceId) : Bool :=
 /-- The entries a micro-step's scans run over: tokens, occurrences, open items, scope occurrences and queued signals.
 `Step.closureWorkBound` sums it over a closure's micro-steps. -/
 def entryCount (state : State) : Nat :=
-  state.tokens.length + state.occurrences.length + state.openItems.size + state.scopes.length + state.signals.length
+  state.tokens.length + state.queuedTokens.size + state.occurrences.length + state.openItems.size + state.scopes.length +
+    state.signals.length + state.queuedSignals.size
 
 /-- The process instance identifier of `scope`. -/
 def instanceOf (state : State) (scope : ScopeOccurrenceId) : String :=
@@ -446,26 +483,6 @@ def enterScope (state : State) (element : ElementId) (parent : ScopeOccurrenceId
       scopeOrdinals := state.scopeOrdinals.insert slot (ordinal + 1)
       scopes := state.scopes ++ [{ id, element := some element, occurrence }]
       variables := state.variables ++ [{ scope := id, entries := keyed locals }] }, id)
-
-/-- The identifier of the process instance a Call Activity's `activation` calls from the instance `caller`: each
-part prefixed by its UTF-8 byte length, so that nested identifiers never collide. -/
-def calledInstanceId (caller : String) (call : ElementId) (activation : Nat) : String :=
-  s!"call:{caller.utf8ByteSize}:{caller}:{call.value.utf8ByteSize}:{call.value}:{activation}"
-
-/-- Enter the called process instance of the Call occurrence `call`, with the given variables: a scope occurrence
-that is the called instance's root, recording the definition the Call bound for this instance. The instance is named by
-the Call's authored identifier (`Program.publicId`), so a Call in another deployment's process that a program carries
-as a renamed copy names its instance as that process's own deployment does (PC-SCOPE-03). -/
-def enterCalled (state : State) (program : Program) (call : Occurrence) (variables : List (String × Value))
-    (definition : DefinitionRef) : State × ScopeOccurrenceId :=
-  let caller := state.instanceOf call.scope
-  let (state, id) := state.enterScope call.element call.scope variables (some call.id)
-  ({ state with
-      scopes := state.scopes.map fun occurrence =>
-        if occurrence.id == id then
-          { occurrence with calledInstance := some (calledInstanceId caller (program.publicId call.element) call.activation) }
-        else occurrence
-      slots := { state.slots with instances := state.slots.instances ++ [{ root := id, definition := some definition }] } }, id)
 
 /-- The elements the scope occurrence `scope` declares: for a called root, the process-level elements of the process its
 Call bound (its `slots.instances` entry), not the Call Activity's, since a called Process behaves as a normal Process

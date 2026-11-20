@@ -31,8 +31,8 @@ def Unnamed (leave : Leave) : Prop := ∀ selected, leave = .flows selected → 
 /-- A reservation of `element` still to be made in `scope`, leaving by `leave`: a queued `Signal.occur`, or the resume
 of a queued compensation or of a compensation run that reserves it there. -/
 def OccurAt (s : State) (element : ElementId) (scope : ScopeOccurrenceId) (leave : Leave) : Prop :=
-  (∃ writes rule, Signal.occur element scope leave writes rule ∈ s.signals) ∨
-    some (Resume.occur element scope leave) ∈ Laws.Step.resumesOf s.signals ∨
+  (∃ writes rule, Signal.occur element scope leave writes rule ∈ (Laws.State.allSignals s)) ∨
+    some (Resume.occur element scope leave) ∈ Laws.Step.resumesOf (Laws.State.allSignals s) ∨
     ∃ run ∈ s.slots.compensation.runs, run.resume = some (.occur element scope leave)
 
 /-- A begin request is placed where it begins: its element, the reservation it begins, and the element its incoming
@@ -72,20 +72,20 @@ def CalledApart (program : Program) (s : State) : Prop :=
 
 /-- The placement lane: `PlacedCore` and the queued and held work placed where it will run. -/
 structure PlacedLane (program : Program) (s : State) : Prop extends PlacedCore program s where
-  tokens : ∀ flow scope target, Token.flow flow scope ∈ s.tokens → program.target? flow = some target →
+  tokens : ∀ flow scope target, Token.flow flow scope ∈ (Laws.State.allQueuedTokens s) → program.target? flow = some target →
     PlacedIn program s target scope
   begins : ∀ request, Queued s request → request.scope ∈ scopeIds s → BeginPlaced program s request
   occurs : ∀ element scope leave, OccurAt s element scope leave → (scope ∈ scopeIds s → PlacedIn program s element scope) ∧
     ∀ selected, leave = .flows selected → ∀ flow ∈ selected, Laws.Flow.Lists program element flow
-  arms : ∀ host element scope, Signal.arm host element scope ∈ s.signals → scope ∈ scopeIds s →
+  arms : ∀ host element scope, Signal.arm host element scope ∈ (Laws.State.allSignals s) → scope ∈ scopeIds s →
     PlacedIn program s element scope
-  gateways : ∀ occurrence gateway scope, Signal.armGateway occurrence gateway scope ∈ s.signals → scope ∈ scopeIds s →
+  gateways : ∀ occurrence gateway scope, Signal.armGateway occurrence gateway scope ∈ (Laws.State.allSignals s) → scope ∈ scopeIds s →
     PlacedIn program s gateway scope
   /-- A queued completion's named flows end where an occurrence of its number lies. -/
-  completes : ∀ id selected writes rule, Signal.complete id (.flows selected) writes rule ∈ s.signals →
+  completes : ∀ id selected writes rule, Signal.complete id (.flows selected) writes rule ∈ (Laws.State.allSignals s) →
     ∀ occurrence ∈ s.occurrences, occurrence.id = id → ∀ flow ∈ selected, ∀ target, program.target? flow = some target →
       PlacedIn program s target occurrence.scope
-  compensates : ∀ id leave, some (Resume.complete id leave) ∈ Laws.Step.resumesOf s.signals → Unnamed leave
+  compensates : ∀ id leave, some (Resume.complete id leave) ∈ Laws.Step.resumesOf (Laws.State.allSignals s) → Unnamed leave
   records : ∀ record ∈ s.slots.compensation.retained, record.scope ∈ scopeIds s →
     ∀ element ∈ recordElements record, PlacedIn program s element record.scope
   pending : ∀ run ∈ s.slots.compensation.runs, run.scope ∈ scopeIds s → ∀ record ∈ run.pending,
@@ -96,12 +96,12 @@ structure PlacedLane (program : Program) (s : State) : Prop extends PlacedCore p
   /-- A Multi-Instance run's element is placed where it holds its instances. -/
   runs : ∀ run ∈ s.slots.multiInstances, run.scope ∈ scopeIds s → PlacedIn program s run.element run.scope
   /-- A queued raise's origin is placed where it was raised. -/
-  raises : ∀ raised origin, Signal.raise raised origin ∈ s.signals → origin.scope ∈ scopeIds s →
+  raises : ∀ raised origin, Signal.raise raised origin ∈ (Laws.State.allSignals s) → origin.scope ∈ scopeIds s →
     PlacedIn program s origin.element origin.scope
   /-- The scope occurrences the clauses above read only while they stand were issued, so a scope occurrence entered
   later is none of them (`Proofs.Former.unissued_enter_rejected`). -/
   issued : ∀ x, ((∃ element leave, OccurAt s element x leave) ∨
-      (∃ raised origin, Signal.raise raised origin ∈ s.signals ∧ origin.scope = x) ∨
+      (∃ raised origin, Signal.raise raised origin ∈ (Laws.State.allSignals s) ∧ origin.scope = x) ∨
       (∃ record ∈ s.slots.compensation.retained, record.scope = x) ∨
       (∃ run ∈ s.slots.compensation.runs, run.scope = x ∧ run.pending ≠ []) ∨
       ∃ run ∈ s.slots.multiInstances, run.scope = x) → Laws.State.ScopeIssued s x
@@ -120,8 +120,8 @@ theorem PlacedLane.frame {program : Program} {s t : State} (moved : Proofs.Frame
     fun placed => placed.same moved.scopes instances
   have present : ∀ {scope}, scope ∈ scopeIds t → scope ∈ scopeIds s := fun inside => by
     simpa [scopeIds, moved.scopes] using inside
-  have signal : ∀ signal ∈ t.signals, Laws.Step.placing signal = true → signal ∈ s.signals := moved.placings
-  have resumed : ∀ resume, resume ∈ Laws.Step.resumesOf t.signals → resume ∈ Laws.Step.resumesOf s.signals :=
+  have signal : ∀ signal ∈ (Laws.State.allSignals t), Laws.Step.placing signal = true → signal ∈ (Laws.State.allSignals s) := moved.placings
+  have resumed : ∀ resume, resume ∈ Laws.Step.resumesOf (Laws.State.allSignals t) → resume ∈ Laws.Step.resumesOf (Laws.State.allSignals s) :=
     fun _ inside => moved.resumes ▸ inside
   refine ⟨⟨⟨?_, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
     fun waiting member occurrence inside named =>
@@ -149,8 +149,8 @@ theorem PlacedLane.frame {program : Program} {s t : State} (moved : Proofs.Frame
   · intro request queued stands
     have old : Queued s request := by
       rcases queued with signalled | deferred
-      · exact .inl (Laws.Step.mem_beginsOf.mp (moved.begins ▸ Laws.Step.mem_beginsOf.mpr signalled))
-      · exact .inr (Laws.Step.mem_deferredOf.mp (moved.deferred ▸ Laws.Step.mem_deferredOf.mpr deferred))
+      · exact .inl (Laws.Step.mem_beginsOf.mp (moved.allBegins ▸ Laws.Step.mem_beginsOf.mpr signalled))
+      · exact .inr (Laws.Step.mem_deferredOf.mp (moved.allDeferred ▸ Laws.Step.mem_deferredOf.mpr deferred))
     have placed := held.begins request old (present stands)
     exact ⟨place placed.element, fun occurrence member same =>
       place (placed.reserved occurrence (moved.occurrences ▸ member) same), placed.incoming⟩

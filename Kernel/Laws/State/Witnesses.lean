@@ -15,6 +15,9 @@ namespace Kernel.Laws.State
 
 open Kernel
 
+/- The witnesses' states queue nothing under a unit key, so the views are their batches. -/
+attribute [local simp] allSignals allQueuedTokens
+
 /-- An occurrence key at or above its counter in a standing scope occurrence violates `IssuedBelow`, so the law excludes
 states. -/
 theorem stale_counter_rejected (kind : OpenKind) : ¬ IssuedBelow { sample kind with occurrenceOrdinals := ∅ } :=
@@ -35,6 +38,12 @@ def armedState (kind : OpenKind) : State :=
     occurrences := [subProcess, innerTask, outerTask, reservation], nextPosition := 8,
     occurrenceOrdinals := sampleCounters.insert { parent := processRoot, element := ⟨"Timer"⟩ } 1,
     draft := { started := [startFact innerTask, startFact outerTask] } }
+
+/- The sample and the armed state queue nothing under a unit key. -/
+@[local simp] theorem sample_queuedSignals (kind : OpenKind) : (sample kind).queuedSignals = ∅ := rfl
+@[local simp] theorem sample_queuedTokens (kind : OpenKind) : (sample kind).queuedTokens = ∅ := rfl
+@[local simp] theorem armed_queuedSignals (kind : OpenKind) : (armedState kind).queuedSignals = ∅ := rfl
+@[local simp] theorem armed_queuedTokens (kind : OpenKind) : (armedState kind).queuedTokens = ∅ := rfl
 
 theorem armed_unstarted (kind : OpenKind) : ReservationsUnstarted (armedState kind) := by
   simp [ReservationsUnstarted, starts, key, armedState, sample, subProcess, innerTask, outerTask, reservation, startFact]
@@ -144,7 +153,8 @@ theorem rekeyed_rejected (kind : OpenKind) :
 theorem rebegin_rejected (kind : OpenKind) :
     ¬ ReservationsClaimed { sample kind with signals := [.begin { element := ⟨"Outer"⟩, scope := processRoot, reserved := some outerKey }] } :=
   fun claimed => by
-    obtain ⟨_, beginnable⟩ := claimed.named _ (.inl (List.mem_singleton.mpr rfl))
+    obtain ⟨_, beginnable⟩ := claimed.named { element := ⟨"Outer"⟩, scope := processRoot, reserved := some outerKey }
+      (.inl (by simp))
     have := (beginnable outerKey (by simp [names, Option.toList])).2 outerTask (by simp [sample]) rfl
     simp [outerTask] at this
 
@@ -153,7 +163,8 @@ theorem claimed_twice_rejected (kind : OpenKind) :
     ¬ ReservationsClaimed { armedState kind with signals :=
       [.begin { element := ⟨"Timer"⟩, scope := processRoot, reserved := some timerKey },
         .begin { element := ⟨"Timer"⟩, scope := processRoot, reserved := some timerKey }] } := fun claimed => by
-  have := claimed.signalsApart _ _ (List.Sublist.refl _) timerKey (by simp [names])
+  have := claimed.signalsApart { element := ⟨"Timer"⟩, scope := processRoot, reserved := some timerKey }
+    { element := ⟨"Timer"⟩, scope := processRoot, reserved := some timerKey } (by simp [Precedes]) timerKey (by simp [names])
   simp [names] at this
 
 /-- A second item holding the reservation `timerKey` an attached item holds breaks `ReservationsClaimed`: disarming the host
@@ -177,13 +188,13 @@ def reservedBegin : BeginRequest := { element := ⟨"Timer"⟩, scope := process
 theorem deferred_twice_rejected (kind : OpenKind) :
     ¬ ReservationsClaimed { armedState kind with tokens := [.begin reservedBegin, .begin reservedBegin] } :=
   fun claimed => by
-    have := claimed.tokensApart _ _ (List.Sublist.refl _) timerKey (by simp [names, reservedBegin])
+    have := claimed.tokensApart reservedBegin reservedBegin (by simp [Precedes]) timerKey (by simp [names, reservedBegin])
     simp [names, reservedBegin] at this
 
 theorem queued_and_deferred_rejected (kind : OpenKind) :
     ¬ ReservationsClaimed { armedState kind with signals := [.begin reservedBegin], tokens := [.begin reservedBegin] } :=
   fun claimed => by
-    have := claimed.queuesApart reservedBegin reservedBegin (List.mem_singleton_self _) (List.mem_singleton_self _) timerKey
+    have := claimed.queuesApart reservedBegin reservedBegin (by simp) (by simp) timerKey
       (by simp [names, reservedBegin])
     simp [names, reservedBegin] at this
 
@@ -191,15 +202,16 @@ theorem queued_and_deferred_rejected (kind : OpenKind) :
 occurrence before it begins. -/
 theorem completed_reservation_rejected (kind : OpenKind) :
     ¬ ReservationsClaimed { armedState kind with signals := [.begin reservedBegin, .complete timerKey .outgoing [] .outward] } :=
-  fun claimed => claimed.uncompleted reservedBegin timerKey .outgoing [] .outward (.inl List.mem_cons_self)
-    (by simp [names, reservedBegin]) (List.mem_cons_of_mem _ List.mem_cons_self)
+  fun claimed => claimed.uncompleted reservedBegin timerKey .outgoing [] .outward
+    (.inl (List.mem_append_right _ List.mem_cons_self)) (by simp [names, reservedBegin])
+    (List.mem_append_right _ (List.mem_cons_of_mem _ List.mem_cons_self))
 
 /-- A begin queued in the scope occurrence `Sub#9`, never issued, breaks `ReservationsClaimed`: a scope occurrence entered
 later would be the one it begins in. -/
 theorem unissued_begin_scope_rejected (kind : OpenKind) :
     ¬ ReservationsClaimed { sample kind with signals := [.begin { element := ⟨"Outer"⟩, scope := (.ofSegments [{ element := ⟨"Sub"⟩, ordinal := 9 }]) }] } :=
   fun claimed => by
-    exact sample_unissued (kind := kind) (claimed.scopesIssued _ (.inl (List.mem_singleton.mpr rfl))) rfl rfl
+    exact sample_unissued (kind := kind) (claimed.scopesIssued { element := ⟨"Outer"⟩, scope := (.ofSegments [{ element := ⟨"Sub"⟩, ordinal := 9 }]) } (.inl (by simp))) rfl rfl
 
 /-- An unbegun reservation parked at a join breaks `SlotsSettled`: the join's firing would complete it. -/
 theorem parked_reservation_rejected (kind : OpenKind) :

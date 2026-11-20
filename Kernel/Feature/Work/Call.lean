@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Hooks
+public import Kernel.State.Called
 
 /-! # Work: Call Activities
 

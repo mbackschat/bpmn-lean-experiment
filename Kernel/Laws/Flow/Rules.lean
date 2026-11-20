@@ -1,6 +1,7 @@
 module
 
 public import Kernel.State
+public import Kernel.Laws.State.Map
 
 /-! # Laws of flow: the rules of splits, joins and reach
 
@@ -116,14 +117,14 @@ def Holds (s : State) (scope : ScopeOccurrenceId) (gateway element : ElementId) 
   element ≠ gateway ∧
     ((∃ occurrence ∈ s.occurrences, occurrence.scope = scope ∧ occurrence.begun = true ∧ occurrence.element = element) ∨
       (∃ child ∈ s.scopes, child.parent = some scope ∧ child.element = some element) ∨
-      ∃ request, Token.begin request ∈ s.tokens ∧ request.scope = scope ∧ request.element = element)
+      ∃ request, Token.begin request ∈ Laws.State.allQueuedTokens s ∧ request.scope = scope ∧ request.element = element)
 
 /-- Some remaining work of `scope` can still reach `target` without passing `gateway`: a flow token of the scope
 occurrence, or an element holding work there, with a path to it (Table 13.3, CIB-INT-0016,
 [flow, Inclusive Gateway](../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md#inclusive-gateway)). -/
 def CanReach (flows : List Flow) (extra : ElementId → FlowId → Prop) (s : State) (gateway : ElementId)
     (scope : ScopeOccurrenceId) (target : FlowId) : Prop :=
-  (∃ start, Token.flow start scope ∈ s.tokens ∧ Leads flows extra gateway start target) ∨
+  (∃ start, Token.flow start scope ∈ Laws.State.allQueuedTokens s ∧ Leads flows extra gateway start target) ∨
     ∃ element next, Holds s scope gateway element ∧ Continues flows extra element next ∧
       Leads flows extra gateway next target
 

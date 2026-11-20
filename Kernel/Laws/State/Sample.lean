@@ -17,6 +17,9 @@ namespace Kernel.Laws.State
 
 open Kernel
 
+/- The sample queues nothing under a unit key, so its queue views are its batches. -/
+attribute [local simp] allSignals allQueuedTokens
+
 /-- The sample's scope occurrences read the instance `p`. -/
 private theorem sample_instance (kind : OpenKind) :
     (sample kind).instanceOf processRoot = "p" ∧ (sample kind).instanceOf subScope = "p" := by

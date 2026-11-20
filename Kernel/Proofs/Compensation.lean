@@ -109,9 +109,9 @@ resumes no group (`QueuedUngrouped`). -/
 def CompensationsFresh : Prop :=
   ∀ (precedes : Compensable → Compensable → Prop) (program : Program) (queue : State) (scope : ScopeOccurrenceId)
     (activity : Option ElementId) (trigger : OccurrenceRef) (leave : Option OccurrenceId) (resume : Option Resume)
-    (rest : List Signal), WellFormed program queue → Formed precedes queue →
-    queue.signals = .compensate scope activity trigger leave resume :: rest →
-    FreshCall { queue with signals := rest } scope trigger resume
+    (unit : UnitKey), WellFormed program queue → Formed precedes queue →
+    queue.queuedSignals[unit]? = some (.compensate scope activity trigger leave resume) →
+    FreshCall { queue with queuedSignals := queue.queuedSignals.erase unit } scope trigger resume
 
 /-- A trigger takes into one new run exactly the retained records it selects, the named Activity's only when it names
 one, and leaves every other record retained (`Laws.Compensation.TakesOut`); the run, as taken, then advances once
@@ -285,12 +285,12 @@ takes the Cancel boundary (`Propagation.leaveOccurrence`). The three refusal cod
 def CancelCompensatesFirst (hooks : Hooks) : Prop :=
   (∀ (ctx : Ctx) (header : Header) (payload : EventPayload) (occurrence : Occurrence) (state after : State),
     hooks.arriveThrow ctx header payload .cancel occurrence state = .ok after →
-    after.tokens = state.tokens ∧ ∃ leave origin,
+    Laws.State.allQueuedTokens after = Laws.State.allQueuedTokens state ∧ ∃ leave origin,
       Queues state after ([.complete occurrence.id leave [] .outward] ++ [.raise .cancel origin]) ∧ origin.host = none ∧
       origin.element = header.id ∧ origin.scope = occurrence.scope ∧ origin.activation = occurrence.activation) ∧
   ∀ (ctx : Ctx) (origin : Origin) (state after : State), StepQueries hooks ctx → CancelCatchers ctx.program →
     origin.host = none → hooks.raise ctx .cancel origin state = .ok after →
-    (∀ token ∈ after.tokens, token ∈ state.tokens) ∧ ∃ scope leave element at_ flows,
+    (∀ token ∈ Laws.State.allQueuedTokens after, token ∈ Laws.State.allQueuedTokens state) ∧ ∃ scope leave element at_ flows,
       Queues state after [.compensate scope none
         { processInstanceId := state.instanceOf origin.scope, element := origin.element, activation := origin.activation }
         leave (some (.occur element at_ flows))] ∧ CancelBoundary ctx.program element flows

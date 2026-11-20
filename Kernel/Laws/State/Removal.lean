@@ -100,6 +100,15 @@ theorem clearInside_counters (s : State) (scope : ScopeOccurrenceId) (keep : Lis
   obtain ⟨entry, inside, rfl⟩ := List.mem_map.mp standing
   exact getD_filter_keep fun _ => (List.mem_filter.mp inside).2
 
+/-- `State.clearInside` drops the tokens inside the scope occurrence from both token queues and keeps the signals. -/
+theorem clearInside_queues (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
+    QueuesKept s (s.clearInside scope keep) :=
+  ⟨by simp [State.clearInside, State.recordCancelled], by simp [State.clearInside, State.recordCancelled],
+    fun _ _ found => by simpa [State.clearInside, State.recordCancelled] using found,
+    fun _ _ found => by
+      simp only [State.clearInside, State.recordCancelled, Std.ExtTreeMap.getElem?_filter] at found
+      exact Option.eq_some_of_pfilter_eq_some found⟩
+
 /-- `State.clearInside` of a present scope occurrence of a well-formed state is `Cleared`. -/
 theorem clearInside_cleared {s : State} (formed : WellFormed program s) {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s)
     (keep : List OccurrenceId) : Cleared s (s.clearInside scope keep) scope keep := by
@@ -128,12 +137,15 @@ theorem clearInside_cleared {s : State} (formed : WellFormed program s) {scope :
       scopes := scopes, occurrences := fun occurrence => ?_, items := fun item => ?_, tokens := fun token => ?_,
       variables := fun variables => ?_, scopesSublist := fewer, occurrencesSublist := List.filter_sublist,
       scopeGrows := clearInside_grows s scope keep,
-      openItemsSub := ItemsSub.filter _ _, ordinals := ordinals, tokensSublist := List.filter_sublist,
+      openItemsSub := ItemsSub.filter _ _, ordinals := ordinals, tokensSublist := ?_,
       variablesSublist := List.filter_sublist, instances := fun x member => ?_, activations := rfl, counters := clearInside_counters s scope keep,
-      signals := rfl, status := rfl, failure := rfl, journal := rfl, started := rfl,
+      signals := rfl, queues := clearInside_queues s scope keep, status := rfl, failure := rfl, journal := rfl,
+      transitions := rfl, started := rfl,
       slots := ⟨fun _ member => ?_, fun _ member => ?_, fun _ member => ?_⟩,
       bodies := by simp [State.clearInside, State.recordCancelled, featureSlotsClear_eq] }
   rotate_left 4
+  · simp only [allQueuedTokens, State.clearInside, State.recordCancelled, Std.ExtTreeMap.toList_filter]
+    exact (List.filter_sublist.map _).append List.filter_sublist
   · obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
     obtain ⟨old, outside⟩ := (scopes entry).mp inside
     refine named ▸ instanceOf_kept formed (formed.distinct.scopes.sublist (fewer.map _))
@@ -147,7 +159,7 @@ theorem clearInside_cleared {s : State} (formed : WellFormed program s) {scope :
     · simp only [State.clearInside, State.recordCancelled, featureSlotsClear_eq] at member
       exact (List.mem_filter.mp member).1
   all_goals simp [State.clearInside, State.recordCancelled, mem, StrictlyWithin,
-    mem_itemList_filter formed.distinct.items]
+    mem_itemList_filter formed.distinct.items, allQueuedTokens, Std.ExtTreeMap.toList_filter, or_and_right]
 
 /-- Clearing a present scope occurrence of a well-formed state journals each begun occurrence it removes once, under
 its key: those within the scope occurrence that it does not keep. -/
@@ -190,6 +202,7 @@ the cancellations in `draft`: the one equation of the clearing the laws above th
 theorem clearInside_eq (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) : ∃ draft, s.clearInside scope keep =
     { s with
       tokens := s.tokens.filter (!(s.subtree scope).contains ·.busyScope)
+      queuedTokens := s.queuedTokens.filter fun _ token => !(s.subtree scope).contains token.busyScope
       openItems := s.openItems.filter fun _ item => !(s.subtree scope).contains item.scope || keep.contains item.id.occurrence
       itemOrdinals := s.itemOrdinals.filter fun id _ => !((s.subtree scope).reverse.flatMap fun current =>
         s.occurrences.filter fun occurrence => occurrence.scope == current && !keep.contains occurrence.id).any (·.id == id)

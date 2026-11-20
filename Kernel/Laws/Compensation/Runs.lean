@@ -38,7 +38,7 @@ def Fits (settled : State → OccurrenceId → Prop) (state : State) (run : Comp
 /-- `resume` is the resume of a compensation queued in a state that kept `inv`, issued no more than `state`, with
 `state`'s scope occurrences and instance entries: where a run a compensation starts resumes from (`StoredFrom`). -/
 def ResumeQueued (inv : State → Prop) (state : State) (resume : Resume) : Prop :=
-  ∃ queue, inv queue ∧ Laws.State.ScopeGrows queue state ∧ some resume ∈ Laws.Step.resumesOf queue.signals ∧
+  ∃ queue, inv queue ∧ Laws.State.ScopeGrows queue state ∧ some resume ∈ Laws.Step.resumesOf (Laws.State.allSignals queue) ∧
     queue.scopes = state.scopes ∧ queue.slots.instances = state.slots.instances
 
 /-- What compensation runs need of the state operations they apply, for an invariant `inv` of instances of `program`

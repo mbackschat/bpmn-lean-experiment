@@ -78,13 +78,13 @@ theorem Fired.transport {s t : State} {item : OpenItem} (fired : Fired program s
     (items : ∀ other ∈ itemList t.openItems, other ∈ itemList s.openItems ∨ ¬ OccurrenceIssued s other.id.occurrence ∧
       ∀ host, other.attachedTo = some host → ∃ found ∈ s.occurrences, found.id = host ∧ found.begun = true)
     (queued : ∀ request, Queued t request → Queued s request)
-    (completes : ∀ leave writes rule, Signal.complete item.id.occurrence leave writes rule ∈ t.signals →
-      Signal.complete item.id.occurrence leave writes rule ∈ s.signals)
+    (completes : ∀ leave writes rule, Signal.complete item.id.occurrence leave writes rule ∈ allSignals t →
+      Signal.complete item.id.occurrence leave writes rule ∈ allSignals s)
     (slots : SlotsWithin s t)
     (compensations : ∀ scope activity trigger leave occurrence resume,
-      Signal.compensate scope activity trigger leave (some (.complete occurrence resume)) ∈ t.signals →
-      Signal.compensate scope activity trigger leave (some (.complete occurrence resume)) ∈ s.signals)
-    (raises : ∀ raised origin, Signal.raise raised origin ∈ t.signals → Signal.raise raised origin ∈ s.signals) :
+      Signal.compensate scope activity trigger leave (some (.complete occurrence resume)) ∈ allSignals t →
+      Signal.compensate scope activity trigger leave (some (.complete occurrence resume)) ∈ allSignals s)
+    (raises : ∀ raised origin, Signal.raise raised origin ∈ allSignals t → Signal.raise raised origin ∈ allSignals s) :
     Fired program t item := by
   obtain ⟨stands, below, unnamed, ⟨unstarted, start⟩⟩ := fired
   have old : ∀ found ∈ t.occurrences, found.id = item.id.occurrence → found ∈ s.occurrences := fun found inside same =>
@@ -122,7 +122,8 @@ theorem Fired.transport {s t : State} {item : OpenItem} (fired : Fired program s
 
 /-- A change that only drops open items and occurrences keeps what a fired item leaves. -/
 theorem Fired.shrink {s t : State} {item : OpenItem} (fired : Fired program s item) (scopes : t.scopes = s.scopes)
-    (named : t.instanceId = s.instanceId) (signals : t.signals = s.signals) (tokens : t.tokens = s.tokens)
+    (named : t.instanceId = s.instanceId) (signals : allSignals t = allSignals s)
+    (tokens : allQueuedTokens t = allQueuedTokens s)
     (issued : OccurrenceGrows s t) (slots : t.slots = s.slots) (items : ∀ other ∈ itemList t.openItems, other ∈ itemList s.openItems)
     (occurrences : ∀ found ∈ t.occurrences, found ∈ s.occurrences) : Fired program t item :=
   fired.transport issued scopes (instanceOf_congr scopes named)
@@ -148,7 +149,7 @@ theorem withdrawOccurrence_fired {s : State} (formed : WellFormed program s) {it
   rw [← withdrawOccurrence_eq] at withdrawn fewer same frame
   refine ⟨withdrawn, fired.shrink ?_ ?_ ?_ ?_ (by rw [frame, disarm_eq, closeOwnItems_eq]; exact .refl _) ?_
     (fun other inside => ?_) fun found inside => ?_⟩
-  all_goals try (rw [frame, disarm_eq, closeOwnItems_eq]; done)
+  all_goals try (rw [frame, disarm_eq, closeOwnItems_eq] <;> rfl)
   · have := fewer.items inside
     rw [disarm_eq, closeOwnItems_eq] at this
     exact (mem_itemList_filter_val.mp (mem_itemList_filter_val.mp (this)).1).1
@@ -187,17 +188,17 @@ theorem Fired.signal {s : State} {item : OpenItem} (fired : Fired program s item
     (.same rfl)
     (fun scope activity trigger leave occurrence resume queued => ?_) fun raised origin queued => ?_
   · rcases queued with signal_ | token
-    · rcases List.mem_append.mp signal_ with old | new
+    · rcases List.mem_append.mp (allSignals_append s _ ▸ signal_) with old | new
       · exact .inl old
       · exact absurd (List.mem_singleton.mp new).symm (notBegin request)
     · exact .inr token
-  · rcases List.mem_append.mp queued with old | new
+  · rcases List.mem_append.mp (allSignals_append s _ ▸ queued) with old | new
     · exact old
     · exact absurd (List.mem_singleton.mp new).symm (notComplete leave writes rule)
-  · rcases List.mem_append.mp queued with old | new
+  · rcases List.mem_append.mp (allSignals_append s _ ▸ queued) with old | new
     · exact old
     · exact absurd (List.mem_singleton.mp new).symm (notCompensate scope activity trigger leave _)
-  · rcases List.mem_append.mp queued with old | new
+  · rcases List.mem_append.mp (allSignals_append s _ ▸ queued) with old | new
     · exact old
     · exact absurd (List.mem_singleton.mp new).symm (notRaise raised origin)
 
@@ -218,7 +219,7 @@ theorem openSubscription_fired {s : State} (formed : WellFormed program s) {item
   have fresh : ¬ OccurrenceIssued s reservation.id := reserves.fresh (reserves.placed ▸ stands)
   refine fired.transport reserves.occurrenceGrows reserves.scopes
     (fun x => by rw [← reserves.instances x]; apply instanceOf_congr <;> rfl) (fun found inside => ?_)
-    (fun other inside => ?_) (fun _ queued => by simpa [Queued, reserves.signals, reserves.tokens] using queued)
+    (fun other inside => ?_) (fun _ queued => queued.shrink (fun _ member => reserves.signals ▸ member) (fun _ member => reserves.tokens ▸ member))
     (fun _ _ _ queued => reserves.signals ▸ queued) (.same reserves.slots)
     (fun _ _ _ _ _ _ queued => reserves.signals ▸ queued) fun _ _ queued => reserves.signals ▸ queued
   · rw [reserves.occurrences] at inside

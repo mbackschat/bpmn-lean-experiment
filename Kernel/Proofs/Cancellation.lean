@@ -38,7 +38,7 @@ def SubtreeRemoved (hooks : Hooks) : Prop :=
   ∀ (program : Program) (input : Input) (before after : State) (removed : ScopeOccurrenceId),
     WellFormed program before → Step.step hooks program (some before) input = .ok after →
     removed ∈ scopeIds before → removed ∉ scopeIds after →
-    (∀ token ∈ after.tokens, ¬ Within before token.busyScope removed) ∧
+    (∀ token ∈ Laws.State.allQueuedTokens after, ¬ Within before token.busyScope removed) ∧
     (∀ item ∈ itemList after.openItems, ¬ Within before item.scope removed) ∧
     (∀ occurrence ∈ after.occurrences, ¬ Within before occurrence.scope removed) ∧
     (∀ variables ∈ after.variables, ¬ Within before variables.scope removed)
@@ -84,9 +84,9 @@ structure Inert (before after : State) : Prop where
   scopes : after.scopes = before.scopes
   occurrences : after.occurrences = before.occurrences
   openItems : after.openItems = before.openItems
-  tokens : after.tokens = before.tokens
+  tokens : Laws.State.allQueuedTokens after = Laws.State.allQueuedTokens before
   variables : after.variables = before.variables
-  signals : after.signals = before.signals
+  signals : Laws.State.allSignals after = Laws.State.allSignals before
   slots : after.slots = before.slots
   occurrenceOrdinals : after.occurrenceOrdinals = before.occurrenceOrdinals
   nextPosition : after.nextPosition = before.nextPosition
@@ -101,11 +101,12 @@ micro-step that runs it either fails the input or changes nothing but the journa
 failure and `Inert` holds vacuously. It is stated of any closure state: such work keeps `WellFormed`, which asks only
 that what queued work names was issued (`Laws.State.QueueSound`). -/
 def QueuedWorkInert (hooks : Hooks) : Prop :=
-  ∀ (ctx : Ctx) (state after : State) (next : Signal) (rest : List Signal) (scope : ScopeOccurrenceId),
-    state.signals = next :: rest → ActsIn next scope → Laws.State.ScopeIssued state scope → scope ∉ scopeIds state →
-    Step.microStep hooks ctx (.signal (Step.signalName next)) none State.root (Step.dispatchSignal hooks ctx next)
-      { state with signals := rest } = .ok after →
-    Inert { state with signals := rest } after
+  ∀ (ctx : Ctx) (state after : State) (next : Signal) (unit : UnitKey) (scope : ScopeOccurrenceId),
+    state.queuedSignals[unit]? = some next → ActsIn next scope → Laws.State.ScopeIssued state scope →
+    scope ∉ scopeIds state →
+    Step.microStep hooks ctx unit (.signal (Step.signalName next)) none State.root (Step.dispatchSignal hooks ctx next)
+      { state with queuedSignals := state.queuedSignals.erase unit } = .ok after →
+    Inert { state with queuedSignals := state.queuedSignals.erase unit } after
 
 /-- Every begun occurrence a committed input removes ends exactly once in the input's journal, which is when `Step`
 hands a cancelled one to `Hooks.cancelled`, the owning features' notice: the journal's cancelled facts and their end
@@ -128,12 +129,12 @@ compensation's failure) is gone (#121), which the signal's targets decide whatev
 (`Laws.Step.signalWork_targets`, `Laws.Step.perform_absent`); either fails the micro-step's body, which a committed
 micro-step ran (`Laws.Step.microStep_ok`). -/
 theorem queuedWorkInert {hooks : Hooks} : QueuedWorkInert hooks := by
-  intro ctx state after next rest scope _ acts issued removed ran
+  intro ctx state after next unit scope _ acts issued removed ran
   obtain ⟨_, _, body, _⟩ := Laws.Step.microStep_ok ran
   rw [Laws.Step.dispatchSignal_eq] at body
   obtain ⟨other, otherCtx, names⟩ := acts
   obtain ⟨scopes, _, requires, _⟩ := Laws.Step.signalWork_targets hooks other ctx otherCtx next
-  rcases Laws.Step.perform_absent (state := { state with signals := rest }) (by rw [scopes, requires]; exact names)
+  rcases Laws.Step.perform_absent (state := { state with queuedSignals := state.queuedSignals.erase unit }) (by rw [scopes, requires]; exact names)
       issued fun entry member same => removed (List.mem_map.mpr ⟨entry, member, same⟩) with failed | failed <;>
     rw [failed] at body <;> cases body
 
@@ -263,7 +264,7 @@ theorem stepKeepsScopes {hooks : Hooks} (contract : ∀ before, Laws.Step.HookCo
     (pipeline : ∀ before, Laws.Step.PipelinePhases (KeepsScopes before)) (facts : Laws.Step.StateFacts) :
     StepKeepsScopes hooks := fun _ _ before _ formed ran =>
   (Laws.Step.running_keeps (contract before) (phases before) facts
-    (Laws.Step.complete_keeps (contract before) (phases before).toClosurePhases (pipeline before) facts)
+    (Laws.Step.complete_keeps (contract before) (phases before).toBodyPhases (pipeline before) facts)
     ⟨Laws.State.reset_wellFormed formed, (KeepsScopes.self formed).2⟩ ran).2
 
 /-- `SubtreeRemoved` from the hooks' contract and `Step`'s phases of `KeepsScopes` of every before-state alone: its
@@ -274,7 +275,7 @@ theorem subtreeRemoved_of_keeps {hooks : Hooks} (contract : ∀ before, Laws.Ste
     SubtreeRemoved hooks :=
   subtreeRemoved (fun _ _ before _ formed ran =>
     (Laws.Step.running_keeps (contract before) (phases before) facts
-      (Laws.Step.complete_keeps (contract before) (phases before).toClosurePhases (pipeline before) facts)
+      (Laws.Step.complete_keeps (contract before) (phases before).toBodyPhases (pipeline before) facts)
       ⟨Laws.State.reset_wellFormed formed, (KeepsScopes.self formed).2⟩ ran).1)
     (stepKeepsScopes contract phases pipeline facts)
 
@@ -371,10 +372,14 @@ nor the counter, beginning issues at most one identity and enters no scope occur
 (`Laws.State.removal_shrinks`). -/
 theorem scopesKept_stepAlongside (before : State) (program : Program) : StepAlongside program (ScopesKept before) where
   toFrameAlongside := (scopesKept_alongside before program).toFrameAlongside
-  journal _ _ _ kept _ _ := kept
-  runOrder _ _ kept := kept
+  journal _ _ _ _ kept _ _ _ := kept
+  queueBatch _ _ _ kept := by rw [Laws.State.queueBatch_eq]; exact kept
+  runOrder _ _ _ kept after made := by
+    obtain rfl := Laws.Step.orderJournal_of made
+    exact kept
   dequeue _ _ _ _ kept := kept
-  untoken _ _ _ _ kept := kept
+  unqueue _ _ _ kept := kept
+  untoken _ _ _ kept := kept
   begin _ request role sourceType formed _ _ _ _ kept :=
     have begins := Laws.State.beginOccurrence_begins formed.activations request role sourceType
     kept.same begins.scopes begins.scopeOrdinals
@@ -421,21 +426,22 @@ state whose journal already ends an occurrence it holds would end that occurrenc
 /-- Each committed micro-step of an input on a running instance keeps the input's end facts from its start `b` and
 leaves none in the draft: the input's own transition and every closure micro-step (`Laws.Step.ClosureStep`). -/
 def MicroStepsKeepEnds (hooks : Hooks) : Prop :=
-  (∀ (ctx : Ctx) (cause : Cause) (transition : State → Outcome) (b state after : State),
+  (∀ (ctx : Ctx) (unit : UnitKey) (cause : Cause) (transition : State → Outcome) (b state after : State),
     Laws.Step.RunsTransition hooks ctx transition → Laws.Step.EndsInv b none ctx.program state →
-    Step.microStep hooks ctx cause none State.root transition state = .ok after →
+    Step.microStep hooks ctx unit cause none State.root transition state = .ok after →
     Laws.Step.EndsInv b none ctx.program after ∧ after.draft.ended = []) ∧
-  ∀ (ctx : Ctx) (b state after : State), Laws.Step.EndsInv b none ctx.program state →
-    Laws.Step.ClosureStep hooks ctx state after → Laws.Step.EndsInv b none ctx.program after ∧ after.draft.ended = []
+  ∀ (ctx : Ctx) (log : Step.RunLog) (unit : UnitKey) (b state after : State), Laws.Step.EndsInv b none ctx.program state →
+    Laws.Step.ClosureStep hooks ctx log unit state after → Laws.Step.EndsInv b none ctx.program after ∧
+      after.draft.ended = []
 
 /-- Each committed micro-step of an input on a running instance keeps `inv`: its transition and every closure
 micro-step. -/
 def MicroStepsKeep (hooks : Hooks) (inv : Program → State → Prop) : Prop :=
-  (∀ (ctx : Ctx) (cause : Cause) (transition : State → Outcome) (state after : State),
+  (∀ (ctx : Ctx) (unit : UnitKey) (cause : Cause) (transition : State → Outcome) (state after : State),
     Laws.Step.RunsTransition hooks ctx transition → inv ctx.program state →
-    Step.microStep hooks ctx cause none State.root transition state = .ok after → inv ctx.program after) ∧
-  ∀ (ctx : Ctx) (state after : State), inv ctx.program state → Laws.Step.ClosureStep hooks ctx state after →
-    inv ctx.program after
+    Step.microStep hooks ctx unit cause none State.root transition state = .ok after → inv ctx.program after) ∧
+  ∀ (ctx : Ctx) (log : Step.RunLog) (unit : UnitKey) (state after : State), inv ctx.program state →
+    Laws.Step.ClosureStep hooks ctx log unit state after → inv ctx.program after
 
 /-- The walk of `Laws.Step.Keeps` keeps a property beside `WellFormed` through each micro-step, with the completion
 pipeline as a premise: the closure's phases keep it by `ClosureAlongside` (`closurePhases_alongside`). -/
@@ -445,9 +451,9 @@ theorem microStepsKeep_alongside {hooks : Hooks} {rel : Program → State → Pr
     (facts : Laws.Step.StateFacts)
     (pipeline : Laws.Step.PipelineKeeps hooks fun program s => WellFormed program s ∧ rel program s) :
     MicroStepsKeep hooks fun program s => WellFormed program s ∧ rel program s :=
-  ⟨fun _ _ _ _ _ runs holds ran => Laws.Step.microStep_keeps contract (closurePhases_alongside phases side) pipeline
-      (fun _ transitioned => Laws.Step.transition_keeps contract (closurePhases_alongside phases side) runs holds transitioned) ran,
-    fun _ _ _ holds step => Laws.Step.closureStep_keeps contract (closurePhases_alongside phases side) facts pipeline holds step⟩
+  ⟨fun _ _ _ _ _ _ runs holds ran => Laws.Step.microStep_keeps contract (closurePhases_alongside phases side) pipeline
+      (fun _ transitioned => Laws.Step.transition_keeps contract (closurePhases_alongside phases side).toBodyPhases runs holds transitioned) ran,
+    fun _ _ _ _ _ holds step => Laws.Step.closureStep_keeps contract (closurePhases_alongside phases side) facts pipeline holds step⟩
 
 /-- A list whose keys are distinct holds the key `key` once if at all. -/
 theorem once_of_nodup {α β : Type} {facts : List (α × β)} {key : α} (distinct : (facts.map (·.1)).Nodup)
@@ -487,17 +493,21 @@ theorem removedEndOnce {hooks : Hooks} (kept : MicroStepsKeepEnds hooks) : Remov
   have startMember : occurrence ∈ start.occurrences := by
     rcases Laws.Step.advanceClock_ok clocked with rfl | ⟨_, rfl⟩ <;> exact member
   obtain ⟨movedHolds, movedDraft⟩ :=
-    kept.1 _ _ _ start start moved runs ⟨startFormed, Laws.Step.EndsKept.start startFormed startEmpty⟩ stepped
+    kept.1 _ _ _ _ start start moved runs ⟨startFormed, Laws.Step.EndsKept.start startFormed startEmpty⟩ stepped
   obtain ⟨⟨_, settledKept⟩, settledDraft⟩ := Laws.Step.settle_induction
     (fun s => Laws.Step.EndsInv start none (Laws.Step.inputCtx hooks program input).program s ∧ s.draft.ended = [])
-    (fun s s' holds closure => kept.2 _ start s s' holds.1 closure) _ _ moved settled ⟨movedHolds, movedDraft⟩ settling
-  subst made
-  have key : before.keyOf occurrence ∈ Laws.Step.endKeys settled := by
+    (fun log unit s s' holds closure => kept.2 _ log unit start s s' holds.1 closure) _ _ _ moved settled
+    ⟨movedHolds, movedDraft⟩ settling
+  obtain ⟨state, log, same, made'⟩ := Laws.Step.orderJournal_ok made
+  obtain ⟨first, second⟩ := Prod.ext_iff.mp (Except.ok.inj same)
+  subst first second
+  rw [made'] at gone
+  have key : before.keyOf occurrence ∈ Laws.Step.endKeys settled.1 := by
     have ended := settledKept.removed occurrence startMember begun gone fun _ none => by cases none
     rwa [Laws.State.keyOf_eq, Laws.State.key, ← sameInstance]
-  have reordered : ((settled.journal.reverse.flatMap (·.ended)).map (·.1)).Perm (Laws.Step.endKeys settled) := by
-    simp only [Laws.Step.endKeys, settledDraft, List.append_nil]
-    exact ((List.reverse_perm settled.journal).flatMap_right _).map _
-  exact once_of_nodup (reordered.nodup_iff.mpr settledKept.nodup) (reordered.mem_iff.mpr key)
+  have keys : ((after.journal.flatMap (·.ended)).map (·.1)).Perm (Laws.Step.endKeys settled.1) := by
+    simp only [made', Laws.Step.endKeys, show settled.1.draft.ended = [] from settledDraft, List.append_nil]
+    exact ((Laws.Step.byRun_perm _ _).flatMap_right _).map _
+  exact once_of_nodup (keys.nodup_iff.mpr settledKept.nodup) (keys.mem_iff.mpr key)
 
 end Kernel.Proofs.Cancellation
