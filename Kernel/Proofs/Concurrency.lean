@@ -8,12 +8,12 @@ public import Kernel.Laws.Flow.Concurrent
 /-! # Proofs: concurrency (P6)
 
 The statement of the proof wave's concurrency lane ([PLAN, P6](../../docs/PLAN.md#proof-wave)): under
-`BranchSchedule.orderInvariant` and the order-invariance premise, two schedules of the enabled tokens and waking items
-of the closure an attempted input runs commit results equal up to a bijection of issued identities, with journal and intents
-compared at the canonical-result observation boundary, or fail alike, with one outcome class: `Step.settle`'s fixed
-order is immaterial. A Conditional contest is not covered:
-the input's ranking decides it by design. Stated over a hooks parameter; the lane closes when `Kernel.Proofs.Step`
-proves it of `Registry.hooks`.
+`BranchSchedule.orderInvariant` and the order-invariance premise, the complete runs of the closure relation from where
+an attempted input's closure begins, each picking any enabled unit (`fire`, `Runs`), commit results equal up to a
+bijection of issued identities, with journal and intents compared at the canonical-result observation boundary, and if
+one commits none fails: `Step.settle`'s fixed order, one such run (`SettleRuns`), is immaterial. A Conditional
+contest is not covered: the input's ranking decides it by design. Stated over a hooks parameter; the lane closes when
+`Kernel.Proofs.Step` proves it of `Registry.hooks`.
 
 Model premises: the profile option `branchSchedule = .orderInvariant`, and `Laws.Flow.Apart`, the order-invariance
 condition admission enforces with `flow.concurrentWrite`, `flow.concurrentInterference` and
@@ -40,62 +40,94 @@ namespace Kernel.Proofs.Concurrency
 
 open Kernel
 
-/-- `after` under the run log `log'` is reached from `before` under `log` by closure micro-steps
-(`Laws.Step.ClosureStep`), the log recording each unit as it runs. -/
+/-- A unit of the closure relation, what one micro-step of a closure runs under any pick (probe P18's `KUnit`, with its
+later layer's picks apart): a queued signal or token by its key, a scope occurrence's idle check by its identifier, the
+offer of a parked arrival by its index in the parked list, and the instance's completion. -/
+inductive ClosureUnit where
+  | signal (key : UnitKey)
+  | token (key : UnitKey)
+  | idle (scope : ScopeOccurrenceId)
+  | offer (index : Nat)
+  | finish
+
+/-- The offer of the parked arrival `waiting` that `Step.reoffer?` makes when no arrival before it fired: its join is
+offered the latest arrival parked on that join in that scope occurrence and fires when the offer queues a signal
+(`some`), `none` when it does not; a parked flow leading to no gateway is an invariant failure. `Step.reoffer?` is the
+first fire in parking order; `SettleRuns` states that the two agree.
+
+This repeats the body of `Step.reoffer?`'s fold, which a `Proofs` module cannot unfold; extracting it in `Kernel.Step`
+and its TypeScript pair would let both read one definition. -/
+def offerOf (hooks : Hooks) (ctx : Ctx) (state : State) (waiting : Parked) :
+    Except Failure (Option (ElementId × ScopeOccurrenceId × OccurrenceId × State)) :=
+  match (ctx.program.target? waiting.flow).bind ctx.program.element? with
+  | none => .error (.semanticFailure .invariant "parked-without-gateway")
+  | some element =>
+    match element.gateway?, ((state.slots.parked.filter fun other => other.scope == waiting.scope &&
+        ctx.program.target? other.flow == ctx.program.target? waiting.flow).getLast?).bind (state.occurrence? ·.occurrence) with
+    | some (header, payload), some occurrence => do
+      let offered ← hooks.arriveGateway ctx header payload occurrence state
+      .ok (if offered.batchSignals.isEmpty then none else some (header.id, waiting.scope, occurrence.id, offered))
+    | _, _ => .error (.semanticFailure .invariant "parked-without-gateway")
+
+/-- The micro-step `unit` runs on `state` with the unit key it runs under, or `none` when `unit` is not enabled there.
+Layer 0 is every queued signal batch entry and every queued token, each run as `Step.settle` runs it. Once neither is
+queued, every idle scope occurrence (`Step.idleScope?`'s gate: not the root, no queued work names it or one inside it,
+no Activity's local scope occurrence) completes through its owner; once none is idle, every parked arrival whose offer
+fires is offered again, a failing offer failing as its unit; once no offer fires, the instance completes when its root
+is idle and no signal is queued (`Step.settle`'s last branch). `orderInvariant` admits any of these picks (KD3), so
+the relation picks any enabled unit where `Step.settle` picks one. -/
+def fire (hooks : Hooks) (ctx : Ctx) (unit : ClosureUnit) (state : State) : Option (Except Failure (UnitKey × State)) :=
+  let quiet := state.queuedSignals.isEmpty && state.queuedTokens.isEmpty
+  match unit with
+  | .signal key => state.queuedSignals[key]?.map fun next =>
+      (Step.microStep hooks ctx key (.signal (Step.signalName next)) none State.root (Step.dispatchSignal hooks ctx next)
+        { state with queuedSignals := state.queuedSignals.erase key }).map (key, ·)
+  | .token key => state.queuedTokens[key]?.map fun token =>
+      (Step.moveToken hooks ctx key token { state with queuedTokens := state.queuedTokens.erase key }).map (key, ·)
+  | .idle id => (state.scopes.find? (·.id == id)).bind fun scope =>
+      if quiet && id != State.root && !state.busyScopes.contains id && !Step.activityLocal ctx state scope &&
+          !Step.signalsHold hooks ctx state id then
+        some ((Step.microStep hooks ctx (.ofRoot (.idle id)) (.idle id) scope.element id
+          (Step.completeIdleScope hooks ctx scope) state).map (.ofRoot (.idle id), ·))
+      else none
+  | .offer index =>
+    if quiet && (Step.idleScope? hooks ctx state).isNone then
+      state.slots.parked[index]?.bind fun waiting =>
+        match offerOf hooks ctx state waiting with
+        | .error failure => some (.error failure)
+        | .ok none => none
+        | .ok (some (gateway, scope, occurrence, offered)) =>
+          let key := UnitKey.ofRoot (.offer occurrence (Step.offerRound state occurrence))
+          some ((Step.microStep hooks ctx key (.idle scope) (some gateway) scope (fun _ => .ok offered) state).map (key, ·))
+    else none
+  | .finish =>
+    if quiet && (Step.idleScope? hooks ctx state).isNone && state.idle State.root then
+      match Step.reoffer? hooks ctx state with
+      | .ok none => some ((Step.microStep hooks ctx (.ofRoot (.idle State.root)) (.idle State.root) none State.root
+          (fun state => .ok (Step.endInstance .completed none state)) state).map (.ofRoot (.idle State.root), ·))
+      | _ => none
+    else none
+
+/-- `after` under the run log `log'` is reached from `state` under `log` by committed micro-steps of the closure
+relation, any enabled unit at each, the log recording each unit as it runs. -/
 inductive Reaches (hooks : Hooks) (ctx : Ctx) : Step.RunLog → State → Step.RunLog → State → Prop where
   | refl (log : Step.RunLog) (state : State) : Reaches hooks ctx log state log state
-  | step {log log' : Step.RunLog} {unit : UnitKey} {before middle after : State} :
-      Laws.Step.ClosureStep hooks ctx log unit before middle → Reaches hooks ctx (log.record unit) middle log' after →
-      Reaches hooks ctx log before log' after
+  | step {log log' : Step.RunLog} {unit : ClosureUnit} {key : UnitKey} {state middle after : State} :
+      state.status = .running → fire hooks ctx unit state = some (.ok (key, middle)) →
+      Reaches hooks ctx (log.record key) middle log' after → Reaches hooks ctx log state log' after
 
-/-- `right` records the units `left` records, in another order: a run log of the same closure run in another schedule. -/
-structure LogReordered (left right : Step.RunLog) : Prop where
-  units : ∀ unit, unit ∈ right.positions ↔ unit ∈ left.positions
-  size : right.positions.size = left.positions.size
-  distinct : ∀ first second, first ∈ right.positions → second ∈ right.positions →
-    right.runPosition first = right.runPosition second → first = second
-  below : ∀ unit, unit ∈ right.positions → right.runPosition unit < right.positions.size
+/-- No unit of the closure relation runs on `state`: the instance stopped running, or no unit is enabled. -/
+def Complete (hooks : Hooks) (ctx : Ctx) (state : State) : Prop :=
+  state.status ≠ .running ∨ ∀ unit, fire hooks ctx unit state = none
 
-/-- Two schedules of one closure state, each with its closure record (DC4): the same state with the units its run log
-records in another order (`log`), its queued tokens moved among their keys by any bijection of the key set (`tokens`),
-and one interval, in breadth order, of its queued signals that are all Signal firings, the receivers one Signal throw
-queues, moved among their keys by any bijection of the interval, every other queued signal in place (`firings`).
-
-DC4 restates P0's form, the queued token list in any order and one contiguous block of the signal list in any order, over
-the unit-keyed queues, without weakening it: a queue lists no order of its own, its keys order it (`Step.orderKey`,
-`UnitKey.breadth`). Over a fixed key set, moving the contents by any bijection of the keys lets the closure's order read
-any permutation of them, so `tokens` is P0's token permutation, cross-batch interleavings included; a contiguous block
-of the signal list is an interval of the queued signal keys in breadth order, the order the closure runs signals in, so
-`firings` is P0's block. Statement only: open (#163).
-
-It does not vary the `begin` signals of a parallel body's instances (under `orderInvariant` no begin is deferred onto
-the tokens), of a Scope's implicitly begun children, whose tokens `tokens` reorders, the begins of the handlers one
-Compensation throw starts, the order of idle scope completions, or the parking order in which `Step.reoffer?` offers
-Inclusive joins again, which `Step.settle` fixes: that those orders are immaterial rests on admission alone
-(`multiInstance.concurrentInstances`, which counts an instance completing where the instances begin or where a broadcast
-resumes them, the compensation pairs of `flow.concurrentWrite` and `flow.concurrentInterference`, a Scope's completion
-followed as its thrower's continuation, the joins' continuations of `flow.concurrentWrite` and
-`flow.concurrentInterference`), restated in `Laws.Flow.Concurrent`'s `instances`, `compensating`, `rejoined` and
-`continuationOf`. The Conditional firings one write or one arming offers stay in place too: admission refuses a write
-whose firings race a sibling unit, and an uncontested firing's effects reach the other units only through the tokens it
-emits, which `tokens` reorders. -/
-structure Reordered (left right : Step.RunLog × State) : Prop where
-  log : LogReordered left.1 right.1
-  tokens : ∃ σ : UnitKey → UnitKey,
-    (∀ first second, first ∈ left.2.queuedTokens → second ∈ left.2.queuedTokens → σ first = σ second → first = second) ∧
-    (∀ key, key ∈ left.2.queuedTokens → σ key ∈ left.2.queuedTokens) ∧
-    (∀ key, key ∈ left.2.queuedTokens → ∃ source, source ∈ left.2.queuedTokens ∧ σ source = key) ∧
-    (∀ key, key ∈ right.2.queuedTokens ↔ key ∈ left.2.queuedTokens) ∧
-    ∀ key, key ∈ left.2.queuedTokens → right.2.queuedTokens[σ key]? = left.2.queuedTokens[key]?
-  firings : ∃ (block : UnitKey → Prop) (σ : UnitKey → UnitKey),
-    (∀ key, block key → ∃ item delivery, left.2.queuedSignals[key]? = some (.fire item (.signal delivery))) ∧
-    (∀ first middle last, block first → block last → middle ∈ left.2.queuedSignals →
-      UnitKey.breadth.val first middle = .lt → UnitKey.breadth.val middle last = .lt → block middle) ∧
-    (∀ first second, block first → block second → σ first = σ second → first = second) ∧
-    (∀ key, block key → block (σ key)) ∧ (∀ key, block key → ∃ source, block source ∧ σ source = key) ∧
-    (∀ key, block key → right.2.queuedSignals[σ key]? = left.2.queuedSignals[key]?) ∧
-    ∀ key, ¬ block key → right.2.queuedSignals[key]? = left.2.queuedSignals[key]?
-  rest : { right.2 with queuedTokens := left.2.queuedTokens, queuedSignals := left.2.queuedSignals } = left.2
+/-- A complete run of the closure relation from `state` under `log` with its outcome in `Step.settle`'s form: it reaches
+a complete state (`ok`), or a unit enabled where it stopped fails (`error`). Probe P18's `Runs` over this relation. -/
+inductive Runs (hooks : Hooks) (ctx : Ctx) : Step.RunLog → State → Except Failure (State × Step.RunLog) → Prop where
+  | done {log log' : Step.RunLog} {state after : State} : Reaches hooks ctx log state log' after →
+      Complete hooks ctx after → Runs hooks ctx log state (.ok (after, log'))
+  | fail {log log' : Step.RunLog} {state before : State} {unit : ClosureUnit} {failure : Failure} :
+      Reaches hooks ctx log state log' before → before.status = .running →
+      fire hooks ctx unit before = some (.error failure) → Runs hooks ctx log state (.error failure)
 
 /-- A bijection of scope keys fixing every key `state` issued (`Laws.State.ScopeIssued`), so only the scope occurrences
 entered from `state` on are renamed. -/
@@ -202,82 +234,89 @@ theorem opensAttempt_of_opens {hooks : Hooks} {program : Program} {input : Input
     cases same
     exact .inr ⟨before, running, transition, clocked, committed, status, runs, moved⟩
 
-/-- Two settle outcomes have one outcome class: both commit, or both fail as one kind of failure (rejected, rolled back,
-semantic failure, unsupported), whatever their codes, a rejection's `stale` flag and a semantic failure's cause. -/
-def SameClass {α β : Type} : Except Failure α → Except Failure β → Prop
-  | .ok _, .ok _ => True
-  | .error (.rejected _ _), .error (.rejected _ _) => True
-  | .error (.rolledBack _), .error (.rolledBack _) => True
-  | .error (.semanticFailure _ _), .error (.semanticFailure _ _) => True
-  | .error (.unsupported _), .error (.unsupported _) => True
-  | _, _ => False
+/-- P6's commit side: under `orderInvariant` and the order-invariance premise, any two complete runs of the closure
+relation (`Runs`) from where an attempted input's closure begins that both commit, commit results alike up to a
+bijection of the identities and activations issued from that state on.
 
-/-- P6's commit side: from a state the closure of an attempted input reaches, any two schedules of its enabled work,
-each with its closure record (DC4), that both settle commit results alike up to a bijection of the identities and
-activations issued from that state on.
-
-P0 stated it from any `Laws.State.WellFormed` state, which is false: `WellFormed` admits queues no run produces, and
-two flow tokens queued in the root of a sequential `Start → User Task → Terminate End` process settle in one order
-beginning the User Task again before the End and in the other ending the instance first, with no renaming relating the
-two journals (P6 design, witness W1). The order-invariance argument rests on the queue having come from a run, so the
-start is reachable (root decision D1, 2026-11-15): the state an attempted input's transition micro-step leaves on a
-committed state of a run, or the start's begin (`OpensAttempt`), under the run log that records the input's
-micro-step, and the closure context `Step.step` gives that input. The results are compared once committed
-(`Step.orderJournal`). -/
+The runs start at a state a run reaches, not at any `Laws.State.WellFormed` state (P0's form), which is false:
+`WellFormed` admits queues no run produces, and two flow tokens queued in the root of a sequential
+`Start → User Task → Terminate End` process settle in one order beginning the User Task again before the End and in the
+other ending the instance first, with no renaming relating the two journals (P6 design, witness W1). The order-invariance
+argument rests on the queue having come from a run, so the start is reachable (root decision D1, 2026-11-15): the state
+an attempted input's transition micro-step leaves on a committed state of a run, or the start's begin (`OpensAttempt`),
+under the run log that records the input's micro-step, and the closure context `Step.step` gives that input. Schedules
+are runs of the closure relation (probe P18), so no bijection of unit keys renames one schedule's queues into another's;
+the results are compared once committed (`Step.orderJournal`). -/
 def CommitsAgree (hooks : Hooks) : Prop :=
-  ∀ (program : Program) (input : Input) (start state reordered left right : State) (log log' : Step.RunLog)
-    (fuel work fuel' work' : Nat),
+  ∀ (program : Program) (input : Input) (start left right : State) (outcome outcome' : Except Failure (State × Step.RunLog)),
     program.options.branchSchedule = .orderInvariant → Laws.Flow.Apart program → OpensAttempt hooks program input start →
-    Reaches hooks (Laws.Step.inputCtx hooks program input) (Step.RunLog.record {} (.ofRoot .input)) start log state →
-    Reordered (log, state) (log', reordered) →
-    Step.orderJournal (Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel work log state) = .ok left →
-    Step.orderJournal (Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel' work' log' reordered) =
-      .ok right →
-    ∃ ids keys, ScopesRenamed state ids ∧ Activations state keys ∧ Alike ids keys left right
+    Runs hooks (Laws.Step.inputCtx hooks program input) (Step.RunLog.record {} (.ofRoot .input)) start outcome →
+    Runs hooks (Laws.Step.inputCtx hooks program input) (Step.RunLog.record {} (.ofRoot .input)) start outcome' →
+    Step.orderJournal outcome = .ok left → Step.orderJournal outcome' = .ok right →
+    ∃ ids keys, ScopesRenamed start ids ∧ Activations start keys ∧ Alike ids keys left right
 
-/-- P6's failure side (KD8's settle-agreement, T42): under the same bounds, two schedules of the closure state of an
-attempted input settle with one outcome class (`SameClass`), so if one fails, the other fails too, as the same kind of
-failure; when both commit it says nothing `CommitsAgree` does not.
+/-- P6's failure side, commit-or-refuse agreement (KD8's settle-agreement, T42): under `orderInvariant` and the
+order-invariance premise, if one complete run of the closure of an attempted input commits, every complete run from
+there commits. Probe P18's `failure_side_L0` is its shape through the real `Step.settle`.
 
-Only the class: with two independently failing units in one closure, the command reports whichever ran first, so the
-failure code may differ between schedules; whether it must agree too is owner item P13 F4, open (2026-11-20). Not yet
-true of the kernel, which is why it is a statement: `Step.settle` charges each micro-step the size of the whole state,
-so one schedule can exceed the closure work bound where another commits (KD8 finding 1, until K3's created-entries
-measure), and `Step.deferred` reads `State.crossed`, so a failure's class depends on which boundary the schedule crossed
-first (probes P01 and P13; DC8, until J retires both). -/
+It compares no failure's class or code: with two independently failing units in one closure, the run reports whichever
+ran first, so the code may differ between schedules (P13 `both_fail_order`), and so may the class (P18
+`fail_class_differs`: on the kernel, a Parallel split whose branches fail with `rolledBack` and `semanticFailure`).
+Whether they must agree is the owner's open item P13 F4; the root recommends that they need not, a refused command
+reporting one enabled failing unit's class and code, outside the order-invariant observation (BPMN orders no concurrent
+failures). Runs carry no bound, so `Step.settle`'s own refusal by its bounds is outside this statement: by `SettleRuns`
+a `settle` that fails where another schedule commits fails by its fuel or its work bound, and the work bound charges
+each micro-step the size of the whole state, so one schedule can exceed it where another commits (KD8 finding 1, until
+K3's created-entries measure). Not yet true of the kernel either: `Step.deferred` reads `State.crossed`, so whether a
+unit fails can depend on which boundary the schedule crossed first (probes P01 and P13; DC8, until J retires it). -/
 def FailureSideAgrees (hooks : Hooks) : Prop :=
-  ∀ (program : Program) (input : Input) (start state reordered : State) (log log' : Step.RunLog) (fuel work : Nat),
+  ∀ (program : Program) (input : Input) (start : State) (committed : State × Step.RunLog)
+    (outcome : Except Failure (State × Step.RunLog)),
     program.options.branchSchedule = .orderInvariant → Laws.Flow.Apart program → OpensAttempt hooks program input start →
-    Reaches hooks (Laws.Step.inputCtx hooks program input) (Step.RunLog.record {} (.ofRoot .input)) start log state →
-    Reordered (log, state) (log', reordered) →
-    SameClass (Step.orderJournal (Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel work log state))
-      (Step.orderJournal (Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel work log' reordered))
+    Runs hooks (Laws.Step.inputCtx hooks program input) (Step.RunLog.record {} (.ofRoot .input)) start (.ok committed) →
+    Runs hooks (Laws.Step.inputCtx hooks program input) (Step.RunLog.record {} (.ofRoot .input)) start outcome →
+    ∃ other, outcome = .ok other
+
+/-- The bridge from `Step.settle` to the closure relation (probe P18's `settle_runs` and `settle_fails`): under
+`orderInvariant`, what `settle` commits from where an attempted input's closure begins is a complete run's outcome, and
+a failure it reports other than its bounds' `closure-bound` is a unit's failure on a run. So the runs `SchedulesAgree`
+compares include `settle`'s own. Statement only: open (#163). -/
+def SettleRuns (hooks : Hooks) : Prop :=
+  ∀ (program : Program) (input : Input) (start : State) (fuel work : Nat),
+    program.options.branchSchedule = .orderInvariant → OpensAttempt hooks program input start →
+    (∀ committed, Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel work
+        (Step.RunLog.record {} (.ofRoot .input)) start = .ok committed →
+      Runs hooks (Laws.Step.inputCtx hooks program input) (Step.RunLog.record {} (.ofRoot .input)) start (.ok committed)) ∧
+    ∀ failure, Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel work
+        (Step.RunLog.record {} (.ofRoot .input)) start = .error failure → failure ≠ .unsupported "closure-bound" →
+      Runs hooks (Laws.Step.inputCtx hooks program input) (Step.RunLog.record {} (.ofRoot .input)) start (.error failure)
 
 /-- P6: under `orderInvariant` and the order-invariance premise, the schedules of the closure of every attempted input
-agree: those that commit commit results alike (`CommitsAgree`), and if one fails every one fails, with one outcome
-class (`FailureSideAgrees`). Statement only: open (#163). -/
+agree: those that commit commit results alike (`CommitsAgree`), and if one commits every one commits
+(`FailureSideAgrees`). With `SettleRuns`, `Step.settle`'s fixed order is immaterial. Statement only: open (#163). -/
 def SchedulesAgree (hooks : Hooks) : Prop := CommitsAgree hooks ∧ FailureSideAgrees hooks
 
 /-- PC-HUM-04 (`DTB-COMMUTE-01`): a token to a None End beside a token entering an embedded Sub-Process commute under
-`orderInvariant` (BPMN 2.0.2 §10.5.3, §13.5.6). The pair's two orders are one `Reordered` pair of a closure state, so
-the former theorem is this lane under `Laws.Flow.Apart` at a state queuing the two tokens that the closure of a
-committed input reaches, with no premise about the pair's elements. -/
-theorem endBesideEntry {hooks : Hooks} (agree : SchedulesAgree hooks)
-    (program : Program) (input : Input) (start state reordered left right : State) (log log' : Step.RunLog)
-    (fuel work fuel' work' : Nat) (toEnd toEntry : FlowId) (scope : ScopeOccurrenceId) (split : UnitKey)
-    (_pair : state.queuedTokens[split.tokenUnit 0]? = some (.flow toEnd scope) ∧
+`orderInvariant` (BPMN 2.0.2 §10.5.3, §13.5.6). Running either token first from a state that queues both, which a run
+of the closure of a committed input reaches, extends to a complete run, so the former theorem is this lane under
+`Laws.Flow.Apart` between `Step.settle`'s run and any other, with no premise about the pair's elements. -/
+theorem endBesideEntry {hooks : Hooks} (agree : SchedulesAgree hooks) (bridge : SettleRuns hooks)
+    (program : Program) (input : Input) (start state left right : State) (log : Step.RunLog)
+    (committed : State × Step.RunLog) (outcome : Except Failure (State × Step.RunLog)) (fuel work : Nat)
+    (toEnd toEntry : FlowId) (scope : ScopeOccurrenceId) (split : UnitKey)
+    (_pair : Reaches hooks (Laws.Step.inputCtx hooks program input) (Step.RunLog.record {} (.ofRoot .input)) start log
+        state ∧
+      state.queuedTokens[split.tokenUnit 0]? = some (.flow toEnd scope) ∧
       state.queuedTokens[split.tokenUnit 1]? = some (.flow toEntry scope))
     (invariant : program.options.branchSchedule = .orderInvariant) (separate : Laws.Flow.Apart program)
     (opens : Opens hooks program input start)
-    (reached : Reaches hooks (Laws.Step.inputCtx hooks program input) (Step.RunLog.record {} (.ofRoot .input)) start log
-      state)
-    (swapped : Reordered (log, state) (log', reordered))
-    (settled : Step.orderJournal (Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel work log state) =
-      .ok left)
-    (settled' : Step.orderJournal (Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel' work' log'
-      reordered) = .ok right) :
-    ∃ ids keys, ScopesRenamed state ids ∧ Activations state keys ∧ Alike ids keys left right :=
-  agree.1 program input start state reordered left right log log' fuel work fuel' work' invariant separate
-    (opensAttempt_of_opens opens) reached swapped settled settled'
+    (settled : Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel work
+      (Step.RunLog.record {} (.ofRoot .input)) start = .ok committed)
+    (other : Runs hooks (Laws.Step.inputCtx hooks program input) (Step.RunLog.record {} (.ofRoot .input)) start outcome)
+    (journalled : Step.orderJournal (.ok committed) = .ok left) (journalled' : Step.orderJournal outcome = .ok right) :
+    ∃ ids keys, ScopesRenamed start ids ∧ Activations start keys ∧ Alike ids keys left right :=
+  agree.1 program input start left right (.ok committed) outcome invariant separate (opensAttempt_of_opens opens)
+    ((bridge program input start fuel work invariant (opensAttempt_of_opens opens)).1 committed settled) other journalled
+    journalled'
 
 end Kernel.Proofs.Concurrency
