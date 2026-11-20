@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Hooks
+public import Kernel.State.Variables
 public import Kernel.Feature.Data.Juel
 
 /-! # Data: expression evaluation and variable writes

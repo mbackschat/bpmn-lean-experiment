@@ -4,10 +4,12 @@ public import Kernel.Laws.State.Reserve
 public import Kernel.Laws.State.Transitions
 public import Kernel.State.Removal
 public import Kernel.State.Called
+public import Kernel.State.Variables
 public import Kernel.Laws.State.Slots
 public import Kernel.Laws.State.Tree
 import all Kernel.State
 import all Kernel.State.Called
+import all Kernel.State.Variables
 import all Kernel.State.Raise
 import all Kernel.State.Wait
 

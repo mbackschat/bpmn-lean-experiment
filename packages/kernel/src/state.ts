@@ -8,7 +8,7 @@
  * any other `T.f` as `tF`.
  *
  * Occurrences and activations are created and removed only here, in `state/removal.ts` and in `step.ts`; variables are written only through
- * `setVariable`, whose one caller is `feature/data.ts`; flow tokens are added only by `emit`, whose one caller is
+ * `state/variables.ts`' `setVariable`, whose one caller is `feature/data.ts`; flow tokens are added only by `emit`, whose one caller is
  * `feature/flow.ts`, and deferred begins only by `deferBegins`, whose one caller is `feature/multi-instance.ts`
  * (guard 17).
  */
@@ -81,7 +81,7 @@ import {
 } from "./state/map.js";
 export { type TreeMap };
 // The closure's unit keys and keyed maps reach the step through this hub, as `Kernel.State` re-exports them (guard 15).
-export { breadthUnitKey, compareUnitKey, occurrenceIdParts, scopeEncloses, type UnitKey, unitRoot, UnitRootTag } from "./state/key.js";
+export { breadthUnitKey, compareUnitKey, occurrenceIdParts, scopeEncloses, scopeParent, type UnitKey, unitRoot, UnitRootTag } from "./state/key.js";
 export {
   type OrderedMap, orderedAny, orderedCount, orderedEntries, orderedErase, orderedGet, orderedHas, orderedInsert, orderedSize,
 } from "./state/map.js";
@@ -816,54 +816,4 @@ export function visible(state: State, program: Program, scope: ScopeOccurrenceId
     current = scopeParent(frame);
   }
   return out;
-}
-
-/**
- * The nearest occurrence of the Scope `element` from `scope` outward, up to the root of its process instance: the
- * occurrence whose frame holds the items `element` declares for a site in `scope`.
- */
-export function declaring(state: State, scope: ScopeOccurrenceId, element: ElementId): ScopeOccurrenceId | null {
-  for (let current: ScopeOccurrenceId | null = scope; current !== null; current = scopeParent(current)) {
-    if (scopeOf(state, current)?.element === element) return current;
-    if (calledRoot(state, current) || !stands(state, current)) return null;
-  }
-  return null;
-}
-
-/** The innermost scope visible from `scope` that declares `name`, up to the root of its process instance. */
-export function owner(state: State, scope: ScopeOccurrenceId, name: string): ScopeOccurrenceId | null {
-  const bindsOwn = (id: ScopeOccurrenceId): boolean => (ownEntries(state, id) ?? []).some(([key]) => key === name);
-  for (let current: ScopeOccurrenceId | null = scope; current !== null; current = scopeParent(current)) {
-    if (bindsOwn(current)) return current;
-    if (calledRoot(state, current) || !stands(state, current)) return null;
-  }
-  return null;
-}
-
-/** Set `name` in `target`'s own variables and log the write. */
-export function setVariable(state: State, target: ScopeOccurrenceId, name: string, value: Value): State {
-  const replace = (entries: readonly Binding[]): readonly Binding[] =>
-    entries.some(([key]) => key === name)
-      ? entries.map((entry) => (entry[0] === name ? ([name, value] as const) : entry))
-      : [...entries, [name, value] as const];
-  const kind = (ownEntries(state, target) ?? []).some(([key]) => key === name) ? VariableEvent.Update : VariableEvent.Create;
-  const written: State = { ...state, writes: [...state.writes, { scope: target, name, kind }] };
-  if (written.variables.some((entry) => entry.scope === target)) {
-    return {
-      ...written,
-      variables: written.variables.map((entry) =>
-        entry.scope === target ? { ...entry, entries: replace(entry.entries) } : entry),
-    };
-  }
-  return { ...written, variables: [...written.variables, { scope: target, entries: [[name, value] as const] }] };
-}
-
-/** Delete `name` from `target`'s own variables and log the deletion. */
-export function removeVariable(state: State, target: ScopeOccurrenceId, name: string): State {
-  return {
-    ...state,
-    writes: [...state.writes, { scope: target, name, kind: VariableEvent.Delete }],
-    variables: state.variables.map((entry) =>
-      entry.scope === target ? { ...entry, entries: entry.entries.filter(([key]) => key !== name) } : entry),
-  };
 }

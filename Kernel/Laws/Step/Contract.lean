@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Step
+public import Kernel.State.Variables
 public import Kernel.Laws.State.Frames
 public import Kernel.Laws.IL
 public import Kernel.Laws.Flow.Sources

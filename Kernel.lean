@@ -194,6 +194,7 @@ public import Kernel.State.Raise
 public import Kernel.State.Removal
 public import Kernel.State.Slots
 public import Kernel.State.Tree
+public import Kernel.State.Variables
 public import Kernel.State.Wait
 public import Kernel.Step
 public import Kernel.Step.Commit

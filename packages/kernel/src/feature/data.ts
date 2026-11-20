@@ -22,12 +22,8 @@ import {
   SemanticCause,
   WriteRule,
   committed,
-  declaring,
   instanceRoot,
-  owner,
-  removeVariable,
   semanticFailure,
-  setVariable,
   type Binding,
   type EvalContext,
   type Outcome,
@@ -35,6 +31,7 @@ import {
   type State,
 } from "../state.js";
 import { EvaluationTag, type Ctx, type Evaluation } from "../hooks.js";
+import { declaring, owner, removeVariable, setVariable } from "../state/variables.js";
 
 export function lookup(variables: readonly Binding[], name: string): Value | null {
   return variables.find(([key]) => key === name)?.[1] ?? null;
