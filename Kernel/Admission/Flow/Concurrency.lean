@@ -100,9 +100,10 @@ def anchorOf (program : Program) : Visit → Option Element
 
 /-- The elements enclosing `element` across Call boundaries: its Scopes and, from its process level, every Call of that
 process with what encloses it. -/
-def enclosingAcross (program : Program) : Nat → Element → List ElementId
-  | 0, _ => []
-  | fuel + 1, element =>
+def enclosingAcross (program : Program) (fuel : Nat) (element : Element) : List ElementId :=
+  match fuel with
+  | 0 => []
+  | fuel + 1 =>
     let scopes := ancestors program program.elements.length element.header.parent
     let top := (scopes.getLast?).getD element
     scopes.map (·.header.id) ++ ((program.processOf top.header).map fun process =>
@@ -219,9 +220,10 @@ def arrivesTwice (program : Program) (element : Element) : Bool :=
 once per record, an Event Sub-Process that does not interrupt, which may start again, two tokens arriving in one
 occurrence of its level (`arrivesTwice`), or that level open twice: its Scope's, or a called process's that two Calls,
 or one Call that runs twice, call. Running out of fuel, which only a Call cycle does, answers yes. -/
-def runsTwice (reading : Reading) (program : Program) : Nat → Element → Bool
-  | 0, _ => true
-  | fuel + 1, element =>
+def runsTwice (reading : Reading) (program : Program) (fuel : Nat) (element : Element) : Bool :=
+  match fuel with
+  | 0 => true
+  | fuel + 1 =>
     (((element.envelope?).bind (·.multiInstance)).isSome && !reading.nextInstance element) || handler reading element ||
       (((element.scope?).bind fun (_, payload) => payload.kind.start?).isSome && !reading.interrupts element) ||
       arrivesTwice program element ||
