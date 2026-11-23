@@ -3,13 +3,14 @@
  * unit makes and the opening or end of a Conditional subscription that a concurrent unit makes are ordered by nothing
  * BPMN states (Table 13.1, §13.3.1, §13.3.4, Tables 10.86, 10.89, 10.90), so a model whose result depends on that order
  * is refused with `flow.concurrentWrite`; a write that can only make the condition true before an opening, a holder
- * that outlives its descendant writer, two wakes below one shared Scope, and a holder's own boundary stay admitted.
+ * that outlives its descendant writer, two wakes below one shared Scope or Call, and a holder's own boundary stay
+ * admitted.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  activity, boundary, callWork, catchEvent, definitionRef, end, eventSubProcess, flow, gateway, literalValue, mapping, model,
+  activity, boundary, callWork, catchEvent, definitionRef, end, eventBased, eventSubProcess, flow, gateway, literalValue, mapping, model,
   refusalOf, base, ruleWork, scope, signal, signalThrow, start, text, throwing, userWork, variable, withOptions, writer,
 } from "./admission-refusal-support.ts";
 import { any, decision, input, lit, output, resource, rule, table } from "./decision-support.ts";
@@ -155,6 +156,51 @@ const ownBoundary = (): Json => model([
 ], [flow("f1", "S", "P"), flow("pr", "P", "R"), flow("pv", "P", "V"), flow("rs", "RS", "RE"), flow("re", "R", "E1"), flow("v", "V", "E2"),
   flow("cb", "CB", "X"), flow("x", "X", "E3")])(program(["go"]));
 
+/**
+ * Audit finding 1: one branch writes b, then a; the other reaches an Event-Based Gateway whose Conditional arms wait on
+ * isPresent(a) and isPresent(b). Opened after both writes, the arming finds both true, a contest the input's ranking
+ * decides; opened before, the write of b fires its arm first.
+ */
+const gatewayContest = (writerFirst: boolean): Json => {
+  const [bEls, bFlows] = writer("T1", "b", "1");
+  const [aEls, aFlows] = writer("T2", "a", "1");
+  const pw = flow("pw", "P", "T1"), pg = flow("pg", "P", "G");
+  return model([
+    start("S"), gateway("P", "parallel"), ...bEls, ...aEls, gateway("G", eventBased()),
+    catchEvent("C1", present("a")), catchEvent("C2", present("b")), activity("X1", userWork()), activity("X2", userWork()),
+    end("E1"), end("E2"), end("E3"),
+  ], [flow("f1", "S", "P"), ...(writerFirst ? [pw, pg] : [pg, pw]), ...bFlows, ...aFlows, flow("t1", "T1", "T2"), flow("t2", "T2", "E1"),
+    flow("g1", "G", "C1"), flow("g2", "G", "C2"), flow("c1", "C1", "X1"), flow("c2", "C2", "X2"), flow("x1", "X1", "E2"),
+    flow("x2", "X2", "E3")])(program(["a", "b"]));
+};
+
+/**
+ * Audit finding 4: a broadcast wakes A's catch, and A then completes, ending its Conditional boundary, beside the
+ * thrower's continuation, which writes go.
+ */
+const wakeBesideContinuation = (): Json => {
+  const [wEls, wFlows] = writer("W", "go", "2");
+  return model([
+    start("S"), gateway("P", "parallel"),
+    scope("A", "embedded", {}, { boundaries: [boundary("CB", present("go"), { interrupting: false })] }),
+    start("AS", null, [], "A"), catchEvent("AC", signal(), [], "A"), end("AE", "none", "A"),
+    activity("U", userWork()), throwing("TH", signalThrow), ...wEls, activity("X", userWork()), end("E1"), end("E2"), end("E3"),
+  ], [flow("f1", "S", "P"), flow("pa", "P", "A"), flow("pu", "P", "U"), flow("a1", "AS", "AC"), flow("a2", "AC", "AE"),
+    flow("ae", "A", "E1"), flow("u", "U", "TH"), flow("tw", "TH", "W"), ...wFlows, flow("we", "W", "E2"), flow("cb", "CB", "X"),
+    flow("x", "X", "E3")])(program(["go"]));
+};
+
+/** Audit finding 3: two Signal catches at the top of one called process, woken together, share their Call's completion. */
+const wakesInOneCall = (): Json => model([
+  start("S"), gateway("P", "parallel"),
+  activity("CA", callWork({ calledElement: text("Q"), inputs: [mapping("din", literalValue({ kind: "string", value: "yes" }), "dataAssociation")],
+    outputs: [mapping("go", variable("din"), "dataAssociation")] })),
+  start("QS"), gateway("QF", "parallel"), catchEvent("QC1", signal()), catchEvent("QC2", signal()), end("QE1"), end("QE2"),
+  activity("U", userWork()), throwing("TH", signalThrow), end("E1"), end("E2"),
+], [flow("f1", "S", "P"), flow("pc", "P", "CA"), flow("pu", "P", "U"), flow("qs", "QS", "QF"), flow("q1", "QF", "QC1"), flow("q2", "QF", "QC2"),
+  flow("q3", "QC1", "QE1"), flow("q4", "QC2", "QE2"), flow("ce", "CA", "E1"), flow("u", "U", "TH"), flow("th", "TH", "E2")])(program([],
+  [{ definition: definitionRef("Q"), children: ["QS", "QF", "QC1", "QC2", "QE1", "QE2"], variables: ["din"], executable: true }]));
+
 const refused: ReadonlyArray<readonly [string, () => Json]> = [
   ["two completing Sub-Processes, boundary on A, write on B, A's flow first", () => closingPair("A", "B", true)],
   ["two completing Sub-Processes, boundary on A, write on B, B's flow first", () => closingPair("A", "B", false)],
@@ -169,6 +215,9 @@ const refused: ReadonlyArray<readonly [string, () => Json]> = [
   ["a write beside a Signal throw whose interrupting resumption removes the boundary's holder, writer's flow last", () => removedHolder(false)],
   ["a holder begun before its writer, both completing after one broadcast", () => lateWokenPair(true)],
   ["a holder begun after its writer, both completing after one broadcast", () => lateWokenPair(false)],
+  ["two writes beside an Event-Based Gateway whose Conditional arms they make true, writer's flow first", () => gatewayContest(true)],
+  ["two writes beside an Event-Based Gateway whose Conditional arms they make true, writer's flow last", () => gatewayContest(false)],
+  ["a woken holder completing beside the thrower's writing continuation", wakeBesideContinuation],
 ];
 
 for (const [description, build] of refused) {
@@ -180,6 +229,7 @@ const admitted: ReadonlyArray<readonly [string, () => Json]> = [
   ["a holder outliving the fork whose branch writes", nestedCascade],
   ["two Signal wakes inside one Sub-Process with an output mapping and its own boundary", twoWakesInOne],
   ["a holder's own boundary against its own output", ownBoundary],
+  ["two Signal wakes at the top of one called process whose Call has an output mapping", wakesInOneCall],
 ];
 
 for (const [description, build] of admitted) {

@@ -4,9 +4,6 @@
  * `closureReach`. It builds on `admission/flow.ts`'s structural reading of flows and Scopes.
  */
 import {
-  ConditionalRetrigger,
-  ExpressionTag,
-  SimpleBooleanTag,
   assertNever,
   elementActivity,
   elementIsCompensationActivity,
@@ -39,16 +36,14 @@ import {
   type Boundary,
   type CalledProcess,
   type DefinitionRef,
-  type ConditionTrigger,
   type Element,
   type ElementId,
-  type Expression,
   type Header,
   type FlowId,
   type Program,
   type Subscription,
 } from "../../il/types.js";
-import { beginReads, expressionReads, footprint, joined, noNames, union, type Footprint, type NameSet } from "../../il/footprint.js";
+import { beginReads, conditionNames, footprint, joined, noNames, union, type Footprint, type NameSet } from "../../il/footprint.js";
 import { onward } from "../../il/paths.js";
 import { enteredChildren, flowTargets, leaving, routing } from "../flow.js";
 
@@ -594,38 +589,11 @@ export function removesElement(program: Program, withdrawal: Withdrawal, fuel: n
     (process !== null && callers(program, process).some((call) => removesElement(program, withdrawal, fuel - 1, elementHeader(call).id)));
 }
 
-/**
- * The names through which a write may turn a condition from true to false: none for `isPresent`, which no write of a
- * closure makes false (only a variable command removes a name, `step/inputs.ts`).
- */
-const falsifiable = (expression: Expression): NameSet =>
-  expression.tag === ExpressionTag.SimpleBoolean && expression.body.tag === SimpleBooleanTag.IsPresent ? noNames : expressionReads(expression);
-
-/**
- * The names through which a write ordered against the opening (`opening`) or the end of a Conditional subscription with
- * `trigger` may change what it fires. Against the opening, under `edge` those that may turn the condition false
- * (`falsifiable`), since a write that can only turn it true fires it after the opening as it would on arrival; under
- * `eachWrite`, which fires again on every write its filter passes while the condition holds, every name the condition
- * reads or the filter passes. Against the end, those through which the write may make it true (`mayMakeTrue`'s bound):
- * under `edge` the names the condition reads, under `eachWrite` those the filter passes. Value-blind: a write that cannot
- * change the outcome counts as one that can.
- */
-function conditionNames(program: Program, opening: boolean, trigger: ConditionTrigger): NameSet {
-  const filtered: NameSet = trigger.variableName !== null ? { names: [trigger.variableName], all: false } : { names: [], all: true };
-  switch (program.options.conditionalRetrigger) {
-    case ConditionalRetrigger.EachWrite:
-      return opening ? union(expressionReads(trigger.condition), filtered) : filtered;
-    case ConditionalRetrigger.Edge:
-      return opening ? falsifiable(trigger.condition) : expressionReads(trigger.condition);
-  }
-  return assertNever(program.options.conditionalRetrigger);
-}
-
 /** The names of `subscriptions`' conditions (`conditionNames`). */
 const subscriptionNames = (program: Program, opening: boolean, subscriptions: readonly Subscription[]): NameSet =>
   subscriptions.reduce((found, subscription) => {
     const trigger = triggerCondition(subscription.trigger);
-    return trigger === null ? found : union(found, conditionNames(program, opening, trigger));
+    return trigger === null ? found : union(found, conditionNames(program.options.conditionalRetrigger, opening, trigger));
   }, noNames);
 
 /**
@@ -686,7 +654,10 @@ function endedBy(program: Program, withdrawals: readonly Withdrawal[]): NameSet 
  * that opens or ends a Conditional subscription, by beginning or completing the element that holds it (`held`) or by
  * removing its carrier (`endedBy`), reads the names through which a write ordered against it changes what it fires
  * (`conditionNames`), so `races` refuses a concurrent unit's write either side of a subscription's lifetime
- * (CIB-OP-0016).
+ * (CIB-OP-0016). Subscriptions one arming may find true together, a contest the input's ranking settles where writes
+ * after the opening fire one at a time, are read in full: the Conditional arms of an Event-Based Gateway and an
+ * interrupting boundary or Event Sub-Process start may fire on entry (`entering`), so their completion or removal reads
+ * every name a write may make them true through.
  */
 export function closureWalk(reading: Reading, program: Program, walk: Walk, begun: readonly Visit[]): Closure {
   const boundaries = program.elements.reduce((count, element) => count + (elementEnvelope(element)?.boundaries.length ?? 0), 0);

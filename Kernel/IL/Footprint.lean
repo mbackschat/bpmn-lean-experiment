@@ -52,6 +52,31 @@ def expressionReads : Expression → NameSet
   | .juel _ => { all := true }
   | .foreign _ _ => { all := true }
 
+/-- The names through which a write may turn a condition from true to false: none for `isPresent`, since no write of a
+closure removes a name (only a variable command does, `Kernel.Step.Inputs`) and an explicit null counts as present. -/
+def falsifiable : Expression → NameSet
+  | .simpleBoolean (.isPresent _) => {}
+  | expression => expressionReads expression
+
+/-- The names through which a write ordered against the opening (`opening`) or the end of a Conditional subscription
+with `trigger` may change what it fires, value-blind. Against the opening, under `edge` those that may turn the
+condition false (`falsifiable`), since a write that can only turn it true fires it after the opening as it would on
+arrival; that holds only without a filter, since arming ignores filters while a filter blocks a later write, so a
+filtered condition reads every name it reads (`edge` admits none, `event.condition.filter`). Under `eachWrite`, which fires again on every
+write its filter passes while the condition holds, every name the condition reads or the filter passes. Against the
+end, those through which the write may make it true (`mayMakeTrue`'s bound): under `edge` the names the condition reads,
+under `eachWrite` those the filter passes. -/
+def conditionNames (retrigger : ConditionalRetrigger) (opening : Bool) (trigger : ConditionTrigger) : NameSet :=
+  let filtered : NameSet := match trigger.variableName with
+    | some name => { names := [name] }
+    | none => { all := true }
+  let unfiltered := trigger.variableName.isNone && trigger.variableEvents.isEmpty
+  match retrigger, opening with
+  | .eachWrite, true => (expressionReads trigger.condition).union filtered
+  | .eachWrite, false => filtered
+  | .edge, true => if unfiltered then falsifiable trigger.condition else expressionReads trigger.condition
+  | .edge, false => expressionReads trigger.condition
+
 def mappingReads (mappings : List Mapping) : NameSet :=
   mappings.foldl (fun found mapping => found.union (expressionReads mapping.source)) {}
 

@@ -98,6 +98,16 @@ def anchorOf (program : Program) : Visit → Option Element
   | .enters started => some started
   | .passes _ => none
 
+/-- The elements enclosing `element` across Call boundaries: its Scopes and, from its process level, every Call of that
+process with what encloses it. -/
+def enclosingAcross (program : Program) : Nat → Element → List ElementId
+  | 0, _ => []
+  | fuel + 1, element =>
+    let scopes := ancestors program program.elements.length element.header.parent
+    let top := (scopes.getLast?).getD element
+    scopes.map (·.header.id) ++ ((program.processOf top.header).map fun process =>
+      (callers program process).flatMap fun call => call.header.id :: enclosingAcross program fuel call).getD []
+
 /-- Whether a level, the children of a Scope or the elements of a process level, may hold two tokens at once: two
 starts or implicitly begun children, a split (a concurrent Gateway or any other element or boundary with several
 outgoing flows), a boundary that does not interrupt, an Event Sub-Process that does not interrupt, or a compensation
@@ -209,28 +219,30 @@ program as `Kernel.Admission.Flow.beyond` counts, which the closure runs in armi
 (BPMN 2.0.2 §10.5.1 lets one Signal reach every catcher; issue #81). A resumption whose first visit removes the thrower
 (`preempts`) is not held against the continuation: that removal is a queued signal, which runs before any token the
 thrower's completion emits, whatever the schedule. A resumption that cannot be open while the thrower runs (`closedAt`)
-is dropped, and one whose subscription may be open twice at once is held against itself (`againstItself`). Two
-resumptions are compared pairwise along paths that ascend into the completions of the Scopes not enclosing both
-anchors (`Walk.ascendsInto`): a Scope that holds only one of them may complete in this closure, its completion
-running beside the other path, while one enclosing both completes only after both, so an ascent stops below the least
-Scope the pair shares, and their shared completion is not held against itself. -/
+is dropped, and one whose subscription may be open twice at once is held against itself (`againstItself`). A
+resumption is compared with the continuation, and two resumptions pairwise, along paths that ascend into the
+completions of the Scopes and Calls not enclosing both (`enclosingAcross`, `Walk.ascendsInto`): one that holds only
+one of them may complete in this closure, its completion running beside the other, while one enclosing both completes
+only after both, so an ascent stops below the least Scope or Call the pair shares, and their shared completion is not
+held against itself. -/
 def signalFanOut (reading : Reading) (program : Program) (element : Element) : Option String :=
   if !((element.event?.bind (·.2.throw?)).any fun thrown => (throwView thrown).signal.isSome) then none
   else
     let wakes := ((program.elements.flatMap (catching signalled)).filter (!closedAt reading program element ·)).map
       fun visit => (visit, pathOf reading program [visit])
     let own := continuation reading program element
-    let around (visit : Visit) : List ElementId := ((anchorOf program visit).map fun anchor =>
-      (ancestors program program.elements.length anchor.header.parent).map (·.header.id)).getD []
-    let ascending (visit other : Visit) : Closure :=
-      let into (id : ElementId) : Bool := !((around visit).contains id && (around other).contains id)
+    let around (visit : Visit) : List ElementId :=
+      ((anchorOf program visit).map (enclosingAcross program (program.processes.length + 1))).getD []
+    let thrower := enclosingAcross program (program.processes.length + 1) element
+    let ascending (visit : Visit) (other : List ElementId) : Closure :=
+      let into (id : ElementId) : Bool := !((around visit).contains id && other.contains id)
       closureWalk reading program { stop := awaitsStimulus, ascends := true, ascendsInto := into } [visit]
     let rec pairs : List Visit → Option String
       | [] => none
-      | visit :: rest => rest.findSome? (fun other => conflict program (ascending visit other) (ascending other visit)) <|>
-        pairs rest
+      | visit :: rest => rest.findSome? (fun other =>
+          conflict program (ascending visit (around other)) (ascending other (around visit))) <|> pairs rest
     (wakes.filter fun (visit, _) => !preempts reading program visit element).findSome?
-        (fun (_, wake) => conflict program own wake) <|>
+        (fun (visit, _) => conflict program own (ascending visit thrower)) <|>
       pairs (wakes.map (·.1)) <|>
       wakes.findSome? fun (visit, wake) => againstItself reading program visit wake
 

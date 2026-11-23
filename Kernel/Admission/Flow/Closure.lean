@@ -382,33 +382,11 @@ def removesElement (program : Program) (withdrawal : Withdrawal) : Nat → Eleme
       inside || ((program.processOf top.header).map fun process =>
         (callers program process).any fun call => removesElement program withdrawal fuel call.header.id).getD false
 
-/-- The names through which a write may turn a condition from true to false: none for `isPresent`, which no write of a
-closure makes false (only a variable command removes a name, `Kernel.Step.Inputs`). -/
-def falsifiable : Expression → NameSet
-  | .simpleBoolean (.isPresent _) => {}
-  | expression => expressionReads expression
-
-/-- The names through which a write ordered against the opening (`opening`) or the end of a Conditional subscription
-with `trigger` may change what it fires. Against the opening, under `edge` those that may turn the condition false
-(`falsifiable`), since a write that can only turn it true fires it after the opening as it would on arrival; under
-`eachWrite`, which fires again on every write its filter passes while the condition holds, every name the condition
-reads or the filter passes. Against the end, those through which the write may make it true (`mayMakeTrue`'s bound):
-under `edge` the names the condition reads, under `eachWrite` those the filter passes. Value-blind: a write that
-cannot change the outcome counts as one that can. -/
-def conditionNames (program : Program) (opening : Bool) (trigger : ConditionTrigger) : NameSet :=
-  let filtered : NameSet := match trigger.variableName with
-    | some name => { names := [name] }
-    | none => { all := true }
-  match program.options.conditionalRetrigger, opening with
-  | .eachWrite, true => (expressionReads trigger.condition).union filtered
-  | .eachWrite, false => filtered
-  | .edge, true => falsifiable trigger.condition
-  | .edge, false => expressionReads trigger.condition
-
 /-- The names of `subscriptions`' conditions (`conditionNames`). -/
 def subscriptionNames (program : Program) (opening : Bool) (subscriptions : List Subscription) : NameSet :=
   subscriptions.foldl (fun found subscription =>
-    found.union (((subscription.trigger.condition?).map (conditionNames program opening)).getD {})) {}
+    found.union (((subscription.trigger.condition?).map
+      (conditionNames program.options.conditionalRetrigger opening)).getD {})) {}
 
 /-- The Conditional subscriptions `element` opens as it begins (`opening`) or ends as it completes: its boundaries, its
 catch, the Event Sub-Process starts of the level its entry opens (a Scope's children, a Call's called processes'), an
@@ -455,7 +433,10 @@ write arms every Conditional of the program once, since it may resume one in the
 that opens or ends a Conditional subscription, by beginning or completing the element that holds it (`held`) or by
 removing its carrier (`endedBy`), reads the names through which a write ordered against it changes what it fires
 (`conditionNames`), so `Footprint.races` refuses a concurrent unit's write either side of a subscription's lifetime
-(CIB-OP-0016). -/
+(CIB-OP-0016). Subscriptions one arming may find true together, a contest the input's ranking settles where writes after
+the opening fire one at a time, are read in full: the Conditional arms of an Event-Based Gateway and an interrupting
+boundary or Event Sub-Process start may fire on entry (`entering`), so their completion or removal reads every name a
+write may make them true through. -/
 def closureWalk (reading : Reading) (program : Program) (walk : Walk) (begun : List Visit) : Closure :=
   let key := visitKey
   let rec go (fuel : Nat) (frontier : List Visit) (seen : List (Nat × ElementId)) (found : Closure) (armed : Bool) :

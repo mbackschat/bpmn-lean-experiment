@@ -452,26 +452,6 @@ def Carries (element : Element) (subscription : Subscription) : Prop :=
   (∃ header payload, element.event? = some (header, payload) ∧ payload.catch? = some subscription) ∨
   EventSubProcessStart element subscription
 
-/-- The names through which a write may turn a condition from true to false: none for `isPresent`, which no write of a
-closure makes false. -/
-def falsifiable : Expression → NameSet
-  | .simpleBoolean (.isPresent _) => {}
-  | expression => expressionReads expression
-
-/-- The names through which a write ordered against the opening (`opening`) or the end of a Conditional subscription
-with `trigger` may change what it fires: against the opening those that may turn the condition false under `edge`,
-and under `eachWrite` every name it reads or its filter passes; against the end those that may make it true, the names
-it reads under `edge` and its filter's under `eachWrite` (`MayMakeTrue`'s bound). -/
-def conditionNames (program : Program) (opening : Bool) (trigger : ConditionTrigger) : NameSet :=
-  let filtered : NameSet := match trigger.variableName with
-    | some name => { names := [name] }
-    | none => { all := true }
-  match program.options.conditionalRetrigger, opening with
-  | .eachWrite, true => (expressionReads trigger.condition).union filtered
-  | .eachWrite, false => filtered
-  | .edge, true => falsifiable trigger.condition
-  | .edge, false => expressionReads trigger.condition
-
 /-- What a visit reads of the Conditional subscriptions it opens or ends (CIB-OP-0016): beginning an element opens
 what it holds and, unless the walk stops there, ends it; completing one ends it; a region the visit removes ends what
 every removed element carries. Each reads the names through which a write ordered against it changes what it fires
@@ -479,17 +459,17 @@ every removed element carries. Each reads the names through which a write ordere
 inductive Lifetime (program : Program) (walk : Walk) : Visit → NameSet → Prop where
   | opens {element : Element} {subscription : Subscription} {trigger : ConditionTrigger} :
       Held program true element subscription → subscription.trigger.condition? = some trigger →
-      Lifetime program walk (.enters element) (conditionNames program true trigger)
+      Lifetime program walk (.enters element) (conditionNames program.options.conditionalRetrigger true trigger)
   | runsThrough {element : Element} {subscription : Subscription} {trigger : ConditionTrigger} : ¬ Stops walk element →
       Held program false element subscription → subscription.trigger.condition? = some trigger →
-      Lifetime program walk (.enters element) (conditionNames program false trigger)
+      Lifetime program walk (.enters element) (conditionNames program.options.conditionalRetrigger false trigger)
   | completes {element : Element} {subscription : Subscription} {trigger : ConditionTrigger} :
       Held program false element subscription → subscription.trigger.condition? = some trigger →
-      Lifetime program walk (.completes element) (conditionNames program false trigger)
+      Lifetime program walk (.completes element) (conditionNames program.options.conditionalRetrigger false trigger)
   | removes {visit : Visit} {region : Region} {id : ElementId} {element : Element} {subscription : Subscription}
       {trigger : ConditionTrigger} : VisitWithdraws program walk visit region → Removes program region id →
       program.element? id = some element → Carries element subscription → subscription.trigger.condition? = some trigger →
-      Lifetime program walk visit (conditionNames program false trigger)
+      Lifetime program walk visit (conditionNames program.options.conditionalRetrigger false trigger)
 
 /-- What one visit's run reads and writes: a boundary its catch's writes, an element its run, an element the walk stops
 at what it reads when it begins. -/

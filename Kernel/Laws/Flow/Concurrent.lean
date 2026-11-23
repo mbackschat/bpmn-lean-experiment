@@ -293,28 +293,38 @@ inductive InstancePair (program : Program) (body : Element) (loop : MultiInstanc
 def SignalWake (program : Program) (thrower : Element) (visit : Visit) : Prop :=
   ProgramCatching program Signalled visit ∧ ¬ ClosedAt program thrower visit
 
-/-- An element enclosing the anchor of the subscription `visit` resumes. -/
-def Around (program : Program) (visit : Visit) (id : ElementId) : Prop :=
-  ∃ anchor, AnchorOf program visit anchor ∧ Within program anchor.header.id id
+/-- `outer` encloses `inner` across Call boundaries: along the parent chain, or as a Call of the process whose level
+holds `inner`, and what encloses that Call. -/
+inductive Encloses (program : Program) : ElementId → ElementId → Prop where
+  | within {inner outer : ElementId} : Within program inner outer → Encloses program inner outer
+  | call {inner : ElementId} {element top call : Element} {process : CalledProcess} :
+      program.element? inner = some element → Top program element top → program.processOf top.header = some process → call ∈ program.elements →
+      Calls program call process → Encloses program inner call.header.id
+  | trans {inner middle outer : ElementId} : Encloses program inner middle → Encloses program middle outer →
+      Encloses program inner outer
 
-/-- A resumption's path against `other`'s, ascending into the completions of the Scopes that do not enclose both
-anchors: a Scope holding only one may complete beside the other's path, one holding both only after both, so the pair's
-shared completion is not held against itself. -/
-def ascending (program : Program) (visit other : Visit) : WorkUnit :=
+/-- An element enclosing the anchor of the subscription `visit` resumes, across Call boundaries. -/
+def Around (program : Program) (visit : Visit) (id : ElementId) : Prop :=
+  ∃ anchor, AnchorOf program visit anchor ∧ Encloses program anchor.header.id id
+
+/-- A resumption's path against another unit whose enclosing elements are `other`, ascending into the completions of
+the Scopes and Calls that do not enclose both: one holding only the resumption's anchor may complete beside the other
+unit, one holding both only after both, so a shared completion is not held against itself. -/
+def ascending (program : Program) (visit : Visit) (other : ElementId → Prop) : WorkUnit :=
   { walk := { stop := AwaitsStimulus, ascends := true,
-              ascendsInto := fun id => ¬ (Around program visit id ∧ Around program other id) }
+              ascendsInto := fun id => ¬ (Around program visit id ∧ other id) }
     start := (· = visit) }
 
 /-- The units a Signal throw starts together: its continuation and each resumption whose first visit does not remove
-it, two resumptions, each ascending below the Scopes both anchors share (`ascending`), and a resumption against a
-second open occurrence of its own subscription. -/
+it, two resumptions, a resumption ascending below the Scopes and Calls it shares with the other unit (`ascending`),
+and a resumption against a second open occurrence of its own subscription. -/
 inductive SignalPair (program : Program) (thrower : Element) : Account → Account → Prop where
   | continuation {visit : Visit} : SignalWake program thrower visit → ¬ Preempts program visit thrower →
       SignalPair program thrower ((continuationOf program thrower).account program)
-        ((pathFrom (· = visit)).account program)
+        ((ascending program visit (Encloses program thrower.header.id)).account program)
   | ascended {visit other : Visit} : SignalWake program thrower visit → SignalWake program thrower other →
-      visit ≠ other → SignalPair program thrower ((ascending program visit other).account program)
-        ((ascending program other visit).account program)
+      visit ≠ other → SignalPair program thrower ((ascending program visit (Around program other)).account program)
+        ((ascending program other (Around program visit)).account program)
   | itself {visit : Visit} {holder : ElementId} : SignalWake program thrower visit → Holder program visit holder →
       SignalPair program thrower (itselfAt program visit) (itselfAt program visit)
 
