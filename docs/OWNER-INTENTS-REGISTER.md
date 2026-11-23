@@ -19,7 +19,7 @@ The owner's standing intents, priorities, concerns and working mode, in the owne
 - **Own models (2026-11-17).** The owner may add their own models to the goal's census at any time; the plan does not wait for them, and the root asks for them at a later stage.
 - **Docs are part of the product.** `docs/` and `docs/kernel/` are reworked with the design; every document gets a keep, revise, replace or retire verdict.
 - **No cost jumps mid-work (2026-11-23).** A design choice is accepted only once its costs and downsides are measured, not estimated; a finding during the work that adds several agent-days is a show stopper. An accepted range is a ceiling: the causal compensation order (candidate (i)) was accepted at about 18–39 agent hours, never more than 40 in total; after the measuring spikes, up to about 48 is acceptable provided the follow-up work it leaves (the cost it adds to later features, kernel changes and proofs) is small.
-- **No new hubs (2026-11-23).** A mechanism that makes every feature carry a cross-cutting obligation, or that makes later changes costly, repeats the reasons for the rewrite; that downside counts against a design whatever its hours.
+- **No new hubs (2026-11-23).** A mechanism that makes every feature carry a cross-cutting obligation, or that makes later changes costly, repeats the first rewrite's cause ([why delivery slowed](kernel/ARCHITECTURE-SPEC.md#why-delivery-slowed)); that downside counts against a design whatever its hours.
 - **Safer over cheaper (2026-11-23).** Extra hours are acceptable for the safer solution, within a measured bound.
 - **The highest risk is measured first (2026-11-23).** P6's unproved settle-agreement diamond is assessed in depth, with measured spikes, before work builds on it.
 
