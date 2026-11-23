@@ -1,7 +1,6 @@
 module
 
 public import Kernel.Hooks
-public import Kernel.IL.Paths
 public import Kernel.IL.Timer
 
 /-! # Host interface

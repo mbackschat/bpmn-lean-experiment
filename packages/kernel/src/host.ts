@@ -35,8 +35,8 @@ import {
   type Subscription,
   type Throw,
   type Work,
+  programPublishesOccurrences,
 } from "./il/types.js";
-import { programPublishesOccurrences } from "./il/paths.js";
 import { resolve, type Resolved } from "./il/timer.js";
 import {
   instanceOf,

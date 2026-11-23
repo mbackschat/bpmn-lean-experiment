@@ -832,3 +832,15 @@ export function programPublicId(program: Program, id: ElementId): ElementId {
   if (element !== null) return elementHeader(element).origin.sourceId;
   return programBoundary(program, id)?.[1].sourceId ?? id;
 }
+
+/**
+ * Whether the element's occurrences are published: a Link Event, throw or catch, publishes none, since its token passes
+ * on as if the Sequence Flow connected the elements around it (`onward`), the observation contract's Link exception
+ * ([publication](../../../../docs/kernel/semantics/PUBLICATION-AND-OBSERVATION-SEMANTICS-SPEC.md#flow-node-occurrences),
+ * CIB-AGR-0018).
+ */
+export function programPublishesOccurrences(program: Program, id: ElementId): boolean {
+  const element = programElement(program, id);
+  const event = element === null ? null : elementEvent(element);
+  return event === null || (eventPayloadLinkThrow(event[1]) === null && eventPayloadLinkCatch(event[1]) === null);
+}

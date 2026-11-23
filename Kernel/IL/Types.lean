@@ -661,4 +661,11 @@ def publicId (program : Program) (id : ElementId) : ElementId :=
 
 end Program
 
+/-- Whether the element's occurrences are published: a Link Event, throw or catch, publishes none, since its token
+passes on as if the Sequence Flow connected the elements around it (`onward`), the observation contract's Link exception
+([publication](../../docs/kernel/semantics/PUBLICATION-AND-OBSERVATION-SEMANTICS-SPEC.md#flow-node-occurrences),
+CIB-AGR-0018). -/
+def Program.publishesOccurrences (program : Program) (id : ElementId) : Bool :=
+  ((program.element? id).bind (·.event?)).all fun (_, payload) => payload.linkThrow?.isNone && payload.linkCatch?.isNone
+
 end Kernel
