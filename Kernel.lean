@@ -214,6 +214,7 @@ public import Kernel.State.Items
 public import Kernel.State.Journal
 public import Kernel.State.Key
 public import Kernel.State.Map
+public import Kernel.State.Occurrence
 public import Kernel.State.Raise
 public import Kernel.State.Removal
 public import Kernel.State.Rename
