@@ -329,7 +329,7 @@ export function onwardVisits(reading: Reading, program: Program, walk: Walk, ele
 }
 
 /** The visits after `element` completes: its own way on (`onwardVisits`) and what it makes beside it (`beyond`). */
-function after(reading: Reading, program: Program, walk: Walk, element: Element): Visit[] {
+export function after(reading: Reading, program: Program, walk: Walk, element: Element): Visit[] {
   return [...onwardVisits(reading, program, walk, element), ...beyond(reading, program, element, true)];
 }
 

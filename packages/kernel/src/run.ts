@@ -82,7 +82,7 @@ import { deploymentSummary, registerSummary, type DeploymentSummary } from "./po
 import { signalStartReceivers } from "./population/signals.js";
 import { EvaluationTag } from "./hooks.js";
 import { hooks } from "./registry.js";
-import { admit } from "./admission-registry.js";
+import { admit, admitLocated } from "./admission-registry.js";
 import { arrayField, field, nullable, referenceJson, requiredString, stimulusOf } from "./run/wire.js";
 import {
   definitionRefFromJson, deploymentSourceFromJson, populationResultJson, receiverJson, stimuliOfPopulation, type Declared,
@@ -647,8 +647,18 @@ function occurrenceAnswers(programs: readonly Program[], input: unknown): JsonVa
   });
 }
 
+/**
+ * The located refusal (`admitLocated`) of a fixture's one program, decoded but not admitted, since the refusal is the
+ * answer: `null` when admitted, else its code, element and related elements.
+ */
+function admitLocatedAnswer(fixture: unknown): JsonValue {
+  const refusal = admitLocated(onlyProgram(arrayField(fixture, "programs", "fixture").map((json) => programFromJson(json, "fixture"))));
+  return refusal === null ? null : { code: refusal.code, element: refusal.element, related: [...refusal.related] };
+}
+
 /** The host-facing functions a fixture's `entry` names, each over the fixture and its `input`. */
 const fixtureEntries: Readonly<Record<string, (fixture: unknown, input: unknown) => JsonValue>> = {
+  admitLocated: (fixture) => admitLocatedAnswer(fixture),
   rootStarts: (fixture) => rootStarts(onlyProgram(fixturePrograms(fixture))).map(([publicId, own]) => [publicId, own]),
   refusesSignalVariables: (fixture) => refusesSignalVariables(onlyProgram(fixturePrograms(fixture))),
   registerSummary: (fixture, input) => registrations(fixturePrograms(fixture), arrayField(input, "deploymentIds", "fixture")),

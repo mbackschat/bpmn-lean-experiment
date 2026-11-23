@@ -4,6 +4,7 @@ public import Kernel.Admission.Data
 public import Kernel.Admission.Flow
 public import Kernel.Admission.Flow.Closure
 public import Kernel.Admission.Flow.Concurrency
+public import Kernel.Admission.Flow.Order
 public import Kernel.Admission.Profile
 public import Kernel.Admission.Work
 public import Kernel.Admission.MultiInstance
@@ -393,6 +394,8 @@ def retainedExtension (options : ProfileOptions) (extension : RetainedExtension)
 structure AdmissionRefusal where
   code : String
   element : Option String
+  /-- The other elements a refusal of several names: the second subject of a pair (`compensation.unorderedDependency`). -/
+  related : List String := []
   deriving DecidableEq, Repr
 
 /-- A check of the whole program, which names no element. -/
@@ -406,8 +409,8 @@ def located {α : Type} (items : List α) (id : α → String) (check : α → O
 /-- The first refusal: references, profile options, a process not marked executable, a retained extension attribute
 outside the profile's inert table, the carried DMN resources, then
 called-process bindings, the process levels' Event Sub-Processes, flows and elements in program order, the instances of
-each loop, the units each element's run fans out to (`Admission.Flow.Concurrency.fanOutConflict`), the Conditional starts of
-each process level, then the Message and the Signal names of the whole program. A flow's, an element's or a loop's own
+each loop, the units each element's run fans out to (`Admission.Flow.Concurrency.fanOutConflict`), the order of one closure's
+compensation records (`Admission.Flow.Order.unorderedRecords`), the Conditional starts of each process level, then the Message and the Signal names of the whole program. A flow's, an element's or a loop's own
 refusal names it, so a host can point at the refused element. -/
 def admitLocated (program : Program) : Option AdmissionRefusal :=
   let elementId (element : Element) : String := element.header.id.value
@@ -424,6 +427,8 @@ def admitLocated (program : Program) : Option AdmissionRefusal :=
     located program.elements elementId (element program (program.elements.filter (reading program).compensates)) <|>
     located program.elements elementId (loopInstances program) <|>
     located program.elements elementId (Admission.Flow.Concurrency.fanOutConflict (reading program) program) <|>
+    ((Admission.Flow.Order.unorderedRecords (reading program) program).map fun (code, subject, others) =>
+      { code, element := some subject.value, related := others.map (·.value) }) <|>
     unlocated (Admission.Subscriptions.startConditions program) <|>
     unlocated (Admission.Subscriptions.messageNames program.options (program.elements.flatMap (sites program messages))) <|>
     unlocated (signalDeclarations program)

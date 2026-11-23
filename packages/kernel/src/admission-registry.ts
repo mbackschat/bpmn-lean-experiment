@@ -49,6 +49,7 @@ import * as Data from "./admission/data.js";
 import * as FlowAdmission from "./admission/flow.js";
 import * as FlowClosure from "./admission/flow/closure.js";
 import * as Concurrency from "./admission/flow/concurrency.js";
+import * as Order from "./admission/flow/order.js";
 import * as Decision from "./admission/work/decision.js";
 import * as Profile from "./admission/profile.js";
 import * as Work from "./admission/work.js";
@@ -621,14 +622,17 @@ function retainedExtension(options: ProfileOptions, extension: RetainedExtension
     ? null : "extension.retained";
 }
 
-/** A refusal code, and the element or flow it names when that element's or flow's own check refused. */
-export type AdmissionRefusal = Readonly<{ code: string; element: string | null }>;
+/**
+ * A refusal code, the element or flow it names when that element's or flow's own check refused, and the other elements
+ * a refusal of several names: the second subject of a pair (`compensation.unorderedDependency`).
+ */
+export type AdmissionRefusal = Readonly<{ code: string; element: string | null; related: readonly string[] }>;
 
 /** A check of the whole program, which names no element. */
 function unlocated(check: () => string | null): () => AdmissionRefusal | null {
   return () => {
     const code = check();
-    return code === null ? null : { code, element: null };
+    return code === null ? null : { code, element: null, related: [] };
   };
 }
 
@@ -637,7 +641,7 @@ function located<T>(items: readonly T[], id: (item: T) => string, check: (item: 
   return () => {
     for (const item of items) {
       const code = check(item);
-      if (code !== null) return { code, element: id(item) };
+      if (code !== null) return { code, element: id(item), related: [] };
     }
     return null;
   };
@@ -647,8 +651,8 @@ function located<T>(items: readonly T[], id: (item: T) => string, check: (item: 
  * The first refusal: references, profile options, a process not marked executable, a retained extension attribute
  * outside the profile's inert table, the carried DMN resources, then
  * called-process bindings, the process levels' Event Sub-Processes, flows and elements in program order, the instances
- * of each loop, the units each element's run fans out to (`admission/flow/concurrency.ts` `fanOutConflict`), the Conditional
- * starts of each process level, then the Message and the Signal names of the whole program.
+ * of each loop, the units each element's run fans out to (`admission/flow/concurrency.ts` `fanOutConflict`), the order of
+ * one closure's compensation records (`admission/flow/order.ts` `unorderedRecords`), the Conditional starts of each process level, then the Message and the Signal names of the whole program.
  * A flow's, an element's or a loop's own refusal names it, so a host can point at the refused element.
  */
 export function admitLocated(program: Program): AdmissionRefusal | null {
@@ -670,6 +674,10 @@ export function admitLocated(program: Program): AdmissionRefusal | null {
     located(program.elements, elementId, (entry) => element(program, throws, entry)),
     located(program.elements, elementId, (entry) => loopInstances(program, entry)),
     located(program.elements, elementId, (entry) => Concurrency.fanOutConflict(reading(program), program, entry)),
+    () => {
+      const refused = Order.unorderedRecords(reading(program), program);
+      return refused === null ? null : { code: refused[0], element: refused[1], related: refused[2] };
+    },
     unlocated(() => Starts.startConditions(program)),
     unlocated(() => Subscriptions.messageNames(program.options, program.elements.flatMap((entry) => sites(program, messages, entry)))),
     unlocated(() => signalDeclarations(program)),

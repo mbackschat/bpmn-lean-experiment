@@ -6,8 +6,9 @@
  * admission accepts derive from this one relation.
  *
  * The structural order (`structurallyBefore`) is the order of compensation records completed in one closure under
- * `BranchSchedule.OrderInvariant` (DC15 (c), candidate (iii)): it reads the program only, so no schedule changes it. A
- * later causal order may refine it only where it leaves records unordered.
+ * `BranchSchedule.OrderInvariant` (DC15 (c), candidate (iii)): it reads the program only, so no schedule changes it, and
+ * admission refuses a model in which it could stand against the order a closure completes dependent records in
+ * (`admission/flow/order.ts`). A later causal order may refine it only where it leaves records unordered.
  */
 import {
   Placement,

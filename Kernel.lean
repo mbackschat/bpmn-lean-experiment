@@ -4,6 +4,7 @@ public import Kernel.Admission.Data
 public import Kernel.Admission.Flow
 public import Kernel.Admission.Flow.Closure
 public import Kernel.Admission.Flow.Concurrency
+public import Kernel.Admission.Flow.Order
 public import Kernel.Admission.MultiInstance
 public import Kernel.Admission.Profile
 public import Kernel.Admission.Propagation

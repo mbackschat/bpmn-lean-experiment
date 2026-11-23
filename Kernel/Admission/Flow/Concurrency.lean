@@ -467,7 +467,8 @@ that pair the same way, or `a` runs once along one token's path (`runsOnce`) and
 witness; a fork sending a second token to `a`, though every path to `b` passes `a`); without `reaches` one token
 returns to `a` through an Activity or a boundary flow; and a Scope around `a` entered again hands its parent the records
 of two occurrences, which meet in one run. A data dependency is not counted, a conservative reading. Two records of one
-closure are ordered by the program's structure (`Kernel.structurallyBefore`). A handler
+closure are ordered by the program's structure (`Kernel.structurallyBefore`), which admission holds to the closure's
+own order wherever `precedes` needs it (`Kernel.Admission.Flow.Order`), so the same pairs are ordered. A handler
 runs once per record, so one that two distinct subjects name is held against itself too, unless their records are
 ordered (#155), and so is one whose subject may complete twice in one closure (`completesTwice`), whose records there
 have no order (I1 (d)); an Event Sub-Process handler, whose one subject `subjectsOf` lists twice, is not. -/

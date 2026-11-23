@@ -171,7 +171,7 @@ export function concurrentBranches(reading: Reading, program: Program, flow: Flo
 // and token).
 
 /** The element a resumption's subscription hangs on: a catch, a boundary's host, an Event Sub-Process. */
-function anchorOf(program: Program, visit: Visit): Element | null {
+export function anchorOf(program: Program, visit: Visit): Element | null {
   switch (visit.tag) {
     case VisitTag.Completes:
     case VisitTag.Enters:
@@ -631,11 +631,12 @@ function writeFanOut(reading: Reading, program: Program, element: Element): stri
  * go from `b` (`reaches`, which passes Activities and follows boundary flows, unlike `flowReaches`) returns to `a`.
  * Without `runsOnce` a second token completes `a` after `b` (a conditioned path from `a` to `b` beside a fork, the
  * review's witness; a fork sending a second token to `a`, though every path to `b` passes `a`); without `reaches` one
- * token returns to `a` through an Activity or a boundary flow; and a Scope around `a` entered again hands its parent the
- * records of two occurrences, which meet in one run. A data dependency is not counted, a conservative reading. Two
- * records of one closure are ordered by the program's structure (`structurallyBefore`). A handler runs once per record, so one that two distinct subjects name is held against itself too, unless their
- * records are ordered (#155), and so is one whose subject may complete twice in one closure (`completesTwice`), whose
- * records there have no order (I1 (d)); an Event Sub-Process handler, whose one subject `subjectsOf` lists twice, is not.
+ * token returns to `a` through an Activity or a boundary flow; and a Scope around `a` entered again hands its parent
+ * the records of two occurrences, which meet in one run. A data dependency is not counted, a conservative reading. Two
+ * records of one closure are ordered by the program's structure (`structurallyBefore`). A handler runs once per record,
+ * so one that two distinct subjects name is held against itself too, unless their records are ordered (#155), and so is
+ * one whose subject may complete twice in one closure (`completesTwice`), whose records there have no order (I1 (d));
+ * an Event Sub-Process handler, whose one subject `subjectsOf` lists twice, is not.
  */
 function compensationFanOut(reading: Reading, program: Program, element: Element): string | null {
   if (!reading.compensates(element)) return null;

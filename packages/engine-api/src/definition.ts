@@ -133,7 +133,9 @@ export function admitDefinition(read: ReadDefinition): CompiledDefinition | Engi
   const { source, profile, overlay, decoded } = read;
   const refusal = admitLocated(decoded);
   if (refusal !== null) {
-    return rejected(source, refusal.code, refusal.element, `Kernel admission refused the definition: ${refusal.code}.`);
+    // A refusal of a pair names its other elements only here, so the diagnostic's shape stays one element.
+    const named = refusal.related.length === 0 ? "" : `; elements ${JSON.stringify([refusal.element, ...refusal.related])}`;
+    return rejected(source, refusal.code, refusal.element, `Kernel admission refused the definition: ${refusal.code}${named}.`);
   }
   return {
     program: read.program,

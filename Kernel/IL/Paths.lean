@@ -10,8 +10,9 @@ nodes that are no Activity and leave no record. `Kernel.Feature.Compensation` or
 token took, so the order the kernel runs and the models admission accepts derive from this one relation.
 
 The structural order (`structurallyBefore`) is the order of compensation records completed in one closure under
-`BranchSchedule.orderInvariant` (DC15 (c), candidate (iii)): it reads the program only, so no schedule changes it. A
-later causal order may refine it only where it leaves records unordered.
+`BranchSchedule.orderInvariant` (DC15 (c), candidate (iii)): it reads the program only, so no schedule changes it, and
+admission refuses a model in which it could stand against the order a closure completes dependent records in
+(`Kernel.Admission.Flow.Order`). A later causal order may refine it only where it leaves records unordered.
 -/
 
 public section

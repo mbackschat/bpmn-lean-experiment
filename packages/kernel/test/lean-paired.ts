@@ -101,6 +101,12 @@ export function admit(program: Program): string | null {
   return kernel.admit(program);
 }
 
+/** The admission registry's located verdict, replayed as the `admitLocated` fixture. */
+export function admitLocated(program: Program): ReturnType<typeof kernel.admitLocated> {
+  record({ entry: "fixture", fixture: { entry: "admitLocated", programs: [wireOf(programJson, program, "program")], input: {} } });
+  return kernel.admitLocated(program);
+}
+
 /** The stimulus codec over `json`, remembering the stimulus and the Timer firing it states. */
 export function stimulusFromJson(json: unknown): Decoded<readonly [string, Input]> {
   record({ entry: "stimulus", stimulus: json });

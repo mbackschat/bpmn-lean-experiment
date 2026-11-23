@@ -169,7 +169,8 @@ def BoundaryLeads (program : Program) (first second : ElementId) : Prop :=
 too or cannot exist: a path leads from `first` to `second`, and either one leads back, so the order of completion
 (`Laws.Compensation.CompletedBefore`) orders the pair the same way, or `first` runs once along one token's path and no
 way out of `second` returns to it. Two records of one closure are ordered by the program's structure
-(`Kernel.structurallyBefore`). -/
+(`Kernel.structurallyBefore`), which admission holds to the closure's own order wherever such a dependency needs it
+(`compensation.unorderedDependency`). -/
 def Follows (program : Program) (first second : ElementId) : Prop :=
   TransitPath program first second ∧
     (TransitPath program second first ∨

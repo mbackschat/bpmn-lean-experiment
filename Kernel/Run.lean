@@ -453,7 +453,16 @@ def occurrenceAnswers (programs : List Program) (input : Json) : Except String J
     Json.arr (startEvents.map fun startEvent =>
       toJson (Population.timerOccurrences summary startEvent fromMs limit)).toArray).toArray)
 
-/-- The answer of the host-facing function a fixture's `entry` names: `rootStarts`, `refusesSignalVariables`,
+/-- The located refusal (`AdmissionRegistry.admitLocated`) of a fixture's one program, decoded but not admitted, since
+the refusal is the answer: `null` when admitted, else its code, element and related elements. -/
+def admitLocatedAnswer (fixture : Json) : Except String Json := do
+  let programs ← (← fixture.getObjValAs? (Array Json) "programs").toList.mapM Codec.programFromJson
+  pure <| match AdmissionRegistry.admitLocated (← onlyProgram programs) with
+    | none => Json.null
+    | some refusal => Json.mkObj [("code", Json.str refusal.code), ("element", (refusal.element.map Json.str).getD Json.null),
+        ("related", Json.arr (refusal.related.map Json.str).toArray)]
+
+/-- The answer of the host-facing function a fixture's `entry` names: `admitLocated`, `rootStarts`, `refusesSignalVariables`,
 `registerSummary` or
 `definitionCapabilities` (as the host view renders it) or `timerOccurrences`, or one of the population functions of
 `Kernel.Run.Fixture`, the Signal address codec's round trip (`signalAddress`) and the ranking a stimulus decodes to
@@ -461,6 +470,7 @@ def occurrenceAnswers (programs : List Program) (input : Json) : Except String J
 def fixtureAnswer (fixture : Json) : Except String Json := do
   let input ← fixture.getObjVal? "input"
   match ← fixture.getObjValAs? String "entry" with
+  | "admitLocated" => admitLocatedAnswer fixture
   | "rootStarts" =>
     let starts := Host.rootStarts (← onlyProgram (← fixturePrograms fixture))
     pure (Json.arr (starts.map fun (publicId, own) => Json.arr #[Json.str publicId, Json.str own.value]).toArray)
