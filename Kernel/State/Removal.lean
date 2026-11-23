@@ -4,8 +4,8 @@ public import Kernel.State.Tree
 
 /-! # Removing occurrences
 
-Clearing a scope occurrence, leaving it, cancelling an occurrence, and withdrawing the open items a cancellation will
-remove. Part of the State layer, above `Kernel.State`; `Kernel.Hooks` re-exports it to the features and `Kernel.Step`.
+Disarming an occurrence's attached items, clearing a scope occurrence, leaving it, cancelling an occurrence, and
+withdrawing the open items a cancellation will remove. Part of the State layer, above `Kernel.State`; `Kernel.Hooks` re-exports it to the features and `Kernel.Step`.
 -/
 
 public section
@@ -20,6 +20,19 @@ private def recordCancelled (state : State) (occurrences : List Occurrence) : St
   let ended := begun.map fun occurrence => (state.keyOf occurrence, Terminal.cancelled)
   { state with draft := { state.draft with
       ended := state.draft.ended ++ ended, cancelled := state.draft.cancelled ++ begun } }
+
+/-- Remove the items attached to the occurrence `host`, with the reservations they hold. The dropped reservations are
+listed once, since a scan of the occurrences for every ordinal counter, run at every completion, made a closure that
+leaves a wait at every pass take 49 s (`closure-work-bound.test.ts` through `kernelRun --batch`, measured 2026-11-17). -/
+def disarm (state : State) (host : OccurrenceId) : State :=
+  let attached := (itemList state.openItems).filter (·.attachedTo == some host)
+  let dropped := (state.occurrences.filter fun occurrence =>
+    !occurrence.begun && attached.any (·.id.occurrence == occurrence.id)).map (·.id)
+  { state with
+      openItems := state.openItems.filter fun _ item => item.attachedTo != some host
+      occurrences := state.occurrences.filter fun occurrence =>
+        occurrence.begun || !attached.any (·.id.occurrence == occurrence.id)
+      itemOrdinals := state.itemOrdinals.filter fun id _ => !dropped.contains id }
 
 /-- Remove every token, item, occurrence, slot entry, variable set and child scope occurrence inside `scope`, with the
 ordinal counters of the removed scope occurrences and occurrences, keeping `scope` itself and the occurrences `keep`

@@ -86,7 +86,7 @@ theorem renameState_variables (r : Issue → Issue) (c : Continuation → Contin
 
 theorem renameState_openItems (r : Issue → Issue) (c : Continuation → Continuation) (s : State) : (renameState r c s).openItems = s.openItems.foldl
     (fun renamed _ item =>
-      let item := { item with id := renameItemKey r item.id, scope := renameScope r item.scope
+      let item := { item with id := renameItemKey r item.id, position := r item.position, scope := renameScope r item.scope
                               attachedTo := item.attachedTo.map (renameId r) }
       renamed.insert item.id item) ∅ := by
   unfold renameState; rfl
@@ -111,7 +111,7 @@ theorem renameState_eq (r : Issue → Issue) (c : Continuation → Continuation)
                         continuation := c occurrence.continuation }
     variables := s.variables.map fun variables => { variables with scope := renameScope r variables.scope }
     openItems := s.openItems.foldl (fun renamed _ item =>
-      let item := { item with id := renameItemKey r item.id, scope := renameScope r item.scope
+      let item := { item with id := renameItemKey r item.id, position := r item.position, scope := renameScope r item.scope
                               attachedTo := item.attachedTo.map (renameId r) }
       renamed.insert item.id item) ∅
     slots := renameSlots r s.slots

@@ -21,14 +21,17 @@ open Kernel Kernel.Step
 
 /-! ## The run log -/
 
-/-- A unit just recorded ran at the next position; every other unit keeps its own. -/
-theorem runPosition_record (log : RunLog) (unit other : UnitKey) :
+/-- A unit just recorded ran at the next position; every other unit the log recorded keeps its own. (An unrecorded one
+reads the log's size, which recording grows.) -/
+theorem runPosition_record (log : RunLog) (unit other : UnitKey) (logged : other = unit ∨ other ∈ log.positions) :
     (log.record unit).runPosition other = if other = unit then log.positions.size else log.runPosition other := by
   simp only [RunLog.record, RunLog.runPosition, Std.ExtTreeMap.get?_eq_getElem?, Std.ExtTreeMap.getElem?_insert]
   by_cases same : other = unit
   · subst same; simp
   · have : compare unit other ≠ .eq := fun eq => same (Std.LawfulEqOrd.eq_of_compare eq).symm
-    simp [same, this]
+    have inside : other ∈ log.positions := logged.resolve_left same
+    obtain ⟨n, found⟩ := Option.isSome_iff_exists.mp (Std.ExtTreeMap.mem_iff_isSome_getElem?.mp inside)
+    simp [same, this, found]
 
 /-- A run log records, after `record unit`, `unit` and the units it recorded before. -/
 theorem mem_record {log : RunLog} {unit other : UnitKey} :
@@ -177,9 +180,9 @@ theorem tokenBefore_trans (log : RunLog) (a b c : UnitKey) (one : tokenBefore lo
   unfold tokenBefore at *
   have keys : compare a b = .lt → compare b c = .lt → compare a c = .lt := Std.TransCmp.lt_trans
   revert one two keys
-  generalize orderKey log a = ka
-  generalize orderKey log b = kb
-  generalize orderKey log c = kc
+  generalize queuedKey log a = ka
+  generalize queuedKey log b = kb
+  generalize queuedKey log c = kc
   obtain ⟨pa, ia⟩ := ka
   obtain ⟨pb, ib⟩ := kb
   obtain ⟨pc, ic⟩ := kc
@@ -200,8 +203,8 @@ theorem tokenBefore_total (log : RunLog) (a b : UnitKey) (apart : a ≠ b) :
     | eq => exact absurd (Std.LawfulEqOrd.eq_of_compare order) apart
     | gt => exact .inr (Std.OrientedCmp.gt_iff_lt.mp order)
   revert keys
-  generalize orderKey log a = ka
-  generalize orderKey log b = kb
+  generalize queuedKey log a = ka
+  generalize queuedKey log b = kb
   obtain ⟨pa, ia⟩ := ka
   obtain ⟨pb, ib⟩ := kb
   simp only [Bool.or_eq_true, decide_eq_true_eq, Bool.and_eq_true, beq_iff_eq]
@@ -226,15 +229,16 @@ theorem latest_greatest {log : RunLog} {queued : TreeMap UnitKey Token compare} 
     (Std.ExtTreeMap.mem_toList_iff_getElem?_eq_some.mpr inside) apart
 
 /-- A queued entry's place in token order is the position its parent ran at and its index in that unit's batch. -/
-theorem orderKey_push (log : RunLog) (unit : UnitKey) (step : UnitStep) :
-    orderKey log (unit.push step) = (log.runPosition unit, step.batchIndex) := by
-  unfold orderKey
+theorem queuedKey_push (log : RunLog) (unit : UnitKey) (step : UnitStep) :
+    queuedKey log (unit.push step) = (log.runPosition unit, step.batchIndex) := by
+  unfold queuedKey
   rw [Laws.State.UnitKey.parent?_push]
+  rfl
 
 /-- Two tokens one unit queued run, in token order, by their indexes in its batch. -/
 theorem tokenBefore_siblings {log : RunLog} {unit : UnitKey} {a b : Nat}
     (before : tokenBefore log (unit.tokenUnit a) (unit.tokenUnit b) = true) (apart : a ≠ b) : a < b := by
-  simp only [tokenBefore, orderKey_push, Laws.State.UnitKey.batchIndex_token, Nat.lt_irrefl, decide_false,
+  simp only [tokenBefore, queuedKey_push, Laws.State.UnitKey.batchIndex_token, Nat.lt_irrefl, decide_false,
     Bool.false_or, beq_self_eq_true, Bool.true_and, Bool.or_eq_true, decide_eq_true_eq, Bool.and_eq_true,
     beq_iff_eq] at before
   omega
@@ -244,5 +248,30 @@ theorem earliest_eq_none {log : RunLog} {queued : TreeMap UnitKey Token compare}
 
 theorem latest_eq_none {log : RunLog} {queued : TreeMap UnitKey Token compare} :
     latest log queued = none ↔ queued.toList = [] := least_eq_none
+
+/-- A closure unit's context differs from the closure's only in its order of units (DC13). -/
+@[simp] theorem unitCtx_program (ctx : Ctx) (log : RunLog) : (unitCtx ctx log).program = ctx.program :=
+  rfl
+
+/-- The closure's order of units is a total order under either schedule (DC13): the sort `Step.issueOrder` makes is a
+total preorder of positions. -/
+instance issuerOrder_transCmp (schedule : BranchSchedule) (log : RunLog) : Std.TransCmp (issuerOrder schedule log) := by
+  cases schedule with
+  | orderInvariant =>
+    show Std.TransCmp UnitKey.breadth.val
+    rw [UnitKey.breadth.property]
+    exact inferInstanceAs <| Std.TransCmp (compareLex _ _)
+  | declarationDepthFirst =>
+    show Std.TransCmp (compareLex (compareOn fun unit => (orderKey log unit 0).1) compare)
+    exact inferInstanceAs <| Std.TransCmp (compareLex _ _)
+
+/-- The closure's order of units ties only equal keys under either schedule. -/
+theorem issuerOrder_tied (schedule : BranchSchedule) (log : RunLog) (a b : UnitKey)
+    (tie : issuerOrder schedule log a b = .eq) : a = b := by
+  cases schedule with
+  | orderInvariant => exact Laws.State.breadth_tied tie
+  | declarationDepthFirst =>
+    simp only [issuerOrder] at tie
+    exact Std.LawfulEqOrd.eq_of_compare (compareLex_eq_eq.mp tie).2
 
 end Kernel.Laws.Step

@@ -235,9 +235,13 @@ structure State where
   emptied by the commit's compaction, which renames each to its ordinal (`Step.compact`, DC12). Empty at commit. -/
   issued : TreeMap Issue ClaimSlot compare := ∅
   activations : List ActivationCount := []
-  /-- The next order position: an open item's `position` and a compensation record's `completion`, which only the sites
-  that order them read. It names no identity; the issue log replaces it (K0.8). -/
+  /-- The next compensation completion number (`takePosition`), taken in run order as a record completes, which only the
+  sites that order records read. -/
   nextPosition : Nat := 1
+  /-- The counter of issued order positions (DC13): an open item's `position` is the running unit's issue in the
+  position slot (`issuePosition`), numbered from here at commit in the closure's position order (`ClaimSlot.position`),
+  which advances it. -/
+  nextOrder : Nat := 1
   logicalTimeMs : Nat := 0
   /-- The running micro-step's batch of signals, in the order it queued them; moved into `queuedSignals` like
   `batchTokens`, and named for the batch like it. -/
@@ -304,7 +308,7 @@ def emit (state : State) (flows : List FlowId) (scope : ScopeOccurrenceId) : Sta
 def deferBegins (state : State) (requests : List BeginRequest) : State :=
   { state with batchTokens := state.batchTokens ++ (requests.map Token.begin).reverse }
 
-/-- The next order position (`nextPosition`), counted up. -/
+/-- The next compensation completion number (`nextPosition`), counted up in run order. -/
 def takePosition (state : State) : State × Nat :=
   ({ state with nextPosition := state.nextPosition + 1 }, state.nextPosition)
 
@@ -313,6 +317,10 @@ with the slot it takes its committed ordinal in at commit. -/
 def issue (state : State) (slot : ClaimSlot) : State × Issue :=
   let issue := Issue.fresh state.issuing state.issueNext
   ({ state with issueNext := state.issueNext + 1, issued := state.issued.insert issue slot }, issue)
+
+/-- A fresh order position (DC13): the running unit's next issue in the position slot, which the commit numbers from
+`nextOrder` in the closure's position order. -/
+def issuePosition (state : State) : State × Issue := state.issue .position
 
 /-- A fresh key for an occurrence of `element` issued in `scope`: the running unit's next issue, which the commit renames
 to the next ordinal of its (scope occurrence, element) counter. The one issuer of occurrence keys (KD1, DC12). -/
@@ -468,17 +476,21 @@ def issueItem (state : State) (occurrence : OccurrenceId) (role : ItemRole) : St
 def putItem (state : State) (item : OpenItem) : State :=
   { state with openItems := state.openItems.insert item.id item }
 
+/-- An item waiting for the begun `occurrence`, with its key, which a reader of the item just opened looks it up by. -/
+def openItemKey (state : State) (kind : OpenKind) (occurrence : Occurrence) : State × ItemKey :=
+  let (state, position) := state.issuePosition
+  let (state, id) := state.issueItem occurrence.id .wait
+  (state.putItem { id, position, kind, element := occurrence.element, scope := occurrence.scope }, id)
+
 /-- An item waiting for the begun `occurrence`. -/
 def openItem (state : State) (kind : OpenKind) (occurrence : Occurrence) : State :=
-  let (state, position) := state.takePosition
-  let (state, id) := state.issueItem occurrence.id .wait
-  state.putItem { id, position, kind, element := occurrence.element, scope := occurrence.scope }
+  (state.openItemKey kind occurrence).1
 
 /-- A subscription item for `element`, with a fresh reservation; `host` is the occurrence it hangs on. -/
 def openSubscription (state : State) (kind : OpenKind) (element : ElementId) (scope : ScopeOccurrenceId)
     (host : Option OccurrenceId) (passive : Bool) : State × OpenItem :=
   let (state, occurrence) := state.reserve element scope
-  let (state, position) := state.takePosition
+  let (state, position) := state.issuePosition
   let (state, id) := state.issueItem occurrence.id .subscription
   let item : OpenItem := { id, position, kind, element, scope, attachedTo := host, passive }
   (state.putItem item, item)
@@ -489,19 +501,6 @@ def closeItem (state : State) (id : ItemKey) : State :=
 /-- Remove the items waiting for the occurrence `id`. -/
 def closeOwnItems (state : State) (id : OccurrenceId) : State :=
   { state with openItems := state.openItems.filter fun _ item => item.id.occurrence != id }
-
-/-- Remove the items attached to the occurrence `host`, with the reservations they hold. The dropped reservations are
-listed once, since a scan of the occurrences for every ordinal counter, run at every completion, made a closure that
-leaves a wait at every pass take 49 s (`closure-work-bound.test.ts` through `kernelRun --batch`, measured 2026-11-17). -/
-def disarm (state : State) (host : OccurrenceId) : State :=
-  let attached := (itemList state.openItems).filter (·.attachedTo == some host)
-  let dropped := (state.occurrences.filter fun occurrence =>
-    !occurrence.begun && attached.any (·.id.occurrence == occurrence.id)).map (·.id)
-  { state with
-      openItems := state.openItems.filter fun _ item => item.attachedTo != some host
-      occurrences := state.occurrences.filter fun occurrence =>
-        occurrence.begun || !attached.any (·.id.occurrence == occurrence.id)
-      itemOrdinals := state.itemOrdinals.filter fun id _ => !dropped.contains id }
 
 /-- Enter a new scope occurrence of `element` inside `parent`, with the given local variables, `keyed`. The scope
 belongs to `occurrence`, when it has one. -/

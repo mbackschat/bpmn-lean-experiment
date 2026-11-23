@@ -24,6 +24,18 @@ theorem IssuerFresh.next {s : State} (fresh : IssuerFresh s) : s.issued[Issue.fr
   | none => rfl
   | some slot => exact absurd (fresh.below _ slot held) (Nat.lt_irrefl _)
 
+/-- Nor the issue after it, once the next is recorded: an item's key follows its position (`State.openItemKey`, DC13). -/
+theorem IssuerFresh.next_succ {s : State} (fresh : IssuerFresh s) (slot : ClaimSlot) :
+    (s.issued.insert (.fresh s.issuing s.issueNext) slot)[Issue.fresh s.issuing (s.issueNext + 1)]? = none := by
+  rw [Std.ExtTreeMap.getElem?_insert]
+  split
+  · rename_i same
+    have := Std.LawfulEqOrd.eq_of_compare same
+    simp at this
+  · cases held : s.issued[Issue.fresh s.issuing (s.issueNext + 1)]? with
+    | none => rfl
+    | some slot' => exact absurd (fresh.below _ slot' held) (by omega)
+
 /-- Recording an issue the table did not hold keeps every entry it held. -/
 theorem TableGrows.insert {s t : State} {issue : Issue} {slot : ClaimSlot} (untabled : s.issued[issue]? = none)
     (issued : t.issued = s.issued.insert issue slot) : TableGrows s t := fun other held found => by

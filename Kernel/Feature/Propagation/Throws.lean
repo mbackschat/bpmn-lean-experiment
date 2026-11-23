@@ -100,10 +100,10 @@ def thrownAddress (ctx : Ctx) (context : EvalContext) (record : SignalThrow) : E
 
 /-- The open items of `address` in the thrower's own State, by process instance, then in arming order, the order the
 linearization of the population fixes for CIB's unordered `HashSet` (`EventSubscriptionManager.java:111-126`). -/
-def ownReceivers (state : State) (address : SignalAddress) : List OpenItem :=
+def ownReceivers (ctx : Ctx) (state : State) (address : SignalAddress) : List OpenItem :=
   ((itemList state.openItems).filter fun item => item.kind.view.signal.any (address.matches ·.address)).mergeSort fun left right =>
     let (l, r) := (state.instanceOf left.scope, state.instanceOf right.scope)
-    decide (l < r) || (l == r && left.position ≤ right.position)
+    decide (l < r) || (l == r && ctx.positionLe left.position right.position)
 
 /-- The delivery that fires `item` from a throw. -/
 def thrownDelivery (ctx : Ctx) (state : State) (address : SignalAddress) (variables : List (String × Value))
@@ -118,7 +118,7 @@ def throwSignal (ctx : Ctx) (payload : EventPayload) (record : SignalThrow) (ori
   let businessKey ← signalBusinessKey ctx context record.businessKey
   let variables ← signalPayload ctx context (state.visible ctx.program occurrence.scope) record
   let address ← thrownAddress ctx context record
-  let fired := (ownReceivers state address).foldl (fun state item =>
+  let fired := (ownReceivers ctx state address).foldl (fun state item =>
     state.signal (.fire item.id (.signal (thrownDelivery ctx state address variables item)))) state
   let intent : BroadcastIntent := { address, variables, businessKey, origin := throwerRef state origin }
   .ok ({ fired with batchIntents := fired.batchIntents ++ [intent] }.signal (.complete occurrence.id (throwLeave payload) [] .outward))

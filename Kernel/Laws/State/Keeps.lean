@@ -629,12 +629,11 @@ theorem openItem_wellFormed {s : State} (formed : WellFormed program s) (kind : 
     (unstarted : (program.element? occurrence.element).bind (·.start?) = none) (role : occurrence.role = .element) :
     WellFormed program (s.openItem kind occurrence) := by
   rw [openItem_eq]
-  have positioned := takePosition_wellFormed formed
-  rw [takePosition_eq] at positioned
+  have positioned := issue_wellFormed formed .position
   have counted := issue_wellFormed positioned (.item occurrence.id)
-  have next := nextItem_issued formed occurrence.id .wait
+  have next := nextItem_issued positioned occurrence.id .wait
   refine addItem_wellFormed (item :=
-      { id := ⟨occurrence.id, .wait, .fresh s.issuing s.issueNext⟩, position := s.nextPosition, kind,
+      { id := ⟨occurrence.id, .wait, .fresh s.issuing (s.issueNext + 1)⟩, position := .fresh s.issuing s.issueNext, kind,
         element := occurrence.element, scope := occurrence.scope }) counted next.1 next.2
     ⟨occurrence, member, rfl, rfl, rfl⟩ (fun _ hung => by simp at hung)
     (fun _ _ _ found present same => by rw [nodup_map_eq formed.distinct.occurrences present member same]; exact begun)
@@ -656,10 +655,9 @@ theorem openSubscription_wellFormed {s : State} (formed : WellFormed program s) 
   generalize s.reserve element scope = pair at reserves reserved unnamed
   obtain ⟨t, reservation⟩ := pair
   dsimp only at reserves reserved unnamed ⊢
-  have positioned := takePosition_wellFormed reserved
-  rw [takePosition_eq] at positioned
+  have positioned := issue_wellFormed reserved .position
   have counted := issue_wellFormed positioned (.item reservation.id)
-  have next := nextItem_issued reserved reservation.id .subscription
+  have next := nextItem_issued positioned reservation.id .subscription
   have fresh : ¬ OccurrenceIssued s reservation.id := reserves.fresh formed.issuer (reserves.placed ▸ stands)
   have above : ∀ other ∈ itemList t.openItems, other.id.occurrence ≠ reservation.id := fun other inside same => by
     obtain ⟨waited, present, named, _⟩ := formed.owned.itemOccurrences other (reserves.items ▸ inside)
@@ -671,8 +669,8 @@ theorem openSubscription_wellFormed {s : State} (formed : WellFormed program s) 
     · rw [List.mem_singleton.mp new]
       exact reserves.unbegun
   refine addItem_wellFormed (item :=
-      { id := ⟨reservation.id, .subscription, .fresh t.issuing t.issueNext⟩, position := t.nextPosition, kind,
-        element, scope, attachedTo := host, passive }) counted next.1 next.2
+      { id := ⟨reservation.id, .subscription, .fresh t.issuing (t.issueNext + 1)⟩, position := .fresh t.issuing t.issueNext,
+        kind, element, scope, attachedTo := host, passive }) counted next.1 next.2
     ⟨reservation, by rw [reserves.occurrences]; simp, rfl, reserves.kind, reserves.placed⟩ (fun id hung => ?_)
     (fun other inside same => absurd same (above other (items_same inside rfl))) unnamed (fun _ => unbegun)
     (fun _ => ⟨unbegun, fun leave writes rule queued =>

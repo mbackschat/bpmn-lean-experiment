@@ -19,7 +19,7 @@ open Kernel Kernel.Step Kernel.Laws.State Kernel.Laws.Step
 
 section Calls
 
-variable {program : Program} {start state : State} {log : RunLog} {after : State}
+variable {schedule : BranchSchedule} {program : Program} {start state : State} {log : RunLog} {after : State}
 
 /-- A scope occurrence's owner the commit renames onto a standing occurrence's key is that occurrence's. -/
 theorem owner_apart (formed : WellFormed program state) (counted : CountersFrom start state)
@@ -27,8 +27,8 @@ theorem owner_apart (formed : WellFormed program state) (counted : CountersFrom 
     (keys : ∀ occurrence ∈ state.occurrences, occurrence.id.scope = occurrence.scope)
     {root : ScopeOccurrence} (member : root ∈ state.scopes) {owner : OccurrenceId} (link : root.occurrence = some owner)
     {occurrence : Occurrence} (present : occurrence ∈ state.occurrences)
-    (same : renameId (commitRenaming start log (ordered log state)) owner =
-      renameId (commitRenaming start log (ordered log state)) occurrence.id) : owner = occurrence.id := by
+    (same : renameId (commitRenaming schedule start log (ordered log state)) owner =
+      renameId (commitRenaming schedule start log (ordered log state)) occurrence.id) : owner = occurrence.id := by
   have facts := ordered_facts log formed counted batches
   have counted := facts.counted
   have issued := facts.issued
@@ -53,9 +53,9 @@ structure OwnerRenamed (state : State) (r : Issue → Issue) (old : ScopeOccurre
 theorem compact_owner (formed : WellFormed program state) (counted : CountersFrom start state)
     (batches : state.batchSignals = [] ∧ state.batchTokens = [] ∧ state.batchIntents = [])
     (keys : ∀ occurrence ∈ state.occurrences, occurrence.id.scope = occurrence.scope)
-    (made : orderJournal start (.ok (state, log)) = .ok after) {root : ScopeOccurrence} (member : root ∈ after.scopes)
+    (made : orderJournal schedule start (.ok (state, log)) = .ok after) {root : ScopeOccurrence} (member : root ∈ after.scopes)
     {call : Occurrence} (present : call ∈ after.occurrences) (link : root.occurrence = some call.id) :
-    ∃ old owner, OwnerRenamed state (commitRenaming start log (ordered log state)) old owner root call := by
+    ∃ old owner, OwnerRenamed state (commitRenaming schedule start log (ordered log state)) old owner root call := by
   have ran := orderJournal_of made
   obtain ⟨old, inside, rfl⟩ := compact_scope_eq ran member
   obtain ⟨owner, ownerIn, mapped⟩ := compact_occurrence_of ran present
@@ -75,7 +75,7 @@ theorem orderJournal_named (formed : WellFormed program state) (counted : Counte
     (named : ∀ root ∈ state.scopes, root.calledInstance.isSome → root.occurrence.isSome ∧ ∀ call ∈ state.occurrences,
       root.occurrence = some call.id → root.calledInstance =
         some (State.calledInstanceId (state.instanceOf call.scope) (program.publicId call.element) call.activation))
-    (made : orderJournal start (.ok (state, log)) = .ok after) :
+    (made : orderJournal schedule start (.ok (state, log)) = .ok after) :
     ∀ root ∈ after.scopes, root.calledInstance.isSome → root.occurrence.isSome ∧ ∀ call ∈ after.occurrences,
       root.occurrence = some call.id → root.calledInstance =
         some (State.calledInstanceId (after.instanceOf call.scope) (program.publicId call.element) call.activation) := by
@@ -102,7 +102,7 @@ theorem orderJournal_roled (formed : WellFormed program state) (counted : Counte
     (keys : ∀ occurrence ∈ state.occurrences, occurrence.id.scope = occurrence.scope)
     (roled : ∀ root ∈ state.scopes, root.calledInstance.isSome → ∀ call ∈ state.occurrences,
       root.occurrence = some call.id → call.role = .element)
-    (made : orderJournal start (.ok (state, log)) = .ok after) :
+    (made : orderJournal schedule start (.ok (state, log)) = .ok after) :
     ∀ root ∈ after.scopes, root.calledInstance.isSome → ∀ call ∈ after.occurrences,
       root.occurrence = some call.id → call.role = .element := by
   intro root member called call present link
@@ -116,7 +116,7 @@ theorem orderJournal_activities (formed : WellFormed program state) (counted : C
     (keys : ∀ occurrence ∈ state.occurrences, occurrence.id.scope = occurrence.scope)
     (activities : ∀ root ∈ state.scopes, root.calledInstance.isSome → ∀ call ∈ state.occurrences,
       root.occurrence = some call.id → ((program.element? call.element).bind (·.activity?)).isSome)
-    (made : orderJournal start (.ok (state, log)) = .ok after) :
+    (made : orderJournal schedule start (.ok (state, log)) = .ok after) :
     ∀ root ∈ after.scopes, root.calledInstance.isSome → ∀ call ∈ after.occurrences,
       root.occurrence = some call.id → ((program.element? call.element).bind (·.activity?)).isSome := by
   intro root member called call present link
@@ -131,7 +131,7 @@ theorem orderJournal_ownersApart (formed : WellFormed program state) (counted : 
     (keys : ∀ occurrence ∈ state.occurrences, occurrence.id.scope = occurrence.scope)
     (apart : ∀ first ∈ state.scopes, ∀ second ∈ state.scopes, first.calledInstance.isSome →
       second.calledInstance.isSome → first.occurrence = second.occurrence → first.id = second.id)
-    (made : orderJournal start (.ok (state, log)) = .ok after) :
+    (made : orderJournal schedule start (.ok (state, log)) = .ok after) :
     ∀ first ∈ after.scopes, ∀ second ∈ after.scopes, first.calledInstance.isSome →
       second.calledInstance.isSome → first.occurrence = second.occurrence → first.id = second.id := by
   have ran := orderJournal_of made

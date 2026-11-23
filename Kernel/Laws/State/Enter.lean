@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Laws.State.Keeps
+public import Kernel.Laws.State.Called
 
 /-! # Laws of the kernel state: entering a scope occurrence and queuing bare begins
 

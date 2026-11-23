@@ -208,7 +208,8 @@ def publicJournal (program : Program) (journal : List Transition) : List Transit
     else none
 
 def hostView (program : Program) (state : State) : View :=
-  let openWaits := (itemsByPosition state.openItems).map (openWait program state)
+  -- A committed state holds committed positions only, which every unit order orders alike.
+  let openWaits := (itemsInOrder (Issue.notAfter UnitKey.breadth.val) state.openItems).map (openWait program state)
   { status := state.status, failure := state.failure.map (publicFailure program), openWaits
     addresses := addressesOf openWaits
     journal := publicJournal program state.journal

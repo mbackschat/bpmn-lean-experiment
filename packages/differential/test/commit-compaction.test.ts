@@ -1,10 +1,11 @@
 /**
  * DC12's compaction at commit (`Kernel.Step.compact`, `packages/kernel/src/step/commit.ts`): inside a closure every
- * identity is its unit's issue, and the commit renames each, in the order the units ran, to the ordinal its slot's
- * counter gives, so the committed keys do not depend on the order the issue table was written in. The test reaches
- * `compact` in the built kernel directly, because no stimulus can write the issue table in an order other than the
- * run's; Lean's side is `Kernel.Laws.Step.Compaction`. The oracle is the base's counter at issue: the unit that ran first
- * takes the slot's next ordinal.
+ * identity is its unit's issue, and the commit renames each, in the issuing units' order (`issuerOrder`: breadth order
+ * under `orderInvariant`, run order under `declarationDepthFirst`, DC13), to the ordinal its slot's counter gives, so the
+ * committed keys do not depend on the order the issue table was written in. The test reaches `compact` in the built
+ * kernel directly, because no stimulus can write the issue table in an order other than the run's; Lean's side is
+ * `Kernel.Laws.Step.Compact`. The oracle is the base's counter at issue: the unit first in that order takes the slot's
+ * next ordinal.
  */
 import assert from "node:assert/strict";
 import path from "node:path";
@@ -25,6 +26,7 @@ test("two units issuing in the opposite order compact to the same committed keys
   const state = await kernelModule("state.js");
   const key = await kernelModule("state/key.js");
   const order = await kernelModule("step/order.js");
+  const { BranchSchedule } = await kernelModule("il/types/options.js");
   const { compact } = await kernelModule("step/commit.js");
   assert.equal(typeof compact, "function", "Step.compact is missing");
 
@@ -43,8 +45,8 @@ test("two units issuing in the opposite order compact to the same committed keys
   const runOrder = run(run(base, first, 1), second, 2);
   const reversed = run(run(base, second, 2), first, 1);
 
-  const committed = (written: State): Readonly<Record<string, unknown>> => {
-    const compacted = compact(base, log, written);
+  const committed = (written: State, schedule: unknown = BranchSchedule.OrderInvariant): Readonly<Record<string, unknown>> => {
+    const compacted = compact(schedule, base, log, written);
     assert.ok(compacted.ok, JSON.stringify(compacted));
     const after = compacted.value as State;
     assert.equal(after.issued, null, "the issue table empties");
@@ -61,11 +63,18 @@ test("two units issuing in the opposite order compact to the same committed keys
     scopeOrdinals: [[{ parent: root, element: "Sub" }, 4]],
     occurrenceOrdinals: [[{ parent: "3:Sub#2/", element: "Task" }, 1], [{ parent: "3:Sub#3/", element: "Task" }, 1]],
   };
-  assert.deepEqual(committed(runOrder), expected);
-  assert.deepEqual(committed(reversed), expected);
-  // `first` entered its scope occurrence first in `runOrder`, `second` in `reversed`; `first` ran first in both.
-  assert.equal(compact(base, log, runOrder).value.scopes[1].id, "3:Sub#2/", "the unit that ran first takes the slot's next ordinal");
-  assert.equal(compact(base, log, reversed).value.scopes[1].id, "3:Sub#3/");
+  for (const schedule of [BranchSchedule.OrderInvariant, BranchSchedule.DeclarationDepthFirst]) {
+    assert.deepEqual(committed(runOrder, schedule), expected);
+    assert.deepEqual(committed(reversed, schedule), expected);
+  }
+  // `first` entered its scope occurrence first in `runOrder`, `second` in `reversed`; `first` ran first in both, and
+  // `second`, the token unit of index 0, comes first in breadth order.
+  const depthFirst = BranchSchedule.DeclarationDepthFirst;
+  assert.equal(compact(depthFirst, base, log, runOrder).value.scopes[1].id, "3:Sub#2/", "the unit that ran first takes the slot's next ordinal");
+  assert.equal(compact(depthFirst, base, log, reversed).value.scopes[1].id, "3:Sub#3/");
+  assert.equal(compact(BranchSchedule.OrderInvariant, base, log, runOrder).value.scopes[1].id, "3:Sub#3/",
+    "the unit first in breadth order takes the slot's next ordinal");
+  assert.equal(compact(BranchSchedule.OrderInvariant, base, log, reversed).value.scopes[1].id, "3:Sub#2/");
 });
 
 /**
@@ -80,6 +89,7 @@ test("a child issued under a scope occurrence the closure then leaves takes the 
   const key = await kernelModule("state/key.js");
   const journal = await kernelModule("state/journal.js");
   const order = await kernelModule("step/order.js");
+  const { BranchSchedule } = await kernelModule("il/types/options.js");
   const { compact } = await kernelModule("step/commit.js");
   const input = key.unitRoot({ tag: key.UnitRootTag.Input });
   const log = order.runRecord(order.emptyRunLog, input);
@@ -88,7 +98,7 @@ test("a child issued under a scope occurrence the closure then leaves takes the 
   const opening = { ...state.initial("I", []), issuing, issueNext: 0 };
   const [opened, fresh] = state.enterScope(opening, "Sub", root, [], null);
   const [entered, earlier] = state.enterScope(opened, "Inner", fresh, [], null);
-  const before = compact(opening, log, removal.leaveScope(entered, earlier));
+  const before = compact(BranchSchedule.OrderInvariant, opening, log, removal.leaveScope(entered, earlier));
   assert.ok(before.ok, JSON.stringify(before));
   const start = before.value as State;
   const sub = "3:Sub#0/" as ScopeOccurrenceId;
@@ -97,7 +107,7 @@ test("a child issued under a scope occurrence the closure then leaves takes the 
 
   const [issued, inner] = state.enterScope({ ...start, issuing, issueNext: 0 }, "Inner", sub, [], null);
   const owned = { cause: { tag: journal.CauseTag.Idle, scope: inner }, element: "Inner", owner: inner, started: [], ended: [], ready: [] };
-  const outcome = compact(start, log, removal.leaveScope({ ...issued, journal: [owned] }, sub));
+  const outcome = compact(BranchSchedule.OrderInvariant, start, log, removal.leaveScope({ ...issued, journal: [owned] }, sub));
   assert.ok(outcome.ok, JSON.stringify(outcome));
   const after = outcome.value as State;
   assert.deepEqual(after.journal.map((transition) => transition.owner), ["5:Inner#1/3:Sub#0/"]);
@@ -113,6 +123,7 @@ const issuing = async (pairs: readonly (readonly [unknown, number])[]): Promise<
   const state = await kernelModule("state.js");
   const key = await kernelModule("state/key.js");
   const order = await kernelModule("step/order.js");
+  const { BranchSchedule } = await kernelModule("il/types/options.js");
   const { compact } = await kernelModule("step/commit.js");
   const input = key.unitRoot({ tag: key.UnitRootTag.Input });
   const log = [input, ...pairs.map(([unit]) => unit)].reduce((recorded, unit) => order.runRecord(recorded, unit), order.emptyRunLog);
@@ -120,7 +131,7 @@ const issuing = async (pairs: readonly (readonly [unknown, number])[]): Promise<
     const issuer = { unit, text: key.issuerText(unit, ran) };
     return state.enterScope({ ...current, issuing: issuer, issueNext: 0 }, "Sub", root, [], null)[0];
   }, state.initial("I", []));
-  return compact(state.initial("I", []), log, written);
+  return compact(BranchSchedule.OrderInvariant, state.initial("I", []), log, written);
 };
 
 test("two issuing units of one closure that share depth, fingerprint and root are refused at commit", async () => {

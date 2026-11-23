@@ -8,18 +8,18 @@
  * so it is `state/rename.ts`'s, which takes the continuation renaming from here: `continuationRekey` and
  * `continuationBody` are `step.ts`'s matches on `Continuation`.
  */
-import { assertNever, type ElementId } from "../il/types.js";
+import { assertNever, type BranchSchedule, type ElementId } from "../il/types.js";
 import {
   committed, type Continuation, ContinuationTag, compareUnitKey, emptyDraft, type OccurrenceId, orderedAny,
   orderedEntries, orderedGet, orderedInsert, type OrderedMap, type Outcome, sameUnitKey, seedUnit, semanticFailure,
   failed, FailureTag, issuerText, type Issued, type IssueTable, SemanticCause, type BroadcastIntent, type Cause,
   type ScopeOccurrenceId, type State, type Transition, type TreeMap, type UnitKey, compareIssue, compareOccurrenceId,
-  compareScopeSlot, freshIssue, type Issue, issueNumber, type ClaimSlot, ClaimSlotTag, compareClaimSlot,
+  compareScopeSlot, freshIssue, type Issue, issueNotAfter, type ClaimSlot, ClaimSlotTag, compareClaimSlot,
   occurrenceFresh, scopeFresh,
 } from "../state.js";
 import { treeMapGetD, treeMapInsert } from "../state/map.js";
 import { renameId, type Rename, renameScope, renameState } from "../state/rename.js";
-import { runPosition, type RunLog } from "./order.js";
+import { issuerOrder, runPosition, type RunLog } from "./order.js";
 
 /** The draft as the transition of the unit `unit`, the draft and the write log emptied. */
 export function journalDraft(unit: UnitKey, cause: Cause, element: ElementId | null, owner: ScopeOccurrenceId, state: State): State {
@@ -83,27 +83,35 @@ function slotBase(state: State, claim: ClaimSlot): number {
       return scopeFresh(claim.slot.parent) ? 0 : treeMapGetD(state.occurrenceOrdinals, claim.slot, compareScopeSlot, 0);
     case ClaimSlotTag.Item:
       return occurrenceFresh(claim.occurrence) ? 0 : treeMapGetD(state.itemOrdinals, claim.occurrence, compareOccurrenceId, 0);
+    case ClaimSlotTag.Position:
+      return state.nextOrder;
   }
   return assertNever(claim);
 }
 
 /**
- * Lean's `issueOrder`: the closure's issues in issue order, the order of their units in the run log, then of the issues
- * in each unit, from the issue table's key order by a stable sort.
+ * Lean's `issueOrder`: the closure's issues in the closure's position order under `schedule` (`issuerOrder`, DC13), by
+ * their units, then by their index in the unit, from the issue table's key order by a stable sort. So the commit numbers
+ * positions in the order the closure's bodies compared them, and under `orderInvariant` every slot's numbering is a
+ * function of the end state (KD1).
  */
-function issueOrder(log: RunLog, state: State): (readonly [Issue, ClaimSlot])[] {
-  const claims = orderedEntries(state.issued).map(([issue, { slot, unit }]) => [runPosition(log, unit), issue, slot] as const);
-  return claims.sort((a, b) => a[0] - b[0] || issueNumber(a[1]) - issueNumber(b[1])).map(([, issue, slot]) => [issue, slot] as const);
+function issueOrder(schedule: BranchSchedule, log: RunLog, state: State): (readonly [Issue, ClaimSlot])[] {
+  const units = issuerOrder(schedule, log);
+  const notAfter = (a: Issue, b: Issue): boolean => issueNotAfter(units, state.issued, a, b);
+  return orderedEntries(state.issued).map(([issue, { slot }]) => [issue, slot] as const)
+    .sort((a, b) => notAfter(a[0], b[0]) ? (notAfter(b[0], a[0]) ? 0 : -1) : 1);
 }
 
 /**
  * Lean's `assign`: every issue's committed ordinal, per slot in issue order above the slot's base, and each advanced
  * slot's next ordinal, keyed by the slot as issued.
  */
-function assign(start: State, log: RunLog, state: State): readonly [OrderedMap<Issue, number>, TreeMap<ClaimSlot, number>] {
+function assign(
+  schedule: BranchSchedule, start: State, log: RunLog, state: State,
+): readonly [OrderedMap<Issue, number>, TreeMap<ClaimSlot, number>] {
   let assigned: OrderedMap<Issue, number> = null;
   let next: TreeMap<ClaimSlot, number> = [];
-  for (const [issue, slot] of issueOrder(log, state)) {
+  for (const [issue, slot] of issueOrder(schedule, log, state)) {
     const taken = treeMapGetD(next, slot, compareClaimSlot, slotBase(start, slot));
     assigned = orderedInsert(assigned, issue, taken, compareIssue);
     next = treeMapInsert(next, slot, taken + 1, compareClaimSlot);
@@ -132,6 +140,8 @@ function advanceSlot(rename: Rename, renamed: State, state: State, claim: ClaimS
       return renamed.occurrences.some((entry) => entry.id === occurrence)
         ? { ...state, itemOrdinals: raiseCounter(state.itemOrdinals, occurrence, ordinal, compareOccurrenceId) } : state;
     }
+    case ClaimSlotTag.Position:
+      return { ...state, nextOrder: Math.max(ordinal, state.nextOrder) };
   }
   return assertNever(claim);
 }
@@ -176,14 +186,14 @@ function issuerCollision(issued: IssueTable): boolean {
  * micro-steps) is an invariant failure. A closure that issued nothing commits its state as it is, so only an issuing
  * commit renames the whole state, linear in its size.
  */
-export function compact(start: State, log: RunLog, state: State): Outcome {
+export function compact(schedule: BranchSchedule, start: State, log: RunLog, state: State): Outcome {
   if (state.issued === null) return committed(state);
   if (orderedAny(state.issued, (_, { unit }) => sameUnitKey(unit, seedUnit))) {
     return semanticFailure(SemanticCause.Invariant, "issue-outside-unit");
   }
   // dynamic-only: a 64-bit fingerprint collision between two units of one closure, which no model property predicts
   if (issuerCollision(state.issued)) return failed(FailureTag.Unsupported, "unit-fingerprint-collision");
-  const [assigned, next] = assign(start, log, state);
+  const [assigned, next] = assign(schedule, start, log, state);
   const rename = renameBy(assigned);
   const continuation = (kept: Continuation): Continuation =>
     continuationRekey((id) => renameId(rename, id), (key) => renameScope(rename, key), kept);
@@ -197,8 +207,8 @@ export function compact(start: State, log: RunLog, state: State): Outcome {
  * compacted (`compact`) against the counters of `start`, the state the closure began from. Queued work an instance that ended mid-closure left behind is dropped with them: no input runs
  * on an ended instance.
  */
-export function orderJournal(start: State, state: State, log: RunLog): Outcome {
-  return compact(start, log, {
+export function orderJournal(schedule: BranchSchedule, start: State, state: State, log: RunLog): Outcome {
+  return compact(schedule, start, log, {
     ...state, journal: byRun(log, state.transitions), intents: byRun<readonly BroadcastIntent[]>(log, state.outboxes).flat(),
     transitions: null, outboxes: null, queuedTokens: null, queuedSignals: null,
   });

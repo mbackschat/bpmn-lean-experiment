@@ -57,11 +57,12 @@ def UnitKey.offers (occurrence : OccurrenceId) (key : UnitKey) : Bool :=
 /-- The slot a fresh issue takes its committed ordinal in at commit (DC12), one constructor per counter map, so the
 commit's assignment keys exactly what each counter compares (P07 F3): a scope occurrence's (parent, element)
 (`State.scopeOrdinals`), an occurrence's (scope occurrence, element) (`State.occurrenceOrdinals`), an item's occurrence
-(`State.itemOrdinals`). -/
+(`State.itemOrdinals`), and an order position's one slot (`State.nextOrder`, DC13), which has no owner. -/
 inductive ClaimSlot where
   | scope (slot : ScopeSlot)
   | occurrence (slot : ScopeSlot)
   | item (occurrence : OccurrenceId)
+  | position
   deriving DecidableEq, Repr
 
 namespace ClaimSlot
@@ -71,16 +72,19 @@ def claimRank : ClaimSlot → Nat
   | .scope _ => 0
   | .occurrence _ => 1
   | .item _ => 2
+  | .position => 3
 
 def scopeSlot? : ClaimSlot → Option ScopeSlot
   | .scope slot => some slot
   | .occurrence slot => some slot
   | .item _ => none
+  | .position => none
 
 def claimItem : ClaimSlot → Option OccurrenceId
   | .item owner => some owner
   | .scope _ => none
   | .occurrence _ => none
+  | .position => none
 
 end ClaimSlot
 
@@ -99,5 +103,19 @@ instance : Std.LawfulEqOrd ClaimSlot where
     have slots : a.scopeSlot? = b.scopeSlot? := Std.LawfulEqOrd.eq_of_compare h.2.1
     have items : a.claimItem = b.claimItem := Std.LawfulEqOrd.eq_of_compare h.2.2
     cases a <;> cases b <;> simp_all [ClaimSlot.claimRank, ClaimSlot.scopeSlot?, ClaimSlot.claimItem]
+
+/-- Whether the order position `a` comes no later than `b` (DC13): a committed position by its number, before every pending
+one, which the closure in progress issued; two pending positions by their units under `units`, then by their index in the
+unit. `units` is the closure's order of units, which `unitCtx` chooses by the branch schedule, so every site that
+orders positions reads that one choice. -/
+def Issue.notAfter (units : UnitKey → UnitKey → Ordering) : Issue → Issue → Bool
+  | .committed a, .committed b => a ≤ b
+  | .committed _, .fresh _ _ => true
+  | .fresh _ _, .committed _ => false
+  | .fresh unit index, .fresh other index' =>
+    match units unit other with
+    | .lt => true
+    | .gt => false
+    | .eq => index ≤ index'
 
 end Kernel

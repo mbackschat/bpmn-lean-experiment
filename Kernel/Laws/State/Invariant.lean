@@ -127,9 +127,12 @@ structure CountersFrom (start s : State) : Prop where
   scopes : ∀ slot, s.scopeOrdinals.getD slot 0 ≤ start.scopeOrdinals.getD slot 0
   occurrences : ∀ slot, s.occurrenceOrdinals.getD slot 0 ≤ start.occurrenceOrdinals.getD slot 0
   items : ∀ occurrence, s.itemOrdinals.getD occurrence 0 ≤ start.itemOrdinals.getD occurrence 0
+  /-- The issued positions' counter, which nothing inside a closure writes (DC13: positions are issued,
+  `State.issuePosition`). -/
+  positions : s.nextOrder ≤ start.nextOrder
 
 theorem CountersFrom.refl (s : State) : CountersFrom s s :=
-  ⟨fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _⟩
+  ⟨fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, Nat.le_refl _⟩
 
 /-- No two occurrences, open items or scope occurrences share an identifier, and no two occurrences a key: each
 activation numbers one occurrence. -/

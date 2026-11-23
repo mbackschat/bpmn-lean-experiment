@@ -18,7 +18,7 @@ open Kernel Kernel.Step Kernel.Laws.State
 
 /-- **A commit keeps every occurrence keyed in its scope occurrence.** -/
 theorem orderJournal_keyed {start s : State} {log : RunLog} {after : State}
-    (ran : orderJournal start (.ok (s, log)) = .ok after)
+    (ran : orderJournal schedule start (.ok (s, log)) = .ok after)
     (keys : ∀ o ∈ s.occurrences, o.id.scope = o.scope) : ∀ o ∈ after.occurrences, o.id.scope = o.scope := by
   intro o member
   obtain ⟨old, inside, mapped⟩ := compact_occurrence_of (orderJournal_of ran) member

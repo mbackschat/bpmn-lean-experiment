@@ -48,10 +48,11 @@ export function sameItemKey(left: ItemKey, right: ItemKey): boolean {
 export interface OpenItem {
   readonly id: ItemKey;
   /**
-   * The order position the item took when it opened (`takePosition`): the order of opening, which every site that reads the items
-   * in order reads (`itemsByPosition`), never the key order of `openItems` (KD1).
+   * The order position the item took when it opened (`issuePosition`, DC13): pending under the unit that opened it until
+   * the commit numbers it, which every site that reads the items in order reads (`itemsInOrder`), never the key order of
+   * `openItems` (KD1).
    */
-  readonly position: number;
+  readonly position: Issue;
   readonly kind: OpenKind;
   readonly element: ElementId;
   readonly scope: ScopeOccurrenceId;
@@ -62,9 +63,12 @@ export interface OpenItem {
 /** Lean's `OpenItems`: the open items in key order, one per key, each under its own `id`. */
 export type OpenItems = readonly OpenItem[];
 
-/** The open items of `items` in the order they opened, by `OpenItem.position`: for every reading that depends on order. */
-export function itemsByPosition(items: OpenItems): readonly OpenItem[] {
-  return [...items].sort((left, right) => left.position - right.position);
+/**
+ * Lean's `itemsInOrder`: the open items of `items` in the order they opened, by `OpenItem.position` under the position
+ * order `notAfter` (`issueNotAfter`): for every reading that depends on order. A stable sort, as Lean's `mergeSort`.
+ */
+export function itemsInOrder(notAfter: (left: Issue, right: Issue) => boolean, items: OpenItems): readonly OpenItem[] {
+  return [...items].sort((left, right) => notAfter(left.position, right.position) ? (notAfter(right.position, left.position) ? 0 : -1) : 1);
 }
 
 /** The open item keyed `key`: Lean's `items[key]?`. */

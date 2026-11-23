@@ -197,7 +197,7 @@ def enabledBoundaries (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) : 
   match (state.scopes.find? (·.id == scope)).bind (·.occurrence) with
   | some host =>
     if enabledWith ctx state host != some scope then .ok (state, []) else
-    ((itemsByPosition state.openItems).filter fun item => item.attachedTo == some host && (ctx.program.boundary? item.element).isSome).foldlM
+    ((itemsInOrder ctx.positionLe state.openItems).filter fun item => item.attachedTo == some host && (ctx.program.boundary? item.element).isSome).foldlM
       (fun (state, fired) item =>
         match itemCondition? ctx item with
         | none => pure (state, fired)
@@ -407,8 +407,8 @@ def arriveCatch (ctx : Ctx) (_ : Header) (_ : EventPayload) (subscription : Subs
     (state : State) : Outcome := do
   match ← waitKind ctx { values := state.evalContext ctx.program occurrence.scope } subscription with
   | some kind =>
-    let state := state.openItem kind occurrence
-    match (itemsByPosition state.openItems).getLast? with
+    let (state, key) := state.openItemKey kind occurrence
+    match state.openItems[key]? with
     | some item => do
       let (state, fires) ← armed ctx subscription item state
       pure (if fires then fireAll none [item] state else state)

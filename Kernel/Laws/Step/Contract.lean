@@ -789,7 +789,7 @@ structure Phases (inv : Program → State → Prop) : Prop extends ClosurePhases
   runOrder : ∀ program start state log, inv program state → Laws.State.CountersFrom start state →
     state.batchSignals = [] ∧ state.batchTokens = [] ∧ state.batchIntents = [] →
     (keys : ∀ occurrence ∈ state.occurrences, occurrence.id.scope = occurrence.scope) → ∀ after,
-    orderJournal start (.ok (state, log)) = .ok after → inv program after
+    orderJournal program.options.branchSchedule start (.ok (state, log)) = .ok after → inv program after
 
 /-- What the completion pipeline's own phases must keep of `inv` (`Step.complete`): starting the completing reservation
 and closing its items, removing its record and journalling its end. -/

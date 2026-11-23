@@ -217,9 +217,12 @@ theorem openSubscription_fired {s : State} (formed : WellFormed program s) {item
   obtain ⟨t, reservation⟩ := pair
   dsimp only at reserves ⊢
   have fresh : ¬ OccurrenceIssued s reservation.id := reserves.fresh formed.issuer (reserves.placed ▸ stands)
-  have item : OccurrenceGrows t { t with issueNext := t.issueNext + 1
-                                         issued := t.issued.insert (.fresh t.issuing t.issueNext) (.item reservation.id) } :=
-    .of_same rfl rfl rfl (.insert (reserves.issuer formed.issuer).next rfl)
+  have item : OccurrenceGrows t { t with issueNext := t.issueNext + 2
+                                         issued := (t.issued.insert (.fresh t.issuing t.issueNext) .position).insert
+                                           (.fresh t.issuing (t.issueNext + 1)) (.item reservation.id) } :=
+    .of_same rfl rfl rfl ((TableGrows.insert (reserves.issuer formed.issuer).next
+      (t := { t with issued := t.issued.insert (.fresh t.issuing t.issueNext) .position }) rfl).trans
+      (.insert ((reserves.issuer formed.issuer).next_succ .position) rfl))
   refine fired.transport ((reserves.occurrenceGrows formed.issuer).trans item) reserves.scopes
     (fun x => by rw [← reserves.instances x]; apply instanceOf_congr <;> rfl) (fun found inside => ?_)
     (fun other inside => ?_) (fun _ queued => queued.shrink (fun _ member => reserves.signals ▸ member) (fun _ member => reserves.tokens ▸ member))
@@ -232,7 +235,7 @@ theorem openSubscription_fired {s : State} (formed : WellFormed program s) {item
       exact .inr fresh
   · have keyedT : KeyedBy t.openItems := by rw [reserves.itemMap.1]; exact formed.distinct.items
     rcases (mem_itemList_insert keyedT (item := other) (new :=
-        { id := ⟨reservation.id, .subscription, .fresh t.issuing t.issueNext⟩, position := t.nextPosition, kind,
+        { id := ⟨reservation.id, .subscription, .fresh t.issuing (t.issueNext + 1)⟩, position := .fresh t.issuing t.issueNext, kind,
           element, scope, attachedTo := host, passive })).mp
       (inside) with new | ⟨old, _⟩
     · subst new

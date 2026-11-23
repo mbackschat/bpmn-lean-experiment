@@ -54,7 +54,7 @@ theorem itemDetail?_some {α : Type} {ctx : Ctx} {state : State} {ref : Occurren
     obtain ⟨_, _, same⟩ := Option.map_eq_some_iff.mp made
     obtain ⟨rfl, _⟩ := Prod.mk.inj same
     simp only [Bool.and_eq_true, beq_iff_eq] at matches_
-    exact ⟨Laws.State.mem_itemsByPosition.mp member, matches_.1.1, matches_.1.2, matches_.2⟩
+    exact ⟨Laws.State.mem_itemsInOrder.mp member, matches_.1.1, matches_.1.2, matches_.2⟩
   · simp at made
 
 theorem itemDetail?_mem {α : Type} {ctx : Ctx} {state : State} {occurrence : OccurrenceRef}

@@ -30,14 +30,14 @@ abbrev renamedRun (r : Issue → Issue) (run : CompensationRun) : CompensationRu
 
 section Compacts
 
-variable {start : State} {log : RunLog} {s t : State}
+variable {schedule : BranchSchedule} {start : State} {log : RunLog} {s t : State}
 
 /-- A commit keeps the next position. -/
-theorem compact_nextPosition (ran : compact start log s = .ok t) : t.nextPosition = s.nextPosition := by
+theorem compact_nextPosition (ran : compact schedule start log s = .ok t) : t.nextPosition = s.nextPosition := by
   rcases compact_cases ran with ⟨_, rfl⟩ | ⟨_, rfl⟩
   · rfl
-  obtain ⟨_, _, _, same⟩ := advance_frame (commitRenaming start log s) (assign start log s).2
-    (renameState (commitRenaming start log s) (commitRekey start log s) s)
+  have same := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2
+    (renameState (commitRenaming schedule start log s) (commitRekey schedule start log s) s)
   unfold compacted
   rw [same, renameState_eq]
 
@@ -79,12 +79,12 @@ theorem completion_claimed {compensation : Compensations} {run : CompensationRun
 
 section Formed
 
-variable {program : Program} {start state : State} {log : RunLog} {after : State}
+variable {schedule : BranchSchedule} {program : Program} {start state : State} {log : RunLog} {after : State}
 
 /-- **`GroupsStanding` across the commit**: a group's nested run keeps its kind and stands, renamed, in its context,
 renamed. -/
 theorem orderJournal_groupsStanding (standing : GroupsStanding state)
-    (made : orderJournal start (.ok (state, log)) = .ok after) : GroupsStanding after := by
+    (made : orderJournal schedule start (.ok (state, log)) = .ok after) : GroupsStanding after := by
   have ran := orderJournal_of made
   intro run' member grouped
   rw [compact_compensation ran] at member
@@ -103,7 +103,7 @@ theorem orderJournal_formed {precedes : Compensable → Compensable → Prop} (f
     (blind : ∀ record other (x y : ScopeOccurrenceId), precedes record other →
       precedes { record with scope := x } { other with scope := y })
     (held : Formed precedes state)
-    (made : orderJournal start (.ok (state, log)) = .ok after) : Formed precedes after := by
+    (made : orderJournal schedule start (.ok (state, log)) = .ok after) : Formed precedes after := by
   have ran := orderJournal_of made
   have facts := ordered_facts log formed counted batches
   have counted' := facts.counted
@@ -126,8 +126,8 @@ theorem orderJournal_formed {precedes : Compensable → Compensable → Prop} (f
     rw [slot] at member retained
     obtain ⟨run, runIn, rfl⟩ := List.mem_map.mp member
     obtain ⟨y, yIn, rfl⟩ := List.mem_map.mp retained
-    obtain ⟨x, xIn, renamed⟩ : ∃ x ∈ claimed run, renameCompensable (commitRenaming start log (ordered log state)) x =
-        renameCompensable (commitRenaming start log (ordered log state)) y := by
+    obtain ⟨x, xIn, renamed⟩ : ∃ x ∈ claimed run, renameCompensable (commitRenaming schedule start log (ordered log state)) x =
+        renameCompensable (commitRenaming schedule start log (ordered log state)) y := by
       rcases List.mem_append.mp inside with pending | running
       · obtain ⟨x, xIn, renamed⟩ := List.mem_map.mp pending
         exact ⟨x, List.mem_append_left _ xIn, renamed⟩
@@ -161,7 +161,7 @@ theorem orderJournal_formed {precedes : Compensable → Compensable → Prop} (f
     obtain ⟨run, runIn, rfl⟩ := List.mem_map.mp member
     obtain ⟨x, xIn, rfl⟩ := List.mem_map.mp pending
     refine held.settled run runIn x ⟨xIn, fun other otherIn precede =>
-      ready (renameCompensable (commitRenaming start log (ordered log state)) other) ?_ ?_⟩
+      ready (renameCompensable (commitRenaming schedule start log (ordered log state)) other) ?_ ?_⟩
     · rcases List.mem_append.mp otherIn with inPending | inRunning
       · exact List.mem_append_left _ (List.mem_map_of_mem inPending)
       · obtain ⟨pair, pairIn, rfl⟩ := List.mem_map.mp inRunning

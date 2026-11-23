@@ -214,6 +214,14 @@ structure Ctx where
   /-- `Step`: the running input's ranking of competing Conditional items (`ConditionChoice`), which only
   `Feature.Subscriptions` reads. -/
   conditionChoices : List ConditionChoice := []
+  /-- `Step`: the closure's order of units, which orders the pending positions its units issued (DC13, `Issue.notAfter`):
+  breadth-first by default, the run log's under `declarationDepthFirst` (`unitCtx`). Read only through
+  `positionLe`. -/
+  issuerOrder : UnitKey → UnitKey → Ordering := UnitKey.breadth.val
+
+/-- Whether the order position `a` comes no later than `b` in the closure in progress (DC13): every site that orders
+open items or other positions reads this. -/
+def Ctx.positionLe (ctx : Ctx) : Issue → Issue → Bool := Issue.notAfter ctx.issuerOrder
 
 /-- Whether `element`, running in the scope occurrence `scope`, is an instance of its own Multi-Instance Activity:
 `scope` is a Multi-Instance instance's and belongs to `element`. An element inside an instance of an enclosing
@@ -287,7 +295,7 @@ def Ctx.requireMappings (ctx : Ctx) (context : EvalContext) (mappings : List Map
 /-- The open item with the public identity `occurrence` whose view has the detail `detail` reads, with that detail. -/
 def itemDetail? {α : Type} (ctx : Ctx) (state : State) (occurrence : OccurrenceRef) (detail : WaitView → Option α) :
     Option (OpenItem × α) :=
-  (itemsByPosition state.openItems).findSome? fun item =>
+  (itemsInOrder ctx.positionLe state.openItems).findSome? fun item =>
     if ctx.program.publicId item.element == occurrence.element &&
         ((state.occurrence? item.id.occurrence).map (·.activation)) == some occurrence.activation &&
         state.instanceOf item.scope == occurrence.processInstanceId

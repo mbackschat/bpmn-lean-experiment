@@ -25,6 +25,7 @@ import {
   type SignalAddress,
   type StartInput,
   type State,
+  breadthUnitKey, issueNotAfter,
 } from "../state.js";
 import { closureBound, context, step } from "../step.js";
 import {
@@ -138,7 +139,9 @@ export function signalReceiversOf(
     return [[instanceOf(state, item.scope), item.position, occurrence(program, state, item)] as const];
   });
   const ordered = mergeSort(waiting, ([leftInstance, leftItem], [rightInstance, rightItem]) =>
-    compareStrings(leftInstance, rightInstance) < 0 || (leftInstance === rightInstance && leftItem <= rightItem));
+    // A committed state holds committed positions only, which every unit order orders alike.
+    compareStrings(leftInstance, rightInstance) < 0 ||
+      (leftInstance === rightInstance && issueNotAfter(breadthUnitKey, state.issued, leftItem, rightItem)));
   return ordered.map(([, , ref]) => ref);
 }
 

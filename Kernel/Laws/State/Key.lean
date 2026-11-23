@@ -465,4 +465,16 @@ theorem between_fresh {u w : UnitKey} {i : Nat} {b : Issue} (ab : compare (Issue
 
 end Issue
 
+/-- Breadth order ties only equal keys. -/
+theorem breadth_tied {a b : UnitKey} (tie : UnitKey.breadth.val a b = .eq) : a = b := by
+  rw [UnitKey.breadth.property, compareLex_eq_eq, compareLex_eq_eq] at tie
+  have roots : a.root = b.root := Std.LawfulEqOrd.eq_of_compare tie.2.1
+  have paths : a.path.reverse = b.path.reverse := Std.LawfulEqOrd.eq_of_compare tie.2.2
+  rw [List.reverse_inj] at paths
+  obtain ⟨root, path, spine, ok⟩ := a
+  obtain ⟨root', path', spine', ok'⟩ := b
+  simp only at roots paths
+  subst roots paths ok ok'
+  rfl
+
 end Kernel.Laws.State

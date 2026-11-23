@@ -359,36 +359,38 @@ def settle (hooks : Hooks) (ctx : Ctx) : Nat → Nat → RunLog → State → Ex
     else if state.status != .running then .ok (state, log)
     else
       let work := work - state.entryCount
+      -- every unit's body orders the closure's pending positions by the units `log` records (DC13)
+      let body := unitCtx ctx log
       match firstBreadth state.queuedSignals with
       | some (unit, next) => do
         let cause := Cause.signal (signalName next)
-        settle hooks ctx fuel work (log.record unit) (← microStep hooks ctx unit cause none State.root
-          (dispatchSignal hooks ctx next) { state with queuedSignals := state.queuedSignals.erase unit })
+        settle hooks ctx fuel work (log.record unit) (← microStep hooks body unit cause none State.root
+          (dispatchSignal hooks body next) { state with queuedSignals := state.queuedSignals.erase unit })
       | none =>
         match nextToken hooks ctx log state with
         | some (unit, token) => do
           settle hooks ctx fuel work (log.record unit)
-            (← moveToken hooks ctx unit token { state with queuedTokens := state.queuedTokens.erase unit })
+            (← moveToken hooks body unit token { state with queuedTokens := state.queuedTokens.erase unit })
         | none =>
           match idleScope? hooks ctx state with
           | some scope =>
             match UnitKey.idleUnit? scope.id with
             | none => .error (.semanticFailure .invariant "idle-unit-unkeyed")
             | some unit => do
-              settle hooks ctx fuel work (log.record unit) (← microStep hooks ctx unit (.idle scope.id) scope.element scope.id
-                (completeIdleScope hooks ctx scope) state)
+              settle hooks ctx fuel work (log.record unit) (← microStep hooks body unit (.idle scope.id) scope.element scope.id
+                (completeIdleScope hooks body scope) state)
           | none => do
-            match ← reoffer? hooks ctx state with
+            match ← reoffer? hooks body state with
             | some (gateway, scope, occurrence, offered) =>
               match UnitKey.offerUnit? occurrence (offerRound state occurrence) with
               | none => .error (.semanticFailure .invariant "offer-unit-unkeyed")
               | some unit =>
-                settle hooks ctx fuel work (log.record unit) (← microStep hooks ctx unit (.idle scope) (some gateway) scope
+                settle hooks ctx fuel work (log.record unit) (← microStep hooks body unit (.idle scope) (some gateway) scope
                   (fun _ => .ok offered) state)
             | none =>
               if state.idle State.root && state.queuedSignals.isEmpty then
                 let unit := UnitKey.ofRoot (.idle [])
-                return (← microStep hooks ctx unit (.idle State.root) none State.root
+                return (← microStep hooks body unit (.idle State.root) none State.root
                   (fun state => .ok (endInstance .completed none state)) state, log.record unit)
               else .ok (state, log)
 
@@ -408,8 +410,8 @@ def onRunning (hooks : Hooks) (ctx : Ctx) (input : Input) (before : Option State
       let start ← advanceClock at? { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] }
       admitChoices hooks ctx
       let unit := UnitKey.ofRoot .input
-      orderJournal start (settle hooks ctx closureBound closureWorkBound (RunLog.record {} unit)
-        (← microStep hooks ctx unit (.input tag) none State.root transition start))
+      orderJournal ctx.program.options.branchSchedule start (settle hooks ctx closureBound closureWorkBound
+        (RunLog.record {} unit) (← microStep hooks ctx unit (.input tag) none State.root transition start))
 
 /-- `Ctx.scopeRole`: read from the slots, since the occurrences that ended there may be gone when an event arrives. -/
 def scopeRole (state : State) (scope : ScopeOccurrenceId) : ScopeRole :=
@@ -448,7 +450,8 @@ def step (hooks : Hooks) (program : Program) (before : Option State) (input : In
           (.ofRoot .seed))
       admitChoices hooks ctx
       let unit := UnitKey.ofRoot .input
-      orderJournal initial <| settle hooks ctx closureBound closureWorkBound (RunLog.record {} unit) (← microStep hooks ctx unit
+      orderJournal ctx.program.options.branchSchedule initial <| settle hooks ctx closureBound closureWorkBound
+        (RunLog.record {} unit) (← microStep hooks ctx unit
         (.input .start) (some start) State.root (begin hooks ctx { element := start, scope := State.root, trigger := payload.trigger })
         initial)
   | .command data => onRunning hooks ctx input before (command hooks ctx data)

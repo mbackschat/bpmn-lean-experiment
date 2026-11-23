@@ -38,7 +38,7 @@ structure StartKeeps (hooks : Hooks) (aux : State → Program → State → Prop
 a settled closure whose occurrences do, every occurrence under its own scope occurrence's key (`orderJournal_keyed`,
 DC26). -/
 theorem orderJournal_committed {start settled : State} {log : RunLog} {after : State}
-    (ran : orderJournal start (.ok (settled, log)) = .ok after)
+    (ran : orderJournal schedule start (.ok (settled, log)) = .ok after)
     (keyed : ∀ occurrence ∈ settled.occurrences, occurrence.id.scope = occurrence.scope) :
     Laws.State.Committed after := by
   refine ⟨(orderJournal_closed ran).2.2.1, ?_, ?_⟩
@@ -62,7 +62,7 @@ theorem running_relative {aux : State → Program → State → Prop} (contract 
     (holds : inv program { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] })
     (ran : step hooks program (some before) input = .ok after) :
     ∃ (start : State) (settled : State × RunLog), (inv program settled.1 ∧ aux start program settled.1 ∧
-      Unbatched settled.1) ∧ orderJournal start (.ok settled) = .ok after := by
+      Unbatched settled.1) ∧ orderJournal program.options.branchSchedule start (.ok settled) = .ok after := by
   rcases step_ok ran with ⟨_, _, fresh, _⟩ | ⟨_, _, runs, ran⟩
   · simp at fresh
   · obtain ⟨state, start, moved, rest⟩ := onRunning_ok ran
@@ -80,7 +80,7 @@ theorem running_relative {aux : State → Program → State → Prop} (contract 
     have held := input_carries contract phases facts pipeline framing based runs started between stepped settling
     have done := input_carries (relative.contract start) (relative.phases start) facts (relative.pipeline start) framing
       (auxBased start) runs (entry _ _ started keys) between stepped settling
-    rw [inputCtx_program] at held done
+    rw [inputCtx_program] at held done made
     exact ⟨start, settled, ⟨held.1, done.1, settle_unbatched queued (microStep_unbatched queued stepped) settling⟩,
       made⟩
 
@@ -120,7 +120,7 @@ theorem start_body (facts : StateFacts) {program : Program} {payload : StartInpu
       microStep hooks (inputCtx hooks program (.start payload)) (.ofRoot .input) (.input .start) element State.root body
         start = .ok moved ∧
       settle hooks (inputCtx hooks program (.start payload)) closureBound closureWorkBound (RunLog.record {} (.ofRoot .input))
-        moved = .ok settled ∧ orderJournal start (.ok settled) = .ok after := by
+        moved = .ok settled ∧ orderJournal (inputCtx hooks program (.start payload)).program.options.branchSchedule start (.ok settled) = .ok after := by
   obtain ⟨element, start, moved, rest⟩ := ran.ran
   obtain ⟨settled, clocked, stepped, rest⟩ := rest
   obtain ⟨settling, made, fired, rest⟩ := rest
@@ -153,7 +153,7 @@ theorem start_relative {aux : State → Program → State → Prop} (contract : 
           (.ofRoot .seed)).occurrences, occurrence.id.scope = occurrence.scope)
     {input : Input} {after : State} (ran : step hooks program none input = .ok after) :
     ∃ (start : State) (settled : State × RunLog), (inv program settled.1 ∧ aux start program settled.1 ∧
-      Unbatched settled.1) ∧ orderJournal start (.ok settled) = .ok after := by
+      Unbatched settled.1) ∧ orderJournal program.options.branchSchedule start (.ok settled) = .ok after := by
   rcases step_ok ran with ⟨payload, rfl, _, ran⟩ | ⟨_, _, _, ran⟩
   · obtain ⟨start, moved, settled, rest⟩ := start_body facts ran
     obtain ⟨clocked, _, _, rest⟩ := rest
@@ -173,7 +173,7 @@ theorem start_relative {aux : State → Program → State → Prop} (contract : 
       framing (auxBased start) (entry _ _ started keys) between byBody stepped
     have done := settle_carries (relative.contract start) (relative.phases start) facts (relative.pipeline start) framing
       (auxBased start) _ _ _ _ _ movedAux.1 movedAux.2 settling
-    rw [inputCtx_program] at held done
+    rw [inputCtx_program] at held done made
     exact ⟨start, settled, ⟨held.1, done.1, settle_unbatched queued (microStep_unbatched queued stepped) settling⟩,
       made⟩
   · obtain ⟨_, _, rest⟩ := onRunning_ok ran

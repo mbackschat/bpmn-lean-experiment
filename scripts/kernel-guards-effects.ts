@@ -381,10 +381,8 @@ function unitKeyedNames(tree: KernelTree): ReadonlySet<string> {
 
 const ownedUses: readonly OwnedUse[] = [
   {
-    // DC12's issue order is the run order of the issuing units, so the commit's compaction reads it (CommitsAgree holds up
-    // to renaming), as `scripts/kernel-effects.lean`'s rule lists `Kernel.Step.issueOrder`.
-    what: "reads the run log through runPosition outside orderKey, byRun and issueOrder",
-    owners: { "step/order": ["orderKey"], "step/commit": ["byRun", "issueOrder"] },
+    what: "reads the run log through runPosition outside orderKey and byRun",
+    owners: { "step/order": ["orderKey"], "step/commit": ["byRun"] },
     at: (tokens, index) => tokens[index]?.text === "runPosition" && tokens[index + 1]?.text === "(" &&
       tokens[index - 1]?.text !== "function",
   },
@@ -432,7 +430,7 @@ function enclosing(bodies: Map<string, readonly [number, number]>, index: number
 
 /**
  * The TypeScript halves of KD7's run-log rules (DC4; `scripts/kernel-effects.lean` holds the Lean halves): the run log is
- * read only through `runPosition`, which only the token order (`orderKey`) and the commit (`byRun`, `issueOrder`) call,
+ * read only through `runPosition`, which only the token order (`orderKey`) and the commit (`byRun`) call,
  * and its positions only by its reader and writer, so no unit's body reads when another ran; and no function but the
  * choices that break every tie by the key, the commit's sort by position then key and the queued tokens' multiset view
  * reads the iteration order of a map keyed by unit, and no type alias names such a map (`unitKeyedAliases`).

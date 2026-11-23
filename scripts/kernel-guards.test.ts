@@ -596,7 +596,7 @@ test("the run-log guard (KD7) holds the log to its one reader and a unit-keyed m
   const real: Record<string, string> = Object.fromEntries(owners.map((file) => [file, readFileSync(path.join(tree.root, file), "utf8")]));
   assert.deepEqual(runLogFindings(fixture({ ...real, "packages/kernel/src/step/issues.ts": "export const issues = (state) => orderedEntries(state.issued);\n" })), [], "the issue table is keyed by issue");
   for (const [module, text, pattern] of [
-    ["feature/work", "export function peek(log, key) { return runPosition(log, key); }", /KD7 run log packages\/kernel\/src\/feature\/work\.ts:1: reads the run log through runPosition outside orderKey, byRun and issueOrder/u],
+    ["feature/work", "export function peek(log, key) { return runPosition(log, key); }", /KD7 run log packages\/kernel\/src\/feature\/work\.ts:1: reads the run log through runPosition outside orderKey and byRun/u],
     ["step/peek", "export function size(log) { return log.positions; }", /KD7 run log packages\/kernel\/src\/step\/peek\.ts:1: reads the run log's positions outside runRecord and runPosition/u],
     ["step/first", "export function first(state) { return orderedEntries(state.queuedSignals)[0]; }", /KD7 run log packages\/kernel\/src\/step\/first\.ts:1: reads the iteration order of a unit-keyed map/u],
     ["step/last", "export const last = (q: OrderedMap<UnitKey, T>) => orderedEntries(q);", /last\.ts:1: reads the iteration order of a unit-keyed map/u],

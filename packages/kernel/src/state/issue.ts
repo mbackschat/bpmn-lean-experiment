@@ -90,12 +90,13 @@ export function offersOccurrence(issued: IssueTable, occurrence: OccurrenceId, k
  * Lean's `ClaimSlot` tags: the slot a fresh issue takes its committed ordinal in at commit (DC12), one per counter map,
  * so the commit's assignment keys exactly what each counter compares: a scope occurrence's (parent, element)
  * (`State.scopeOrdinals`), an occurrence's (scope occurrence, element) (`State.occurrenceOrdinals`), an item's
- * occurrence (`State.itemOrdinals`).
+ * occurrence (`State.itemOrdinals`), and an order position's one slot (`State.nextOrder`, DC13), which has no owner.
  */
-export enum ClaimSlotTag { Scope = "scope", Occurrence = "occurrence", Item = "item" }
+export enum ClaimSlotTag { Scope = "scope", Occurrence = "occurrence", Item = "item", Position = "position" }
 export type ClaimSlot =
   | Readonly<{ tag: ClaimSlotTag.Scope | ClaimSlotTag.Occurrence; slot: ScopeSlot }>
-  | Readonly<{ tag: ClaimSlotTag.Item; occurrence: OccurrenceId }>;
+  | Readonly<{ tag: ClaimSlotTag.Item; occurrence: OccurrenceId }>
+  | Readonly<{ tag: ClaimSlotTag.Position }>;
 
 /** Lean's `ClaimSlot.rank`: the counter map a slot counts in. */
 function claimRank(slot: ClaimSlot): number {
@@ -106,6 +107,8 @@ function claimRank(slot: ClaimSlot): number {
       return 1;
     case ClaimSlotTag.Item:
       return 2;
+    case ClaimSlotTag.Position:
+      return 3;
   }
   return assertNever(slot);
 }
@@ -117,6 +120,7 @@ function claimScopeSlot(slot: ClaimSlot): ScopeSlot | null {
     case ClaimSlotTag.Occurrence:
       return slot.slot;
     case ClaimSlotTag.Item:
+    case ClaimSlotTag.Position:
       return null;
   }
   return assertNever(slot);
@@ -130,6 +134,8 @@ function claimItem(slot: ClaimSlot): OccurrenceId | null {
       return null;
     case ClaimSlotTag.Item:
       return slot.occurrence;
+    case ClaimSlotTag.Position:
+      return null;
   }
   return assertNever(slot);
 }
@@ -156,6 +162,21 @@ export type IssueTable = OrderedMap<Issue, Issued>;
 
 /** A running micro-step's unit (`State.issuing`), with the text its fresh issues name it by (`IssuerText`). */
 export type Issuer = Readonly<{ unit: UnitKey; text: IssuerText }>;
+
+/**
+ * Lean's `Issue.notAfter`: whether the order position `left` comes no later than `right` (DC13): a committed position by
+ * its number, before every pending one, which the closure in progress issued; two pending positions by their units under
+ * `units`, then by their index in the unit. A pending position names its unit only by its digest, so the unit is read
+ * from the issue table `issued`, which holds every issue of the closure in progress.
+ */
+export function issueNotAfter(units: (a: UnitKey, b: UnitKey) => number, issued: IssueTable, left: Issue, right: Issue): boolean {
+  const [a, b] = [freshIssue(left), freshIssue(right)];
+  if (a === null || b === null) return a === null && (b !== null || (left as number) <= (right as number));
+  const [unitA, unitB] = [issuerOf(issued, a), issuerOf(issued, b)];
+  if (unitA === null || unitB === null) throw new Error("position-outside-issue-table");
+  const order = units(unitA, unitB);
+  return order < 0 || (order === 0 && a.index <= b.index);
+}
 
 /** The seed's unit key, which no micro-step runs under: the issuer between micro-steps (`State.issuing`). */
 export const seedUnit: UnitKey = unitRoot({ tag: UnitRootTag.Seed });

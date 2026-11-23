@@ -23,13 +23,13 @@ open Kernel Kernel.Step Kernel.Laws.State Kernel.Laws.Step
 
 section Runs
 
-variable {start : State} {log : RunLog} {s t : State}
+variable {schedule : BranchSchedule} {start : State} {log : RunLog} {s t : State}
 
 /-- The compensation runs a commit leaves run their handlers in the settled state's contexts, renamed. -/
-theorem compact_contexts (ran : compact start log s = .ok t) {other : CompensationRun}
+theorem compact_contexts (ran : compact schedule start log s = .ok t) {other : CompensationRun}
     (member : other ∈ t.slots.compensation.runs) :
     ∃ old ∈ s.slots.compensation.runs,
-      other.running.map (·.1) = (old.running.map (·.1)).map (renameScope (commitRenaming start log s)) := by
+      other.running.map (·.1) = (old.running.map (·.1)).map (renameScope (commitRenaming schedule start log s)) := by
   rw [compact_slots ran, renameSlots_eq] at member
   obtain ⟨old, inside, rfl⟩ := List.mem_map.mp member
   exact ⟨old, inside, by simp [List.map_map, Function.comp_def]⟩
@@ -46,7 +46,7 @@ theorem renameIteration_waiting {r : Issue → Issue} {iteration : Iteration} :
 
 section Framed
 
-variable {program : Program} {start state : State} {log : RunLog} {after : State}
+variable {schedule : BranchSchedule} {program : Program} {start state : State} {log : RunLog} {after : State}
 
 /-- **`RunsFramed.keyed` across the commit** (`RunsKeyed`, stated over its body): standing bodies' keys rename apart. -/
 theorem orderJournal_runsKeyed (formed : WellFormed program state) (counted : CountersFrom start state)
@@ -54,7 +54,7 @@ theorem orderJournal_runsKeyed (formed : WellFormed program state) (counted : Co
     (keys : ∀ occurrence ∈ state.occurrences, occurrence.id.scope = occurrence.scope)
     (bodies : ∀ run ∈ state.slots.multiInstances, ∃ occurrence ∈ state.occurrences, occurrence.id = run.occurrence)
     (keyed : (state.slots.multiInstances.map (·.occurrence)).Nodup)
-    (made : orderJournal start (.ok (state, log)) = .ok after) :
+    (made : orderJournal schedule start (.ok (state, log)) = .ok after) :
     (after.slots.multiInstances.map (·.occurrence)).Nodup := by
   have ran := orderJournal_of made
   have facts := ordered_facts log formed counted batches
@@ -83,7 +83,7 @@ theorem orderJournal_runsOwned (formed : WellFormed program state) (counted : Co
         ∃ entry ∈ state.scopes, entry.id = scope ∧ entry.parent = some run.scope) ∧
       ∀ (first second : Nat) (scope : ScopeOccurrenceId), run.instances[first]? = some (.active scope) →
         run.instances[second]? = some (.active scope) → first = second)
-    (made : orderJournal start (.ok (state, log)) = .ok after) :
+    (made : orderJournal schedule start (.ok (state, log)) = .ok after) :
     ∀ run ∈ after.slots.multiInstances,
       (∃ occurrence ∈ after.occurrences, occurrence.id = run.occurrence ∧ occurrence.element = run.element ∧
         occurrence.role = .multiInstanceBody) ∧ run.scope ∈ after.scopes.map (·.id) ∧
@@ -97,7 +97,7 @@ theorem orderJournal_runsOwned (formed : WellFormed program state) (counted : Co
   have issued := facts.issued
   have rooted := facts.rooted
   obtain ⟨H, history⟩ := historic_of issued rooted
-  have fixes : Fixes (commitRenaming start log (ordered log state)) := renameBy_fixes _
+  have fixes : Fixes (commitRenaming schedule start log (ordered log state)) := renameBy_fixes _
   intro run member
   rw [compact_bodies ran] at member
   obtain ⟨old, inside, rfl⟩ := List.mem_map.mp member
@@ -135,7 +135,7 @@ theorem orderJournal_bodyOwns (formed : WellFormed program state) (counted : Cou
     (bodyScopes : ∀ run ∈ state.slots.multiInstances, run.scope ∈ state.scopes.map (·.id))
     (owns : ∀ run ∈ state.slots.multiInstances, ∀ entry ∈ state.scopes, entry.id = run.scope →
       entry.occurrence = some run.occurrence)
-    (made : orderJournal start (.ok (state, log)) = .ok after) :
+    (made : orderJournal schedule start (.ok (state, log)) = .ok after) :
     ∀ run ∈ after.slots.multiInstances, ∀ entry ∈ after.scopes, entry.id = run.scope →
       entry.occurrence = some run.occurrence := by
   have ran := orderJournal_of made
@@ -160,7 +160,7 @@ theorem orderJournal_instancesUnowned (formed : WellFormed program state) (count
       run.instances[index]? = some (.active scope) → ∃ entry ∈ state.scopes, entry.id = scope ∧ entry.parent = some run.scope)
     (unowned : ∀ run ∈ state.slots.multiInstances, ∀ scope, Iteration.active scope ∈ run.instances →
       ∀ entry ∈ state.scopes, entry.id = scope → entry.occurrence = none)
-    (made : orderJournal start (.ok (state, log)) = .ok after) :
+    (made : orderJournal schedule start (.ok (state, log)) = .ok after) :
     ∀ run ∈ after.slots.multiInstances, ∀ scope, Iteration.active scope ∈ run.instances →
       ∀ entry ∈ after.scopes, entry.id = scope → entry.occurrence = none := by
   have ran := orderJournal_of made
@@ -191,7 +191,7 @@ theorem orderJournal_instancesUnheld (formed : WellFormed program state) (counte
       run.instances[index]? = some (.active scope) → ∃ entry ∈ state.scopes, entry.id = scope ∧ entry.parent = some run.scope)
     (unheld : ∀ run ∈ state.slots.multiInstances, ∀ scope, Iteration.active scope ∈ run.instances →
       ∀ other ∈ state.slots.compensation.runs, scope ∉ other.running.map (·.1))
-    (made : orderJournal start (.ok (state, log)) = .ok after) :
+    (made : orderJournal schedule start (.ok (state, log)) = .ok after) :
     ∀ run ∈ after.slots.multiInstances, ∀ scope, Iteration.active scope ∈ run.instances →
       ∀ other ∈ after.slots.compensation.runs, scope ∉ other.running.map (·.1) := by
   have ran := orderJournal_of made
@@ -225,7 +225,7 @@ theorem orderJournal_shaped
       (loop.mode = .parallel → ∀ slot ∈ run.instances, slot ≠ .waiting) ∧
       ∀ output, Iteration.completed output ∈ run.instances → (loop.outputDataItem.isSome → output.isSome) ∧
         ∀ value, output = some value → ∀ items, run.collection = .stringList items → ∃ text, value = .string text)
-    (made : orderJournal start (.ok (state, log)) = .ok after) :
+    (made : orderJournal schedule start (.ok (state, log)) = .ok after) :
     ∀ run ∈ after.slots.multiInstances, ∀ loop : MultiInstance,
       ((program.element? run.element).bind (·.envelope?)).bind (·.multiInstance) = some loop →
       (loop.mode = .sequential → ∃ filled current waiting, run.instances = filled ++ current ++ waiting ∧
@@ -246,16 +246,16 @@ theorem orderJournal_shaped
     have single := shape.2.2.1
     have running := shape.2.2.2.1
     have pending := shape.2.2.2.2
-    refine ⟨filled.map (renameIteration (commitRenaming start log (ordered log state))),
-      current.map (renameIteration (commitRenaming start log (ordered log state))),
-      waiting.map (renameIteration (commitRenaming start log (ordered log state))),
+    refine ⟨filled.map (renameIteration (commitRenaming schedule start log (ordered log state))),
+      current.map (renameIteration (commitRenaming schedule start log (ordered log state))),
+      waiting.map (renameIteration (commitRenaming schedule start log (ordered log state))),
       by simp [split], fun slot slotIn => ?_, by simpa using single, fun slot slotIn => ?_, fun slot slotIn => ?_⟩
     · obtain ⟨original, originalIn, rfl⟩ := List.mem_map.mp slotIn
       obtain ⟨output, rfl⟩ := done original originalIn
       exact ⟨output, by simp⟩
     · obtain ⟨original, originalIn, rfl⟩ := List.mem_map.mp slotIn
       obtain ⟨scope, rfl⟩ := running original originalIn
-      exact ⟨renameScope (commitRenaming start log (ordered log state)) scope, by simp⟩
+      exact ⟨renameScope (commitRenaming schedule start log (ordered log state)) scope, by simp⟩
     · obtain ⟨original, originalIn, rfl⟩ := List.mem_map.mp slotIn
       rw [pending original originalIn]
       simp
@@ -270,7 +270,7 @@ theorem orderJournal_shaped
 /-- A committed, well-formed before-state's bodies' keys are fixed by the commit's renaming. -/
 theorem before_fixed {programBefore : Program} {b : State} (formedBefore : WellFormed programBefore b) (committed : Committed b)
     {earlier : MultiInstanceRun} (member : earlier ∈ b.slots.multiInstances) :
-    renameId (commitRenaming start log (ordered log state)) earlier.occurrence = earlier.occurrence :=
+    renameId (commitRenaming schedule start log (ordered log state)) earlier.occurrence = earlier.occurrence :=
   id_fixed committed.issued (formedBefore.settled.bodies earlier member).1 (renameBy_fixes _)
 
 /-- **`Unstarted b` across the commit** (its three fields, stated over their bodies): the before-state's bodies' keys
@@ -283,7 +283,7 @@ theorem orderJournal_unstarted {programBefore : Program} {b : State} (formedBefo
     (begun : ∀ earlier ∈ b.slots.multiInstances, ∀ o ∈ state.occurrences, o.id = earlier.occurrence → o.begun = true)
     (unstarted : ∀ earlier ∈ b.slots.multiInstances, ∀ o ∈ state.occurrences, o.id = earlier.occurrence →
       key state o ∉ state.draft.started.map (·.occurrence))
-    (made : orderJournal start (.ok (state, log)) = .ok after) :
+    (made : orderJournal schedule start (.ok (state, log)) = .ok after) :
     (∀ earlier ∈ b.slots.multiInstances, OccurrenceIssued after earlier.occurrence) ∧
     (∀ earlier ∈ b.slots.multiInstances, ∀ o ∈ after.occurrences, o.id = earlier.occurrence → o.begun = true) ∧
     (∀ earlier ∈ b.slots.multiInstances, ∀ o ∈ after.occurrences, o.id = earlier.occurrence →
@@ -333,7 +333,7 @@ theorem orderJournal_snapshots {programBefore : Program} {b : State} (formedBefo
         run.instances[index]? = some (.completed output))
     (generated : ∀ run ∈ state.slots.multiInstances, (∀ earlier ∈ b.slots.multiInstances, earlier.occurrence ≠ run.occurrence) →
       0 < run.instances.length)
-    (made : orderJournal start (.ok (state, log)) = .ok after) :
+    (made : orderJournal schedule start (.ok (state, log)) = .ok after) :
     (∀ earlier ∈ b.slots.multiInstances, ∀ run ∈ after.slots.multiInstances, run.occurrence = earlier.occurrence →
       run.collection = earlier.collection ∧ run.instances.length = earlier.instances.length ∧ run.scope = earlier.scope ∧
       run.element = earlier.element ∧ run.occurrence = earlier.occurrence ∧
@@ -357,7 +357,7 @@ theorem orderJournal_snapshots {programBefore : Program} {b : State} (formedBefo
         (by rw [before_fixed formedBefore committed member, bodyId]; exact named.symm)
     have kept := fixed earlier member old oldIn same.symm
     have stays := kept.2.2.2.2.2
-    have scopeFixed : renameScope (commitRenaming start log (ordered log state)) earlier.scope = earlier.scope :=
+    have scopeFixed : renameScope (commitRenaming schedule start log (ordered log state)) earlier.scope = earlier.scope :=
       scope_fixed committed.issued ((historic_of formedBefore.issued formedBefore.rooted).issued_key
         (bodyScopes earlier member)) (renameBy_fixes _)
     refine ⟨kept.1, by simpa using kept.2.1, by change renameScope _ old.scope = _; rw [kept.2.2.1, scopeFixed], kept.2.2.2.1,

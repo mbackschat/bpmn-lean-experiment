@@ -40,16 +40,16 @@ abbrev ordered (log : RunLog) (state : State) : State :=
                transitions := ∅, outboxes := ∅, queuedTokens := ∅, queuedSignals := ∅ }
 
 /-- A committed closure: the settled one ordered, then compacted. -/
-theorem orderJournal_ok {start : State} {outcome : Except Failure (State × RunLog)} {after : State} (ran : orderJournal start outcome = .ok after) :
-    ∃ settled log, outcome = .ok (settled, log) ∧ compact start log (ordered log settled) = .ok after := by
+theorem orderJournal_ok {start : State} {outcome : Except Failure (State × RunLog)} {after : State} (ran : orderJournal schedule start outcome = .ok after) :
+    ∃ settled log, outcome = .ok (settled, log) ∧ compact schedule start log (ordered log settled) = .ok after := by
   cases outcome with
   | error failure => simp [orderJournal, bind, Except.bind] at ran
   | ok settled => exact ⟨settled.1, settled.2, rfl, ran⟩
 
 /-- What a settled closure commits, given its settled state and run log. -/
 theorem orderJournal_of {start state : State} {log : RunLog} {after : State}
-    (made : orderJournal start (.ok (state, log)) = .ok after) :
-    compact start log (ordered log state) = .ok after :=
+    (made : orderJournal schedule start (.ok (state, log)) = .ok after) :
+    compact schedule start log (ordered log state) = .ok after :=
   made
 
 /-- `byRun` reorders the entries of a unit-keyed family and keeps each of them. -/
@@ -109,7 +109,7 @@ theorem byRun_sorted {α : Type} (log : RunLog) (entries : TreeMap UnitKey α co
 
 /-- A committed commit committed a settled closure. -/
 theorem orderJournal_settled {start : State} {outcome : Except Failure (State × RunLog)} {after : State}
-    (ran : orderJournal start outcome = .ok after) : ∃ settled, outcome = .ok settled ∧ orderJournal start (.ok settled) = .ok after := by
+    (ran : orderJournal schedule start outcome = .ok after) : ∃ settled, outcome = .ok settled ∧ orderJournal schedule start (.ok settled) = .ok after := by
   cases outcome with
   | error failure => simp [orderJournal, bind, Except.bind] at ran
   | ok settled => exact ⟨settled, rfl, ran⟩
@@ -198,14 +198,25 @@ theorem fold_took {base : ClaimSlot → Nat} :
     · exact fold_keeps rest _ distinct.1 (assignStep_above above _) (assignStep_took above _)
     · exact fold_took rest _ distinct.2 (assignStep_above above first) claim later
 
+theorem assignStep_eq (base : ClaimSlot → Nat) (acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare)
+    (claim : Issue × ClaimSlot) : assignStep base acc claim = (acc.1.insert claim.1 (acc.2.getD claim.2 (base claim.2)),
+      acc.2.insert claim.2 (acc.2.getD claim.2 (base claim.2) + 1)) := by simp only [assignStep]
+
+theorem assign_eq (start : State) (log : RunLog) (state : State) :
+    assign schedule start log state = (issueOrder schedule log state).foldl (assignStep (slotBase start)) (∅, ∅) := by
+  simp only [assign]
+
+theorem issueOrder_eq (log : RunLog) (state : State) : issueOrder schedule log state =
+    state.issued.toList.mergeSort fun a b => Issue.notAfter (issuerOrder schedule log) a.1 b.1 := by simp only [issueOrder]
+
 /-- The issue order lists the table's entries, each issue once. -/
 theorem issueOrder_mem {log : RunLog} {state : State} {claim : Issue × ClaimSlot} :
-    claim ∈ issueOrder log state ↔ state.issued[claim.1]? = some claim.2 := by
+    claim ∈ issueOrder schedule log state ↔ state.issued[claim.1]? = some claim.2 := by
   unfold issueOrder
   rw [(List.mergeSort_perm _ _).mem_iff]
   exact Std.ExtTreeMap.mem_toList_iff_getElem?_eq_some
 
-theorem issueOrder_nodup (log : RunLog) (state : State) : ((issueOrder log state).map (·.1)).Nodup := by
+theorem issueOrder_nodup (schedule : BranchSchedule) (log : RunLog) (state : State) : ((issueOrder schedule log state).map (·.1)).Nodup := by
   unfold issueOrder
   refine ((List.mergeSort_perm _ _).map _).nodup_iff.mpr ?_
   rw [List.nodup_iff_pairwise_ne, List.pairwise_map]
@@ -214,9 +225,9 @@ theorem issueOrder_nodup (log : RunLog) (state : State) : ((issueOrder log state
 /-- **`assign_took`.** Every entry of the issue table takes an ordinal at or above its slot's base and below the slot's
 next ordinal. -/
 theorem assign_took {start : State} {log : RunLog} {state : State} {issue : Issue} {slot : ClaimSlot}
-    (tabled : state.issued[issue]? = some slot) : Took (slotBase start) (assign start log state) (issue, slot) := by
+    (tabled : state.issued[issue]? = some slot) : Took (slotBase start) (assign schedule start log state) (issue, slot) := by
   unfold assign
-  exact fold_took _ _ (issueOrder_nodup log state) (fun _ _ found => by simp at found) _ (issueOrder_mem.mpr tabled)
+  exact fold_took _ _ (issueOrder_nodup schedule log state) (fun _ _ found => by simp at found) _ (issueOrder_mem.mpr tabled)
 
 /-! ## The counters after the commit -/
 
@@ -275,10 +286,12 @@ theorem advance_step (r : Issue → Issue) (renamed state : State) (slot : Claim
         let occurrence := renameId r occurrence
         if renamed.occurrences.any (·.id == occurrence) then
           { state with itemOrdinals := raiseCounter state.itemOrdinals occurrence ordinal }
-        else state) := by
-  cases slot <;> dsimp only <;> split
+        else state
+      | .position => { state with nextOrder := max ordinal state.nextOrder }) := by
+  cases slot <;> dsimp only <;> try split
   all_goals first
     | exact .refl state
+    | exact ⟨rfl, rfl, rfl, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _⟩
     | exact ⟨rfl, rfl, rfl, fun key => raiseCounter_ge _ _ key _, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _⟩
     | exact ⟨rfl, rfl, rfl, fun _ => Nat.le_refl _, fun key => raiseCounter_ge _ _ key _, fun _ => Nat.le_refl _⟩
     | exact ⟨rfl, rfl, rfl, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, fun key => raiseCounter_ge _ _ key _⟩
@@ -365,7 +378,8 @@ ordinal. -/
 theorem slotBase_eq (state : State) (slot : ClaimSlot) : slotBase state slot = match slot with
     | .scope slot => if slot.parent.fresh then 0 else state.scopeOrdinals.getD slot 0
     | .occurrence slot => if slot.parent.fresh then 0 else state.occurrenceOrdinals.getD slot 0
-    | .item occurrence => if occurrence.fresh then 0 else state.itemOrdinals.getD occurrence 0 := by
+    | .item occurrence => if occurrence.fresh then 0 else state.itemOrdinals.getD occurrence 0
+    | .position => state.nextOrder := by
   cases slot <;> rfl
 
 /-- What the fold keeps of the claims it processed: each took an ordinal below its slot's next ordinal, and two of one
@@ -441,9 +455,9 @@ theorem fold_apart {base : ClaimSlot → Nat} :
 /-- **Two entries of one slot take different ordinals.** -/
 theorem assign_apart {start : State} {log : RunLog} {state : State} {first second : Issue} {slot : ClaimSlot}
     (one : state.issued[first]? = some slot) (two : state.issued[second]? = some slot)
-    (same : (assign start log state).1[first]? = (assign start log state).1[second]?) : first = second := by
-  have kept := fold_apart (base := slotBase start) (issueOrder log state) [] (∅, ∅)
-    (by simpa using issueOrder_nodup log state) ⟨fun _ member => (nomatch member), fun _ member => (nomatch member)⟩
+    (same : (assign schedule start log state).1[first]? = (assign schedule start log state).1[second]?) : first = second := by
+  have kept := fold_apart (base := slotBase start) (issueOrder schedule log state) [] (∅, ∅)
+    (by simpa using issueOrder_nodup schedule log state) ⟨fun _ member => (nomatch member), fun _ member => (nomatch member)⟩
   unfold assign at same
   exact kept.apart (first, slot) (by simpa using issueOrder_mem.mpr one) (second, slot)
     (by simpa using issueOrder_mem.mpr two) rfl same
@@ -451,29 +465,29 @@ theorem assign_apart {start : State} {log : RunLog} {state : State} {first secon
 /-! ## What a commit leaves -/
 
 /-- The renaming a commit applies. -/
-abbrev commitRenaming (start : State) (log : RunLog) (s : State) : Issue → Issue := renameBy (assign start log s).1
+abbrev commitRenaming (schedule : BranchSchedule) (start : State) (log : RunLog) (s : State) : Issue → Issue := renameBy (assign schedule start log s).1
 
 /-- The continuation renaming a commit passes to `renameState`. -/
-abbrev commitRekey (start : State) (log : RunLog) (s : State) : Continuation → Continuation :=
-  Continuation.rekey (renameId (commitRenaming start log s)) (renameScope (commitRenaming start log s))
+abbrev commitRekey (schedule : BranchSchedule) (start : State) (log : RunLog) (s : State) : Continuation → Continuation :=
+  Continuation.rekey (renameId (commitRenaming schedule start log s)) (renameScope (commitRenaming schedule start log s))
 
 @[simp] theorem commitRenaming_committed (start : State) (log : RunLog) (s : State) (n : Nat) :
-    commitRenaming start log s (.committed n) = .committed n :=
+    commitRenaming schedule start log s (.committed n) = .committed n :=
   renameBy_committed _ n
 
 /-- The state a commit leaves when the closure issued anything: the settled one renamed and advanced, the issue table
 emptied. -/
-abbrev compacted (start : State) (log : RunLog) (s : State) : State :=
-  { advanceCounters (commitRenaming start log s) (assign start log s).2 (renameState (commitRenaming start log s) (commitRekey start log s) s) with
+abbrev compacted (schedule : BranchSchedule) (start : State) (log : RunLog) (s : State) : State :=
+  { advanceCounters (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitRekey schedule start log s) s) with
     issued := ∅, issuing := .ofRoot .seed, issueNext := 0 }
 
 /-- **A closure that issued nothing commits its state as it is.** -/
-theorem compact_empty {start : State} {log : RunLog} {s : State} (empty : s.issued.isEmpty = true) : compact start log s = .ok s := by
+theorem compact_empty {start : State} {log : RunLog} {s : State} (empty : s.issued.isEmpty = true) : compact schedule start log s = .ok s := by
   simp [compact, empty]
 
 /-- A commit leaves the settled state when the closure issued nothing, and `compacted` otherwise. -/
-theorem compact_cases {start : State} {log : RunLog} {s t : State} (ran : compact start log s = .ok t) :
-    (s.issued.isEmpty = true ∧ t = s) ∨ (s.issued.isEmpty = false ∧ t = compacted start log s) := by
+theorem compact_cases {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) :
+    (s.issued.isEmpty = true ∧ t = s) ∨ (s.issued.isEmpty = false ∧ t = compacted schedule start log s) := by
   unfold compact at ran
   split at ran
   · rename_i empty
@@ -485,8 +499,8 @@ theorem compact_cases {start : State} {log : RunLog} {s t : State} (ran : compac
       · cases ran
       · exact .inr ⟨by simpa using empty, (Except.ok.inj ran).symm⟩
 
-theorem assign_empty {start : State} {log : RunLog} {s : State} (empty : s.issued.isEmpty = true) : assign start log s = (∅, ∅) := by
-  have none : issueOrder log s = [] := by
+theorem assign_empty {start : State} {log : RunLog} {s : State} (empty : s.issued.isEmpty = true) : assign schedule start log s = (∅, ∅) := by
+  have none : issueOrder schedule log s = [] := by
     have list : s.issued.toList = [] := by simpa [Std.ExtTreeMap.isEmpty_iff] using empty
     unfold issueOrder
     simp [list]
@@ -494,15 +508,15 @@ theorem assign_empty {start : State} {log : RunLog} {s : State} (empty : s.issue
 
 /-- A closure that issued nothing renames nothing. -/
 theorem commitRenaming_empty {start : State} {log : RunLog} {s : State} (empty : s.issued.isEmpty = true) (issue : Issue) :
-    commitRenaming start log s issue = issue := by
+    commitRenaming schedule start log s issue = issue := by
   cases issue <;> simp [commitRenaming, renameBy, assign_empty empty]
 
 theorem rekey_id {r : Issue → Issue} (same : ∀ issue, r issue = issue) (continuation : Continuation) :
     continuation.rekey (renameId r) (renameScope r) = continuation := by
   cases continuation <;> simp [Continuation.rekey, renameId_id same, renameScope_id same]
 
-theorem compact_scopes {start : State} {log : RunLog} {s t : State} (ran : compact start log s = .ok t) :
-    standingKeys t = (standingKeys s).map (renameScope (commitRenaming start log s)) := by
+theorem compact_scopes {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) :
+    standingKeys t = (standingKeys s).map (renameScope (commitRenaming schedule start log s)) := by
   rcases compact_cases ran with ⟨empty, rfl⟩ | ⟨_, rfl⟩
   · simp [renameScope_id (commitRenaming_empty empty)]
   change (advanceCounters _ _ _).scopes.map (·.id) = _
@@ -510,17 +524,17 @@ theorem compact_scopes {start : State} {log : RunLog} {s t : State} (ran : compa
   simp only [standingKeys, renameState_scopes, List.map_map]
   rfl
 
-theorem compact_counter {start : State} {log : RunLog} {s t : State} (ran : compact start log s = .ok t) (slot : ScopeSlot) :
+theorem compact_counter {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) (slot : ScopeSlot) :
     s.scopeOrdinals.getD slot 0 ≤ t.scopeOrdinals.getD slot 0 := by
   rcases compact_cases ran with ⟨_, rfl⟩ | ⟨_, rfl⟩
   · exact Nat.le_refl _
-  have raised := (advance_raised (commitRenaming start log s) (assign start log s).2 (renameState (commitRenaming start log s) (commitRekey start log s) s)).scopeOrdinals slot
+  have raised := (advance_raised (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitRekey schedule start log s) s)).scopeOrdinals slot
   rwa [renameState_scopeOrdinals] at raised
 
-theorem compact_reach {start : State} {log : RunLog} {s t : State} (ran : compact start log s = .ok t) {slot : ScopeSlot} {ordinal : Nat}
-    (advanced : (assign start log s).2[ClaimSlot.scope slot]? = some ordinal)
-    (stands : renameScope (commitRenaming start log s) slot.parent ∈ standingKeys t) :
-    ordinal ≤ t.scopeOrdinals.getD { slot with parent := renameScope (commitRenaming start log s) slot.parent } 0 := by
+theorem compact_reach {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) {slot : ScopeSlot} {ordinal : Nat}
+    (advanced : (assign schedule start log s).2[ClaimSlot.scope slot]? = some ordinal)
+    (stands : renameScope (commitRenaming schedule start log s) slot.parent ∈ standingKeys t) :
+    ordinal ≤ t.scopeOrdinals.getD { slot with parent := renameScope (commitRenaming schedule start log s) slot.parent } 0 := by
   rcases compact_cases ran with ⟨empty, rfl⟩ | ⟨_, rfl⟩
   · simp [assign_empty empty] at advanced
   change _ ∈ (advanceCounters _ _ _).scopes.map (·.id) at stands
@@ -528,50 +542,43 @@ theorem compact_reach {start : State} {log : RunLog} {s t : State} (ran : compac
   obtain ⟨z, member, same⟩ := List.mem_map.mp stands
   exact advance_scope advanced (List.any_eq_true.mpr ⟨z, member, by simp [same]⟩)
 
+/-- `t` is `s` with its counters alone changed. -/
+def CountersOnly (s t : State) : Prop :=
+  t = { s with scopeOrdinals := t.scopeOrdinals, occurrenceOrdinals := t.occurrenceOrdinals,
+               itemOrdinals := t.itemOrdinals, nextOrder := t.nextOrder }
+
 /-- Advancing changes the counters alone. -/
 theorem advance_frame (r : Issue → Issue) (next : TreeMap ClaimSlot Nat compare) (renamed : State) :
-    ∃ scopeOrdinals occurrenceOrdinals itemOrdinals, advanceCounters r next renamed =
-      { renamed with scopeOrdinals, occurrenceOrdinals, itemOrdinals } := by
+    advanceCounters r next renamed =
+      { renamed with scopeOrdinals := (advanceCounters r next renamed).scopeOrdinals,
+                     occurrenceOrdinals := (advanceCounters r next renamed).occurrenceOrdinals,
+                     itemOrdinals := (advanceCounters r next renamed).itemOrdinals,
+                     nextOrder := (advanceCounters r next renamed).nextOrder } := by
+  show CountersOnly renamed _
   unfold advanceCounters
   rw [Std.ExtTreeMap.foldl_eq_foldl_toList]
   generalize next.toList = entries
-  suffices keeps : ∀ (entries : List (ClaimSlot × Nat)) (state : State), (∃ scopeOrdinals occurrenceOrdinals itemOrdinals,
-      state = { renamed with scopeOrdinals, occurrenceOrdinals, itemOrdinals }) →
-      ∃ scopeOrdinals occurrenceOrdinals itemOrdinals, entries.foldl (fun state (x : ClaimSlot × Nat) =>
-        match x.1 with
-        | .scope slot =>
-          let slot := { slot with parent := renameScope r slot.parent }
-          if renamed.scopes.any (·.id == slot.parent) then
-            { state with scopeOrdinals := raiseCounter state.scopeOrdinals slot x.2 }
-          else state
-        | .occurrence slot =>
-          let slot := { slot with parent := renameScope r slot.parent }
-          if renamed.scopes.any (·.id == slot.parent) then
-            { state with occurrenceOrdinals := raiseCounter state.occurrenceOrdinals slot x.2 }
-          else state
-        | .item occurrence =>
-          let occurrence := renameId r occurrence
-          if renamed.occurrences.any (·.id == occurrence) then
-            { state with itemOrdinals := raiseCounter state.itemOrdinals occurrence x.2 }
-          else state) state = { renamed with scopeOrdinals, occurrenceOrdinals, itemOrdinals } from
-    keeps entries renamed ⟨_, _, _, rfl⟩
-  intro entries
-  induction entries with
-  | nil => intro state framed; exact framed
-  | cons x rest step =>
-    rintro state ⟨a, b, c, rfl⟩
-    apply step
-    obtain ⟨slot, ordinal⟩ := x
-    cases slot <;> dsimp only <;> split
-    all_goals exact ⟨_, _, _, rfl⟩
+  have fold : ∀ (f : State → ClaimSlot × Nat → State),
+      (∀ state x, CountersOnly renamed state → CountersOnly renamed (f state x)) →
+      ∀ (entries : List (ClaimSlot × Nat)) state, CountersOnly renamed state →
+        CountersOnly renamed (entries.foldl f state) := by
+    intro f keeps entries
+    induction entries with
+    | nil => intro state framed; exact framed
+    | cons x rest step => intro state framed; exact step _ (keeps state x framed)
+  refine fold _ (fun state x framed => ?_) entries renamed rfl
+  obtain ⟨slot, ordinal⟩ := x
+  unfold CountersOnly at framed ⊢
+  cases slot <;> dsimp only <;> try split
+  all_goals (rw [framed])
 
 /-- A commit changes no field but the identities, the counters and the issue table. -/
-theorem compact_frame {start : State} {log : RunLog} {s t : State} (ran : compact start log s = .ok t) :
+theorem compact_frame {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) :
     t.queuedTokens = s.queuedTokens ∧ t.queuedSignals = s.queuedSignals ∧ t.transitions = s.transitions ∧
       t.outboxes = s.outboxes ∧ t.journal.flatMap (·.ended) = s.journal.flatMap (·.ended) := by
   rcases compact_cases ran with ⟨_, rfl⟩ | ⟨_, rfl⟩
   · exact ⟨rfl, rfl, rfl, rfl, rfl⟩
-  obtain ⟨_, _, _, same⟩ := advance_frame (commitRenaming start log s) (assign start log s).2 (renameState (commitRenaming start log s) (commitRekey start log s) s)
+  have same := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitRekey schedule start log s) s)
   unfold compacted
   rw [same, renameState_eq]
   refine ⟨rfl, rfl, rfl, rfl, ?_⟩
@@ -579,7 +586,7 @@ theorem compact_frame {start : State} {log : RunLog} {s t : State} (ran : compac
   simp only [List.flatMap_map, renameTransition_ended]
 
 /-- A committed closure's journal holds its transitions' end facts, in the order its units ran. -/
-theorem orderJournal_ended {start : State} {outcome : Except Failure (State × RunLog)} {after : State} (ran : orderJournal start outcome = .ok after) :
+theorem orderJournal_ended {start : State} {outcome : Except Failure (State × RunLog)} {after : State} (ran : orderJournal schedule start outcome = .ok after) :
     ∃ settled, outcome = .ok settled ∧
       (after.journal.flatMap (·.ended)).Perm ((settled.1.transitions.toList.map (·.2)).flatMap (·.ended)) := by
   obtain ⟨settled, log, same, made⟩ := orderJournal_ok ran
@@ -587,7 +594,7 @@ theorem orderJournal_ended {start : State} {outcome : Except Failure (State × R
   exact ⟨(settled, log), same, (byRun_perm log settled.transitions).flatMap_right _⟩
 
 /-- No unit key outlives its closure: a committed state holds no queued token, signal, transition or keyed intent. -/
-theorem orderJournal_closed {start : State} {outcome : Except Failure (State × RunLog)} {after : State} (ran : orderJournal start outcome = .ok after) :
+theorem orderJournal_closed {start : State} {outcome : Except Failure (State × RunLog)} {after : State} (ran : orderJournal schedule start outcome = .ok after) :
     after.queuedTokens = ∅ ∧ after.queuedSignals = ∅ ∧ after.transitions = ∅ ∧ after.outboxes = ∅ := by
   obtain ⟨_, _, _, made⟩ := orderJournal_ok ran
   obtain ⟨tokens, signals, parts⟩ := compact_frame made
@@ -596,37 +603,37 @@ theorem orderJournal_closed {start : State} {outcome : Except Failure (State × 
 
 /-! ## The occurrences and items a commit leaves -/
 
-theorem compact_occurrences {start : State} {log : RunLog} {s t : State} (ran : compact start log s = .ok t) :
+theorem compact_occurrences {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) :
     t.occurrences = s.occurrences.map fun occurrence =>
-      { occurrence with id := renameId (commitRenaming start log s) occurrence.id
-                        scope := renameScope (commitRenaming start log s) occurrence.scope
-                        continuation := occurrence.continuation.rekey (renameId (commitRenaming start log s))
-                          (renameScope (commitRenaming start log s)) } := by
+      { occurrence with id := renameId (commitRenaming schedule start log s) occurrence.id
+                        scope := renameScope (commitRenaming schedule start log s) occurrence.scope
+                        continuation := occurrence.continuation.rekey (renameId (commitRenaming schedule start log s))
+                          (renameScope (commitRenaming schedule start log s)) } := by
   rcases compact_cases ran with ⟨empty, rfl⟩ | ⟨_, rfl⟩
-  · have same := commitRenaming_empty (start := start) (log := log) empty
+  · have same := commitRenaming_empty (schedule := schedule) (start := start) (log := log) empty
     exact (List.map_congr_left fun _ _ => by simp [renameId_id same, renameScope_id same, rekey_id same]).trans
       (List.map_id _) |>.symm
   change (advanceCounters _ _ _).occurrences = _
   rw [(advance_raised _ _ _).occurrences, renameState_occurrences]
 
-theorem compact_occurrence_counter {start : State} {log : RunLog} {s t : State} (ran : compact start log s = .ok t) (slot : ScopeSlot) :
+theorem compact_occurrence_counter {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) (slot : ScopeSlot) :
     s.occurrenceOrdinals.getD slot 0 ≤ t.occurrenceOrdinals.getD slot 0 := by
   rcases compact_cases ran with ⟨_, rfl⟩ | ⟨_, rfl⟩
   · exact Nat.le_refl _
-  have raised := (advance_raised (commitRenaming start log s) (assign start log s).2 (renameState (commitRenaming start log s) (commitRekey start log s) s)).occurrenceOrdinals slot
+  have raised := (advance_raised (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitRekey schedule start log s) s)).occurrenceOrdinals slot
   rwa [renameState_occurrenceOrdinals] at raised
 
-theorem compact_item_counter {start : State} {log : RunLog} {s t : State} (ran : compact start log s = .ok t) (occurrence : OccurrenceId) :
+theorem compact_item_counter {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) (occurrence : OccurrenceId) :
     s.itemOrdinals.getD occurrence 0 ≤ t.itemOrdinals.getD occurrence 0 := by
   rcases compact_cases ran with ⟨_, rfl⟩ | ⟨_, rfl⟩
   · exact Nat.le_refl _
-  have raised := (advance_raised (commitRenaming start log s) (assign start log s).2 (renameState (commitRenaming start log s) (commitRekey start log s) s)).itemOrdinals occurrence
+  have raised := (advance_raised (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitRekey schedule start log s) s)).itemOrdinals occurrence
   rwa [renameState_itemOrdinals] at raised
 
-theorem compact_reach_occurrence {start : State} {log : RunLog} {s t : State} (ran : compact start log s = .ok t) {slot : ScopeSlot}
-    {ordinal : Nat} (advanced : (assign start log s).2[ClaimSlot.occurrence slot]? = some ordinal)
-    (stands : renameScope (commitRenaming start log s) slot.parent ∈ standingKeys t) :
-    ordinal ≤ t.occurrenceOrdinals.getD { slot with parent := renameScope (commitRenaming start log s) slot.parent } 0 := by
+theorem compact_reach_occurrence {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) {slot : ScopeSlot}
+    {ordinal : Nat} (advanced : (assign schedule start log s).2[ClaimSlot.occurrence slot]? = some ordinal)
+    (stands : renameScope (commitRenaming schedule start log s) slot.parent ∈ standingKeys t) :
+    ordinal ≤ t.occurrenceOrdinals.getD { slot with parent := renameScope (commitRenaming schedule start log s) slot.parent } 0 := by
   rcases compact_cases ran with ⟨empty, rfl⟩ | ⟨_, rfl⟩
   · simp [assign_empty empty] at advanced
   change _ ∈ (advanceCounters _ _ _).scopes.map (·.id) at stands
@@ -634,10 +641,10 @@ theorem compact_reach_occurrence {start : State} {log : RunLog} {s t : State} (r
   obtain ⟨z, member, same⟩ := List.mem_map.mp stands
   exact advance_occurrence advanced (List.any_eq_true.mpr ⟨z, member, by simp [same]⟩)
 
-theorem compact_reach_item {start : State} {log : RunLog} {s t : State} (ran : compact start log s = .ok t) {occurrence : OccurrenceId}
-    {ordinal : Nat} (advanced : (assign start log s).2[ClaimSlot.item occurrence]? = some ordinal)
-    (present : ∃ other ∈ t.occurrences, other.id = renameId (commitRenaming start log s) occurrence) :
-    ordinal ≤ t.itemOrdinals.getD (renameId (commitRenaming start log s) occurrence) 0 := by
+theorem compact_reach_item {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) {occurrence : OccurrenceId}
+    {ordinal : Nat} (advanced : (assign schedule start log s).2[ClaimSlot.item occurrence]? = some ordinal)
+    (present : ∃ other ∈ t.occurrences, other.id = renameId (commitRenaming schedule start log s) occurrence) :
+    ordinal ≤ t.itemOrdinals.getD (renameId (commitRenaming schedule start log s) occurrence) 0 := by
   obtain ⟨other, member, same⟩ := present
   rcases compact_cases ran with ⟨empty, rfl⟩ | ⟨_, rfl⟩
   · simp [assign_empty empty] at advanced
@@ -668,9 +675,9 @@ theorem foldl_from {β : Type} {f : OpenItems → β → OpenItems} {g : β → 
       exact .inr ⟨y, List.mem_cons_of_mem _ member, same⟩
 
 /-- An item the commit leaves is an item of the settled state renamed. -/
-theorem compact_items {start : State} {log : RunLog} {s t : State} (ran : compact start log s = .ok t) {item : OpenItem}
+theorem compact_items {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) {item : OpenItem}
     (member : item ∈ itemList t.openItems) :
-    ∃ old ∈ itemList s.openItems, item.id = renameItemKey (commitRenaming start log s) old.id := by
+    ∃ old ∈ itemList s.openItems, item.id = renameItemKey (commitRenaming schedule start log s) old.id := by
   rcases compact_cases ran with ⟨empty, rfl⟩ | ⟨_, rfl⟩
   · exact ⟨item, member, (renameItemKey_id (commitRenaming_empty empty) _).symm⟩
   change item ∈ itemList (advanceCounters _ _ _).openItems at member
@@ -679,8 +686,9 @@ theorem compact_items {start : State} {log : RunLog} {s t : State} (ran : compac
   rw [renameState_openItems] at held
   rw [Std.ExtTreeMap.foldl_eq_foldl_toList] at held
   rcases foldl_from (g := fun (x : ItemKey × OpenItem) =>
-      { x.2 with id := renameItemKey (commitRenaming start log s) x.2.id, scope := renameScope (commitRenaming start log s) x.2.scope
-                 attachedTo := x.2.attachedTo.map (renameId (commitRenaming start log s)) })
+      { x.2 with id := renameItemKey (commitRenaming schedule start log s) x.2.id, position := commitRenaming schedule start log s x.2.position,
+                 scope := renameScope (commitRenaming schedule start log s) x.2.scope
+                 attachedTo := x.2.attachedTo.map (renameId (commitRenaming schedule start log s)) })
       (fun m x k v found => by
         simp only [Std.ExtTreeMap.getElem?_insert] at found
         split at found
@@ -693,25 +701,25 @@ theorem compact_items {start : State} {log : RunLog} {s t : State} (ran : compac
 /-! ## One shape for both commits -/
 
 /-- The feature slots a commit leaves: the settled state's, renamed. -/
-theorem compact_slots {start : State} {log : RunLog} {s t : State} (ran : compact start log s = .ok t) :
-    t.slots = renameSlots (commitRenaming start log s) s.slots := by
+theorem compact_slots {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) :
+    t.slots = renameSlots (commitRenaming schedule start log s) s.slots := by
   rcases compact_cases ran with ⟨empty, rfl⟩ | ⟨_, rfl⟩
   · exact (renameSlots_id (commitRenaming_empty empty) _).symm
-  obtain ⟨_, _, _, frame⟩ := advance_frame (commitRenaming start log s) (assign start log s).2 (renameState (commitRenaming start log s) (commitRekey start log s) s)
+  have frame := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitRekey schedule start log s) s)
   unfold compacted
   rw [frame, renameState_eq]
 
 /-- The scope occurrence records a commit leaves: the settled state's, renamed. -/
-theorem compact_scopeRecords {start : State} {log : RunLog} {s t : State} (ran : compact start log s = .ok t) :
+theorem compact_scopeRecords {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) :
     t.scopes = s.scopes.map fun scope =>
-      { scope with id := renameScope (commitRenaming start log s) scope.id,
-                   occurrence := scope.occurrence.map (renameId (commitRenaming start log s)) } := by
+      { scope with id := renameScope (commitRenaming schedule start log s) scope.id,
+                   occurrence := scope.occurrence.map (renameId (commitRenaming schedule start log s)) } := by
   rcases compact_cases ran with ⟨empty, kept⟩ | ⟨_, rfl⟩
   · rw [kept]
-    have same := commitRenaming_empty (start := start) (log := log) empty
-    have ids : renameId (commitRenaming start log s) = id := funext (renameId_id same)
+    have same := commitRenaming_empty (schedule := schedule) (start := start) (log := log) empty
+    have ids : renameId (commitRenaming schedule start log s) = id := funext (renameId_id same)
     exact ((List.map_congr_left fun _ _ => by simp [ids, renameScope_id same]).trans (List.map_id _)).symm
-  obtain ⟨_, _, _, frame⟩ := advance_frame (commitRenaming start log s) (assign start log s).2 (renameState (commitRenaming start log s) (commitRekey start log s) s)
+  have frame := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitRekey schedule start log s) s)
   unfold compacted
   rw [frame, renameState_eq]
 
@@ -804,7 +812,7 @@ private theorem apart_of_adjacent (K : List Issue) (sorted : K.Pairwise fun a b 
 /-- **Issuer names apart** (DC12): a commit that compacts leaves no two distinct units that issued at a common index and
 agree on depth, fingerprint and root, the fixed-size name the TypeScript kernel orders issuers by. Every unit numbers
 its issues from 0 (`Step.microStep`), so any two distinct issuers share index 0. -/
-theorem compact_issuersNamed {start : State} {log : RunLog} {s t : State} (ran : compact start log s = .ok t) {unit other : UnitKey}
+theorem compact_issuersNamed {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) {unit other : UnitKey}
     {index : Nat} (held : Issue.fresh unit index ∈ s.issued) (held' : Issue.fresh other index ∈ s.issued)
     (apart : unit ≠ other) :
     ¬ (unit.spine.level = other.spine.level ∧ unit.spine.fingerprint = other.spine.fingerprint ∧ unit.root = other.root) := by

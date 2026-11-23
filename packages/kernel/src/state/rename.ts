@@ -120,7 +120,8 @@ export function renameState(rename: Rename, continuation: (continuation: Continu
     variables: state.variables.map((variables) => ({ ...variables, scope: scope(variables.scope) })),
     // Renamed keys are inserted afresh, in the renamed key order, as Lean's fold into an empty map inserts them.
     openItems: state.openItems.map((item) => ({
-      ...item, id: renameItemKey(rename, item.id), scope: scope(item.scope), attachedTo: item.attachedTo === null ? null : id(item.attachedTo),
+      ...item, id: renameItemKey(rename, item.id), position: rename(item.position), scope: scope(item.scope),
+      attachedTo: item.attachedTo === null ? null : id(item.attachedTo),
     })).sort((left, right) => compareItemKey(left.id, right.id)),
     slots: renameSlots(rename, state.slots),
     journal: state.journal.map((transition) => renameTransition(rename, transition)),

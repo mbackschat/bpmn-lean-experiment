@@ -29,7 +29,11 @@ theorem openSubscription_grows (state : State) (kind : OpenKind) (element : Elem
   have reserves := reserve_reserves state element scope
   rw [openSubscription_eq]
   exact .of_same (congrArg (List.map (·.id)) reserves.scopes) reserves.scopeOrdinals
-    ((reserves.table fresh).trans (.insert (reserves.issuer fresh).next rfl))
+    ((reserves.table fresh).trans ((TableGrows.insert (reserves.issuer fresh).next
+      (t := { (state.reserve element scope).1 with
+        issued := (state.reserve element scope).1.issued.insert
+          (.fresh (state.reserve element scope).1.issuing (state.reserve element scope).1.issueNext) .position }) rfl).trans
+      (.insert ((reserves.issuer fresh).next_succ .position) rfl)))
 
 theorem keyed_single (binding : String × Value) : keyed [binding] = [binding] := by
   rw [keyed_eq.2, keyed_eq.1]

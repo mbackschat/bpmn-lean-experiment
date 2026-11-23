@@ -66,7 +66,8 @@ def signalReceiversOf (program : Program) (state : State) (address : SignalAddre
     let waiting := ((itemList state.openItems).filter fun item => item.kind.view.signal.any (address.matches ·.address)).map
       fun item => (state.instanceOf item.scope, item.position, occurrence program state item)
     let ordered := waiting.mergeSort fun (leftInstance, leftItem, _) (rightInstance, rightItem, _) =>
-      decide (leftInstance < rightInstance) || (leftInstance == rightInstance && decide (leftItem ≤ rightItem))
+      -- A committed state holds committed positions only, which every unit order orders alike.
+      decide (leftInstance < rightInstance) || (leftInstance == rightInstance && Issue.notAfter UnitKey.breadth.val leftItem rightItem)
     ordered.map (·.2.2)
 
 /-- The root Signal starts of `program`, deployed as `deploymentId`, that a delivery of `address` carrying `variables`

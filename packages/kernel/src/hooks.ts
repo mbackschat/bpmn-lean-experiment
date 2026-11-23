@@ -89,12 +89,12 @@ import {
   type WriteEvent,
   SemanticCause,
   semanticFailure,
-  itemsByPosition, type OccurrenceId,
+  issueNotAfter, type Issue, itemsInOrder, type OccurrenceId, type UnitKey,
 } from "./state.js";
 // Lean's `Kernel.Hooks` re-exports `Kernel.State.Removal` to the features and `Kernel.Step`; so does this module, which
 // keeps the removal module's direct importers to this hub (guard 15).
 export {
-  cancelOccurrence, clearInside, idleWithout, leaveScope, removeOccurrence, withdrawInside, withdrawOccurrence,
+  cancelOccurrence, clearInside, disarm, idleWithout, leaveScope, removeOccurrence, withdrawInside, withdrawOccurrence,
 } from "./state/removal.js";
 export { subtree } from "./state/tree.js";
 
@@ -404,6 +404,21 @@ export interface Ctx {
    * `feature/subscriptions` reads.
    */
   readonly conditionChoices: readonly ConditionChoice[];
+  /**
+   * `step.ts`: the closure's order of units, which orders the pending positions its units issued (DC13,
+   * `issueNotAfter`): breadth-first by default, the run log's under `declarationDepthFirst` (`unitCtx`). Read only
+   * through `ctxPositionLe`.
+   */
+  readonly issuerOrder: (a: UnitKey, b: UnitKey) => number;
+}
+
+/**
+ * Lean's `Ctx.positionLe`: whether the order position `left` comes no later than `right` in the closure in progress
+ * (DC13), reading the units of pending positions from `state`'s issue table; every site that orders open items or other
+ * positions reads this.
+ */
+export function ctxPositionLe(ctx: Ctx, state: State): (left: Issue, right: Issue) => boolean {
+  return (left, right) => issueNotAfter(ctx.issuerOrder, state.issued, left, right);
 }
 
 /**
@@ -531,7 +546,7 @@ export function ctxRequireMappings(ctx: Ctx, context: EvalContext, mappings: rea
 export function itemDetailOf<T>(
   ctx: Ctx, state: State, occurrence: OccurrenceRef, detail: (view: WaitView) => T | null,
 ): readonly [OpenItem, T] | null {
-  for (const item of itemsByPosition(state.openItems)) {
+  for (const item of itemsInOrder(ctxPositionLe(ctx, state), state.openItems)) {
     if (programPublicId(ctx.program, item.element) !== occurrence.element ||
       occurrenceOf(state, item.id.occurrence)?.activation !== occurrence.activation ||
       instanceOf(state, item.scope) !== occurrence.processInstanceId) continue;

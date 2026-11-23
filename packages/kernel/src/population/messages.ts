@@ -4,7 +4,7 @@
  * ([specification](../../../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md)).
  */
 import { MessageNames, assertNever, compareStrings, programPublicId, valueSourceLiteral, type ElementId, type Program } from "../il/types.js";
-import { messageTriggerChannel, type Hooks } from "../hooks.js";
+import { ctxPositionLe, messageTriggerChannel, type Hooks } from "../hooks.js";
 import {
   DeliveryTriggerTag,
   InputTag,
@@ -27,7 +27,7 @@ import {
   type State,
   committed,
   failedWith,
-  itemsByPosition,
+  itemsInOrder,
 } from "../state.js";
 import { criteriaRefusal, startCriteriaRefusal } from "../state/criteria.js";
 import { context, step } from "../step.js";
@@ -120,7 +120,7 @@ export function messageReceivers(
   const ctx = context(hooks, program);
   const receivers: (readonly [OccurrenceRef, MessageChannel])[] = [];
   const refusals: Failure[] = [];
-  for (const item of itemsByPosition(state.openItems)) {
+  for (const item of itemsInOrder(ctxPositionLe(ctx, state), state.openItems)) {
     const view = openKindView(item.kind);
     const message = publication.message;
     const channel = message.tag === MessageAddressTag.Channel ? message.channel : view.name === message.name ? view.channel : null;

@@ -25,13 +25,13 @@ open Kernel.Laws.MultiInstance (LoopOf NumberedInOrder InstancesPlaced BeginsQue
 
 section Numbering
 
-variable {program : Program} {start state : State} {log : RunLog} {after : State}
+variable {schedule : BranchSchedule} {program : Program} {start state : State} {log : RunLog} {after : State}
 
 /-- A reservation still to be made after the commit was one before it: the commit queues nothing, and a held
 compensation run keeps the element its resume reserves. -/
 theorem orderJournal_occurPending (formed : WellFormed program state) (counted : CountersFrom start state)
     (batches : state.batchSignals = [] ∧ state.batchTokens = [] ∧ state.batchIntents = [])
-    (made : orderJournal start (.ok (state, log)) = .ok after) {element : ElementId}
+    (made : orderJournal schedule start (.ok (state, log)) = .ok after) {element : ElementId}
     (pending : OccurPending after element) : OccurPending state element := by
   have ran := orderJournal_of made
   have facts := ordered_facts log formed counted batches
@@ -54,7 +54,7 @@ theorem orderJournal_numbered (formed : WellFormed program state) (counted : Cou
     (keys : ∀ occurrence ∈ state.occurrences, occurrence.id.scope = occurrence.scope)
     (bodies : ∀ run ∈ state.slots.multiInstances, ∃ occurrence ∈ state.occurrences, occurrence.id = run.occurrence)
     (continuations : ∀ o ∈ state.occurrences, ∀ body, o.continuation = .multiInstance body → OccurrenceIssued state body)
-    (held : Numbered program state) (made : orderJournal start (.ok (state, log)) = .ok after) :
+    (held : Numbered program state) (made : orderJournal schedule start (.ok (state, log)) = .ok after) :
     Numbered program after := by
   unfold Numbered at held ⊢
   have ran := orderJournal_of made
@@ -69,9 +69,9 @@ theorem orderJournal_numbered (formed : WellFormed program state) (counted : Cou
   have kept := compact_kept ran
   -- An occurrence whose renamed continuation enters a renamed body continues into the body.
   have intoBody : ∀ o ∈ state.occurrences, ∀ run ∈ state.slots.multiInstances,
-      o.continuation.rekey (renameId (commitRenaming start log (ordered log state)))
-          (renameScope (commitRenaming start log (ordered log state))) =
-        .multiInstance (renameId (commitRenaming start log (ordered log state)) run.occurrence) →
+      o.continuation.rekey (renameId (commitRenaming schedule start log (ordered log state)))
+          (renameScope (commitRenaming schedule start log (ordered log state))) =
+        .multiInstance (renameId (commitRenaming schedule start log (ordered log state)) run.occurrence) →
       o.continuation = .multiInstance run.occurrence := by
     intro o present run runIn same
     obtain ⟨body, continued, renamed⟩ := Continuation.rekey_eq_multiInstance same
@@ -81,8 +81,8 @@ theorem orderJournal_numbered (formed : WellFormed program state) (counted : Cou
       renamed]
   -- A renamed active slot's scope occurrence holds a renamed occurrence only where the slot's holds it.
   have inSlot : ∀ run ∈ state.slots.multiInstances, ∀ slot, Iteration.active slot ∈ run.instances →
-      ∀ o ∈ state.occurrences, renameScope (commitRenaming start log (ordered log state)) slot =
-        renameScope (commitRenaming start log (ordered log state)) o.scope → slot = o.scope :=
+      ∀ o ∈ state.occurrences, renameScope (commitRenaming schedule start log (ordered log state)) slot =
+        renameScope (commitRenaming schedule start log (ordered log state)) o.scope → slot = o.scope :=
     fun run runIn slot active o present same =>
       renameScope_apart counted' rooted (formed.settled.placed run runIn slot active).1
         (owned.occurrenceScopes o present) same
@@ -159,12 +159,12 @@ end Numbering
 
 section Logged
 
-variable {program : Program} {start state : State} {log : RunLog} {after : State}
+variable {schedule : BranchSchedule} {program : Program} {start state : State} {log : RunLog} {after : State}
 
 /-- **`Unlooped.unbegun` across the commit** (what `UnbegunKept` reads of `Logged` after the commit): an unbegun
 occurrence keeps its element and stays unbegun. -/
 theorem orderJournal_unbegunUnlooped (unbegun : UnbegunUnlooped program state)
-    (made : orderJournal start (.ok (state, log)) = .ok after) : UnbegunUnlooped program after := by
+    (made : orderJournal schedule start (.ok (state, log)) = .ok after) : UnbegunUnlooped program after := by
   intro occurrence member flag
   obtain ⟨old, inside, mapped⟩ := compact_occurrence_of (orderJournal_of made) member
   have element := mapped.element
@@ -193,7 +193,7 @@ theorem beginsInOrder_of_keys {first second : List StartedFact}
 journal lists the start facts of the settled transitions in run order, each fact's occurrence key kept. -/
 theorem orderJournal_beginsInOrder {processInstance : String} {element : ElementId}
     (ordered : BeginsInOrder ((byRun log state.transitions).flatMap (·.started)) processInstance element)
-    (made : orderJournal start (.ok (state, log)) = .ok after) :
+    (made : orderJournal schedule start (.ok (state, log)) = .ok after) :
     BeginsInOrder (after.journal.flatMap (·.started)) processInstance element :=
   beginsInOrder_of_keys (compact_journalStarts (orderJournal_of made)) ordered
 

@@ -195,6 +195,7 @@ theorem arriveCatch_keeps {inv : State → Prop} {ctx : Ctx} (ops : Subscription
   obtain ⟨kind?, _, ran⟩ := ok_bind ran
   split at ran
   · have opened := ops.openItem state ‹_› occurrence holds member begun unstarted role
+    rw [← Laws.State.openItemKey_fst] at opened
     dsimp only at ran
     split at ran
     · obtain ⟨⟨evaluated, fires⟩, evaluation, ran⟩ := ok_bind ran

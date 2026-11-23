@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Laws.State.Invariant
+public import Kernel.State.Removal
 
 /-! # Laws of the kernel state: frames
 

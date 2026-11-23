@@ -90,6 +90,7 @@ public import Kernel.Laws.Starts
 public import Kernel.Laws.State
 public import Kernel.Laws.State.Begin
 public import Kernel.Laws.State.Begins
+public import Kernel.Laws.State.Called
 public import Kernel.Laws.State.Chain
 public import Kernel.Laws.State.Claim
 public import Kernel.Laws.State.Clear

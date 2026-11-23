@@ -544,10 +544,10 @@ theorem closureStep_concludes {side : Program → State → Prop} (contract : Ho
     (sideHolds : side ctx.program { state with issuing := unit, issueNext := 0 })
     (step : ClosureStep hooks ctx log unit state after) :
     ∃ mid cause element owner, (inv ctx.program mid ∧ side ctx.program mid) ∧
-      conclude hooks ctx unit cause element owner mid = .ok after := by
+      conclude hooks (unitCtx ctx log) unit cause element owner mid = .ok after := by
   cases step with
   | signal _ heads ran =>
-    obtain ⟨mid, kept, concluded⟩ := microStep_concludes phases pipeline sidePhases sidePipeline
+    obtain ⟨mid, kept, concluded⟩ := microStep_concludes (ctx := unitCtx ctx log) phases pipeline sidePhases sidePipeline
       (fun _ dispatched => ⟨signal_keeps contract phases facts pipeline holds heads dispatched,
         signal_keeps sideContract sidePhases facts sidePipeline sideHolds heads dispatched⟩) ran
     exact ⟨mid, _, _, _, kept, concluded⟩
@@ -555,24 +555,24 @@ theorem closureStep_concludes {side : Program → State → Prop} (contract : Ho
     have taken : TokenTaken ctx.program { state with issuing := unit, issueNext := 0 } _
         { { state with queuedTokens := state.queuedTokens.erase unit } with issuing := unit, issueNext := 0 } :=
       ⟨quiet, unit, log, (nextToken_mem next).2, rfl⟩
-    exact moveToken_concludes contract phases pipeline sideContract sidePhases sidePipeline facts
+    exact moveToken_concludes (ctx := unitCtx ctx log) contract phases pipeline sideContract sidePhases sidePipeline facts
       (phases.untoken _ _ _ holds) (sidePhases.untoken _ _ _ sideHolds)
       (fun request same => phases.admittedToken _ _ _ _ holds (same ▸ taken)) _ holds sideHolds taken ran
   | idle _ _ _ idle _ ran =>
     have member := idleScope_mem idle
-    obtain ⟨mid, kept, concluded⟩ := microStep_concludes phases pipeline sidePhases sidePipeline
+    obtain ⟨mid, kept, concluded⟩ := microStep_concludes (ctx := unitCtx ctx log) phases pipeline sidePhases sidePipeline
       (fun _ completed => ⟨completeIdleScope_keeps contract facts holds member completed,
         completeIdleScope_keeps sideContract facts sideHolds member completed⟩) ran
     exact ⟨mid, _, _, _, kept, concluded⟩
   | reoffer _ _ _ _ offered keyed ran =>
-    obtain ⟨mid, kept, concluded⟩ := microStep_concludes phases pipeline sidePhases sidePipeline (fun next made => by
+    obtain ⟨mid, kept, concluded⟩ := microStep_concludes (ctx := unitCtx ctx log) phases pipeline sidePhases sidePipeline (fun next made => by
       simp only [Except.ok.injEq] at made
       subst made
       exact ⟨reoffer_keeps contract phases facts holds offered keyed,
         reoffer_keeps sideContract sidePhases facts sideHolds offered keyed⟩) ran
     exact ⟨mid, _, _, _, kept, concluded⟩
   | finish _ _ _ _ _ _ _ ran =>
-    obtain ⟨mid, kept, concluded⟩ := microStep_concludes phases pipeline sidePhases sidePipeline (fun next ended => by
+    obtain ⟨mid, kept, concluded⟩ := microStep_concludes (ctx := unitCtx ctx log) phases pipeline sidePhases sidePipeline (fun next ended => by
       simp only [Except.ok.injEq] at ended
       subst ended
       exact ⟨phases.endInstance _ _ _ _ holds (by simp), sidePhases.endInstance _ _ _ _ sideHolds (by simp)⟩) ran
@@ -595,7 +595,7 @@ theorem closureStep_carries (contract : HookContract hooks inv) (phases : Closur
   obtain ⟨mid, _, _, ⟨_, ⟨kept, framedMid⟩, concluded⟩⟩ := closureStep_concludes contract phases.toBodyPhases pipeline
     (framing.contract _) (framing.body _) (framing.pipeline _) facts
     (phases.enterUnit _ _ _ holds unrun unseeded between.untabled) framed step
-  exact conclude_carries (b := { state with issuing := unit, issueNext := 0 }) contract phases framing rfl unrun unseeded
+  exact conclude_carries (ctx := unitCtx ctx log) (b := { state with issuing := unit, issueNext := 0 }) contract phases framing rfl unrun unseeded
     between.seed kept framedMid concluded
 
 /-- The closure keeps `inv` between micro-steps. -/
@@ -645,7 +645,7 @@ theorem running_settles (contract : HookContract hooks inv) (phases : ClosurePha
     (holds : inv program { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] })
     (ran : step hooks program (some before) input = .ok after) :
     ∃ (start : State) (settled : State × RunLog), (inv program settled.1 ∧ Between settled.1) ∧
-      orderJournal start (.ok settled) = .ok after := by
+      orderJournal program.options.branchSchedule start (.ok settled) = .ok after := by
   rcases step_ok ran with ⟨_, _, fresh, _⟩ | ⟨_, _, runs, ran⟩
   · simp at fresh
   · obtain ⟨state, start, moved, rest⟩ := onRunning_ok ran
@@ -659,7 +659,7 @@ theorem running_settles (contract : HookContract hooks inv) (phases : ClosurePha
     have done := input_carries contract phases facts pipeline framing based runs
       (advanceClock_keeps phases.toBodyPhases entered clocked) (advanceClock_between (reset_between committed) clocked)
       stepped settling
-    rw [inputCtx_program] at done
+    rw [inputCtx_program] at done made
     exact ⟨start, settled, done, made⟩
 
 end Walk

@@ -6,7 +6,7 @@ public import Kernel.State.Slots
 /-! # Open items
 
 The open-item map (KD1): an item's structural key and its order, the item itself, the map keyed by it, and the two
-readings of the map, as a set in key order (`itemList`) and in the order the items opened (`itemsByPosition`). Part
+readings of the map, as a set in key order (`itemList`) and in the order the items opened (`itemsInOrder`). Part
 of `Kernel.State`, which re-exports it.
 -/
 
@@ -61,9 +61,10 @@ boundary's host, the Event-Based Gateway of an arm). A `passive` item, such as a
 subscription, keeps no scope occurrence alive and is removed when its scope completes. -/
 structure OpenItem where
   id : ItemKey
-  /-- The order position the item took when it opened (`State.takePosition`): the order of opening, which every site that reads
-  the items in order reads (`itemsByPosition`), never the map's key order (KD1). -/
-  position : Nat
+  /-- The order position the item took when it opened (`State.issuePosition`, DC13): pending under the unit that opened it
+  until the commit numbers it, which every site that reads the items in order reads (`itemsInOrder`), never the map's key
+  order (KD1). -/
+  position : Issue
   kind : OpenKind
   element : ElementId
   scope : ScopeOccurrenceId
@@ -78,8 +79,9 @@ abbrev OpenItems := TreeMap ItemKey OpenItem compare
 /-- The open items of `items` in key order. -/
 def itemList (items : OpenItems) : List OpenItem := items.toList.map (·.2)
 
-/-- The open items of `items` in the order they opened, by `OpenItem.position`: for every reading that depends on
-order. -/
-def itemsByPosition (items : OpenItems) : List OpenItem := (itemList items).mergeSort fun a b => a.position ≤ b.position
+/-- The open items of `items` in the order they opened, by `OpenItem.position` under the position order `le`
+(`Issue.notAfter`): for every reading that depends on order. -/
+def itemsInOrder (le : Issue → Issue → Bool) (items : OpenItems) : List OpenItem :=
+  (itemList items).mergeSort fun a b => le a.position b.position
 
 end Kernel

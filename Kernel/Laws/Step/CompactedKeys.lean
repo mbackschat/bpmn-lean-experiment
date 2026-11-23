@@ -21,19 +21,19 @@ open Kernel Kernel.Step Kernel.Laws.State
 
 section Keys
 
-variable {start : State} {log : RunLog} {s t : State}
+variable {schedule : BranchSchedule} {start : State} {log : RunLog} {s t : State}
 
 /-- A scope occurrence record renamed by a commit. -/
 abbrev renamedScope (r : Issue → Issue) (scope : ScopeOccurrence) : ScopeOccurrence :=
   { scope with id := renameScope r scope.id, occurrence := scope.occurrence.map (renameId r) }
 
 /-- A process instance reading of the settled state, renamed, is one of the committed state. -/
-theorem compact_instanceIn (ran : compact start log s = .ok t) (issued : IssuedBelow s) (rooted : Rooted s)
+theorem compact_instanceIn (ran : compact schedule start log s = .ok t) (issued : IssuedBelow s) (rooted : Rooted s)
     {x : ScopeOccurrenceId} {name : String} {chain : List ScopeOccurrence} (reading : InstanceIn s x name chain) :
-    InstanceIn t (renameScope (commitRenaming start log s) x) name (chain.map (renamedScope (commitRenaming start log s))) := by
+    InstanceIn t (renameScope (commitRenaming schedule start log s) x) name (chain.map (renamedScope (commitRenaming schedule start log s))) := by
   obtain ⟨H, history⟩ := historic_of issued rooted
-  have fixes : Fixes (commitRenaming start log s) := renameBy_fixes _
-  have held : ∀ entry ∈ s.scopes, renamedScope (commitRenaming start log s) entry ∈ t.scopes := fun entry member => by
+  have fixes : Fixes (commitRenaming schedule start log s) := renameBy_fixes _
+  have held : ∀ entry ∈ s.scopes, renamedScope (commitRenaming schedule start log s) entry ∈ t.scopes := fun entry member => by
     rw [compact_scopeRecords ran]; exact List.mem_map_of_mem member
   have layered : ∀ entry ∈ s.scopes, Layered entry.id.segments := fun entry member =>
     history.layered _ (history.standing entry member)
@@ -53,16 +53,16 @@ theorem compact_instanceIn (ran : compact start log s = .ok t) (issued : IssuedB
 
 /-- **A standing scope occurrence keeps its process instance across the commit.** `u` is any well-formed state with the
 settled state's scope occurrences and instance, through which `Laws.State.instanceIn_exists` reads it. -/
-theorem compact_instanceOf {program : Program} {u : State} (ran : compact start log s = .ok t)
+theorem compact_instanceOf {program : Program} {u : State} (ran : compact schedule start log s = .ok t)
     (counted : CountersFrom start s) (formed : WellFormed program u) (scopes : s.scopes = u.scopes)
     (named : s.instanceId = u.instanceId) (issued : IssuedBelow s) (rooted : Rooted s) (distinct : (scopeIds s).Nodup)
     {x : ScopeOccurrenceId} (present : x ∈ scopeIds s) :
-    t.instanceOf (renameScope (commitRenaming start log s) x) = s.instanceOf x := by
+    t.instanceOf (renameScope (commitRenaming schedule start log s) x) = s.instanceOf x := by
   obtain ⟨name, chain, reading, rest⟩ := instanceIn_exists formed (by rw [scopeIds, ← scopes]; exact present)
   have nodup := rest.1
   have reading : InstanceIn s x name chain :=
     reading.transport (fun entry inside => by rw [scopes]; exact reading.mem entry inside) named
-  have renamedNodup : ((chain.map (renamedScope (commitRenaming start log s))).map (·.id)).Nodup := by
+  have renamedNodup : ((chain.map (renamedScope (commitRenaming schedule start log s))).map (·.id)).Nodup := by
     rw [List.map_map]
     unfold List.Nodup at nodup ⊢
     rw [List.pairwise_map] at nodup ⊢
@@ -77,7 +77,7 @@ theorem compact_instanceOf {program : Program} {u : State} (ran : compact start 
     renamedNodup
 
 /-- An occurrence keeps its public key across the commit. -/
-theorem compact_key {program : Program} {u : State} (ran : compact start log s = .ok t) (counted : CountersFrom start s)
+theorem compact_key {program : Program} {u : State} (ran : compact schedule start log s = .ok t) (counted : CountersFrom start s)
     (formed : WellFormed program u) (scopes : s.scopes = u.scopes) (named : s.instanceId = u.instanceId)
     (issued : IssuedBelow s) (owned : Owned s) (rooted : Rooted s) (distinct : (scopeIds s).Nodup)
     {occurrence : Occurrence} (member : occurrence ∈ t.occurrences) :
@@ -95,7 +95,7 @@ theorem compact_key {program : Program} {u : State} (ran : compact start log s =
 /-! ## The clauses over occurrence keys -/
 
 /-- **`Distinct.keys` across the commit.** -/
-theorem compact_keysDistinct {program : Program} {u : State} (ran : compact start log s = .ok t)
+theorem compact_keysDistinct {program : Program} {u : State} (ran : compact schedule start log s = .ok t)
     (counted : CountersFrom start s) (formed : WellFormed program u) (scopes : s.scopes = u.scopes)
     (named : s.instanceId = u.instanceId) (issued : IssuedBelow s) (owned : Owned s) (rooted : Rooted s)
     (distinct : Distinct s) : (t.occurrences.map (key t)).Nodup := by
@@ -110,7 +110,7 @@ theorem compact_keysDistinct {program : Program} {u : State} (ran : compact star
   exact distinct.keys
 
 /-- **`OccurrencesCounted` across the commit** (`occurrencesCounted`). -/
-theorem compact_occurrencesCounted {program : Program} {u : State} (ran : compact start log s = .ok t)
+theorem compact_occurrencesCounted {program : Program} {u : State} (ran : compact schedule start log s = .ok t)
     (counted : CountersFrom start s) (formed : WellFormed program u) (scopes : s.scopes = u.scopes)
     (named : s.instanceId = u.instanceId) (issued : IssuedBelow s) (owned : Owned s) (rooted : Rooted s)
     (distinct : (scopeIds s).Nodup) (occurrences : OccurrencesCounted s) : OccurrencesCounted t := by
@@ -120,7 +120,7 @@ theorem compact_occurrencesCounted {program : Program} {u : State} (ran : compac
   exact ⟨count, by rw [(compact_kept ran).activations]; exact held, by rw [same]; exact rest⟩
 
 /-- **`ReservationsUnstarted` across the commit** (`reservations`). -/
-theorem compact_reservations {program : Program} {u : State} (ran : compact start log s = .ok t)
+theorem compact_reservations {program : Program} {u : State} (ran : compact schedule start log s = .ok t)
     (counted : CountersFrom start s) (formed : WellFormed program u) (scopes : s.scopes = u.scopes)
     (named : s.instanceId = u.instanceId) (issued : IssuedBelow s) (owned : Owned s) (rooted : Rooted s)
     (distinct : (scopeIds s).Nodup) (unstarted : ReservationsUnstarted s) : ReservationsUnstarted t := by
@@ -145,7 +145,7 @@ theorem compact_wellFormed {program : Program} {start state : State} {log : RunL
     (formed : WellFormed program state) (counted : CountersFrom start state)
     (batches : state.batchSignals = [] ∧ state.batchTokens = [] ∧ state.batchIntents = [])
     (keys : ∀ occurrence ∈ state.occurrences, occurrence.id.scope = occurrence.scope)
-    (ran : compact start log (ordered log state) = .ok t) : WellFormed program t := by
+    (ran : compact schedule start log (ordered log state) = .ok t) : WellFormed program t := by
   have fewer : Fewer (starts (ordered log state)) (starts state) := by
     simp only [starts, toList_empty, List.map_nil, List.flatMap_nil, List.append_nil]
     exact Fewer.trans (.of_perm (((byRun_perm log state.transitions).flatMap_right _).append_right _))
@@ -221,7 +221,7 @@ theorem orderJournal_wellFormed {program : Program} {start state : State} {log :
     (formed : WellFormed program state) (counted : CountersFrom start state)
     (batches : state.batchSignals = [] ∧ state.batchTokens = [] ∧ state.batchIntents = [])
     (keys : ∀ occurrence ∈ state.occurrences, occurrence.id.scope = occurrence.scope)
-    (made : orderJournal start (.ok (state, log)) = .ok after) : WellFormed program after :=
+    (made : orderJournal schedule start (.ok (state, log)) = .ok after) : WellFormed program after :=
   compact_wellFormed formed counted batches keys (orderJournal_of made)
 
 end Kernel.Laws.Step

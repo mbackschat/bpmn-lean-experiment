@@ -24,18 +24,18 @@ open Kernel.Laws.Compensation (recordElements)
 
 section Compacts
 
-variable {start : State} {log : RunLog} {s t : State}
+variable {schedule : BranchSchedule} {start : State} {log : RunLog} {s t : State}
 
 /-- The instance entries a commit leaves: the settled state's, their roots renamed. -/
-theorem compact_instances (ran : compact start log s = .ok t) :
-    t.slots.instances = s.slots.instances.map fun data => { data with root := renameScope (commitRenaming start log s) data.root } := by
+theorem compact_instances (ran : compact schedule start log s = .ok t) :
+    t.slots.instances = s.slots.instances.map fun data => { data with root := renameScope (commitRenaming schedule start log s) data.root } := by
   rw [compact_slots ran, renameSlots_eq]
 
 /-- The join waits a commit leaves: the settled state's, renamed. -/
-theorem compact_parked (ran : compact start log s = .ok t) :
+theorem compact_parked (ran : compact schedule start log s = .ok t) :
     t.slots.parked = s.slots.parked.map fun parked => { parked with
-      occurrence := renameId (commitRenaming start log s) parked.occurrence
-      scope := renameScope (commitRenaming start log s) parked.scope } := by
+      occurrence := renameId (commitRenaming schedule start log s) parked.occurrence
+      scope := renameScope (commitRenaming schedule start log s) parked.scope } := by
   rw [compact_slots ran, renameSlots_eq]
 
 /-- An issued key's parent was issued. -/
@@ -47,8 +47,8 @@ theorem issued_parent {x p : ScopeOccurrenceId} (issued : ScopeIssued s x) (link
   rwa [ScopeOccurrenceId.ofSegments_eta] at parent
 
 /-- An issued key the commit renames onto a standing one stood. -/
-theorem compact_present (ran : compact start log s = .ok t) (counted : CountersFrom start s) (rooted : Rooted s)
-    {x : ScopeOccurrenceId} (issued : ScopeIssued s x) (present : renameScope (commitRenaming start log s) x ∈ scopeIds t) :
+theorem compact_present (ran : compact schedule start log s = .ok t) (counted : CountersFrom start s) (rooted : Rooted s)
+    {x : ScopeOccurrenceId} (issued : ScopeIssued s x) (present : renameScope (commitRenaming schedule start log s) x ∈ scopeIds t) :
     x ∈ scopeIds s := by
   rw [scopeIds, ← standingKeys, compact_scopes ran] at present
   obtain ⟨y, standing, same⟩ := List.mem_map.mp present
@@ -56,8 +56,8 @@ theorem compact_present (ran : compact start log s = .ok t) (counted : CountersF
   exact standing
 
 /-- A standing scope occurrence stands, renamed, after the commit. -/
-theorem compact_standing (ran : compact start log s = .ok t) {x : ScopeOccurrenceId} (present : x ∈ scopeIds s) :
-    renameScope (commitRenaming start log s) x ∈ scopeIds t := by
+theorem compact_standing (ran : compact schedule start log s = .ok t) {x : ScopeOccurrenceId} (present : x ∈ scopeIds s) :
+    renameScope (commitRenaming schedule start log s) x ∈ scopeIds t := by
   rw [scopeIds, ← standingKeys, compact_scopes ran]
   exact List.mem_map_of_mem present
 
@@ -65,8 +65,8 @@ end Compacts
 
 /-- A commit's renaming keeps the root an instance chain ends at, renamed. -/
 theorem chainRoot_renamed {start s : State} {log : RunLog} (rooted : Rooted s) (chain : List ScopeOccurrence) :
-    chainRoot (chain.map (renamedScope (commitRenaming start log s))) =
-      renameScope (commitRenaming start log s) (chainRoot chain) := by
+    chainRoot (chain.map (renamedScope (commitRenaming schedule start log s))) =
+      renameScope (commitRenaming schedule start log s) (chainRoot chain) := by
   unfold chainRoot
   rw [List.getLast?_map]
   rcases chain.getLast? with _ | last
@@ -77,14 +77,14 @@ theorem chainRoot_renamed {start s : State} {log : RunLog} (rooted : Rooted s) (
 
 section Placing
 
-variable {program : Program} {start state : State} {log : RunLog} {after : State}
+variable {schedule : BranchSchedule} {program : Program} {start state : State} {log : RunLog} {after : State}
 
 /-- **A standing scope occurrence keeps its instance root across the commit**, renamed, and that root stands. -/
 theorem orderJournal_instanceRoot (formed : WellFormed program state) (counted : CountersFrom start state)
     (batches : state.batchSignals = [] ∧ state.batchTokens = [] ∧ state.batchIntents = [])
-    (made : orderJournal start (.ok (state, log)) = .ok after) {x : ScopeOccurrenceId} (present : x ∈ scopeIds state) :
-    after.instanceRoot (renameScope (commitRenaming start log (ordered log state)) x) =
-        renameScope (commitRenaming start log (ordered log state)) (state.instanceRoot x) ∧
+    (made : orderJournal schedule start (.ok (state, log)) = .ok after) {x : ScopeOccurrenceId} (present : x ∈ scopeIds state) :
+    after.instanceRoot (renameScope (commitRenaming schedule start log (ordered log state)) x) =
+        renameScope (commitRenaming schedule start log (ordered log state)) (state.instanceRoot x) ∧
       state.instanceRoot x ∈ scopeIds state := by
   have ran := orderJournal_of made
   have facts := ordered_facts log formed counted batches
@@ -112,9 +112,9 @@ theorem orderJournal_instanceRoot (formed : WellFormed program state) (counted :
 theorem orderJournal_placedIn (formed : WellFormed program state) (counted : CountersFrom start state)
     (batches : state.batchSignals = [] ∧ state.batchTokens = [] ∧ state.batchIntents = [])
     (rootsIssued : ∀ entry ∈ state.slots.instances, ScopeIssued state entry.root)
-    (made : orderJournal start (.ok (state, log)) = .ok after) {element : ElementId} {x : ScopeOccurrenceId}
+    (made : orderJournal schedule start (.ok (state, log)) = .ok after) {element : ElementId} {x : ScopeOccurrenceId}
     (placed : PlacedIn program state element x) (present : x ∈ scopeIds state) :
-    PlacedIn program after element (renameScope (commitRenaming start log (ordered log state)) x) := by
+    PlacedIn program after element (renameScope (commitRenaming schedule start log (ordered log state)) x) := by
   have ran := orderJournal_of made
   have facts := ordered_facts log formed counted batches
   have counted' := facts.counted
@@ -129,7 +129,7 @@ theorem orderJournal_placedIn (formed : WellFormed program state) (counted : Cou
 
 /-- **`RootsStanding` across the commit.** -/
 theorem orderJournal_rootsStanding (standing : RootsStanding state)
-    (made : orderJournal start (.ok (state, log)) = .ok after) : RootsStanding after := by
+    (made : orderJournal schedule start (.ok (state, log)) = .ok after) : RootsStanding after := by
   have ran := orderJournal_of made
   intro entry member
   rw [compact_instances ran] at member
@@ -149,7 +149,7 @@ theorem orderJournal_placedLane (formed : WellFormed program state) (counted : C
     (batches : state.batchSignals = [] ∧ state.batchTokens = [] ∧ state.batchIntents = [])
     (keys : ∀ occurrence ∈ state.occurrences, occurrence.id.scope = occurrence.scope)
     (held : PlacedLane program state)
-    (made : orderJournal start (.ok (state, log)) = .ok after) : PlacedLane program after := by
+    (made : orderJournal schedule start (.ok (state, log)) = .ok after) : PlacedLane program after := by
   have ran := orderJournal_of made
   have facts := ordered_facts log formed counted batches
   have counted' := facts.counted
@@ -159,19 +159,19 @@ theorem orderJournal_placedLane (formed : WellFormed program state) (counted : C
   have quietSignals := facts.quietSignals
   have quietTokens := facts.quietTokens
   have quiet := compact_quiet ran ⟨quietSignals, quietTokens⟩
-  have fixes : Fixes (commitRenaming start log (ordered log state)) := renameBy_fixes _
+  have fixes : Fixes (commitRenaming schedule start log (ordered log state)) := renameBy_fixes _
   have historic := historic_of issued rooted
   have place : ∀ {element x}, PlacedIn program state element x → x ∈ scopeIds state →
-      PlacedIn program after element (renameScope (commitRenaming start log (ordered log state)) x) :=
+      PlacedIn program after element (renameScope (commitRenaming schedule start log (ordered log state)) x) :=
     fun placed present => orderJournal_placedIn formed counted batches held.rootsIssued made placed present
   have present : ∀ {x}, ScopeIssued state x →
-      renameScope (commitRenaming start log (ordered log state)) x ∈ scopeIds after → x ∈ scopeIds state :=
+      renameScope (commitRenaming schedule start log (ordered log state)) x ∈ scopeIds after → x ∈ scopeIds state :=
     fun issuedX inside => compact_present ran counted' rooted issuedX inside
   have resumes : Laws.Step.resumesOf (allSignals after) = [] := by rw [quiet.1]; rfl
   -- A renamed occurrence carrying a join wait's renamed number is the wait's.
   have waiting : ∀ w ∈ state.slots.parked, ∀ old ∈ state.occurrences,
-      renameId (commitRenaming start log (ordered log state)) old.id =
-        renameId (commitRenaming start log (ordered log state)) w.occurrence → old.id = w.occurrence :=
+      renameId (commitRenaming schedule start log (ordered log state)) old.id =
+        renameId (commitRenaming schedule start log (ordered log state)) w.occurrence → old.id = w.occurrence :=
     fun w wIn old oldIn same =>
       (renamed_apart counted' issued owned rooted keys (formed.settled.parked w wIn).1 oldIn same.symm).symm
   have retainedEq := congrArg Compensations.retained (compact_compensation ran)
@@ -340,7 +340,7 @@ theorem orderJournal_placing (formed : WellFormed program state) (counted : Coun
     (batches : state.batchSignals = [] ∧ state.batchTokens = [] ∧ state.batchIntents = [])
     (keys : ∀ occurrence ∈ state.occurrences, occurrence.id.scope = occurrence.scope)
     (held : Placing program state)
-    (made : orderJournal start (.ok (state, log)) = .ok after) : Placing program after := fun references =>
+    (made : orderJournal schedule start (.ok (state, log)) = .ok after) : Placing program after := fun references =>
   orderJournal_placedLane formed counted batches keys (held references) made
 
 end Placing

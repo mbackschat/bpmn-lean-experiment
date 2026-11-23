@@ -54,7 +54,6 @@ import {
   calledRoot,
   committed,
   completeSignal,
-  disarm,
   failed,
   failedWith,
   idle,
@@ -76,7 +75,7 @@ import {
   allTokens,
 } from "../state.js";
 import {
-  ScopeRole, boundaryFire, clearInside, ctxOutputReads, ctxRequireMappingsWith, ctxRunsAsInstance, idleWithout, lastWrites,
+  ScopeRole, boundaryFire, clearInside, disarm, ctxOutputReads, ctxRequireMappingsWith, ctxRunsAsInstance, idleWithout, lastWrites,
   ownVariables, type Ctx,
 } from "../hooks.js";
 import { best, boundariesOf, contextCatcher, levelCandidates } from "./propagation/candidates.js";

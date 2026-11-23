@@ -482,13 +482,13 @@ theorem once_of_nodup {α β : Type} {facts : List (α × β)} {key : α} (disti
 
 /-- A commit keeps the journal's end facts: its renaming rewrites a transition's cause, owner and started facts only
 (`Laws.State.renameTransition_eq`). -/
-theorem compact_ended {start : State} {log : Step.RunLog} {s t : State} (ran : Step.compact start log s = .ok t) :
+theorem compact_ended {start : State} {log : Step.RunLog} {s t : State} (ran : Step.compact schedule start log s = .ok t) :
     t.journal.flatMap (·.ended) = s.journal.flatMap (·.ended) := by
   rcases Laws.Step.compact_cases ran with ⟨_, same⟩ | ⟨_, same⟩
   · rw [same]
-  have journal : t.journal = s.journal.map (renameTransition (Laws.Step.commitRenaming start log s)) := by
-    obtain ⟨_, _, _, frame⟩ := Laws.Step.advance_frame (Laws.Step.commitRenaming start log s) (Step.assign start log s).2
-      (renameState (Laws.Step.commitRenaming start log s) (Laws.Step.commitRekey start log s) s)
+  have journal : t.journal = s.journal.map (renameTransition (Laws.Step.commitRenaming schedule start log s)) := by
+    have frame := Laws.Step.advance_frame (Laws.Step.commitRenaming schedule start log s) (Step.assign schedule start log s).2
+      (renameState (Laws.Step.commitRenaming schedule start log s) (Laws.Step.commitRekey schedule start log s) s)
     rw [same]
     unfold Laws.Step.compacted
     rw [frame, Laws.State.renameState_eq]

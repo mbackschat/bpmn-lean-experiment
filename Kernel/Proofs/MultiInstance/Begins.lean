@@ -466,12 +466,18 @@ theorem LogOrder.record {program : Program} {log : Step.RunLog} {s : State} {uni
     simp [Std.ExtTreeMap.mem_iff_isSome_getElem?, fresh] at inside
   have older : ∀ other, other ≠ unit → (T.insert unit transition)[other]? = T[other]? := fun other apart => by
     rw [Std.ExtTreeMap.getElem?_insert, ite_eq_right fun same => apart (Std.LawfulEqOrd.eq_of_compare same).symm]
+  have logIn : ∀ other, other ∈ T.insert unit transition → other = unit ∨ other ∈ log.positions := fun other inside => by
+    by_cases same : other = unit
+    · exact .inl same
+    · refine .inr (order.logged other ?_).1
+      rw [Std.ExtTreeMap.mem_iff_isSome_getElem?, ← older other same, ← Std.ExtTreeMap.mem_iff_isSome_getElem?]
+      exact inside
   refine ⟨fun other inside => ?_, fun other inside => ?_, fun other block found => ?_,
     fun one two first second found found' apart below element loop processInstance looped => ?_⟩
   · rcases Laws.Step.mem_record.mp inside with same | old
     · rw [same]; exact Std.ExtTreeMap.mem_insert_self
     · exact Std.ExtTreeMap.mem_insert.mpr (.inr (order.ran other old))
-  · rw [Laws.Step.size_record unlogged, Laws.Step.runPosition_record]
+  · rw [Laws.Step.size_record unlogged, Laws.Step.runPosition_record _ _ _ (logIn other inside)]
     by_cases same : other = unit
     · rw [ite_eq_left same]
       exact ⟨Laws.Step.mem_record.mpr (.inl same), Nat.lt_succ_self _⟩
@@ -487,7 +493,9 @@ theorem LogOrder.record {program : Program} {log : Step.RunLog} {s : State} {uni
       exact kept.ordered
     · rw [older other same] at found
       exact order.ordered other block found
-  · rw [Laws.Step.runPosition_record, Laws.Step.runPosition_record] at below
+  · rw [Laws.Step.runPosition_record _ _ _
+      (logIn one (Std.ExtTreeMap.mem_iff_isSome_getElem?.mpr (by simp [found]))),
+      Laws.Step.runPosition_record _ _ _ (logIn two (Std.ExtTreeMap.mem_iff_isSome_getElem?.mpr (by simp [found'])))] at below
     by_cases oneSame : one = unit <;> by_cases twoSame : two = unit
     · exact absurd (oneSame.trans twoSame.symm) apart
     · rw [ite_eq_left oneSame, ite_eq_right twoSame] at below
@@ -678,7 +686,8 @@ theorem logged_step {ctx : Ctx} {log : Step.RunLog} {unit : UnitKey} {before aft
   obtain ⟨mid, _, _, rest⟩ := Laws.Step.closureStep_concludes (contract _) (phases _) keeps
     (contract _) (phases _) keeps facts entered entered step
   obtain ⟨_, ⟨kept, -⟩, concluded⟩ := rest
-  exact ⟨⟨carried.1, logged_conclude contract formed kept unrun (fun apart => (holds.2 apart).2) concluded⟩, carried.2⟩
+  exact ⟨⟨carried.1, logged_conclude (ctx := Step.unitCtx ctx log) contract formed kept unrun
+    (fun apart => (holds.2 apart).2) concluded⟩, carried.2⟩
 
 include contract phases pipeline wellFormed formed formedPipeline framing facts in
 /-- An input's first micro-step and the closure after it settle in a state that keeps `Logged` under its run log, from
@@ -714,7 +723,7 @@ theorem logged_running {program : Program} {before after : State} {input : Input
     (occurs : IdsUnique program → ∀ element, OccurPending before element → ∀ loop, ¬ LoopOf program element loop)
     (ran : Step.step hooks program (some before) input = .ok after) :
     ∃ (start : State) (settled : State × Step.RunLog), Logged program settled.2 settled.1 ∧
-      Step.orderJournal start (.ok settled) = .ok after := by
+      Step.orderJournal program.options.branchSchedule start (.ok settled) = .ok after := by
   rcases Laws.Step.step_ok ran with ⟨_, _, fresh, _⟩ | ⟨_, _, runs, ran⟩
   · simp at fresh
   obtain ⟨_, start, moved, rest⟩ := Laws.Step.onRunning_ok ran
@@ -732,7 +741,7 @@ theorem logged_running {program : Program} {before after : State} {input : Input
     (Laws.Step.advanceClock_between (Laws.Step.reset_between committed) clocked)
     (fun _ keeps keepPhases kept _ transitioned => Laws.Step.transition_keeps keeps keepPhases runs kept transitioned)
     stepped settling
-  rw [Laws.Step.inputCtx_program] at done
+  rw [Laws.Step.inputCtx_program] at done made
   exact ⟨start, settled, done, made⟩
 
 include contract phases pipeline wellFormed formed formedPipeline framing facts in
@@ -745,7 +754,7 @@ theorem logged_start
         (.ofRoot .seed)))
     {program : Program} {input : Input} {after : State} (ran : Step.step hooks program none input = .ok after) :
     ∃ (start : State) (settled : State × Step.RunLog), Logged program settled.2 settled.1 ∧
-      Step.orderJournal start (.ok settled) = .ok after := by
+      Step.orderJournal program.options.branchSchedule start (.ok settled) = .ok after := by
   rcases Laws.Step.step_ok ran with ⟨payload, same, _, started⟩ | ⟨_, _, _, ran⟩
   · subst same
     obtain ⟨start, moved, settled, rest⟩ := Laws.Step.start_body facts started
@@ -762,7 +771,7 @@ theorem logged_start
     have done := logged_settles contract phases pipeline wellFormed formed formedPipeline framing facts
       (Laws.Step.advanceClock_keeps (phases ∅) queued clocked) (Laws.Step.advanceClock_between (fresh _ _ _) clocked)
       byBody stepped settling
-    rw [Laws.Step.inputCtx_program] at done
+    rw [Laws.Step.inputCtx_program] at done made
     exact ⟨start, settled, done, made⟩
   · obtain ⟨_, _, rest⟩ := Laws.Step.onRunning_ok ran
     obtain ⟨_, _, present, _⟩ := rest

@@ -143,9 +143,10 @@ theorem items_congr {s t : State} (same : t.openItems = s.openItems) : itemList 
 theorem items_same {s t : State} {item : OpenItem} (member : item ∈ itemList t.openItems)
     (same : t.openItems = s.openItems) : item ∈ itemList s.openItems := items_congr same ▸ member
 
-/-- The items in opening order are the items: `itemsByPosition` only orders them. -/
-@[simp] theorem mem_itemsByPosition {m : OpenItems} {item : OpenItem} : item ∈ itemsByPosition m ↔ item ∈ itemList m := by
-  unfold itemsByPosition; exact List.mem_mergeSort
+/-- The items in opening order are the items: `itemsInOrder` only orders them. -/
+@[simp] theorem mem_itemsInOrder {le : Issue → Issue → Bool} {m : OpenItems} {item : OpenItem} :
+    item ∈ itemsInOrder le m ↔ item ∈ itemList m := by
+  unfold itemsInOrder; exact List.mem_mergeSort
 
 @[simp] theorem mem_ofItems {items : List OpenItem} (nodup : (items.map (·.id)).Nodup) {item : OpenItem} :
     item ∈ itemList (ofItems items) ↔ item ∈ items := by

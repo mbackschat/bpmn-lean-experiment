@@ -65,7 +65,6 @@ import {
   closeItem,
   committed,
   completeSignal,
-  disarm,
   failed,
   failedWith,
   initial,
@@ -73,7 +72,7 @@ import {
   leaveOutgoing,
   messageChannelEquals,
   occurrenceOf,
-  openItem,
+  openItemKey,
   openKindView,
   openSubscription,
   ownScope,
@@ -102,11 +101,11 @@ import {
   visible,
   SemanticCause,
   semanticFailure,
-  itemsByPosition, type OccurrenceId,
+  itemAt, itemsInOrder, type OccurrenceId,
 } from "../state.js";
 import {
   EvaluationTag, admitValues, boundaryFire, deliveryTriggerChannel, evalContext,
-  messageTriggerChannel, withdrawInside, withdrawOccurrence, type Catch, type Ctx,
+  messageTriggerChannel, ctxPositionLe, disarm, withdrawInside, withdrawOccurrence, type Catch, type Ctx,
 } from "../hooks.js";
 import { ClassifiedTag, TimerKind, armAt as armTimer, classify, dynamicCode, successor } from "../il/timer.js";
 import { armed, conditionOf, evaluateItem, fireAll, predicateHolds, resolveContests } from "./subscriptions/conditions.js";
@@ -441,7 +440,7 @@ function enabledBoundaries(ctx: Ctx, scope: ScopeOccurrenceId, state: State): Re
   if (host === null || enabledWith(ctx, state, host) !== scope) return committed([state, []]);
   let current = state;
   const fired: OpenItem[] = [];
-  for (const item of itemsByPosition(state.openItems).filter((open) => open.attachedTo === host && programBoundary(ctx.program, open.element) !== null)) {
+  for (const item of itemsInOrder(ctxPositionLe(ctx, state), state.openItems).filter((open) => open.attachedTo === host && programBoundary(ctx.program, open.element) !== null)) {
     const condition = conditionOf(ctx, item);
     if (condition === null) continue;
     const next = evaluateItem(ctx, item, condition, current);
@@ -730,8 +729,8 @@ export function arriveCatch(ctx: Ctx, _header: Header, _payload: EventPayload, s
   // Admission refuses every trigger reaching `null` here (`event.catch.error`, `.escalation`, `.compensation`, `.cancel`);
   // the code names the first.
   if (kind.value === null) return failed(FailureTag.Unsupported, "event-catch-error");
-  const opened = openItem(state, kind.value, occurrence);
-  const item = itemsByPosition(opened.openItems).at(-1);
+  const [opened, key] = openItemKey(state, kind.value, occurrence);
+  const item = itemAt(opened.openItems, key);
   if (item === undefined) return committed(opened);
   const evaluated = armed(ctx, subscription, item, opened);
   if (!evaluated.ok) return failedWith(evaluated.failure);

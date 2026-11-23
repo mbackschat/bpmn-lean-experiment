@@ -62,6 +62,7 @@ def slotBase (state : State) : ClaimSlot → Nat
   | .scope slot => if slot.parent.fresh then 0 else state.scopeOrdinals.getD slot 0
   | .occurrence slot => if slot.parent.fresh then 0 else state.occurrenceOrdinals.getD slot 0
   | .item occurrence => if occurrence.fresh then 0 else state.itemOrdinals.getD occurrence 0
+  | .position => state.nextOrder
 
 /-- One issue takes its slot's next ordinal; the slot counts past it. -/
 def assignStep (base : ClaimSlot → Nat) (acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare)
@@ -69,15 +70,17 @@ def assignStep (base : ClaimSlot → Nat) (acc : TreeMap Issue Nat compare × Tr
   let ordinal := acc.2.getD claim.2 (base claim.2)
   (acc.1.insert claim.1 ordinal, acc.2.insert claim.2 (ordinal + 1))
 
-/-- The closure's issues in issue order: the order of their units in the run log, then of the issues in each unit. -/
-def issueOrder (log : RunLog) (state : State) : List (Issue × ClaimSlot) :=
-  let order := fun (claim : Issue × ClaimSlot) => ((claim.1.unit?.map log.runPosition).getD 0, claim.1.number)
-  state.issued.toList.mergeSort fun a b => let (x, y) := (order a, order b); x.1 < y.1 || x.1 == y.1 && x.2 ≤ y.2
+/-- The closure's issues in the closure's position order under `schedule` (`issuerOrder`, DC13): by their units, then by
+their index in the unit. So the commit numbers positions in the order the closure's bodies compared them, and under
+`orderInvariant` every slot's numbering is a function of the end state (KD1). -/
+def issueOrder (schedule : BranchSchedule) (log : RunLog) (state : State) : List (Issue × ClaimSlot) :=
+  state.issued.toList.mergeSort fun a b => Issue.notAfter (issuerOrder schedule log) a.1 b.1
 
 /-- Every issue's committed ordinal, per slot in issue order above the slot's base, and each advanced slot's next
 ordinal, keyed by the slot as issued. -/
-def assign (start : State) (log : RunLog) (state : State) : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare :=
-  (issueOrder log state).foldl (assignStep (slotBase start)) (∅, ∅)
+def assign (schedule : BranchSchedule) (start : State) (log : RunLog) (state : State) :
+    TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare :=
+  (issueOrder schedule log state).foldl (assignStep (slotBase start)) (∅, ∅)
 
 /-- The counters after the commit: each advanced slot's next ordinal under its renamed slot, where its renamed owner
 stands; a counter whose owner the closure removed goes, as it went with its owner (`State.clearInside`,
@@ -102,7 +105,8 @@ def advanceCounters (r : Issue → Issue) (next : TreeMap ClaimSlot Nat compare)
       let occurrence := renameId r occurrence
       if renamed.occurrences.any (·.id == occurrence) then
         { state with itemOrdinals := raiseCounter state.itemOrdinals occurrence ordinal }
-      else state) renamed
+      else state
+    | .position => { state with nextOrder := max ordinal state.nextOrder }) renamed
 
 /-- Whether two fresh issues share their index and their units agree on depth, fingerprint and root. -/
 def sameIssuerName : Issue → Issue → Bool
@@ -128,14 +132,14 @@ the counters of owners that stand advance past them. The issue table empties. An
 micro-steps) is an invariant failure; two issuers a fixed-size name cannot tell apart (`issuerCollision`) are refused.
 A closure that issued nothing commits its state as it is, so only an issuing commit renames the whole state; that
 renaming walks every identity the state holds, linear in its size per issuing commit. -/
-def compact (start : State) (log : RunLog) (state : State) : Outcome :=
+def compact (schedule : BranchSchedule) (start : State) (log : RunLog) (state : State) : Outcome :=
   if state.issued.isEmpty then .ok state
   else if state.issued.any (fun issue _ => issue.unit? == some (.ofRoot .seed)) then
     .error (.semanticFailure .invariant "issue-outside-unit")
   -- dynamic-only: a 64-bit fingerprint collision between two units of one closure, which no model property predicts
   else if issuerCollision state.issued then .error (.unsupported "unit-fingerprint-collision")
   else
-    let (assigned, next) := assign start log state
+    let (assigned, next) := assign schedule start log state
     let r := renameBy assigned
     .ok { advanceCounters r next (renameState r (Continuation.rekey (renameId r) (renameScope r)) state) with issued := ∅, issuing := .ofRoot .seed, issueNext := 0 }
 
@@ -144,9 +148,9 @@ order its units ran, every family keyed by a unit key emptied, so no unit key ou
 identity it issued compacted (`compact`, DC12) against the counters of `start`, the state the closure began from.
 Queued work an instance that ended mid-closure left behind is dropped with them: no input runs on an ended instance
 (`Step.onRunning`). -/
-def orderJournal (start : State) (outcome : Except Failure (State × RunLog)) : Outcome := do
+def orderJournal (schedule : BranchSchedule) (start : State) (outcome : Except Failure (State × RunLog)) : Outcome := do
   let (state, log) ← outcome
-  compact start log
+  compact schedule start log
     { state with
         journal := byRun log state.transitions, intents := (byRun log state.outboxes).flatten
         transitions := ∅, outboxes := ∅, queuedTokens := ∅, queuedSignals := ∅ }

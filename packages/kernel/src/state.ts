@@ -72,10 +72,10 @@ import {
 export { type OccurrenceId };
 import { type ClaimSlot, ClaimSlotTag, type Issuer, type IssueTable, seedUnit } from "./state/issue.js";
 import {
-  compareItemKey, insertItem, type ItemKey, itemAt, itemKeyText, ItemRole, itemsByPosition, type OpenItem, type OpenItems, sameItemKey,
+  compareItemKey, insertItem, type ItemKey, itemAt, itemKeyText, ItemRole, itemsInOrder, type OpenItem, type OpenItems, sameItemKey,
 } from "./state/items.js";
 export {
-  compareItemKey, insertItem, type ItemKey, itemAt, itemKeyText, ItemRole, itemsByPosition, type OpenItem, type OpenItems, sameItemKey,
+  compareItemKey, insertItem, type ItemKey, itemAt, itemKeyText, ItemRole, itemsInOrder, type OpenItem, type OpenItems, sameItemKey,
 };
 import { type OrderedMap, orderedAny, orderedEntries, orderedInsert, orderedSize, type TreeMap } from "./state/map.js";
 export { type TreeMap };
@@ -87,7 +87,7 @@ export {
 } from "./state/key.js";
 export {
   type ClaimSlot, ClaimSlotTag, compareClaimSlot, committedScope, idleUnit, type Issued, type Issuer, type IssueTable,
-  occurrenceFresh, offersOccurrence, offerUnit, scopeFresh, seedUnit,
+  issueNotAfter, occurrenceFresh, offersOccurrence, offerUnit, scopeFresh, seedUnit,
 } from "./state/issue.js";
 export {
   type OrderedMap, orderedAny, orderedCount, orderedEntries, orderedErase, orderedGet, orderedHas, orderedInsert, orderedSize,
@@ -385,8 +385,13 @@ export interface State {
    */
   readonly issued: IssueTable;
   readonly activations: readonly ActivationCount[];
-  /** The next order position of an open item or a compensation record, read only by the sites that order them (K0.8). */
+  /** The next compensation completion number (`takePosition`), taken in run order as a record completes. */
   readonly nextPosition: number;
+  /**
+   * The counter of issued order positions (DC13): an open item's `position` is the running unit's issue in the position
+   * slot (`issuePosition`), numbered from here at commit in the closure's position order, which advances it.
+   */
+  readonly nextOrder: number;
   readonly logicalTimeMs: number;
   /** The running micro-step's batch of signals, in order; moved into `queuedSignals` like `batchTokens`. */
   readonly batchSignals: readonly Signal[];
@@ -473,6 +478,7 @@ export function initial(instanceId: string, variables: readonly Binding[], busin
     issued: null,
     activations: [],
     nextPosition: 1,
+    nextOrder: 1,
     logicalTimeMs: 0,
     batchSignals: [],
     queuedSignals: null,
@@ -507,7 +513,7 @@ export function deferBegins(state: State, requests: readonly BeginRequest[]): St
   return { ...state, batchTokens: [...state.batchTokens, ...deferred.reverse()] };
 }
 
-/** The next order position (`nextPosition`), counted up. */
+/** The next compensation completion number (`nextPosition`), counted up in run order. */
 export function takePosition(state: State): readonly [State, number] {
   return [{ ...state, nextPosition: state.nextPosition + 1 }, state.nextPosition];
 }
@@ -521,6 +527,11 @@ export function issue(state: State, slot: ClaimSlot): readonly [State, Issue] {
   const fresh: Issue = { issuer: issuer.text, index: state.issueNext };
   const issued = orderedInsert(state.issued, fresh, { slot, unit: issuer.unit }, compareIssue);
   return [{ ...state, issueNext: state.issueNext + 1, issued }, fresh];
+}
+
+/** Lean's `State.issuePosition`: a fresh order position, the running unit's next issue in the position slot (DC13). */
+export function issuePosition(state: State): readonly [State, Issue] {
+  return issue(state, { tag: ClaimSlotTag.Position });
 }
 
 /**
@@ -760,13 +771,16 @@ export function putItem(state: State, item: OpenItem): State {
   return { ...state, openItems: insertItem(state.openItems, item) };
 }
 
+/** An item waiting for the begun `occurrence`, with its key, which a reader of the item just opened looks it up by. */
+export function openItemKey(state: State, kind: OpenKind, occurrence: Occurrence): readonly [State, ItemKey] {
+  const [positioned, position] = issuePosition(state);
+  const [issued, id] = issueItem(positioned, occurrence.id, ItemRole.Wait);
+  return [putItem(issued, { id, position, kind, element: occurrence.element, scope: occurrence.scope, attachedTo: null, passive: false }), id];
+}
+
 /** An item waiting for the begun `occurrence`. */
 export function openItem(state: State, kind: OpenKind, occurrence: Occurrence): State {
-  const [positioned, position] = takePosition(state);
-  const [issued, id] = issueItem(positioned, occurrence.id, ItemRole.Wait);
-  return putItem(issued, {
-    id, position, kind, element: occurrence.element, scope: occurrence.scope, attachedTo: null, passive: false,
-  });
+  return openItemKey(state, kind, occurrence)[0];
 }
 
 /** A subscription item for `element`, with a fresh reservation; `host` is the occurrence it hangs on. */
@@ -779,7 +793,7 @@ export function openSubscription(
   passive: boolean,
 ): readonly [State, OpenItem] {
   const [reserved, occurrence] = reserve(state, element, scope);
-  const [positioned, position] = takePosition(reserved);
+  const [positioned, position] = issuePosition(reserved);
   const [issued, id] = issueItem(positioned, occurrence.id, ItemRole.Subscription);
   const item: OpenItem = { id, position, kind, element, scope, attachedTo: host, passive };
   return [putItem(issued, item), item];
@@ -792,19 +806,6 @@ export function closeItem(state: State, id: ItemKey): State {
 /** Remove the items waiting for the occurrence `id`. */
 export function closeOwnItems(state: State, id: OccurrenceId): State {
   return { ...state, openItems: state.openItems.filter((item) => item.id.occurrence !== id) };
-}
-
-/** Remove the items attached to the occurrence `host`, with the reservations they hold, listed once (`State.disarm`). */
-export function disarm(state: State, host: OccurrenceId): State {
-  const attached = new Set(state.openItems.flatMap((item) => item.attachedTo === host ? [item.id.occurrence] : []));
-  const dropped = new Set(state.occurrences.flatMap((occurrence) =>
-    !occurrence.begun && attached.has(occurrence.id) ? [occurrence.id] : []));
-  return {
-    ...state,
-    openItems: state.openItems.filter((item) => item.attachedTo !== host),
-    occurrences: state.occurrences.filter((occurrence) => occurrence.begun || !attached.has(occurrence.id)),
-    itemOrdinals: state.itemOrdinals.filter(([id]) => !dropped.has(id)),
-  };
 }
 
 /**

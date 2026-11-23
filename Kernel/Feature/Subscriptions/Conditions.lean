@@ -110,7 +110,7 @@ def withdrawnBy (ctx : Ctx) (state : State) (item : OpenItem) : List ItemKey :=
   | none => []
   | some withdraw =>
     let kept := (withdraw.withdrawFrom state).openItems
-    ((itemsByPosition state.openItems).filter fun open_ => open_.id != item.id && !kept.contains open_.id).map (·.id)
+    ((itemsInOrder ctx.positionLe state.openItems).filter fun open_ => open_.id != item.id && !kept.contains open_.id).map (·.id)
 
 /-- The refusal of a contest the ranking leaves undecided: the Event-Based Gateway code when it holds an arm. -/
 def contestCode (ctx : Ctx) (contest : List OpenItem) : String :=
@@ -230,7 +230,7 @@ def offerWrites (ctx : Ctx) (writes : List WriteEvent) (state : State) : Outcome
       (itemCondition? ctx item).bind fun trigger =>
         if passes trigger write && inSubtree state write.scope (homeScope state item) then some (item, trigger) else none
     let ordered := offered.mergeSort fun (left, _) (right, _) =>
-      depth state left < depth state right || (depth state left == depth state right && left.position ≤ right.position)
+      depth state left < depth state right || (depth state left == depth state right && ctx.positionLe left.position right.position)
     let (state, fired) ← ordered.foldlM (fun (state, fired) (item, trigger) => do
       let (state, fires) ← evaluateItem ctx item trigger state
       pure (state, if fires then fired ++ [item] else fired)) (state, [])

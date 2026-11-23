@@ -30,7 +30,6 @@ import {
   SignalTag,
   calledRoot,
   committed,
-  disarm,
   failed,
   failedWith,
   openKindView,
@@ -43,10 +42,10 @@ import {
   type ScopeOccurrenceId,
   type State,
   type WriteEvent,
-  itemKeyText, itemsByPosition, sameItemKey, type OccurrenceId,
+  itemKeyText, itemsInOrder, sameItemKey, type OccurrenceId,
 } from "../../state.js";
 import {
-  EvaluationTag, evalContext, subscriptionOf, subtree, withdrawInside, withdrawOccurrence, type Ctx,
+  EvaluationTag, ctxPositionLe, disarm, evalContext, subscriptionOf, subtree, withdrawInside, withdrawOccurrence, type Ctx,
 } from "../../hooks.js";
 
 /** `ownScope` of an open item: its host's own scope, else the item's scope. */
@@ -204,7 +203,8 @@ function withdrawnBy(ctx: Ctx, state: State, item: OpenItem): readonly string[] 
   if (withdraw === null) return [];
   const kept = withdrawFrom(withdraw, state).openItems.map((open) => itemKeyText(open.id));
   const own = itemKeyText(item.id);
-  return itemsByPosition(state.openItems).map((open) => itemKeyText(open.id)).filter((open) => open !== own && !kept.includes(open));
+  return itemsInOrder(ctxPositionLe(ctx, state), state.openItems).map((open) => itemKeyText(open.id))
+    .filter((open) => open !== own && !kept.includes(open));
 }
 
 /** The refusal of a contest the ranking leaves undecided: the Event-Based Gateway code when it holds an arm. */
@@ -381,7 +381,9 @@ export function offerWrites(ctx: Ctx, writes: readonly WriteEvent[], state: Stat
         : [];
     });
     const at = current;
-    const ordered = [...offered].sort(([left], [right]) => depth(at, left) - depth(at, right) || left.position - right.position);
+    const positionLe = ctxPositionLe(ctx, at);
+    const ordered = [...offered].sort(([left], [right]) => depth(at, left) - depth(at, right) ||
+      (positionLe(left.position, right.position) ? (positionLe(right.position, left.position) ? 0 : -1) : 1));
     const fired: OpenItem[] = [];
     for (const [item, condition] of ordered) {
       const next = evaluateItem(ctx, item, condition, current);

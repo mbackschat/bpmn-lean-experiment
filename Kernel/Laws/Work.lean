@@ -4,7 +4,7 @@ public import Kernel.Hooks
 public import Kernel.Feature.Work
 public import Kernel.Laws.Flow.Sources
 import Kernel.Laws.Step.Elements
-import Kernel.Laws.State
+import Kernel.Laws.State.Called
 import all Kernel.Feature.Work
 import all Kernel.Feature.Work.Call
 

@@ -68,7 +68,7 @@ import {
   SignalAddressTag,
   type State,
 } from "../../state.js";
-import { EvaluationTag, clearInside, ctxRequireMappings, evalContext, lastWrites, type Ctx } from "../../hooks.js";
+import { EvaluationTag, clearInside, ctxPositionLe, ctxRequireMappings, evalContext, lastWrites, type Ctx } from "../../hooks.js";
 
 /** How a throw Event leaves once it has done its work. */
 export function throwLeave(payload: EventPayload): Leave {
@@ -224,14 +224,15 @@ function thrownAddress(ctx: Ctx, context: EvalContext, record: SignalThrow): Res
  * The open items of `address` in the thrower's own State, by process instance, then in arming order, the order the
  * linearization of the population fixes for CIB's unordered `HashSet` (`EventSubscriptionManager.java:111-126`).
  */
-function ownReceivers(state: State, address: SignalAddress): readonly OpenItem[] {
+function ownReceivers(ctx: Ctx, state: State, address: SignalAddress): readonly OpenItem[] {
   const reached = state.openItems.filter((item) => {
     const detail = openKindView(item.kind).signal;
     return detail !== null && signalAddressMatches(address, detail.address);
   });
+  const positionLe = ctxPositionLe(ctx, state);
   return mergeSort(reached, (left, right) => {
     const order = compareStrings(instanceOf(state, left.scope), instanceOf(state, right.scope));
-    return order < 0 || (order === 0 && left.position <= right.position);
+    return order < 0 || (order === 0 && positionLe(left.position, right.position));
   });
 }
 
@@ -261,7 +262,7 @@ function throwSignal(ctx: Ctx, payload: EventPayload, record: SignalThrow, origi
   const address = thrownAddress(ctx, context, record);
   if (!address.ok) return failedWith(address.failure);
   let fired = state;
-  for (const item of ownReceivers(state, address.value)) {
+  for (const item of ownReceivers(ctx, state, address.value)) {
     fired = signal(fired, {
       tag: SignalTag.Fire, item: item.id,
       fired: { tag: FiredTag.Signal, delivery: thrownDelivery(ctx, fired, address.value, variables.value, item) },

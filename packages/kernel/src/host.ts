@@ -56,7 +56,7 @@ import {
   type State,
   type Transition,
   type WaitView,
-  itemsByPosition,
+  breadthUnitKey, issueNotAfter, itemsInOrder,
 } from "./state.js";
 import { messageTriggerChannel, ownVariables } from "./hooks.js";
 
@@ -329,7 +329,9 @@ function publicJournal(program: Program, journal: readonly Transition[]): Transi
 }
 
 export function hostView(program: Program, state: State): View {
-  const openWaits = itemsByPosition(state.openItems).map((item) => openWait(program, state, item));
+  // A committed state holds committed positions only, which every unit order orders alike.
+  const openWaits = itemsInOrder((left, right) => issueNotAfter(breadthUnitKey, state.issued, left, right), state.openItems)
+    .map((item) => openWait(program, state, item));
   return {
     status: state.status,
     failure: state.failure === null ? null : publicFailure(program, state.failure),

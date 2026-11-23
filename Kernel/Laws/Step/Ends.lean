@@ -365,7 +365,8 @@ theorem moveToken_microStep {hooks : Hooks} {ctx : Ctx} {unit : UnitKey} {token 
 /-- Every closure micro-step is a micro-step: a moved token's is its arrival's or its deferred begin's. -/
 theorem ClosureStep.microStep {hooks : Hooks} {ctx : Ctx} {log : RunLog} {unit : UnitKey} {state after : State}
     (step : ClosureStep hooks ctx log unit state after) :
-    ∃ cause element owner body start, microStep hooks ctx unit cause element owner body start = .ok after := by
+    ∃ cause element owner body start,
+      microStep hooks (unitCtx ctx log) unit cause element owner body start = .ok after := by
   cases step with
   | signal _ _ ran => exact ⟨_, _, _, _, _, ran⟩
   | token _ _ _ ran =>

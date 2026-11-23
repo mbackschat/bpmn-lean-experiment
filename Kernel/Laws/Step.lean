@@ -120,7 +120,7 @@ theorem settle_ok_settled {hooks : Hooks} {ctx : Ctx} : ∀ {fuel work : Nat} {l
     {after : State × RunLog}, settle hooks ctx fuel work log state = .ok after → after.1.status ≠ .running ∨
       (Quiescent hooks ctx after.2 after.1 ∧ (after.1.idle State.root && after.1.queuedSignals.isEmpty) = false) ∨
       ∃ last earlier, Quiescent hooks ctx earlier last ∧ last.idle State.root = true ∧ last.queuedSignals.isEmpty = true ∧
-        microStep hooks ctx (.ofRoot (.idle [])) (.idle State.root) none State.root
+        microStep hooks (unitCtx ctx earlier) (.ofRoot (.idle [])) (.idle State.root) none State.root
           (fun state => .ok (endInstance .completed none state)) last = .ok after.1 ∧
         after.2 = earlier.record (.ofRoot (.idle [])) := by
   intro fuel
@@ -274,7 +274,7 @@ theorem step_eq {hooks : Hooks} {program : Program} {before : Option State} {inp
               (.ofRoot .seed))
           admitChoices hooks ctx
           let unit := UnitKey.ofRoot .input
-          orderJournal initial <| settle hooks ctx closureBound closureWorkBound (RunLog.record {} unit) (← microStep hooks ctx unit
+          orderJournal ctx.program.options.branchSchedule initial <| settle hooks ctx closureBound closureWorkBound (RunLog.record {} unit) (← microStep hooks ctx unit
             (.input .start) (some start) State.root (begin hooks ctx { element := start, scope := State.root, trigger := payload.trigger })
             initial)
       | .command data => onRunning hooks ctx input before (command hooks ctx data)
@@ -309,7 +309,7 @@ theorem onRunning_eq {hooks : Hooks} {ctx : Ctx} {input : Input} {before : Optio
           let start ← advanceClock at? { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] }
           admitChoices hooks ctx
           let unit := UnitKey.ofRoot .input
-          orderJournal start (settle hooks ctx closureBound closureWorkBound (RunLog.record {} unit)
+          orderJournal ctx.program.options.branchSchedule start (settle hooks ctx closureBound closureWorkBound (RunLog.record {} unit)
             (← microStep hooks ctx unit (.input tag) none State.root transition start))) := by
   unfold onRunning; rfl
 

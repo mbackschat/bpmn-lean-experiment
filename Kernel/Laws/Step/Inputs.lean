@@ -25,7 +25,7 @@ theorem onRunning_ok {hooks : Hooks} {ctx : Ctx} {input : Input} {before : Optio
       advanceClock (inputHead input).2.1 { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } = .ok start ∧
       microStep hooks ctx (.ofRoot .input) (.input (inputHead input).1) none State.root transition start = .ok moved ∧
       settle hooks ctx closureBound closureWorkBound (RunLog.record {} (.ofRoot .input)) moved = .ok settled ∧
-      orderJournal start (.ok settled) = .ok after := by
+      orderJournal ctx.program.options.branchSchedule start (.ok settled) = .ok after := by
   rw [onRunning_eq] at ran
   split at ran
   · simp at ran

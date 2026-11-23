@@ -85,7 +85,7 @@ def renameState (continuation : Continuation → Continuation) (state : State) :
                         continuation := continuation occurrence.continuation }
     variables := state.variables.map fun variables => { variables with scope := renameScope r variables.scope }
     openItems := state.openItems.foldl (fun renamed _ item =>
-      let item := { item with id := renameItemKey r item.id, scope := renameScope r item.scope
+      let item := { item with id := renameItemKey r item.id, position := r item.position, scope := renameScope r item.scope
                               attachedTo := item.attachedTo.map (renameId r) }
       renamed.insert item.id item) ∅
     slots := renameSlots r state.slots

@@ -237,7 +237,7 @@ def CommitsAgree (hooks : Hooks) : Prop :=
     program.options.branchSchedule = .orderInvariant → Laws.Flow.Apart program → OpensAttempt hooks program input start →
     Runs hooks (Laws.Step.inputCtx hooks program input) (Step.RunLog.record {} (.ofRoot .input)) start outcome →
     Runs hooks (Laws.Step.inputCtx hooks program input) (Step.RunLog.record {} (.ofRoot .input)) start outcome' →
-    Step.orderJournal start outcome = .ok left → Step.orderJournal start outcome' = .ok right →
+    Step.orderJournal program.options.branchSchedule start outcome = .ok left → Step.orderJournal program.options.branchSchedule start outcome' = .ok right →
     ∃ ids keys, ScopesRenamed start ids ∧ Activations start keys ∧ Alike ids keys left right
 
 /-- P6's failure side, commit-or-refuse agreement (KD8's settle-agreement, T42): under `orderInvariant` and the
@@ -298,8 +298,8 @@ theorem endBesideEntry {hooks : Hooks} (agree : SchedulesAgree hooks) (bridge : 
     (settled : Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel work
       (Step.RunLog.record {} (.ofRoot .input)) start = .ok committed)
     (other : Runs hooks (Laws.Step.inputCtx hooks program input) (Step.RunLog.record {} (.ofRoot .input)) start outcome)
-    (journalled : Step.orderJournal start (.ok committed) = .ok left)
-    (journalled' : Step.orderJournal start outcome = .ok right) :
+    (journalled : Step.orderJournal program.options.branchSchedule start (.ok committed) = .ok left)
+    (journalled' : Step.orderJournal program.options.branchSchedule start outcome = .ok right) :
     ∃ ids keys, ScopesRenamed start ids ∧ Activations start keys ∧ Alike ids keys left right :=
   agree.1 program input start left right (.ok committed) outcome invariant separate (opensAttempt_of_opens opens)
     ((bridge program input start fuel work invariant (opensAttempt_of_opens opens)).1 committed settled) other journalled

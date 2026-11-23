@@ -40,7 +40,7 @@ Criteria `criteriaRefusal` refuses are the command's refusal too, which the call
 def messageReceivers (hooks : Hooks) (program : Program) (state : State) (publication : Publication) :
     Except Failure (List (OccurrenceRef × MessageChannel)) :=
   let ctx := Step.context hooks program
-  let verdicts := (itemsByPosition state.openItems).filterMap fun item =>
+  let verdicts := (itemsInOrder ctx.positionLe state.openItems).filterMap fun item =>
     let view := item.kind.view
     let channel? := match publication.message with
       | .channel channel => some channel

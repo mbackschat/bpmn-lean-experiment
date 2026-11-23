@@ -1,15 +1,29 @@
 /**
- * Removing occurrences and the scope contents they own, transcribed from `Kernel/State/Removal.lean`: clearing a scope,
+ * Removing occurrences and the scope contents they own, transcribed from `Kernel/State/Removal.lean`: disarming an
+ * occurrence's attached items, clearing a scope,
  * leaving it, cancelling an occurrence, and withdrawing the open items a cancellation will remove. Part of the State
  * layer, above `state.ts`, whose callers import it directly.
  */
 import {
-  closeOwnItems, disarm, idle, keyOf, type OccurrenceId, occurrenceOf, type Occurrence, type State,
+  closeOwnItems, idle, keyOf, type OccurrenceId, occurrenceOf, type Occurrence, type State,
 } from "../state.js";
 import { orderedFilter } from "./map.js";
 import { subtree } from "./tree.js";
 import { Terminal } from "./journal.js";
 import { featureSlotsClear, type ScopeOccurrenceId } from "./slots.js";
+
+/** Remove the items attached to the occurrence `host`, with the reservations they hold, listed once (`State.disarm`). */
+export function disarm(state: State, host: OccurrenceId): State {
+  const attached = new Set(state.openItems.flatMap((item) => item.attachedTo === host ? [item.id.occurrence] : []));
+  const dropped = new Set(state.occurrences.flatMap((occurrence) =>
+    !occurrence.begun && attached.has(occurrence.id) ? [occurrence.id] : []));
+  return {
+    ...state,
+    openItems: state.openItems.filter((item) => item.attachedTo !== host),
+    occurrences: state.occurrences.filter((occurrence) => occurrence.begun || !attached.has(occurrence.id)),
+    itemOrdinals: state.itemOrdinals.filter(([id]) => !dropped.has(id)),
+  };
+}
 
 /** The journal facts of removing the begun `occurrences`, cancelled. */
 function recordCancelled(state: State, occurrences: readonly Occurrence[]): State {

@@ -36,14 +36,14 @@ import {
   type Token, type Parked,
   SemanticCause, semanticFailure,
   itemAt, iterationHolds, type OccurrenceId,
-  compareUnitKey, idleUnit, occurrenceIdParts, offersOccurrence, offerUnit, orderedAny, orderedCount, orderedErase, orderedHas,
+  breadthUnitKey, compareUnitKey, idleUnit, occurrenceIdParts, offersOccurrence, offerUnit, orderedAny, orderedCount, orderedErase, orderedHas,
   orderedSize, scopeEncloses, issuerFor, type UnitKey, unitRoot, UnitRootTag,
 } from "./state.js";
 import {
   ScopeRole, admitThen, cancelOccurrence, chooseStart, clearInside, itemOf, removeOccurrence, type Ctx, type Hooks, type ScopeEntry,
 } from "./hooks.js";
 import { continuationBody, journalDraft, orderJournal } from "./step/commit.js";
-import { earliest, emptyRunLog, firstBreadth, latest, runRecord, type RunLog } from "./step/order.js";
+import { earliest, emptyRunLog, firstBreadth, latest, runRecord, type RunLog, unitCtx } from "./step/order.js";
 import { deferred, effectContinuation, timerJob } from "./step/jobs.js";
 import { advanceClock, admitChoicesThen, command, deliverEffectResult } from "./step/inputs.js";
 import { perform, requireScope, queuedNames, type SignalRun } from "./step/stale.js";
@@ -474,7 +474,10 @@ function settle(hooks: Hooks, ctx: Ctx, bound: number, opening: State, start: St
     if (fuel === 0) return failed(FailureTag.Unsupported, "closure-bound"); // dynamic-only: a closure's length depends on the run
     work -= entryCount(state);
     if (work < 0) return failed(FailureTag.Unsupported, "closure-bound"); // dynamic-only: so does its size
-    if (state.status !== InstanceStatus.Running) return orderJournal(opening, state, log);
+    const schedule = ctx.program.options.branchSchedule;
+    if (state.status !== InstanceStatus.Running) return orderJournal(schedule, opening, state, log);
+    // every unit's body orders the closure's pending positions by the units `log` records (DC13)
+    const body = unitCtx(ctx, log);
     const signalled = firstBreadth(state.queuedSignals);
     const token = signalled === undefined ? nextToken(hooks, ctx, log, state) : undefined;
     const ready = signalled === undefined && token === undefined ? idleScope(hooks, ctx, state) : undefined;
@@ -483,30 +486,30 @@ function settle(hooks: Hooks, ctx: Ctx, bound: number, opening: State, start: St
     if (signalled !== undefined) {
       const [key, next] = signalled;
       ran = key;
-      stepped = microStep(hooks, ctx, key, { tag: CauseTag.Signal, name: signalName(next) }, null, root,
-        dispatchSignal(hooks, ctx, next), { ...state, queuedSignals: orderedErase(state.queuedSignals, key, compareUnitKey) });
+      stepped = microStep(hooks, body, key, { tag: CauseTag.Signal, name: signalName(next) }, null, root,
+        dispatchSignal(hooks, body, next), { ...state, queuedSignals: orderedErase(state.queuedSignals, key, compareUnitKey) });
     } else if (token !== undefined) {
       ran = token[0];
-      stepped = moveToken(hooks, ctx, token[0], token[1], { ...state, queuedTokens: orderedErase(state.queuedTokens, token[0], compareUnitKey) });
+      stepped = moveToken(hooks, body, token[0], token[1], { ...state, queuedTokens: orderedErase(state.queuedTokens, token[0], compareUnitKey) });
     } else if (ready !== undefined) {
       const idling = idleUnit(state.issued, ready.id);
       if (idling === null) return semanticFailure(SemanticCause.Invariant, "idle-unit-unkeyed");
       ran = idling;
-      stepped = microStep(hooks, ctx, ran, { tag: CauseTag.Idle, scope: ready.id }, ready.element, ready.id,
-        (current) => completeIdleScope(hooks, ctx, ready, current), state);
+      stepped = microStep(hooks, body, ran, { tag: CauseTag.Idle, scope: ready.id }, ready.element, ready.id,
+        (current) => completeIdleScope(hooks, body, ready, current), state);
     } else {
-      const offered = reoffer(hooks, ctx, state);
+      const offered = reoffer(hooks, body, state);
       if (!offered.ok) return offered;
       const fired = offered.value;
       if (fired === null) {
-        if (!idle(state, root) || orderedSize(state.queuedSignals) > 0) return orderJournal(opening, state, log);
+        if (!idle(state, root) || orderedSize(state.queuedSignals) > 0) return orderJournal(schedule, opening, state, log);
         const finish = unitRoot({ tag: UnitRootTag.Idle, scope: root });
-        const finished = microStep(hooks, ctx, finish, { tag: CauseTag.Idle, scope: root }, null, root,
+        const finished = microStep(hooks, body, finish, { tag: CauseTag.Idle, scope: root }, null, root,
           (current) => committed(endInstance(InstanceStatus.Completed, null, current)), state);
-        return finished.ok ? orderJournal(opening, finished.value, runRecord(log, finish)) : finished;
+        return finished.ok ? orderJournal(schedule, opening, finished.value, runRecord(log, finish)) : finished;
       }
       ran = fired.unit;
-      stepped = microStep(hooks, ctx, ran, { tag: CauseTag.Idle, scope: fired.scope }, fired.gateway, fired.scope,
+      stepped = microStep(hooks, body, ran, { tag: CauseTag.Idle, scope: fired.scope }, fired.gateway, fired.scope,
         () => committed(fired.state), state);
     }
     if (!stepped.ok) return stepped;
@@ -549,7 +552,10 @@ function scopeRole(state: State, scope: ScopeOccurrenceId): ScopeRole {
 
 /** The context every hook of `program` reads, its queries filled from `hooks`. */
 export function context(hooks: Hooks, program: Program): Ctx {
-  return { program, evaluate: hooks.evaluate, catches: hooks.catches, eventStart: hooks.eventStart, scopeRole, conditionChoices: [] };
+  return {
+    program, evaluate: hooks.evaluate, catches: hooks.catches, eventStart: hooks.eventStart, scopeRole, conditionChoices: [],
+    issuerOrder: breadthUnitKey,
+  };
 }
 
 /**

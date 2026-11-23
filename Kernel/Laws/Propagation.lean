@@ -90,7 +90,7 @@ theorem arriveThrow_keeps {inv : State → Prop} {ctx : Ctx} (ops : PropagationO
     simp only [bind, Except.bind] at ran
     repeat' split at ran
     all_goals try cases ran
-    obtain ⟨fired, same⟩ := fireAll_keeps ops _ (Feature.Propagation.ownReceivers state _) state holds
+    obtain ⟨fired, same⟩ := fireAll_keeps ops _ (Feature.Propagation.ownReceivers ctx state _) state holds
     exact ops.complete _ _ _ _ _ (ops.batchIntents _ _ fired) (same ▸ member) begun (throwLeave_unnamed payload)
   | compensation record =>
     dsimp only at ran

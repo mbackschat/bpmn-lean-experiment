@@ -1,6 +1,6 @@
 module
 
-public import Kernel.Laws.State
+public import Kernel.Laws.State.Called
 public import Kernel.Laws.Data.Values
 
 /-! # Laws of the kernel state: the scope chain's searches

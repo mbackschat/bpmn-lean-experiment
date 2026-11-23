@@ -18,6 +18,23 @@ namespace Kernel.Laws.State
 
 open Kernel
 
+/-- `State.disarm` closes the items attached to `host` and drops the reservations they hold. -/
+theorem disarm_eq (s : State) (host : OccurrenceId) : s.disarm host = { s with
+    openItems := s.openItems.filter fun _ item => item.attachedTo != some host
+    occurrences := s.occurrences.filter fun occurrence =>
+      occurrence.begun || !((itemList s.openItems).filter (·.attachedTo == some host)).any (·.id.occurrence == occurrence.id)
+    itemOrdinals := s.itemOrdinals.filter fun id _ => !s.occurrences.any fun occurrence =>
+      occurrence.id == id && !occurrence.begun && ((itemList s.openItems).filter (·.attachedTo == some host)).any (·.id.occurrence == occurrence.id) } := by
+  simp only [State.disarm, State.mk.injEq, and_true, true_and]
+  congr 1
+  funext id _
+  simp only [List.contains_map, List.any_filter]
+  congr 2
+  funext occurrence
+  cases occurrence.begun <;> simp only [Bool.not_true, Bool.not_false, Bool.false_and, Bool.true_and, Bool.and_false,
+    Bool.and_true]
+  rw [BEq.comm, Bool.and_comm]
+
 /-! ### Cancellation facts -/
 
 private theorem recordCancelled_cancels (state : State) (occurrences : List Occurrence) :
@@ -334,17 +351,20 @@ theorem getD_erase_le {α : Type} [Ord α] [Std.TransOrd α] [Std.LawfulEqOrd α
 theorem CountersFrom.lower {start s t : State} (counted : CountersFrom start s)
     (scopes : ∀ slot, t.scopeOrdinals.getD slot 0 ≤ s.scopeOrdinals.getD slot 0)
     (occurrences : ∀ slot, t.occurrenceOrdinals.getD slot 0 ≤ s.occurrenceOrdinals.getD slot 0)
-    (items : ∀ occurrence, t.itemOrdinals.getD occurrence 0 ≤ s.itemOrdinals.getD occurrence 0) : CountersFrom start t :=
+    (items : ∀ occurrence, t.itemOrdinals.getD occurrence 0 ≤ s.itemOrdinals.getD occurrence 0)
+    (positions : t.nextOrder ≤ s.nextOrder := by exact Nat.le_refl _) : CountersFrom start t :=
   ⟨fun slot => Nat.le_trans (scopes slot) (counted.scopes slot),
     fun slot => Nat.le_trans (occurrences slot) (counted.occurrences slot),
-    fun occurrence => Nat.le_trans (items occurrence) (counted.items occurrence)⟩
+    fun occurrence => Nat.le_trans (items occurrence) (counted.items occurrence),
+    Nat.le_trans positions counted.positions⟩
 
 /-- A change that leaves the three counter maps keeps `CountersFrom start`. -/
 theorem CountersFrom.same {start s t : State} (counted : CountersFrom start s) (scopes : t.scopeOrdinals = s.scopeOrdinals)
-    (occurrences : t.occurrenceOrdinals = s.occurrenceOrdinals) (items : t.itemOrdinals = s.itemOrdinals) :
+    (occurrences : t.occurrenceOrdinals = s.occurrenceOrdinals) (items : t.itemOrdinals = s.itemOrdinals)
+    (positions : t.nextOrder = s.nextOrder := by exact rfl) :
     CountersFrom start t :=
   counted.lower (fun _ => by rw [scopes]; exact Nat.le_refl _) (fun _ => by rw [occurrences]; exact Nat.le_refl _)
-    fun _ => by rw [items]; exact Nat.le_refl _
+    (fun _ => by rw [items]; exact Nat.le_refl _) (by rw [positions]; exact Nat.le_refl _)
 
 /-- `State.clearInside` prunes counters only. -/
 theorem clearInside_countersFrom {start s : State} (counted : CountersFrom start s) (scope : ScopeOccurrenceId)
@@ -386,7 +406,7 @@ theorem withdrawOccurrence_countersFrom {start s : State} (counted : CountersFro
     CountersFrom start (s.withdrawOccurrence id) := by
   rw [withdrawOccurrence_eq]
   have disarmed := disarm_countersFrom (s := s.closeOwnItems id)
-    (counted.same (by rw [closeOwnItems_eq]) (by rw [closeOwnItems_eq]) (by rw [closeOwnItems_eq])) id
+    (counted.same (by rw [closeOwnItems_eq]) (by rw [closeOwnItems_eq]) (by rw [closeOwnItems_eq]) (by rw [closeOwnItems_eq])) id
   generalize (s.closeOwnItems id).disarm id = t at disarmed ⊢
   generalize t.scopes.filter (·.occurrence == some id) = entries
   induction entries generalizing t with
