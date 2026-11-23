@@ -72,7 +72,7 @@ theorem renameItemKey_eq (r : Issue → Issue) (key : ItemKey) :
   unfold renameItemKey; rfl
 
 theorem renameState_scopes (r : Issue → Issue) (c : Continuation → Continuation) (s : State) : (renameState r c s).scopes = s.scopes.map fun scope =>
-    { scope with id := renameScope r scope.id, occurrence := scope.occurrence.map (renameId r) } := by
+    { scope with id := renameScope r scope.id, position := r scope.position, occurrence := scope.occurrence.map (renameId r) } := by
   unfold renameState; rfl
 
 theorem renameState_occurrences (r : Issue → Issue) (c : Continuation → Continuation) (s : State) : (renameState r c s).occurrences = s.occurrences.map
@@ -105,7 +105,7 @@ theorem renameState_journal (r : Issue → Issue) (c : Continuation → Continua
 /-- The renaming as an equation: every field but the identities it renames is kept. -/
 theorem renameState_eq (r : Issue → Issue) (c : Continuation → Continuation) (s : State) : renameState r c s = { s with
     scopes := s.scopes.map fun scope =>
-      { scope with id := renameScope r scope.id, occurrence := scope.occurrence.map (renameId r) }
+      { scope with id := renameScope r scope.id, position := r scope.position, occurrence := scope.occurrence.map (renameId r) }
     occurrences := s.occurrences.map fun occurrence =>
       { occurrence with id := renameId r occurrence.id, scope := renameScope r occurrence.scope
                         continuation := c occurrence.continuation }

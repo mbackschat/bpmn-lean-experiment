@@ -14,6 +14,8 @@ that kept either. The walk's start-relative property (`Proofs.State.KeysAux`) ca
 
 namespace Kernel.Proofs.Frame
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel
 open Kernel.Laws.State (WellFormed)
 
@@ -94,10 +96,10 @@ theorem frameAlongside_both (a : FrameAlongside program A) (b : FrameAlongside p
         (popped.imp fun _ => .imp fun _ => .imp fun _ => popped_mono left) held.1,
       b.reserve s element scope formed stands (pendingIn_mono (fun _ both => both.2) pending)
         (popped.imp fun _ => .imp fun _ => .imp fun _ => popped_mono right) held.2⟩
-  leaveScope s scope formed stands owned held :=
-    ⟨a.leaveScope s scope formed stands owned held.1, b.leaveScope s scope formed stands owned held.2⟩
-  clearInside s scope keep formed stands outside held :=
-    ⟨a.clearInside s scope keep formed stands outside held.1, b.clearInside s scope keep formed stands outside held.2⟩
+  leaveScope le s scope formed stands owned held :=
+    ⟨a.leaveScope le s scope formed stands owned held.1, b.leaveScope le s scope formed stands owned held.2⟩
+  clearInside le s scope keep formed stands outside held :=
+    ⟨a.clearInside le s scope keep formed stands outside held.1, b.clearInside le s scope keep formed stands outside held.2⟩
   disarm s host formed held := ⟨a.disarm s host formed held.1, b.disarm s host formed held.2⟩
   setVariable s target name value formed held :=
     ⟨a.setVariable s target name value formed held.1, b.setVariable s target name value formed held.2⟩
@@ -122,8 +124,9 @@ theorem alongside_both (a : Alongside program A) (b : Alongside program B) : Alo
     defer := fun s requests formed anchored held =>
       ⟨a.defer s requests formed (fun request member => (anchored request member).mono left) held.1,
         b.defer s requests formed (fun request member => (anchored request member).mono right) held.2⟩
-    leaveInstance := fun s run scope formed member active stands held =>
-      ⟨a.leaveInstance s run scope formed member active stands held.1, b.leaveInstance s run scope formed member active stands held.2⟩
+    leaveInstance := fun le s run scope formed member active stands held =>
+      ⟨a.leaveInstance le s run scope formed member active stands held.1,
+        b.leaveInstance le s run scope formed member active stands held.2⟩
     runs := fun s runs formed anchored held =>
       ⟨a.runs s runs formed (fun run member => (anchored run member).mono left) held.1,
         b.runs s runs formed (fun run member => (anchored run member).mono right) held.2⟩ }
@@ -142,11 +145,11 @@ theorem occursAlongside_both (a : OccursAlongside program A) (b : OccursAlongsid
   compensate s scope activity trigger leave element at_ resumed origin rolled anchored held :=
     ⟨a.compensate s scope activity trigger leave element at_ resumed
         (origin.imp_right (pendingIn_mono fun _ both => both.1))
-        (rolled.imp fun _ ⟨same, formed, stands, back⟩ => ⟨same, formed, stands, rollsBack_mono left back⟩)
+        (rolled.imp fun _ => .imp fun _ ⟨same, formed, back⟩ => ⟨same, formed, back.imp_right (rollsBack_mono left)⟩)
         (anchored.mono left) held.1,
       b.compensate s scope activity trigger leave element at_ resumed
         (origin.imp_right (pendingIn_mono fun _ both => both.2))
-        (rolled.imp fun _ ⟨same, formed, stands, back⟩ => ⟨same, formed, stands, rollsBack_mono right back⟩)
+        (rolled.imp fun _ => .imp fun _ ⟨same, formed, back⟩ => ⟨same, formed, back.imp_right (rollsBack_mono right)⟩)
         (anchored.mono right) held.2⟩
   throwCompensate s occurrence scope activity trigger leave formed begun same unnamed held :=
     ⟨a.throwCompensate s occurrence scope activity trigger leave formed (begunFrom_mono left begun) same unnamed held.1,
@@ -169,7 +172,7 @@ theorem closureAlongside_both (a : ClosureAlongside program A) (b : ClosureAlong
     begin := fun s request role sourceType formed stands admitted roled origin held =>
       ⟨a.begin s request role sourceType formed stands admitted roled (origin.mono fun _ both => ⟨both.1, both.2.1⟩) held.1,
         b.begin s request role sourceType formed stands admitted roled (origin.mono fun _ both => ⟨both.1, both.2.2⟩) held.2⟩
-    cancel := fun s id formed held => ⟨a.cancel s id formed held.1, b.cancel s id formed held.2⟩
+    cancel := fun le s id formed held => ⟨a.cancel le s id formed held.1, b.cancel le s id formed held.2⟩
     journal := fun s unit transition formed held unjournalled started ended =>
       ⟨a.journal s unit transition formed held.1 unjournalled started ended,
         b.journal s unit transition formed held.2 unjournalled started ended⟩
@@ -186,9 +189,9 @@ theorem pipelinePhases_both {A B : Program → State → Prop}
     have one := a.startReserved program s occurrence sourceType ⟨holds.1, holds.2.1⟩ member unnamed
     have two := b.startReserved program s occurrence sourceType ⟨holds.1, holds.2.2⟩ member unnamed
     ⟨one.1, one.2, two.2⟩
-  removeOccurrence program s occurrence holds member free :=
-    have one := a.removeOccurrence program s occurrence ⟨holds.1, holds.2.1⟩ member free
-    have two := b.removeOccurrence program s occurrence ⟨holds.1, holds.2.2⟩ member free
+  removeOccurrence program le s occurrence holds member free :=
+    have one := a.removeOccurrence program le s occurrence ⟨holds.1, holds.2.1⟩ member free
+    have two := b.removeOccurrence program le s occurrence ⟨holds.1, holds.2.2⟩ member free
     ⟨⟨one.1.1, one.1.2, two.1.2⟩, one.2⟩
   recordEnd program s key terminal holds :=
     have one := a.recordEnd program s key terminal ⟨holds.1, holds.2.1⟩

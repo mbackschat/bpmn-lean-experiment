@@ -30,6 +30,8 @@ everything, values that violate it.
 
 namespace Kernel.Laws.Scopes
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel
 open Kernel.Laws.State (ClearsInside)
 
@@ -117,15 +119,15 @@ structure ScopesOps (program : Program) (inv : State → Prop) : Prop where
   /-- An interrupting Event Sub-Process's clearing of the scope occurrence its begun occurrence runs in, keeping that
   occurrence and its start Event's reservation, which lies there; the occurrence stands and the reservation stays
   claimable there. -/
-  clear : ∀ state occurrence (inner : Option OccurrenceId), inv state → occurrence ∈ state.occurrences →
+  clear : ∀ le state occurrence (inner : Option OccurrenceId), inv state → occurrence ∈ state.occurrences →
     occurrence.begun = true →
     (∀ id ∈ inner.toList, Laws.State.Beginnable state occurrence.scope id ∧ Laws.State.Unclaimed state id ∧
       ∀ found ∈ state.occurrences, found.id = id → found.scope = occurrence.scope) →
-    inv (state.clearInside occurrence.scope (occurrence.id :: inner.toList)) ∧
-      occurrence ∈ (state.clearInside occurrence.scope (occurrence.id :: inner.toList)).occurrences ∧
+    inv (state.clearInside le occurrence.scope (occurrence.id :: inner.toList)) ∧
+      occurrence ∈ (state.clearInside le occurrence.scope (occurrence.id :: inner.toList)).occurrences ∧
       ∀ id ∈ inner.toList,
-        Laws.State.Beginnable (state.clearInside occurrence.scope (occurrence.id :: inner.toList)) occurrence.scope id ∧
-        Laws.State.Unclaimed (state.clearInside occurrence.scope (occurrence.id :: inner.toList)) id
+        Laws.State.Beginnable (state.clearInside le occurrence.scope (occurrence.id :: inner.toList)) occurrence.scope id ∧
+        Laws.State.Unclaimed (state.clearInside le occurrence.scope (occurrence.id :: inner.toList)) id
   /-- A Scope's occurrence entered below the scope occurrence its begun occurrence runs in, which owns it and runs its
   element: the occurrences stay, the entered scope occurrence stands, and a reservation claimable in the parent is
   claimable in it. -/
@@ -360,9 +362,9 @@ theorem arriveScope_keeps {inv : State → Prop} {ctx : Ctx} (ops : ScopesOps ct
         dsimp only at ran
         cases interrupting
         · exact enter_keeps ops holds member begun named claimable lies ran
-        · obtain ⟨cleared, stays, clearedReady⟩ := ops.clear state occurrence entry.inner holds member begun ready
+        · obtain ⟨cleared, stays, clearedReady⟩ := ops.clear ctx.positionLe state occurrence entry.inner holds member begun ready
           refine enter_keeps ops cleared stays begun named clearedReady (fun found inside reserved => ?_) ran
-          obtain ⟨_, shape⟩ := Laws.State.clearInside_eq state occurrence.scope (occurrence.id :: entry.inner.toList)
+          obtain ⟨_, shape⟩ := Laws.State.clearInside_eq (le := ctx.positionLe) state occurrence.scope (occurrence.id :: entry.inner.toList)
           rw [shape] at inside
           exact lies found (List.mem_filter.mp inside).1 reserved
 
@@ -402,7 +404,7 @@ theorem cleared_clears {before after : State} {scope : ScopeOccurrenceId} {keep 
 /-- `State.clearInside` of a scope occurrence that stands in a well-formed state is a `ClearsInside` transition. -/
 theorem clearInside_clears {program : Program} {s : State} {scope : ScopeOccurrenceId}
     (formed : Laws.State.WellFormed program s) (present : scope ∈ Laws.State.scopeIds s) (keep : List OccurrenceId) :
-    ClearsInside s (s.clearInside scope keep) scope keep :=
+    ClearsInside s (s.clearInside le scope keep) scope keep :=
   cleared_clears (Laws.State.clearInside_cleared formed present keep) (Laws.State.clearInside_instanceId s scope keep)
 
 /-- A queued signal leaves a `ClearsInside` transition one, since the transition reads no queued signal. -/

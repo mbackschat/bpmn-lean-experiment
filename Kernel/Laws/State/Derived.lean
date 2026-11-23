@@ -14,6 +14,8 @@ opening `Kernel.State`'s bodies, so `Kernel.Laws.State` keeps only what needs th
 
 namespace Kernel.Laws.State
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel
 
 /-! ## Keyed variable sets -/
@@ -92,31 +94,31 @@ theorem busyScopes_parent (state : State) (child : ScopeOccurrence) (member : ch
 
 /-- Clearing a scope occurrence keeps the instance identity. -/
 theorem clearInside_instanceId (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
-    (s.clearInside scope keep).instanceId = s.instanceId := by
+    (s.clearInside le scope keep).instanceId = s.instanceId := by
   obtain ⟨_, made⟩ := clearInside_eq s scope keep
   rw [made]
 
 /-- Clearing a scope occurrence queues and drops no signal, whatever it clears. -/
 theorem clearInside_signals (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
-    (s.clearInside scope keep).batchSignals = s.batchSignals := by
+    (s.clearInside le scope keep).batchSignals = s.batchSignals := by
   obtain ⟨_, made⟩ := clearInside_eq s scope keep
   rw [made]
 
 theorem allSignals_clearInside (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
-    allSignals (s.clearInside scope keep) = allSignals s := by
+    allSignals (s.clearInside le scope keep) = allSignals s := by
   obtain ⟨_, made⟩ := clearInside_eq s scope keep
   rw [made]
   rfl
 
 /-- Clearing a scope occurrence only drops tokens, whatever it clears. -/
 theorem clearInside_tokens (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
-    (s.clearInside scope keep).batchTokens.Sublist s.batchTokens := by
+    (s.clearInside le scope keep).batchTokens.Sublist s.batchTokens := by
   obtain ⟨_, made⟩ := clearInside_eq s scope keep
   rw [made]
   exact List.filter_sublist
 
 theorem allQueuedTokens_clearInside (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
-    (allQueuedTokens (s.clearInside scope keep)).Sublist (allQueuedTokens s) := by
+    (allQueuedTokens (s.clearInside le scope keep)).Sublist (allQueuedTokens s) := by
   obtain ⟨_, made⟩ := clearInside_eq s scope keep
   rw [made]
   simp only [allQueuedTokens, Std.ExtTreeMap.toList_filter]
@@ -124,7 +126,7 @@ theorem allQueuedTokens_clearInside (s : State) (scope : ScopeOccurrenceId) (kee
 
 /-- Clearing drops scope occurrences and takes no position, whatever it clears. -/
 theorem clearInside_shrinks (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
-    (s.clearInside scope keep).scopes.Sublist s.scopes ∧ (s.clearInside scope keep).nextCompletion = s.nextCompletion := by
+    (s.clearInside le scope keep).scopes.Sublist s.scopes ∧ (s.clearInside le scope keep).nextCompletion = s.nextCompletion := by
   obtain ⟨_, made⟩ := clearInside_eq s scope keep
   rw [made]
   exact ⟨List.filter_sublist, rfl⟩
@@ -132,25 +134,25 @@ theorem clearInside_shrinks (s : State) (scope : ScopeOccurrenceId) (keep : List
 /-- Clearing a scope occurrence drops the compensation records retained strictly inside it and the runs inside it, its
 own included, and keeps the others in order. -/
 theorem clearInside_compensation (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
-    (s.clearInside scope keep).slots.compensation =
-      { retained := s.slots.compensation.retained.filter (!((s.subtree scope).filter (· != scope)).contains ·.scope)
-        runs := s.slots.compensation.runs.filter (!(s.subtree scope).contains ·.scope) } := by
+    (s.clearInside le scope keep).slots.compensation =
+      { retained := s.slots.compensation.retained.filter (!((s.subtree le scope).filter (· != scope)).contains ·.scope)
+        runs := s.slots.compensation.runs.filter (!(s.subtree le scope).contains ·.scope) } := by
   obtain ⟨_, made⟩ := clearInside_eq s scope keep
   rw [made]
 
 /-- Leaving a scope occurrence keeps the slots its clearing leaves but the retained compensation records. -/
 theorem leaveScope_slots (s : State) (scope : ScopeOccurrenceId) :
-    (s.leaveScope scope).slots.parked = (s.clearInside scope).slots.parked ∧
-      (s.leaveScope scope).slots.multiInstances = (s.clearInside scope).slots.multiInstances ∧
-      (s.leaveScope scope).slots.compensation.runs = (s.clearInside scope).slots.compensation.runs := by
+    (s.leaveScope le scope).slots.parked = (s.clearInside le scope).slots.parked ∧
+      (s.leaveScope le scope).slots.multiInstances = (s.clearInside le scope).slots.multiInstances ∧
+      (s.leaveScope le scope).slots.compensation.runs = (s.clearInside le scope).slots.compensation.runs := by
   rw [leaveScope_slots_eq]
   exact ⟨rfl, rfl, rfl⟩
 
 /-- Leaving a scope occurrence keeps only instance entries the state had, and none rooted at it, so a completed called
 instance leaves no entry behind (DC24, #169). -/
 theorem leaveScope_instances (s : State) (scope : ScopeOccurrenceId) :
-    (s.leaveScope scope).slots.instances.Sublist s.slots.instances ∧
-      ∀ entry ∈ (s.leaveScope scope).slots.instances, entry.root ≠ scope := by
+    (s.leaveScope le scope).slots.instances.Sublist s.slots.instances ∧
+      ∀ entry ∈ (s.leaveScope le scope).slots.instances, entry.root ≠ scope := by
   obtain ⟨_, made⟩ := clearInside_eq s scope []
   rw [leaveScope_slots_eq, made]
   refine ⟨List.filter_sublist.trans List.filter_sublist, fun entry member => ?_⟩
@@ -158,31 +160,31 @@ theorem leaveScope_instances (s : State) (scope : ScopeOccurrenceId) :
 
 /-- Leaving a scope occurrence keeps a sublist of the occurrences. -/
 theorem leaveScope_occurrences (s : State) (scope : ScopeOccurrenceId) :
-    (s.leaveScope scope).occurrences.Sublist s.occurrences := by
+    (s.leaveScope le scope).occurrences.Sublist s.occurrences := by
   rw [(leaveScope_eq s scope).1]
   obtain ⟨_, made⟩ := clearInside_eq s scope []
   rw [made]
   exact List.filter_sublist
 
-theorem leaveScope_signals (s : State) (scope : ScopeOccurrenceId) : (s.leaveScope scope).batchSignals = s.batchSignals := by
+theorem leaveScope_signals (s : State) (scope : ScopeOccurrenceId) : (s.leaveScope le scope).batchSignals = s.batchSignals := by
   rw [(leaveScope_eq s scope).1]
   exact clearInside_signals s scope []
 
 theorem allSignals_leaveScope (s : State) (scope : ScopeOccurrenceId) :
-    allSignals (s.leaveScope scope) = allSignals s := by
+    allSignals (s.leaveScope le scope) = allSignals s := by
   rw [(leaveScope_eq s scope).1]
   exact allSignals_clearInside s scope []
 
 /-- Leaving a scope occurrence removes it and the scope occurrences below it, with the records they retain and the runs
 in its subtree, and keeps the counters: what a compensation run's release changes, read without a well-formed state. -/
 theorem leaveScope_compensation (s : State) (scope : ScopeOccurrenceId) :
-    (s.leaveScope scope).slots.compensation.retained =
+    (s.leaveScope le scope).slots.compensation.retained =
       (s.slots.compensation.retained.filter fun record =>
-        !((s.subtree scope).filter (· != scope)).contains record.scope).filter (·.scope != scope) ∧
-    (s.leaveScope scope).slots.compensation.runs = s.slots.compensation.runs.filter (!(s.subtree scope).contains ·.scope) ∧
-    (s.leaveScope scope).scopes = (s.scopes.filter fun entry =>
-      !((s.subtree scope).filter (· != scope)).contains entry.id).filter (·.id != scope) ∧
-    (s.leaveScope scope).activations = s.activations ∧ (s.leaveScope scope).nextCompletion = s.nextCompletion := by
+        !((s.subtree le scope).filter (· != scope)).contains record.scope).filter (·.scope != scope) ∧
+    (s.leaveScope le scope).slots.compensation.runs = s.slots.compensation.runs.filter (!(s.subtree le scope).contains ·.scope) ∧
+    (s.leaveScope le scope).scopes = (s.scopes.filter fun entry =>
+      !((s.subtree le scope).filter (· != scope)).contains entry.id).filter (·.id != scope) ∧
+    (s.leaveScope le scope).activations = s.activations ∧ (s.leaveScope le scope).nextCompletion = s.nextCompletion := by
   obtain ⟨_, made⟩ := clearInside_eq s scope []
   rw [leaveScope_slots_eq, (leaveScope_eq s scope).1, made]
   exact ⟨rfl, rfl, rfl, rfl, rfl⟩

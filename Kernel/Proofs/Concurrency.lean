@@ -90,7 +90,7 @@ def fire (hooks : Hooks) (ctx : Ctx) (unit : ClosureUnit) (state : State) : Opti
     if quiet && (Step.idleScope? hooks ctx state).isNone && state.idle State.root then
       match Step.reoffer? hooks ctx state with
       | .ok none => some ((Step.microStep hooks ctx (.ofRoot (.idle [])) (.idle State.root) none State.root
-          (fun state => .ok (Step.endInstance .completed none state)) state).map (.ofRoot (.idle []), ·))
+          (fun state => .ok (Step.endInstance ctx.positionLe .completed none state)) state).map (.ofRoot (.idle []), ·))
       | _ => none
     else none
 

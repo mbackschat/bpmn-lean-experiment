@@ -90,7 +90,7 @@ nothing but the thrower, whose leave is queued (`hostLeaves`), remains there. CI
 def endsInstanceWithOutputs (ctx : Ctx) (origin : Origin) (state : State) : Bool :=
   let outputs := (((ctx.program.element? origin.element).bind (·.envelope?)).map (·.outputs)).getD []
   let left := match origin.host with
-    | some host => state.idleWithout origin.scope host
+    | some host => state.idleWithout ctx.positionLe origin.scope host
     | none => state.idle origin.scope
   !outputs.isEmpty && state.instanceRoot origin.scope == origin.scope && left
 
@@ -214,7 +214,7 @@ def leaveOccurrence (hooks : PropagationHooks) (ctx : Ctx) (raised : Raised) (or
     let terminating := match occurrence.occurrence with
       | some activity => if rolledBack == occurrence.id then state.disarm activity else state
       | none => state
-    .ok ((terminating.clearInside rolledBack).signal (.compensate rolledBack none thrown occurrence.occurrence
+    .ok ((terminating.clearInside ctx.positionLe rolledBack).signal (.compensate rolledBack none thrown occurrence.occurrence
       (some (.occur boundary.id parent (.flows boundary.outgoing)))))
   else if boundary.interrupting then
     let host := if state.calledRoot occurrence.id then parent else occurrence.id

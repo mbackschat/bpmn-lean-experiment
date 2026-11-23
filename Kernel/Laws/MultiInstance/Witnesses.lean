@@ -39,15 +39,15 @@ def firstInstance : Occurrence :=
 def secondInstance : Occurrence :=
   { id := secondKey, element := review, scope := secondScope, activation := 2, continuation := .multiInstance bodyKey }
 
-def firstOwned : ScopeOccurrence := { id := firstScope, element := some review }
-def secondOwned : ScopeOccurrence := { id := secondScope, element := some review }
+def firstOwned : ScopeOccurrence := { id := firstScope, element := some review, position := 0 }
+def secondOwned : ScopeOccurrence := { id := secondScope, element := some review, position := 0 }
 def firstLocals : ScopeVariables := { scope := firstScope, entries := [("item", .string "x"), ("loopCounter", .int 0)] }
 def secondLocals : ScopeVariables := { scope := secondScope, entries := [("item", .string "x"), ("loopCounter", .int 1)] }
 
 def entered : State :=
   { instanceId := "p"
-    scopes := [{ id := root, element := none },
-      { id := bodyScope, element := some review, occurrence := some bodyKey }, firstOwned, secondOwned]
+    scopes := [{ id := root, element := none, position := 0 },
+      { id := bodyScope, element := some review, position := 0, occurrence := some bodyKey }, firstOwned, secondOwned]
     occurrences := [bodyOccurrence, firstInstance, secondInstance]
     variables := [firstLocals, secondLocals]
     slots := { multiInstances := [running] } }
@@ -87,8 +87,8 @@ theorem body_owned : BodyOwns entered running := by
 
 /-- A body scope occurrence no occurrence owns breaks `BodyOwns`. -/
 theorem unowned_body_rejected :
-    ¬ BodyOwns { entered with scopes := [{ id := bodyScope, element := some review }] } running :=
-  fun owns => by simpa using owns { id := bodyScope, element := some review } (by simp) rfl
+    ¬ BodyOwns { entered with scopes := [{ id := bodyScope, element := some review, position := 0 }] } running :=
+  fun owns => by simpa using owns { id := bodyScope, element := some review, position := 0 } (by simp) rfl
 
 theorem instances_unowned : InstancesUnowned entered running := by
   intro scope active entry member named

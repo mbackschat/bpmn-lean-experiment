@@ -106,12 +106,12 @@ def boundaryFlow : FlowId := ⟨"ToRecovery"⟩
 def counter : ActivationCount := { processInstance := "p", element := exact, role := .element, count := 2 }
 
 def running : State :=
-  { instanceId := "p", scopes := [{ id := triggerScope, element := none }, { id := raising, element := some ⟨"Sub"⟩ }],
+  { instanceId := "p", scopes := [{ id := triggerScope, element := none, position := 0 }, { id := raising, element := some ⟨"Sub"⟩, position := 0 }],
     batchTokens := [.flow ⟨"Inner"⟩ raising], activations := [counter] }
 
 def recovered : State :=
   { running with
-    scopes := [{ id := triggerScope, element := none }]
+    scopes := [{ id := triggerScope, element := none, position := 0 }]
     batchTokens := [.flow boundaryFlow triggerScope] }
 
 theorem catch_interrupts : InterruptingCatch true (· = raising) triggerScope [boundaryFlow] running recovered := fun _ =>
@@ -120,7 +120,7 @@ theorem catch_interrupts : InterruptingCatch true (· = raising) triggerScope [b
 /-- Keeping the interrupted scope occurrence is rejected. -/
 theorem keeps_inner_scope_rejected :
     ¬ InterruptingCatch true (· = raising) triggerScope [boundaryFlow] running { recovered with scopes := running.scopes } :=
-  fun law => (law rfl).1 { id := raising, element := some ⟨"Sub"⟩ } (by simp [running]) rfl
+  fun law => (law rfl).1 { id := raising, element := some ⟨"Sub"⟩, position := 0 } (by simp [running]) rfl
 
 /-- Adding no token on the catcher's flow is rejected. -/
 theorem no_boundary_token_rejected :

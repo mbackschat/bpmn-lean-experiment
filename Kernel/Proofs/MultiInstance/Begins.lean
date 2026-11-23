@@ -30,6 +30,8 @@ not reach a feature's Laws module beyond its fan-in (guard 15). Nothing executab
 
 namespace Kernel.Proofs.MultiInstance
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel
 open Kernel.Laws.State (WellFormed scopeIds)
 open Kernel.Laws.IL (BoundaryOf Reservable)
@@ -155,19 +157,19 @@ theorem BeginsKept.reserve {program : Program} {s : State} {element : ElementId}
     reserves.transitions, by rw [reserves.draft]⟩
 
 /-- Leaving a scope occurrence that stands keeps `BeginsKept`: it only takes away. -/
-theorem BeginsKept.leaveScope {program other : Program} {s : State} (formed : WellFormed other s)
+theorem BeginsKept.leaveScope (le : Issue → Issue → Bool) {program other : Program} {s : State} (formed : WellFormed other s)
     {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s) (held : BeginsKept program T s) :
-    BeginsKept program T (s.leaveScope scope) :=
-  have left := Laws.State.leaveScope_left formed present
+    BeginsKept program T (s.leaveScope le scope) :=
+  have left := Laws.State.leaveScope_left (le := le) formed present
   held.frame (fun o inside => ((left.occurrences o).mp inside).1)
     (fun _ named => pending_of_sublist left.queues.signal_mem left.slots.runs named)
     left.transitions left.started
 
 /-- Clearing a scope occurrence that stands keeps `BeginsKept`: it only takes away. -/
-theorem BeginsKept.clearInside {program other : Program} {s : State} (formed : WellFormed other s)
+theorem BeginsKept.clearInside (le : Issue → Issue → Bool) {program other : Program} {s : State} (formed : WellFormed other s)
     {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s) (keep : List OccurrenceId) (held : BeginsKept program T s) :
-    BeginsKept program T (s.clearInside scope keep) :=
-  have cleared := Laws.State.clearInside_cleared formed present keep
+    BeginsKept program T (s.clearInside le scope keep) :=
+  have cleared := Laws.State.clearInside_cleared (le := le) formed present keep
   held.frame (fun o inside => ((cleared.occurrences o).mp inside).1)
     (fun _ named => pending_of_sublist cleared.queues.signal_mem cleared.slots.runs named)
     cleared.transitions cleared.started
@@ -834,14 +836,14 @@ theorem beginsKept_alongside (program : Program) (T : TreeMap UnitKey Transition
   enterScope _ element parent locals owner _ _ _ held := held.enterScope element parent locals owner
   reserve _ _ scope _ _ pending _ held :=
     held.reserve (fun apart => PendingIn.unlooped (fun _ kept => (kept apart).occurs) pending) scope
-  leaveScope _ _ formed present _ held := held.leaveScope formed present
-  clearInside _ _ keep formed present _ held := held.clearInside formed present keep
+  leaveScope le _ _ formed present _ held := held.leaveScope le formed present
+  clearInside le _ _ keep formed present _ held := held.clearInside le formed present keep
   disarm _ host _ held := held.disarm host
   setVariable _ target name value _ held := held.setVariable target name value
   removeVariable _ target name _ held := held.removeVariable target name
   instanceBegin _ request _ _ held := held.signalBegin request
   defer _ requests _ _ held := held.defer requests
-  leaveInstance _ _ _ formed _ _ present held := held.leaveScope formed present
+  leaveInstance le _ _ _ formed _ _ present held := held.leaveScope le formed present
   runs _ runs _ _ held := held.runs runs
 
 /-- Storing compensation runs that resume only by pending reservations keeps `BeginsKept`. -/
@@ -859,7 +861,7 @@ theorem beginsKept_bodyAlongside (program : Program) (T : TreeMap UnitKey Transi
   unqueue _ unit _ held := held.unqueue unit
   untoken _ unit _ held := held.untoken unit
   begin _ _ role sourceType formed _ admitted _ _ held := held.begin formed admitted role sourceType
-  cancel _ _ formed held := (beginsKept_alongside program T).toFrameAlongside.cancelOccurrence
+  cancel le _ _ formed held := (beginsKept_alongside program T).toFrameAlongside.cancelOccurrence le
     (fun _ id _ kept => kept.withoutRecord id) (fun _ _ _ kept => kept.draft _ rfl) formed held
 
 /-- The completion pipeline's own phases keep `BeginsKept` where they keep `WellFormed`. -/
@@ -867,9 +869,9 @@ theorem beginsKept_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellForme
     Laws.Step.PipelinePhases fun program s => WellFormed program s ∧ BeginsKept program T s where
   startReserved _ _ occurrence sourceType holds member unnamed :=
     ⟨pipeline.startReserved _ _ occurrence sourceType holds.1 member unnamed, holds.2.startReserved sourceType member⟩
-  removeOccurrence program _ occurrence holds member free :=
-    have removed := pipeline.removeOccurrence _ _ occurrence holds.1 member free
-    ⟨⟨removed.1, (beginsKept_alongside program T).toFrameAlongside.removeOccurrence
+  removeOccurrence program le _ occurrence holds member free :=
+    have removed := pipeline.removeOccurrence _ le _ occurrence holds.1 member free
+    ⟨⟨removed.1, (beginsKept_alongside program T).toFrameAlongside.removeOccurrence le
       (fun _ id _ kept => kept.withoutRecord id) holds.1 holds.2⟩, removed.2⟩
   recordEnd _ _ key terminal holds := ⟨pipeline.recordEnd _ _ key terminal holds.1, holds.2.recordEnd key terminal⟩
 

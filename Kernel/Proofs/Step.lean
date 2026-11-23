@@ -34,6 +34,8 @@ from `Laws.Step.Operations` and `Laws.Step.StateFacts`. Nothing executable impor
 
 namespace Kernel.Proofs.Step
 
+variable {le : Issue → Issue → Bool}
+
 variable {program : Program}
 
 open Kernel
@@ -143,7 +145,7 @@ theorem bodyPhases : Laws.Step.BodyPhases Laws.State.WellFormed :=
       Laws.State.begin_unowned formed request role sourceType (mem stands) admitted.2.1
     parkedBegun := fun _ _ waiting _ formed parked member named =>
       (formed.settled.parked waiting parked).2.1 _ member named
-    endInstance := fun _ _ _ _ formed recorded => by
+    endInstance := fun _ le _ _ _ formed recorded => by
       rw [Laws.Step.endInstance_eq]
       exact Laws.State.endInstance_wellFormed formed recorded
     begin := fun _ _ request role sourceType formed stands admitted roled bodied _ _ =>
@@ -152,7 +154,7 @@ theorem bodyPhases : Laws.Step.BodyPhases Laws.State.WellFormed :=
           admitted.2.2⟩
     reserve := fun _ _ element scope formed stands _ _ =>
       Laws.State.reserve_wellFormed formed element scope (mem stands)
-    cancel := fun _ _ id formed => Laws.State.cancel_wellFormed formed id
+    cancel := fun _ le _ id formed => Laws.State.cancel_wellFormed formed id
     issuer := fun _ _ formed => formed.issuer }
 
 /-- The phases `Step` runs itself keep `Laws.State.WellFormed` (`Laws.Step.Phases`): the body's (`bodyPhases`),
@@ -170,7 +172,7 @@ theorem phases : Laws.Step.Phases Laws.State.WellFormed :=
 theorem pipelinePhases : Laws.Step.PipelinePhases Laws.State.WellFormed where
   startReserved _ _ _ sourceType formed member unnamed :=
     Laws.State.startReserved_closeOwnItems_wellFormed formed sourceType member unnamed
-  removeOccurrence _ _ _ formed member free :=
+  removeOccurrence _ _ _ _ formed member free :=
     ⟨(Laws.State.removeOccurrence_wellFormed formed member free).1,
       List.mem_map.mp (Laws.State.removeOccurrence_wellFormed formed member free).2⟩
   recordEnd _ _ key terminal formed := Laws.State.recordEnd_wellFormed formed key terminal
@@ -307,16 +309,16 @@ theorem multiInstanceOps : Laws.MultiInstance.MultiInstanceOps program (Laws.Sta
   begin _ _ formed bare stands _ := ⟨bareBegin_wellFormed formed bare stands, fun _ settled => settled.begin bare⟩
   defer _ _ formed bare _ := ⟨Laws.State.deferBegins_wellFormed formed bare,
     fun _ settled => settled.defer fun request member => (bare request member).1⟩
-  record state run index scope output results formed member slot stands _ := by
+  record le state run index scope output results formed member slot stands _ := by
     obtain ⟨below, parentOf⟩ := formed.settled.placed run member _ (List.mem_of_getElem? slot)
     obtain ⟨entry, inside, named⟩ := List.mem_map.mp stands
     subst named
     obtain ⟨left, standing, frame⟩ := Laws.State.leaveChild_wellFormed formed inside (parentOf entry inside rfl)
-    have body : Laws.State.Settled (state.leaveScope entry.id) run.occurrence :=
+    have body : Laws.State.Settled (state.leaveScope le entry.id) run.occurrence :=
       (formed.settled.bodies run member).transport frame.occurrenceGrows
         (fun _ present _ => .inl (frame.occurrencesSublist.subset present))
         (fun _ queued => queued.shrink (fun _ member => frame.signals ▸ member) (fun _ member => frame.tokensSublist.subset member))
-    have placed : Laws.State.Placed (state.leaveScope entry.id) (Laws.MultiInstance.recorded run index output results) :=
+    have placed : Laws.State.Placed (state.leaveScope le entry.id) (Laws.MultiInstance.recorded run index output results) :=
       fun inner active => (formed.settled.placed run member).transport (Laws.State.leaveScope_grows state entry.id)
         (fun _ present => .inl (frame.scopesSublist.subset present)) inner
         ((List.mem_or_eq_of_mem_set active).resolve_right (by simp))
@@ -353,7 +355,7 @@ theorem startsOps : Laws.Starts.StartsOps (Laws.State.WellFormed program) where
 theorem scopesOps : Laws.Scopes.ScopesOps program (Laws.State.WellFormed program) where
   owner _ _ _ formed member owned link := owner_begun formed member owned link
   complete _ _ leave writes rule formed member begun _ := complete_wellFormed formed member begun leave writes rule
-  clear _ _ _ formed member begun ready := Laws.State.clearInside_inner formed member begun ready
+  clear le _ _ _ formed member begun ready := Laws.State.clearInside_inner formed member begun ready
   enter _ element locals _ _ formed member begun _ claimable :=
     Laws.State.enterScope_inner formed element locals member begun claimable
   arm _ _ element formed member begun _ := queueArm_wellFormed formed member begun element
@@ -383,7 +385,7 @@ theorem propagationOps : Laws.Propagation.PropagationOps program (Laws.State.Wel
   compensate _ _ _ _ _ _ formed member begun _ _ _ := queue_wellFormed formed fun _ same => by
     cases same
     exact ⟨fun _ _ same => by cases same; exact begun_settled formed member begun, fun _ same => by simp at same⟩
-  terminate _ _ formed member begun :=
+  terminate le _ _ formed member begun :=
     have cleared := Laws.State.clearInside_inner formed member begun (inner := none) (by simp)
     ⟨cleared.1, cleared.2.1⟩
   openItem _ kind _ formed member begun unstarted role :=
@@ -399,7 +401,7 @@ theorem propagationOps : Laws.Propagation.PropagationOps program (Laws.State.Wel
   failCompensation _ _ _ _ _ formed := queue_wellFormed formed trivial
   fail _ _ formed := queue_wellFormed formed (by simp [Queueable])
   disarm _ host formed := ⟨Laws.State.disarm_wellFormed formed host, by rw [Laws.State.disarm_eq]⟩
-  rollBack _ _ _ _ _ _ _ formed stands _ _ _ _ := queue_wellFormed
+  rollBack le _ _ _ _ _ _ _ formed stands _ _ _ _ := queue_wellFormed
     (Laws.State.clearAll_wellFormed formed (List.mem_map.mpr stands)) fun _ same => by
       cases same
       exact ⟨fun _ _ wrong => (by cases wrong), fun _ wrong => by cases wrong⟩
@@ -503,7 +505,7 @@ theorem runsOps : Laws.Compensation.RunsOps program (Laws.State.WellFormed progr
   occur _ _ _ _ _ _ formed _ _ := ⟨queue_wellFormed formed trivial, fun _ settled => settled.signal fun _ same => by simp at same⟩
   begin _ _ _ _ formed stands _ := ⟨bareBegin_wellFormed formed (by simp [Laws.State.names]) stands,
     fun _ settled => settled.begin (by simp [Laws.State.names])⟩
-  leave _ _ _ formed member link _ := by
+  leave le _ _ _ formed member link _ := by
     obtain ⟨left, standing, frame⟩ := Laws.State.leaveChild_wellFormed formed member link
     exact ⟨left, standing, frame.occurrenceGrows, frame.scopeGrows, fun _ kept => frame.scopesSublist.subset kept, frame.slots.bodies, fun _ settled =>
       settled.transport frame.occurrenceGrows (fun _ present _ => .inl (frame.occurrencesSublist.subset present))

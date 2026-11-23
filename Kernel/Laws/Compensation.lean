@@ -21,6 +21,8 @@ executable imports this module.
 
 namespace Kernel.Laws.Compensation
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel
 
 /-! ## What the hooks do
@@ -229,9 +231,9 @@ theorem beginHandler_spec {ctx : Ctx} {trigger : OccurrenceRef} {scope : ScopeOc
 theorem release_spec {ctx : Ctx} {context : ScopeOccurrenceId} {state : State} {fuel : Nat} {after : State}
     (ran : Feature.Compensation.release ctx context state fuel = .ok after) :
     ∃ less owner, fuel = less + 1 ∧ FirstOf (Holds context) state.slots.compensation.runs owner ∧
-      Feature.Compensation.advance ctx owner.scope owner.trigger (Feature.Compensation.store (state.leaveScope context)
-        { (state.leaveScope context).slots.compensation with
-          runs := (state.leaveScope context).slots.compensation.runs.map fun candidate =>
+      Feature.Compensation.advance ctx owner.scope owner.trigger (Feature.Compensation.store (state.leaveScope ctx.positionLe context)
+        { (state.leaveScope ctx.positionLe context).slots.compensation with
+          runs := (state.leaveScope ctx.positionLe context).slots.compensation.runs.map fun candidate =>
             if Feature.Compensation.isRun owner.scope owner.trigger candidate then
               { candidate with running := candidate.running.filter (·.1 != context) }
             else candidate }) less = .ok after := by
@@ -275,7 +277,7 @@ theorem handlerEnded_spec {ctx : Ctx} {occurrence : Occurrence} {state after : S
 /-- `Hooks.dropRuns` drops the runs whose scope occurrence lies in `scope`'s subtree and changes nothing else. -/
 theorem dropWithin_spec (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) :
     Feature.Compensation.dropWithin ctx scope state = Feature.Compensation.store state { state.slots.compensation with
-      runs := state.slots.compensation.runs.filter fun run => !(state.subtree scope).contains run.scope } := by
+      runs := state.slots.compensation.runs.filter fun run => !(state.inside scope).contains run.scope } := by
   unfold Feature.Compensation.dropWithin; rfl
 
 /-- A throw in `scope` sees only `scope` itself unless `scope` stands: the walk outward starts from its entry. -/
@@ -672,16 +674,16 @@ theorem runs_keep {inv : State → Prop} {settled : State → OccurrenceId → P
         obtain ⟨entry, inside, rfl⟩ := List.mem_map.mp stands
         have link := ((ops.fits state owner holds member).2.2 entry.id
           (List.mem_map.mpr ⟨pair, running, beq_iff_eq.mp named⟩)).2 entry inside rfl
-        obtain ⟨left, parentStands, rest⟩ := ops.leave state entry owner.scope holds inside link
+        obtain ⟨left, parentStands, rest⟩ := ops.leave ctx.positionLe state entry owner.scope holds inside link
           ⟨owner, member, List.mem_map.mpr ⟨pair, running, beq_iff_eq.mp named⟩⟩
         obtain ⟨issued, leftGrows, rest⟩ := rest
         obtain ⟨kept, leftBodies, leftSettled⟩ := rest
-        have mapped : ∀ run ∈ (state.leaveScope entry.id).slots.compensation.runs.map fun candidate =>
+        have mapped : ∀ run ∈ (state.leaveScope ctx.positionLe entry.id).slots.compensation.runs.map fun candidate =>
             if Feature.Compensation.isRun owner.scope owner.trigger candidate then
               { candidate with running := candidate.running.filter (·.1 != entry.id) }
-            else candidate, ∃ candidate ∈ (state.leaveScope entry.id).slots.compensation.runs,
+            else candidate, ∃ candidate ∈ (state.leaveScope ctx.positionLe entry.id).slots.compensation.runs,
               (∀ context ∈ run.running.map (·.1), context ∈ candidate.running.map (·.1)) ∧
-                (run ∈ (state.leaveScope entry.id).slots.compensation.runs ∨ Fits settled (state.leaveScope entry.id) run) :=
+                (run ∈ (state.leaveScope ctx.positionLe entry.id).slots.compensation.runs ∨ Fits settled (state.leaveScope ctx.positionLe entry.id) run) :=
           fun run held => by
             obtain ⟨candidate, inLeft, rfl⟩ := List.mem_map.mp held
             refine ⟨candidate, inLeft, ?_⟩
@@ -690,8 +692,8 @@ theorem runs_keep {inv : State → Prop} {settled : State → OccurrenceId → P
               exact ⟨fun context running => (List.filter_sublist.map _).subset running, .inr ⟨fits.1, fits.2.1,
                 fun context running => fits.2.2 context ((List.filter_sublist.map _).subset running)⟩⟩
             · exact ⟨fun _ running => running, .inl inLeft⟩
-        have stored := ops.store (state.leaveScope entry.id) { (state.leaveScope entry.id).slots.compensation with
-            runs := (state.leaveScope entry.id).slots.compensation.runs.map fun candidate =>
+        have stored := ops.store (state.leaveScope ctx.positionLe entry.id) { (state.leaveScope ctx.positionLe entry.id).slots.compensation with
+            runs := (state.leaveScope ctx.positionLe entry.id).slots.compensation.runs.map fun candidate =>
               if Feature.Compensation.isRun owner.scope owner.trigger candidate then
                 { candidate with running := candidate.running.filter (·.1 != entry.id) }
               else candidate } left (fun run held => by obtain ⟨_, _, _, fits⟩ := mapped run held; exact fits)

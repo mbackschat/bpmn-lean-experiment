@@ -20,6 +20,8 @@ this module.
 
 namespace Kernel.Laws.MultiInstance
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel
 open Kernel.Laws.State (Within)
 
@@ -46,14 +48,15 @@ theorem setRun_runs (state : State) (next : MultiInstanceRun) :
 
 /-- The state an instance's completion leaves: its scope occurrence `scope` left and the body's slot record `next`
 set. -/
-def leftWith (state : State) (scope : ScopeOccurrenceId) (next : MultiInstanceRun) : State :=
-  Feature.MultiInstance.setRun (state.leaveScope scope) next
+def leftWith (le : Issue → Issue → Bool) (state : State) (scope : ScopeOccurrenceId) (next : MultiInstanceRun) : State :=
+  Feature.MultiInstance.setRun (state.leaveScope le scope) next
 
 /-- The state `counted` an instance's completion reaches before it completes or continues its body: `leftWith`, then
 the body's counters written or not. -/
-def Counted (state : State) (scope : ScopeOccurrenceId) (next : MultiInstanceRun) (counted : State) : Prop :=
-  counted = leftWith state scope next ∨
-    ∃ target writes rule, counted = (leftWith state scope next).signal (.write target writes rule)
+def Counted (le : Issue → Issue → Bool) (state : State) (scope : ScopeOccurrenceId) (next : MultiInstanceRun)
+    (counted : State) : Prop :=
+  counted = leftWith le state scope next ∨
+    ∃ target writes rule, counted = (leftWith le state scope next).signal (.write target writes rule)
 
 /-- What entering instances made of the body's slot record `base`: `next` differs only in the slots
 `MultiInstance.opening` names under the loop's mode, each now active in a scope occurrence `EnteredFor` it, of its
@@ -115,12 +118,12 @@ structure MultiInstanceOps (program : Program) (inv : State → Prop) (settled :
     inv (state.deferBegins requests) ∧ ∀ id, settled state id → settled (state.deferBegins requests) id
   /-- An instance's completion recorded: its scope occurrence left and its slot filled with an output that fits,
   which keeps the body's occurrence settled, its scope occurrence standing and its instances placed. -/
-  record : ∀ state run index scope output results, inv state → run ∈ state.slots.multiInstances →
+  record : ∀ le state run index scope output results, inv state → run ∈ state.slots.multiInstances →
     run.instances[index]? = some (.active scope) → scope ∈ Laws.State.scopeIds state → OutputFits program run output →
-    inv (leftWith state scope (recorded run index output results)) ∧
-      settled (leftWith state scope (recorded run index output results)) run.occurrence ∧
-      run.scope ∈ Laws.State.scopeIds (leftWith state scope (recorded run index output results)) ∧
-      Laws.State.Placed (leftWith state scope (recorded run index output results)) (recorded run index output results)
+    inv (leftWith le state scope (recorded run index output results)) ∧
+      settled (leftWith le state scope (recorded run index output results)) run.occurrence ∧
+      run.scope ∈ Laws.State.scopeIds (leftWith le state scope (recorded run index output results)) ∧
+      Laws.State.Placed (leftWith le state scope (recorded run index output results)) (recorded run index output results)
   /-- A body's slot record set once its instances are entered: `next` opens `base`, which, unless every slot of it
   waits, is the body's record already held and opens by its element's loop; its element is anchored at its scope
   occurrence. -/
@@ -567,11 +570,11 @@ structure Completes (ctx : Ctx) (body : OccurrenceId) (scope : ScopeOccurrenceId
   intact : Feature.MultiInstance.holdsCounts ctx (state.ownVariables run.scope)
       (Feature.MultiInstance.bodyCounts loop run.instances) = true ∧
     Feature.MultiInstance.holdsCounts ctx (state.ownVariables scope) (Feature.MultiInstance.instanceCounts index) = true
-  ends : ∃ results counted, Counted state scope (recorded run index output results) counted ∧
+  ends : ∃ results counted, Counted ctx.positionLe state scope (recorded run index output results) counted ∧
     (after = Feature.MultiInstance.finish ctx loop (recorded run index output results) counted ∨
       ∃ items, after = Feature.MultiInstance.beginInstances ctx loop items (recorded run index output results) counted)
   exhausts : (∀ slot ∈ run.instances.set index (.completed output), ∃ filled, slot = .completed filled) →
-    ∃ results counted, Counted state scope (recorded run index output results) counted ∧
+    ∃ results counted, Counted ctx.positionLe state scope (recorded run index output results) counted ∧
       after = Feature.MultiInstance.finish ctx loop (recorded run index output results) counted
 
 /-- Slots each filled are all filled, as `MultiInstance.instanceCompleted` reads its exhaustion. -/

@@ -339,6 +339,13 @@ theorem compacts_issued {start : State} {log : RunLog} {s t : State} (ran : comp
     obtain ⟨old, inside, rfl⟩ := List.mem_map.mp standing
     obtain ⟨H, history, held⟩ := issued.scopes old inside
     exact ⟨_, compact_history ran counted history parents, old.id, held, same⟩
+  positions scope member unit index fresh := by
+    rw [compact_scopeRecords ran] at member
+    obtain ⟨old, inside, rfl⟩ := List.mem_map.mp member
+    obtain ⟨n, renamed⟩ := renamed_issue (schedule := schedule) (start := start) (log := log) (s := s)
+      fun unit index same => ⟨_, issued.positions old inside unit index same⟩
+    simp only [renamed] at fresh
+    cases fresh
 
 /-! ## The renaming is injective on standing keys -/
 

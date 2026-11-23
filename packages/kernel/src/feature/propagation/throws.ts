@@ -299,7 +299,7 @@ export function arriveThrow(ctx: Ctx, header: Header, payload: EventPayload, thr
     case ThrowTag.None:
       return committed(leave(state));
     case ThrowTag.Terminate:
-      return committed(signal(clearInside(state, occurrence.scope, [occurrence.id]),
+      return committed(signal(clearInside(state, ctxPositionLe(ctx, state), occurrence.scope, [occurrence.id]),
         completeSignal(occurrence.id, leaveFlows([]), [], WriteRule.Outward)));
     case ThrowTag.Error: {
       // `throw.error.message` at admission refuses an expression, the only message the kernel cannot read.

@@ -26,6 +26,8 @@ the registry's Laws module, since it composes the registered hooks, and so stays
 
 namespace Kernel.Proofs.MultiInstance
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel
 open Kernel.Laws.State (WellFormed Within scopeIds)
 open Kernel.Laws.MultiInstance (LoopOf Owned BodyOwns InstancesUnowned InstancesUnheld RunsKeyed NumberedInOrder
@@ -145,10 +147,10 @@ theorem instanceCompleted_framed {ctx : Ctx} {body : OccurrenceId} {occurrence :
   have member := Laws.MultiInstance.found_mem done.found
   obtain ⟨entering, _, present⟩ := counted_entering ops formed stands done left
   have countedFramed : RunsFramed ctx.program counted := by
-    have leftFramed := leftWith_framed (results := results) formed framed member done.slot done.fits
+    have leftFramed := leftWith_framed (le := ctx.positionLe) (results := results) formed framed member done.slot done.fits
     rcases left with rfl | ⟨target, counts, rule, rfl⟩
     · exact leftFramed
-    · have same := Laws.State.signal_eq (Laws.MultiInstance.leftWith state occurrence.scope
+    · have same := Laws.State.signal_eq (Laws.MultiInstance.leftWith ctx.positionLe state occurrence.scope
         (Laws.MultiInstance.recorded run index output results)) (.write target counts rule)
       exact leftFramed.carry (.equal (by rw [same]) (by rw [same]) (by rw [same]) (by rw [same]))
   have recordedFramed := countedFramed.framed _ present
@@ -353,12 +355,12 @@ theorem numbering_frameAlongside (program : Program) :
   reserve s element scope formed stands pending _ kept :=
     ⟨reserve_runsFramed s element scope kept.1, fun apart =>
       (kept.2 apart).reserve formed (PendingIn.unlooped (fun _ kept => (kept.2 apart).2.occurs) pending) stands.mem⟩
-  leaveScope s scope formed present leaves kept :=
-    ⟨(runsFramed_frameAlongside program).leaveScope s scope formed present leaves kept.1,
-      fun apart => (kept.2 apart).leaveScope formed kept.1.owns present⟩
-  clearInside s scope keep formed present outside kept :=
-    ⟨(runsFramed_frameAlongside program).clearInside s scope keep formed present outside kept.1,
-      fun apart => (kept.2 apart).clearInside formed kept.1.owns present keep⟩
+  leaveScope le s scope formed present leaves kept :=
+    ⟨(runsFramed_frameAlongside program).leaveScope le s scope formed present leaves kept.1,
+      fun apart => (kept.2 apart).leaveScope le formed kept.1.owns present⟩
+  clearInside le s scope keep formed present outside kept :=
+    ⟨(runsFramed_frameAlongside program).clearInside le s scope keep formed present outside kept.1,
+      fun apart => (kept.2 apart).clearInside le formed kept.1.owns present keep⟩
   disarm s host formed kept :=
     ⟨(runsFramed_frameAlongside program).disarm s host formed kept.1, fun apart => (kept.2 apart).disarm host⟩
   setVariable s target name value formed kept :=
@@ -392,7 +394,7 @@ theorem numbering_occursAlongside (program : Program) : OccursAlongside program 
   compensate s scope activity trigger leave element at_ resumed source rolls anchored kept :=
     ⟨(runsFramed_occursAlongside program).compensate s scope activity trigger leave element at_ resumed
       (source.imp_right fun ⟨held, kept, queued⟩ => ⟨held, kept.1, queued⟩)
-      (rolls.imp fun _ => And.imp_right (And.imp_right (And.imp_right
+      (rolls.imp fun _ => Exists.imp fun _ => And.imp_right (And.imp_right (And.imp_right
         (Laws.State.RollsBack.imp fun _ => And.imp_right And.left)))) (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1, fun apart =>
       (kept.2 apart).signalPending rfl fun named inside => by
         rw [List.mem_singleton.mp inside]
@@ -536,10 +538,10 @@ theorem composed_bodyPhases : Laws.Step.BodyPhases Composed :=
     unrun := fun _ _ request role sourceType holds => phases.unrun _ _ request role sourceType holds.1
     unowned := fun _ _ request role sourceType holds => phases.unowned _ _ request role sourceType holds.1
     parkedBegun := fun _ _ waiting occurrence holds => phases.parkedBegun _ _ waiting occurrence holds.1
-    endInstance := fun _ s status failure holds recorded => by
-      refine ⟨phases.endInstance _ _ status failure holds.1 recorded, ?_⟩
+    endInstance := fun _ le s status failure holds recorded => by
+      refine ⟨phases.endInstance _ le _ status failure holds.1 recorded, ?_⟩
       rw [Laws.Step.endInstance_eq]
-      exact framedNumbered_unmoved ((framedNumbered_frameAlongside _).clearInside s State.root [] holds.1 holds.1.rooted.1
+      exact framedNumbered_unmoved ((framedNumbered_frameAlongside _).clearInside le s State.root [] holds.1 holds.1.rooted.1
         (fun _ _ none => by cases none) holds.2) rfl rfl rfl rfl rfl rfl rfl
     begin := fun _ s request role sourceType holds stands admitted roled bodied assigned origin =>
       have begun := phases.begin _ _ request role sourceType holds.1 stands admitted roled bodied assigned
@@ -550,8 +552,8 @@ theorem composed_bodyPhases : Laws.Step.BodyPhases Composed :=
         (popped.imp fun _ => Exists.imp fun _ => Exists.imp fun _ queued => queued.imp fun _ held => held.1)
       ⟨⟨reserved.1, (framedNumbered_frameAlongside _).reserve s element scope holds.1 stands
         (pending.imp fun _ => And.imp_left And.right) popped holds.2⟩, reserved.2⟩
-    cancel := fun _ s id holds => ⟨phases.cancel _ _ id holds.1, (framedNumbered_frameAlongside _).cancelOccurrence
-      framedNumbered_withoutRecord (fun _ _ _ kept => framedNumbered_unmoved kept rfl rfl rfl rfl rfl rfl rfl) holds.1 holds.2⟩ }
+    cancel := fun _ le s id holds => ⟨phases.cancel _ le _ id holds.1, (framedNumbered_frameAlongside _).cancelOccurrence
+      le framedNumbered_withoutRecord (fun _ _ _ kept => framedNumbered_unmoved kept rfl rfl rfl rfl rfl rfl rfl) holds.1 holds.2⟩ }
 
 /-- `Step`'s phases keep `Composed`: the body's (`composed_bodyPhases`), journalling the draft, moving the batches under
 the unit key and ordering the journal at the commit. -/
@@ -586,9 +588,9 @@ theorem composed_pipelinePhases : Laws.Step.PipelinePhases Composed :=
         exact ((holds.2.1.2 apart).startReserved sourceType member).unmoved rfl rfl rfl rfl rfl rfl rfl
           fun _ pending => .inl pending⟩,
         (continued.startReserved _ s occurrence sourceType ⟨holds.1, holds.2.2⟩ member unnamed).2⟩
-    removeOccurrence := fun _ _ occurrence holds member free =>
-      have removed := Proofs.Step.pipelinePhases.removeOccurrence _ _ occurrence holds.1 member free
-      ⟨⟨removed.1, (framedNumbered_frameAlongside _).removeOccurrence framedNumbered_withoutRecord holds.1 holds.2⟩,
+    removeOccurrence := fun _ le _ occurrence holds member free =>
+      have removed := Proofs.Step.pipelinePhases.removeOccurrence _ le _ occurrence holds.1 member free
+      ⟨⟨removed.1, (framedNumbered_frameAlongside _).removeOccurrence le framedNumbered_withoutRecord holds.1 holds.2⟩,
         removed.2⟩
     recordEnd := fun _ s key terminal holds =>
       have recorded := pipeline.recordEnd _ s key terminal ⟨holds.1, holds.2.1.1⟩

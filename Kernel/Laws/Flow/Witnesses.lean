@@ -135,7 +135,7 @@ def atC : Occurrence := { id := keyC, element := ⟨"C"⟩, scope := root, activ
 
 /-- `A` arrived; `C` still works upstream of `b`, so the Inclusive join waits. -/
 def waitingAtC : State :=
-  { instanceId := "p", scopes := [{ id := root, element := none }], occurrences := [atJoin, atC],
+  { instanceId := "p", scopes := [{ id := root, element := none, position := 0 }], occurrences := [atJoin, atC],
     slots := { parked := [arrivedA] } }
 
 /-- `C` is gone: nothing can reach `b` any more, so the join is ready without an arrival on `b`. -/

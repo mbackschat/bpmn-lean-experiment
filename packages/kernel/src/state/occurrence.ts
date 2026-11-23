@@ -5,7 +5,7 @@
  */
 import { type ElementId, type FlowId } from "../il/types.js";
 import { type ActivationRole } from "./journal.js";
-import { type OccurrenceId, type ScopeOccurrenceId, scopeParent } from "./key.js";
+import { type Issue, type OccurrenceId, type ScopeOccurrenceId, scopeParent } from "./key.js";
 
 /** Guarded type: `step.ts` owns matching on it. Whom `Step` tells when an occurrence completes. */
 export enum ContinuationTag {
@@ -56,6 +56,12 @@ export interface Occurrence {
 export interface ScopeOccurrence {
   readonly id: ScopeOccurrenceId;
   readonly element: ElementId | null;
+  /**
+   * The order position it took when it was entered (`enterScope`, DC25), pending under the entering unit until the
+   * commit numbers it; the root's is committed `0`. The idle check (`idleScope`), the cancellation order (`subtree`) and
+   * an owner's removal (`removeOccurrence`) read it.
+   */
+  readonly position: Issue;
   readonly occurrence: OccurrenceId | null;
   readonly calledInstance: string | null;
 }

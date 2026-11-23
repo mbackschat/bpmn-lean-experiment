@@ -18,6 +18,8 @@ composes them with the registered records of `WellFormed` into what a committed 
 
 namespace Kernel.Proofs.Former
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel
 open Kernel.Laws.State (WellFormed Within StrictlyWithin scopeIds)
 open Kernel.Proofs.Frame
@@ -130,19 +132,19 @@ theorem PlacedLane.reserved (formed : WellFormed program s) (lane : PlacedLane p
 
 /-- A clearing keeps the instance entries rooted outside the scope occurrence it clears, and only entries it held. -/
 theorem clearInside_entries (formed : WellFormed program s) {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s)
-    (keep : List OccurrenceId) : (s.clearInside scope keep).slots.instances.Sublist s.slots.instances ∧
+    (keep : List OccurrenceId) : (s.clearInside le scope keep).slots.instances.Sublist s.slots.instances ∧
       (∀ entry ∈ s.slots.instances, ¬ StrictlyWithin s entry.root scope →
-        entry ∈ (s.clearInside scope keep).slots.instances) ∧
-      ∀ entry ∈ (s.clearInside scope keep).slots.instances, ¬ StrictlyWithin s entry.root scope := by
-  obtain ⟨draft, cleared⟩ := Laws.State.clearInside_eq s scope keep
+        entry ∈ (s.clearInside le scope keep).slots.instances) ∧
+      ∀ entry ∈ (s.clearInside le scope keep).slots.instances, ¬ StrictlyWithin s entry.root scope := by
+  obtain ⟨draft, cleared⟩ := Laws.State.clearInside_eq (le := le) s scope keep
   rw [cleared]
   refine ⟨List.filter_sublist, fun entry member free => List.mem_filter.mpr ⟨member, ?_⟩, fun entry member strictly => ?_⟩
-  · have outside : ¬ entry.root ∈ s.subtree scope ∨ entry.root = scope := by
-      by_cases sub : entry.root ∈ s.subtree scope
+  · have outside : ¬ entry.root ∈ s.subtree le scope ∨ entry.root = scope := by
+      by_cases sub : entry.root ∈ s.subtree le scope
       · exact .inr (Classical.byContradiction fun other => free ⟨(Laws.State.subtree_iff formed present _).mp sub, other⟩)
       · exact .inl sub
     simpa using outside
-  · have inside := (Laws.State.subtree_iff formed present _).mpr strictly.1
+  · have inside := (Laws.State.subtree_iff (le := le) formed present _).mpr strictly.1
     have kept := (List.mem_filter.mp member).2
     simp [inside, strictly.2] at kept
 
@@ -169,11 +171,11 @@ theorem LeavesOwned.notRoot (formed : WellFormed program s) {scope : ScopeOccurr
 
 /-- Leaving a standing scope occurrence other than the root keeps the lane. -/
 theorem PlacedLane.left (formed : WellFormed program s) (lane : PlacedLane program s) {scope : ScopeOccurrenceId}
-    (present : scope ∈ scopeIds s) (notRoot : scope ≠ State.root) : PlacedLane program (s.leaveScope scope) := by
-  have left := Laws.State.leaveScope_left formed present
-  have slots := Laws.State.leaveScope_slots_eq s scope
-  have entries := clearInside_entries formed present []
-  obtain ⟨draft, cleared⟩ := Laws.State.clearInside_eq s scope []
+    (present : scope ∈ scopeIds s) (notRoot : scope ≠ State.root) : PlacedLane program (s.leaveScope le scope) := by
+  have left := Laws.State.leaveScope_left (le := le) formed present
+  have slots := Laws.State.leaveScope_slots_eq (le := le) s scope
+  have entries := clearInside_entries (le := le) formed present []
+  obtain ⟨draft, cleared⟩ := Laws.State.clearInside_eq (le := le) s scope []
   refine lane.shrink formed (Within s · scope) (fun _ _ _ within out => within.trans out)
     (fun within => notRoot (Laws.State.root_within formed within).symm) left.scopesSublist left.scopes
     (by rw [slots]; exact List.filter_sublist.trans entries.1)
@@ -197,10 +199,10 @@ keeps the lane. -/
 theorem PlacedLane.cleared (formed : WellFormed program s) (lane : PlacedLane program s) {scope : ScopeOccurrenceId}
     {keep : List OccurrenceId} (present : scope ∈ scopeIds s)
     (kept : ∀ o ∈ s.occurrences, o.id ∈ keep → ¬ StrictlyWithin s o.scope scope) :
-    PlacedLane program (s.clearInside scope keep) := by
-  have cleared := Laws.State.clearInside_cleared formed present keep
-  have entries := clearInside_entries formed present keep
-  obtain ⟨draft, shape⟩ := Laws.State.clearInside_eq s scope keep
+    PlacedLane program (s.clearInside le scope keep) := by
+  have cleared := Laws.State.clearInside_cleared (le := le) formed present keep
+  have entries := clearInside_entries (le := le) formed present keep
+  obtain ⟨draft, shape⟩ := Laws.State.clearInside_eq (le := le) s scope keep
   refine lane.shrink formed (StrictlyWithin s · scope) (fun _ _ stands within ⟨up, other⟩ =>
       ⟨within.trans up, fun same => other (Laws.State.Within.antisymm formed stands up (same ▸ within))⟩)
     (fun within => within.2 (Laws.State.root_within formed within.1)) cleared.scopesSublist cleared.scopes entries.1
@@ -456,9 +458,9 @@ theorem placedAlongside (program : Program) : Alongside program (Placing program
   enterScope _ _ _ _ _ formed stands anchored held refs := (held refs).entered refs formed stands anchored
   reserve _ _ _ formed stands _ popped held refs :=
     (held refs).reserved formed (stands_present stands) (popped_placed refs popped (stands_present stands))
-  leaveScope _ _ formed present leaves held refs :=
+  leaveScope le _ _ formed present leaves held refs :=
     (held refs).left formed present (LeavesOwned.notRoot formed present leaves)
-  clearInside _ _ _ formed present kept held refs := (held refs).cleared formed present kept
+  clearInside le _ _ _ formed present kept held refs := (held refs).cleared formed present kept
   disarm _ _ _ held refs := by
     rw [Laws.State.disarm_eq]
     exact (held refs).queue rfl rfl rfl (.refl _) (fun _ member => (List.mem_filter.mp member).1) rfl rfl listKept
@@ -467,7 +469,7 @@ theorem placedAlongside (program : Program) : Alongside program (Placing program
   instanceBegin _ _ formed anchored held refs :=
     (held refs).signalled (.ofBegin (beginAnchored_placed refs formed (held refs) anchored))
   defer _ _ formed anchored held refs := (held refs).deferred refs formed anchored
-  leaveInstance _ run scope formed member active present held refs := (held refs).left formed present
+  leaveInstance le _ run scope formed member active present held refs := (held refs).left formed present
     (notRoot_of_parent formed present fun entry inside named =>
       ⟨_, (formed.settled.placed run member scope active).2 entry inside named⟩)
   runs _ _ formed anchored held refs := (held refs).bodied refs formed anchored
@@ -485,8 +487,8 @@ theorem placedOccursAlongside (program : Program) : OccursAlongside program (Pla
   occur _ _ _ _ _ _ formed _ anchored held refs :=
     (held refs).signalled (.ofOccur (occurAnchored_placed refs formed (held refs) anchored))
   compensate s _ _ _ _ _ _ _ _ cleared anchored held refs := by
-    obtain ⟨before, same, formedBefore, rest⟩ := cleared
-    have formed : WellFormed program s := same ▸ Laws.State.clearAll_wellFormed formedBefore rest.1
+    obtain ⟨before, le, same, rest⟩ := cleared
+    have formed : WellFormed program s := same ▸ Laws.State.clearAll_wellFormed rest.1 rest.2.1
     exact (held refs).signalled (.ofCompensate ⟨fun _ _ _ resumed => by
       obtain ⟨rfl, rfl, rfl⟩ := Resume.occur.inj (Option.some.inj resumed)
       exact occurAnchored_placed refs formed (held refs) anchored,
@@ -530,7 +532,7 @@ theorem placedStepAlongside (program : Program) : StepAlongside program (Placing
   untoken _ _ formed held refs := (held refs).within formed rfl rfl rfl (.refl _) (fun _ member => .inl member)
     listKept (fun _ member => .inl (Laws.State.allQueuedTokens_untoken _ member)) listKept listKept listKept listKept
   begin _ _ _ _ formed stands admitted _ origin held refs := (held refs).begun refs formed stands admitted origin
-  cancel _ _ formed held := (placedAlongside program).toFrameAlongside.cancelOccurrence
+  cancel le _ _ formed held := (placedAlongside program).toFrameAlongside.cancelOccurrence le
     (fun _ id _ kept refs => (kept refs).withoutRecord id)
     (fun _ _ _ kept refs => (kept refs).queue rfl rfl rfl (.refl _) (fun _ member => member) rfl rfl listKept) formed held
   runOrder _ _ _ formed held counted batches keys _ made :=
@@ -560,9 +562,9 @@ theorem placed_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellFormed) :
       rw [Laws.State.closeOwnItems_eq]
       exact ((holds.2 refs).started holds.1 member sourceType).queue rfl rfl rfl (.refl _) (fun _ inside => inside)
         rfl rfl listKept⟩
-  removeOccurrence program _ occurrence holds member free :=
-    have removed := pipeline.removeOccurrence _ _ occurrence holds.1 member free
-    ⟨⟨removed.1, (placedAlongside program).toFrameAlongside.removeOccurrence
+  removeOccurrence program le _ occurrence holds member free :=
+    have removed := pipeline.removeOccurrence _ le _ occurrence holds.1 member free
+    ⟨⟨removed.1, (placedAlongside program).toFrameAlongside.removeOccurrence le
       (fun _ id _ kept refs => (kept refs).withoutRecord id) holds.1 holds.2⟩, removed.2⟩
   recordEnd _ _ key terminal holds :=
     ⟨pipeline.recordEnd _ _ key terminal holds.1, fun refs => by

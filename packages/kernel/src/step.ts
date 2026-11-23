@@ -31,7 +31,7 @@ import {
   InstanceStatus, LeaveTag, SignalTag, Terminal, TokenTag, WriteRule, beginOccurrence, beginRequest,
   busyScopes, closeOwnItems, queueBatch, committed, emptyDraft, entryCount, failed, failedWith, idle, initial, keyOf, localScope, occurrenceOf, recordEnd, reserve, root, signal as enqueue, startReserved, type BeginRequest,
   type Binding, type Cause, type Fired, type Input,
-  type InstanceFailure, type Leave, type Occurrence, type OpenItem, type Outcome,
+  type InstanceFailure, type Issue, type Leave, type Occurrence, type OpenItem, type Outcome,
   type Result, type ScopeOccurrence, type ScopeOccurrenceId, type Signal, type StartInput, type StartTrigger, type State,
   type Token, type Parked,
   SemanticCause, semanticFailure,
@@ -40,7 +40,7 @@ import {
   orderedSize, scopeEncloses, issuerFor, type UnitKey, unitRoot, UnitRootTag,
 } from "./state.js";
 import {
-  ScopeRole, admitThen, cancelOccurrence, chooseStart, clearInside, itemOf, removeOccurrence, type Ctx, type Hooks, type ScopeEntry,
+  ScopeRole, admitThen, cancelOccurrence, chooseStart, clearInside, ctxPositionLe, itemOf, removeOccurrence, type Ctx, type Hooks, type ScopeEntry,
 } from "./hooks.js";
 import { continuationBody, journalDraft, orderJournal } from "./step/commit.js";
 import { earliest, emptyRunLog, firstBreadth, latest, runRecord, type RunLog, unitCtx } from "./step/order.js";
@@ -174,12 +174,12 @@ function complete(
   const leave = selected.value;
   switch (leave.tag) {
     case LeaveTag.Raised:
-      return continueAfter(hooks, ctx, occurrence, leave, writes, recordEnd(removeOccurrence(state, id), key, Terminal.Cancelled));
+      return continueAfter(hooks, ctx, occurrence, leave, writes, recordEnd(removeOccurrence(state, ctxPositionLe(ctx, state), id), key, Terminal.Cancelled));
     case LeaveTag.Outgoing:
     case LeaveTag.Flows: {
       const retained = hooks.completed(ctx, occurrence, state);
       if (!retained.ok) return retained;
-      const removed = removeOccurrence(retained.value, id);
+      const removed = removeOccurrence(retained.value, ctxPositionLe(ctx, retained.value), id);
       // An `asyncAfter` boundary lies before the continuation, though the completion's fact is journalled after it.
       const continued = deferred(ctx.program, recordEnd(removed, key, Terminal.Completed),
         continueAfter(hooks, ctx, occurrence, leave, writes, removed));
@@ -199,8 +199,8 @@ function fireItem(hooks: Hooks, ctx: Ctx, item: OpenItem, fired: Fired, state: S
 }
 
 /** The one writer of `State.status`: everything left in the instance goes first. */
-function endInstance(status: InstanceStatus, failure: InstanceFailure | null, state: State): State {
-  return { ...clearInside(state, root), status, failure };
+function endInstance(ctx: Ctx, status: InstanceStatus, failure: InstanceFailure | null, state: State): State {
+  return { ...clearInside(state, ctxPositionLe(ctx, state), root), status, failure };
 }
 
 const other = (
@@ -239,14 +239,14 @@ function signalRun(hooks: Hooks, ctx: Ctx, next: Signal): SignalRun {
         return complete(hooks, ctx, occurrence.id, next.leave, next.writes, next.rule, reserved);
       }, [next.scope]);
     case SignalTag.Cancel:
-      return other((state) => committed(cancelOccurrence(state, next.occurrence)), [], [], [], [next.occurrence]);
+      return other((state) => committed(cancelOccurrence(state, ctxPositionLe(ctx, state), next.occurrence)), [], [], [], [next.occurrence]);
     case SignalTag.Fire:
       return other((state) => {
         const open = itemAt(state.openItems, next.item);
         return open === undefined ? committed(state) : fireItem(hooks, ctx, open, next.fired, state);
       }, [], [], [], [], (state) => [itemAt(state.openItems, next.item)?.scope ?? occurrenceIdParts(next.item.occurrence).scope]);
     case SignalTag.EndInstance:
-      return other((state) => committed(endInstance(next.status, next.failure, state)), [], [], [], [],
+      return other((state) => committed(endInstance(ctx, next.status, next.failure, state)), [], [], [], [],
         (state) => state.scopes.map((scope) => scope.id));
     case SignalTag.Compensate:
       return other((state) => hooks.compensate(ctx, next.scope, next.activity, next.trigger, next.leave, next.resume, state), [], [],
@@ -384,14 +384,22 @@ function signalsHold(hooks: Hooks, ctx: Ctx, state: State, scope: ScopeOccurrenc
 }
 
 /**
- * The next scope occurrence other than the root that is idle, which the closure completes through its owner: no queued
- * work names it or a scope occurrence inside it (DC5).
+ * The idle scope occurrence other than the root of least order position (`ctxPositionLe`, DC25), which the closure
+ * completes through its owner: no queued work names it or a scope occurrence inside it (DC5).
  */
 function idleScope(hooks: Hooks, ctx: Ctx, state: State): ScopeOccurrence | undefined {
   if (!state.scopes.some((scope) => scope.id !== root)) return undefined;
   const busy = busyScopes(state);
-  return state.scopes.find((scope) => scope.id !== root && !busy.has(scope.id) && !activityLocal(ctx, state, scope) &&
-    !signalsHold(hooks, ctx, state, scope.id));
+  return leastPosition(ctxPositionLe(ctx, state), state.scopes.filter((scope) => scope.id !== root && !busy.has(scope.id) &&
+    !activityLocal(ctx, state, scope) && !signalsHold(hooks, ctx, state, scope.id)));
+}
+
+/**
+ * Lean's `leastPosition`: the scope occurrence of least order position among `scopes` under `le`, the first of those tied
+ * (a stable sort, as Lean's `mergeSort`), in the order `removeOccurrence` leaves owned scope occurrences in.
+ */
+function leastPosition(le: (left: Issue, right: Issue) => boolean, scopes: readonly ScopeOccurrence[]): ScopeOccurrence | undefined {
+  return [...scopes].sort((left, right) => le(left.position, right.position) ? (le(right.position, left.position) ? 0 : -1) : 1)[0];
 }
 
 /**
@@ -480,7 +488,7 @@ function settle(hooks: Hooks, ctx: Ctx, bound: number, opening: State, start: St
     const body = unitCtx(ctx, log);
     const signalled = firstBreadth(state.queuedSignals);
     const token = signalled === undefined ? nextToken(hooks, ctx, log, state) : undefined;
-    const ready = signalled === undefined && token === undefined ? idleScope(hooks, ctx, state) : undefined;
+    const ready = signalled === undefined && token === undefined ? idleScope(hooks, body, state) : undefined;
     let stepped: Outcome;
     let ran: UnitKey;
     if (signalled !== undefined) {
@@ -505,7 +513,7 @@ function settle(hooks: Hooks, ctx: Ctx, bound: number, opening: State, start: St
         if (!idle(state, root) || orderedSize(state.queuedSignals) > 0) return orderJournal(schedule, opening, state, log);
         const finish = unitRoot({ tag: UnitRootTag.Idle, scope: root });
         const finished = microStep(hooks, body, finish, { tag: CauseTag.Idle, scope: root }, null, root,
-          (current) => committed(endInstance(InstanceStatus.Completed, null, current)), state);
+          (current) => committed(endInstance(body, InstanceStatus.Completed, null, current)), state);
         return finished.ok ? orderJournal(schedule, opening, finished.value, runRecord(log, finish)) : finished;
       }
       ran = fired.unit;

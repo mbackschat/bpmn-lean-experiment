@@ -27,7 +27,7 @@ variable {start : State} {log : RunLog} {s t : State}
 
 /-- A scope occurrence record renamed by a commit. -/
 abbrev renamedScope (r : Issue → Issue) (scope : ScopeOccurrence) : ScopeOccurrence :=
-  { scope with id := renameScope r scope.id, occurrence := scope.occurrence.map (renameId r) }
+  { scope with id := renameScope r scope.id, position := r scope.position, occurrence := scope.occurrence.map (renameId r) }
 
 /-- A process instance reading of the settled state, renamed, is one of the committed state. -/
 theorem compact_instanceIn (ran : compact schedule start log s = .ok t) (issued : IssuedBelow s) (rooted : Rooted s)

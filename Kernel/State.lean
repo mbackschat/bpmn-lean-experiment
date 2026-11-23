@@ -255,7 +255,7 @@ def root : ScopeOccurrenceId := .ofSegments []
 /-- A fresh process instance: one root scope occurrence with the given variables, `keyed`. -/
 def initial (instanceId : String) (variables : List (String × Value)) (businessKey : Option String := none) : State :=
   { instanceId
-    scopes := [{ id := root, element := none }]
+    scopes := [{ id := root, element := none, position := 0 }]
     variables := [{ scope := root, entries := keyed variables }]
     slots := { instances := [{ root, businessKey }] } }
 
@@ -467,8 +467,9 @@ def enterScope (state : State) (element : ElementId) (parent : ScopeOccurrenceId
     (locals : List (String × Value)) (occurrence : Option OccurrenceId) : State × ScopeOccurrenceId :=
   let (state, ordinal) := state.issue (.scope { parent, element })
   let id := parent.child element ordinal
+  let (state, position) := state.issuePosition
   ({ state with
-      scopes := state.scopes ++ [{ id, element := some element, occurrence }]
+      scopes := state.scopes ++ [{ id, element := some element, position, occurrence }]
       variables := state.variables ++ [{ scope := id, entries := keyed locals }] }, id)
 
 /-- The elements the scope occurrence `scope` declares: for a called root, the process-level elements of the process its

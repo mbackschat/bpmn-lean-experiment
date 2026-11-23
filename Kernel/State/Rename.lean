@@ -79,7 +79,8 @@ items, slots and journal. The counters are keyed by committed keys already (`Ste
 the families keyed by unit keys are empty (`Step.orderJournal`). -/
 def renameState (continuation : Continuation → Continuation) (state : State) : State :=
   { state with
-    scopes := state.scopes.map fun scope => { scope with id := renameScope r scope.id, occurrence := scope.occurrence.map (renameId r) }
+    scopes := state.scopes.map fun scope =>
+      { scope with id := renameScope r scope.id, position := r scope.position, occurrence := scope.occurrence.map (renameId r) }
     occurrences := state.occurrences.map fun occurrence =>
       { occurrence with id := renameId r occurrence.id, scope := renameScope r occurrence.scope
                         continuation := continuation occurrence.continuation }

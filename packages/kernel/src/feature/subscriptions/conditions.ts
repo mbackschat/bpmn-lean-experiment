@@ -45,7 +45,7 @@ import {
   itemKeyText, itemsInOrder, sameItemKey, type OccurrenceId,
 } from "../../state.js";
 import {
-  EvaluationTag, ctxPositionLe, disarm, evalContext, subscriptionOf, subtree, withdrawInside, withdrawOccurrence, type Ctx,
+  EvaluationTag, ctxPositionLe, disarm, evalContext, inside, subscriptionOf, withdrawInside, withdrawOccurrence, type Ctx,
 } from "../../hooks.js";
 
 /** `ownScope` of an open item: its host's own scope, else the item's scope. */
@@ -171,11 +171,11 @@ function withdrawFrom(withdraw: Withdrawal, state: State): State {
 function region(state: State, withdraw: Withdrawal): readonly ScopeOccurrenceId[] {
   switch (withdraw.tag) {
     case WithdrawalTag.Host:
-      return state.scopes.filter((scope) => scope.occurrence === withdraw.occurrence).flatMap((scope) => subtree(state, scope.id));
+      return state.scopes.filter((scope) => scope.occurrence === withdraw.occurrence).flatMap((scope) => inside(state, scope.id));
     case WithdrawalTag.Arms:
       return [];
     case WithdrawalTag.Inside:
-      return subtree(state, withdraw.scope);
+      return inside(state, withdraw.scope);
   }
   return assertNever(withdraw);
 }

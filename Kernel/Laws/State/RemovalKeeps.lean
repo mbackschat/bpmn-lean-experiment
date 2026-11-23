@@ -16,6 +16,8 @@ Nothing executable imports this module.
 
 namespace Kernel.Laws.State
 
+variable {le : Issue → Issue → Bool}
+
 variable {program : Program}
 
 open Kernel
@@ -23,8 +25,8 @@ open Kernel
 /-! ## Leaving a scope occurrence -/
 
 /-- Leaving a scope occurrence keeps the counters of the scope occurrences that remain, so every history grows. -/
-theorem leaveScope_grows (s : State) (scope : ScopeOccurrenceId) : ScopeGrows s (s.leaveScope scope) := by
-  have shape := (leaveScope_eq s scope).1
+theorem leaveScope_grows (s : State) (scope : ScopeOccurrenceId) : ScopeGrows s (s.leaveScope le scope) := by
+  have shape := (leaveScope_eq (le := le) s scope).1
   refine (clearInside_grows s scope []).trans (.shrink
     (fun _ member => by rw [shape] at member; exact (List.filter_sublist.map _).subset member) (fun _ standing _ => ?_)
     (.of_eq (by rw [leaveScope_issued, clearInside_issued])))
@@ -34,15 +36,15 @@ theorem leaveScope_grows (s : State) (scope : ScopeOccurrenceId) : ScopeGrows s 
 
 /-- Leaving a scope occurrence keeps the occurrence counters of the scope occurrences that remain, so every occurrence
 key issued stays issued. -/
-theorem leaveScope_occurrenceGrows (s : State) (scope : ScopeOccurrenceId) : OccurrenceGrows s (s.leaveScope scope) := by
-  have shape := (leaveScope_eq s scope).1
-  have cleared : OccurrenceGrows s (s.clearInside scope) :=
+theorem leaveScope_occurrenceGrows (s : State) (scope : ScopeOccurrenceId) : OccurrenceGrows s (s.leaveScope le scope) := by
+  have shape := (leaveScope_eq (le := le) s scope).1
+  have cleared : OccurrenceGrows s (s.clearInside le scope) :=
     .of_scopes (clearInside_grows s scope []) (fun _ member _ => ((clearInside_shrinks s scope []).1.map _).subset member)
       (fun x member element => Nat.le_of_eq (clearInside_counters s scope [] x member element).symm)
       (.of_eq (clearInside_issued s scope []))
-  have table : TableGrows (s.clearInside scope) (s.leaveScope scope) :=
+  have table : TableGrows (s.clearInside le scope) (s.leaveScope le scope) :=
     .of_eq (by rw [leaveScope_issued, clearInside_issued])
-  have grows : ScopeGrows (s.clearInside scope) (s.leaveScope scope) := .shrink
+  have grows : ScopeGrows (s.clearInside le scope) (s.leaveScope le scope) := .shrink
     (fun _ member => by rw [shape] at member; exact (List.filter_sublist.map _).subset member) (fun _ standing _ => by
       rw [shape] at standing ⊢
       obtain ⟨entry, inside, rfl⟩ := List.mem_map.mp standing
@@ -55,17 +57,17 @@ theorem leaveScope_occurrenceGrows (s : State) (scope : ScopeOccurrenceId) : Occ
 
 /-- Leaving a present scope occurrence of a well-formed state. -/
 theorem leaveScope_left {s : State} (formed : WellFormed program s) {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s) :
-    Left s (s.leaveScope scope) scope := by
-  have cleared := clearInside_cleared formed present []
-  have shape := (leaveScope_eq s scope).1
-  have scopes : ∀ entry, entry ∈ (s.leaveScope scope).scopes ↔ entry ∈ s.scopes ∧ ¬ Within s entry.id scope := by
+    Left s (s.leaveScope le scope) scope := by
+  have cleared := clearInside_cleared (le := le) formed present []
+  have shape := (leaveScope_eq (le := le) s scope).1
+  have scopes : ∀ entry, entry ∈ (s.leaveScope le scope).scopes ↔ entry ∈ s.scopes ∧ ¬ Within s entry.id scope := by
     intro entry
     rw [shape]
     simp only [List.mem_filter, cleared.scopes entry, bne_iff_ne, ne_eq, StrictlyWithin]
     by_cases same : entry.id = scope
     · simp [same, Within.refl]
     · simp [same]
-  have fewer : (s.leaveScope scope).scopes.Sublist s.scopes := by
+  have fewer : (s.leaveScope le scope).scopes.Sublist s.scopes := by
     rw [shape]
     exact List.filter_sublist.trans cleared.scopesSublist
   refine {
@@ -116,13 +118,13 @@ theorem Depth.present {s : State} (formed : WellFormed program s) {scope : Scope
 /-- Leaving a scope occurrence that has a parent keeps a state well-formed and its parent standing. -/
 theorem leaveChild_wellFormed {s : State} (formed : WellFormed program s) {child : ScopeOccurrence} (member : child ∈ s.scopes)
     {parent : ScopeOccurrenceId} (link : child.parent = some parent) :
-    WellFormed program (s.leaveScope child.id) ∧ parent ∈ scopeIds (s.leaveScope child.id) ∧
-      Left s (s.leaveScope child.id) child.id := by
+    WellFormed program (s.leaveScope le child.id) ∧ parent ∈ scopeIds (s.leaveScope le child.id) ∧
+      Left s (s.leaveScope le child.id) child.id := by
   have present : child.id ∈ scopeIds s := List.mem_map.mpr ⟨child, member, rfl⟩
   have notRoot : child.id ≠ State.root := fun same => by
     have := (formed.rooted.2.1 child member).mpr same
     simp [this] at link
-  have left := leaveScope_left formed present
+  have left := leaveScope_left (le := le) formed present
   obtain ⟨n, depth⟩ := (formed.rooted.2.2 child member).depth
   obtain ⟨_, _, parentDepth⟩ := Depth.parent formed member link depth
   obtain ⟨entry, inside, named⟩ := List.mem_map.mp (parentDepth.present formed)
@@ -174,12 +176,12 @@ private theorem leaveOwned {id : OccurrenceId} {record : Occurrence} :
       (∀ occurrence ∈ t.occurrences, occurrence.id = id → occurrence = record) → owned.Nodup →
       (∀ entry ∈ owned, entry ∈ t.scopes ∧ entry.parent = some record.scope) →
       (∀ entry ∈ t.scopes, entry.occurrence = some id → entry ∈ owned) →
-      owned.foldl (fun state entry => state.leaveScope entry.id) (withoutRecord t id) =
-        withoutRecord (owned.foldl (fun state entry => state.leaveScope entry.id) t) id ∧
-      WellFormed program (owned.foldl (fun state entry => state.leaveScope entry.id) t) ∧
-      record.scope ∈ scopeIds (owned.foldl (fun state entry => state.leaveScope entry.id) t) ∧
-      ItemsSub (owned.foldl (fun state entry => state.leaveScope entry.id) t).openItems t.openItems ∧
-      ∀ entry ∈ (owned.foldl (fun state entry => state.leaveScope entry.id) t).scopes, entry.occurrence ≠ some id := by
+      owned.foldl (fun state entry => state.leaveScope le entry.id) (withoutRecord t id) =
+        withoutRecord (owned.foldl (fun state entry => state.leaveScope le entry.id) t) id ∧
+      WellFormed program (owned.foldl (fun state entry => state.leaveScope le entry.id) t) ∧
+      record.scope ∈ scopeIds (owned.foldl (fun state entry => state.leaveScope le entry.id) t) ∧
+      ItemsSub (owned.foldl (fun state entry => state.leaveScope le entry.id) t).openItems t.openItems ∧
+      ∀ entry ∈ (owned.foldl (fun state entry => state.leaveScope le entry.id) t).scopes, entry.occurrence ≠ some id := by
   intro owned
   induction owned with
   | nil =>
@@ -192,26 +194,26 @@ private theorem leaveOwned {id : OccurrenceId} {record : Occurrence} :
     have present : first.id ∈ scopeIds t := List.mem_map.mpr ⟨first, firstMember, rfl⟩
     have notRoot : first.id ≠ State.root := fun same => by
       simp [(formed.rooted.2.1 first firstMember).mpr same] at firstLink
-    have left := leaveScope_left formed present
+    have left := leaveScope_left (le := le) formed present
     have outside : ¬ Within t record.scope first.id := parent_not_within formed firstMember firstLink
-    have apart : ∀ occurrence ∈ t.occurrences, occurrence.id = id → occurrence.scope ∉ t.subtree first.id :=
+    have apart : ∀ occurrence ∈ t.occurrences, occurrence.id = id → occurrence.scope ∉ t.subtree le first.id :=
       fun occurrence inside same within => by
         rw [only occurrence inside same] at within
         exact outside ((subtree_iff formed present _).mp within)
-    have restPlaced : ∀ entry ∈ rest, entry ∈ (t.leaveScope first.id).scopes ∧ entry.parent = some record.scope :=
+    have restPlaced : ∀ entry ∈ rest, entry ∈ (t.leaveScope le first.id).scopes ∧ entry.parent = some record.scope :=
       fun entry inside => by
         obtain ⟨entryMember, entryLink⟩ := placed entry (List.mem_cons_of_mem _ inside)
         have other : entry.id ≠ first.id := fun same =>
           (List.nodup_cons.mp nodup).1 (scope_unique formed.distinct entryMember firstMember same ▸ inside)
         exact ⟨(left.scopes entry).mpr ⟨entryMember, sibling_outside formed firstMember entryMember firstLink entryLink
           other⟩, entryLink⟩
-    have restUnowned : ∀ entry ∈ (t.leaveScope first.id).scopes, entry.occurrence = some id → entry ∈ rest :=
+    have restUnowned : ∀ entry ∈ (t.leaveScope le first.id).scopes, entry.occurrence = some id → entry ∈ rest :=
       fun entry inside owns => by
         obtain ⟨old, away⟩ := (left.scopes entry).mp inside
         rcases List.mem_cons.mp (unowned entry old owns) with rfl | later
         · exact absurd (.refl _) away
         · exact later
-    obtain ⟨commutes, kept, stands, rest⟩ := ih (t.leaveScope first.id) (left.wellFormed formed present notRoot)
+    obtain ⟨commutes, kept, stands, rest⟩ := ih (t.leaveScope le first.id) (left.wellFormed formed present notRoot)
       ((left.occurrences record).mpr ⟨member, outside⟩)
       (fun occurrence inside same => only occurrence (left.occurrencesSublist.subset inside) same)
       (List.nodup_cons.mp nodup).2 restPlaced restUnowned
@@ -225,18 +227,19 @@ standing. -/
 theorem removeOccurrence_wellFormed {s : State} (formed : WellFormed program s) {record : Occurrence}
     (member : record ∈ s.occurrences)
     (free : ∀ item ∈ itemList s.openItems, item.id.occurrence ≠ record.id ∧ item.attachedTo ≠ some record.id) :
-    WellFormed program (s.removeOccurrence record.id) ∧ record.scope ∈ scopeIds (s.removeOccurrence record.id) := by
-  have owned : ∀ entry ∈ s.scopes.filter (·.occurrence == some record.id), entry ∈ s.scopes ∧
-      entry.parent = some record.scope := fun entry inside => by
-    obtain ⟨entryMember, owns⟩ := List.mem_filter.mp inside
+    WellFormed program (s.removeOccurrence le record.id) ∧ record.scope ∈ scopeIds (s.removeOccurrence le record.id) := by
+  -- the owned scope occurrences in the order `le` leaves them (`State.removeOccurrence`, DC25)
+  let owning := (s.scopes.filter (·.occurrence == some record.id)).mergeSort fun a b => le a.position b.position
+  have owned : ∀ entry ∈ owning, entry ∈ s.scopes ∧ entry.parent = some record.scope := fun entry inside => by
+    obtain ⟨entryMember, owns⟩ := List.mem_filter.mp (List.mem_mergeSort.mp inside)
     exact ⟨entryMember, formed.ownedBelow entry entryMember record member (by simpa using owns)⟩
   have scopesNodup : s.scopes.Nodup := by
     have nodup : (s.scopes.map (·.id)).Nodup := formed.distinct.scopes
     exact List.Pairwise.of_map (R := (· ≠ ·)) (S := (· ≠ ·)) (·.id) (fun _ _ apart same => apart (congrArg _ same)) nodup
-  obtain ⟨commutes, kept, stands, rest⟩ := leaveOwned (record := record) (id := record.id)
-    (s.scopes.filter (·.occurrence == some record.id)) s formed member
+  obtain ⟨commutes, kept, stands, rest⟩ := leaveOwned (record := record) (id := record.id) owning s formed member
     (fun occurrence inside same => nodup_map_eq formed.distinct.occurrences inside member same)
-    (scopesNodup.sublist List.filter_sublist) owned (fun entry inside owns => List.mem_filter.mpr ⟨inside, by simpa using owns⟩)
+    ((List.mergeSort_perm _ _).nodup_iff.mpr (scopesNodup.sublist List.filter_sublist)) owned
+    (fun entry inside owns => List.mem_mergeSort.mpr (List.mem_filter.mpr ⟨inside, by simpa using owns⟩))
   obtain ⟨fewer, none⟩ := rest
   rw [removeOccurrence_eq, commutes]
   exact ⟨withoutRecord_wellFormed kept (fun item inside => free item (fewer.items inside)) none, stands⟩
@@ -314,7 +317,7 @@ theorem draftEnds_wellFormed {s : State} (formed : WellFormed program s) (ended 
 
 /-- Cancelling an occurrence keeps a state well-formed: its items and the subscriptions on it are withdrawn first, so
 its record goes with nothing left waiting for it or hanging on it. -/
-theorem cancel_wellFormed {s : State} (formed : WellFormed program s) (id : OccurrenceId) : WellFormed program (s.cancelOccurrence id) := by
+theorem cancel_wellFormed {s : State} (formed : WellFormed program s) (id : OccurrenceId) : WellFormed program (s.cancelOccurrence le id) := by
   cases found : s.occurrence? id with
   | none =>
     rw [cancelOccurrence_absent found]
@@ -352,24 +355,24 @@ theorem cancel_wellFormed {s : State} (formed : WellFormed program s) (id : Occu
 /-! ## What removal shrinks -/
 
 private theorem leaveScope_shrinks (s : State) (scope : ScopeOccurrenceId) :
-    (s.leaveScope scope).scopes.Sublist s.scopes ∧ (s.leaveScope scope).nextCompletion = s.nextCompletion := by
+    (s.leaveScope le scope).scopes.Sublist s.scopes ∧ (s.leaveScope le scope).nextCompletion = s.nextCompletion := by
   obtain ⟨fewer, same⟩ := clearInside_shrinks s scope []
   rw [(leaveScope_eq s scope).1]
   exact ⟨List.filter_sublist.trans fewer, same⟩
 
 private theorem leaveAll_shrinks : ∀ (scopes : List ScopeOccurrence) (t : State),
-    (scopes.foldl (fun t entry => t.leaveScope entry.id) t).scopes.Sublist t.scopes ∧
-      (scopes.foldl (fun t entry => t.leaveScope entry.id) t).nextCompletion = t.nextCompletion ∧
-      ScopeGrows t (scopes.foldl (fun t entry => t.leaveScope entry.id) t)
+    (scopes.foldl (fun t entry => t.leaveScope le entry.id) t).scopes.Sublist t.scopes ∧
+      (scopes.foldl (fun t entry => t.leaveScope le entry.id) t).nextCompletion = t.nextCompletion ∧
+      ScopeGrows t (scopes.foldl (fun t entry => t.leaveScope le entry.id) t)
   | [], _ => ⟨.refl _, rfl, .refl _⟩
   | entry :: rest, t => by
-    obtain ⟨fewer, same, grows⟩ := leaveAll_shrinks rest (t.leaveScope entry.id)
+    obtain ⟨fewer, same, grows⟩ := leaveAll_shrinks rest (t.leaveScope le entry.id)
     obtain ⟨fewer', same'⟩ := leaveScope_shrinks t entry.id
     exact ⟨fewer.trans fewer', same.trans same', (leaveScope_grows t entry.id).trans grows⟩
 
 private theorem removeOccurrence_shrinks (s : State) (id : OccurrenceId) :
-    (s.removeOccurrence id).scopes.Sublist s.scopes ∧ (s.removeOccurrence id).nextCompletion = s.nextCompletion ∧
-      ScopeGrows s (s.removeOccurrence id) := by
+    (s.removeOccurrence le id).scopes.Sublist s.scopes ∧ (s.removeOccurrence le id).nextCompletion = s.nextCompletion ∧
+      ScopeGrows s (s.removeOccurrence le id) := by
   rw [removeOccurrence_eq]
   obtain ⟨fewer, same, grows⟩ := leaveAll_shrinks _ (withoutRecord s id)
   exact ⟨fewer, same, (ScopeGrows.of_same (t := withoutRecord s id) rfl rfl (.refl _)).trans grows⟩
@@ -387,14 +390,14 @@ private theorem withdrawAll_shrinks : ∀ (scopes : List ScopeOccurrence) (t : S
 
 /-- The removal operations drop scope occurrences, take no position and keep every scope occurrence key issued. -/
 theorem removal_shrinks (s : State) :
-    (∀ scope keep, (s.clearInside scope keep).scopes.Sublist s.scopes ∧
-      (s.clearInside scope keep).nextCompletion = s.nextCompletion ∧ ScopeGrows s (s.clearInside scope keep)) ∧
-    (∀ scope, (s.leaveScope scope).scopes.Sublist s.scopes ∧ (s.leaveScope scope).nextCompletion = s.nextCompletion ∧
-      ScopeGrows s (s.leaveScope scope)) ∧
-    (∀ id, (s.removeOccurrence id).scopes.Sublist s.scopes ∧ (s.removeOccurrence id).nextCompletion = s.nextCompletion ∧
-      ScopeGrows s (s.removeOccurrence id)) ∧
-    ∀ id, (s.cancelOccurrence id).scopes.Sublist s.scopes ∧ (s.cancelOccurrence id).nextCompletion = s.nextCompletion ∧
-      ScopeGrows s (s.cancelOccurrence id) := by
+    (∀ scope keep, (s.clearInside le scope keep).scopes.Sublist s.scopes ∧
+      (s.clearInside le scope keep).nextCompletion = s.nextCompletion ∧ ScopeGrows s (s.clearInside le scope keep)) ∧
+    (∀ scope, (s.leaveScope le scope).scopes.Sublist s.scopes ∧ (s.leaveScope le scope).nextCompletion = s.nextCompletion ∧
+      ScopeGrows s (s.leaveScope le scope)) ∧
+    (∀ id, (s.removeOccurrence le id).scopes.Sublist s.scopes ∧ (s.removeOccurrence le id).nextCompletion = s.nextCompletion ∧
+      ScopeGrows s (s.removeOccurrence le id)) ∧
+    ∀ id, (s.cancelOccurrence le id).scopes.Sublist s.scopes ∧ (s.cancelOccurrence le id).nextCompletion = s.nextCompletion ∧
+      ScopeGrows s (s.cancelOccurrence le id) := by
   refine ⟨fun scope keep => ⟨(clearInside_shrinks s scope keep).1, (clearInside_shrinks s scope keep).2,
       clearInside_grows s scope keep⟩,
     fun scope => ⟨(leaveScope_shrinks s scope).1, (leaveScope_shrinks s scope).2, leaveScope_grows s scope⟩,

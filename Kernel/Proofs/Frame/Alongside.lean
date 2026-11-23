@@ -18,6 +18,8 @@ they lie in no feature's rebuild cone (guard 15). Nothing executable imports thi
 
 namespace Kernel.Proofs.Frame
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel
 open Kernel.Laws.State (WellFormed Within scopeIds occurrenceIds)
 open Kernel.Laws.IL (BoundaryOf Reservable)
@@ -48,7 +50,7 @@ structure OccursAlongside (program : Program) (rel : State → Prop) : Prop wher
     rel (s.signal (.occur element scope leave writes rule))
   compensate : ∀ s scope activity trigger leave element at_ resumed,
     (BoundaryOf program element ∨ PendingIn rel element) →
-    (∃ before, s = before.clearInside scope ∧ WellFormed program before ∧ scope ∈ scopeIds before ∧
+    (∃ before le, s = before.clearInside le scope ∧ WellFormed program before ∧ scope ∈ scopeIds before ∧
       Laws.State.RollsBack (fun t => WellFormed program t ∧ rel t) trigger before) →
     Laws.Flow.OccurAnchored (fun t => WellFormed program t ∧ rel t) program s element at_ resumed → rel s →
     rel (s.signal (.compensate scope activity trigger leave (some (.occur element at_ resumed))))
@@ -282,11 +284,11 @@ structure FrameAlongside (program : Program) (rel : State → Prop) (srel : Stat
     (∃ leave writes rule, Laws.State.Popped (fun t => WellFormed program t ∧ rel t)
       (.occur element scope leave writes rule) s) → rel s →
     rel (s.reserve element scope).1
-  leaveScope : ∀ s scope, WellFormed program s → scope ∈ scopeIds s → LeavesOwned s scope → rel s →
-    rel (s.leaveScope scope)
-  clearInside : ∀ s scope keep, WellFormed program s → scope ∈ scopeIds s →
+  leaveScope : ∀ le s scope, WellFormed program s → scope ∈ scopeIds s → LeavesOwned s scope → rel s →
+    rel (s.leaveScope le scope)
+  clearInside : ∀ le s scope keep, WellFormed program s → scope ∈ scopeIds s →
     (∀ o ∈ s.occurrences, o.id ∈ keep → ¬ Laws.State.StrictlyWithin s o.scope scope) → rel s →
-    rel (s.clearInside scope keep)
+    rel (s.clearInside le scope keep)
   disarm : ∀ s host, WellFormed program s → rel s → rel (s.disarm host)
   setVariable : ∀ s target name value, WellFormed program s → rel s → rel (s.setVariable target name value)
   removeVariable : ∀ s target name, WellFormed program s → rel s → rel (s.removeVariable target name)
@@ -315,8 +317,8 @@ structure Alongside (program : Program) (rel : State → Prop) (srel : State →
     (∀ request ∈ requests, Laws.Flow.BeginAnchored (fun t => WellFormed program t ∧ rel t) program s request) → rel s →
     rel (s.deferBegins requests)
   /-- The Multi-Instance runs replaced by runs whose elements are anchored at their scope occurrences. -/
-  leaveInstance : ∀ s run scope, WellFormed program s → run ∈ s.slots.multiInstances →
-    Iteration.active scope ∈ run.instances → scope ∈ scopeIds s → rel s → rel (s.leaveScope scope)
+  leaveInstance : ∀ le s run scope, WellFormed program s → run ∈ s.slots.multiInstances →
+    Iteration.active scope ∈ run.instances → scope ∈ scopeIds s → rel s → rel (s.leaveScope le scope)
   runs : ∀ s (runs : List MultiInstanceRun), WellFormed program s →
     (∀ run ∈ runs, Laws.Flow.Anchored (fun t => WellFormed program t ∧ rel t) program s run.element run.scope) → rel s →
     rel { s with slots := { s.slots with multiInstances := runs } }
@@ -346,25 +348,25 @@ theorem FrameAlongside.signal {rel : State → Prop} {program : Program} (side :
 no scope occurrence keeps: `State.removeOccurrence` drops the record and then leaves the scope occurrences it owns,
 which ends where leaving them first, each owned and from a well-formed state, and dropping the record last ends, since
 the record lies outside each of them (`Laws.State.leaveScope_withoutRecord`); with no record, nothing owns one. -/
-theorem FrameAlongside.removeOccurrence {rel : State → Prop} {program : Program} (side : FrameAlongside program rel)
+theorem FrameAlongside.removeOccurrence (le : Issue → Issue → Bool) {rel : State → Prop} {program : Program} (side : FrameAlongside program rel)
     (without : ∀ t id, (∀ entry ∈ t.scopes, entry.occurrence ≠ some id) → rel t → rel (Laws.State.withoutRecord t id))
     {s : State} {id : OccurrenceId} (formed : WellFormed program s) (kept : rel s) :
-    rel (s.removeOccurrence id) := by
+    rel (s.removeOccurrence le id) := by
   by_cases absent : id ∉ occurrenceIds s
   · have unowned : ∀ entry ∈ s.scopes, entry.occurrence ≠ some id := fun entry inside owns => by
       obtain ⟨owner, present, named, _⟩ := formed.owned.scopeOwners entry inside id owns
       exact absent (List.mem_map.mpr ⟨owner, present, named⟩)
     rw [Laws.State.removeOccurrence_eq,
-      List.filter_eq_nil_iff.mpr fun entry inside owns => unowned entry inside (by simpa using owns)]
+      List.filter_eq_nil_iff.mpr fun entry inside owns => unowned entry inside (by simpa using owns), List.mergeSort_nil]
     exact without s id unowned kept
   obtain ⟨record, member, rfl⟩ := List.mem_map.mp (Classical.not_not.mp absent)
   have leaves : ∀ (owned : List ScopeOccurrence) (t : State), WellFormed program t → record ∈ t.occurrences →
       owned.Nodup → (∀ entry ∈ owned, entry ∈ t.scopes ∧ entry.parent = some record.scope ∧
         entry.occurrence = some record.id) → (∀ entry ∈ t.scopes, entry.occurrence = some record.id → entry ∈ owned) →
-      rel t → owned.foldl (fun state entry => state.leaveScope entry.id) (Laws.State.withoutRecord t record.id) =
-        Laws.State.withoutRecord (owned.foldl (fun state entry => state.leaveScope entry.id) t) record.id ∧
-        rel (owned.foldl (fun state entry => state.leaveScope entry.id) t) ∧
-        ∀ entry ∈ (owned.foldl (fun state entry => state.leaveScope entry.id) t).scopes,
+      rel t → owned.foldl (fun state entry => state.leaveScope le entry.id) (Laws.State.withoutRecord t record.id) =
+        Laws.State.withoutRecord (owned.foldl (fun state entry => state.leaveScope le entry.id) t) record.id ∧
+        rel (owned.foldl (fun state entry => state.leaveScope le entry.id) t) ∧
+        ∀ entry ∈ (owned.foldl (fun state entry => state.leaveScope le entry.id) t).scopes,
           entry.occurrence ≠ some record.id := by
     intro owned
     induction owned with
@@ -377,40 +379,41 @@ theorem FrameAlongside.removeOccurrence {rel : State → Prop} {program : Progra
       have present : first.id ∈ scopeIds t := List.mem_map.mpr ⟨first, firstMember, rfl⟩
       have notRoot : first.id ≠ State.root := fun same => by
         simp [(formed.rooted.2.1 first firstMember).mpr same] at firstLink
-      have left := Laws.State.leaveScope_left formed present
+      have left := Laws.State.leaveScope_left (le := le) formed present
       have outside : ¬ Within t record.scope first.id := Laws.State.parent_not_within formed firstMember firstLink
-      have apart : ∀ occurrence ∈ t.occurrences, occurrence.id = record.id → occurrence.scope ∉ t.subtree first.id :=
+      have apart : ∀ occurrence ∈ t.occurrences, occurrence.id = record.id → occurrence.scope ∉ t.subtree le first.id :=
         fun occurrence inside same within => by
           rw [Laws.State.nodup_map_eq formed.distinct.occurrences inside member same] at within
           exact outside ((Laws.State.subtree_iff formed present _).mp within)
-      have restPlaced : ∀ entry ∈ rest, entry ∈ (t.leaveScope first.id).scopes ∧ entry.parent = some record.scope ∧
+      have restPlaced : ∀ entry ∈ rest, entry ∈ (t.leaveScope le first.id).scopes ∧ entry.parent = some record.scope ∧
           entry.occurrence = some record.id := fun entry inside => by
         obtain ⟨entryMember, entryLink, entryOwned⟩ := placed entry (List.mem_cons_of_mem _ inside)
         have other : entry.id ≠ first.id := fun same =>
           (List.nodup_cons.mp nodup).1 (Laws.State.scope_unique formed.distinct entryMember firstMember same ▸ inside)
         exact ⟨(left.scopes entry).mpr ⟨entryMember,
           Laws.State.sibling_outside formed firstMember entryMember firstLink entryLink other⟩, entryLink, entryOwned⟩
-      have restUnowned : ∀ entry ∈ (t.leaveScope first.id).scopes, entry.occurrence = some record.id → entry ∈ rest :=
+      have restUnowned : ∀ entry ∈ (t.leaveScope le first.id).scopes, entry.occurrence = some record.id → entry ∈ rest :=
         fun entry inside owns => by
           obtain ⟨old, away⟩ := (left.scopes entry).mp inside
           rcases List.mem_cons.mp (unowned entry old owns) with rfl | later
           · exact absurd (.refl _) away
           · exact later
-      obtain ⟨commutes, kept, none⟩ := ih (t.leaveScope first.id) (left.wellFormed formed present notRoot)
+      obtain ⟨commutes, kept, none⟩ := ih (t.leaveScope le first.id) (left.wellFormed formed present notRoot)
         ((left.occurrences record).mpr ⟨member, outside⟩) (List.nodup_cons.mp nodup).2 restPlaced restUnowned
-        (side.leaveScope t first.id formed present (.inl ⟨first, firstMember, rfl, record.id, firstOwned⟩) kept)
+        (side.leaveScope le t first.id formed present (.inl ⟨first, firstMember, rfl, record.id, firstOwned⟩) kept)
       simp only [List.foldl_cons]
       rw [Laws.State.leaveScope_withoutRecord t record.id first.id apart]
       exact ⟨commutes, kept, none⟩
   have scopesNodup : s.scopes.Nodup :=
     List.Pairwise.of_map (R := (· ≠ ·)) (S := (· ≠ ·)) (·.id) (fun _ _ apart same => apart (congrArg _ same))
       formed.distinct.scopes
-  obtain ⟨commutes, kept, none⟩ := leaves (s.scopes.filter (·.occurrence == some record.id)) s formed member
-    (scopesNodup.sublist List.filter_sublist) (fun entry inside => by
-      obtain ⟨entryMember, owns⟩ := List.mem_filter.mp inside
+  obtain ⟨commutes, kept, none⟩ := leaves
+    ((s.scopes.filter (·.occurrence == some record.id)).mergeSort fun a b => le a.position b.position) s formed member
+    ((List.mergeSort_perm _ _).nodup_iff.mpr (scopesNodup.sublist List.filter_sublist)) (fun entry inside => by
+      obtain ⟨entryMember, owns⟩ := List.mem_filter.mp (List.mem_mergeSort.mp inside)
       have owned : entry.occurrence = some record.id := by simpa using owns
       exact ⟨entryMember, formed.ownedBelow entry entryMember record member owned, owned⟩)
-    (fun entry inside owns => List.mem_filter.mpr ⟨inside, by simpa using owns⟩) kept
+    (fun entry inside owns => List.mem_mergeSort.mpr (List.mem_filter.mpr ⟨inside, by simpa using owns⟩)) kept
   rw [Laws.State.removeOccurrence_eq, commutes]
   exact without _ _ none kept
 
@@ -429,11 +432,11 @@ theorem FrameAlongside.withdrawOccurrence {rel : State → Prop} {program : Prog
 /-- Cancelling an occurrence of a well-formed state withdraws its items (`FrameAlongside.withdrawOccurrence`), removes
 it (`FrameAlongside.removeOccurrence`, given what dropping a record that owns no scope occurrence keeps) and journals
 its end and cancellation, which `ends` keeps. -/
-theorem FrameAlongside.cancelOccurrence {rel : State → Prop} {program : Program} (side : FrameAlongside program rel)
+theorem FrameAlongside.cancelOccurrence (le : Issue → Issue → Bool) {rel : State → Prop} {program : Program} (side : FrameAlongside program rel)
     (without : ∀ t id, (∀ entry ∈ t.scopes, entry.occurrence ≠ some id) → rel t → rel (Laws.State.withoutRecord t id))
     (ends : ∀ t ended cancelled, rel t → rel { t with draft := { t.draft with ended, cancelled } })
     {s : State} {id : OccurrenceId} (formed : WellFormed program s) (kept : rel s) :
-    rel (s.cancelOccurrence id) := by
+    rel (s.cancelOccurrence le id) := by
   cases found : s.occurrence? id with
   | none =>
     rw [Laws.State.cancelOccurrence_absent found]
@@ -445,7 +448,7 @@ theorem FrameAlongside.cancelOccurrence {rel : State → Prop} {program : Progra
       (Laws.State.disarm_wellFormed (Laws.State.closeOwnItems_wellFormed formed id) id)).1
     rw [← Laws.State.withdrawOccurrence_eq] at withdrawn
     rw [cancels]
-    exact ends _ ended cancelled (side.removeOccurrence without withdrawn (side.withdrawOccurrence formed kept id))
+    exact ends _ ended cancelled (side.removeOccurrence le without withdrawn (side.withdrawOccurrence formed kept id))
 
 /-- What the phases a micro-step's body runs keep of a property `rel` carried beside `WellFormed`, besides the hooks'
 state operations (`FrameAlongside`): beginning an admitted request in a scope occurrence that stands and cancelling an
@@ -462,7 +465,7 @@ structure BodyAlongside (program : Program) (rel : State → Prop) : Prop extend
     Laws.Step.Admitted s request → role = Step.roleOf program request →
     Laws.Step.BeginOrigin (fun program s => WellFormed program s ∧ rel s) program s request → rel s →
     rel (s.beginOccurrence request role sourceType).1
-  cancel : ∀ s id, WellFormed program s → rel s → rel (s.cancelOccurrence id)
+  cancel : ∀ le s id, WellFormed program s → rel s → rel (s.cancelOccurrence le id)
 
 /-- `BodyAlongside` and what `Step.conclude` does once the body has run: journalling the draft and moving the batches
 under the unit key. -/

@@ -21,6 +21,8 @@ executable imports this module.
 
 namespace Kernel.Proofs.MultiInstance
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel
 open Kernel.Laws.State (WellFormed OccurrenceGrows Queued allSignals allQueuedTokens)
 open Kernel.Proofs.Frame (FrameAlongside StoresAlongside OccursAlongside StepAlongside Alongside Unmoved)
@@ -183,12 +185,12 @@ theorem continued_stores (program : Program) : StoresAlongside program Continued
     rw [Laws.State.enterScope_eq] at issued ⊢
     exact kept.same issued rfl rfl rfl
   reserve s element scope formed _ _ _ kept := kept.reserve formed element scope
-  leaveScope _ _ formed present _ kept :=
-    have left := Laws.State.leaveScope_left formed present
+  leaveScope le _ _ formed present _ kept :=
+    have left := Laws.State.leaveScope_left (le := le) formed present
     kept.shrink (Laws.Step.leaveScope_frame formed present).issued (fun _ inside => left.occurrencesSublist.subset inside)
       (fun _ held => left.signals ▸ held) fun _ held => left.tokensSublist.subset held
-  clearInside _ _ keep formed present inside kept :=
-    have cleared := Laws.State.clearInside_cleared formed present keep
+  clearInside le _ _ keep formed present inside kept :=
+    have cleared := Laws.State.clearInside_cleared (le := le) formed present keep
     kept.shrink (Laws.Step.clearInside_frame formed present inside).issued
       (fun _ held => cleared.occurrencesSublist.subset held) (fun _ held => cleared.signals ▸ held)
       fun _ held => cleared.tokensSublist.subset held
@@ -247,8 +249,8 @@ theorem grown_alongside (s0 : State) (program : Program) : Alongside program (Oc
   enterScope s element _ locals owner formed stands _ kept :=
     kept.trans (Laws.Step.enterScope_frame formed element stands locals owner).issued
   reserve _ element _ formed stands _ _ kept := kept.trans (Laws.Step.reserve_frame formed element stands.mem).issued
-  leaveScope _ _ formed present _ kept := kept.trans (Laws.Step.leaveScope_frame formed present).issued
-  clearInside _ _ _ formed present inside kept := kept.trans (Laws.Step.clearInside_frame formed present inside).issued
+  leaveScope le _ _ formed present _ kept := kept.trans (Laws.Step.leaveScope_frame formed present).issued
+  clearInside le _ _ _ formed present inside kept := kept.trans (Laws.Step.clearInside_frame formed present inside).issued
   disarm s host _ kept := kept.trans (Laws.Step.disarm_frame s host).issued
   setVariable s target name value _ kept := kept.trans (Laws.Step.setVariable_frame s target name value).issued
   removeVariable s target name _ kept := kept.trans (Laws.Step.removeVariable_frame s target name).issued
@@ -258,7 +260,7 @@ theorem grown_alongside (s0 : State) (program : Program) : Alongside program (Oc
   defer s _ _ _ kept := by
     rw [Laws.State.deferBegins_eq]
     exact kept
-  leaveInstance _ _ _ formed _ _ present kept := kept.trans (Laws.Step.leaveScope_frame formed present).issued
+  leaveInstance le _ _ _ formed _ _ present kept := kept.trans (Laws.Step.leaveScope_frame formed present).issued
   runs _ _ _ _ kept := kept
 
 /-! ## `Step`'s phases and the commit -/
@@ -310,7 +312,7 @@ theorem continued_stepAlongside (program : Program) : StepAlongside program Cont
       rcases origin with ⟨flows, _, _⟩ | ⟨queue, held, dequeued⟩
       · exact (Laws.Step.flow_ne_multiInstance body (flows.symm.trans on)).elim
       · exact dequeued_issued held.2 dequeued on
-  cancel s id formed kept := (continued_stores program).cancelOccurrence (fun _ id _ kept => kept.withoutRecord id)
+  cancel le s id formed kept := (continued_stores program).cancelOccurrence le (fun _ id _ kept => kept.withoutRecord id)
     (fun _ _ _ kept => kept.same (fun _ issued => issued) rfl rfl rfl) (id := id) formed kept
 
 /-- The completion pipeline's own phases keep `Continued` where they keep `WellFormed`: starting a reservation begins it
@@ -334,9 +336,9 @@ theorem continued_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellFormed
       · exact ⟨other, otherIn, by simp [same]⟩
     · rw [Laws.State.startReserved_begun s sourceType begun]
       exact holds.2
-  removeOccurrence program _ occurrence holds member free :=
-    have removed := pipeline.removeOccurrence _ _ occurrence holds.1 member free
-    ⟨⟨removed.1, (continued_stores program).removeOccurrence (fun _ id _ kept => kept.withoutRecord id) holds.1 holds.2⟩,
+  removeOccurrence program le _ occurrence holds member free :=
+    have removed := pipeline.removeOccurrence _ le _ occurrence holds.1 member free
+    ⟨⟨removed.1, (continued_stores program).removeOccurrence le (fun _ id _ kept => kept.withoutRecord id) holds.1 holds.2⟩,
       removed.2⟩
   recordEnd _ _ key terminal holds := ⟨pipeline.recordEnd _ _ key terminal holds.1, by
     rw [Laws.State.recordEnd_eq]

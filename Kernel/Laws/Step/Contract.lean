@@ -730,9 +730,9 @@ structure BodyPhases (inv : Program → State → Prop) : Prop where
   parkedBegun : ∀ program state waiting occurrence, inv program state → waiting ∈ state.slots.parked →
     occurrence ∈ state.occurrences →
     occurrence.id = waiting.occurrence → occurrence.begun = true
-  /-- `Step.endInstance`, with a failure exactly when the instance fails. -/
-  endInstance : ∀ program state status failure, inv program state → (failure.isSome = true ↔ status = .failed) →
-    inv program (endInstance status failure state)
+  /-- `Step.endInstance` under any position order, with a failure exactly when the instance fails. -/
+  endInstance : ∀ program le state status failure, inv program state → (failure.isSome = true ↔ status = .failed) →
+    inv program (endInstance le status failure state)
   /-- `State.beginOccurrence` of an admitted request, in a scope occurrence that stands (`Step.requireScope`); the
   request's start Event reservation stays beginnable, unclaimed and placed in the scope occurrence its begun occurrence
   runs in. The role is the request's (`Step.roleOf`): an Event's occurrence numbers under its element's counter
@@ -757,7 +757,7 @@ structure BodyPhases (inv : Program → State → Prop) : Prop where
     inv program (state.reserve element scope).1 ∧
     ∀ request, Laws.State.Queued (state.reserve element scope).1 request →
       (state.reserve element scope).2.id ∉ Laws.State.names request
-  cancel : ∀ program state id, inv program state → inv program (state.cancelOccurrence id)
+  cancel : ∀ program le state id, inv program state → inv program (state.cancelOccurrence le id)
 
 /-- `BodyPhases` and what `Step.conclude` does once a micro-step's body has run: journal the draft and move the batches.
 Apart, so a micro-step's body is known to journal nothing (`Laws.Step.closureStep_concludes`), which an invariant that
@@ -800,9 +800,9 @@ structure PipelinePhases (inv : Program → State → Prop) : Prop where
     (∀ request, Laws.State.Queued state request → occurrence.id ∉ Laws.State.names request) →
     inv program ((state.startReserved occurrence sourceType).1.closeOwnItems occurrence.id)
   /-- `State.removeOccurrence` of an occurrence on which nothing waits or hangs; its scope occurrence stays. -/
-  removeOccurrence : ∀ program state occurrence, inv program state → occurrence ∈ state.occurrences →
+  removeOccurrence : ∀ program le state occurrence, inv program state → occurrence ∈ state.occurrences →
     (∀ item ∈ itemList state.openItems, item.id.occurrence ≠ occurrence.id ∧ item.attachedTo ≠ some occurrence.id) →
-    inv program (state.removeOccurrence occurrence.id) ∧ ScopeStands (state.removeOccurrence occurrence.id) occurrence.scope
+    inv program (state.removeOccurrence le occurrence.id) ∧ ScopeStands (state.removeOccurrence le occurrence.id) occurrence.scope
   recordEnd : ∀ program state key terminal, inv program state → inv program (state.recordEnd key terminal)
 
 /-- The completion pipeline keeps `inv`, from a state in which no queued begin names the completing occurrence and
@@ -845,8 +845,8 @@ structure StateFacts : Prop where
     (state.reserve element scope).1.scopes = state.scopes ∧
     (state.reserve element scope).1.slots.instances = state.slots.instances
   /-- Removing an occurrence keeps no scope occurrence and no instance entry it did not have. -/
-  removeOccurrence : ∀ (state : State) id, (∀ entry ∈ (state.removeOccurrence id).scopes, entry ∈ state.scopes) ∧
-    ∀ entry ∈ (state.removeOccurrence id).slots.instances, entry ∈ state.slots.instances
+  removeOccurrence : ∀ (state : State) le id, (∀ entry ∈ (state.removeOccurrence le id).scopes, entry ∈ state.scopes) ∧
+    ∀ entry ∈ (state.removeOccurrence le id).slots.instances, entry ∈ state.slots.instances
   /-- A variable write or removal changes no scope occurrence, occurrence or open item. -/
   setVariable : ∀ (state : State) target name value, (state.setVariable target name value).scopes = state.scopes ∧
     (state.setVariable target name value).occurrences = state.occurrences ∧

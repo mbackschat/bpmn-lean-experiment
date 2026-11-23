@@ -17,6 +17,8 @@ carries it through the registered hooks. It reads no feature's Laws module, so i
 
 namespace Kernel.Proofs.MultiInstance
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel
 open Kernel.Laws.State (WellFormed Within StrictlyWithin scopeIds)
 open Kernel.Laws.MultiInstance (LoopOf Owned BodyOwns InstancesUnowned InstancesUnheld RunsKeyed NumberedInOrder
@@ -216,9 +218,9 @@ theorem unstarted_alongside (b : State) (program : Program) : Alongside program 
   enterScope s element parent locals owner formed stands _ kept :=
     kept.move (.ofEnds (Laws.Step.enterScope_frame formed element stands locals owner) (by rw [Laws.State.enterScope_eq]))
   reserve s element _ formed stands _ _ kept := kept.reserve formed stands.mem
-  leaveScope _ _ formed present _ kept :=
+  leaveScope le _ _ formed present _ kept :=
     kept.move (.ofEnds (Laws.Step.leaveScope_frame formed present) (Laws.State.leaveScope_left formed present).started)
-  clearInside _ _ keep formed present inside kept :=
+  clearInside le _ _ keep formed present inside kept :=
     kept.move (.ofEnds (Laws.Step.clearInside_frame formed present inside)
       (Laws.State.clearInside_cleared formed present keep).started)
   disarm s host _ kept := kept.move (.ofEnds (Laws.Step.disarm_frame s host) (by rw [Laws.State.disarm_eq]))
@@ -234,7 +236,7 @@ theorem unstarted_alongside (b : State) (program : Program) : Alongside program 
   defer s _ _ _ kept := by
     rw [Laws.State.deferBegins_eq]
     exact kept.move (.same rfl rfl rfl (.refl _) rfl)
-  leaveInstance _ _ _ formed _ _ present kept :=
+  leaveInstance le _ _ _ formed _ _ present kept :=
     kept.move (.ofEnds (Laws.Step.leaveScope_frame formed present) (Laws.State.leaveScope_left formed present).started)
   runs _ _ _ _ kept := kept.move (.same rfl rfl rfl (.refl _) rfl)
 
@@ -273,8 +275,8 @@ theorem snapshots_frameAlongside (b : State) (program : Program) : StoresAlongsi
     rw [Laws.State.enterScope_eq]
     exact kept.same rfl
   reserve s element scope _ _ _ _ kept := kept.reserve element scope
-  leaveScope _ _ formed present _ kept := kept.shrink (Laws.State.leaveScope_left formed present).slots.bodies
-  clearInside _ _ keep formed present _ kept :=
+  leaveScope le _ _ formed present _ kept := kept.shrink (Laws.State.leaveScope_left formed present).slots.bodies
+  clearInside le _ _ keep formed present _ kept :=
     kept.shrink (Laws.State.clearInside_cleared formed present keep).slots.bodies
   disarm s host _ kept := by
     rw [Laws.State.disarm_eq]
@@ -315,11 +317,11 @@ theorem since_frameAlongside (b : State) (program : Program) :
         two.enterScope s element parent locals owner formed stands (anchored.mono fun _ held => ⟨held.1, held.2.2⟩)
           kept.2⟩
     reserve := fun _ element scope formed stands _ _ kept => ⟨kept.1.reserve formed stands.mem, kept.2.reserve element scope⟩
-    leaveScope := fun s scope formed present leaves kept =>
-      ⟨one.leaveScope s scope formed present leaves kept.1, two.leaveScope s scope formed present leaves kept.2⟩
-    clearInside := fun s scope keep formed present inside kept =>
-      ⟨one.clearInside s scope keep formed present inside kept.1,
-        two.clearInside s scope keep formed present inside kept.2⟩
+    leaveScope := fun le s scope formed present leaves kept =>
+      ⟨one.leaveScope le s scope formed present leaves kept.1, two.leaveScope le s scope formed present leaves kept.2⟩
+    clearInside := fun le s scope keep formed present inside kept =>
+      ⟨one.clearInside le s scope keep formed present inside kept.1,
+        two.clearInside le s scope keep formed present inside kept.2⟩
     disarm := fun s host formed kept => ⟨one.disarm s host formed kept.1, two.disarm s host formed kept.2⟩
     setVariable := fun s target name value formed kept =>
       ⟨one.setVariable s target name value formed kept.1, two.setVariable s target name value formed kept.2⟩
@@ -399,7 +401,7 @@ theorem since_closureAlongside (b : State) (program : Program) :
       exact ((admitted.2.1 reserved.id named).1.2 o member (same.trans source.id)).1
     · exact (source.fresh formed.issuer stands.mem below).elim
     · exact (fresh.fresh formed.issuer stands.mem below).elim
-  cancel s id formed kept := (since_frameAlongside b program).cancelOccurrence
+  cancel le s id formed kept := (since_frameAlongside b program).cancelOccurrence le
     (fun _ id _ kept => since_withoutRecord id kept)
     (fun _ _ _ kept => ⟨kept.1.move (.same rfl rfl rfl (.refl _) rfl), kept.2.same rfl⟩) (id := id) formed kept
 
@@ -426,9 +428,9 @@ theorem since_pipelinePhases (b : State) (pipeline : Laws.Step.PipelinePhases We
       exact begun
     · rw [Laws.State.startReserved_begun s sourceType begun]
       exact holds.2
-  removeOccurrence program _ occurrence holds member free :=
-    have removed := pipeline.removeOccurrence _ _ occurrence holds.1 member free
-    ⟨⟨removed.1, (since_frameAlongside b program).removeOccurrence (fun _ id _ kept => since_withoutRecord id kept) holds.1
+  removeOccurrence program le _ occurrence holds member free :=
+    have removed := pipeline.removeOccurrence _ le _ occurrence holds.1 member free
+    ⟨⟨removed.1, (since_frameAlongside b program).removeOccurrence le (fun _ id _ kept => since_withoutRecord id kept) holds.1
       holds.2⟩, removed.2⟩
   recordEnd _ _ key terminal holds := ⟨pipeline.recordEnd _ _ key terminal holds.1, by
     rw [Laws.State.recordEnd_eq]

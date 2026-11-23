@@ -18,6 +18,8 @@ Nothing executable imports this module.
 
 namespace Kernel.Proofs.MultiInstance
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel
 open Kernel.Laws.State (WellFormed Within scopeIds)
 open Kernel.Laws.MultiInstance (LoopOf Owned BodyOwns InstancesUnowned InstancesUnheld RunsKeyed NumberedInOrder
@@ -279,20 +281,20 @@ theorem leftWith_framed {program : Program} {s : State} {run : MultiInstanceRun}
     {scope : ScopeOccurrenceId} {output : Option Value} {results : List String} (formed : WellFormed program s)
     (framed : RunsFramed program s) (member : run ∈ s.slots.multiInstances)
     (slot : run.instances[index]? = some (.active scope)) (fits : Laws.MultiInstance.OutputFits program run output) :
-    RunsFramed program (Laws.MultiInstance.leftWith s scope (Laws.MultiInstance.recorded run index output results)) := by
+    RunsFramed program (Laws.MultiInstance.leftWith le s scope (Laws.MultiInstance.recorded run index output results)) := by
   have each := framed.framed run member
   obtain ⟨placed, placedIn, placedNamed, placedLink⟩ := each.owned.instanceScopes index scope slot
   have present : scope ∈ scopeIds s := List.mem_map.mpr ⟨placed, placedIn, placedNamed⟩
   have away : ¬ Within s run.scope scope := placedNamed ▸ Laws.State.parent_not_within formed placedIn placedLink
-  have left := Laws.State.leaveScope_left formed present
+  have left := Laws.State.leaveScope_left (le := le) formed present
   obtain ⟨_, bodiesEq, _⟩ := Laws.State.leaveScope_slots s scope
   obtain ⟨fewer, _⟩ := cleared_bodies formed present (Laws.State.clearInside_cleared formed present [])
   rw [← bodiesEq] at fewer
-  have entryOf : ∀ entry ∈ (s.leaveScope scope).scopes, entry ∈ s.scopes := fun _ inside =>
+  have entryOf : ∀ entry ∈ (s.leaveScope le scope).scopes, entry ∈ s.scopes := fun _ inside =>
     left.scopesSublist.subset inside
-  have others : ∀ other ∈ (s.leaveScope scope).slots.multiInstances,
+  have others : ∀ other ∈ (s.leaveScope le scope).slots.multiInstances,
       other.occurrence ≠ (Laws.MultiInstance.recorded run index output results).occurrence →
-      RunFramed program (s.leaveScope scope) other := by
+      RunFramed program (s.leaveScope le scope) other := by
     intro other inside differs
     refine leaveScope_framed formed present framed inside fun active => differs ?_
     obtain ⟨at_, found⟩ := List.mem_iff_getElem?.mp active
@@ -450,7 +452,7 @@ theorem instanceCompleted_snapshots (mi : ∀ program, Laws.MultiInstance.MultiI
     rw [filled.count]
     exact kept.generated run member fun earlier inside same => apart earlier inside (same.trans filled.occurrence.symm)
   have countedKept : Snapshots b counted := by
-    have leftKept : Snapshots b (Laws.MultiInstance.leftWith state occurrence.scope (recorded run index output results)) :=
+    have leftKept : Snapshots b (Laws.MultiInstance.leftWith ctx.positionLe state occurrence.scope (recorded run index output results)) :=
       (kept.shrink (Laws.State.leaveScope_left formed stands).slots.bodies).setRun fixed generated
     rcases left with rfl | ⟨target, counts, rule, rfl⟩
     · exact leftKept
@@ -576,10 +578,10 @@ theorem instanceCompleted_continued
   obtain ⟨run, loop, index, found⟩ := Laws.MultiInstance.instanceCompleted_spec ran
   obtain ⟨output, done⟩ := found
   obtain ⟨results, counted, left, ended⟩ := done.ends
-  have leftOf := Laws.State.leaveScope_left formed stands
-  have back : (∀ o ∈ (Laws.MultiInstance.leftWith state occurrence.scope (recorded run index output results)).occurrences,
+  have leftOf := Laws.State.leaveScope_left (le := ctx.positionLe) formed stands
+  have back : (∀ o ∈ (Laws.MultiInstance.leftWith ctx.positionLe state occurrence.scope (recorded run index output results)).occurrences,
       o ∈ state.occurrences) ∧ ∀ request,
-      Queued (Laws.MultiInstance.leftWith state occurrence.scope (recorded run index output results)) request →
+      Queued (Laws.MultiInstance.leftWith ctx.positionLe state occurrence.scope (recorded run index output results)) request →
         Queued state request := by
     unfold Laws.MultiInstance.leftWith
     rw [Laws.MultiInstance.setRun_eq]

@@ -20,6 +20,8 @@ that keep none of it, a run advanced while its handlers begin (`Kernel.Proofs.Co
 
 namespace Kernel.Proofs.Compensation
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel
 open Kernel.Laws.State (WellFormed scopeIds Counted Untriggered)
 open Kernel.Laws.Compensation (ClaimsApart Advances Ready Keyed Holds FirstOf BeginsEach claimed)
@@ -565,7 +567,7 @@ theorem release_formed {precedes : Compensable → Compensable → Prop} {ctx : 
   obtain ⟨less', owner, same, rest⟩ := Laws.Compensation.release_spec ran
   have advanced := rest.2
   obtain ⟨entry, entered, named⟩ := List.mem_map.mp stands
-  have ownerStands : owner.scope ∈ scopeIds (s.leaveScope context) :=
+  have ownerStands : owner.scope ∈ scopeIds (s.leaveScope ctx.positionLe context) :=
     left_parent tame.parents entered named (tame.runningIn owner rest.1.mem context rest.1.1 entry entered named)
   obtain rfl : less' = less := (Nat.succ.inj same).symm
   rw [store_stored] at advanced
@@ -670,7 +672,7 @@ theorem dropWithin_formed (hooks : Hooks) {ctx : Ctx} {scope : ScopeOccurrenceId
     (before : WellFormed ctx.program s) (formed : Formed (DependsIn hooks footprintReads footprintWrites ctx.program) s)
     (after : WellFormed ctx.program (Feature.Compensation.dropWithin ctx scope s)) :
     Formed (DependsIn hooks footprintReads footprintWrites ctx.program) (Feature.Compensation.dropWithin ctx scope s) := by
-  have fewer := List.filter_sublist (p := fun run => !(s.subtree scope).contains run.scope)
+  have fewer := List.filter_sublist (p := fun run => !(s.inside scope).contains run.scope)
     (l := s.slots.compensation.runs)
   have tame := tame_fewer (tame_of before formed.retained formed.keyed formed.runsIssued formed.groupsStanding) fewer
   have moves := moves_fewer s fewer

@@ -144,10 +144,10 @@ def complete (hooks : Hooks) (ctx : Ctx) (id : OccurrenceId) (leave : Leave) (wr
   let state ← hooks.writeOutputs ctx occurrence.scope writes rule state
   let key := state.keyOf occurrence
   match leave with
-  | .raised => continueAfter hooks ctx occurrence leave writes ((state.removeOccurrence id).recordEnd key .cancelled)
+  | .raised => continueAfter hooks ctx occurrence leave writes ((state.removeOccurrence ctx.positionLe id).recordEnd key .cancelled)
   | .outgoing | .flows _ =>
     let state ← hooks.completed ctx occurrence state
-    let state := state.removeOccurrence id
+    let state := state.removeOccurrence ctx.positionLe id
     -- An `asyncAfter` boundary lies before the continuation, though the completion's fact is journalled after it.
     let state ← deferred ctx.program (state.recordEnd key .completed) <| continueAfter hooks ctx occurrence leave writes state
     .ok (state.recordEnd key .completed)
@@ -158,9 +158,11 @@ def fireItem (hooks : Hooks) (ctx : Ctx) (item : OpenItem) (fired : Fired) (stat
   | some (header, payload) => hooks.triggerActivity ctx header payload item fired state
   | none => hooks.trigger ctx item fired state
 
-/-- The one writer of `State.status`: everything left in the instance goes first. -/
-def endInstance (status : InstanceStatus) (failure : Option InstanceFailure) (state : State) : State :=
-  { state.clearInside State.root with status, failure }
+/-- The one writer of `State.status`: everything left in the instance goes first, journalled in the order positions
+`le` orders (`State.clearInside`). -/
+def endInstance (le : Issue → Issue → Bool) (status : InstanceStatus) (failure : Option InstanceFailure) (state : State) :
+    State :=
+  { state.clearInside le State.root with status, failure }
 
 /-- What a queued signal does and the targets it names (`Kernel.Step.Stale`). -/
 def signalWork (hooks : Hooks) (ctx : Ctx) : Signal → SignalWork
@@ -178,7 +180,7 @@ def signalWork (hooks : Hooks) (ctx : Ctx) : Signal → SignalWork
     requireScope state scope
     let (state, occurrence) := state.reserve element scope
     complete hooks ctx occurrence.id leave writes rule state }
-  | .cancel occurrence => { acts := [occurrence], run := fun state => .ok (state.cancelOccurrence occurrence) }
+  | .cancel occurrence => { acts := [occurrence], run := fun state => .ok (state.cancelOccurrence ctx.positionLe occurrence) }
   | .fire item fired =>
     { holds := fun state => [((state.openItems[item]?).map (·.scope)).getD item.occurrence.scope]
       run := fun state =>
@@ -186,7 +188,7 @@ def signalWork (hooks : Hooks) (ctx : Ctx) : Signal → SignalWork
         | some open_ => fireItem hooks ctx open_ fired state
         | none => .ok state }
   | .endInstance status failure =>
-    { holds := fun state => state.scopes.map (·.id), run := fun state => .ok (endInstance status failure state) }
+    { holds := fun state => state.scopes.map (·.id), run := fun state => .ok (endInstance ctx.positionLe status failure state) }
   | .compensate scope activity trigger leave resume =>
     { requires := [scope], run := hooks.compensate ctx scope activity trigger leave resume }
   | .compensationFailed handler code message origin =>
@@ -292,15 +294,20 @@ def signalsHold (hooks : Hooks) (ctx : Ctx) (state : State) (scope : ScopeOccurr
   state.queuedSignals.any fun _ signal => ((signalWork hooks ctx signal).names state).any fun named =>
     named.segments.drop (named.segments.length - scope.segments.length) == scope.segments
 
-/-- The next scope occurrence other than the root that is idle, which the closure completes through its owner: no queued
-work names it or a scope occurrence inside it (DC5). The busy scope occurrences are computed once per search
-(`State.busyScopes`). -/
+/-- The scope occurrence of least order position among `scopes` under `le`, the first of those tied (`mergeSort` is
+stable), in the order `State.removeOccurrence` leaves owned scope occurrences in. -/
+def leastPosition (le : Issue → Issue → Bool) (scopes : List ScopeOccurrence) : Option ScopeOccurrence :=
+  (scopes.mergeSort fun a b => le a.position b.position).head?
+
+/-- The idle scope occurrence other than the root of least order position (`Ctx.positionLe`, DC25), which the closure
+completes through its owner: no queued work names it or a scope occurrence inside it (DC5). The busy scope occurrences
+are computed once per search (`State.busyScopes`). -/
 def idleScope? (hooks : Hooks) (ctx : Ctx) (state : State) : Option ScopeOccurrence :=
   if !state.scopes.any (·.id != State.root) then none
   else
     let busy := state.busyScopes
-    state.scopes.find? fun scope => scope.id != State.root && !busy.contains scope.id && !activityLocal ctx state scope &&
-      !signalsHold hooks ctx state scope.id
+    leastPosition ctx.positionLe (state.scopes.filter fun scope => scope.id != State.root && !busy.contains scope.id &&
+      !activityLocal ctx state scope && !signalsHold hooks ctx state scope.id)
 
 /-- The token the closure moves next, and the rest: the oldest under `BranchSchedule.orderInvariant`, whose admitted
 models no order changes (`flow.concurrentWrite`); the newest under `declarationDepthFirst` (CIB-OP-0016), where `Flow`
@@ -372,7 +379,7 @@ def settle (hooks : Hooks) (ctx : Ctx) : Nat → Nat → RunLog → State → Ex
           settle hooks ctx fuel work (log.record unit)
             (← moveToken hooks body unit token { state with queuedTokens := state.queuedTokens.erase unit })
         | none =>
-          match idleScope? hooks ctx state with
+          match idleScope? hooks (unitCtx ctx log) state with
           | some scope =>
             match UnitKey.idleUnit? scope.id with
             | none => .error (.semanticFailure .invariant "idle-unit-unkeyed")
@@ -391,7 +398,7 @@ def settle (hooks : Hooks) (ctx : Ctx) : Nat → Nat → RunLog → State → Ex
               if state.idle State.root && state.queuedSignals.isEmpty then
                 let unit := UnitKey.ofRoot (.idle [])
                 return (← microStep hooks body unit (.idle State.root) none State.root
-                  (fun state => .ok (endInstance .completed none state)) state, log.record unit)
+                  (fun state => .ok (endInstance body.positionLe .completed none state)) state, log.record unit)
               else .ok (state, log)
 
 /-- Run an input's transition on a running instance, then settle. The input starts from an empty per-input record

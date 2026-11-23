@@ -102,8 +102,8 @@ def lateItem (kind : OpenKind) : OpenItem :=
 def workItem (kind : OpenKind) : OpenItem :=
   { id := ⟨workId, .wait, 0⟩, position := 8, kind, element := ⟨"Work"⟩, scope := sub }
 
-def rootScope : ScopeOccurrence := { id := root, element := none }
-def subScope : ScopeOccurrence := { id := sub, element := some ⟨"Sub"⟩ }
+def rootScope : ScopeOccurrence := { id := root, element := none, position := 0 }
+def subScope : ScopeOccurrence := { id := sub, element := some ⟨"Sub"⟩, position := 0 }
 
 def choosing (kind : OpenKind) : State :=
   { instanceId := "p", scopes := [rootScope, subScope], occurrences := [gatewayOccurrence, armMessage, armTimer, task]

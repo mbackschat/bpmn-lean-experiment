@@ -93,6 +93,21 @@ theorem IssuerFresh.issue {s t : State} {slot : ClaimSlot} (fresh : IssuerFresh 
       exact .inr issuing.symm
     · exact (fresh.ran _ _ _ found).imp (transitions ▸ ·) (·.trans issuing.symm)
 
+/-- Two issues in a row, an identity and then its order position (`State.enterScope`, DC25), keep the issuer fresh. -/
+theorem IssuerFresh.issue_issue {s t : State} {first second : ClaimSlot} (fresh : IssuerFresh s)
+    (issued : t.issued = (s.issued.insert (.fresh s.issuing s.issueNext) first).insert (.fresh s.issuing (s.issueNext + 1)) second)
+    (issuing : t.issuing = s.issuing) (issueNext : t.issueNext = s.issueNext + 1 + 1) (transitions : t.transitions = s.transitions) :
+    IssuerFresh t :=
+  (fresh.issue (t := { s with issued := s.issued.insert (.fresh s.issuing s.issueNext) first, issueNext := s.issueNext + 1 })
+    rfl rfl rfl rfl).issue issued issuing issueNext transitions
+
+/-- Two issues in a row grow the issue table. -/
+theorem TableGrows.insert_insert {s t : State} {first second : ClaimSlot} (fresh : IssuerFresh s)
+    (issued : t.issued = (s.issued.insert (.fresh s.issuing s.issueNext) first).insert (.fresh s.issuing (s.issueNext + 1)) second) :
+    TableGrows s t :=
+  (TableGrows.insert fresh.next (t := { s with issued := s.issued.insert (.fresh s.issuing s.issueNext) first }) rfl).trans
+    (.insert (fresh.next_succ first) issued)
+
 /-! ## Counters -/
 
 /-- `after`'s counters are `before`'s with the counter of `inst`, `element` and `role` moved to `n`, above every count
@@ -406,7 +421,8 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
           · rw [ordinals]; exact below ⟨found, old, same⟩ n committed
           · rw [erased, getD_erase_ne fun equal => unnamed (by rw [reserved, same, equal])]
             exact below ⟨found, old, same⟩ n committed,
-      fun entry member => grows.issued (formed.issued.scopes entry (begins.scopes ▸ member))⟩
+      fun entry member => grows.issued (formed.issued.scopes entry (begins.scopes ▸ member)),
+      formed.issued.positionsKept (fun _ member => begins.scopes ▸ member) (begins.table formed.issuer)⟩
   case distinct =>
     refine ⟨?_, begins.itemMap.1 ▸ formed.distinct.items, by simpa [scopeIds, begins.scopes] using formed.distinct.scopes,
       ?_⟩

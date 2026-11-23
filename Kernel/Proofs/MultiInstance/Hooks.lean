@@ -18,6 +18,8 @@ this module.
 
 namespace Kernel.Proofs.MultiInstance
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel
 open Kernel.Laws.MultiInstance (MultiInstanceOps Entering Begun SlotsCounted Completes recorded leftWith setRun_eq
   beginInstances_spec arriveMultiInstance_spec instanceCompleted_spec finish_spec LoopOf)
@@ -164,9 +166,9 @@ theorem arriveMultiInstance_keeps (ops : MultiInstanceOps program inv settled) {
 
 /-- An instance's completion leaves the position counter where it was. -/
 theorem leftWith_position (state : State) (scope : ScopeOccurrenceId) (next : MultiInstanceRun) :
-    (leftWith state scope next).nextCompletion = state.nextCompletion := by
+    (leftWith le state scope next).nextCompletion = state.nextCompletion := by
   rw [leftWith, setRun_eq]
-  show (state.leaveScope scope).nextCompletion = state.nextCompletion
+  show (state.leaveScope le scope).nextCompletion = state.nextCompletion
   rw [(Laws.State.leaveScope_eq state scope).1]
   exact (Laws.State.clearInside_shrinks state scope []).2
 
@@ -180,13 +182,13 @@ theorem counted_entering {ctx : Ctx} (ops : MultiInstanceOps ctx.program inv set
     {scope : ScopeOccurrenceId} {state after counted : State} {run : MultiInstanceRun} {loop : MultiInstance}
     {index : Nat} {output : Option Value} {results : List String} (holds : inv state)
     (stands : scope ∈ Laws.State.scopeIds state) (done : Completes ctx body scope state after run loop index output)
-    (left : Laws.MultiInstance.Counted state scope (recorded run index output results) counted) :
+    (left : Laws.MultiInstance.Counted le state scope (recorded run index output results) counted) :
     Entering inv settled (recorded run index output results) counted (recorded run index output results).instances [] ∧
       counted.nextCompletion = state.nextCompletion ∧ recorded run index output results ∈ counted.slots.multiInstances := by
-  obtain ⟨kept, carried, standing, placed⟩ := ops.record state run index scope output results holds
+  obtain ⟨kept, carried, standing, placed⟩ := ops.record le state run index scope output results holds
     (Laws.MultiInstance.found_mem done.found) done.slot stands done.fits
   have base : Entering inv settled (recorded run index output results)
-      (leftWith state scope (recorded run index output results)) (recorded run index output results).instances [] :=
+      (leftWith le state scope (recorded run index output results)) (recorded run index output results).instances [] :=
     ⟨kept, carried, standing, placed, fun _ none => (by cases none), .inl (setRun_mem _ _)⟩
   refine ⟨?_, ?_, ?_⟩ <;> rcases left with rfl | ⟨target, written, rule, rfl⟩
   · exact base
@@ -236,15 +238,15 @@ theorem nothingCounted {state after : State}
 
 /-- An instance's completion, its counters written or not, keeps only the bodies it had and the one it records. -/
 theorem counted_bodies {state counted : State} {scope : ScopeOccurrenceId} {next other : MultiInstanceRun}
-    (left : Laws.MultiInstance.Counted state scope next counted) (member : other ∈ counted.slots.multiInstances) :
+    (left : Laws.MultiInstance.Counted le state scope next counted) (member : other ∈ counted.slots.multiInstances) :
     other ∈ state.slots.multiInstances ∨ other = next := by
-  have kept : other ∈ (leftWith state scope next).slots.multiInstances := by
+  have kept : other ∈ (leftWith le state scope next).slots.multiInstances := by
     rcases left with rfl | ⟨_, _, _, rfl⟩
     · exact member
     · rwa [Laws.State.signal_eq] at member
-  rcases mem_setRun (state := state.leaveScope scope) kept with ⟨held, _⟩ | same
+  rcases mem_setRun (state := state.leaveScope le scope) kept with ⟨held, _⟩ | same
   · rw [(Laws.State.leaveScope_slots state scope).2.1] at held
-    obtain ⟨_, made⟩ := Laws.State.clearInside_eq state scope []
+    obtain ⟨_, made⟩ := Laws.State.clearInside_eq (le := le) state scope []
     rw [made] at held
     exact .inl (List.mem_filter.mp held).1
   · exact .inr same
@@ -365,7 +367,7 @@ theorem instanceCompleted_counted {ctx : Ctx} (ops : MultiInstanceOps ctx.progra
 
 /-- Recording an instance's slot queues nothing. -/
 theorem leftWith_signals (state : State) (scope : ScopeOccurrenceId) (next : MultiInstanceRun) :
-    Laws.State.allSignals (leftWith state scope next) = Laws.State.allSignals state := by
+    Laws.State.allSignals (leftWith le state scope next) = Laws.State.allSignals state := by
   rw [leftWith, setRun_eq]
   exact Laws.State.allSignals_leaveScope state scope
 
@@ -383,10 +385,10 @@ theorem recorded_fits {program : Program} {run : MultiInstanceRun} {loop : Multi
 /-- What an instance's completion queues before it completes or continues its body: writes of its body's counters,
 over the slot record `leftWith` sets (`Laws.MultiInstance.Counted`). -/
 theorem counted_signals {state counted : State} {scope : ScopeOccurrenceId} {next : MultiInstanceRun}
-    (left : Laws.MultiInstance.Counted state scope next counted) :
+    (left : Laws.MultiInstance.Counted le state scope next counted) :
     ∃ counts : List Signal, Laws.State.allSignals counted = Laws.State.allSignals state ++ counts ∧
       (∀ signal ∈ counts, ∃ target counts rule, signal = .write target counts rule) ∧
-      counted.slots = (leftWith state scope next).slots := by
+      counted.slots = (leftWith le state scope next).slots := by
   rcases left with rfl | ⟨target, counts, rule, rfl⟩
   · exact ⟨[], by rw [leftWith_signals, List.append_nil], fun _ none => (by cases none), rfl⟩
   · exact ⟨[.write target counts rule], by rw [Laws.State.signal_eq, Laws.State.allSignals_append, leftWith_signals],

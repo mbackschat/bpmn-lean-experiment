@@ -23,6 +23,8 @@ no body. Nothing executable imports it.
 
 namespace Kernel.Laws.Step
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel Kernel.Step
 open Kernel.Laws.State (WellFormed key Counted CountsGrow occurrenceIds)
 
@@ -319,14 +321,14 @@ theorem complete_ends {hooks : Hooks} {b : State} {src : Program → State → P
       begunId begunElement begunScope).mono (sourced ctx.program)
   cases finishes with
   | raised continuing =>
-    obtain ⟨removedFormed, removedStands⟩ := pipeline.removeOccurrence _ written _ writtenHolds.1 inWritten
+    obtain ⟨removedFormed, removedStands⟩ := pipeline.removeOccurrence _ ctx.positionLe written _ writtenHolds.1 inWritten
       (free written writtenFrame.items)
     obtain ⟨removing, gone, _⟩ := removeOccurrence_frame writtenHolds.1 inWritten
     have recorded := (writtenHolds.2.remove writtenHolds.1 inWritten removing gone).record .cancelled
     rw [identity] at removedFormed removedStands recorded
     obtain ⟨entry, inside, entryNamed⟩ := removedStands
-    obtain ⟨removedScopes, removedInstances⟩ := facts.removeOccurrence written id
-    obtain ⟨endedScopes, endedInstances⟩ := facts.recordEnd (written.removeOccurrence id) (written.keyOf
+    obtain ⟨removedScopes, removedInstances⟩ := facts.removeOccurrence written ctx.positionLe id
+    obtain ⟨endedScopes, endedInstances⟩ := facts.recordEnd (written.removeOccurrence ctx.positionLe id) (written.keyOf
       (state.startReserved occurrence sourceType).2) .cancelled
     rw [Laws.State.keyOf_eq] at continuing endedScopes endedInstances
     exact continueAfter_keeps (contract none) ⟨pipeline.recordEnd _ _ _ _ removedFormed, recorded⟩
@@ -337,11 +339,11 @@ theorem complete_ends {hooks : Hooks} {b : State} {src : Program → State → P
     obtain ⟨retainedHolds, retainedFrame⟩ := (contract none).completed _ _ _ _ writtenHolds inWritten retaining
     have inRetained := retainedFrame.begun _ inWritten begunFlag
     have unhung := free _ fun item member => writtenFrame.items item (retainedFrame.items item member)
-    obtain ⟨removedFormed, removedStands⟩ := pipeline.removeOccurrence _ _ _ retainedHolds.1 inRetained unhung
+    obtain ⟨removedFormed, removedStands⟩ := pipeline.removeOccurrence _ ctx.positionLe _ _ retainedHolds.1 inRetained unhung
     obtain ⟨removing, gone, _⟩ := removeOccurrence_frame retainedHolds.1 inRetained
     have exempt := retainedHolds.2.remove retainedHolds.1 inRetained removing gone
     rw [identity] at removedFormed removedStands exempt
-    obtain ⟨removedScopes, removedInstances⟩ := facts.removeOccurrence retained id
+    obtain ⟨removedScopes, removedInstances⟩ := facts.removeOccurrence retained ctx.positionLe id
     obtain ⟨continuedFormed, continuedKept⟩ := continueAfter_keeps (contract _) ⟨removedFormed, exempt⟩ removedStands
       (toWritten _ (fun entry member => retainedFrame.instances _ (removedInstances entry member))
         (fun entry member => retainedFrame.scopes ▸ removedScopes entry member)) continuing

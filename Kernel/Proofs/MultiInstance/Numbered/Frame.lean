@@ -12,6 +12,8 @@ What each state operation the hooks and `Step`'s phases apply keeps of `Numbered
 
 namespace Kernel.Proofs.MultiInstance
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel
 open Kernel.Laws.State (WellFormed scopeIds)
 open Kernel.Laws.MultiInstance (LoopOf IdsUnique NumberedInOrder InstancesPlaced BeginsQueued BeginsOrdered
@@ -43,10 +45,10 @@ theorem slot_strictly {program : Program} {s : State} (formed : WellFormed progr
 
 /-- Clearing a scope occurrence that stands keeps `Numbered`: a body that goes lies within it, so its instances' scope
 occurrences go too. -/
-theorem Numbered.clearInside {program other : Program} {s : State} (formed : WellFormed other s) (owns : SlotsOwned s)
+theorem Numbered.clearInside (le : Issue → Issue → Bool) {program other : Program} {s : State} (formed : WellFormed other s) (owns : SlotsOwned s)
     {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s) (keep : List OccurrenceId) (held : Numbered program s) :
-    Numbered program (s.clearInside scope keep) := by
-  have cleared := Laws.State.clearInside_cleared formed present keep
+    Numbered program (s.clearInside le scope keep) := by
+  have cleared := Laws.State.clearInside_cleared (le := le) formed present keep
   refine held.shrink ⟨by rw [cleared.bodies]; exact List.filter_sublist,
     fun o inside => ((cleared.occurrences o).mp inside).1, fun e inside => .inl ((cleared.scopes e).mp inside).1,
     fun run member outside inner active stands => ?_, .of_kept cleared.queues,
@@ -55,17 +57,17 @@ theorem Numbered.clearInside {program other : Program} {s : State} (formed : Wel
   obtain ⟨_, notWithin⟩ := (cleared.scopes e).mp eIn
   have within : Laws.State.Within s run.scope scope := by
     rw [cleared.bodies] at outside
-    have contained : (s.subtree scope).contains run.scope = true := Classical.byContradiction fun other =>
+    have contained : (s.inside scope).contains run.scope = true := Classical.byContradiction fun other =>
       outside (List.mem_filter.mpr ⟨member, by simpa using other⟩)
-    exact (Laws.State.subtree_iff formed present _).mp (by simpa using contained)
+    exact (Laws.State.inside_iff formed present _).mp (by simpa using contained)
   exact notWithin (eNamed ▸ slot_strictly formed owns member within active)
 
 /-- Leaving a scope occurrence that stands keeps `Numbered`, as clearing it does. -/
-theorem Numbered.leaveScope {program other : Program} {s : State} (formed : WellFormed other s) (owns : SlotsOwned s)
+theorem Numbered.leaveScope (le : Issue → Issue → Bool) {program other : Program} {s : State} (formed : WellFormed other s) (owns : SlotsOwned s)
     {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s) (held : Numbered program s) :
-    Numbered program (s.leaveScope scope) := by
-  have left := Laws.State.leaveScope_left formed present
-  have cleared := Laws.State.clearInside_cleared formed present []
+    Numbered program (s.leaveScope le scope) := by
+  have left := Laws.State.leaveScope_left (le := le) formed present
+  have cleared := Laws.State.clearInside_cleared (le := le) formed present []
   obtain ⟨_, bodies, _⟩ := Laws.State.leaveScope_slots s scope
   refine held.shrink ⟨by rw [bodies, cleared.bodies]; exact List.filter_sublist,
     fun o inside => ((left.occurrences o).mp inside).1, fun e inside => .inl ((left.scopes e).mp inside).1,
@@ -75,9 +77,9 @@ theorem Numbered.leaveScope {program other : Program} {s : State} (formed : Well
   obtain ⟨_, notWithin⟩ := (left.scopes e).mp eIn
   have within : Laws.State.Within s run.scope scope := by
     rw [bodies, cleared.bodies] at outside
-    have contained : (s.subtree scope).contains run.scope = true := Classical.byContradiction fun other =>
+    have contained : (s.inside scope).contains run.scope = true := Classical.byContradiction fun other =>
       outside (List.mem_filter.mpr ⟨member, by simpa using other⟩)
-    exact (Laws.State.subtree_iff formed present _).mp (by simpa using contained)
+    exact (Laws.State.inside_iff formed present _).mp (by simpa using contained)
   exact notWithin (eNamed ▸ (slot_strictly formed owns member within active).1)
 
 /-- Disarming a host keeps `Numbered`: it drops only reservations. -/

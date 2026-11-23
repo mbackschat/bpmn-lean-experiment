@@ -79,7 +79,7 @@ structure RaiseRegistered (hooks : Hooks) (propagation : Feature.Propagation.Pro
 /-- The state operations' facts a raise's search reads. -/
 theorem raiseFacts : Laws.Propagation.RaiseFacts where
   signal state signal := by rw [Laws.State.signal_eq]; exact Laws.State.allSignals_append _ _
-  cleared state scope := Laws.State.allSignals_clearInside state scope _
+  cleared state le scope := Laws.State.allSignals_clearInside state scope _
   disarmed state host := by rw [Laws.State.disarm_eq]; rfl
   cancel := Laws.State.isCancel_cancel
 

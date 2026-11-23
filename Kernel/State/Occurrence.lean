@@ -51,6 +51,10 @@ to, `none` for the process root, a Multi-Instance instance and a handler's conte
 structure ScopeOccurrence where
   id : ScopeOccurrenceId
   element : Option ElementId
+  /-- The order position it took when it was entered (`State.enterScope`, DC25), pending under the entering unit until
+  the commit numbers it; the root's is committed `0`. The readers that order scope occurrences read it: the idle check
+  (`Step.idleScope?`), the cancellation order (`State.subtree`) and an owner's removal (`State.removeOccurrence`). -/
+  position : Issue
   occurrence : Option OccurrenceId := none
   calledInstance : Option String := none
   deriving Repr

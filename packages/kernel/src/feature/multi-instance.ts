@@ -72,7 +72,7 @@ import {
   semanticFailure, type OccurrenceId,
 } from "../state.js";
 import {
-  EvaluationTag, collectionItems, evalContext, hold, leaveScope, multiInstanceRunItems, ownVariables, type Ctx,
+  EvaluationTag, collectionItems, ctxPositionLe, evalContext, hold, leaveScope, multiInstanceRunItems, ownVariables, type Ctx,
 } from "../hooks.js";
 import { opening, sequential } from "./multi-instance/opening.js";
 
@@ -707,7 +707,7 @@ export function instanceCompleted(ctx: Ctx, body: OccurrenceId, occurrence: Occu
   // `SequentialMultiInstanceActivityBehavior:48-51`), and the body's compensation snapshot copies them as they then
   // stand (`MultiInstanceActivityBehavior.java:172-175`), so every path writes them (#106); without counter locals
   // there is no write.
-  const left = setRun(leaveScope(state, occurrence.scope), run);
+  const left = setRun(leaveScope(state, ctxPositionLe(ctx, state), occurrence.scope), run);
   const counts = counterLocals(ctx, bodyCounts(loop, run.instances));
   const counted = counts.length === 0 ? left : signal(left, { tag: SignalTag.Write, scope: run.scope, writes: counts, rule: WriteRule.Own });
   if (stop.value || exhausted) return committed(finish(ctx, loop, run, counted));

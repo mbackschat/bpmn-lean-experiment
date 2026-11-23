@@ -17,6 +17,8 @@ module.
 
 namespace Kernel.Laws.State
 
+variable {le : Issue → Issue → Bool}
+
 variable {program : Program}
 
 open Kernel
@@ -221,12 +223,12 @@ theorem clearInside_inner {s : State} (formed : WellFormed program s) {occurrenc
     (member : occurrence ∈ s.occurrences) (begun : occurrence.begun = true) {inner : Option OccurrenceId}
     (ready : ∀ id ∈ inner.toList, Beginnable s occurrence.scope id ∧ Unclaimed s id ∧
       ∀ found ∈ s.occurrences, found.id = id → found.scope = occurrence.scope) :
-    WellFormed program (s.clearInside occurrence.scope (occurrence.id :: inner.toList)) ∧
-      occurrence ∈ (s.clearInside occurrence.scope (occurrence.id :: inner.toList)).occurrences ∧
-      Claimable (s.clearInside occurrence.scope (occurrence.id :: inner.toList)) occurrence.scope inner := by
+    WellFormed program (s.clearInside le occurrence.scope (occurrence.id :: inner.toList)) ∧
+      occurrence ∈ (s.clearInside le occurrence.scope (occurrence.id :: inner.toList)).occurrences ∧
+      Claimable (s.clearInside le occurrence.scope (occurrence.id :: inner.toList)) occurrence.scope inner := by
   have present := formed.owned.occurrenceScopes occurrence member
-  have cleared := clearInside_cleared formed present (occurrence.id :: inner.toList)
-  generalize s.clearInside occurrence.scope (occurrence.id :: inner.toList) = after at cleared ⊢
+  have cleared := clearInside_cleared (le := le) formed present (occurrence.id :: inner.toList)
+  generalize s.clearInside le occurrence.scope (occurrence.id :: inner.toList) = after at cleared ⊢
   have notStrict : ¬ StrictlyWithin s occurrence.scope occurrence.scope := fun strict => strict.2 rfl
   have kept : ∀ found ∈ s.occurrences, found.id ∈ occurrence.id :: inner.toList →
       ¬ StrictlyWithin s found.scope occurrence.scope := by
@@ -286,10 +288,12 @@ theorem enterScope_inner {s : State} (formed : WellFormed program s) (element : 
   rw [enterScope_eq] at formedAfter issued ⊢
   dsimp only at formedAfter issued ⊢
   generalize keyIs : occurrence.scope.child element (.fresh s.issuing s.issueNext) = key at formedAfter issued ⊢
-  generalize entryIs : ScopeOccurrence.mk key (some element) (some occurrence.id) none = entry at formedAfter issued ⊢
+  generalize entryIs : ScopeOccurrence.mk key (some element) (.fresh s.issuing (s.issueNext + 1)) (some occurrence.id) none
+    = entry at formedAfter issued ⊢
   generalize afterIs : ({ s with
-      issueNext := s.issueNext + 1
-      issued := s.issued.insert (.fresh s.issuing s.issueNext) (.scope { parent := occurrence.scope, element })
+      issueNext := s.issueNext + 1 + 1
+      issued := (s.issued.insert (.fresh s.issuing s.issueNext) (.scope { parent := occurrence.scope, element })).insert
+        (.fresh s.issuing (s.issueNext + 1)) .position
       scopes := s.scopes ++ [entry]
       variables := s.variables ++ [ScopeVariables.mk key (keyed locals)] } : State) = t at formedAfter issued ⊢
   have scopes : t.scopes = s.scopes ++ [entry] := by rw [← afterIs]

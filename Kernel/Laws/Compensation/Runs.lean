@@ -17,6 +17,8 @@ a handler's begin keep (`Advanced`, `Ended`, `Begun`). Nothing executable import
 
 namespace Kernel.Laws.Compensation
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel
 
 /-! ## What a run needs
@@ -70,7 +72,8 @@ structure RunsOps (program : Program) (inv : State → Prop) (settled : State �
   entered : ∀ (state : State) element parent locals, (state.enterScope element parent locals none).2.parent? = some parent ∧
     (state.enterScope element parent locals none).1.occurrenceOrdinals = state.occurrenceOrdinals ∧
     (state.enterScope element parent locals none).1.scopes = state.scopes ++
-      [{ id := (state.enterScope element parent locals none).2, element := some element, occurrence := none }] ∧
+      [{ id := (state.enterScope element parent locals none).2, element := some element,
+         position := .fresh state.issuing (state.issueNext + 1), occurrence := none }] ∧
     (state.enterScope element parent locals none).1.slots = state.slots
   /-- A context entered below a scope occurrence that stands takes a key never issued, which every history then holds,
   and the issue table keeps every entry (DC12). -/
@@ -101,13 +104,13 @@ structure RunsOps (program : Program) (inv : State → Prop) (settled : State �
   /-- A context left, which keeps its parent standing and adds no Multi-Instance body; it is a running handler's
   context, so an invariant that keeps every other scope occurrence a hook does not own (a Multi-Instance instance's) is
   kept by leaving it. -/
-  leave : ∀ state entry parent, inv state → entry ∈ state.scopes → entry.parent = some parent →
+  leave : ∀ le state entry parent, inv state → entry ∈ state.scopes → entry.parent = some parent →
     (∃ run ∈ state.slots.compensation.runs, entry.id ∈ run.running.map (·.1)) →
-    inv (state.leaveScope entry.id) ∧ parent ∈ (state.leaveScope entry.id).scopes.map (·.id) ∧
-      Laws.State.OccurrenceGrows state (state.leaveScope entry.id) ∧ Laws.State.ScopeGrows state (state.leaveScope entry.id) ∧
-      (∀ kept ∈ (state.leaveScope entry.id).scopes, kept ∈ state.scopes) ∧
-      (∀ body ∈ (state.leaveScope entry.id).slots.multiInstances, body ∈ state.slots.multiInstances) ∧
-      ∀ id, settled state id → settled (state.leaveScope entry.id) id
+    inv (state.leaveScope le entry.id) ∧ parent ∈ (state.leaveScope le entry.id).scopes.map (·.id) ∧
+      Laws.State.OccurrenceGrows state (state.leaveScope le entry.id) ∧ Laws.State.ScopeGrows state (state.leaveScope le entry.id) ∧
+      (∀ kept ∈ (state.leaveScope le entry.id).scopes, kept ∈ state.scopes) ∧
+      (∀ body ∈ (state.leaveScope le entry.id).slots.multiInstances, body ∈ state.slots.multiInstances) ∧
+      ∀ id, settled state id → settled (state.leaveScope le entry.id) id
 
 /-- `after` follows `before` while runs begin, advance and end: every occurrence key issued stays issued, each scope occurrence
 of `after` stood in `before` or was issued since, what has settled stays settled, no Multi-Instance body is added, and
@@ -357,7 +360,8 @@ theorem entered_children {inv : State → Prop} {settled : State → OccurrenceI
   intro child inside
   have linked : InstanceLinked program (state.enterScope element run.scope locals none).1
       (state.enterScope element run.scope locals none).2 run.scope :=
-    .parent { id := (state.enterScope element run.scope locals none).2, element := some element, occurrence := none }
+    .parent { id := (state.enterScope element run.scope locals none).2, element := some element,
+              position := .fresh state.issuing (state.issueNext + 1), occurrence := none }
       run.scope (by rw [scopesEq]; exact List.mem_append_right _ (List.mem_singleton_self _)) link (Or.inl rfl)
   exact .inl (RecordHeld.narrow (.pending (by rw [slotsEq]; exact member) pending) (kept child inside) linked.symm)
 
@@ -425,7 +429,8 @@ theorem handler_keeps {inv : State → Prop} {settled : State → OccurrenceId �
     (.begin { element := handler, scope := entered.2, continuation := .compensation scope })
   have scopesAfter : (({ entered.1 with slots := { entered.1.slots with compensation } } : State).signal
       (.begin { element := handler, scope := entered.2, continuation := .compensation scope })).scopes = state.scopes ++
-      [{ id := entered.2, element := some handler, occurrence := none }] :=
+      [{ id := entered.2, element := some handler, position := .fresh state.issuing (state.issueNext + 1),
+         occurrence := none }] :=
     shape.1.trans scopesEq
   have signalGrows := ops.signalGrows { entered.1 with slots := { entered.1.slots with compensation } }
     (.begin { element := handler, scope := entered.2, continuation := .compensation scope })

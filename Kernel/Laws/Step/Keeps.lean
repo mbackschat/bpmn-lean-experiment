@@ -20,6 +20,8 @@ public section
 
 namespace Kernel.Laws.Step
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel Kernel.Step
 
 /-! ## The closure from its bodies -/
@@ -112,12 +114,12 @@ theorem complete_keeps (contract : HookContract hooks inv) (phases : BodyPhases 
       begunId begunElement begunScope
   cases finishes with
   | raised continuing =>
-    obtain ⟨removedHolds, removedStands⟩ := pipeline.removeOccurrence _ written _ writtenHolds inWritten
+    obtain ⟨removedHolds, removedStands⟩ := pipeline.removeOccurrence _ ctx.positionLe written _ writtenHolds inWritten
       (free written writtenFrame.items)
     rw [identity] at removedHolds removedStands
     obtain ⟨entry, inside, named⟩ := removedStands
-    obtain ⟨removedScopes, removedInstances⟩ := facts.removeOccurrence written id
-    obtain ⟨endedScopes, endedInstances⟩ := facts.recordEnd (written.removeOccurrence id) (written.keyOf
+    obtain ⟨removedScopes, removedInstances⟩ := facts.removeOccurrence written ctx.positionLe id
+    obtain ⟨endedScopes, endedInstances⟩ := facts.recordEnd (written.removeOccurrence ctx.positionLe id) (written.keyOf
       (state.startReserved occurrence sourceType).2) .cancelled
     exact continueAfter_keeps contract (pipeline.recordEnd _ _ _ _ removedHolds)
       ⟨entry, endedScopes.symm ▸ inside, named⟩
@@ -125,11 +127,11 @@ theorem complete_keeps (contract : HookContract hooks inv) (phases : BodyPhases 
         (fun entry member => removedScopes entry (endedScopes ▸ member))) continuing
   | left _ retaining continuing =>
     obtain ⟨retainedHolds, retainedFrame⟩ := contract.completed _ _ _ _ writtenHolds inWritten retaining
-    obtain ⟨removedHolds, removedStands⟩ := pipeline.removeOccurrence _ _ _ retainedHolds
+    obtain ⟨removedHolds, removedStands⟩ := pipeline.removeOccurrence _ ctx.positionLe _ _ retainedHolds
       (retainedFrame.begun _ inWritten begunFlag)
       (free _ fun item member => writtenFrame.items item (retainedFrame.items item member))
     rw [identity] at removedHolds removedStands
-    obtain ⟨removedScopes, removedInstances⟩ := facts.removeOccurrence _ id
+    obtain ⟨removedScopes, removedInstances⟩ := facts.removeOccurrence _ ctx.positionLe id
     exact pipeline.recordEnd _ _ _ _ (continueAfter_keeps contract removedHolds removedStands
       (toWritten _ (fun entry member => retainedFrame.instances _ (removedInstances entry member))
         (fun entry member => retainedFrame.scopes ▸ removedScopes entry member)) continuing)
@@ -266,12 +268,12 @@ theorem signal_keeps (contract : HookContract hooks inv) (phases : BodyPhases in
     exact ⟨queue, holds, fun entry kept => instances ▸ kept, fun entry kept => scopes ▸ kept,
       .inr ⟨_, _, _, by rw [element, scope]; exact head, fun selected same flow inside =>
         .inr ⟨selected, same, inside⟩⟩⟩
-  | onCancel => exact phases.cancel _ _ _ popped
+  | onCancel => exact phases.cancel _ _ _ _ popped
   | onFire fired =>
     rcases fired with ⟨item, open_, ran⟩ | same
     · exact fireItem_keeps contract popped open_ ran
     · exact same ▸ popped
-  | onEndInstance => exact phases.endInstance _ _ _ _ popped (phases.endRecorded _ queue _ _ holds head)
+  | onEndInstance => exact phases.endInstance _ _ _ _ _ popped (phases.endRecorded _ queue _ _ holds head)
   | onCompensate stands ran =>
     exact contract.compensate _ _ _ _ _ _ _ _ popped stands (fun _ same => phases.resumable _ _ _ _ _ _ _ _ holds
       (same ▸ heads)) (fun _ _ _ same => ⟨queue, holds, .inr (.inl ⟨_, _, _, _, _, _, same ▸ head⟩)⟩)
@@ -575,7 +577,7 @@ theorem closureStep_concludes {side : Program → State → Prop} (contract : Ho
     obtain ⟨mid, kept, concluded⟩ := microStep_concludes (ctx := unitCtx ctx log) phases pipeline sidePhases sidePipeline (fun next ended => by
       simp only [Except.ok.injEq] at ended
       subst ended
-      exact ⟨phases.endInstance _ _ _ _ holds (by simp), sidePhases.endInstance _ _ _ _ sideHolds (by simp)⟩) ran
+      exact ⟨phases.endInstance _ _ _ _ _ holds (by simp), sidePhases.endInstance _ _ _ _ _ sideHolds (by simp)⟩) ran
     exact ⟨mid, _, _, _, kept, concluded⟩
 
 section Walk

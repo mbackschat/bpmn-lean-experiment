@@ -17,18 +17,20 @@ namespace Kernel.Laws.State
 
 open Kernel
 
-/-- A Call enters its called root as the running unit's next issue, below its own scope occurrence, recording the
-instance it names and the definition it bound; the other scope occurrences, issued before, stay as they were. -/
+/-- A Call enters its called root as the running unit's next issue, below its own scope occurrence, with the following
+issue as its order position, recording the instance it names and the definition it bound; the other scope occurrences,
+issued before, stay as they were. -/
 theorem enterCalled_eq (state : State) (program : Program) (call : Occurrence) (variables : List (String × Value))
     (definition : DefinitionRef)
     (fresh : ∀ entry ∈ state.scopes, entry.id ≠ call.scope.child call.element (.fresh state.issuing state.issueNext)) :
     state.enterCalled program call variables definition =
       ({ state with
-          issueNext := state.issueNext + 1
-          issued := state.issued.insert (.fresh state.issuing state.issueNext)
-            (.scope { parent := call.scope, element := call.element })
+          issueNext := state.issueNext + 1 + 1
+          issued := (state.issued.insert (.fresh state.issuing state.issueNext)
+            (.scope { parent := call.scope, element := call.element })).insert (.fresh state.issuing (state.issueNext + 1)) .position
           scopes := state.scopes ++ [{ id := call.scope.child call.element (.fresh state.issuing state.issueNext)
-                                       element := some call.element, occurrence := some call.id
+                                       element := some call.element, position := .fresh state.issuing (state.issueNext + 1)
+                                       occurrence := some call.id
                                        calledInstance := some (State.calledInstanceId (state.instanceOf call.scope)
                                          (program.publicId call.element) call.activation) }]
           variables := state.variables ++

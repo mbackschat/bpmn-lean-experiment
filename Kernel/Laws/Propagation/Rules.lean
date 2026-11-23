@@ -32,6 +32,8 @@ so that the rules, the witnesses and that vocabulary stay outside `Kernel.Featur
 
 namespace Kernel.Laws.Propagation
 
+variable {le : Issue → Issue → Bool}
+
 variable {program : Program}
 
 open Kernel
@@ -168,9 +170,9 @@ structure PropagationOps (program : Program) (inv : State → Prop) : Prop where
                 activation := occurrence.activation } →
     inv (state.signal (.compensate scope activity trigger none (some (.complete occurrence.id leave))))
   /-- A Terminate End's clearing of its scope occurrence, keeping its own begun occurrence. -/
-  terminate : ∀ state occurrence, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
-    inv (state.clearInside occurrence.scope [occurrence.id]) ∧
-      occurrence ∈ (state.clearInside occurrence.scope [occurrence.id]).occurrences
+  terminate : ∀ le state occurrence, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
+    inv (state.clearInside le occurrence.scope [occurrence.id]) ∧
+      occurrence ∈ (state.clearInside le occurrence.scope [occurrence.id]).occurrences
   /-- An item for a begun occurrence of an element the program declares no start Event, numbered under its element's
   counter. -/
   openItem : ∀ state kind occurrence, inv state → occurrence ∈ state.occurrences → occurrence.begun = true →
@@ -202,11 +204,11 @@ structure PropagationOps (program : Program) (inv : State → Prop) : Prop where
   /-- A caught Cancel's rollback: the scope occurrence, which stands, cleared, then its compensation queued, which takes
   the boundary, anchored where it occurs before the clearing and leaving by flows it lists, once it ends, and the
   trigger of the Cancel raise it was taken off. -/
-  rollBack : ∀ state scope trigger leave element parent flows, inv state → (∃ entry ∈ state.scopes, entry.id = scope) →
+  rollBack : ∀ le state scope trigger leave element parent flows, inv state → (∃ entry ∈ state.scopes, entry.id = scope) →
     Laws.IL.BoundaryOf program element → RollsBack inv trigger state →
     Laws.Flow.Anchored inv program state element parent →
     (∀ selected, flows = .flows selected → ∀ flow ∈ selected, Laws.Flow.Lists program element flow) →
-    inv ((state.clearInside scope).signal (.compensate scope none trigger leave (some (.occur element parent flows))))
+    inv ((state.clearInside le scope).signal (.compensate scope none trigger leave (some (.occur element parent flows))))
 
 /-- Firing each of a Signal throw's receivers keeps `inv` and the occurrences. -/
 theorem fireAll_keeps {inv : State → Prop} (ops : PropagationOps program inv) (fired : State → OpenItem → Fired) :
@@ -230,7 +232,7 @@ appended, the clearing and the disarming a caught Cancel applies queue nothing, 
 (`Raised.isCancel`). -/
 structure RaiseFacts : Prop where
   signal : ∀ (state : State) signal, Laws.State.allSignals (state.signal signal) = Laws.State.allSignals state ++ [signal]
-  cleared : ∀ (state : State) scope, Laws.State.allSignals (state.clearInside scope) = Laws.State.allSignals state
+  cleared : ∀ (state : State) le scope, Laws.State.allSignals (state.clearInside le scope) = Laws.State.allSignals state
   disarmed : ∀ (state : State) host, Laws.State.allSignals (state.disarm host) = Laws.State.allSignals state
   cancel : Raised.cancel.isCancel = true
 
@@ -263,7 +265,7 @@ def CancelTaken (ctx : Ctx) (origin : Origin) (passed after : State) : Prop :=
   ∃ occurrence ∈ passed.scopes, ∃ parent boundary, occurrence.parent = some parent ∧ CancelCatch ctx occurrence boundary ∧
     ∃ rolledBack terminating, (∃ entry ∈ passed.scopes, entry.id = rolledBack) ∧
       (terminating = passed ∨ ∃ activity, occurrence.occurrence = some activity ∧ terminating = passed.disarm activity) ∧
-      after = (terminating.clearInside rolledBack).signal (.compensate rolledBack none
+      after = (terminating.clearInside ctx.positionLe rolledBack).signal (.compensate rolledBack none
         { processInstanceId := passed.instanceOf origin.scope, element := origin.element, activation := origin.activation }
         occurrence.occurrence (some (.occur boundary.id parent (.flows boundary.outgoing))))
 

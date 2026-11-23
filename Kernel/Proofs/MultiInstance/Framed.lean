@@ -31,6 +31,8 @@ directly, so it lies in their rebuild cones alone (guard 15). Nothing executable
 
 namespace Kernel.Proofs.MultiInstance
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel
 open Kernel.Laws.State (WellFormed Within StrictlyWithin scopeIds)
 open Kernel.Laws.MultiInstance (LoopOf Owned BodyOwns InstancesUnowned InstancesUnheld RunsKeyed NumberedInOrder
@@ -209,7 +211,7 @@ theorem cleared_bodies {program : Program} {s t : State} (formed : WellFormed pr
   refine ⟨List.filter_sublist, fun run member within => ?_⟩
   have outside := (List.mem_filter.mp member).2
   simp only [Bool.not_eq_true'] at outside
-  have inside := (Laws.State.subtree_iff formed present _).mpr within
+  have inside := (Laws.State.inside_iff formed present _).mpr within
   rw [List.contains_iff_mem.mpr inside] at outside
   cases outside
 
@@ -218,18 +220,18 @@ theorem cleared_bodies {program : Program} {s t : State} (formed : WellFormed pr
 instances' scope occurrences, which lies directly below its body's. -/
 theorem leaveScope_framed {program other : Program} {s : State} {scope : ScopeOccurrenceId}
     (formed : WellFormed program s) (present : scope ∈ scopeIds s) (framed : RunsFramed other s)
-    {run : MultiInstanceRun} (member : run ∈ (s.leaveScope scope).slots.multiInstances)
-    (absent : Iteration.active scope ∉ run.instances) : RunFramed other (s.leaveScope scope) run := by
-  have left := Laws.State.leaveScope_left formed present
+    {run : MultiInstanceRun} (member : run ∈ (s.leaveScope le scope).slots.multiInstances)
+    (absent : Iteration.active scope ∉ run.instances) : RunFramed other (s.leaveScope le scope) run := by
+  have left := Laws.State.leaveScope_left (le := le) formed present
   obtain ⟨_, bodiesEq, _⟩ := Laws.State.leaveScope_slots s scope
   obtain ⟨fewer, outside⟩ := cleared_bodies formed present (Laws.State.clearInside_cleared formed present [])
   rw [← bodiesEq] at fewer outside
   have each := framed.framed run (fewer.subset member)
   have away := outside run member
-  have entryOf : ∀ entry ∈ (s.leaveScope scope).scopes, entry ∈ s.scopes := fun _ inside =>
+  have entryOf : ∀ entry ∈ (s.leaveScope le scope).scopes, entry ∈ s.scopes := fun _ inside =>
     left.scopesSublist.subset inside
   have kept : ∀ entry ∈ s.scopes, (entry.id = run.scope ∨ Iteration.active entry.id ∈ run.instances) →
-      entry ∈ (s.leaveScope scope).scopes := fun entry inside which => by
+      entry ∈ (s.leaveScope le scope).scopes := fun entry inside which => by
     refine (left.scopes entry).mpr ⟨inside, fun within => ?_⟩
     rcases which with named | active
     · exact away (named ▸ within)
@@ -249,7 +251,7 @@ theorem leaveScope_framed {program other : Program} {s : State} {scope : ScopeOc
 running body has an active instance there, whose scope occurrence is owned by no occurrence and holds no handler. -/
 theorem leaveScope_runsFramed {program other : Program} {s : State} {scope : ScopeOccurrenceId}
     (formed : WellFormed program s) (present : scope ∈ scopeIds s) (leaves : LeavesOwned s scope)
-    (framed : RunsFramed other s) : RunsFramed other (s.leaveScope scope) := by
+    (framed : RunsFramed other s) : RunsFramed other (s.leaveScope le scope) := by
   obtain ⟨_, bodiesEq, _⟩ := Laws.State.leaveScope_slots s scope
   obtain ⟨fewer, _⟩ := cleared_bodies formed present (Laws.State.clearInside_cleared formed present [])
   rw [← bodiesEq] at fewer
@@ -265,8 +267,8 @@ theorem leaveScope_runsFramed {program other : Program} {s : State} {scope : Sco
 /-- Clearing a scope occurrence that stands carries the invariant. -/
 theorem clearInside_carries {program other : Program} {s : State} {scope : ScopeOccurrenceId}
     (formed : WellFormed program s) (present : scope ∈ scopeIds s) (keep : List OccurrenceId) (framed : RunsFramed other s) :
-    Carries s (s.clearInside scope keep) := by
-  have cleared := Laws.State.clearInside_cleared formed present keep
+    Carries s (s.clearInside le scope keep) := by
+  have cleared := Laws.State.clearInside_cleared (le := le) formed present keep
   obtain ⟨fewer, outside⟩ := cleared_bodies formed present cleared
   refine ⟨fewer, fun run member o inside named => ⟨o, (cleared.occurrences o).mpr ⟨inside,
     .inl ((outside_body formed (framed.framed run (fewer.subset member)) (outside run member)).1 o inside named)⟩, rfl,
@@ -325,8 +327,8 @@ theorem runsFramed_frameAlongside (program : Program) : StoresAlongside program 
     · rw [List.mem_singleton.mp new]
       exact .inr (counter_fresh formed)
   reserve s element scope _ _ _ _ kept := reserve_runsFramed s element scope kept
-  leaveScope _ _ formed present leaves kept := leaveScope_runsFramed formed present leaves kept
-  clearInside _ _ keep formed present _ kept := kept.carry (clearInside_carries formed present keep kept)
+  leaveScope le _ _ formed present leaves kept := leaveScope_runsFramed formed present leaves kept
+  clearInside le _ _ keep formed present _ kept := kept.carry (clearInside_carries formed present keep kept)
   disarm s host formed kept := by
     rw [Laws.State.disarm_eq]
     exact kept.carry (.same rfl rfl rfl (fun _ present begun => List.mem_filter.mpr ⟨present, by simp [begun]⟩)
@@ -425,7 +427,7 @@ theorem runsFramed_stepAlongside (program : Program) : StepAlongside program (Ru
         rw [begins.slots] at running
         exact (admitted.2.1 o.id (by simp [Laws.State.names, reserved])).2.2.2 (.inr (.inl ⟨run, running, named.symm⟩))
       exact ⟨o, List.mem_append_left _ (List.mem_filter.mpr ⟨present, by simp [same, unnamed]⟩), rfl, rfl, rfl⟩
-  cancel s id formed kept := (runsFramed_frameAlongside program).cancelOccurrence
+  cancel le s id formed kept := (runsFramed_frameAlongside program).cancelOccurrence le
     (fun _ _ unowned framed => withoutRecord_carries unowned framed) (fun _ _ _ kept => kept.carry (.equal rfl rfl rfl rfl))
     (id := id) formed kept
 
@@ -451,9 +453,9 @@ theorem runsFramed_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellForme
       · exact ⟨o, List.mem_map.mpr ⟨o, present, by simp [same]⟩, rfl, rfl, rfl⟩
     · rw [Laws.State.startReserved_begun s sourceType begun]
       exact holds.2
-  removeOccurrence program _ occurrence holds member free :=
-    have removed := pipeline.removeOccurrence _ _ occurrence holds.1 member free
-    ⟨⟨removed.1, (runsFramed_frameAlongside program).removeOccurrence
+  removeOccurrence program le _ occurrence holds member free :=
+    have removed := pipeline.removeOccurrence _ le _ occurrence holds.1 member free
+    ⟨⟨removed.1, (runsFramed_frameAlongside program).removeOccurrence le
       (fun _ _ unowned framed => withoutRecord_carries unowned framed) holds.1 holds.2⟩, removed.2⟩
   recordEnd _ _ key terminal holds := ⟨pipeline.recordEnd _ _ key terminal holds.1, by
     rw [Laws.State.recordEnd_eq]

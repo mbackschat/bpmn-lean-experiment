@@ -91,6 +91,10 @@ test("a child issued under a scope occurrence the closure then leaves takes the 
   const order = await kernelModule("step/order.js");
   const { BranchSchedule } = await kernelModule("il/types/options.js");
   const { compact } = await kernelModule("step/commit.js");
+  const issue = await kernelModule("state/issue.js");
+  // The order-invariant closure's position order (`ctxPositionLe`), which orders the scope occurrences a leave removes.
+  const positionLe = (state: State) => (left: unknown, right: unknown): boolean =>
+    issue.issueNotAfter(key.breadthUnitKey, state.issued, left, right);
   const input = key.unitRoot({ tag: key.UnitRootTag.Input });
   const log = order.runRecord(order.emptyRunLog, input);
   const issuing = { unit: input, text: key.issuerText(input, 1) };
@@ -98,7 +102,7 @@ test("a child issued under a scope occurrence the closure then leaves takes the 
   const opening = { ...state.initial("I", []), issuing, issueNext: 0 };
   const [opened, fresh] = state.enterScope(opening, "Sub", root, [], null);
   const [entered, earlier] = state.enterScope(opened, "Inner", fresh, [], null);
-  const before = compact(BranchSchedule.OrderInvariant, opening, log, removal.leaveScope(entered, earlier));
+  const before = compact(BranchSchedule.OrderInvariant, opening, log, removal.leaveScope(entered, positionLe(entered), earlier));
   assert.ok(before.ok, JSON.stringify(before));
   const start = before.value as State;
   const sub = "3:Sub#0/" as ScopeOccurrenceId;
@@ -107,7 +111,7 @@ test("a child issued under a scope occurrence the closure then leaves takes the 
 
   const [issued, inner] = state.enterScope({ ...start, issuing, issueNext: 0 }, "Inner", sub, [], null);
   const owned = { cause: { tag: journal.CauseTag.Idle, scope: inner }, element: "Inner", owner: inner, started: [], ended: [], ready: [] };
-  const outcome = compact(BranchSchedule.OrderInvariant, start, log, removal.leaveScope({ ...issued, journal: [owned] }, sub));
+  const outcome = compact(BranchSchedule.OrderInvariant, start, log, removal.leaveScope({ ...issued, journal: [owned] }, positionLe(issued), sub));
   assert.ok(outcome.ok, JSON.stringify(outcome));
   const after = outcome.value as State;
   assert.deepEqual(after.journal.map((transition) => transition.owner), ["5:Inner#1/3:Sub#0/"]);

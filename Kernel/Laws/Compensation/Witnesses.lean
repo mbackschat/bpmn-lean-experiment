@@ -208,7 +208,7 @@ theorem drop_begins_nothing : DropBeginsNothing true (· = outer) begun { begun 
 
 /-- Beginning a handler's context while dropping the run is rejected. -/
 theorem drop_begins_rejected :
-    ¬ DropBeginsNothing true (· = outer) begun { begun with slots := {}, scopes := [{ id := inner, element := none }] } :=
+    ¬ DropBeginsNothing true (· = outer) begun { begun with slots := {}, scopes := [{ id := inner, element := none, position := 0 }] } :=
   fun law => by
     have := (law rfl).2.1
     simp [begun] at this

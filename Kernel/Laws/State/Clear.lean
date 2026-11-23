@@ -20,7 +20,7 @@ open Kernel
 
 /-! ## Clearing a scope occurrence -/
 
-/-- What `State.clearInside before scope keep` leaves of `before`, read through the scope tree: the scope occurrences
+/-- What `before.clearInside le scope keep` leaves of `before`, read through the scope tree: the scope occurrences
 and variable sets not strictly within `scope`, the occurrences, open items and tokens not within it but those of the
 kept occurrences, and everything else as it was but the draft's end and cancelled facts; what stands keeps its process
 instance. P3's cancellation lane and the phases that clear (`Step.endInstance`, `State.leaveScope`) build on it. -/
@@ -55,7 +55,7 @@ structure Cleared (before after : State) (scope : ScopeOccurrenceId) (keep : Lis
   started : after.draft.started = before.draft.started
   slots : SlotsWithin before after
   /-- The Multi-Instance bodies that stay are those whose scope occurrence does not lie within `scope`. -/
-  bodies : after.slots.multiInstances = before.slots.multiInstances.filter (!(before.subtree scope).contains ·.scope)
+  bodies : after.slots.multiInstances = before.slots.multiInstances.filter (!(before.inside scope).contains ·.scope)
   issued : after.issued = before.issued
   issuing : after.issuing = before.issuing
   issueNext : after.issueNext = before.issueNext
@@ -116,7 +116,8 @@ theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {k
         (cleared.occurrencesSublist.subset member)),
       issuedItems_transport cleared.openItemsSub (fun _ member => cleared.occurrencesSublist.subset member) cleared.ordinals
         (.of_eq cleared.issued) formed.issued.items,
-      fun entry member => cleared.scopeGrows.issued (formed.issued.scopes entry (cleared.scopesSublist.subset member))⟩
+      fun entry member => cleared.scopeGrows.issued (formed.issued.scopes entry (cleared.scopesSublist.subset member)),
+      formed.issued.positionsKept (fun _ member => cleared.scopesSublist.subset member) (.of_eq cleared.issued)⟩
   · refine ⟨formed.distinct.occurrences.sublist (cleared.occurrencesSublist.map _),
       cleared.openItemsSub.keyed formed.distinct.items,
       formed.distinct.scopes.sublist (cleared.scopesSublist.map _), ?_⟩
@@ -275,7 +276,8 @@ theorem Prunes.wellFormed {before after : State} (formed : WellFormed program be
     exact ⟨fun occurrence member => prunes.occurrenceGrows _ (formed.issued.occurrences occurrence (kept member)),
       issuedItems_transport prunes.items (fun _ member => prunes.occurrences.subset member) prunes.ordinals
         (.of_eq prunes.issued) formed.issued.items,
-      fun scope member => grows.issued (formed.issued.scopes scope (prunes.scopes ▸ member))⟩
+      fun scope member => grows.issued (formed.issued.scopes scope (prunes.scopes ▸ member)),
+      formed.issued.positionsKept (fun _ member => prunes.scopes ▸ member) (.of_eq prunes.issued)⟩
   case distinct =>
     refine ⟨formed.distinct.occurrences.sublist (prunes.occurrences.map _),
       prunes.items.keyed formed.distinct.items, by simpa [scopeIds, prunes.scopes] using formed.distinct.scopes,
@@ -355,7 +357,7 @@ def withoutRecord (s : State) (id : OccurrenceId) : State :=
 
 /-! ## Leaving a scope occurrence -/
 
-/-- What `State.leaveScope before scope` leaves of `before`, read through the scope tree: what does not lie within
+/-- What `before.leaveScope le scope` leaves of `before`, read through the scope tree: what does not lie within
 `scope`, which goes with everything inside it, and everything else as it was but the draft's end and cancelled facts;
 what stands keeps its process instance. `State.removeOccurrence` leaves the scope occurrences the removed occurrence
 owns. -/
@@ -427,7 +429,8 @@ theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (form
     exact ⟨fun occurrence member => left.occurrenceGrows _ (formed.issued.occurrences occurrence (kept member)),
       issuedItems_transport left.openItemsSub (fun _ member => left.occurrencesSublist.subset member) left.ordinals
         (.of_eq left.issued) formed.issued.items,
-      fun entry member => grows.issued (formed.issued.scopes entry (left.scopesSublist.subset member))⟩
+      fun entry member => grows.issued (formed.issued.scopes entry (left.scopesSublist.subset member)),
+      formed.issued.positionsKept (fun _ member => left.scopesSublist.subset member) (.of_eq left.issued)⟩
   case distinct =>
     refine ⟨formed.distinct.occurrences.sublist (left.occurrencesSublist.map _),
       left.openItemsSub.keyed formed.distinct.items,

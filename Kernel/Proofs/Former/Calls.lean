@@ -29,6 +29,8 @@ apply. Nothing executable imports this module.
 
 namespace Kernel.Proofs.Former
 
+variable {le : Issue → Issue → Bool}
+
 variable {program : Program}
 
 open Kernel
@@ -304,15 +306,15 @@ A Call `CallIt`'s first occurrence in the process root and called roots of ordin
 a state the others accept. -/
 
 /-- The process root of the witnesses. -/
-def witnessRoot : ScopeOccurrence := { id := (.ofSegments []), element := none }
+def witnessRoot : ScopeOccurrence := { id := (.ofSegments []), element := none, position := 0 }
 
 /-- The key of `CallIt`'s first occurrence in the process root. -/
 def callItKey : OccurrenceId := { scope := (.ofSegments []), element := ⟨"CallIt"⟩, ordinal := 0 }
 
 /-- A called root of the witnesses, the `ordinal`th of `CallIt` in the process root, owned by `owner`. -/
 def witnessCalled (ordinal : Nat) (owner : Option OccurrenceId) : ScopeOccurrence :=
-  { id := (.ofSegments [{ element := ⟨"CallIt"⟩, ordinal := .committed ordinal }]), element := some ⟨"CallIt"⟩, occurrence := owner
-    calledInstance := some "I1-call" }
+  { id := (.ofSegments [{ element := ⟨"CallIt"⟩, ordinal := .committed ordinal }]), element := some ⟨"CallIt"⟩, position := 0
+    occurrence := owner, calledInstance := some "I1-call" }
 
 /-- A called root that no occurrence owns breaks `Named`. -/
 theorem unowned_root_rejected (program : Program) :
@@ -417,14 +419,15 @@ private theorem enterLocal_facts {program : Program} {header : Header} {inputs :
     · rw [Laws.State.enterScope_eq] at inside same
       dsimp only at same
       rcases List.mem_append.mp inside with old | new
-      · -- The scope occurrences that stood were issued, and the issuer's next issue but one is not in the table (DC12).
-        have untabled : state.issued[Issue.fresh state.issuing (state.issueNext + 1)]? = none := by
-          cases tabled : state.issued[Issue.fresh state.issuing (state.issueNext + 1)]? with
+      · -- The scope occurrences that stood were issued, and the issuer's next issue but two is not in the table (DC12).
+        have untabled : state.issued[Issue.fresh state.issuing (state.issueNext + 1 + 1)]? = none := by
+          cases tabled : state.issued[Issue.fresh state.issuing (state.issueNext + 1 + 1)]? with
           | none => rfl
           | some slot => exact absurd (formed.issuer.below _ slot tabled) (by omega)
         exact Laws.State.entered_unissued _ _ untabled (by rw [← same]; exact below entry old)
       · rw [List.mem_singleton.mp new] at same
         simp [Laws.State.child_eq, Laws.State.ScopeOccurrenceId.ofSegments_inj] at same
+        exact absurd same.2 (by omega)
 
 theorem callInstallsSnapshot {hooks : Hooks} {workHooks : Feature.Work.WorkHooks}
     (arrive : hooks.arriveActivity = Feature.Work.arriveActivity workHooks) : CallInstallsSnapshot hooks := by
@@ -442,7 +445,10 @@ theorem callInstallsSnapshot {hooks : Hooks} {workHooks : Feature.Work.WorkHooks
       [{ id := occurrence.scope.child occurrence.element
            (.fresh (Feature.Work.enterLocal header inputs occurrence state).issuing
              (Feature.Work.enterLocal header inputs occurrence state).issueNext)
-         element := some occurrence.element, occurrence := some occurrence.id
+         element := some occurrence.element
+         position := .fresh (Feature.Work.enterLocal header inputs occurrence state).issuing
+           ((Feature.Work.enterLocal header inputs occurrence state).issueNext + 1)
+         occurrence := some occurrence.id
          calledInstance := some (State.calledInstanceId
            ((Feature.Work.enterLocal header inputs occurrence state).instanceOf occurrence.scope)
            (ctx.program.publicId occurrence.element) occurrence.activation) }] ∧
@@ -590,8 +596,8 @@ theorem CallsFormed.entered (formed : WellFormed under s) (holds : CallsFormed p
     CallsFormed program (s.enterScope element parent locals owner).1 := by
   have scopes := (Laws.State.enterScope_eq s element parent locals owner ▸ rfl :
     (s.enterScope element parent locals owner).1.scopes =
-      s.scopes ++ [{ id := parent.child element (.fresh s.issuing s.issueNext), element := some element
-                     occurrence := owner }])
+      s.scopes ++ [{ id := parent.child element (.fresh s.issuing s.issueNext), element := some element,
+                     position := .fresh s.issuing (s.issueNext + 1), occurrence := owner }])
   have occurrences : (s.enterScope element parent locals owner).1.occurrences = s.occurrences := by
     rw [Laws.State.enterScope_eq]
   have named : (s.enterScope element parent locals owner).1.instanceId = s.instanceId := by
@@ -664,10 +670,12 @@ theorem CallsFormed.enterCalled (formed : WellFormed under s) (holds : CallsForm
     CallsFormed program (s.enterCalled program call variables definition).1 := by
   rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]
   have stays := fun {x} => instanceOf_grown (t := { s with
-      issueNext := s.issueNext + 1
-      issued := s.issued.insert (.fresh s.issuing s.issueNext) (.scope { parent := call.scope, element := call.element })
+      issueNext := s.issueNext + 1 + 1
+      issued := (s.issued.insert (.fresh s.issuing s.issueNext) (.scope { parent := call.scope, element := call.element })).insert
+        (.fresh s.issuing (s.issueNext + 1)) .position
       scopes := s.scopes ++ [{ id := call.scope.child call.element (.fresh s.issuing s.issueNext)
-                               element := some call.element, occurrence := some call.id
+                               element := some call.element, position := .fresh s.issuing (s.issueNext + 1)
+                               occurrence := some call.id
                                calledInstance := some (State.calledInstanceId (s.instanceOf call.scope)
                                  (program.publicId call.element) call.activation) }]
       variables := s.variables ++
@@ -725,8 +733,8 @@ theorem callsFormed_alongside (program : Program) : Alongside program (CallsForm
     (by rw [Laws.State.takeCompletion_eq])
   enterScope _ element parent locals owner formed _ _ held := held.entered formed element parent locals owner
   reserve _ element _ formed stands _ _ held := held.reserved formed element stands.mem
-  leaveScope _ _ formed present _ held := held.left formed (Laws.State.leaveScope_left formed present)
-  clearInside _ _ keep formed present kept held :=
+  leaveScope le _ _ formed present _ held := held.left formed (Laws.State.leaveScope_left formed present)
+  clearInside le _ _ keep formed present kept held :=
     held.cleared formed (Laws.State.clearInside_cleared formed present keep) kept
   disarm _ host _ held := held.same (by rw [Laws.State.disarm_eq])
     (by rw [Laws.State.disarm_eq]; exact fun _ member => (List.mem_filter.mp member).1) (by rw [Laws.State.disarm_eq])
@@ -739,7 +747,7 @@ theorem callsFormed_alongside (program : Program) : Alongside program (CallsForm
   instanceBegin _ request _ _ held := held.signal (.begin request)
   defer _ requests _ _ held := held.same (by rw [Laws.State.deferBegins_eq]) (by rw [Laws.State.deferBegins_eq]; exact fun _ member => member)
     (by rw [Laws.State.deferBegins_eq])
-  leaveInstance _ _ _ formed _ _ present held := held.left formed (Laws.State.leaveScope_left formed present)
+  leaveInstance le _ _ _ formed _ _ present held := held.left formed (Laws.State.leaveScope_left formed present)
   runs _ _ _ _ held := held.same rfl (fun _ member => member) rfl
 
 /-- Storing compensation runs keeps the lane invariant. -/
@@ -769,7 +777,7 @@ theorem callsFormed_stepAlongside (program : Program) : StepAlongside program (C
   untoken _ _ _ held := held.same rfl (fun _ member => member) rfl
   begin _ request role sourceType formed stands admitted _ _ held :=
     held.begun formed request role sourceType stands.mem admitted.2.1
-  cancel _ _ formed held := (callsFormed_alongside program).toFrameAlongside.cancelOccurrence
+  cancel le _ _ formed held := (callsFormed_alongside program).toFrameAlongside.cancelOccurrence le
     (fun _ id _ kept => kept.withoutRecord id) (fun _ _ _ kept => kept.same rfl (fun _ member => member) rfl) formed held
   runOrder _ _ _ formed held counted batches keys _ made :=
     { named := orderJournal_named formed counted batches keys held.named made
@@ -792,9 +800,9 @@ theorem callsFormed_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellForm
     ⟨pipeline.startReserved _ _ occurrence sourceType holds.1 member unnamed, by
       rw [Laws.State.closeOwnItems_eq]
       exact (holds.2.startReserved member sourceType).same rfl (fun _ inside => inside) rfl⟩
-  removeOccurrence program _ occurrence holds member free :=
-    have removed := pipeline.removeOccurrence _ _ occurrence holds.1 member free
-    ⟨⟨removed.1, (callsFormed_alongside program).toFrameAlongside.removeOccurrence
+  removeOccurrence program le _ occurrence holds member free :=
+    have removed := pipeline.removeOccurrence _ le _ occurrence holds.1 member free
+    ⟨⟨removed.1, (callsFormed_alongside program).toFrameAlongside.removeOccurrence le
       (fun _ id _ kept => kept.withoutRecord id) holds.1 holds.2⟩, removed.2⟩
   recordEnd _ _ key terminal holds :=
     ⟨pipeline.recordEnd _ _ key terminal holds.1, by

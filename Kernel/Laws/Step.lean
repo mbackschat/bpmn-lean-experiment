@@ -33,6 +33,8 @@ public section
 
 namespace Kernel.Laws.Step
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel Kernel.Step
 
 /-! ## Micro-steps -/
@@ -121,7 +123,7 @@ theorem settle_ok_settled {hooks : Hooks} {ctx : Ctx} : ∀ {fuel work : Nat} {l
       (Quiescent hooks ctx after.2 after.1 ∧ (after.1.idle State.root && after.1.queuedSignals.isEmpty) = false) ∨
       ∃ last earlier, Quiescent hooks ctx earlier last ∧ last.idle State.root = true ∧ last.queuedSignals.isEmpty = true ∧
         microStep hooks (unitCtx ctx earlier) (.ofRoot (.idle [])) (.idle State.root) none State.root
-          (fun state => .ok (endInstance .completed none state)) last = .ok after.1 ∧
+          (fun state => .ok (endInstance (unitCtx ctx earlier).positionLe .completed none state)) last = .ok after.1 ∧
         after.2 = earlier.record (.ofRoot (.idle [])) := by
   intro fuel
   induction fuel with
@@ -252,7 +254,7 @@ pipeline (`complete_ok`, `continueAfter_ok`) and queued work whose target is gon
 
 /-- An instance end clears the instance root and records the status and failure. -/
 theorem endInstance_eq {status : InstanceStatus} {failure : Option InstanceFailure} {state : State} :
-    endInstance status failure state = { state.clearInside State.root with status, failure } := by
+    endInstance le status failure state = { state.clearInside le State.root with status, failure } := by
   simp only [endInstance]
 
 /-! ### The inputs' bodies
@@ -652,12 +654,17 @@ theorem nextToken_mem {hooks : Hooks} {ctx : Ctx} {log : RunLog} {state : State}
     · simp at next
     · exact ⟨latest_mem next, .inr next⟩
 
+/-- The least position is one of the scope occurrences it chose from. -/
+theorem leastPosition_mem {le : Issue → Issue → Bool} {scopes : List ScopeOccurrence} {scope : ScopeOccurrence}
+    (least : leastPosition le scopes = some scope) : scope ∈ scopes :=
+  List.mem_mergeSort.mp (List.mem_of_mem_head? least)
+
 theorem idleScope_mem {hooks : Hooks} {ctx : Ctx} {state : State} {scope : ScopeOccurrence}
     (idle : idleScope? hooks ctx state = some scope) : scope ∈ state.scopes := by
   unfold idleScope? at idle
   split at idle
   · simp at idle
-  · exact List.mem_of_find?_eq_some idle
+  · exact (List.mem_filter.mp (leastPosition_mem idle)).1
 
 /-- The idle scope occurrence the closure completes has no child scope occurrence, since a parent is busy
 (`StateFacts.parentBusy`): a nested Call's root keeps the scope occurrence it lies in from completing. -/
@@ -667,7 +674,7 @@ theorem idleScope?_childless (facts : StateFacts) {hooks : Hooks} {ctx : Ctx} {s
   unfold idleScope? at idle
   split at idle
   · simp at idle
-  · have chosen := List.find?_some idle
+  · have chosen := (List.mem_filter.mp (leastPosition_mem idle)).2
     simp only [Bool.and_eq_true, Bool.not_eq_true'] at chosen
     have busy := facts.parentBusy state child member scope.id linked
     simp [busy] at chosen

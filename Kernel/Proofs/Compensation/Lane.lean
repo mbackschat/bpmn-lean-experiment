@@ -16,6 +16,8 @@ imports this module.
 
 namespace Kernel.Proofs.Compensation
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel
 open Kernel.Laws.State (WellFormed scopeIds Counted Untriggered Within)
 open Kernel.Laws.Compensation (ClaimsApart Advances Ready claimed)
@@ -184,8 +186,8 @@ theorem entered_eq (s : State) (element : ElementId) (parent : ScopeOccurrenceId
       (s.enterScope element parent locals none).1.slots = s.slots ∧
       (s.enterScope element parent locals none).1.nextCompletion = s.nextCompletion ∧
       (s.enterScope element parent locals none).1.scopes =
-        s.scopes ++ [{ id := parent.child element (.fresh s.issuing s.issueNext), element := some element
-                       occurrence := none }] ∧
+        s.scopes ++ [{ id := parent.child element (.fresh s.issuing s.issueNext), element := some element,
+                       position := .fresh s.issuing (s.issueNext + 1), occurrence := none }] ∧
       (s.enterScope element parent locals none).1.activations = s.activations ∧
       (s.enterScope element parent locals none).1.instanceId = s.instanceId ∧
       Laws.State.allSignals (s.enterScope element parent locals none).1 = Laws.State.allSignals s := by
@@ -204,7 +206,7 @@ theorem entered_fresh {s : State} (tame : Tame s) (element : ElementId) {parent 
 theorem entered_issuer {s : State} (fresh : Laws.State.IssuerFresh s) (element : ElementId) (parent : ScopeOccurrenceId)
     (locals : List (String × Value)) : Laws.State.IssuerFresh (s.enterScope element parent locals none).1 := by
   rw [Laws.State.enterScope_eq]
-  exact fresh.issue rfl rfl rfl rfl
+  exact fresh.issue_issue rfl rfl rfl rfl
 
 /-- Appending a scope occurrence below a standing parent keeps the parents standing. -/
 theorem parents_append {s : State} (parents : ParentsStand s) {scopes : List ScopeOccurrence} {added : ScopeOccurrence}
@@ -224,8 +226,8 @@ theorem parents_append {s : State} (parents : ParentsStand s) {scopes : List Sco
 
 /-- A scope occurrence stays when a scope occurrence is left exactly when it is neither that one nor below it. -/
 theorem left_mem {s : State} {context : ScopeOccurrenceId} {entry : ScopeOccurrence} (member : entry ∈ s.scopes) :
-    entry ∈ (s.leaveScope context).scopes ↔ entry.id ≠ context ∧ State.below context.segments entry.id.segments = false := by
-  have contains : ((s.subtree context).filter (· != context)).contains entry.id = true ↔
+    entry ∈ (s.leaveScope le context).scopes ↔ entry.id ≠ context ∧ State.below context.segments entry.id.segments = false := by
+  have contains : ((s.subtree le context).filter (· != context)).contains entry.id = true ↔
       entry.id ≠ context ∧ State.below context.segments entry.id.segments = true := by
     rw [List.contains_iff_mem, List.mem_filter, Laws.State.mem_subtree, bne_iff_ne]
     constructor
@@ -243,18 +245,18 @@ theorem left_mem {s : State} {context : ScopeOccurrenceId} {entry : ScopeOccurre
     · rfl
     · simp at outside
       rcases outside with out | same
-      · exact absurd ((Laws.State.mem_subtree s context entry.id).mpr (.inr ⟨entry, member, rfl, below⟩)) out
+      · exact absurd ((Laws.State.mem_subtree s le context entry.id).mpr (.inr ⟨entry, member, rfl, below⟩)) out
       · exact absurd same other'
   · rintro ⟨other, below⟩
     refine ⟨⟨member, ?_⟩, by simpa using other⟩
-    cases held : ((s.subtree context).filter (· != context)).contains entry.id
+    cases held : ((s.subtree le context).filter (· != context)).contains entry.id
     · rfl
     · have := (contains.mp held).2
       rw [below] at this; cases this
 
 /-- Leaving a scope occurrence keeps the parents standing: a scope occurrence below a removed one is removed. -/
 theorem parents_left {s : State} (parents : ParentsStand s) (context : ScopeOccurrenceId) :
-    ParentsStand (s.leaveScope context) := by
+    ParentsStand (s.leaveScope le context) := by
   intro entry inside segment rest keyed
   have old : entry ∈ s.scopes := by
     rw [(Laws.State.leaveScope_compensation s context).2.2.1] at inside; exact (List.mem_filter.mp (List.mem_filter.mp inside).1).1
@@ -276,7 +278,7 @@ theorem parents_left {s : State} (parents : ParentsStand s) (context : ScopeOccu
 /-- Leaving a standing scope occurrence keeps its parent standing. -/
 theorem left_parent {s : State} (parents : ParentsStand s) {context : ScopeOccurrenceId}
     {entry : ScopeOccurrence} (member : entry ∈ s.scopes) (named : entry.id = context) {outer : ScopeOccurrenceId}
-    (link : entry.parent = some outer) : outer ∈ scopeIds (s.leaveScope context) := by
+    (link : entry.parent = some outer) : outer ∈ scopeIds (s.leaveScope le context) := by
   obtain ⟨segment, rest, keyed, rfl⟩ : ∃ segment rest, entry.id.segments = segment :: rest ∧ outer = .ofSegments rest := by
     change entry.id.parent? = some outer at link
     obtain ⟨segment, keyed⟩ := Laws.State.ScopeOccurrenceId.parent?_eq_some.mp link
@@ -487,19 +489,20 @@ structure Trims (f : CompensationRun → CompensationRun) : Prop where
   shrinks : ∀ run, (f run).running.Sublist run.running
 
 /-- `s` with `context` left and its runs mapped by `f`: what a release advances from. -/
-def trimmed (s : State) (context : ScopeOccurrenceId) (f : CompensationRun → CompensationRun) : State :=
-  stored (s.leaveScope context)
-    { (s.leaveScope context).slots.compensation with runs := (s.leaveScope context).slots.compensation.runs.map f }
+def trimmed (le : Issue → Issue → Bool) (s : State) (context : ScopeOccurrenceId) (f : CompensationRun → CompensationRun) :
+    State :=
+  stored (s.leaveScope le context)
+    { (s.leaveScope le context).slots.compensation with runs := (s.leaveScope le context).slots.compensation.runs.map f }
 
 theorem left_runs (s : State) (context : ScopeOccurrenceId) :
-    (s.leaveScope context).slots.compensation.runs.Sublist s.slots.compensation.runs := by
+    (s.leaveScope le context).slots.compensation.runs.Sublist s.slots.compensation.runs := by
   rw [(Laws.State.leaveScope_compensation s context).2.1]; exact List.filter_sublist
 
-theorem left_scopes (s : State) (context : ScopeOccurrenceId) : (s.leaveScope context).scopes.Sublist s.scopes := by
+theorem left_scopes (s : State) (context : ScopeOccurrenceId) : (s.leaveScope le context).scopes.Sublist s.scopes := by
   rw [(Laws.State.leaveScope_compensation s context).2.2.1]; exact List.filter_sublist.trans List.filter_sublist
 
 theorem left_retained (s : State) (context : ScopeOccurrenceId) :
-    (s.leaveScope context).slots.compensation.retained.Sublist s.slots.compensation.retained := by
+    (s.leaveScope le context).slots.compensation.retained.Sublist s.slots.compensation.retained := by
   rw [(Laws.State.leaveScope_compensation s context).1]; exact List.filter_sublist.trans List.filter_sublist
 
 theorem trims_keys {f : CompensationRun → CompensationRun} (trims : Trims f) (runs : List CompensationRun) :
@@ -516,11 +519,11 @@ theorem trims_ungrouped {f : CompensationRun → CompensationRun} (trims : Trims
   exact List.map_congr_left fun run _ => by simp [trims.sameTrigger]
 
 theorem tame_trimmed {s : State} (tame : Tame s) (context : ScopeOccurrenceId) {f : CompensationRun → CompensationRun}
-    (trims : Trims f) : Tame (trimmed s context f) := by
-  have retainedEq := (Laws.State.leaveScope_compensation s context).1
-  have scopesEq := (Laws.State.leaveScope_compensation s context).2.2.1
-  have grows := Laws.State.leaveScope_grows s context
-  have runsSub := left_runs s context
+    (trims : Trims f) : Tame (trimmed le s context f) := by
+  have retainedEq := (Laws.State.leaveScope_compensation (le := le) s context).1
+  have scopesEq := (Laws.State.leaveScope_compensation (le := le) s context).2.2.1
+  have grows := Laws.State.leaveScope_grows (le := le) s context
+  have runsSub := left_runs (le := le) s context
   refine ⟨fun record inside => ?_, ?_, fun run inside => ?_, fun run inside held running => ?_,
     fun entry inside => ?_, fun run inside held resumed => ?_, parents_left tame.parents context,
     fun run inside held running entry member named => ?_,
@@ -562,17 +565,17 @@ theorem tame_trimmed {s : State} (tame : Tame s) (context : ScopeOccurrenceId) {
     have kept := member
     rw [(Laws.State.leaveScope_compensation s context).2.1, List.mem_filter] at kept
     obtain ⟨old, outside⟩ := kept
-    have out : source.scope ∉ s.subtree context := by simpa using outside
+    have out : source.scope ∉ s.subtree le context := by simpa using outside
     obtain ⟨entry, present, named⟩ := List.mem_map.mp (tame.groupsStanding source old grouped)
     rw [← named] at out
     simp only [trimmed, stored, scopeIds, scopesEq]
     refine List.mem_map.mpr ⟨entry, List.mem_filter.mpr ⟨List.mem_filter.mpr ⟨present, ?_⟩, ?_⟩, named⟩
     · simpa using .inl out
-    · simpa using fun (same : entry.id = context) => out (same ▸ (Laws.State.mem_subtree s context context).mpr (.inl rfl))
+    · simpa using fun (same : entry.id = context) => out (same ▸ (Laws.State.mem_subtree s le context context).mpr (.inl rfl))
 
 theorem moves_trimmed (s : State) (context : ScopeOccurrenceId) {f : CompensationRun → CompensationRun}
-    (trims : Trims f) : Moves s (trimmed s context f) := by
-  have runsSub := left_runs s context
+    (trims : Trims f) : Moves s (trimmed le s context f) := by
+  have runsSub := left_runs (le := le) s context
   refine ⟨Nat.le_of_eq (Laws.State.leaveScope_compensation s context).2.2.2.2.symm, Laws.State.leaveScope_grows s context,
     fun entry inside => .inl ((left_scopes s context).subset inside), (Laws.State.leaveScope_compensation s context).2.2.2.1,
     (Laws.State.leaveScope_eq s context).2, ⟨[], ?_, by simp⟩, fun trigger => ?_, fun run inside => ?_,
@@ -588,14 +591,14 @@ theorem moves_trimmed (s : State) (context : ScopeOccurrenceId) {f : Compensatio
 
 theorem counted_trimmed (s : State) (context : ScopeOccurrenceId) {f : CompensationRun → CompensationRun}
     (trims : Trims f) (n : Nat) :
-    (completions (trimmed s context f).slots.compensation).count n ≤ (completions s.slots.compensation).count n := by
-  have each : ∀ run ∈ (s.leaveScope context).slots.compensation.runs,
+    (completions (trimmed le s context f).slots.compensation).count n ≤ (completions s.slots.compensation).count n := by
+  have each : ∀ run ∈ (s.leaveScope le context).slots.compensation.runs,
       (runCompletions (f run)).Sublist (runCompletions run) := fun run _ => by
     simp only [runCompletions, trims.samePending]
     exact ((trims.shrinks run).map _).append_left _
   have shrunk := (flatMap_sublist_of each).count_le n
   have below := count_completions_le (before := s.slots.compensation)
-    (after := { (s.leaveScope context).slots.compensation with runs := (s.leaveScope context).slots.compensation.runs })
+    (after := { (s.leaveScope le context).slots.compensation with runs := (s.leaveScope le context).slots.compensation.runs })
     (left_retained s context) (left_runs s context) n
   rw [count_completions] at below ⊢
   simp only [trimmed, stored, List.flatMap_map] at shrunk below ⊢

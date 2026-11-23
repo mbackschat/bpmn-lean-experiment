@@ -391,7 +391,7 @@ def instanceCompleted (ctx : Ctx) (body : OccurrenceId) (occurrence : Occurrence
   -- :84-87`, `SequentialMultiInstanceActivityBehavior:48-51`), and the body's compensation snapshot copies them as they
   -- then stand (`MultiInstanceActivityBehavior.java:172-175`), so every path writes them (#106); without counter
   -- locals there is no write.
-  let left := setRun (state.leaveScope occurrence.scope) run
+  let left := setRun (state.leaveScope ctx.positionLe occurrence.scope) run
   let counted := match counterLocals ctx (bodyCounts loop run.instances) with
     | [] => left
     | counts => left.signal (.write run.scope counts .own)

@@ -18,6 +18,8 @@ feature but Multi-Instance (guard 15). Nothing executable imports this module.
 
 namespace Kernel.Proofs.MultiInstance
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel
 open Kernel.Laws.State (WellFormed scopeIds Precedes)
 open Kernel.Laws.MultiInstance (LoopOf QueuedFor Begun Requested instanceRequest)
@@ -600,15 +602,15 @@ theorem quiet_of_parallel {mode : MultiInstanceMode} {instances : List Iteration
 /-- A running body stays through leaving one of its instances' scope occurrences, which lies below the body's. -/
 theorem leaveScope_keeps_body {program : Program} {s : State} (formed : WellFormed program s) (owns : SlotsOwned s)
     {run : MultiInstanceRun} (member : run ∈ s.slots.multiInstances) {index : Nat} {scope : ScopeOccurrenceId}
-    (slot : run.instances[index]? = some (.active scope)) : run ∈ (s.leaveScope scope).slots.multiInstances := by
+    (slot : run.instances[index]? = some (.active scope)) : run ∈ (s.leaveScope le scope).slots.multiInstances := by
   obtain ⟨e, eIn, eNamed, eLink⟩ := (owns.owned run member).instanceScopes index scope slot
   have present : scope ∈ scopeIds s := List.mem_map.mpr ⟨e, eIn, eNamed⟩
   have away : ¬ Laws.State.Within s run.scope scope := eNamed ▸ Laws.State.parent_not_within formed eIn eLink
   rw [(Laws.State.leaveScope_slots s scope).2.1, (Laws.State.clearInside_cleared formed present []).bodies]
   refine List.mem_filter.mpr ⟨member, ?_⟩
-  cases contained : (s.subtree scope).contains run.scope
+  cases contained : (s.inside scope).contains run.scope
   · rfl
-  · exact absurd ((Laws.State.subtree_iff formed present _).mp (List.contains_iff_mem.mp contained)) away
+  · exact absurd ((Laws.State.inside_iff formed present _).mp (List.contains_iff_mem.mp contained)) away
 
 /-! ## The registered Multi-Instance hooks -/
 
@@ -671,7 +673,7 @@ theorem numbered_instanceCompleted {ctx : Ctx} {body : OccurrenceId} {occurrence
     (stands : occurrence.scope ∈ scopeIds state)
     (ownsLeft : ∀ run index output results, run ∈ state.slots.multiInstances →
       run.instances[index]? = some (.active occurrence.scope) → Laws.MultiInstance.OutputFits ctx.program run output →
-      SlotsOwned (Laws.MultiInstance.leftWith state occurrence.scope (Laws.MultiInstance.recorded run index output results)))
+      SlotsOwned (Laws.MultiInstance.leftWith ctx.positionLe state occurrence.scope (Laws.MultiInstance.recorded run index output results)))
     (parallel : ∀ run ∈ state.slots.multiInstances, ∀ loop, LoopOf ctx.program run.element loop →
       loop.mode = .parallel → ∀ slot ∈ run.instances, slot ≠ .waiting)
     (ran : Feature.MultiInstance.instanceCompleted ctx body occurrence writes state = .ok after) :
@@ -680,7 +682,7 @@ theorem numbered_instanceCompleted {ctx : Ctx} {body : OccurrenceId} {occurrence
   obtain ⟨output, done⟩ := found
   obtain ⟨results, counted, left, ended⟩ := done.ends
   have member := Laws.MultiInstance.found_mem done.found
-  have leaves := Laws.State.leaveScope_left formed stands
+  have leaves := Laws.State.leaveScope_left (le := ctx.positionLe) formed stands
   have recordedSlot : ∀ (i : Nat) (scope : ScopeOccurrenceId),
       (Laws.MultiInstance.recorded run index output results).instances[i]? = some (.active scope) →
         i ≠ index ∧ run.instances[i]? = some (.active scope) := fun i scope slot => by
@@ -694,13 +696,13 @@ theorem numbered_instanceCompleted {ctx : Ctx} {body : OccurrenceId} {occurrence
         run.instances.set index (.completed output) from rfl, List.getElem?_set_ne (Ne.symm differs)] at slot
       exact slot⟩
   have leftHeld : Numbered ctx.program
-      (Laws.MultiInstance.leftWith state occurrence.scope (Laws.MultiInstance.recorded run index output results)) := by
-    have keyedLeft : Laws.MultiInstance.RunsKeyed (state.leaveScope occurrence.scope) := by
+      (Laws.MultiInstance.leftWith ctx.positionLe state occurrence.scope (Laws.MultiInstance.recorded run index output results)) := by
+    have keyedLeft : Laws.MultiInstance.RunsKeyed (state.leaveScope ctx.positionLe occurrence.scope) := by
       unfold Laws.MultiInstance.RunsKeyed
       rw [(Laws.State.leaveScope_slots state occurrence.scope).2.1,
         (Laws.State.clearInside_cleared formed stands []).bodies]
       exact owns.keyed.sublist (List.filter_sublist.map _)
-    refine (held.leaveScope formed owns stands).narrow keyedLeft (leaveScope_keeps_body formed owns member done.slot)
+    refine (held.leaveScope ctx.positionLe formed owns stands).narrow keyedLeft (leaveScope_keeps_body formed owns member done.slot)
       rfl rfl (fun i scope slot => (recordedSlot i scope slot).2) fun i scope slot present => ?_
     have differs : i ≠ index := fun same => by
       rw [same, done.slot] at slot

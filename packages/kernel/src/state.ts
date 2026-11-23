@@ -416,7 +416,7 @@ export function initial(instanceId: string, variables: readonly Binding[], busin
   return {
     instanceId,
     status: InstanceStatus.Running,
-    scopes: [{ id: root, element: null, occurrence: null, calledInstance: null }],
+    scopes: [{ id: root, element: null, position: 0, occurrence: null, calledInstance: null }],
     occurrences: [],
     batchTokens: [],
     queuedTokens: null,
@@ -774,10 +774,11 @@ export function enterScope(
 ): readonly [State, ScopeOccurrenceId] {
   const [issued, ordinal] = issue(state, { tag: ClaimSlotTag.Scope, slot: { parent, element } });
   const id = childScope(parent, element, ordinal);
+  const [positioned, position] = issuePosition(issued);
   return [
     {
-      ...issued,
-      scopes: [...state.scopes, { id, element, occurrence, calledInstance: null }],
+      ...positioned,
+      scopes: [...state.scopes, { id, element, position, occurrence, calledInstance: null }],
       variables: [...state.variables, { scope: id, entries: keyed(locals) }],
     },
     id,

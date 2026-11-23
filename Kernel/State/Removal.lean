@@ -36,10 +36,12 @@ def disarm (state : State) (host : OccurrenceId) : State :=
 
 /-- Remove every token, item, occurrence, slot entry, variable set and child scope occurrence inside `scope`, with the
 ordinal counters of the removed scope occurrences and occurrences, keeping `scope` itself and the occurrences `keep`
-names. Each begun occurrence is journalled cancelled, deepest scope first, then in the order the state holds them;
-`Hooks.cancelled` tells the owning features afterwards. -/
-def clearInside (state : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId := []) : State :=
-  let inside := state.subtree scope
+names. Each begun occurrence is journalled cancelled, deepest scope first, each level by the order positions of its
+scope occurrences under `le` (`subtree`), then in the order the state holds them; `Hooks.cancelled` tells the owning
+features afterwards. -/
+def clearInside (state : State) (le : Issue → Issue → Bool) (scope : ScopeOccurrenceId) (keep : List OccurrenceId := []) :
+    State :=
+  let inside := state.subtree le scope
   let nested := inside.filter (· != scope)
   let removed := inside.reverse.flatMap fun current =>
     state.occurrences.filter fun occurrence => occurrence.scope == current && !keep.contains occurrence.id
@@ -61,8 +63,8 @@ Activities completed in a Sub-Process left before its own completion are never c
 completed Activities only ([BPMN 2.0.2 §13.5.5](../docs/reference/bpmn-2.0.2/README.md), "presumed abort"). A called
 instance's root takes its instance entry with it, which every reader finds only through a standing root
 (`State.instanceRoot`), so a completed call retains nothing (DC24, #169). -/
-def leaveScope (state : State) (scope : ScopeOccurrenceId) : State :=
-  let cleared := state.clearInside scope
+def leaveScope (state : State) (le : Issue → Issue → Bool) (scope : ScopeOccurrenceId) : State :=
+  let cleared := state.clearInside le scope
   { cleared with
       scopes := cleared.scopes.filter (·.id != scope)
       scopeOrdinals := cleared.scopeOrdinals.filter fun slot _ => slot.parent != scope
@@ -73,17 +75,18 @@ def leaveScope (state : State) (scope : ScopeOccurrenceId) : State :=
           retained := cleared.slots.compensation.retained.filter (·.scope != scope) }
         instances := cleared.slots.instances.filter (·.root != scope) } }
 
-/-- Remove the occurrence record `id` and the scope occurrences it owns, if any. The record goes first, so that
-leaving a scope does not cancel the occurrence that owns it. -/
-def removeOccurrence (state : State) (id : OccurrenceId) : State :=
+/-- Remove the occurrence record `id` and the scope occurrences it owns, if any, in the order of their positions under
+`le`. The record goes first, so that leaving a scope does not cancel the occurrence that owns it. -/
+def removeOccurrence (state : State) (le : Issue → Issue → Bool) (id : OccurrenceId) : State :=
   let removed := { state with
     occurrences := state.occurrences.filter (·.id != id), itemOrdinals := state.itemOrdinals.erase id }
-  (removed.scopes.filter (·.occurrence == some id)).foldl (fun state scope => state.leaveScope scope.id) removed
+  ((removed.scopes.filter (·.occurrence == some id)).mergeSort fun a b => le a.position b.position).foldl
+    (fun state scope => state.leaveScope le scope.id) removed
 
 /-- Close the open items inside `scope`, its own included; the occurrences they reserved go when the scope is
 cleared. -/
 def withdrawInside (state : State) (scope : ScopeOccurrenceId) : State :=
-  let inside := state.subtree scope
+  let inside := state.inside scope
   { state with openItems := state.openItems.filter fun _ item => !inside.contains item.scope }
 
 /-- Close the open items `cancelOccurrence` removes with the occurrence `id`: its own, those attached to it with
@@ -95,15 +98,15 @@ def withdrawOccurrence (state : State) (id : OccurrenceId) : State :=
 
 /-- Cancel the occurrence `id` wherever it stands: its items and subscriptions go, the scope occurrence it owns is
 left, and it is journalled cancelled. -/
-def cancelOccurrence (state : State) (id : OccurrenceId) : State :=
+def cancelOccurrence (state : State) (le : Issue → Issue → Bool) (id : OccurrenceId) : State :=
   match state.occurrence? id with
   | none => state
-  | some occurrence => recordCancelled ((state.withdrawOccurrence id).removeOccurrence id) [occurrence]
+  | some occurrence => recordCancelled ((state.withdrawOccurrence id).removeOccurrence le id) [occurrence]
 
 /-- Whether `scope` would be idle once the occurrence `id`, its items, what is attached to it and the scope occurrence
 it owns were gone: nothing else remains there. -/
-def idleWithout (state : State) (scope : ScopeOccurrenceId) (id : OccurrenceId) : Bool :=
-  (((state.closeOwnItems id).disarm id).removeOccurrence id).idle scope
+def idleWithout (state : State) (le : Issue → Issue → Bool) (scope : ScopeOccurrenceId) (id : OccurrenceId) : Bool :=
+  (((state.closeOwnItems id).disarm id).removeOccurrence le id).idle scope
 
 end State
 

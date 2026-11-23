@@ -95,6 +95,17 @@ structure IssuedBelow (s : State) : Prop where
   its identity never recurs (`occurrences`). -/
   items : ∀ item ∈ itemList s.openItems, ItemIssued s item.id
   scopes : ∀ scope ∈ s.scopes, ScopeIssued s scope.id
+  /-- A fresh order position of a scope occurrence is in the issue table (DC25), so the commit numbers it and a committed
+  state holds committed positions only. -/
+  positions : ∀ scope ∈ s.scopes, ∀ unit index, scope.position = .fresh unit index →
+    s.issued[Issue.fresh unit index]? = some .position
+
+/-- `IssuedBelow`'s position clause carries to a state whose scope occurrences are some of `s`'s and whose issue table
+holds `s`'s. -/
+theorem IssuedBelow.positionsKept {s t : State} (issued : IssuedBelow s) (scopes : ∀ scope ∈ t.scopes, scope ∈ s.scopes)
+    (table : TableGrows s t) : ∀ scope ∈ t.scopes, ∀ unit index, scope.position = .fresh unit index →
+      t.issued[Issue.fresh unit index]? = some .position :=
+  fun scope member unit index fresh => table _ _ (issued.positions scope (scopes scope member) unit index fresh)
 
 /-- The issue table and the issuer (DC12, `IssuerFresh`): the table holds fresh issues only, none of the running
 unit's at or above its next index, so the next issue (`State.issue`) is not in the table, and only the issues of a
@@ -654,8 +665,8 @@ def subProcess : Occurrence := { id := subKey, element := ⟨"Sub"⟩, scope := 
 def innerTask : Occurrence := { id := innerKey, element := ⟨"Inner"⟩, scope := subScope, activation := 1 }
 def outerTask : Occurrence := { id := outerKey, element := ⟨"Outer"⟩, scope := processRoot, activation := 1 }
 
-def rootScope : ScopeOccurrence := { id := processRoot, element := none }
-def childScope : ScopeOccurrence := { id := subScope, element := some ⟨"Sub"⟩, occurrence := some subKey }
+def rootScope : ScopeOccurrence := { id := processRoot, element := none, position := 0 }
+def childScope : ScopeOccurrence := { id := subScope, element := some ⟨"Sub"⟩, position := 0, occurrence := some subKey }
 
 def innerItem (kind : OpenKind) : OpenItem := { id := ⟨innerKey, .wait, 0⟩, position := 4, kind, element := ⟨"Inner"⟩, scope := subScope }
 def outerItem (kind : OpenKind) : OpenItem := { id := ⟨outerKey, .wait, 0⟩, position := 6, kind, element := ⟨"Outer"⟩, scope := processRoot }

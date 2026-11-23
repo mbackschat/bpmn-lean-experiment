@@ -74,7 +74,7 @@ import {
   SemanticCause,
   semanticFailure, type OccurrenceId,
 } from "../state.js";
-import { ScopeRole, ctxRunsAsInstance, leaveScope, subtree, type Ctx } from "../hooks.js";
+import { ScopeRole, ctxPositionLe, ctxRunsAsInstance, inside, leaveScope, type Ctx } from "../hooks.js";
 import { begunChildren, keptRecords } from "./compensation/kept.js";
 
 function store(state: State, compensation: Compensations): State {
@@ -322,7 +322,7 @@ function release(ctx: Ctx, context: ScopeOccurrenceId, state: State, fuel: numbe
   if (fuel === 0) return semanticFailure(SemanticCause.Invariant, "compensation-run-depth");
   const owner = state.slots.compensation.runs.find((candidate) => candidate.running.some(([running]) => running === context));
   if (owner === undefined) return semanticFailure(SemanticCause.Invariant, "compensation-run-missing");
-  const left = leaveScope(state, context);
+  const left = leaveScope(state, ctxPositionLe(ctx, state), context);
   const compensation = left.slots.compensation;
   const matches = isRun(owner.scope, owner.trigger);
   const runs = compensation.runs.map((candidate) => matches(candidate)
@@ -392,9 +392,9 @@ export function handlerCompleted(ctx: Ctx, occurrence: Occurrence, state: State)
  * then.
  */
 export function dropWithin(_ctx: Ctx, scope: ScopeOccurrenceId, state: State): State {
-  const inside = subtree(state, scope);
+  const within = inside(state, scope);
   const compensation = state.slots.compensation;
-  return store(state, { ...compensation, runs: compensation.runs.filter((run) => !inside.includes(run.scope)) });
+  return store(state, { ...compensation, runs: compensation.runs.filter((run) => !within.includes(run.scope)) });
 }
 
 /**

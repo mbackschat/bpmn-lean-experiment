@@ -47,7 +47,7 @@ import {
   semanticFailure,
 } from "../state.js";
 import {
-  clearInside, ctxOutputReads, ctxRequireMappings, ctxRequireMappingsWith, evalContext, ownVariables, type Ctx,
+  clearInside, ctxOutputReads, ctxPositionLe, ctxRequireMappings, ctxRequireMappingsWith, evalContext, ownVariables, type Ctx,
   type ScopeEntry,
 } from "../hooks.js";
 
@@ -135,7 +135,7 @@ export function arriveScope(ctx: Ctx, header: Header, payload: ScopePayload, occ
       const read = ctx.eventStart(payload);
       if (read === null) return semanticFailure(SemanticCause.Invariant, "event-subprocess-without-start-reading");
       const keep = entry.inner === null ? [occurrence.id] : [occurrence.id, entry.inner];
-      const cleared = read[1] ? clearInside(state, occurrence.scope, keep) : state;
+      const cleared = read[1] ? clearInside(state, ctxPositionLe(ctx, state), occurrence.scope, keep) : state;
       return enter(ctx, header, payload, occurrence, entry, cleared);
     }
   }

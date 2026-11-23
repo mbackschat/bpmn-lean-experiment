@@ -113,7 +113,9 @@ export function renameState(rename: Rename, continuation: (continuation: Continu
   const id = (key: OccurrenceId): OccurrenceId => renameId(rename, key);
   return {
     ...state,
-    scopes: state.scopes.map((entry) => ({ ...entry, id: scope(entry.id), occurrence: entry.occurrence === null ? null : id(entry.occurrence) })),
+    scopes: state.scopes.map((entry) => ({
+      ...entry, id: scope(entry.id), position: rename(entry.position), occurrence: entry.occurrence === null ? null : id(entry.occurrence),
+    })),
     occurrences: state.occurrences.map((occurrence) => ({
       ...occurrence, id: id(occurrence.id), scope: scope(occurrence.scope), continuation: continuation(occurrence.continuation),
     })),

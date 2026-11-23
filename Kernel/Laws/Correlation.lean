@@ -146,8 +146,8 @@ occurrence of `Sub` below it holding `step = "a"`. -/
 def root : ScopeOccurrenceId := .ofSegments []
 def inner : ScopeOccurrenceId := .ofSegments [{ element := ⟨"Sub"⟩, ordinal := 0 }]
 
-def rootScope : ScopeOccurrence := { id := root, element := none }
-def innerScope : ScopeOccurrence := { id := inner, element := some ⟨"Sub"⟩ }
+def rootScope : ScopeOccurrence := { id := root, element := none, position := 0 }
+def innerScope : ScopeOccurrence := { id := inner, element := some ⟨"Sub"⟩, position := 0 }
 def rootLocals : ScopeVariables := { scope := root, entries := [("order", .int 7)] }
 def innerLocals : ScopeVariables := { scope := inner, entries := [("step", .string "a")] }
 def rootData : InstanceData := { root, businessKey := some "k" }

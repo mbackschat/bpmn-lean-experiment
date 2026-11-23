@@ -224,19 +224,21 @@ theorem openSubscription_eq (state : State) (kind : OpenKind) (element : Element
   simp only [State.openSubscription, State.issuePosition, State.issueItem, State.issue, State.putItem]
 
 /-- A scope occurrence is entered below its parent as the running unit's next issue, which the issue table records
-under its slot, with its locals keyed. -/
+under its slot, then takes the unit's following issue as its order position (DC25), with its locals keyed. -/
 theorem enterScope_eq (state : State) (element : ElementId) (parent : ScopeOccurrenceId)
     (locals : List (String × Value)) (occurrence : Option OccurrenceId) :
     state.enterScope element parent locals occurrence =
       ({ state with
-          issueNext := state.issueNext + 1
-          issued := state.issued.insert (.fresh state.issuing state.issueNext) (.scope { parent, element })
+          issueNext := state.issueNext + 1 + 1
+          issued := (state.issued.insert (.fresh state.issuing state.issueNext) (.scope { parent, element })).insert
+            (.fresh state.issuing (state.issueNext + 1)) .position
           scopes := state.scopes ++
-            [{ id := parent.child element (.fresh state.issuing state.issueNext), element := some element, occurrence }]
+            [{ id := parent.child element (.fresh state.issuing state.issueNext), element := some element,
+               position := .fresh state.issuing (state.issueNext + 1), occurrence }]
           variables := state.variables ++
             [{ scope := parent.child element (.fresh state.issuing state.issueNext), entries := keyed locals }] },
         parent.child element (.fresh state.issuing state.issueNext)) := by
-  simp only [State.enterScope, State.issue]
+  simp only [State.enterScope, State.issuePosition, State.issue]
 
 theorem recordEnd_eq (state : State) (key : OccurrenceKey) (terminal : Terminal) :
     state.recordEnd key terminal = { state with draft := { state.draft with ended := state.draft.ended ++ [(key, terminal)] } } := by
@@ -481,7 +483,7 @@ theorem instanceRoot_go (state : State) :
 theorem initial_eq (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
     State.initial instanceId variables businessKey =
       { instanceId
-        scopes := [{ id := State.root, element := none }]
+        scopes := [{ id := State.root, element := none, position := 0 }]
         variables := [{ scope := State.root, entries := keyed variables }]
         slots := { instances := [{ root := State.root, businessKey }] } } := by
   simp only [State.initial]

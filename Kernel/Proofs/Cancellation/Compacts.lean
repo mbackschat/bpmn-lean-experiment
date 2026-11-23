@@ -54,7 +54,14 @@ theorem orderJournal_scopesKept {programBefore program : Program} {before start 
       | some id =>
         obtain ⟨occurrence, present, named, -⟩ := formedBefore.owned.scopeOwners settled held id link
         rw [Option.map_some, id_fixed committed.issued (named ▸ formedBefore.issued.occurrences occurrence present) fixes]
-    rw [← same, fixed old oldIn, same, owner]
+    have position : commitRenaming schedule start log (ordered log state) settled.position = settled.position := by
+      cases standing : settled.position with
+      | committed n => exact fixes n
+      | fresh unit index =>
+        have tabled := formedBefore.issued.positions settled held unit index standing
+        rw [committed.issued] at tabled
+        simp at tabled
+    rw [← same, fixed old oldIn, same, owner, position]
     exact held
 
 end Kernel.Proofs.Cancellation

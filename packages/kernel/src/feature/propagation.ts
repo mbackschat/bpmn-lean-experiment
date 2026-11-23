@@ -75,7 +75,7 @@ import {
   allTokens,
 } from "../state.js";
 import {
-  ScopeRole, boundaryFire, clearInside, disarm, ctxOutputReads, ctxRequireMappingsWith, ctxRunsAsInstance, idleWithout, lastWrites,
+  ScopeRole, boundaryFire, clearInside, disarm, ctxOutputReads, ctxPositionLe, ctxRequireMappingsWith, ctxRunsAsInstance, idleWithout, lastWrites,
   ownVariables, type Ctx,
 } from "../hooks.js";
 import { best, boundariesOf, contextCatcher, levelCandidates } from "./propagation/candidates.js";
@@ -154,7 +154,7 @@ function hostLeaves(hooks: PropagationHooks, ctx: Ctx, origin: Origin, state: St
 function endsInstanceWithOutputs(ctx: Ctx, origin: Origin, state: State): boolean {
   const thrower = programElement(ctx.program, origin.element);
   const outputs = (thrower === null ? null : elementEnvelope(thrower))?.outputs ?? [];
-  const left = origin.host === null ? idle(state, origin.scope) : idleWithout(state, origin.scope, origin.host);
+  const left = origin.host === null ? idle(state, origin.scope) : idleWithout(state, ctxPositionLe(ctx, state), origin.scope, origin.host);
   return outputs.length > 0 && instanceRoot(state, origin.scope) === origin.scope && left;
 }
 
@@ -329,7 +329,7 @@ function leaveOccurrence(
   if (raisedIsCancel(raised)) {
     const rolledBack = cancelledScope(origin, occurrence, state);
     const terminating = occurrence.occurrence !== null && rolledBack === occurrence.id ? disarm(state, occurrence.occurrence) : state;
-    return committed(signal(clearInside(terminating, rolledBack), {
+    return committed(signal(clearInside(terminating, ctxPositionLe(ctx, terminating), rolledBack), {
       tag: SignalTag.Compensate,
       scope: rolledBack,
       activity: null,

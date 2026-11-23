@@ -530,7 +530,8 @@ theorem visible_enterScope (formed : WellFormed program s) {scope : ScopeOccurre
   obtain ⟨t, entered⟩ : ∃ t : State, (s.enterScope element parent locals occurrence).1 = t := ⟨_, rfl⟩
   rw [entered]
   have scopes : t.scopes = s.scopes ++
-      [{ id := parent.child element (.fresh s.issuing s.issueNext), element := some element, occurrence }] := by
+      [{ id := parent.child element (.fresh s.issuing s.issueNext), element := some element,
+         position := .fresh s.issuing (s.issueNext + 1), occurrence }] := by
     rw [← entered, enterScope_eq]
   have variables : t.variables = s.variables ++
       [{ scope := parent.child element (.fresh s.issuing s.issueNext), entries := keyed locals }] := by

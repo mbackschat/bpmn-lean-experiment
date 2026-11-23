@@ -74,7 +74,7 @@ theorem arriveThrow_keeps {inv : State → Prop} {ctx : Ctx} (ops : PropagationO
   | none => cases ran; exact complete
   | terminate =>
     cases ran
-    obtain ⟨cleared, stays⟩ := ops.terminate state occurrence holds member begun
+    obtain ⟨cleared, stays⟩ := ops.terminate ctx.positionLe state occurrence holds member begun
     exact ops.complete _ _ _ _ _ cleared stays begun fun _ same => by cases same; rfl
   | error record => cases ran; rw [named]; exact ops.raise _ _ _ complete left begun ⟨state, begunFrom, .inr ⟨_, rfl⟩⟩
   | escalation record => cases ran; rw [named]; exact ops.raise _ _ _ holds member begun ⟨state, begunFrom, .inl rfl⟩
@@ -248,9 +248,9 @@ theorem leaveOccurrence_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Featur
     obtain ⟨entry, inside, same⟩ := cancelledScope_stands (origin := origin) present
     repeat' split
     all_goals first
-      | exact ops.rollBack _ _ _ _ _ _ _ holds ⟨entry, inside, same⟩ bounded
+      | exact ops.rollBack _ _ _ _ _ _ _ _ holds ⟨entry, inside, same⟩ bounded
           ⟨base, raised, origin, state, popped, standing, cancels, steady, .inl rfl, rfl⟩ (entered _ present) flows
-      | exact ops.rollBack _ _ _ _ _ _ _ (ops.disarm _ _ holds).1 ⟨entry, (ops.disarm _ _ holds).2 ▸ inside, same⟩
+      | exact ops.rollBack _ _ _ _ _ _ _ _ (ops.disarm _ _ holds).1 ⟨entry, (ops.disarm _ _ holds).2 ▸ inside, same⟩
           bounded ⟨base, raised, origin, state, popped, standing, cancels, steady, .inr ⟨_, rfl⟩, rfl⟩
           (entered _ ((ops.disarm _ _ holds).2 ▸ present)) flows
   · split at ran
@@ -385,7 +385,7 @@ The cancellation lane's (P3) share: what a Terminate End's arrival does, from wh
 flow. -/
 theorem arriveThrow_terminate (ctx : Ctx) (header : Header) (payload : EventPayload) (occurrence : Occurrence)
     (state : State) : Feature.Propagation.arriveThrow ctx header payload .terminate occurrence state =
-      .ok ((state.clearInside occurrence.scope [occurrence.id]).signal
+      .ok ((state.clearInside ctx.positionLe occurrence.scope [occurrence.id]).signal
         (.complete occurrence.id (.flows []) [] .outward)) := by
   unfold Feature.Propagation.arriveThrow
   rfl
@@ -434,7 +434,7 @@ theorem leaveOccurrence_cancel {ctx : Ctx} {hooks : Feature.Propagation.Propagat
     (ran : Feature.Propagation.leaveOccurrence hooks ctx raised origin occurrence parent boundary writes state = .ok after) :
     ∃ terminating, (terminating = state ∨ ∃ activity, occurrence.occurrence = some activity ∧
         terminating = state.disarm activity) ∧
-      after = (terminating.clearInside (Feature.Propagation.cancelledScope origin occurrence state)).signal
+      after = (terminating.clearInside ctx.positionLe (Feature.Propagation.cancelledScope origin occurrence state)).signal
         (.compensate (Feature.Propagation.cancelledScope origin occurrence state) none
           { processInstanceId := state.instanceOf origin.scope, element := origin.element, activation := origin.activation }
           occurrence.occurrence (some (.occur boundary.id parent (.flows boundary.outgoing)))) := by

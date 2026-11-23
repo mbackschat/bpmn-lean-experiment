@@ -25,6 +25,8 @@ module.
 
 namespace Kernel.Proofs.Cancellation
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel
 open Kernel.Laws.State (WellFormed)
 open Kernel.Laws.Step (Operations)
@@ -122,10 +124,10 @@ theorem joinOps_alongside {program : Program} (side : FrameAlongside program rel
 
 /-- Leaving a scope occurrence keeps no instance entry it did not have. -/
 private theorem leaveScope_entries (s : State) (scope : ScopeOccurrenceId) :
-    ∀ entry ∈ (s.leaveScope scope).slots.instances, entry ∈ s.slots.instances := by
+    ∀ entry ∈ (s.leaveScope le scope).slots.instances, entry ∈ s.slots.instances := by
   intro entry inside
   rw [Laws.State.leaveScope_slots_eq] at inside
-  obtain ⟨_, shape⟩ := Laws.State.clearInside_eq s scope []
+  obtain ⟨_, shape⟩ := Laws.State.clearInside_eq (le := le) s scope []
   rw [shape] at inside
   exact (List.mem_filter.mp (List.mem_filter.mp inside).1).1
 
@@ -144,20 +146,20 @@ theorem multiInstanceOps_alongside {program : Program} (side : Alongside program
     Laws.MultiInstance.MultiInstanceOps program (fun s => WellFormed program s ∧ rel s) Laws.State.Settled where
   issued s holds := ops.issued s holds.1
   contexts s holds := ops.contexts s holds.1
-  record s run index scope output results holds member slot stands fits := by
-    have recorded := ops.record s run index scope output results holds.1 member slot stands fits
+  record le s run index scope output results holds member slot stands fits := by
+    have recorded := ops.record le s run index scope output results holds.1 member slot stands fits
     have parentOf := (holds.1.settled.placed run member _ (List.mem_of_getElem? slot)).2
     obtain ⟨entry, inside, named⟩ := List.mem_map.mp stands
     subst named
     obtain ⟨left, -, frame⟩ := Laws.State.leaveChild_wellFormed holds.1 inside (parentOf entry inside rfl)
-    have held : Laws.Flow.Anchored (fun t => WellFormed program t ∧ rel t) program (s.leaveScope entry.id)
+    have held : Laws.Flow.Anchored (fun t => WellFormed program t ∧ rel t) program (s.leaveScope le entry.id)
         run.element run.scope :=
       Laws.Flow.Anchored.weaken holds ⟨run.element, .inl rfl, .inl (.inr (.inr (.inr (.inr (.inl ⟨run, member, rfl,
         rfl⟩)))))⟩ (Laws.State.leaveScope_grows s entry.id)
         (fun _ present => frame.scopesSublist.subset present) (leaveScope_entries s entry.id)
     refine ⟨⟨recorded.1, ?_⟩, recorded.2⟩
     rw [Laws.MultiInstance.leftWith, Laws.MultiInstance.setRun_eq]
-    exact side.runs _ _ left (setRun_anchored held) (side.leaveInstance s run entry.id holds.1 member
+    exact side.runs _ _ left (setRun_anchored held) (side.leaveInstance le s run entry.id holds.1 member
       (List.mem_of_getElem? slot) stands holds.2)
   bodies s run holds member := ops.bodies s run holds.1 member
   placed s run holds member := ops.placed s run holds.1 member
@@ -202,14 +204,14 @@ theorem scopesOps_alongside {program : Program} (side : FrameAlongside program r
   owner s scope occurrence holds member owned link := ops.owner s scope occurrence holds.1 member owned link
   complete s occurrence leave writes rule holds member begun unnamed :=
     ⟨ops.complete s occurrence leave writes rule holds.1 member begun unnamed, side.signal holds.2 _ (unplacing := Laws.Step.placing_complete unnamed)⟩
-  clear s occurrence inner holds member begun ready :=
-    have cleared := ops.clear s occurrence inner holds.1 member begun ready
+  clear le s occurrence inner holds member begun ready :=
+    have cleared := ops.clear le s occurrence inner holds.1 member begun ready
     have kept : ∀ o ∈ s.occurrences, o.id ∈ occurrence.id :: inner.toList →
         ¬ Laws.State.StrictlyWithin s o.scope occurrence.scope := fun o inside keeps strictly => by
       rcases List.mem_cons.mp keeps with same | reserved
       · exact strictly.2 (congrArg Occurrence.scope (Laws.State.nodup_map_eq holds.1.distinct.occurrences inside member same))
       · exact strictly.2 ((ready o.id reserved).2.2 o inside rfl)
-    ⟨⟨cleared.1, side.clearInside s _ _ holds.1 (holds.1.owned.occurrenceScopes occurrence member) kept holds.2⟩,
+    ⟨⟨cleared.1, side.clearInside le s _ _ holds.1 (holds.1.owned.occurrenceScopes occurrence member) kept holds.2⟩,
       cleared.2⟩
   enter s element locals occurrence inner holds member begun named ready :=
     have entered := ops.enter s element locals occurrence inner holds.1 member begun named ready
@@ -228,9 +230,9 @@ theorem scopesOps_alongside {program : Program} (side : FrameAlongside program r
 
 /-- A clearing keeps no scope occurrence and no instance entry it did not have. -/
 private theorem cleared_within (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
-    (∀ entry ∈ (s.clearInside scope keep).scopes, entry ∈ s.scopes) ∧
-      ∀ entry ∈ (s.clearInside scope keep).slots.instances, entry ∈ s.slots.instances := by
-  obtain ⟨_, shape⟩ := Laws.State.clearInside_eq s scope keep
+    (∀ entry ∈ (s.clearInside le scope keep).scopes, entry ∈ s.scopes) ∧
+      ∀ entry ∈ (s.clearInside le scope keep).slots.instances, entry ∈ s.slots.instances := by
+  obtain ⟨_, shape⟩ := Laws.State.clearInside_eq (le := le) s scope keep
   rw [shape]
   exact ⟨fun _ inside => (List.mem_filter.mp inside).1, fun _ inside => (List.mem_filter.mp inside).1⟩
 
@@ -250,9 +252,9 @@ theorem propagationOps_alongside {program : Program} (side : FrameAlongside prog
     ⟨ops.compensate s occurrence scope activity trigger leave holds.1 member begun (begunFrom.imp fun _ => And.left)
       unnamed named, occurs.throwCompensate s occurrence scope activity trigger leave holds.1 begunFrom named unnamed
         holds.2⟩
-  terminate s occurrence holds member begun :=
-    have cleared := ops.terminate s occurrence holds.1 member begun
-    ⟨⟨cleared.1, side.clearInside s _ _ holds.1 (holds.1.owned.occurrenceScopes occurrence member)
+  terminate le s occurrence holds member begun :=
+    have cleared := ops.terminate le s occurrence holds.1 member begun
+    ⟨⟨cleared.1, side.clearInside le s _ _ holds.1 (holds.1.owned.occurrenceScopes occurrence member)
       (fun _ inside keeps strictly => strictly.2 (congrArg Occurrence.scope (Laws.State.nodup_map_eq
         holds.1.distinct.occurrences inside member (List.mem_singleton.mp keeps)))) holds.2⟩, cleared.2⟩
   openItem s kind occurrence holds member begun unstarted role :=
@@ -273,13 +275,13 @@ theorem propagationOps_alongside {program : Program} (side : FrameAlongside prog
   disarm s host holds :=
     have disarmed := ops.disarm s host holds.1
     ⟨⟨disarmed.1, side.disarm s host holds.1 holds.2⟩, disarmed.2⟩
-  rollBack s scope trigger leave element parent flows holds stands bounded rolls anchored listed :=
-    ⟨ops.rollBack s scope trigger leave element parent flows holds.1 stands bounded (rolls.imp fun _ => And.left)
+  rollBack le s scope trigger leave element parent flows holds stands bounded rolls anchored listed :=
+    ⟨ops.rollBack le s scope trigger leave element parent flows holds.1 stands bounded (rolls.imp fun _ => And.left)
       (anchored.mono fun _ => And.left) listed,
-      occurs.compensate _ _ _ _ _ _ _ _ (.inl bounded) ⟨s, rfl, holds.1, List.mem_map.mpr stands, rolls⟩
+      occurs.compensate _ _ _ _ _ _ _ _ (.inl bounded) ⟨s, le, rfl, holds.1, List.mem_map.mpr stands, rolls⟩
         (.inl ⟨anchored.weaken holds (Laws.State.clearInside_grows s scope [])
           (cleared_within s scope []).1 (cleared_within s scope []).2, listed⟩)
-        (side.clearInside s scope [] holds.1 (List.mem_map.mpr stands) (fun _ _ none => by simp at none) holds.2)⟩
+        (side.clearInside le s scope [] holds.1 (List.mem_map.mpr stands) (fun _ _ none => by simp at none) holds.2)⟩
 
 /-- Compensation runs' record beside `WellFormed`: a context `Laws.Compensation.RunsOps` leaves is a running one
 (`LeavesOwned`), the runs it stores hold only contexts held or fresh (`StoresHeldOrFresh`) and resume by pending
@@ -323,9 +325,9 @@ theorem runsOps_alongside {program : Program} (side : StoresAlongside program re
     ⟨⟨queued.1, side.signalBegin _ _ holds.1 (.handler rfl rfl)
       ⟨⟨handler, .inl rfl, .inl (.inr (.inl ⟨entry, member, facts.2.1, .inr ⟨facts.1, facts.2.2⟩⟩))⟩,
         fun _ _ none => (by cases none), fun _ none => by cases none⟩ holds.2⟩, queued.2⟩
-  leave s entry parent holds member link running :=
-    have left := ops.leave s entry parent holds.1 member link running
-    ⟨⟨left.1, side.leaveScope s entry.id holds.1 (List.mem_map.mpr ⟨entry, member, rfl⟩) (.inr running)
+  leave le s entry parent holds member link running :=
+    have left := ops.leave le s entry parent holds.1 member link running
+    ⟨⟨left.1, side.leaveScope le s entry.id holds.1 (List.mem_map.mpr ⟨entry, member, rfl⟩) (.inr running)
       holds.2⟩, left.2⟩
 
 /-- A fired item's completion by flows its element lists is offered where its occurrence lies, in the state the item
@@ -650,8 +652,8 @@ theorem endsKept_alongside (b : State) (x : Option (OccurrenceId × OccurrenceKe
   enterScope s element parent locals owner formed stands _ kept :=
     kept.step formed (Laws.Step.enterScope_frame formed element stands locals owner)
   reserve _ element _ formed stands _ _ kept := kept.step formed (Laws.Step.reserve_frame formed element stands.mem)
-  leaveScope _ _ formed present _ kept := kept.step formed (Laws.Step.leaveScope_frame formed present)
-  clearInside _ _ _ formed present inside kept := kept.step formed (Laws.Step.clearInside_frame formed present inside)
+  leaveScope le _ _ formed present _ kept := kept.step formed (Laws.Step.leaveScope_frame formed present)
+  clearInside le _ _ _ formed present inside kept := kept.step formed (Laws.Step.clearInside_frame formed present inside)
   disarm s host formed kept := kept.step formed (Laws.Step.disarm_frame s host)
   setVariable s target name value formed kept := kept.step formed (Laws.Step.setVariable_frame s target name value)
   removeVariable s target name formed kept := kept.step formed (Laws.Step.removeVariable_frame s target name)
@@ -661,7 +663,7 @@ theorem endsKept_alongside (b : State) (x : Option (OccurrenceId × OccurrenceKe
   defer s _ _ _ kept := by
     rw [Laws.State.deferBegins_eq]
     exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (.refl _) (.refl _)
-  leaveInstance _ _ _ formed _ _ present kept := kept.step formed (Laws.Step.leaveScope_frame formed present)
+  leaveInstance le _ _ _ formed _ _ present kept := kept.step formed (Laws.Step.leaveScope_frame formed present)
   runs _ _ _ _ kept := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (.refl _) (.refl _)
 
 /-- Storing compensation runs keeps an input's end facts from its start. -/
@@ -690,7 +692,7 @@ theorem endsKept_closureAlongside (b : State) (program : Program) :
   untoken _ _ _ kept := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (.refl _) (.refl _)
   begin _ _ role sourceType formed stands admitted _ _ kept :=
     kept.step formed (Laws.Step.beginOccurrence_frame formed stands admitted role sourceType)
-  cancel _ id formed kept := kept.step formed (Laws.Step.cancelOccurrence_frame formed id)
+  cancel le _ id formed kept := kept.step formed (Laws.Step.cancelOccurrence_frame formed id)
 
 /-- Reservations and queued occurrences keep an input's end facts from its start, which they frame
 (`Kernel.Laws.Step.EndsFrames`). -/

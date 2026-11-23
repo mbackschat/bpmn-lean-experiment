@@ -257,11 +257,11 @@ attribute [local simp] Laws.State.root_eq calledKey strayKey callOccurrence aIn
 
 /-- The called root of the witnesses. -/
 def placedCalled : ScopeOccurrence :=
-  { id := calledKey, element := some ⟨"Call"⟩, occurrence := some callOccurrence, calledInstance := some "I-call" }
+  { id := calledKey, element := some ⟨"Call"⟩, position := 0, occurrence := some callOccurrence, calledInstance := some "I-call" }
 
 /-- A process instance holding one called instance, which runs `definition`. -/
 def placedState : State :=
-  { instanceId := "I", scopes := [{ id := State.root, element := none }, placedCalled]
+  { instanceId := "I", scopes := [{ id := State.root, element := none, position := 0 }, placedCalled]
     scopeOrdinals := (∅ : TreeMap ScopeSlot Nat compare).insert { parent := State.root, element := ⟨"Call"⟩ } 1
     occurrenceOrdinals := (∅ : TreeMap ScopeSlot Nat compare).insert { parent := State.root, element := ⟨"Call"⟩ } 1
     slots := { instances := [{ root := State.root }, { root := calledKey, definition := some definition }] } }
@@ -370,7 +370,7 @@ theorem called_root_rejected :
 /-- A Sub-Process occurrence of the root process inside a called instance breaks `PlacedLane.scopes`. -/
 theorem misplaced_scope_rejected :
     ¬ PlacedLane { program with elements := [] } { placedState definition with
-        scopes := (placedState definition).scopes ++ [{ id := calledKey.child ⟨"S"⟩ 0, element := some ⟨"S"⟩ }] } :=
+        scopes := (placedState definition).scopes ++ [{ id := calledKey.child ⟨"S"⟩ 0, element := some ⟨"S"⟩, position := 0 }] } :=
   fun lane => placed_misplaced (definition := definition)
     (lane.scopes _ (List.mem_append_right _ (List.mem_singleton_self _)) _ calledKey rfl (Laws.State.ScopeOccurrenceId.parent?_child _ _ _)
       (by simp [scopeIds, placedState, placedCalled]))
@@ -647,7 +647,7 @@ theorem undefined_called_rejected :
 /-- A process root with an element breaks `PlacedLane.rootBare`. -/
 theorem elemented_root_rejected :
     ¬ PlacedLane program { placedState definition with
-        scopes := [{ id := State.root, element := some ⟨"R"⟩ }, placedCalled] } := fun lane => by
+        scopes := [{ id := State.root, element := some ⟨"R"⟩, position := 0 }, placedCalled] } := fun lane => by
   simpa using (lane.rootBare _ (List.mem_cons_self ..)).mpr (by simp)
 
 /-- A Multi-Instance run of the root process inside a called instance breaks `PlacedLane.runs`. -/
@@ -681,8 +681,8 @@ theorem called_scope_rejected : ¬ PlacedLane (calledScope program) (placedState
 /-- The witnesses' process root is its own instance root. -/
 theorem placed_rootRoot : (placedState definition).instanceRoot State.root = State.root := by
   have reading : Laws.State.InstanceIn (placedState definition) State.root (placedState definition).instanceId
-      [{ id := State.root, element := none }] :=
-    .root { id := State.root, element := none } (by simp [placedState]) rfl (by simp)
+      [{ id := State.root, element := none, position := 0 }] :=
+    .root { id := State.root, element := none, position := 0 } (by simp [placedState]) rfl (by simp)
   rw [instanceRoot_chain reading (by simp [scopeIds, placedState, placedCalled, Laws.State.root_eq])
     reading.mem]
   simp [chainRoot]

@@ -36,8 +36,21 @@ theorem below_cons (outer rest : List ScopeSegment) (segment : ScopeSegment) :
 theorem below_nil (outer : List ScopeSegment) : State.below outer [] = false := by
   simp only [State.below]
 
-/-- `State.subtree` holds `scope` and the standing scope occurrences whose keys lie below its key. -/
-theorem mem_subtree (s : State) (scope x : ScopeOccurrenceId) : x ∈ s.subtree scope ↔
+/-- `State.inside` holds `scope` and the standing scope occurrences whose keys lie below its key. -/
+theorem mem_inside (s : State) (scope x : ScopeOccurrenceId) : x ∈ s.inside scope ↔
+    x = scope ∨ ∃ entry ∈ s.scopes, entry.id = x ∧ State.below scope.segments x.segments = true := by
+  simp only [State.inside, List.mem_cons, List.mem_map, List.mem_filter]
+  constructor
+  · rintro (same | ⟨entry, ⟨member, below⟩, named⟩)
+    · exact .inl same
+    · exact .inr ⟨entry, member, named, named ▸ below⟩
+  · rintro (same | ⟨entry, member, rfl, below⟩)
+    · exact .inl same
+    · exact .inr ⟨entry, ⟨member, below⟩, rfl⟩
+
+/-- `State.subtree` holds `scope` and the standing scope occurrences whose keys lie below its key, under every position
+order. -/
+theorem mem_subtree (s : State) (le : Issue → Issue → Bool) (scope x : ScopeOccurrenceId) : x ∈ s.subtree le scope ↔
     x = scope ∨ ∃ entry ∈ s.scopes, entry.id = x ∧ State.below scope.segments x.segments = true := by
   simp only [State.subtree, List.mem_cons, List.mem_map, List.mem_mergeSort, List.mem_filter, Prod.exists]
   constructor
@@ -50,9 +63,19 @@ theorem mem_subtree (s : State) (scope x : ScopeOccurrenceId) : x ∈ s.subtree 
     · exact .inl same
     · exact .inr ⟨_, entry.id, ⟨entry, ⟨member, below⟩, rfl⟩, rfl⟩
 
+/-- `State.subtree` and `State.inside` hold the same scope occurrences. -/
+theorem mem_subtree_inside (s : State) (le : Issue → Issue → Bool) (scope x : ScopeOccurrenceId) :
+    x ∈ s.subtree le scope ↔ x ∈ s.inside scope := by
+  rw [mem_subtree, mem_inside]
+
+/-- A membership test of `State.subtree` is one of `State.inside`. -/
+@[simp] theorem subtree_contains (s : State) (le : Issue → Issue → Bool) (scope x : ScopeOccurrenceId) :
+    (s.subtree le scope).contains x = (s.inside scope).contains x := by
+  rw [Bool.eq_iff_iff, List.contains_iff_mem, List.contains_iff_mem, mem_subtree_inside]
+
 /-- `State.subtree` meets each scope occurrence once. -/
-theorem subtree_nodup (s : State) (distinct : (s.scopes.map (·.id)).Nodup) (scope : ScopeOccurrenceId) :
-    (s.subtree scope).Nodup := by
+theorem subtree_nodup (s : State) (le : Issue → Issue → Bool) (distinct : (s.scopes.map (·.id)).Nodup)
+    (scope : ScopeOccurrenceId) : (s.subtree le scope).Nodup := by
   simp only [State.subtree]
   refine List.nodup_cons.mpr ⟨fun inside => ?_, ?_⟩
   · obtain ⟨_, member, named⟩ := List.mem_map.mp inside
@@ -67,9 +90,14 @@ theorem subtree_nodup (s : State) (distinct : (s.scopes.map (·.id)).Nodup) (sco
     rw [List.map_map]
     exact (distinct.sublist ((List.filter_sublist).map _))
 
+/-- `State.inside` reads only the scope occurrences. -/
+theorem inside_congr {s t : State} (scopes : t.scopes = s.scopes) (scope : ScopeOccurrenceId) :
+    t.inside scope = s.inside scope := by
+  simp only [State.inside, scopes]
+
 /-- `State.subtree` reads only the scope occurrences. -/
-theorem subtree_congr {s t : State} (scopes : t.scopes = s.scopes) (scope : ScopeOccurrenceId) :
-    t.subtree scope = s.subtree scope := by
+theorem subtree_congr {s t : State} (scopes : t.scopes = s.scopes) (le : Issue → Issue → Bool) (scope : ScopeOccurrenceId) :
+    t.subtree le scope = s.subtree le scope := by
   have ranks : ∀ outer inner, t.ranks outer inner = s.ranks outer inner := by
     intro outer inner
     induction inner with

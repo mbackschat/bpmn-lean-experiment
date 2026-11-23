@@ -42,6 +42,8 @@ Nothing executable imports this module.
 
 namespace Kernel.Proofs.State
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel
 open Kernel.Laws.State (WellFormed)
 
@@ -67,13 +69,13 @@ def PopulationKeepsWellFormed (hooks : Hooks) : Prop :=
 
 /-- Leaving scope occurrences keeps no scope occurrence or instance entry the state did not have. -/
 private theorem leaveAll_kept : ∀ (scopes : List ScopeOccurrence) (t : State),
-    (∀ entry ∈ (scopes.foldl (fun t entry => t.leaveScope entry.id) t).scopes, entry ∈ t.scopes) ∧
-      ∀ entry ∈ (scopes.foldl (fun t entry => t.leaveScope entry.id) t).slots.instances, entry ∈ t.slots.instances
+    (∀ entry ∈ (scopes.foldl (fun t entry => t.leaveScope le entry.id) t).scopes, entry ∈ t.scopes) ∧
+      ∀ entry ∈ (scopes.foldl (fun t entry => t.leaveScope le entry.id) t).slots.instances, entry ∈ t.slots.instances
   | [], _ => ⟨fun _ kept => kept, fun _ kept => kept⟩
   | entry :: rest, t => by
-    obtain ⟨scopes, instances⟩ := leaveAll_kept rest (t.leaveScope entry.id)
-    obtain ⟨draft, cleared⟩ := Laws.State.clearInside_eq t entry.id []
-    have left := (Laws.State.leaveScope_eq t entry.id).1
+    obtain ⟨scopes, instances⟩ := leaveAll_kept rest (t.leaveScope le entry.id)
+    obtain ⟨draft, cleared⟩ := Laws.State.clearInside_eq (le := le) t entry.id []
+    have left := (Laws.State.leaveScope_eq (le := le) t entry.id).1
     refine ⟨fun found member => ?_, fun found member => ?_⟩
     · have inLeft := scopes found member
       rw [left, cleared] at inLeft
@@ -100,10 +102,9 @@ theorem stateFacts : Laws.Step.StateFacts where
     exact ⟨reserves.occurrences, reserves.kind, reserves.placed,
       fun fresh standing => reserves.fresh fresh (by rw [reserves.placed]; exact standing), reserves.scopes,
       by rw [Laws.State.reserve_slots]⟩
-  removeOccurrence state id := by
+  removeOccurrence state le id := by
     rw [Laws.State.removeOccurrence_eq]
-    obtain ⟨scopes, instances⟩ := leaveAll_kept (state.scopes.filter (·.occurrence == some id))
-      (Laws.State.withoutRecord state id)
+    obtain ⟨scopes, instances⟩ := leaveAll_kept (le := le) _ (Laws.State.withoutRecord state id)
     exact ⟨scopes, instances⟩
   setVariable := Laws.State.setVariable_frame
   removeVariable := Laws.State.removeVariable_frame
@@ -127,10 +128,10 @@ theorem operations : Laws.Step.Operations WellFormed where
   removeVariable _ _ _ _ formed := Laws.State.removeVariable_wellFormed formed
 
 /-- `Step.endInstance` keeps `WellFormed` (`Laws.Step.Phases.endInstance`). -/
-theorem endInstance_wellFormed {program : Program} {state : State} {status : InstanceStatus}
+theorem endInstance_wellFormed {program : Program} {le : Issue → Issue → Bool} {state : State} {status : InstanceStatus}
     {failure : Option InstanceFailure} (formed : WellFormed program state) (recorded : failure.isSome = true ↔ status = .failed) :
-    WellFormed program (Step.endInstance status failure state) :=
-  Laws.Step.endInstance_eq ▸ Laws.State.endInstance_wellFormed formed recorded
+    WellFormed program (Step.endInstance le status failure state) :=
+  Laws.Step.endInstance_eq ▸ Laws.State.endInstance_wellFormed (le := le) formed recorded
 
 /-- What a closure keeps relative to the state it starts from beside `WellFormed`: the counters the commit compacts
 under and every occurrence under its own scope occurrence's key (`Laws.Step.Phases.runOrder`, DC12, DC26). -/

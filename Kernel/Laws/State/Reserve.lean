@@ -116,7 +116,8 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
           obtain ⟨named, -, -⟩ := parts
           exact absurd (named.trans same.symm) (above occurrence inside)
         · exact below ⟨found, old, same⟩ n committed,
-      fun entry member => grows.issued (formed.issued.scopes entry (reserves.scopes ▸ member))⟩
+      fun entry member => grows.issued (formed.issued.scopes entry (reserves.scopes ▸ member)),
+      formed.issued.positionsKept (fun _ member => reserves.scopes ▸ member) (reserves.table formed.issuer)⟩
   case distinct =>
     refine ⟨?_, reserves.itemMap.1 ▸ formed.distinct.items,
       by simpa [scopeIds, reserves.scopes] using formed.distinct.scopes, ?_⟩
@@ -364,7 +365,8 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
         rcases members found present with rfl | ⟨held, _⟩
         · exact below ⟨occurrence, member, same⟩ n committed
         · exact below ⟨found, held, same⟩ n committed,
-      fun entry inside => grows.issued (formed.issued.scopes entry (starts_.scopes ▸ inside))⟩
+      fun entry inside => grows.issued (formed.issued.scopes entry (starts_.scopes ▸ inside)),
+      formed.issued.positionsKept (fun _ inside => starts_.scopes ▸ inside) (.of_eq starts_.issued)⟩
   case distinct =>
     refine ⟨?_, starts_.itemMap.1 ▸ formed.distinct.items,
       by simpa [scopeIds, starts_.scopes] using formed.distinct.scopes, ?_⟩

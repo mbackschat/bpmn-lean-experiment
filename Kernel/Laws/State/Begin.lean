@@ -15,6 +15,8 @@ Nothing executable imports this module.
 
 namespace Kernel.Laws.State
 
+variable {le : Issue → Issue → Bool}
+
 variable {program : Program}
 
 open Kernel
@@ -264,13 +266,13 @@ theorem clearInside_wellFormed {s : State} (formed : WellFormed program s) {scop
     (attached : ∀ item ∈ itemList s.openItems, (¬ Within s item.scope scope ∨ item.id.occurrence ∈ keep) → ∀ host,
       item.attachedTo = some host → ∀ occurrence ∈ s.occurrences, occurrence.id = host →
         ¬ Within s occurrence.scope scope ∨ host ∈ keep) :
-    WellFormed program (s.clearInside scope keep) :=
+    WellFormed program (s.clearInside le scope keep) :=
   (clearInside_cleared formed present keep).wellFormed formed present kept attached
 
 /-- Clearing everything inside a present scope occurrence keeps a state well-formed: what hangs on an occurrence lies in
 its scope occurrence, so nothing left outside hangs on one removed. -/
 theorem clearAll_wellFormed {s : State} (formed : WellFormed program s) {scope : ScopeOccurrenceId}
-    (present : scope ∈ scopeIds s) : WellFormed program (s.clearInside scope) :=
+    (present : scope ∈ scopeIds s) : WellFormed program (s.clearInside le scope) :=
   clearInside_wellFormed formed present (fun _ _ none => by simp at none) fun item member outside host hangs found
       standing named => by
     obtain ⟨hostOccurrence, hostIn, hostId, placed⟩ := formed.owned.attachments item member host hangs
@@ -281,7 +283,7 @@ theorem clearAll_wellFormed {s : State} (formed : WellFormed program s) {scope :
 occurrence lies within the root, so nothing is kept and nothing is left hanging. -/
 theorem endInstance_wellFormed {s : State} (formed : WellFormed program s) {status : InstanceStatus}
     {failure : Option InstanceFailure} (recorded : failure.isSome = true ↔ status = .failed) :
-    WellFormed program { s.clearInside State.root with status, failure } := by
+    WellFormed program { s.clearInside le State.root with status, failure } := by
   obtain ⟨rootPresent, _, reach⟩ := formed.rooted
   refine (clearInside_wellFormed formed rootPresent (fun _ _ none => by simp at none) ?_).withStatus (fun _ => by apply instanceOf_congr <;> rfl) recorded
   intro item member left

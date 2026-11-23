@@ -44,29 +44,29 @@ inductive ClosureStep (hooks : Hooks) (ctx : Ctx) : RunLog → UnitKey → State
       ClosureStep hooks ctx log unit state after
   | idle {log : RunLog} {state after : State} {scope : ScopeOccurrence} {unit : UnitKey} :
       state.status = .running → firstBreadth state.queuedSignals = none → nextToken hooks ctx log state = none →
-      idleScope? hooks ctx state = some scope → UnitKey.idleUnit? scope.id = some unit →
+      idleScope? hooks (unitCtx ctx log) state = some scope → UnitKey.idleUnit? scope.id = some unit →
       microStep hooks (unitCtx ctx log) unit (.idle scope.id) scope.element scope.id (completeIdleScope hooks (unitCtx ctx log) scope)
         state = .ok after → ClosureStep hooks ctx log unit state after
   | reoffer {log : RunLog} {state after offered : State} {gateway : ElementId} {scope : ScopeOccurrenceId}
       {occurrence : OccurrenceId} {unit : UnitKey} :
       state.status = .running → firstBreadth state.queuedSignals = none → nextToken hooks ctx log state = none →
-      idleScope? hooks ctx state = none → reoffer? hooks (unitCtx ctx log) state = .ok (some (gateway, scope, occurrence, offered)) →
+      idleScope? hooks (unitCtx ctx log) state = none → reoffer? hooks (unitCtx ctx log) state = .ok (some (gateway, scope, occurrence, offered)) →
       UnitKey.offerUnit? occurrence (offerRound state occurrence) = some unit →
       microStep hooks (unitCtx ctx log) unit (.idle scope) (some gateway) scope (fun _ => .ok offered) state = .ok after →
       ClosureStep hooks ctx log unit state after
   | finish {log : RunLog} {state after : State} :
       state.status = .running → firstBreadth state.queuedSignals = none → nextToken hooks ctx log state = none →
-      idleScope? hooks ctx state = none → reoffer? hooks (unitCtx ctx log) state = .ok none → state.idle State.root = true →
+      idleScope? hooks (unitCtx ctx log) state = none → reoffer? hooks (unitCtx ctx log) state = .ok none → state.idle State.root = true →
       state.queuedSignals.isEmpty = true →
       microStep hooks (unitCtx ctx log) (.ofRoot (.idle [])) (.idle State.root) none State.root
-        (fun state => .ok (endInstance .completed none state)) state = .ok after →
+        (fun state => .ok (endInstance (unitCtx ctx log).positionLe .completed none state)) state = .ok after →
       ClosureStep hooks ctx log (.ofRoot (.idle [])) state after
 
 /-- The closure has nothing left to run in `state` after the units `log` records but, once its root is idle and no
 signal is queued, the instance's completion: no queued signal, no token to move, no idle scope occurrence and no parked
 join that fires when it is offered again. -/
 def Quiescent (hooks : Hooks) (ctx : Ctx) (log : RunLog) (state : State) : Prop :=
-  firstBreadth state.queuedSignals = none ∧ nextToken hooks ctx log state = none ∧ idleScope? hooks ctx state = none ∧
+  firstBreadth state.queuedSignals = none ∧ nextToken hooks ctx log state = none ∧ idleScope? hooks (unitCtx ctx log) state = none ∧
     reoffer? hooks (unitCtx ctx log) state = .ok none
 
 /-- The context `Step.step` gives every hook of `input`'s closure. -/
@@ -108,11 +108,11 @@ inductive Finishes (hooks : Hooks) (ctx : Ctx) (id : OccurrenceId) (occurrence :
     Leave → State → State → Prop where
   | raised {state after : State} :
       continueAfter hooks ctx occurrence .raised writes
-        ((state.removeOccurrence id).recordEnd (state.keyOf occurrence) .cancelled) = .ok after →
+        ((state.removeOccurrence ctx.positionLe id).recordEnd (state.keyOf occurrence) .cancelled) = .ok after →
       Finishes hooks ctx id occurrence writes .raised state after
   | left {leave : Leave} {state retained continued : State} : leave ≠ .raised →
       hooks.completed ctx occurrence state = .ok retained →
-      continueAfter hooks ctx occurrence leave writes (retained.removeOccurrence id) = .ok continued →
+      continueAfter hooks ctx occurrence leave writes (retained.removeOccurrence ctx.positionLe id) = .ok continued →
       Finishes hooks ctx id occurrence writes leave state (continued.recordEnd (state.keyOf occurrence) .completed)
 
 
@@ -185,12 +185,12 @@ inductive Performed (hooks : Hooks) (ctx : Ctx) : Signal → State → State →
       complete hooks ctx (state.reserve element scope).2.id leave writes rule (state.reserve element scope).1 = .ok after →
       Performed hooks ctx (.occur element scope leave writes rule) state after
   | onCancel {occurrence : OccurrenceId} {state : State} :
-      Performed hooks ctx (.cancel occurrence) state (state.cancelOccurrence occurrence)
+      Performed hooks ctx (.cancel occurrence) state (state.cancelOccurrence ctx.positionLe occurrence)
   | onFire {item : ItemKey} {fired : Fired} {state after : State} :
       ((∃ open_ ∈ itemList state.openItems, fireItem hooks ctx open_ fired state = .ok after) ∨ after = state) →
       Performed hooks ctx (.fire item fired) state after
   | onEndInstance {status : InstanceStatus} {failure : Option InstanceFailure} {state : State} :
-      Performed hooks ctx (.endInstance status failure) state (endInstance status failure state)
+      Performed hooks ctx (.endInstance status failure) state (endInstance ctx.positionLe status failure state)
   | onCompensate {scope : ScopeOccurrenceId} {activity : Option ElementId} {trigger : OccurrenceRef} {leave : Option OccurrenceId}
       {resume : Option Resume} {state after : State} : ScopeStands state scope →
       hooks.compensate ctx scope activity trigger leave resume state = .ok after →

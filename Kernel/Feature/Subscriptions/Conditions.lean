@@ -88,9 +88,9 @@ def Withdrawal.disarms : Withdrawal → Bool
 host occurrence owns and everything inside them, or the scope occurrence an Event Sub-Process start interrupts and
 everything inside it, its own tokens included; disarming removes none. -/
 def Withdrawal.region (state : State) : Withdrawal → List ScopeOccurrenceId
-  | .host occurrence => (state.scopes.filter (·.occurrence == some occurrence)).flatMap fun scope => state.subtree scope.id
+  | .host occurrence => (state.scopes.filter (·.occurrence == some occurrence)).flatMap fun scope => state.inside scope.id
   | .arms _ => []
-  | .inside scope => state.subtree scope
+  | .inside scope => state.inside scope
 
 /-- What firing `item` withdraws; `none` for an item whose firing withdraws nothing else: a non-interrupting boundary or
 start, or a catch Event. -/

@@ -715,12 +715,13 @@ theorem compact_slots {start : State} {log : RunLog} {s t : State} (ran : compac
 theorem compact_scopeRecords {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) :
     t.scopes = s.scopes.map fun scope =>
       { scope with id := renameScope (commitRenaming schedule start log s) scope.id,
+                   position := commitRenaming schedule start log s scope.position,
                    occurrence := scope.occurrence.map (renameId (commitRenaming schedule start log s)) } := by
   rcases compact_cases ran with ⟨empty, kept⟩ | ⟨_, rfl⟩
   · rw [kept]
     have same := commitRenaming_empty (schedule := schedule) (start := start) (log := log) empty
     have ids : renameId (commitRenaming schedule start log s) = id := funext (renameId_id same)
-    exact ((List.map_congr_left fun _ _ => by simp [ids, renameScope_id same]).trans (List.map_id _)).symm
+    exact ((List.map_congr_left fun _ _ => by simp [ids, renameScope_id same, same]).trans (List.map_id _)).symm
   have frame := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitRekey schedule start log s) s)
   unfold compacted
   rw [frame, renameState_eq]

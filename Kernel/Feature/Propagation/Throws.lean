@@ -139,7 +139,7 @@ def arriveThrow (ctx : Ctx) (header : Header) (payload : EventPayload) (thrown :
   let leave (state : State) : State := state.signal (.complete occurrence.id (throwLeave payload) [] .outward)
   match thrown with
   | .none => .ok (leave state)
-  | .terminate => .ok ((state.clearInside occurrence.scope [occurrence.id]).signal
+  | .terminate => .ok ((state.clearInside ctx.positionLe occurrence.scope [occurrence.id]).signal
       (.complete occurrence.id (.flows []) [] .outward))
   | .error record =>
     -- `throw.error.message` at admission refuses an expression, the only message the kernel cannot read.

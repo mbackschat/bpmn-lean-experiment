@@ -221,7 +221,7 @@ def release (ctx : Ctx) (context : ScopeOccurrenceId) (state : State) : Nat → 
     match state.slots.compensation.runs.find? (·.running.any (·.1 == context)) with
     | none => .error (.semanticFailure .invariant "compensation-run-missing")
     | some owner =>
-      let left := state.leaveScope context
+      let left := state.leaveScope ctx.positionLe context
       let compensation := left.slots.compensation
       let runs := compensation.runs.map fun candidate =>
         if isRun owner.scope owner.trigger candidate then
@@ -272,7 +272,7 @@ def handlerCompleted (ctx : Ctx) (occurrence : Occurrence) (state : State) : Out
 (`Propagation.PropagationHooks.dropRuns`): its interruption is still queued, and a run it would remove must begin no
 handler before then. -/
 def dropWithin (_ : Ctx) (scope : ScopeOccurrenceId) (state : State) : State :=
-  let inside := state.subtree scope
+  let inside := state.inside scope
   let compensation := state.slots.compensation
   store state { compensation with runs := compensation.runs.filter (!inside.contains ·.scope) }
 

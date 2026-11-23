@@ -197,22 +197,27 @@ theorem historic_of_standing {s : State}
     { standing := fun _ member => List.mem_map_of_mem (f := ScopeOccurrence.id) member
       closed, below := fun segment rest n held committed _ => below segment rest n held committed, tabled, layered }⟩
 
+/-- An issue the unit's following issue was inserted after keeps its slot: an identity whose order position the unit
+issued next (`State.enterScope`, DC25). -/
+theorem getElem?_insert_insert_first (m : TreeMap Issue ClaimSlot compare) (unit : UnitKey) (index : Nat)
+    (first second : ClaimSlot) :
+    ((m.insert (.fresh unit index) first).insert (.fresh unit (index + 1)) second)[Issue.fresh unit index]? = some first := by
+  rw [Std.ExtTreeMap.getElem?_insert]
+  split
+  · rename_i same
+    obtain ⟨-, apart⟩ := Issue.fresh.inj (Std.LawfulEqOrd.eq_of_compare same)
+    omega
+  · exact Std.ExtTreeMap.getElem?_insert_self
+
 /-- An entry under a standing parent (DC12): the new key, of the fresh issue `.fresh unit index` the table did not hold,
 joins the standing keys and the table, the counters unchanged. It keeps every history, which then holds the new key. -/
 theorem ScopeGrows.enter {s t : State} {parent : ScopeOccurrenceId} {element : ElementId} {unit : UnitKey} {index : Nat}
     (standing : parent ∈ standingKeys s) (untabled : s.issued[Issue.fresh unit index]? = none)
     (keys : standingKeys t = standingKeys s ++ [parent.child element (.fresh unit index)])
-    (ordinals : t.scopeOrdinals = s.scopeOrdinals)
-    (issued : t.issued = s.issued.insert (.fresh unit index) (.scope { parent, element })) :
+    (ordinals : t.scopeOrdinals = s.scopeOrdinals) (table : TableGrows s t)
+    (issued : t.issued[Issue.fresh unit index]? = some (.scope { parent, element })) :
     ScopeGrows s t ∧ (Historic s → ScopeIssued t (parent.child element (.fresh unit index))) := by
   let fresh := parent.child element (.fresh unit index)
-  have table : TableGrows s t := fun issue slot held => by
-    rw [issued, Std.ExtTreeMap.getElem?_insert]
-    split
-    · rename_i same
-      rw [← Std.LawfulEqOrd.eq_of_compare same, untabled] at held
-      cases held
-    · exact held
   have grows : ∀ H, ScopeHistory s H → ScopeHistory t (fun x => H x ∨ x = fresh) := fun H history =>
     { standing := fun scope member => by
         have : scope.id ∈ standingKeys t := List.mem_map_of_mem (f := ScopeOccurrence.id) member
@@ -250,7 +255,8 @@ theorem ScopeGrows.enter {s t : State} {parent : ScopeOccurrenceId} {element : E
         · simp only [fresh, child_eq, ScopeOccurrenceId.ofSegments_inj, List.cons.injEq] at new
           obtain ⟨rfl, rfl⟩ := new
           cases fresh'
-          rw [issued, Std.ExtTreeMap.getElem?_insert_self, ScopeOccurrenceId.ofSegments_eta]
+          rw [ScopeOccurrenceId.ofSegments_eta]
+          exact issued
       layered := fun x held => by
         rcases held with old | new
         · exact history.layered x old

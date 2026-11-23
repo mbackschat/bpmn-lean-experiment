@@ -430,6 +430,7 @@ theorem WellFormed.reshape {before after : State} (formed : WellFormed program b
   have raises : RaisesSound program after := formed.raises.transport (fun _ _ queued => narrows.signals.subset queued)
     grows issued fun _ member _ => narrows.occurrences ▸ member
   have issuer : IssuerFresh after := formed.issuer.grow narrows.issued narrows.issuing narrows.issueNext narrows.ran
+  have positions := formed.issued.positionsKept (fun _ member => narrows.scopes ▸ member) (.of_eq narrows.issued)
   have distinct : Distinct after := ⟨by simpa [occurrenceIds, narrows.occurrences] using formed.distinct.occurrences,
     narrows.items.keyed formed.distinct.items, by simpa [scopeIds, narrows.scopes] using formed.distinct.scopes,
     by rw [narrows.occurrences, funext keys]; exact formed.distinct.keys⟩
@@ -439,7 +440,7 @@ theorem WellFormed.reshape {before after : State} (formed : WellFormed program b
       let ⟨owner, below, tabled⟩ := formed.issued.items item (items member)
       ⟨owner, fun present n committed => Nat.lt_of_lt_of_le (below (narrows.occurrences ▸ present) n committed)
         (narrows.items.ordinals _), fun unit index fresh => narrows.issued ▸ tabled unit index fresh⟩,
-    fun scope member => grows.issued (formed.issued.scopes scope (narrows.scopes ▸ member))⟩
+    fun scope member => grows.issued (formed.issued.scopes scope (narrows.scopes ▸ member)), positions⟩
   issuer := issuer
   distinct := distinct
   startedOnce := once

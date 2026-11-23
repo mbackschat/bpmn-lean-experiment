@@ -15,6 +15,8 @@ writers keep or drop records. Nothing executable imports this module.
 
 namespace Kernel.Proofs.Frame
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel
 open Kernel.Laws.State (WellFormed)
 
@@ -67,8 +69,8 @@ theorem keyed_frame : FrameAlongside program Keyed where
   takeCompletion _ held := by rw [Laws.State.takeCompletion_eq]; exact held
   enterScope _ _ _ _ _ _ _ _ held := by rw [Laws.State.enterScope_eq]; exact held
   reserve _ element scope _ _ _ _ held := keyed_reserve held element scope
-  leaveScope s scope _ _ _ held := held.sublist (Laws.State.leaveScope_occurrences s scope)
-  clearInside _ scope keep formed present _ held :=
+  leaveScope le s scope _ _ _ held := held.sublist (Laws.State.leaveScope_occurrences s scope)
+  clearInside le _ scope keep formed present _ held :=
     held.sublist (Laws.State.clearInside_cleared formed present keep).occurrencesSublist
   disarm s host _ held := held.sublist (Laws.State.disarm_occurrences s host)
   setVariable s target name value _ held := held.same (Laws.State.setVariable_same s target name value).occurrences
@@ -81,7 +83,7 @@ theorem keyed_alongside : Alongside program Keyed :=
   { keyed_frame program with
     instanceBegin := fun _ _ _ _ held => by rw [Laws.State.signal_eq]; exact held
     defer := fun _ _ _ _ held => by rw [Laws.State.deferBegins_eq]; exact held
-    leaveInstance := fun s _ scope _ _ _ _ held => held.sublist (Laws.State.leaveScope_occurrences s scope)
+    leaveInstance := fun le s _ scope _ _ _ _ held => held.sublist (Laws.State.leaveScope_occurrences s scope)
     runs := fun _ _ _ _ held => held }
 
 theorem keyed_occurs : OccursAlongside program Keyed where
@@ -100,8 +102,8 @@ theorem keyed_withoutRecord (t : State) (id : OccurrenceId) (held : Keyed t) :
 
 /-- Cancelling an occurrence withdraws its items, drops its record and journals its end. -/
 theorem keyed_cancel {s : State} (formed : WellFormed program s) (held : Keyed s) (id : OccurrenceId) :
-    Keyed (s.cancelOccurrence id) :=
-  (keyed_frame program).cancelOccurrence (fun t id _ kept => keyed_withoutRecord t id kept)
+    Keyed (s.cancelOccurrence le id) :=
+  (keyed_frame program).cancelOccurrence le (fun t id _ kept => keyed_withoutRecord t id kept)
     (fun _ _ _ kept => kept) formed held
 
 /-- `Step`'s own phases keep the occurrences keyed: every begin does (`keyed_begin`), and taking work off the queues,
@@ -112,7 +114,7 @@ theorem keyed_closure : ClosureAlongside program Keyed :=
     unqueue := fun _ _ _ held => held
     untoken := fun _ _ _ held => held
     begin := fun _ request role sourceType formed _ _ _ _ held => keyed_begin formed held request role sourceType
-    cancel := fun _ id formed held => keyed_cancel program formed held id
+    cancel := fun le _ id formed held => keyed_cancel program formed held id
     journal := fun _ _ _ _ held _ _ _ => held
     queueBatch := fun _ _ _ held => by rw [Laws.State.queueBatch_eq]; exact held }
 
@@ -137,9 +139,9 @@ theorem keyed_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellFormed) :
         exact holds.2
     rw [Laws.State.closeOwnItems_eq]
     exact started
-  removeOccurrence _ s occurrence holds member free :=
-    have removed := pipeline.removeOccurrence _ _ occurrence holds.1 member free
-    ⟨⟨removed.1, (keyed_frame _).removeOccurrence (fun t id _ kept => keyed_withoutRecord t id kept) holds.1 holds.2⟩,
+  removeOccurrence _ le s occurrence holds member free :=
+    have removed := pipeline.removeOccurrence _ le _ occurrence holds.1 member free
+    ⟨⟨removed.1, (keyed_frame _).removeOccurrence le (fun t id _ kept => keyed_withoutRecord t id kept) holds.1 holds.2⟩,
       removed.2⟩
   recordEnd _ _ key terminal holds := ⟨pipeline.recordEnd _ _ key terminal holds.1, by
     rw [Laws.State.recordEnd_eq]

@@ -28,6 +28,8 @@ executable imports this module.
 
 namespace Kernel.Proofs.Cancellation
 
+variable {le : Issue → Issue → Bool}
+
 variable {program : Program} {schedule : BranchSchedule}
 
 open Kernel
@@ -344,9 +346,9 @@ theorem scopesKept_alongside (before : State) (program : Program) : Alongside pr
   reserve s element scope formed _ _ _ kept :=
     have reserves := Laws.State.reserve_reserves s element scope
     kept.same reserves.scopes reserves.scopeOrdinals (reserves.table formed.issuer)
-  leaveScope s scope _ _ _ kept :=
+  leaveScope le s scope _ _ _ kept :=
     kept.shrink ((Laws.State.removal_shrinks s).2.1 scope).1 ((Laws.State.removal_shrinks s).2.1 scope).2.2
-  clearInside s scope keep _ _ _ kept :=
+  clearInside le s scope keep _ _ _ kept :=
     kept.shrink ((Laws.State.removal_shrinks s).1 scope keep).1 ((Laws.State.removal_shrinks s).1 scope keep).2.2
   disarm s host _ kept := by
     rw [Laws.State.disarm_eq]
@@ -363,7 +365,7 @@ theorem scopesKept_alongside (before : State) (program : Program) : Alongside pr
   defer s _ _ _ kept := by
     rw [Laws.State.deferBegins_eq]
     exact kept
-  leaveInstance s _ scope _ _ _ _ kept :=
+  leaveInstance le s _ scope _ _ _ _ kept :=
     kept.shrink ((Laws.State.removal_shrinks s).2.1 scope).1 ((Laws.State.removal_shrinks s).2.1 scope).2.2
   runs _ _ _ _ kept := kept.shrink (.refl _) (.refl _)
 
@@ -388,7 +390,7 @@ theorem scopesKept_stepAlongside {programBefore : Program} (before : State) (for
   begin _ request role sourceType formed _ _ _ _ kept :=
     have begins := Laws.State.beginOccurrence_begins formed.activations request role sourceType
     kept.same begins.scopes begins.scopeOrdinals (begins.table formed.issuer)
-  cancel s id _ kept :=
+  cancel le s id _ kept :=
     kept.shrink ((Laws.State.removal_shrinks s).2.2.2 id).1 ((Laws.State.removal_shrinks s).2.2.2 id).2.2
 
 /-- `Step`'s phases keep `KeepsScopes before` where they keep `WellFormed`. -/
@@ -411,8 +413,8 @@ theorem keepsScopes_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellForm
       exact holds.2.same starts.scopes starts.scopeOrdinals (.of_eq starts.issued)
     · rw [Laws.State.startReserved_begun s sourceType begun]
       exact holds.2
-  removeOccurrence _ s occurrence holds member free :=
-    have removed := pipeline.removeOccurrence _ _ occurrence holds.1 member free
+  removeOccurrence _ le s occurrence holds member free :=
+    have removed := pipeline.removeOccurrence _ le _ occurrence holds.1 member free
     ⟨⟨removed.1, holds.2.shrink ((Laws.State.removal_shrinks s).2.2.1 occurrence.id).1
       ((Laws.State.removal_shrinks s).2.2.1 occurrence.id).2.2⟩, removed.2⟩
   recordEnd _ _ key terminal holds := ⟨pipeline.recordEnd _ _ key terminal holds.1, by

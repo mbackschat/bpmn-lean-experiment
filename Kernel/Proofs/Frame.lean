@@ -14,6 +14,8 @@ feature, so it lies in no feature's rebuild cone (guard 15). Nothing executable 
 
 namespace Kernel.Proofs.Frame
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel
 open Kernel.Laws.State (WellFormed)
 
@@ -53,11 +55,11 @@ theorem bodyPhases_alongside {rel : Program → State → Prop} (phases : Laws.S
   unrun _ _ request role sourceType holds := phases.unrun _ _ request role sourceType holds.1
   unowned _ _ request role sourceType holds := phases.unowned _ _ request role sourceType holds.1
   parkedBegun _ _ waiting occurrence holds := phases.parkedBegun _ _ waiting occurrence holds.1
-  endInstance _ s status failure holds recorded := by
-    refine ⟨phases.endInstance _ _ status failure holds.1 recorded, ?_⟩
+  endInstance _ le s status failure holds recorded := by
+    refine ⟨phases.endInstance _ le _ status failure holds.1 recorded, ?_⟩
     rw [Laws.Step.endInstance_eq]
-    exact (side _).frame (s.clearInside State.root) _ .same
-      ((side _).clearInside s State.root [] holds.1 holds.1.rooted.1 (fun _ _ none => by cases none) holds.2)
+    exact (side _).frame (s.clearInside le State.root) _ .same
+      ((side _).clearInside le s State.root [] holds.1 holds.1.rooted.1 (fun _ _ none => by cases none) holds.2)
   begin _ s request role sourceType holds stands admitted roled bodied assigned origin :=
     have begun := phases.begin _ _ request role sourceType holds.1 stands admitted roled bodied assigned
       (origin.mono fun _ held => held.1)
@@ -67,7 +69,7 @@ theorem bodyPhases_alongside {rel : Program → State → Prop} (phases : Laws.S
       (popped.imp fun _ => Exists.imp fun _ => Exists.imp fun _ queued => queued.imp fun _ held => held.1)
     ⟨⟨reserved.1, (side _).reserve s element scope holds.1 stands (pending.imp fun _ => And.imp_left And.right) popped
       holds.2⟩, reserved.2⟩
-  cancel _ s id holds := ⟨phases.cancel _ _ id holds.1, (side _).cancel s id holds.1 holds.2⟩
+  cancel _ le s id holds := ⟨phases.cancel _ le _ id holds.1, (side _).cancel le s id holds.1 holds.2⟩
 
 /-- The phases a closure runs keep a property beside `WellFormed` that the state operations they apply keep: the body's
 by `bodyPhases_alongside`, journalling the draft and moving the batches by `ClosureAlongside`, and the issuer resets
@@ -122,8 +124,8 @@ theorem countersFrom_frame : FrameAlongside program (Laws.State.CountersFrom sta
     have reserves := Laws.State.reserve_reserves s element scope
     held.same reserves.scopeOrdinals reserves.occurrenceOrdinals reserves.itemMap.2
       ((Laws.State.orders_kept s).1 element scope)
-  leaveScope _ scope _ _ _ held := Laws.State.leaveScope_countersFrom held scope
-  clearInside _ scope keep _ _ _ held := Laws.State.clearInside_countersFrom held scope keep
+  leaveScope le _ scope _ _ _ held := Laws.State.leaveScope_countersFrom held scope
+  clearInside le _ scope keep _ _ _ held := Laws.State.clearInside_countersFrom held scope keep
   disarm _ host _ held := Laws.State.disarm_countersFrom held host
   setVariable s target name value _ held :=
     have same := Laws.State.setVariable_same s target name value
@@ -139,7 +141,7 @@ theorem countersFrom_alongside : Alongside program (Laws.State.CountersFrom star
   { countersFrom_frame start program with
     instanceBegin := fun _ _ _ _ held => by rw [Laws.State.signal_eq]; exact held.same rfl rfl rfl
     defer := fun _ _ _ _ held => by rw [Laws.State.deferBegins_eq]; exact held.same rfl rfl rfl
-    leaveInstance := fun _ _ scope _ _ _ _ held => Laws.State.leaveScope_countersFrom held scope
+    leaveInstance := fun le _ _ scope _ _ _ _ held => Laws.State.leaveScope_countersFrom held scope
     runs := fun _ _ _ _ held => held.same rfl rfl rfl }
 
 theorem countersFrom_occurs : OccursAlongside program (Laws.State.CountersFrom start) where
@@ -167,7 +169,7 @@ theorem countersFrom_closure : ClosureAlongside program (Laws.State.CountersFrom
           (fun _ => Nat.le_of_eq (by rw [begins.occurrenceOrdinals]))
           (fun _ => by rw [erased]; exact Laws.State.getD_erase_le _ _ _)
           (Nat.le_of_eq ((Laws.State.orders_kept s).2.1 request role sourceType))
-    cancel := fun _ id _ held => Laws.State.cancelOccurrence_countersFrom held id
+    cancel := fun le _ id _ held => Laws.State.cancelOccurrence_countersFrom held id
     journal := fun _ _ _ _ held _ _ _ => held.same rfl rfl rfl
     queueBatch := fun _ _ _ held => by rw [Laws.State.queueBatch_eq]; exact held.same rfl rfl rfl }
 
@@ -186,8 +188,8 @@ theorem countersFrom_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellFor
         exact holds.2
     rw [Laws.State.closeOwnItems_eq]
     exact started.same rfl rfl rfl
-  removeOccurrence _ s occurrence holds member free :=
-    have removed := pipeline.removeOccurrence _ _ occurrence holds.1 member free
+  removeOccurrence _ le s occurrence holds member free :=
+    have removed := pipeline.removeOccurrence _ le _ occurrence holds.1 member free
     ⟨⟨removed.1, Laws.State.removeOccurrence_countersFrom holds.2 occurrence.id⟩, removed.2⟩
   recordEnd _ _ key terminal holds := ⟨pipeline.recordEnd _ _ key terminal holds.1, by
     rw [Laws.State.recordEnd_eq]
@@ -227,8 +229,8 @@ theorem issuerOf_frame : FrameAlongside program (IssuerOf b) where
   reserve s element scope _ _ _ _ held :=
     have reserves := Laws.State.reserve_reserves s element scope
     held.kept ⟨reserves.transitions, reserves.issuing⟩
-  leaveScope s scope _ _ _ held := held.kept (Laws.State.leaveScope_issuerKept s scope)
-  clearInside s scope keep _ _ _ held := held.kept (Laws.State.clearInside_issuerKept s scope keep)
+  leaveScope le s scope _ _ _ held := held.kept (Laws.State.leaveScope_issuerKept s scope)
+  clearInside le s scope keep _ _ _ held := held.kept (Laws.State.clearInside_issuerKept s scope keep)
   disarm s host _ held := held.kept (Laws.State.disarm_issuerKept s host)
   setVariable s target name value _ held :=
     have same := Laws.State.setVariable_same s target name value
@@ -244,7 +246,7 @@ theorem issuerOf_alongside : Alongside program (IssuerOf b) :=
   { issuerOf_frame b program with
     instanceBegin := fun _ _ _ _ held => by rw [Laws.State.signal_eq]; exact held
     defer := fun _ _ _ _ held => by rw [Laws.State.deferBegins_eq]; exact held
-    leaveInstance := fun _ _ scope _ _ _ _ held => held.kept (Laws.State.leaveScope_issuerKept _ scope)
+    leaveInstance := fun le _ _ scope _ _ _ _ held => held.kept (Laws.State.leaveScope_issuerKept _ scope)
     runs := fun _ _ _ _ held => held }
 
 theorem issuerOf_occurs : OccursAlongside program (IssuerOf b) where
@@ -266,7 +268,7 @@ theorem issuerOf_body : BodyAlongside program (IssuerOf b) :=
     begin := fun _ request role sourceType formed _ _ _ _ held =>
       have begins := Laws.State.beginOccurrence_begins formed.activations request role sourceType
       held.kept ⟨begins.transitions, begins.issuing⟩
-    cancel := fun s id _ held => held.kept (Laws.State.cancelOccurrence_issuerKept s id) }
+    cancel := fun _ s id _ held => held.kept (Laws.State.cancelOccurrence_issuerKept s id) }
 
 /-- The completion pipeline keeps `WellFormed` and the transitions and the issuer of `b` beside it. -/
 theorem issuerOf_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellFormed) :
@@ -281,8 +283,8 @@ theorem issuerOf_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellFormed)
         exact holds.2
     rw [Laws.State.closeOwnItems_eq]
     exact started
-  removeOccurrence _ s occurrence holds member free :=
-    have removed := pipeline.removeOccurrence _ _ occurrence holds.1 member free
+  removeOccurrence _ le s occurrence holds member free :=
+    have removed := pipeline.removeOccurrence _ le _ occurrence holds.1 member free
     ⟨⟨removed.1, holds.2.kept (Laws.State.removeOccurrence_issuerKept s occurrence.id)⟩, removed.2⟩
   recordEnd _ _ key terminal holds := ⟨pipeline.recordEnd _ _ key terminal holds.1, by
     rw [Laws.State.recordEnd_eq]

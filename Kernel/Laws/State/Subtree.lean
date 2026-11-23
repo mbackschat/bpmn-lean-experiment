@@ -14,6 +14,8 @@ executable does.
 
 namespace Kernel.Laws.State
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel
 
 variable {program : Program}
@@ -45,8 +47,8 @@ theorem parent_stands {s : State} (formed : WellFormed program s) {entry : Scope
 
 /-- In a well-formed state, the subtree of a present scope occurrence is exactly what lies within it. -/
 theorem subtree_iff {s : State} (formed : WellFormed program s) {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s)
-    (x : ScopeOccurrenceId) : x ∈ s.subtree scope ↔ Within s x scope := by
-  rw [mem_subtree]
+    (x : ScopeOccurrenceId) : x ∈ s.subtree le scope ↔ Within s x scope := by
+  rw [mem_subtree_inside, mem_inside]
   constructor
   · rintro (rfl | ⟨entry, member, rfl, below⟩)
     · exact .refl _
@@ -79,5 +81,11 @@ theorem subtree_iff {s : State} (formed : WellFormed program s) {scope : ScopeOc
       rcases ih present with same | ⟨_, _, rfl, deeper⟩
       · exact .inl (by rw [same])
       · exact .inr deeper
+
+/-- In a well-formed state, what lies inside a present scope occurrence (`State.inside`) is exactly what lies within it. -/
+theorem inside_iff {s : State} (formed : WellFormed program s) {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s)
+    (x : ScopeOccurrenceId) : x ∈ s.inside scope ↔ Within s x scope := by
+  rw [← mem_subtree_inside s (fun _ _ => true)]
+  exact subtree_iff (le := fun _ _ => true) formed present x
 
 end Kernel.Laws.State
