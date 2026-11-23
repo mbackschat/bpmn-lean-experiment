@@ -17,6 +17,8 @@ module.
 
 namespace Kernel.Laws.State
 
+variable {program : Program}
+
 open Kernel
 
 /-- The reservations `inner` names are beginnable in `scope` and nothing claims them. -/

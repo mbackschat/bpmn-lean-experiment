@@ -13,6 +13,8 @@ body. Nothing executable imports this module.
 
 namespace Kernel.Laws.State
 
+variable {program : Program}
+
 open Kernel
 
 /- The witnesses' states queue nothing under a unit key, so the views are their batches. -/

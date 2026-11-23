@@ -22,6 +22,8 @@ one renamed and advanced (`compact_cases`). This is the one module that sees `Ke
 
 namespace Kernel.Laws.Step
 
+variable {schedule : BranchSchedule}
+
 open Kernel Kernel.Step Kernel.Laws.State
 
 /-- The draft journalled as the transition of the unit `unit`, the draft and the write log emptied. -/

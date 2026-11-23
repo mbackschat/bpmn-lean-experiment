@@ -189,7 +189,7 @@ def countOf (rule : MultiInstanceCount) (value : Value) : Except Failure Nat :=
 (CIB-INT-0019): `none` when an unavailable input holds the occurrence, as an unavailable InputSet does
 ([BPMN 2.0.2 §10.4.2](../../docs/reference/bpmn-2.0.2/README.md)), and a value `rule` refuses a semantic failure;
 under `rollback` both fail the operation. -/
-def entryInput (ctx : Ctx) (state : State) (scope : ScopeOccurrenceId) (expression : Expression)
+def entryInput {α : Type} (ctx : Ctx) (state : State) (scope : ScopeOccurrenceId) (expression : Expression)
     (rule : Value → Except Failure α) : Except Failure (Option α) :=
   let rollback := ctx.program.options.multiInstanceInputFailure == .rollback
   match ctx.evaluate { state.evalContext ctx.program scope with domainChecked := false } expression with

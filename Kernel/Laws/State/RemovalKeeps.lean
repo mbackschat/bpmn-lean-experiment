@@ -16,6 +16,8 @@ Nothing executable imports this module.
 
 namespace Kernel.Laws.State
 
+variable {program : Program}
+
 open Kernel
 
 /-! ## Leaving a scope occurrence -/

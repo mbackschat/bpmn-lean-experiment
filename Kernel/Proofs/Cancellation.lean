@@ -28,6 +28,8 @@ executable imports this module.
 
 namespace Kernel.Proofs.Cancellation
 
+variable {program : Program} {schedule : BranchSchedule}
+
 open Kernel
 open Kernel.Laws.State (WellFormed Within scopeIds occurrenceIds)
 open Kernel.Proofs.Frame

@@ -14,6 +14,8 @@ this module reads no body. Nothing executable imports this module.
 
 namespace Kernel.Laws.State
 
+variable {program : Program}
+
 open Kernel
 
 /-! ## The running unit's next issue -/

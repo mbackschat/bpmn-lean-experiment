@@ -32,6 +32,8 @@ so that the rules, the witnesses and that vocabulary stay outside `Kernel.Featur
 
 namespace Kernel.Laws.Propagation
 
+variable {program : Program}
+
 open Kernel
 open Kernel.Laws.State (Steady BegunFrom RaisesFrom RollsBack)
 

@@ -34,6 +34,8 @@ from `Laws.Step.Operations` and `Laws.Step.StateFacts`. Nothing executable impor
 
 namespace Kernel.Proofs.Step
 
+variable {program : Program}
+
 open Kernel
 
 /-- A flow token moved into an Exclusive Gateway leaves exactly the flows `Laws.Flow.ExclusiveTakes` allows (BPMN 2.0.2

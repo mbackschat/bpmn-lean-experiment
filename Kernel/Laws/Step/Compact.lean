@@ -17,13 +17,15 @@ What `Kernel.Step.compact` keeps of `Laws.State.WellFormed`, clause by clause, f
 
 namespace Kernel.Laws.Step
 
+variable {schedule : BranchSchedule}
+
 open Kernel Kernel.Step Kernel.Laws.State
 
 /-! ## The scope history across the commit -/
 
 section History
 
-variable {schedule : BranchSchedule} {start : State} {log : RunLog} {s : State} {H : ScopeOccurrenceId → Prop}
+variable {start : State} {log : RunLog} {s : State} {H : ScopeOccurrenceId → Prop}
 
 /-- A fresh head segment of a history key took a committed ordinal at or above its slot's base and below its slot's
 next ordinal. -/

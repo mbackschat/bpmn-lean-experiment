@@ -16,6 +16,8 @@ key is its record, renamed onto itself.
 
 namespace Kernel.Proofs.Cancellation
 
+variable {schedule : BranchSchedule}
+
 open Kernel Kernel.Step Kernel.Laws.State Kernel.Laws.Step
 
 /-- **`ScopesKept before` across the commit** (discharges `scopesKept_stepAlongside`'s `runOrder`, both fields of

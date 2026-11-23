@@ -183,15 +183,19 @@ function packageLeanOption(lakefile: string, option: string, value: string): boo
   return table.split(", ").includes(`${option} = ${value}`);
 }
 
-/** The options the kernel architecture pins (docs/kernel/ARCHITECTURE-SPEC.md#modules-and-build-shape): synchronous elaboration, and
- * sparse case splits off, which keeps a body edit from rebuilding its module's public cone (`lakefile.toml`). */
-const pinnedLeanOptions = [["Elab.async", "false"], ["backward.match.sparseCases", "false"]] as const;
+/** The options the kernel architecture pins (docs/kernel/ARCHITECTURE-SPEC.md#modules-and-build-shape): synchronous elaboration;
+ * sparse case splits off, which keeps a body edit from rebuilding its module's public cone (`lakefile.toml`); and no
+ * auto-bound implicits, under which an unresolved name in a statement became a silently quantified argument (eight
+ * law statements in K0.11's item-position slice, 2026-11-23). */
+const pinnedLeanOptions = [
+  ["Elab.async", "false"], ["backward.match.sparseCases", "false"], ["autoImplicit", "false"], ["relaxedAutoImplicit", "false"],
+] as const;
 
 function pinnedPackageOptions(lakefile: string): boolean {
   return pinnedLeanOptions.every(([option, value]) => packageLeanOption(lakefile, option, value));
 }
 
-test("the Lake package pins synchronous elaboration and no sparse case splits for every module target", async () => {
+test("the Lake package pins synchronous elaboration, no sparse case splits and no auto-bound implicits for every module target", async () => {
   const lakefile = await readFile(
     fileURLToPath(new URL("../lakefile.toml", import.meta.url)), "utf8",
   );
@@ -211,7 +215,7 @@ test("the Lake package bounds every Lean process at 2 GiB on Lean's command line
 });
 
 test("the Lean option guard rejects an absent, enabled, or library-only setting of each pinned option", () => {
-  const option = "leanOptions = { Elab.async = false, backward.match.sparseCases = false }";
+  const option = "leanOptions = { Elab.async = false, backward.match.sparseCases = false, autoImplicit = false, relaxedAutoImplicit = false }";
   const library = "[[lean_lib]]\nname = \"Example\"";
   assert.equal(pinnedPackageOptions(`${option}\n${library}`), true);
   assert.equal(pinnedPackageOptions(library), false);

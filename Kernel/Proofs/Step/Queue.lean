@@ -15,6 +15,8 @@ them apart. The helpers here queue the signals of the phases and of the register
 
 namespace Kernel.Proofs.Step
 
+variable {program : Program}
+
 open Kernel
 
 /-- What queuing `signal` asks of a well-formed state `s`: an arming names issued identities and a host begun in the

@@ -16,6 +16,8 @@ facts they journal (`removal_cancels_with_ends`). `Kernel.State`'s own operation
 
 namespace Kernel.Laws.State
 
+variable {program : Program}
+
 open Kernel
 
 /-- `State.disarm` closes the items attached to `host` and drops the reservations they hold. -/

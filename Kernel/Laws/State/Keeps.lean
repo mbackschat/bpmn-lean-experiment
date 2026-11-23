@@ -19,6 +19,8 @@ the fresh instance; `Kernel.Proofs.Step` assembles them into `Laws.Step.Phases` 
 
 namespace Kernel.Laws.State
 
+variable {program : Program}
+
 open Kernel
 
 /-! ## The phases of `Step`

@@ -19,12 +19,14 @@ lane does not carry.
 
 namespace Kernel.Proofs.Former
 
+variable {schedule : BranchSchedule}
+
 open Kernel Kernel.Step Kernel.Laws.State Kernel.Laws.Step
 open Kernel.Laws.Compensation (recordElements)
 
 section Compacts
 
-variable {schedule : BranchSchedule} {start : State} {log : RunLog} {s t : State}
+variable {start : State} {log : RunLog} {s t : State}
 
 /-- The instance entries a commit leaves: the settled state's, their roots renamed. -/
 theorem compact_instances (ran : compact schedule start log s = .ok t) :
@@ -77,7 +79,7 @@ theorem chainRoot_renamed {start s : State} {log : RunLog} (rooted : Rooted s) (
 
 section Placing
 
-variable {schedule : BranchSchedule} {program : Program} {start state : State} {log : RunLog} {after : State}
+variable {program : Program} {start state : State} {log : RunLog} {after : State}
 
 /-- **A standing scope occurrence keeps its instance root across the commit**, renamed, and that root stands. -/
 theorem orderJournal_instanceRoot (formed : WellFormed program state) (counted : CountersFrom start state)

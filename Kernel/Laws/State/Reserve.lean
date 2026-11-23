@@ -13,6 +13,8 @@ module reads no body. Nothing executable imports this module.
 
 namespace Kernel.Laws.State
 
+variable {program : Program}
+
 open Kernel
 
 /-- What `State.reserve` makes of `before`: an unbegun occurrence of `element` in `scope` that continues by its

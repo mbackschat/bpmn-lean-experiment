@@ -13,6 +13,8 @@ it, a removal drops it, and nothing else `WellFormed` reads changes (`SameButVar
 
 namespace Kernel.Laws.State
 
+variable {program : Program}
+
 open Kernel
 
 /-! ## Variables -/

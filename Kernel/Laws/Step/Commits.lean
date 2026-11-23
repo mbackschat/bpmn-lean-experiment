@@ -14,6 +14,8 @@ public section
 
 namespace Kernel.Laws.Step
 
+variable {schedule : BranchSchedule}
+
 open Kernel Kernel.Step
 
 section Walk

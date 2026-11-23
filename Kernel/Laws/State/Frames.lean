@@ -17,6 +17,8 @@ module.
 
 namespace Kernel.Laws.State
 
+variable {program : Program}
+
 open Kernel
 
 /-! ## Keys, counters and claims -/

@@ -14,6 +14,8 @@ this module.
 
 namespace Kernel.Laws.State
 
+variable {program : Program}
+
 open Kernel
 
 /-- A state with only its issuer and issue table changed is well-formed when the table only grows and the new issuer is

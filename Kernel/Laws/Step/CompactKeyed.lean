@@ -14,6 +14,8 @@ imports this module.
 
 namespace Kernel.Laws.Step
 
+variable {schedule : BranchSchedule}
+
 open Kernel Kernel.Step Kernel.Laws.State
 
 /-- **A commit keeps every occurrence keyed in its scope occurrence.** -/

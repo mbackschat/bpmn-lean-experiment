@@ -34,6 +34,8 @@ well-formedness among them, `Kernel.Laws.State.Sample`'s.
 
 namespace Kernel.Laws.State
 
+variable {program : Program}
+
 open Kernel
 
 /-! ## The scope tree -/

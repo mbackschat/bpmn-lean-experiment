@@ -18,6 +18,8 @@ it keeps the claims single and what has settled settled. Nothing executable impo
 
 namespace Kernel.Laws.State
 
+variable {program : Program}
+
 open Kernel
 
 /-- A containment holds in a state that keeps every scope occurrence. -/

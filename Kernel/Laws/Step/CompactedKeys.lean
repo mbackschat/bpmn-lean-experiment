@@ -17,11 +17,13 @@ module.
 
 namespace Kernel.Laws.Step
 
+variable {schedule : BranchSchedule}
+
 open Kernel Kernel.Step Kernel.Laws.State
 
 section Keys
 
-variable {schedule : BranchSchedule} {start : State} {log : RunLog} {s t : State}
+variable {start : State} {log : RunLog} {s t : State}
 
 /-- A scope occurrence record renamed by a commit. -/
 abbrev renamedScope (r : Issue → Issue) (scope : ScopeOccurrence) : ScopeOccurrence :=

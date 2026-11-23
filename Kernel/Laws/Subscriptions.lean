@@ -28,6 +28,8 @@ What `Kernel.Feature.Subscriptions`' hooks do and keep of an invariant, under th
 
 namespace Kernel.Laws.Subscriptions
 
+variable {program : Program}
+
 open Kernel
 open Kernel.Laws.State (Within scopeIds occurrenceIds AwaitsTrigger)
 

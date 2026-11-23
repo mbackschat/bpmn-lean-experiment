@@ -13,6 +13,8 @@ That a start's fresh instance (`State.initial`) is well-formed and holds no occu
 
 namespace Kernel.Laws.State
 
+variable {program : Program}
+
 open Kernel
 
 /-! ## The fresh instance -/

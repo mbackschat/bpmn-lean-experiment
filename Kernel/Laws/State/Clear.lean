@@ -14,6 +14,8 @@ shows `State.clearInside` makes, the pruning of occurrences and items (`Prunes`)
 
 namespace Kernel.Laws.State
 
+variable {program : Program}
+
 open Kernel
 
 /-! ## Clearing a scope occurrence -/

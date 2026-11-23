@@ -30,6 +30,8 @@ everything, values that violate it.
 
 namespace Kernel.Laws.Work
 
+variable {program : Program}
+
 open Kernel
 
 /-! ## Script Tasks -/

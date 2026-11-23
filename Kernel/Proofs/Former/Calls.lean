@@ -29,6 +29,8 @@ apply. Nothing executable imports this module.
 
 namespace Kernel.Proofs.Former
 
+variable {program : Program}
+
 open Kernel
 open Kernel.Laws.State (WellFormed Within Queues InstanceRoot)
 

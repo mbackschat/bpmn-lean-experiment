@@ -15,6 +15,8 @@ that last step; it holds through the steps between. It reads no body. Nothing ex
 
 namespace Kernel.Laws.State
 
+variable {program : Program}
+
 open Kernel
 
 /-- What a fired item leaves: its scope occurrence stands, and the occurrence it waited on was issued, no queued begin
