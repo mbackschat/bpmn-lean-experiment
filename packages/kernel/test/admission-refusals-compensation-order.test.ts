@@ -13,7 +13,9 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { admitLocated, decodeProgram } from "./lean-paired.ts";
-import { activity, base, end, flow, gateway, loop, scope, simpleBoolean, start, wired } from "./admission-refusal-support.ts";
+import {
+  activity, base, end, flow, gateway, loop, scope, simpleBoolean, start, wired, withOptions, writer,
+} from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
 import { compensateAll, handlerTask, userTask } from "./compensation-support.ts";
 
@@ -28,14 +30,15 @@ function located(json: Json): ReturnType<typeof admitLocated> {
 const program = (elements: Json[], flows: Json[]): Json => ({ ...base(), variables: ["items"], elements, flows });
 
 /**
- * A Sub-Process `id` compensable by the User Task `H<id>`, running `<id>S -> <id>T -> <id>E`, where `<id>T` is a
- * Manual Task (non-waiting; compensation counts it as reading and writing every name, D1 (c)) or a User Task when `waits`.
+ * A Sub-Process `id` compensable by `H<id>` (the User Task `handler` defaults to), running `<id>S -> <id>T -> <id>E`,
+ * where `<id>T` is a Manual Task (non-waiting; compensation counts it as reading and writing every name, D1 (c)) or a
+ * User Task when `waits`.
  */
-function quick(id: string, waits = false, env: Json = {}): Json[] {
+function quick(id: string, waits = false, env: Json = {}, handler: Json[] = [handlerTask(`H${id}`)]): Json[] {
   const inner = waits ? userTask(`${id}T`, null, id) : activity(`${id}T`, "manual", {}, id);
   return [
     scope(id, "embedded", {}, { compensationHandlers: [`H${id}`], ...env }), start(`${id}S`, null, [], id), inner,
-    end(`${id}E`, "none", id), handlerTask(`H${id}`),
+    end(`${id}E`, "none", id), ...handler,
   ];
 }
 const inner = (id: string): Json[] => [flow(`${id}0`, `${id}S`, `${id}T`), flow(`${id}1`, `${id}T`, `${id}E`)];
@@ -106,4 +109,24 @@ test("a sequential Multi-Instance Sub-Process whose body waits is admitted", () 
 
 test("a parallel Multi-Instance Sub-Process whose instances complete in one closure is admitted: they are unordered", () => {
   assert.equal(located(instances("parallel", false)), null);
+});
+
+/**
+ * `instances("parallel", false)` whose handler `HM` is a Sub-Process writing `outcome`, under `schedule`: the
+ * instances' records of one closure have no order, so the Compensation End `E` runs `HM` once per record concurrently.
+ */
+function writingHandler(schedule: string): Json {
+  const [elements, flows] = tail("M");
+  const [handler, handlerFlows] = writer("HM", "outcome", "undone", null, { forCompensation: true, incoming: [], outgoing: [] });
+  const looped = quick("M", false, { multiInstance: loop({ mode: "parallel", outputDataItem: null }) }, handler);
+  return withOptions(program([start("S"), ...looped, ...elements], [flow("sm", "S", "M"), ...inner("M"), ...handlerFlows, ...flows]),
+    { branchSchedule: schedule });
+}
+
+test("a parallel Multi-Instance Sub-Process's writing handler runs once per unordered record, so the runs race and are refused", () => {
+  assert.deepEqual(located(writingHandler("orderInvariant")), { code: "flow.concurrentWrite", element: "E", related: [] });
+});
+
+test("a parallel Multi-Instance Sub-Process's writing handler is admitted under CIB's schedule, which orders the records", () => {
+  assert.equal(located(writingHandler("declarationDepthFirst")), null);
 });
