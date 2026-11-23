@@ -125,7 +125,7 @@ function proveDispatchScan(lean: Lean, directory: string): string[] {
   // Fully qualified: the seed lands outside the module's namespace, where an unqualified `Element` auto-binds.
   const seeded = "def seededDispatchViolation : Kernel.Element → Nat\n  | .activity .. => 1\n  | _ => 0\n" +
     // `Value` has no owner, so any module may match it, but never with a catch-all, a nested one included.
-    "def seededValueMatch : Kernel.Value → Nat\n  | .null => 0\n  | .bool _ | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ => 1\n" +
+    "def seededValueMatch : Kernel.Value → Nat\n  | .null => 0\n  | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .string _ | .stringList _ | .list _ | .map _ => 1\n" +
     "def seededValueCatchAll : Option Kernel.Value → Nat\n  | some (.string _) => 1\n  | _ => 0\n" +
     // `Kernel.Feature.Data` owns `JuelUnary`, so only the catch-all nested inside the `Option` is a violation.
     "def seededGuardedCatchAll : Option Kernel.JuelUnary → Nat\n  | some .not => 1\n  | _ => 0\n" +
