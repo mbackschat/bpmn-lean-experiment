@@ -18,7 +18,8 @@ contest is not covered: the input's ranking decides it by design. Stated over a 
 Model premises: the profile option `branchSchedule = .orderInvariant`, and `Laws.Flow.Apart`, the order-invariance
 condition admission enforces with `flow.concurrentWrite`, `flow.concurrentInterference` and
 `multiInstance.concurrentInstances` (#81): two units of work one closure may hold together (`Laws.Flow.Concurrent`)
-neither race on a name, by the read and write account of `Kernel.IL.Footprint`, nor act on each other's work, by
+neither race on a name, by the read and write account of `Kernel.IL.Footprint` with a Conditional subscription's
+opening and end reading its condition's names (`Laws.Flow.Lifetime`), nor act on each other's work, by
 removing a region that holds it, resuming a subscription it opens or compensating a record it leaves. The units are
 those of the mechanisms that queue more than one work item, one case each: a split's emission (BPMN 2.0.2 §13.3.1,
 Table 13.1), a parallel body's instances (§13.3.7), a Signal throw's firings beside its continuation (§10.5.1: a Signal

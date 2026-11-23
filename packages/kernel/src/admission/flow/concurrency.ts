@@ -5,7 +5,8 @@
  * §13.3.1, §13.3.7). These checks compare the closures `admission/flow/closure.ts` `closureWalk` finds for them and refuse a
  * model whose committed result would depend on that order: `flow.concurrentWrite` and `flow.concurrentInterference`
  * for a split's branches and for the units one element's run fans out to (`fanOutConflict`), and the `races`
- * `admission/multi-instance.ts` `concurrentInstances` reads for instances.
+ * `admission/multi-instance.ts` `concurrentInstances` reads for instances. A unit's write against another's opening or
+ * ending of a Conditional subscription is a race too, since nothing orders the two (CIB-OP-0016).
  */
 import {
   BranchSchedule,
@@ -66,6 +67,7 @@ import {
   onwardVisits,
   reaches,
   removal,
+  removesElement,
   runs,
   signalled,
   startingSubProcesses,
@@ -89,34 +91,10 @@ const branchClosure = (reading: Reading, program: Program, start: FlowId): Closu
 const wakeClosure = (reading: Reading, program: Program, wakes: readonly Visit[]): Closure =>
   closureWalk(reading, program, { stop: awaitsStimulus, ascends: false }, wakes);
 
-/** Whether `withdrawal` removes the element `id`: `id` lies in its region, or in a called process a Call in it calls. */
-function removesElement(program: Program, withdrawal: Withdrawal, fuel: number, id: ElementId): boolean {
-  if (fuel === 0) return false;
-  if (withdrawal.everything) return true;
-  const element = programElement(program, id);
-  if (element === null) return false;
-  const enclosing = ancestors(program, elementHeader(element).parent);
-  const top = enclosing.at(-1) ?? element;
-  const processOf = (header: Header): CalledProcess | null => programProcessOf(program, header);
-  let inside: boolean;
-  if (withdrawal.root !== null) {
-    const root = withdrawal.root;
-    inside = (withdrawal.inclusive && id === root) || enclosing.some((candidate) => elementHeader(candidate).id === root);
-  } else {
-    const source = programElement(program, withdrawal.source);
-    const own = source === null ? undefined : processOf(elementHeader(source));
-    const there = processOf(elementHeader(top));
-    inside = own !== undefined && (own === null || there === null ? own === there : definitionRefEquals(own.definition, there.definition));
-  }
-  const process = processOf(elementHeader(top));
-  return inside ||
-    (process !== null && callers(program, process).some((call) => removesElement(program, withdrawal, fuel - 1, elementHeader(call).id)));
-}
-
 /**
  * Whether `own` acts on work `other` begins or completes, so their order decides what is left: it removes a region
  * holding an element `other` begins, resumes a Signal subscription `other` opens, or compensates an Activity `other`
- * completes.
+ * completes. A removal that ends a Conditional subscription against `other`'s write is a race, not this (`closureWalk`).
  */
 function interferes(program: Program, own: Closure, other: Closure): boolean {
   return own.withdraws.some((withdrawal) => other.begun.some((id) => removesElement(program, withdrawal, program.elements.length + 1, id))) ||
@@ -125,8 +103,8 @@ function interferes(program: Program, own: Closure, other: Closure): boolean {
 
 /**
  * What two closures that may run in either order would answer differently: a name one writes and the other reads or
- * writes (`flow.concurrentWrite`), or work one acts on that the other begins or completes
- * (`flow.concurrentInterference`).
+ * writes, opening or ending a Conditional subscription counting as reading its condition's names (`closureWalk`;
+ * `flow.concurrentWrite`), or work one acts on that the other begins or completes (`flow.concurrentInterference`).
  */
 function conflict(program: Program, own: Closure, other: Closure): string | null {
   if (races(own.footprint, other.footprint)) return "flow.concurrentWrite";
@@ -159,8 +137,11 @@ function branchesAgainst(reading: Reading, program: Program, own: Closure, other
  * around it, any Signal throw any Signal subscription and any Compensation throw any record in its Scope; a later
  * profile may take the interleaving as a choice input instead. A branch runs to its next wait through every Parallel
  * and Inclusive join, so the work after a join two branches reach counts in both and is held against itself, though a
- * join that synchronises every branch orders it after them (#162). Not counted: what an element it stops at evaluates
- * besides its input mappings and Multi-Instance definition.
+ * join that synchronises every branch orders it after them (#162). A branch that opens or ends a Conditional
+ * subscription, by beginning, completing or removing what holds it, reads its condition's names (`closureWalk`), so a
+ * write of another branch on either side of that lifetime is refused, value-blind. Not counted: what an element it stops
+ * at evaluates besides its input mappings, its Multi-Instance definition and the conditions of the subscriptions it
+ * opens.
  */
 export function concurrentBranches(reading: Reading, program: Program, flow: Flow): string | null {
   switch (program.options.branchSchedule) {
@@ -187,17 +168,6 @@ export function concurrentBranches(reading: Reading, program: Program, flow: Flo
 // `conflict`; a unit is the closure walk from where it starts, and a continuation ascends, since a token that ends its
 // Scope lets the Scope complete beside the other units (`step.ts` `settle` completes idle scopes only after every signal
 // and token).
-
-/** The first conflict (`conflict`) between two of `units`, each against every later one. */
-function firstConflict(program: Program, units: readonly Closure[]): string | null {
-  for (const [index, unit] of units.entries()) {
-    for (const other of units.slice(index + 1)) {
-      const found = conflict(program, unit, other);
-      if (found !== null) return found;
-    }
-  }
-  return null;
-}
 
 /** The element a resumption's subscription hangs on: a catch, a boundary's host, an Event Sub-Process. */
 function anchorOf(program: Program, visit: Visit): Element | null {
@@ -367,6 +337,10 @@ function continuation(reading: Reading, program: Program, element: Element): Clo
  * (`preempts`) is not held against the continuation: that removal is a queued signal, which runs before any token the
  * thrower's completion emits, whatever the schedule. A resumption that cannot be open while the thrower runs
  * (`closedAt`) is dropped, and one whose subscription may be open twice at once is held against itself (`againstItself`).
+ * Two resumptions are compared pairwise along paths that ascend into the completions of the Scopes not enclosing both
+ * anchors (`Walk.ascendsInto`): a Scope that holds only one of them may complete in this closure, its completion running
+ * beside the other path, while one enclosing both completes only after both, so an ascent stops below the least Scope
+ * the pair shares, and their shared completion is not held against itself.
  */
 function signalFanOut(reading: Reading, program: Program, element: Element): string | null {
   const event = elementEvent(element);
@@ -376,8 +350,24 @@ function signalFanOut(reading: Reading, program: Program, element: Element): str
     .filter((visit) => !closedAt(reading, program, element, visit))
     .map((visit) => [visit, pathOf(reading, program, [visit])] as const);
   const own = continuation(reading, program, element);
+  const around = (visit: Visit): ElementId[] => {
+    const anchor = anchorOf(program, visit);
+    return anchor === null ? [] : ancestors(program, elementHeader(anchor).parent).map((scope) => elementHeader(scope).id);
+  };
+  const ascending = (visit: Visit, other: Visit): Closure => closureWalk(reading, program, {
+    stop: awaitsStimulus, ascends: true, ascendsInto: (id) => !(around(visit).includes(id) && around(other).includes(id)),
+  }, [visit]);
+  const pairs = (visits: readonly Visit[]): string | null => {
+    for (const [index, visit] of visits.entries()) {
+      for (const other of visits.slice(index + 1)) {
+        const found = conflict(program, ascending(visit, other), ascending(other, visit));
+        if (found !== null) return found;
+      }
+    }
+    return null;
+  };
   return firstOf(wakes.filter(([visit]) => !preempts(reading, program, visit, element)), ([, wake]) => conflict(program, own, wake)) ??
-    firstConflict(program, wakes.map(([, wake]) => wake)) ??
+    pairs(wakes.map(([visit]) => visit)) ??
     firstOf(wakes, ([visit, wake]) => againstItself(reading, program, visit, wake));
 }
 

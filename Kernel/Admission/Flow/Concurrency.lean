@@ -9,7 +9,8 @@ branches of a split and the instances of a parallel Multi-Instance Activity inte
 §13.3.1, §13.3.7). These checks compare the closures `Kernel.Admission.Flow.closureWalk` finds for them and refuse a
 model whose committed result would depend on that order: `flow.concurrentWrite` and `flow.concurrentInterference` for
 a split's branches and for the units one element's run fans out to (`fanOutConflict`), and the `races`
-`Kernel.Admission.MultiInstance.concurrentInstances` reads for instances.
+`Kernel.Admission.MultiInstance.concurrentInstances` reads for instances. A unit's write against another's opening or
+ending of a Conditional subscription is a race too, since nothing orders the two (CIB-OP-0016).
 -/
 
 public section
@@ -27,34 +28,18 @@ def branchClosure (reading : Reading) (program : Program) (start : FlowId) : Clo
 def wakeClosure (reading : Reading) (program : Program) (wakes : List Visit) : Closure :=
   closureWalk reading program { stop := awaitsStimulus, ascends := false } wakes
 
-/-- Whether `withdrawal` removes the element `id`: `id` lies in its region, or in a called process a Call in it
-calls. -/
-def removesElement (program : Program) (withdrawal : Withdrawal) : Nat → ElementId → Bool
-  | 0, _ => false
-  | fuel + 1, id =>
-    withdrawal.everything || match program.element? id with
-    | none => false
-    | some element =>
-      let enclosing := ancestors program program.elements.length element.header.parent
-      let top := (enclosing.getLast?).getD element
-      let inside := match withdrawal.root with
-        | some root => (withdrawal.inclusive && id == root) || enclosing.any (·.header.id == root)
-        | none => (program.element? withdrawal.source).any fun source =>
-          (program.processOf source.header).map (·.definition) == (program.processOf top.header).map (·.definition)
-      inside || ((program.processOf top.header).map fun process =>
-        (callers program process).any fun call => removesElement program withdrawal fuel call.header.id).getD false
-
 /-- Whether `own` acts on work `other` begins or completes, so their order decides what is left: it removes a region
 holding an element `other` begins, resumes a Signal subscription `other` opens, or compensates an Activity `other`
-completes. -/
+completes. A removal that ends a Conditional subscription against `other`'s write is a race, not this
+(`closureWalk`). -/
 def interferes (program : Program) (own other : Closure) : Bool :=
   own.withdraws.any (fun withdrawal =>
       other.begun.any (removesElement program withdrawal (program.elements.length + 1))) ||
     own.resumes.any other.begun.contains || own.compensates.any other.completed.contains
 
 /-- What two closures that may run in either order would answer differently: a name one writes and the other reads or
-writes (`flow.concurrentWrite`), or work one acts on that the other begins or completes
-(`flow.concurrentInterference`). -/
+writes, opening or ending a Conditional subscription counting as reading its condition's names (`closureWalk`;
+`flow.concurrentWrite`), or work one acts on that the other begins or completes (`flow.concurrentInterference`). -/
 def conflict (program : Program) (own other : Closure) : Option String :=
   if own.footprint.races other.footprint then some "flow.concurrentWrite"
   else if interferes program own other || interferes program other own then some "flow.concurrentInterference"
@@ -82,8 +67,10 @@ called instance waits, and a JUEL text as reading every name; any raise may meet
 throw any Signal subscription and any Compensation throw any record in its Scope; a later profile may take the
 interleaving as a choice input instead. A branch runs to its next wait through every Parallel and Inclusive join, so
 the work after a join two branches reach counts in both and is held against itself, though a join that synchronises
-every branch orders it after them (#162). Not counted: what an element it stops at evaluates besides its input mappings
-and Multi-Instance definition. -/
+every branch orders it after them (#162). A branch that opens or ends a Conditional subscription, by beginning,
+completing or removing what holds it, reads its condition's names (`closureWalk`), so a write of another branch on either
+side of that lifetime is refused, value-blind. Not counted: what an element it stops at evaluates besides its input
+mappings, its Multi-Instance definition and the conditions of the subscriptions it opens. -/
 def concurrentBranches (reading : Reading) (program : Program) (flow : Flow) : Option String :=
   match program.options.branchSchedule with
   | .declarationDepthFirst => none
@@ -103,11 +90,6 @@ writer, and the compensation handlers one trigger begins together. One check per
 `conflict`; a unit is the closure walk from where it starts, and a continuation ascends, since a token that ends its
 Scope lets the Scope complete beside the other units (`Step.settle` completes idle scopes only after every signal and
 token). -/
-
-/-- The first conflict (`conflict`) between two of `units`, each against every later one. -/
-def firstConflict (program : Program) : List Closure → Option String
-  | [] => none
-  | unit :: rest => rest.findSome? (conflict program unit) <|> firstConflict program rest
 
 /-- The element a resumption's subscription hangs on: a catch, a boundary's host, an Event Sub-Process. -/
 def anchorOf (program : Program) : Visit → Option Element
@@ -227,16 +209,29 @@ program as `Kernel.Admission.Flow.beyond` counts, which the closure runs in armi
 (BPMN 2.0.2 §10.5.1 lets one Signal reach every catcher; issue #81). A resumption whose first visit removes the thrower
 (`preempts`) is not held against the continuation: that removal is a queued signal, which runs before any token the
 thrower's completion emits, whatever the schedule. A resumption that cannot be open while the thrower runs (`closedAt`)
-is dropped, and one whose subscription may be open twice at once is held against itself (`againstItself`). -/
+is dropped, and one whose subscription may be open twice at once is held against itself (`againstItself`). Two
+resumptions are compared pairwise along paths that ascend into the completions of the Scopes not enclosing both
+anchors (`Walk.ascendsInto`): a Scope that holds only one of them may complete in this closure, its completion
+running beside the other path, while one enclosing both completes only after both, so an ascent stops below the least
+Scope the pair shares, and their shared completion is not held against itself. -/
 def signalFanOut (reading : Reading) (program : Program) (element : Element) : Option String :=
   if !((element.event?.bind (·.2.throw?)).any fun thrown => (throwView thrown).signal.isSome) then none
   else
     let wakes := ((program.elements.flatMap (catching signalled)).filter (!closedAt reading program element ·)).map
       fun visit => (visit, pathOf reading program [visit])
     let own := continuation reading program element
+    let around (visit : Visit) : List ElementId := ((anchorOf program visit).map fun anchor =>
+      (ancestors program program.elements.length anchor.header.parent).map (·.header.id)).getD []
+    let ascending (visit other : Visit) : Closure :=
+      let into (id : ElementId) : Bool := !((around visit).contains id && (around other).contains id)
+      closureWalk reading program { stop := awaitsStimulus, ascends := true, ascendsInto := into } [visit]
+    let rec pairs : List Visit → Option String
+      | [] => none
+      | visit :: rest => rest.findSome? (fun other => conflict program (ascending visit other) (ascending other visit)) <|>
+        pairs rest
     (wakes.filter fun (visit, _) => !preempts reading program visit element).findSome?
         (fun (_, wake) => conflict program own wake) <|>
-      firstConflict program (wakes.map (·.2)) <|>
+      pairs (wakes.map (·.1)) <|>
       wakes.findSome? fun (visit, wake) => againstItself reading program visit wake
 
 /-- Under `BranchSchedule.orderInvariant`, an Escalation thrower's continuation may not conflict with what a catcher

@@ -9,7 +9,8 @@ The visit rules of the closure walk (`Kernel.Admission.Flow.closureWalk`) as an 
 completes, removes, resumes and compensates. `Kernel.Laws.Flow.Concurrent` pairs the units one closure may hold
 together and states `Apart` over their accounts. The restatement keeps the walk's over-approximations, so it is no
 stronger than what admission enforces: any work raise meets any catcher around it, a Signal throw resumes every Signal
-subscription, a write arms every Conditional, a Compensation throw may begin every handler of its level. The readings
+subscription, a write arms every Conditional, a Compensation throw may begin every handler of its level, and opening or
+ending a Conditional subscription reads its condition's names whatever the values (`Lifetime`). The readings
 other owners' guarded types give the walk (`Kernel.AdmissionRegistry.reading`) appear as constructor hypotheses on
 `Work`, `Throw`, `Trigger`, `ScopeKind` and `MultiInstanceMode`, never as a match. The relations assume admission's
 well-formed IL: identifiers unique (`il.reference`) and parents that resolve to enclosing Scopes
@@ -336,20 +337,24 @@ its Calls, and a looping element's instance begins the next. -/
 structure Walk where
   stop : Element → Prop
   ascends : Bool
+  /-- The Scopes and Calls whose completion an ascent may visit: every one, unless a pairwise comparison stops below the
+  Scopes its two units share (`Kernel.Laws.Flow.ascending`). -/
+  ascendsInto : ElementId → Prop := fun _ => True
 
 def Stops (walk : Walk) (element : Element) : Prop := walk.stop element ∧ ¬ RunsThrough element
 
 /-- The visits a token leaving `element` makes on its own way: its flows and Link, and when it goes on nowhere and
-the walk ascends, its parent's completion or its called process's Calls'; a handler completes no parent. -/
+the walk ascends, its parent's completion or its called process's Calls', those `ascendsInto` admits; a handler
+completes no parent. -/
 inductive OnwardVisit (program : Program) (walk : Walk) (element : Element) : Visit → Prop where
   | next {target : Element} : Continuing program element target → OnwardVisit program walk element (.enters target)
   | parent {parent : ElementId} {scope : Element} : walk.ascends = true →
       (∀ target, ¬ Continuing program element target) → ¬ Handler element → element.header.parent = some parent →
-      program.element? parent = some scope → OnwardVisit program walk element (.completes scope)
+      walk.ascendsInto parent → program.element? parent = some scope → OnwardVisit program walk element (.completes scope)
   | caller {process : CalledProcess} {call : Element} : walk.ascends = true →
       (∀ target, ¬ Continuing program element target) → ¬ Handler element → element.header.parent = none →
       program.processOf element.header = some process → call ∈ program.elements → Calls program call process →
-      OnwardVisit program walk element (.completes call)
+      walk.ascendsInto call.header.id → OnwardVisit program walk element (.completes call)
 
 /-- The visits `element`'s completion makes beside its own way: the catchers of its raise, the handlers it begins, a
 handler's fellow handlers and their trigger's resumption, and every Signal subscription its Signal throw resumes
@@ -404,14 +409,101 @@ inductive Opened (program : Program) (element : Element) (stops : Prop) : Visit 
 def runFootprint (program : Program) (element : Element) : Footprint :=
   { reads := (footprint program element).reads, writes := (footprint program element).writes.union (writes element) }
 
-/-- What one visit reads and writes: a boundary its catch's writes, an element its run, an element the walk stops at
-what it reads when it begins. -/
-def VisitFootprint (program : Program) (walk : Walk) : Visit → Footprint → Prop
+/-- The regions one visit may remove: an interrupting boundary's host, an interrupting Event Sub-Process's or Terminate
+End's parent, and the whole instance for a run whose Error no catcher takes. -/
+def VisitWithdraws (program : Program) (walk : Walk) : Visit → Region → Prop
+  | .fires boundary, region => Interruption program boundary region
+  | .passes _, _ => False
+  | .completes element, region => Unhandled program element region
+  | .enters element, region => Removal element region ∨ (¬ Stops walk element ∧ Unhandled program element region)
+
+/-- The level the entry of `element` opens: a Scope's children, or a called process's for a Call. -/
+def OpensLevel (program : Program) (element : Element) (level : List Element) : Prop :=
+  (∃ header payload, element.scope? = some (header, payload) ∧ level = program.children (some header.id)) ∨
+    ∃ header payload work process, element.activity? = some (header, payload) ∧ payload.work.call? = some work ∧
+      process ∈ program.calledProcessFor program.options.calledElementResolution (program.callerDeployment element.header)
+        work ∧ level = program.processChildren process
+
+/-- A start Event of the root process, whose start arms the root's Event Sub-Process starts. -/
+def RootStart (program : Program) (element : Element) : Prop :=
+  element.start?.isSome = true ∧ element.header.parent = none ∧ program.inCalledProcess element.header.id = false
+
+/-- A subscription beginning `element` opens (`opening`) or completing it ends: its boundaries', its catch's, the Event
+Sub-Process starts of the level its entry opens, an Event-Based Gateway's arms', and on opening a root start Event the
+root level's starts. -/
+inductive Held (program : Program) (opening : Bool) (element : Element) : Subscription → Prop where
+  | boundary {envelope : Envelope} {boundary : Boundary} : element.envelope? = some envelope →
+      boundary ∈ envelope.boundaries → Held program opening element boundary.subscription
+  | caught {header : Header} {payload : EventPayload} {subscription : Subscription} :
+      element.event? = some (header, payload) → payload.catch? = some subscription → Held program opening element subscription
+  | start {level : List Element} {start : Element} {subscription : Subscription} : OpensLevel program element level →
+      start ∈ level → EventSubProcessStart start subscription → Held program opening element subscription
+  | root {start : Element} {subscription : Subscription} : opening = true → RootStart program element →
+      start ∈ program.siblings element.header → EventSubProcessStart start subscription →
+      Held program opening element subscription
+  | arm {flow : FlowId} {arm : Element} {header : Header} {payload : EventPayload} {subscription : Subscription} :
+      WaitsGateway element → flow ∈ element.outgoing → Targets program flow arm → arm.event? = some (header, payload) →
+      payload.catch? = some subscription → Held program opening element subscription
+
+/-- A subscription removing `element` ends: its boundaries', its catch's, an Event Sub-Process's start. -/
+def Carries (element : Element) (subscription : Subscription) : Prop :=
+  (∃ envelope boundary, element.envelope? = some envelope ∧ boundary ∈ envelope.boundaries ∧
+    subscription = boundary.subscription) ∨
+  (∃ header payload, element.event? = some (header, payload) ∧ payload.catch? = some subscription) ∨
+  EventSubProcessStart element subscription
+
+/-- The names through which a write may turn a condition from true to false: none for `isPresent`, which no write of a
+closure makes false. -/
+def falsifiable : Expression → NameSet
+  | .simpleBoolean (.isPresent _) => {}
+  | expression => expressionReads expression
+
+/-- The names through which a write ordered against the opening (`opening`) or the end of a Conditional subscription
+with `trigger` may change what it fires: against the opening those that may turn the condition false under `edge`,
+and under `eachWrite` every name it reads or its filter passes; against the end those that may make it true, the names
+it reads under `edge` and its filter's under `eachWrite` (`MayMakeTrue`'s bound). -/
+def conditionNames (program : Program) (opening : Bool) (trigger : ConditionTrigger) : NameSet :=
+  let filtered : NameSet := match trigger.variableName with
+    | some name => { names := [name] }
+    | none => { all := true }
+  match program.options.conditionalRetrigger, opening with
+  | .eachWrite, true => (expressionReads trigger.condition).union filtered
+  | .eachWrite, false => filtered
+  | .edge, true => falsifiable trigger.condition
+  | .edge, false => expressionReads trigger.condition
+
+/-- What a visit reads of the Conditional subscriptions it opens or ends (CIB-OP-0016): beginning an element opens
+what it holds and, unless the walk stops there, ends it; completing one ends it; a region the visit removes ends what
+every removed element carries. Each reads the names through which a write ordered against it changes what it fires
+(`conditionNames`), value-blind. -/
+inductive Lifetime (program : Program) (walk : Walk) : Visit → NameSet → Prop where
+  | opens {element : Element} {subscription : Subscription} {trigger : ConditionTrigger} :
+      Held program true element subscription → subscription.trigger.condition? = some trigger →
+      Lifetime program walk (.enters element) (conditionNames program true trigger)
+  | runsThrough {element : Element} {subscription : Subscription} {trigger : ConditionTrigger} : ¬ Stops walk element →
+      Held program false element subscription → subscription.trigger.condition? = some trigger →
+      Lifetime program walk (.enters element) (conditionNames program false trigger)
+  | completes {element : Element} {subscription : Subscription} {trigger : ConditionTrigger} :
+      Held program false element subscription → subscription.trigger.condition? = some trigger →
+      Lifetime program walk (.completes element) (conditionNames program false trigger)
+  | removes {visit : Visit} {region : Region} {id : ElementId} {element : Element} {subscription : Subscription}
+      {trigger : ConditionTrigger} : VisitWithdraws program walk visit region → Removes program region id →
+      program.element? id = some element → Carries element subscription → subscription.trigger.condition? = some trigger →
+      Lifetime program walk visit (conditionNames program false trigger)
+
+/-- What one visit's run reads and writes: a boundary its catch's writes, an element its run, an element the walk stops
+at what it reads when it begins. -/
+def VisitRun (program : Program) (walk : Walk) : Visit → Footprint → Prop
   | .fires boundary, found => found = { writes := { names := catchWrites boundary.subscription } }
   | .passes element, found => found = runFootprint program element
   | .completes element, found => found = runFootprint program element
   | .enters element, found => (Stops walk element ∧ found = { reads := beginReads program element }) ∨
       (¬ Stops walk element ∧ found = runFootprint program element)
+
+/-- What one visit reads and writes: its run's account (`VisitRun`) and what it reads of the Conditional subscriptions
+it opens or ends (`Lifetime`). -/
+def VisitFootprint (program : Program) (walk : Walk) (visit : Visit) (found : Footprint) : Prop :=
+  VisitRun program walk visit found ∨ ∃ names, Lifetime program walk visit names ∧ found = { reads := names }
 
 /-- A unit of work: a walk from its start visits. -/
 structure WorkUnit where
@@ -440,14 +532,6 @@ inductive Reaches (program : Program) (unit : WorkUnit) : Visit → Prop where
 /-- `element` runs in the unit: it completes, or begins and does not stop. -/
 def Acts (program : Program) (unit : WorkUnit) (element : Element) : Prop :=
   Reaches program unit (.completes element) ∨ (Reaches program unit (.enters element) ∧ ¬ Stops unit.walk element)
-
-/-- The regions one visit may remove: an interrupting boundary's host, an interrupting Event Sub-Process's or Terminate
-End's parent, and the whole instance for a run whose Error no catcher takes. -/
-def VisitWithdraws (program : Program) (walk : Walk) : Visit → Region → Prop
-  | .fires boundary, region => Interruption program boundary region
-  | .passes _, _ => False
-  | .completes element, region => Unhandled program element region
-  | .enters element, region => Removal element region ∨ (¬ Stops walk element ∧ Unhandled program element region)
 
 /-- What `Apart` compares of a unit: its footprint, the work it begins and completes, the regions it may remove, the
 elements whose Signal subscriptions it resumes and whose records it compensates, and `exposed`, the elements whose

@@ -293,15 +293,28 @@ inductive InstancePair (program : Program) (body : Element) (loop : MultiInstanc
 def SignalWake (program : Program) (thrower : Element) (visit : Visit) : Prop :=
   ProgramCatching program Signalled visit ∧ ¬ ClosedAt program thrower visit
 
+/-- An element enclosing the anchor of the subscription `visit` resumes. -/
+def Around (program : Program) (visit : Visit) (id : ElementId) : Prop :=
+  ∃ anchor, AnchorOf program visit anchor ∧ Within program anchor.header.id id
+
+/-- A resumption's path against `other`'s, ascending into the completions of the Scopes that do not enclose both
+anchors: a Scope holding only one may complete beside the other's path, one holding both only after both, so the pair's
+shared completion is not held against itself. -/
+def ascending (program : Program) (visit other : Visit) : WorkUnit :=
+  { walk := { stop := AwaitsStimulus, ascends := true,
+              ascendsInto := fun id => ¬ (Around program visit id ∧ Around program other id) }
+    start := (· = visit) }
+
 /-- The units a Signal throw starts together: its continuation and each resumption whose first visit does not remove
-it, two resumptions, and a resumption against a second open occurrence of its own subscription. -/
+it, two resumptions, each ascending below the Scopes both anchors share (`ascending`), and a resumption against a
+second open occurrence of its own subscription. -/
 inductive SignalPair (program : Program) (thrower : Element) : Account → Account → Prop where
   | continuation {visit : Visit} : SignalWake program thrower visit → ¬ Preempts program visit thrower →
       SignalPair program thrower ((continuationOf program thrower).account program)
         ((pathFrom (· = visit)).account program)
-  | resumptions {visit other : Visit} : SignalWake program thrower visit → SignalWake program thrower other →
-      visit ≠ other →
-      SignalPair program thrower ((pathFrom (· = visit)).account program) ((pathFrom (· = other)).account program)
+  | ascended {visit other : Visit} : SignalWake program thrower visit → SignalWake program thrower other →
+      visit ≠ other → SignalPair program thrower ((ascending program visit other).account program)
+        ((ascending program other visit).account program)
   | itself {visit : Visit} {holder : ElementId} : SignalWake program thrower visit → Holder program visit holder →
       SignalPair program thrower (itselfAt program visit) (itselfAt program visit)
 
@@ -348,17 +361,6 @@ inductive WritePair (program : Program) (writer : Element) : Account → Account
   | rivals {visit other : Visit} : Catching Conditional writer visit → ProgramCatching program Conditional other →
       Together program visit other →
       WritePair program writer ((pathFrom (· = visit)).account program) ((pathFrom (· = other)).account program)
-
-/-- The level the entry of `element` opens: a Scope's children, or a called process's for a Call. -/
-def OpensLevel (program : Program) (element : Element) (level : List Element) : Prop :=
-  (∃ header payload, element.scope? = some (header, payload) ∧ level = program.children (some header.id)) ∨
-    ∃ header payload work process, element.activity? = some (header, payload) ∧ payload.work.call? = some work ∧
-      process ∈ program.calledProcessFor program.options.calledElementResolution (program.callerDeployment element.header)
-        work ∧ level = program.processChildren process
-
-/-- A start Event of the root process, whose start arms the root's Event Sub-Process starts. -/
-def RootStart (program : Program) (element : Element) : Prop :=
-  element.start?.isSome = true ∧ element.header.parent = none ∧ program.inCalledProcess element.header.id = false
 
 /-- The Conditional resumptions the arming on entering `element` evaluates together
 (`Kernel.Feature.Subscriptions.subscribeAll`): its Conditional boundaries and the Conditional Event Sub-Process starts of
@@ -513,8 +515,8 @@ theorem split_race_not_apart {program : Program} {flow : Flow} {other : FlowId} 
     (runsLeft : ¬ Stops branchWalk left) (runsRight : ¬ Stops branchWalk right)
     (race : (runFootprint program left).races (runFootprint program right) = true) : ¬ Apart program := fun apart =>
   (apart _ (mechanism_mem_all _) _ _ (.split member forks leaving distinct .paths)).1
-    ⟨_, _, ⟨.enters left, .start ⟨left, toLeft, rfl⟩, .inr ⟨runsLeft, rfl⟩⟩,
-      ⟨.enters right, .start ⟨right, toRight, rfl⟩, .inr ⟨runsRight, rfl⟩⟩, race⟩
+    ⟨_, _, ⟨.enters left, .start ⟨left, toLeft, rfl⟩, .inl (.inr ⟨runsLeft, rfl⟩)⟩,
+      ⟨.enters right, .start ⟨right, toRight, rfl⟩, .inl (.inr ⟨runsRight, rfl⟩)⟩, race⟩
 
 theorem shared_handler_not_apart {program : Program} {thrower handler : Element} {first second : ElementId}
     (member : thrower ∈ program.elements) (compensates : Compensates thrower) (handles : HandlersOf program thrower handler)
