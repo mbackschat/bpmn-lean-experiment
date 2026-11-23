@@ -29,13 +29,13 @@ That each phase `Step` runs itself keeps `WellFormed` (`Laws.Step.Phases`, which
 
 /-- An input's reset keeps no start fact: it empties the journal, the transitions and the draft. -/
 theorem starts_reset (s : State) :
-    (starts { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] }).Sublist (starts s) := by
+    (starts { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := s.nextCompletion }).Sublist (starts s) := by
   simp [starts]
 
 /-- `Step.onRunning` starts an input from an empty journal, intents, transitions and draft, on a committed state, whose
 transitions the commit emptied (`Laws.Step.orderJournal_closed`), so the issue table loses no unit that ran. -/
 theorem reset_wellFormed {s : State} (formed : WellFormed program s) (committed : Committed s) :
-    WellFormed program { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } :=
+    WellFormed program { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := s.nextCompletion } :=
   formed.narrow {
       scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := fun _ => by apply instanceOf_congr <;> rfl, recorded := id, items := .refl _, tokens := .refl _,

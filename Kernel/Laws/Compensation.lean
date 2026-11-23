@@ -29,6 +29,23 @@ Each compensation operation's effect on the compensation slot, the queued signal
 vocabulary of `Kernel.Laws.Compensation.Rules`, so that what follows from it is proved without the feature's bodies.
 `beginHandler`, `advance` and `release` each take one unit of fuel and hand the rest to the operation they call. -/
 
+/-- Which of two records completed first in the order §13.5.5 reads (I1 (d), DC15 (c)): under
+`BranchSchedule.orderInvariant` the one of an earlier closure, and of one closure the one whose subject the other's
+structurally follows (`structurallyBefore`), which no schedule changes; under `declarationDepthFirst` the one that
+completed first. -/
+def CompletedBefore (program : Program) (record other : Compensable) : Prop :=
+  match program.options.branchSchedule with
+  | .orderInvariant =>
+    record.closure < other.closure ∨
+      (record.closure = other.closure ∧ structurallyBefore program record.subject other.subject = true)
+  | .declarationDepthFirst => record.completion < other.completion
+
+/-- The kernel's order of completion is `CompletedBefore`. -/
+theorem completedBefore_iff (program : Program) (record other : Compensable) :
+    Feature.Compensation.completedBefore program record other = true ↔ CompletedBefore program record other := by
+  unfold Feature.Compensation.completedBefore CompletedBefore
+  cases program.options.branchSchedule <;> simp
+
 /-- The kernel's dependency between two records is `Precedes` over the program's Sequence Flow paths (`flowReaches`)
 and the boundary Events attached to `record`'s subject, with the data clause read over the footprints' name sets,
 which may hold every name (`NameSet.meets`). -/
@@ -37,11 +54,11 @@ theorem precedes_spec (ctx : Ctx) (record other : Compensable) :
       (record.subject ≠ other.subject ∧ flowReaches ctx.program
           ((((ctx.program.element? record.subject).bind (·.envelope?)).map fun envelope =>
             envelope.boundaries.map (·.id)).getD []) other.subject = true) ∨
-        (record.completion < other.completion ∧
+        (CompletedBefore ctx.program record other ∧
           (record.subject = other.subject ∨ flowReaches ctx.program [record.subject] other.subject = true ∨
             (subjectData ctx.program other.subject).reads.meets (subjectData ctx.program record.subject).writes = true)) := by
   unfold Feature.Compensation.precedes
-  simp only [Bool.or_eq_true, Bool.and_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq, beq_iff_eq, or_assoc]
+  simp only [Bool.or_eq_true, Bool.and_eq_true, bne_iff_ne, ne_eq, beq_iff_eq, or_assoc, completedBefore_iff]
 
 /-- The kernel's dependency reads only the program, so every context of one program orders records alike. -/
 theorem precedes_congr {ctx other : Ctx} (same : ctx.program = other.program) :

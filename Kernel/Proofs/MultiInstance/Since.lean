@@ -438,7 +438,7 @@ theorem since_pipelinePhases (b : State) (pipeline : Laws.Step.PipelinePhases We
 every body's occurrence has settled (`Laws.State.SlotsSettled.bodies`) and one record per body occurrence is held. -/
 theorem since_reset {program : Program} {b : State} (formed : WellFormed program b) (committed : Laws.State.Committed b)
     (keyed : RunsKeyed b) :
-    Since b program { b with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } := by
+    Since b program { b with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := b.nextCompletion } := by
   refine ⟨Laws.State.reset_wellFormed formed committed, ⟨fun earlier member => (formed.settled.bodies earlier member).1,
     fun earlier member o inside same => (formed.settled.bodies earlier member).2.1 o inside same,
     fun _ _ _ _ _ => by simp⟩, ⟨fun earlier member run inside same => ?_, fun run inside apart => absurd rfl

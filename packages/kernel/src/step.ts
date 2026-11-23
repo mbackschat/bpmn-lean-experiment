@@ -521,7 +521,8 @@ function settle(hooks: Hooks, ctx: Ctx, bound: number, opening: State, start: St
 /**
  * Run an input's transition on a running instance at its logical time `atMs`, then settle. A Timer firing without its own
  * time happens at the deadline it names; a host that wakes later states the later time. The input starts from an empty
- * per-input record (journal, intents, draft and write log); a committed state holds no draft or write log, since every
+ * per-input record (journal, intents, draft and write log), and the records it completes take the compensation counter
+ * as it stands as their closure stamp (`State.completionBase`); a committed state holds no draft or write log, since every
  * micro-step's `conclude` empties them and the registered `cancelled` and `written` hooks it then runs refill neither,
  * so emptying them here changes no run.
  */
@@ -530,7 +531,10 @@ function onRunning(
 ): Outcome {
   if (before === null) return failed(FailureTag.Rejected, "instance-not-started");
   if (before.status !== InstanceStatus.Running) return failed(FailureTag.Rejected, "instance-not-running");
-  const advanced = advanceClock(atMs, { ...before, journal: [], intents: [], transitions: null, outboxes: null, draft: emptyDraft, writes: [] });
+  const advanced = advanceClock(atMs, {
+    ...before, journal: [], intents: [], transitions: null, outboxes: null, draft: emptyDraft, writes: [],
+    completionBase: before.nextCompletion,
+  });
   if (!advanced.ok) return advanced;
   const unit = unitRoot({ tag: UnitRootTag.Input });
   const started = admitChoicesThen(hooks, ctx, () => microStep(hooks, ctx, unit, { tag: CauseTag.Input, input: tag }, null, root, transition, advanced.value));

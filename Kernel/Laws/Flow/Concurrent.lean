@@ -166,29 +166,14 @@ def BoundaryLeads (program : Program) (first second : ElementId) : Prop :=
     boundary ∈ envelope.boundaries ∧ TransitPath program boundary.id second
 
 /-- Every record of `first` precedes a later one of `second` and a record of `first` after one of `second` is ordered
-too or cannot exist: a path leads from `first` to `second`, and either one leads back, so completion orders the pair
-the same way, or `first` runs once along one token's path and no way out of `second` returns to it. -/
+too or cannot exist: a path leads from `first` to `second`, and either one leads back, so the order of completion
+(`Laws.Compensation.CompletedBefore`) orders the pair the same way, or `first` runs once along one token's path and no
+way out of `second` returns to it. Two records of one closure are ordered by the program's structure
+(`Kernel.structurallyBefore`). -/
 def Follows (program : Program) (first second : ElementId) : Prop :=
   TransitPath program first second ∧
     (TransitPath program second first ∨
       (¬ Goes program second first ∧ ∃ element, program.element? first = some element ∧ RunsOnce program element))
-
-/-- Two subjects whose records `Kernel.Feature.Compensation.precedes` orders in every run (BPMN 2.0.2 §13.5.5): one
-subject, ordered by completion; a path from one's boundary Events to the other, ordered whatever the completion; or
-one follows the other. -/
-def OrderedSubjects (program : Program) (first second : ElementId) : Prop :=
-  first = second ∨ BoundaryLeads program first second ∨ BoundaryLeads program second first ∨
-    Follows program first second ∨ Follows program second first
-
-/-- Every pair of the two handlers' subjects is ordered. -/
-def Ordered (program : Program) (left right : Element) : Prop :=
-  ∀ first second, SubjectOf program left first → SubjectOf program right second → OrderedSubjects program first second
-
-/-- Two handler runs one throw may begin together: §13.5.5 compensates records, one per completed subject, so besides
-two handlers one handler serving two subjects runs twice (#155). One subject's records `Ordered` orders by completion. -/
-def TwoRuns (program : Program) (left right : Element) : Prop :=
-  left.header.id ≠ right.header.id ∨
-    (left = right ∧ ∃ subject, SubjectOf program left subject ∧ ∃ other, SubjectOf program left other ∧ subject ≠ other)
 
 /-! ## Units -/
 
@@ -281,6 +266,37 @@ and Calls that may hold the two occurrences apart (`HeldTwice`, #194); one holdi
 def itselfAt (program : Program) (visit : Visit) : Account :=
   itselfHeld program { stop := AwaitsStimulus, ascends := true, ascendsInto := HeldTwice program } visit
     (Holder program visit)
+
+/-- `subject` may complete twice in one closure, so its records there have no order and their handlers run together
+(COMPENSATION-SEMANTICS-SPEC I1 (d), DC15 (c); `Kernel.Admission.Flow.Concurrency.completesTwice`): it completes
+without waiting for an input and does not run once along one token's path, or it is a Multi-Instance Sub-Process whose
+instances may complete in the closure that begins them or in the one a broadcast resumes them in. -/
+def CompletesTwice (program : Program) (subject : ElementId) : Prop :=
+  ∃ element, program.element? subject = some element ∧
+    ((¬ AwaitsStimulus element ∧ ¬ RunsOnce program element) ∨
+      (∃ header payload loop, element.scope? = some (header, payload) ∧ (element.envelope?).bind (·.multiInstance) = some loop ∧
+        (Ends program (enteredFrom program header.id branchWalk) ∨
+          Ends program (wake program (enteredFrom program header.id branchWalk)))))
+
+/-- Two subjects whose records `Kernel.Feature.Compensation.precedes` orders in every run (BPMN 2.0.2 §13.5.5): one
+subject that never completes twice in one closure, ordered by completion; a path from one's boundary Events to the
+other, ordered whatever the completion; or one follows the other. -/
+def OrderedSubjects (program : Program) (first second : ElementId) : Prop :=
+  (first = second ∧ ¬ CompletesTwice program first) ∨ BoundaryLeads program first second ∨ BoundaryLeads program second first ∨
+    Follows program first second ∨ Follows program second first
+
+/-- Every pair of the two handlers' subjects is ordered. -/
+def Ordered (program : Program) (left right : Element) : Prop :=
+  ∀ first second, SubjectOf program left first → SubjectOf program right second → OrderedSubjects program first second
+
+/-- Two handler runs one throw may begin together: §13.5.5 compensates records, one per completed subject, so besides
+two handlers one handler serving two subjects runs twice (#155), and so does one whose subject may complete twice in
+one closure, whose records there have no order. Other records of one subject `Ordered` orders by completion. -/
+def TwoRuns (program : Program) (left right : Element) : Prop :=
+  left.header.id ≠ right.header.id ∨
+    (left = right ∧
+      ((∃ subject, SubjectOf program left subject ∧ ∃ other, SubjectOf program left other ∧ subject ≠ other) ∨
+        ∃ subject, SubjectOf program left subject ∧ CompletesTwice program subject))
 
 /-- The body with every instance in it, which an instance's completion removes once the completion condition holds
 (BPMN 2.0.2 §13.3.7). -/
@@ -592,6 +608,6 @@ theorem shared_handler_not_apart {program : Program} {thrower handler : Element}
     (unordered : ¬ Ordered program handler handler) (runs : ¬ AwaitsStimulus handler)
     (race : (runFootprint program handler).races (runFootprint program handler) = true) : ¬ Apart program := fun apart =>
   (apart _ (mechanism_mem_all _) _ _ (.compensating member compensates handles handles
-    (.inr ⟨rfl, first, ofFirst, ⟨second, ofSecond, distinct⟩⟩) unordered)).1 ⟨_, _, .inr ⟨runs, rfl⟩, .inr ⟨runs, rfl⟩, race⟩
+    (.inr ⟨rfl, .inl ⟨first, ofFirst, ⟨second, ofSecond, distinct⟩⟩⟩) unordered)).1 ⟨_, _, .inr ⟨runs, rfl⟩, .inr ⟨runs, rfl⟩, race⟩
 
 end Kernel.Laws.Flow

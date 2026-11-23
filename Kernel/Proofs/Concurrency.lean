@@ -178,7 +178,7 @@ def Opens (hooks : Hooks) (program : Program) (input : Input) (start : State) : 
     Step.step hooks program (some before) input = .ok after ∧
     Laws.Step.RunsTransition hooks (Laws.Step.inputCtx hooks program input) transition ∧
     Step.onRunning hooks (Laws.Step.inputCtx hooks program input) running (some before) transition = .ok after ∧
-    Step.advanceClock (Step.inputHead running).2.1 { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } =
+    Step.advanceClock (Step.inputHead running).2.1 { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := before.nextCompletion } =
       .ok clocked ∧
     Step.microStep hooks (Laws.Step.inputCtx hooks program input) (.ofRoot .input) (.input (Step.inputHead running).1)
       none State.root transition clocked = .ok start
@@ -200,7 +200,7 @@ def OpensAttempt (hooks : Hooks) (program : Program) (input : Input) (start : St
         { element, scope := State.root, trigger := payload.trigger }) initial = .ok start) ∨
   ∃ before running transition clocked, Committed hooks program before ∧ before.status = .running ∧
     Laws.Step.RunsTransition hooks (Laws.Step.inputCtx hooks program input) transition ∧
-    Step.advanceClock (Step.inputHead running).2.1 { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } =
+    Step.advanceClock (Step.inputHead running).2.1 { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := before.nextCompletion } =
       .ok clocked ∧
     Step.microStep hooks (Laws.Step.inputCtx hooks program input) (.ofRoot .input) (.input (Step.inputHead running).1)
       none State.root transition clocked = .ok start

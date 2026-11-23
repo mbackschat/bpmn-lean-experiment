@@ -21,8 +21,10 @@ and runs their handlers, each begun in a context scope occurrence of its own ins
 context, with continuation `.compensation`. Order (§13.5.5): when A's record completed before B's, a Sequence Flow from
 A or from a boundary Event of A to B, a name B reads that A can write, or A and B being records of one subject makes B's
 handler complete before A's starts (`precedes`); handlers without such a dependency run concurrently, so every pending
-handler none of whose successors is still pending or running starts at once, in program order. Once the last handler has
-completed, the trigger continues as its thrower asked.
+handler none of whose successors is still pending or running starts at once, in program order. Which record completed
+first is `completedBefore`'s: under `BranchSchedule.orderInvariant` the closure, then the program's structural order, never
+the order a closure ran its units in (DC15 (c)). Once the last handler has completed, the trigger continues as its
+thrower asked.
 
 Under `ImplicitCompensation.everySubProcess` (I5) a completed Sub-Process without a handler that holds records is
 retained as one group record without a handler: compensating it runs its children as a nested run in a context holding
@@ -101,20 +103,32 @@ def completed (ctx : Ctx) (occurrence : Occurrence) (state : State) : Outcome :=
         { processInstanceId := state.instanceOf occurrence.scope, element := occurrence.element
           activation := occurrence.activation }
       let record : Compensable :=
-        { subject := occurrence.element, handler, scope := target, occurrence := some reference, completion, snapshot,
-          children := inner.flatMap keptRecords }
+        { subject := occurrence.element, handler, scope := target, occurrence := some reference, completion,
+          closure := state.completionBase, snapshot, children := inner.flatMap keptRecords }
       .ok (store state { compensation with retained := outer ++ [record] })
+
+/-- Whether `record` completed before `other` in the order §13.5.5 reads: under `BranchSchedule.orderInvariant` a record
+of an earlier closure first, and of one closure the one whose subject the other's structurally follows
+(`structurallyBefore`, DC15 (c), candidate (iii)), so no schedule changes it, and two records the structural order
+leaves unordered, one subject's included, have no order (I1 (d)); under `declarationDepthFirst` in the order they
+completed, as CIB numbers them. -/
+def completedBefore (program : Program) (record other : Compensable) : Bool :=
+  match program.options.branchSchedule with
+  | .orderInvariant =>
+    record.closure < other.closure ||
+      (record.closure == other.closure && structurallyBefore program record.subject other.subject)
+  | .declarationDepthFirst => record.completion < other.completion
 
 /-- `record`'s subject ran before `other`'s in a way §13.5.5 orders, so `other`'s handler completes before `record`'s
 starts: (b) a Sequence Flow path (`flowReaches`) leads from a boundary Event attached to `record`'s subject to
-`other`'s, a different one, whose record may complete while the subject still runs; or `record` completed first and
-(a) a Sequence Flow path leads from its subject to `other`'s, (c) `other`'s subject reads a name `record`'s can write
-(`subjectData`), or (d) both are records of one subject, run in reverse completion order. -/
+`other`'s, a different one, whose record may complete while the subject still runs; or `record` completed first
+(`completedBefore`) and (a) a Sequence Flow path leads from its subject to `other`'s, (c) `other`'s subject reads a
+name `record`'s can write (`subjectData`), or (d) both are records of one subject. -/
 def precedes (ctx : Ctx) (record other : Compensable) : Bool :=
   let boundaries := (((ctx.program.element? record.subject).bind (·.envelope?)).map fun envelope =>
     envelope.boundaries.map (·.id)).getD []
   (record.subject != other.subject && flowReaches ctx.program boundaries other.subject) ||
-    (record.completion < other.completion &&
+    (completedBefore ctx.program record other &&
       (record.subject == other.subject || flowReaches ctx.program [record.subject] other.subject ||
         (subjectData ctx.program other.subject).reads.meets (subjectData ctx.program record.subject).writes))
 

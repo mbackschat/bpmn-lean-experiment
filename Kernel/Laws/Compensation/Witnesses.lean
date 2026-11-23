@@ -34,7 +34,8 @@ def flowAB (sources : List ElementId) (target : ElementId) : Bool := sources.con
 def noBoundaries (_ : ElementId) : List ElementId := []
 def nothing (_ : ElementId) : List String := []
 
-def precedesAB : Compensable → Compensable → Prop := Precedes flowAB noBoundaries nothing nothing
+def precedesAB : Compensable → Compensable → Prop :=
+  Precedes flowAB noBoundaries (fun record other => record.completion < other.completion) nothing nothing
 
 def trigger : OccurrenceRef := { processInstanceId := "p", element := ⟨"Throw"⟩, activation := 1 }
 def both : CompensationRun := { trigger, scope := outer, pending := [recordA, recordB], leave := none, resume := none }

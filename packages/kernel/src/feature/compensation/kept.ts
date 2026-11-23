@@ -10,9 +10,9 @@ import { type Compensable, type CompensableChild, type ScopeOccurrenceId } from 
 
 /** `record` as its new holder keeps it: itself, directly, then what it keeps, one group deeper, under its completion number. */
 export function keptRecords(record: Compensable): CompensableChild[] {
-  const { subject, handler, occurrence, completion, snapshot } = record;
+  const { subject, handler, occurrence, completion, closure, snapshot } = record;
   return [
-    { subject, handler, occurrence, completion, snapshot, group: [] },
+    { subject, handler, occurrence, completion, closure, snapshot, group: [] },
     ...record.children.map((child) => ({ ...child, group: [completion, ...child.group] })),
   ];
 }
@@ -28,9 +28,9 @@ function releaseKept(context: ScopeOccurrenceId, direct: readonly CompensableChi
   const isInside = (record: CompensableChild): boolean => record.group[0] === child.completion;
   const inside = below.filter(isInside);
   const rest = below.filter((record) => !isInside(record));
-  const { subject, handler, occurrence, completion, snapshot } = child;
+  const { subject, handler, occurrence, completion, closure, snapshot } = child;
   return [
-    { subject, handler, scope: context, occurrence, completion, snapshot, children: inside.map((record) => ({ ...record, group: record.group.slice(1) })) },
+    { subject, handler, scope: context, occurrence, completion, closure, snapshot, children: inside.map((record) => ({ ...record, group: record.group.slice(1) })) },
     ...releaseKept(context, others, rest),
   ];
 }

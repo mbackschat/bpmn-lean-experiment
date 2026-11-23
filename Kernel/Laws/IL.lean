@@ -2,10 +2,12 @@ module
 
 public import Kernel.IL.Types
 public import Kernel.IL.Footprint
+public import Kernel.IL.Paths
 import all Kernel.IL.Types
 import all Kernel.IL.Types.Options
 import all Kernel.IL.Types.Work
 import all Kernel.IL.Footprint
+import all Kernel.IL.Paths
 
 /-! # Laws of the IL
 
@@ -442,5 +444,196 @@ theorem rule_il_reads_inputs (program : Program) (header : Header) (work : RuleW
 /-- A subject the program does not declare reads and writes nothing. -/
 theorem subjectData_missing {program : Program} {subject : ElementId} (missing : program.element? subject = none) :
     subjectData program subject = {} := by simp [subjectData, missing]
+
+/-! ## The structural order (DC15 (c), candidate (iii))
+
+`structuralSearch` answers exactly whether a path of `structuralNext` steps leads from a frontier node to the target
+(`structuralSearch_sound`, `structuralSearch_complete`), so `structurallyFollows` is transitive and `structurallyBefore`
+a strict partial order: compensation records of one closure ordered by it can form no dependency cycle among
+themselves, and a later causal order can refine it where it leaves records unordered. -/
+
+/-- A path of the structural walk's steps from `node` to `target`. -/
+inductive StructuralReach (program : Program) : StructuralNode → StructuralNode → Prop where
+  | here (node : StructuralNode) : StructuralReach program node node
+  | step {node after target : StructuralNode} :
+      after ∈ structuralNext program node → StructuralReach program after target → StructuralReach program node target
+
+theorem StructuralReach.trans {program : Program} {first middle last : StructuralNode}
+    (left : StructuralReach program first middle) (right : StructuralReach program middle last) :
+    StructuralReach program first last := by
+  induction left with
+  | here => exact right
+  | step after _ ih => exact .step after (ih right)
+
+/-- A node of an element the program declares is one of `Program.structuralNodes`. -/
+theorem structuralNode_declared {program : Program} {id : ElementId} {element : Element}
+    (found : program.element? id = some element) :
+    StructuralNode.enters id ∈ program.structuralNodes ∧ StructuralNode.completes id ∈ program.structuralNodes := by
+  have member := element?_mem found
+  have named := element?_header found
+  constructor <;> exact List.mem_flatMap.mpr ⟨element, member, by simp [named]⟩
+
+/-- A node outside `Program.structuralNodes` leads nowhere. -/
+theorem structuralNext_undeclared {program : Program} {node : StructuralNode}
+    (undeclared : ¬program.structuralNodes.contains node = true) : structuralNext program node = [] := by
+  cases node with
+  | enters id =>
+    cases found : program.element? id with
+    | none => simp [structuralNext, found]
+    | some element => exact absurd (by simpa using (structuralNode_declared found).1) undeclared
+  | completes id =>
+    cases found : program.element? id with
+    | none => simp [structuralNext, found]
+    | some element => exact absurd (by simpa using (structuralNode_declared found).2) undeclared
+
+/-- What the search answers "follows" for is reachable from a frontier node. -/
+theorem structuralSearch_sound {program : Program} {target : StructuralNode} {seen frontier : List StructuralNode}
+    (found : structuralSearch program target seen frontier = true) :
+    ∃ start ∈ frontier, StructuralReach program start target := by
+  fun_induction structuralSearch program target seen frontier with
+  | case1 => simp at found
+  | case2 _ node rest hit => exact ⟨node, by simp, by simp at hit; exact hit ▸ .here node⟩
+  | case3 _ node rest _ _ ih =>
+    obtain ⟨start, mem, path⟩ := ih found
+    exact ⟨start, List.mem_cons_of_mem _ mem, path⟩
+  | case4 _ node rest _ _ _ ih =>
+    obtain ⟨start, mem, path⟩ := ih found
+    rcases List.mem_append.mp mem with inRest | after
+    · exact ⟨start, List.mem_cons_of_mem _ inRest, path⟩
+    · exact ⟨node, by simp, .step after path⟩
+  | case5 _ node rest _ _ _ ih =>
+    obtain ⟨start, mem, path⟩ := ih found
+    exact ⟨start, List.mem_cons_of_mem _ mem, path⟩
+
+/-- What the search answers "does not follow" for is unreachable from every seen or frontier node, given that no seen
+node is the target and every step out of a seen node lands on a seen node, a frontier node or a non-target node that
+leads nowhere. -/
+theorem structuralSearch_complete {program : Program} {target : StructuralNode} {seen frontier : List StructuralNode}
+    (missed : structuralSearch program target seen frontier = false)
+    (seenFree : ∀ node ∈ seen, node ≠ target)
+    (closed : ∀ node ∈ seen, ∀ after ∈ structuralNext program node,
+      after ∈ seen ∨ after ∈ frontier ∨ (structuralNext program after = [] ∧ after ≠ target)) :
+    ∀ start, (start ∈ seen ∨ start ∈ frontier) → ∀ last, StructuralReach program start last → last ≠ target := by
+  fun_induction structuralSearch program target seen frontier with
+  | case1 seen =>
+    have safe : ∀ start last, StructuralReach program start last →
+        start ∈ seen ∨ (structuralNext program start = [] ∧ start ≠ target) → last ≠ target := by
+      intro start last path
+      induction path with
+      | here node =>
+        rintro (mem | ⟨_, free⟩)
+        · exact seenFree node mem
+        · exact free
+      | step after _ ih =>
+        rintro (mem | ⟨dead, _⟩)
+        · rcases closed _ mem _ after with seenAfter | none | dead
+          · exact ih (.inl seenAfter)
+          · simp at none
+          · exact ih (.inr dead)
+        · simp [dead] at after
+    intro start inSome last path
+    exact safe start last path (.inl (by simpa using inSome))
+  | case2 => simp at missed
+  | case3 seen node rest _ old ih =>
+    have inSeen : node ∈ seen := by simpa using old
+    intro start inSome
+    refine ih missed seenFree (fun x mem after step => ?_) start ?_
+    · rcases closed x mem after step with s | f | d
+      · exact .inl s
+      · rcases List.mem_cons.mp f with same | r
+        · exact .inl (same ▸ inSeen)
+        · exact .inr (.inl r)
+      · exact .inr (.inr d)
+    · rcases inSome with s | f
+      · exact .inl s
+      · rcases List.mem_cons.mp f with same | r
+        · exact .inl (same ▸ inSeen)
+        · exact .inr r
+  | case4 seen node rest hit _ _ ih =>
+    have free : node ≠ target := by simpa using hit
+    intro start inSome
+    refine ih missed ?_ (fun x mem after step => ?_) start ?_
+    · intro x mem
+      rcases List.mem_cons.mp mem with same | s
+      · exact same ▸ free
+      · exact seenFree x s
+    · rcases List.mem_cons.mp mem with same | s
+      · subst same
+        exact .inr (.inl (List.mem_append_right _ step))
+      · rcases closed x s after step with s' | f | d
+        · exact .inl (List.mem_cons_of_mem _ s')
+        · rcases List.mem_cons.mp f with same | r
+          · exact .inl (same ▸ List.mem_cons_self)
+          · exact .inr (.inl (List.mem_append_left _ r))
+        · exact .inr (.inr d)
+    · rcases inSome with s | f
+      · exact .inl (List.mem_cons_of_mem _ s)
+      · rcases List.mem_cons.mp f with same | r
+        · exact .inl (same ▸ List.mem_cons_self)
+        · exact .inr (List.mem_append_left _ r)
+  | case5 seen node rest hit _ undeclared ih =>
+    have free : node ≠ target := by simpa using hit
+    have dead : structuralNext program node = [] := structuralNext_undeclared undeclared
+    intro start inSome last path
+    have fromDead : start = node → last ≠ target := by
+      rintro rfl
+      cases path with
+      | here => exact free
+      | step after _ => simp [dead] at after
+    refine (Classical.em (start = node)).elim fromDead fun other => ?_
+    refine ih missed seenFree (fun x mem after step => ?_) start ?_ last path
+    · rcases closed x mem after step with s | f | d
+      · exact .inl s
+      · rcases List.mem_cons.mp f with same | r
+        · exact .inr (.inr (same ▸ ⟨dead, free⟩))
+        · exact .inr (.inl r)
+      · exact .inr (.inr d)
+    · rcases inSome with s | f
+      · exact .inl s
+      · rcases List.mem_cons.mp f with same | r
+        · exact absurd same other
+        · exact .inr r
+
+/-- `structurallyFollows` answers exactly whether a path of at least one step leads from `earlier`'s completion to
+`later`'s. -/
+theorem structurallyFollows_iff {program : Program} {earlier later : ElementId} :
+    structurallyFollows program earlier later = true ↔
+      ∃ next ∈ structuralNext program (.completes earlier), StructuralReach program next (.completes later) := by
+  constructor
+  · exact structuralSearch_sound
+  · rintro ⟨next, mem, path⟩
+    cases answer : structurallyFollows program earlier later with
+    | true => rfl
+    | false =>
+      exact absurd rfl (structuralSearch_complete answer (by simp) (by simp) next (.inr mem) _ path)
+
+theorem structurallyFollows_trans {program : Program} {first middle last : ElementId}
+    (left : structurallyFollows program first middle = true) (right : structurallyFollows program middle last = true) :
+    structurallyFollows program first last = true := by
+  obtain ⟨next, mem, path⟩ := structurallyFollows_iff.mp left
+  obtain ⟨next', mem', path'⟩ := structurallyFollows_iff.mp right
+  exact structurallyFollows_iff.mpr ⟨next, mem, path.trans (.step mem' path')⟩
+
+/-- **The structural order is a strict partial order**: irreflexive, … -/
+theorem structurallyBefore_irrefl (program : Program) (subject : ElementId) :
+    structurallyBefore program subject subject = false := by
+  simp [structurallyBefore]
+
+/-- … asymmetric, … -/
+theorem structurallyBefore_asymm {program : Program} {earlier later : ElementId}
+    (before : structurallyBefore program earlier later = true) : structurallyBefore program later earlier = false := by
+  simp_all [structurallyBefore]
+
+/-- … and transitive. -/
+theorem structurallyBefore_trans {program : Program} {first middle last : ElementId}
+    (left : structurallyBefore program first middle = true) (right : structurallyBefore program middle last = true) :
+    structurallyBefore program first last = true := by
+  simp only [structurallyBefore, Bool.and_eq_true, Bool.not_eq_true'] at left right ⊢
+  refine ⟨structurallyFollows_trans left.1 right.1, ?_⟩
+  cases back : structurallyFollows program last first with
+  | false => rfl
+  | true =>
+    have := structurallyFollows_trans back left.1
+    simp [this] at right
 
 end Kernel.Laws.IL

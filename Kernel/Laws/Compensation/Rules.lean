@@ -104,12 +104,13 @@ theorem ReleasesOwn.othersKept {context : ScopeOccurrenceId} {before after : Lis
 
 /-- §13.5.5's dependency between two records of one trigger (I1): `record`'s handler waits until `other`'s completed when
 a Sequence Flow path leads from a boundary Event of `record`'s subject to `other`'s, a different one, or `record`
-completed first and a Sequence Flow path leads from its subject to `other`'s, `other`'s subject reads a name
+completed first (`before`) and a Sequence Flow path leads from its subject to `other`'s, `other`'s subject reads a name
 `record`'s can write, or both are records of one subject. -/
 def Precedes (flowFrom : List ElementId → ElementId → Bool) (boundaries : ElementId → List ElementId)
-    (reads writes : ElementId → List String) (record other : Compensable) : Prop :=
+    (before : Compensable → Compensable → Prop) (reads writes : ElementId → List String) (record other : Compensable) :
+    Prop :=
   (record.subject ≠ other.subject ∧ flowFrom (boundaries record.subject) other.subject = true) ∨
-    (record.completion < other.completion ∧
+    (before record other ∧
       (record.subject = other.subject ∨ flowFrom [record.subject] other.subject = true ∨
         ∃ name ∈ reads other.subject, name ∈ writes record.subject))
 
@@ -132,9 +133,9 @@ theorem Advances.respectsOrder {precedes : Compensable → Compensable → Prop}
 
 /-- In particular a Sequence Flow from an earlier record's subject keeps its handler waiting for the later one's. -/
 theorem Advances.flowOrder {flowFrom : List ElementId → ElementId → Bool} {boundaries : ElementId → List ElementId}
-    {reads writes : ElementId → List String} {run after : CompensationRun} {started : List Compensable}
-    (law : Advances (Precedes flowFrom boundaries reads writes) run after started) {record other : Compensable}
-    (earlier : record.completion < other.completion) (flow : flowFrom [record.subject] other.subject = true)
+    {before : Compensable → Compensable → Prop} {reads writes : ElementId → List String} {run after : CompensationRun}
+    {started : List Compensable} (law : Advances (Precedes flowFrom boundaries before reads writes) run after started)
+    {record other : Compensable} (earlier : before record other) (flow : flowFrom [record.subject] other.subject = true)
     (waiting : other ∈ run.pending ++ run.running.map (·.2)) : record ∉ started := fun begun =>
   law.respectsOrder begun waiting (.inr ⟨earlier, .inr (.inl flow)⟩)
 

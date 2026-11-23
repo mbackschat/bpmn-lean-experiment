@@ -611,7 +611,7 @@ theorem settle_carries (contract : HookContract hooks inv) (phases : ClosurePhas
 
 /-- An input's start on a running instance holds no issue and no transition when the before-state is committed. -/
 theorem reset_between {before : State} (committed : Laws.State.Committed before) :
-    Between { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } :=
+    Between { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := before.nextCompletion } :=
   ⟨fun index => by simp [committed.issued], by simp⟩
 
 /-- The clock moves neither the issue table nor the transitions. -/
@@ -642,7 +642,7 @@ theorem running_settles (contract : HookContract hooks inv) (phases : ClosurePha
     (pipeline : PipelineKeeps hooks inv) (framing : Framing hooks base)
     (based : ∀ program s, inv program s → base program s) {program : Program} {before : State} {input : Input}
     {after : State} (committed : Laws.State.Committed before)
-    (holds : inv program { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] })
+    (holds : inv program { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := before.nextCompletion })
     (ran : step hooks program (some before) input = .ok after) :
     ∃ (start : State) (settled : State × RunLog), (inv program settled.1 ∧ Between settled.1) ∧
       orderJournal program.options.branchSchedule start (.ok settled) = .ok after := by
@@ -653,7 +653,7 @@ theorem running_settles (contract : HookContract hooks inv) (phases : ClosurePha
     obtain ⟨clocked, stepped, settling, made⟩ := rest
     obtain rfl := Option.some.inj present
     have entered : inv (inputCtx hooks program input).program
-        { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } := by
+        { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := before.nextCompletion } := by
       rw [inputCtx_program]
       exact holds
     have done := input_carries contract phases facts pipeline framing based runs

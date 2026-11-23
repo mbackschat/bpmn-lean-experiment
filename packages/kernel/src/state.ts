@@ -334,6 +334,12 @@ export interface State {
   /** The next compensation completion number (`takeCompletion`), taken in run order as a record completes. */
   readonly nextCompletion: number;
   /**
+   * `nextCompletion` when the closure in progress began (`step.ts`'s `onRunning`), the closure stamp of every record it
+   * completes (`Compensable.closure`): records of one closure share it, and a later closure's is greater whenever an
+   * earlier one completed a record.
+   */
+  readonly completionBase: number;
+  /**
    * The counter of issued order positions (DC13): an open item's `position` is the running unit's issue in the position
    * slot (`issuePosition`), numbered from here at commit in the closure's position order, which advances it.
    */
@@ -424,6 +430,7 @@ export function initial(instanceId: string, variables: readonly Binding[], busin
     issued: null,
     activations: [],
     nextCompletion: 1,
+    completionBase: 1,
     nextOrder: 1,
     logicalTimeMs: 0,
     batchSignals: [],

@@ -29,6 +29,7 @@
 import {
   CompensationHandlerFailureTag,
   ImplicitCompensation,
+  BranchSchedule,
   assertNever,
   elementActivity,
   elementEnvelope,
@@ -37,9 +38,10 @@ import {
   mergeSort,
   programElement,
   type ElementId,
+  type Program,
 } from "../il/types.js";
 import { meets, subjectData } from "../il/footprint.js";
-import { flowReaches } from "../il/paths.js";
+import { flowReaches, structurallyBefore } from "../il/paths.js";
 import {
   scopeOccurrenceParent,
   ContinuationTag,
@@ -155,22 +157,43 @@ export function completed(ctx: Ctx, occurrence: Occurrence, state: State): Outco
     element: occurrence.element,
     activation: occurrence.activation,
   };
-  const record: Compensable = { subject: occurrence.element, handler, scope: target, occurrence: reference, completion, snapshot, children: inner.flatMap(keptRecords) };
+  const record: Compensable = {
+    subject: occurrence.element, handler, scope: target, occurrence: reference, completion, closure: issued.completionBase, snapshot,
+    children: inner.flatMap(keptRecords),
+  };
   return committed(store(issued, { ...compensation, retained: [...outer, record] }));
+}
+
+/**
+ * Whether `record` completed before `other` in the order §13.5.5 reads: under `BranchSchedule.OrderInvariant` a record of
+ * an earlier closure first, and of one closure the one whose subject the other's structurally follows
+ * (`structurallyBefore`, DC15 (c), candidate (iii)), so no schedule changes it, and two records the structural order
+ * leaves unordered, one subject's included, have no order (I1 (d)); under `DeclarationDepthFirst` in the order they
+ * completed, as CIB numbers them.
+ */
+function completedBefore(program: Program, record: Compensable, other: Compensable): boolean {
+  switch (program.options.branchSchedule) {
+    case BranchSchedule.OrderInvariant:
+      return record.closure < other.closure ||
+        (record.closure === other.closure && structurallyBefore(program, record.subject, other.subject));
+    case BranchSchedule.DeclarationDepthFirst:
+      return record.completion < other.completion;
+  }
+  return assertNever(program.options.branchSchedule);
 }
 
 /**
  * `record`'s subject ran before `other`'s in a way §13.5.5 orders, so `other`'s handler completes before `record`'s
  * starts: (b) a Sequence Flow path (`flowReaches`) leads from a boundary Event attached to `record`'s subject to
- * `other`'s, a different one, whose record may complete while the subject still runs; or `record` completed first and
- * (a) a Sequence Flow path leads from its subject to `other`'s, (c) `other`'s subject reads a name `record`'s can write
- * (`subjectData`), or (d) both are records of one subject, run in reverse completion order.
+ * `other`'s, a different one, whose record may complete while the subject still runs; or `record` completed first
+ * (`completedBefore`) and (a) a Sequence Flow path leads from its subject to `other`'s, (c) `other`'s subject reads a
+ * name `record`'s can write (`subjectData`), or (d) both are records of one subject.
  */
 function precedes(ctx: Ctx, record: Compensable, other: Compensable): boolean {
   const subject = programElement(ctx.program, record.subject);
   const boundaries = ((subject === null ? null : elementEnvelope(subject))?.boundaries ?? []).map((boundary) => boundary.id);
   return (record.subject !== other.subject && flowReaches(ctx.program, boundaries, other.subject)) ||
-    (record.completion < other.completion &&
+    (completedBefore(ctx.program, record, other) &&
       (record.subject === other.subject || flowReaches(ctx.program, [record.subject], other.subject) ||
         meets(subjectData(ctx.program, other.subject).reads, subjectData(ctx.program, record.subject).writes)));
 }

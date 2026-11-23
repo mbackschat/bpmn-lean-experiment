@@ -157,7 +157,7 @@ theorem step_keeps {hooks : Hooks} {inv : Program → State → Prop} (contract 
     (framing : Laws.Step.Framing hooks WellFormed) (counters : Laws.Step.StartKeeps hooks KeysAux)
     (based : ∀ program s, inv program s → WellFormed program s)
     (reset : ∀ program state, inv program state → Laws.State.Committed state →
-      inv program { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] })
+      inv program { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := state.nextCompletion })
     {program : Program}
     (initial : ∀ instanceId variables businessKey,
       inv program ((State.initial instanceId variables businessKey).signal (.armScope State.root)))
@@ -177,7 +177,7 @@ theorem running_keeps {hooks : Hooks} {inv : Program → State → Prop} (contra
     (framing : Laws.Step.Framing hooks WellFormed) (counters : Laws.Step.StartKeeps hooks KeysAux)
     (based : ∀ program s, inv program s → WellFormed program s) {program : Program} {before : State} {input : Input}
     {after : State} (committed : Laws.State.Committed before)
-    (holds : inv program { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] })
+    (holds : inv program { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := before.nextCompletion })
     (ran : Step.step hooks program (some before) input = .ok after) : inv program after ∧ Laws.State.Committed after :=
   Laws.Step.running_keeps contract phases stateFacts pipeline counters framing based (fun _ _ _ held => held.1)
     (fun _ _ formed keys => ⟨based _ _ formed, .refl _, keys⟩) (fun _ _ _ held => held.2.1)

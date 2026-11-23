@@ -435,7 +435,7 @@ theorem registeredFormed_phases : Laws.Step.Phases RegisteredFormed :=
 /-- Clearing an input's journal, intents, draft and writes keeps `RegisteredFormed`. -/
 theorem registeredFormed_reset {program : Program} {s : State} (holds : RegisteredFormed program s)
     (committed : Laws.State.Committed s) :
-    RegisteredFormed program { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } :=
+    RegisteredFormed program { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := s.nextCompletion } :=
   ⟨Laws.State.reset_wellFormed holds.1 committed, holds.2.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)⟩
 
 /-- A start's fresh instance holds no record, run or trigger. -/

@@ -2,7 +2,6 @@ module
 
 public import Kernel.Laws.Compensation
 public import Kernel.Laws.State.Transitions
-public import Kernel.IL.Paths
 public import Kernel.Laws.Population
 public import Kernel.Proofs.Compensation.Relation
 public import Kernel.Laws.Propagation
@@ -44,10 +43,12 @@ def attachedBoundaries (program : Program) (subject : ElementId) : List ElementI
   (((program.element? subject).bind (·.envelope?)).map fun envelope => envelope.boundaries.map (·.id)).getD []
 
 /-- §13.5.5's dependency between two records of one trigger, `Laws.Compensation.Precedes` over the program's Sequence
-Flow paths (`flowReaches`), the subjects' attached boundary Events and the variable names each subject's run reads
-and writes, `reads` and `writes`. -/
+Flow paths (`flowReaches`), the subjects' attached boundary Events, the order of completion the program's schedule
+reads (`Laws.Compensation.CompletedBefore`) and the variable names each subject's run reads and writes, `reads` and
+`writes`. -/
 def Depends (program : Program) (reads writes : ElementId → List String) : Compensable → Compensable → Prop :=
-  Laws.Compensation.Precedes (flowReaches program) (attachedBoundaries program) reads writes
+  Laws.Compensation.Precedes (flowReaches program) (attachedBoundaries program)
+    (Laws.Compensation.CompletedBefore program) reads writes
 
 /-- `Depends` under the read and write name lists of `Step`'s context for `hooks` and `program`
 (`Step.context`), what the lane relation of an instance of `program` is settled by. -/

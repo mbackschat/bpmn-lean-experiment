@@ -50,7 +50,7 @@ import {
 import {
   QueuingMechanism, QueuingSite, expressionReads, joined, meets, queuedAt, queuingMechanisms, races, type NameSet,
 } from "../../il/footprint.js";
-import { flowReaches } from "../../il/paths.js";
+import { flowReaches, programEnteredChildren } from "../../il/paths.js";
 import {
   VisitTag,
   anchors,
@@ -82,7 +82,7 @@ import {
   type Walk,
   type Withdrawal,
 } from "./closure.js";
-import { awaitsStimulus, enteredChildren, flowTargets, leaving, routing } from "../flow.js";
+import { awaitsStimulus, flowTargets, leaving, routing } from "../flow.js";
 
 /** The closure a token on `start` runs in: the work it reaches, stopping where it waits and passing every join (#162). */
 const branchClosure = (reading: Reading, program: Program, start: FlowId): Closure =>
@@ -529,7 +529,7 @@ function armedOn(program: Program, element: Element): readonly [Visit[], readonl
   const called = work === null ? [] : programCalledProcessFor(program, program.options.calledElementResolution,
     programCallerDeployment(program, elementHeader(element)), work).flatMap((process) => programProcessChildren(program, process));
   const scope = elementScope(element);
-  if (scope !== null) return [[...boundaries, ...starts(programChildren(program, scope[0].id))], enteredChildren(program, scope[0].id)];
+  if (scope !== null) return [[...boundaries, ...starts(programChildren(program, scope[0].id))], programEnteredChildren(program, scope[0].id)];
   const header = elementHeader(element);
   if (elementStart(element) !== null && header.parent === null && !programInCalledProcess(program, header.id)) {
     return [starts(programSiblings(program, header)), [element]];
@@ -587,7 +587,7 @@ function writeFanOut(reading: Reading, program: Program, element: Element): stri
       .map((visit) => [visit, pathOf(reading, program, [visit])] as const);
   const written = runs(reading, program, element).footprint.writes;
   const scope = elementScope(element);
-  const inside = scope !== null && scopeKindStart(scope[1].kind) !== null ? enteredChildren(program, scope[0].id).map(toEnter) : [];
+  const inside = scope !== null && scopeKindStart(scope[1].kind) !== null ? programEnteredChildren(program, scope[0].id).map(toEnter) : [];
   const own = (): string | null => {
     if (written.names.length === 0 && !written.all) return null;
     const next = continuation(reading, program, element);
@@ -632,9 +632,10 @@ function writeFanOut(reading: Reading, program: Program, element: Element): stri
  * Without `runsOnce` a second token completes `a` after `b` (a conditioned path from `a` to `b` beside a fork, the
  * review's witness; a fork sending a second token to `a`, though every path to `b` passes `a`); without `reaches` one
  * token returns to `a` through an Activity or a boundary flow; and a Scope around `a` entered again hands its parent the
- * records of two occurrences, which meet in one run. A data dependency is not counted, a conservative reading. A handler
- * runs once per record, so one that two distinct subjects name is held against itself too, unless their records are
- * ordered (#155); an Event Sub-Process handler, whose one subject `subjectsOf` lists twice, is not.
+ * records of two occurrences, which meet in one run. A data dependency is not counted, a conservative reading. Two
+ * records of one closure are ordered by the program's structure (`structurallyBefore`). A handler runs once per record, so one that two distinct subjects name is held against itself too, unless their
+ * records are ordered (#155), and so is one whose subject may complete twice in one closure (`completesTwice`), whose
+ * records there have no order (I1 (d)); an Event Sub-Process handler, whose one subject `subjectsOf` lists twice, is not.
  */
 function compensationFanOut(reading: Reading, program: Program, element: Element): string | null {
   if (!reading.compensates(element)) return null;
@@ -658,13 +659,17 @@ function compensationFanOut(reading: Reading, program: Program, element: Element
   };
   const joinedBy = (first: ElementId, second: ElementId): boolean =>
     flowReaches(program, boundariesOf(first), second) || follows(first, second);
+  const twice = (subject: ElementId): boolean => {
+    const found = programElement(program, subject);
+    return found !== null && completesTwice(reading, program, found);
+  };
   const ordered = (left: Element, right: Element): boolean =>
     subjectsOf(program, left).every((first) => subjectsOf(program, right).every((second) =>
-      first === second || joinedBy(first, second) || joinedBy(second, first)));
+      (first === second && !twice(first)) || joinedBy(first, second) || joinedBy(second, first)));
   const handlers = handlersOf(reading, program, element);
   for (const [index, handlerElement] of handlers.entries()) {
-    const distinct = new Set(subjectsOf(program, handlerElement)).size;
-    const against = [...(distinct >= 2 ? [handlerElement] : []), ...handlers.slice(index + 1)];
+    const shared = new Set(subjectsOf(program, handlerElement)).size >= 2 || subjectsOf(program, handlerElement).some(twice);
+    const against = [...(shared ? [handlerElement] : []), ...handlers.slice(index + 1)];
     const found = firstOf(against.filter((other) => !ordered(handlerElement, other)),
       (other) => conflict(program, unit(handlerElement), unit(other)));
     if (found !== null) return found;
@@ -681,7 +686,7 @@ function compensationFanOut(reading: Reading, program: Program, element: Element
 function implicitFanOut(reading: Reading, program: Program, element: Element): string | null {
   const scope = elementScope(element);
   if (scope === null) return null;
-  const paths = enteredChildren(program, scope[0].id).map((child) => pathOf(reading, program, [toEnter(child)]));
+  const paths = programEnteredChildren(program, scope[0].id).map((child) => pathOf(reading, program, [toEnter(child)]));
   for (const [index, own] of paths.entries()) {
     const found = branchesAgainst(reading, program, own, paths.slice(index + 1));
     if (found !== null) return found;
@@ -807,7 +812,7 @@ export function instanceClosure(reading: Reading, program: Program, element: Ele
   const conflicts = (closure: Closure): boolean => races(closure.footprint, closure.footprint) || meetsSibling(closure);
   const scope = elementScope(element);
   if (scope !== null) {
-    const closure = walk(enteredChildren(program, scope[0].id).map(toEnter));
+    const closure = walk(programEnteredChildren(program, scope[0].id).map(toEnter));
     // A broadcast resumes every instance's subscription in one closure, which completes the idle instances in scope
     // order (`step.ts` `settle`), so an instance completing there meets the completion condition in an order no input
     // states.
@@ -819,4 +824,16 @@ export function instanceClosure(reading: Reading, program: Program, element: Ele
   const run = runs(reading, program, element);
   const beside = walk(beyond(reading, program, element, true));
   return { races: races(run.footprint, run.footprint) || meetsSibling({ ...beside, withdraws: [...run.withdraws, ...beside.withdraws] }), completes: true };
+}
+
+/**
+ * Whether `subject` may complete twice in one closure, so that its records there have no order and their handlers run
+ * together (COMPENSATION-SEMANTICS-SPEC I1 (d), DC15 (c)): it completes without waiting for an input and does not run
+ * once along one token's path (`runsOnce`), or it is a Multi-Instance Sub-Process whose instances may complete in one
+ * closure (`instanceClosure`).
+ */
+export function completesTwice(reading: Reading, program: Program, subject: Element): boolean {
+  return (!awaitsStimulus(subject) && !runsOnce(reading, program, subject)) ||
+    (elementScope(subject) !== null && (elementEnvelope(subject)?.multiInstance ?? null) !== null &&
+      instanceClosure(reading, program, subject).completes);
 }

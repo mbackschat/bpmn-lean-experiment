@@ -44,8 +44,8 @@ import {
   type Subscription,
 } from "../../il/types.js";
 import { beginReads, conditionNames, footprint, joined, noNames, union, type Footprint, type NameSet } from "../../il/footprint.js";
-import { onward } from "../../il/paths.js";
-import { enteredChildren, flowTargets, leaving, routing } from "../flow.js";
+import { onward, programEnteredChildren } from "../../il/paths.js";
+import { flowTargets, leaving, routing } from "../flow.js";
 
 /**
  * What a closure walk reads of an element beyond the IL, filled by `admission-registry.ts` `reading` from the
@@ -350,7 +350,7 @@ function entering(reading: Reading, program: Program, element: Element): Visit[]
     : [];
   const scope = elementScope(element);
   const nested = scope === null ? [] : [
-    ...enteredChildren(program, scope[0].id).map(toEnter),
+    ...programEnteredChildren(program, scope[0].id).map(toEnter),
     ...startingSubProcesses(programChildren(program, scope[0].id), conditional).map(toEnter),
   ];
   return [...conditions, ...arms, ...nested, ...(reading.mayRunNone(element) ? [toComplete(element)] : [])];
@@ -732,7 +732,7 @@ export function closureWalk(reading: Reading, program: Program, walk: Walk, begu
           return entering(reading, program, element);
         }
         const scope = elementScope(element);
-        const onward = [...continuing(program, element), ...(scope === null ? [] : enteredChildren(program, scope[0].id))];
+        const onward = [...continuing(program, element), ...(scope === null ? [] : programEnteredChildren(program, scope[0].id))];
         add(runs(reading, program, element));
         acts(element);
         ends ||= onward.length === 0;

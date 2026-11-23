@@ -90,13 +90,17 @@ export interface CompensableChild {
   readonly handler: ElementId | null;
   readonly occurrence: OccurrenceRef | null;
   readonly completion: number;
+  readonly closure: number;
   readonly snapshot: readonly Binding[];
   readonly group: readonly number[];
 }
 
 /**
  * A completed Activity or Scope whose compensation handler may still run: it completed in `scope`, and its handler
- * restores `snapshot` (BPMN 2.0.2 §13.5.5). `completion` orders the records of one scope. `children` keeps the records
+ * restores `snapshot` (BPMN 2.0.2 §13.5.5). `completion` numbers the records in the order they completed, a kept
+ * record's key (`CompensableChild.group`) and the order under `BranchSchedule.DeclarationDepthFirst`; `closure` stamps
+ * the closure it completed in (`State.completionBase`), which under `OrderInvariant` orders records of different
+ * closures (`feature/compensation.ts`'s `completedBefore`). `children` keeps the records
  * of a completed Sub-Process at every depth, each under its group key, for its handler to trigger recursively
  * (§13.5.5). A record without a `handler` is a group whose compensation runs its children.
  */
@@ -106,6 +110,7 @@ export interface Compensable {
   readonly scope: ScopeOccurrenceId;
   readonly occurrence: OccurrenceRef | null;
   readonly completion: number;
+  readonly closure: number;
   readonly snapshot: readonly Binding[];
   readonly children: readonly CompensableChild[];
 }

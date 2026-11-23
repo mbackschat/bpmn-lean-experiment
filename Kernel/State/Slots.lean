@@ -68,13 +68,16 @@ structure CompensableChild where
   handler : Option ElementId
   occurrence : Option OccurrenceRef := none
   completion : Nat := 0
+  closure : Nat := 0
   snapshot : List (String × Value) := []
   group : List Nat := []
   deriving Repr
 
 /-- A completed Activity or Scope whose compensation handler may still run: it completed in `scope`, and its
-handler restores `snapshot` ([BPMN 2.0.2 §13.5.5](../docs/reference/bpmn-2.0.2/README.md)). `completion` orders the
-records of one scope. `children` keeps the records of a completed Sub-Process at every depth, each under its group key,
+handler restores `snapshot` ([BPMN 2.0.2 §13.5.5](../docs/reference/bpmn-2.0.2/README.md)). `completion` numbers the
+records in the order they completed, a kept record's key (`CompensableChild.group`) and the order under
+`BranchSchedule.declarationDepthFirst`; `closure` stamps the closure it completed in (`State.completionBase`), which
+under `orderInvariant` orders records of different closures (`Feature.Compensation.completedBefore`). `children` keeps the records of a completed Sub-Process at every depth, each under its group key,
 for its handler to trigger recursively (§13.5.5; CIB moves them into an event-scope tree,
 `CompensationUtil.createEventScopeExecution`). A record without a `handler` is a group whose compensation runs its
 children. -/
@@ -84,6 +87,7 @@ structure Compensable where
   scope : ScopeOccurrenceId
   occurrence : Option OccurrenceRef := none
   completion : Nat := 0
+  closure : Nat := 0
   snapshot : List (String × Value) := []
   children : List CompensableChild := []
   deriving Repr

@@ -550,6 +550,15 @@ def Element.beginsImplicitly (element : Element) : Bool :=
   let eventSubProcess := ((element.scope?).bind fun (_, payload) => payload.kind.start?).isSome
   element.incoming.isEmpty && element.start?.isNone && !element.isCompensationActivity && !eventSubProcess
 
+/-- Whether `element` waits for an input before it completes, so a token that reaches it stops in its closure: a User,
+Service or Receive Task, a Script or Business Rule Task whose result an external worker delivers, or a catching Event.
+An Event-Based Gateway passes on, since each element it leads to waits. -/
+def Element.waitsForInput (element : Element) : Bool :=
+  (element.activity?.any fun (_, payload) =>
+    payload.work.isUser || payload.work.isService || payload.work.receive?.isSome ||
+      payload.work.reader?.any (·.isLeft)) ||
+  element.event?.any fun (_, payload) => payload.catch?.isSome
+
 namespace Program
 
 def element? (program : Program) (id : ElementId) : Option Element :=

@@ -22,7 +22,7 @@ in run order. -/
 theorem onRunning_ok {hooks : Hooks} {ctx : Ctx} {input : Input} {before : Option State}
     {transition : State → Outcome} {after : State} (ran : onRunning hooks ctx input before transition = .ok after) :
     ∃ state start moved settled, before = some state ∧ state.status = .running ∧
-      advanceClock (inputHead input).2.1 { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } = .ok start ∧
+      advanceClock (inputHead input).2.1 { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := state.nextCompletion } = .ok start ∧
       microStep hooks ctx (.ofRoot .input) (.input (inputHead input).1) none State.root transition start = .ok moved ∧
       settle hooks ctx closureBound closureWorkBound (RunLog.record {} (.ofRoot .input)) moved = .ok settled ∧
       orderJournal ctx.program.options.branchSchedule start (.ok settled) = .ok after := by
@@ -102,7 +102,7 @@ theorem onRunning_rejects {hooks : Hooks} {ctx : Ctx} {input : Input} {state : S
   simp only [onRunning_eq]
   split
   · exact ⟨_, rfl⟩
-  · cases clock : advanceClock (inputHead input).2.1 { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } with
+  · cases clock : advanceClock (inputHead input).2.1 { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := state.nextCompletion } with
     | error failure =>
       obtain ⟨code, rfl⟩ := advanceClock_error clock
       exact ⟨code, by simp [bind, Except.bind]⟩

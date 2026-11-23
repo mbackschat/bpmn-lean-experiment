@@ -7,8 +7,6 @@ import {
   GatewayKindTag,
   assertNever,
   distinctCount,
-  elementActivity,
-  elementBeginsImplicitly,
   elementEnvelope,
   elementEvent,
   elementGateway,
@@ -20,15 +18,12 @@ import {
   eventPayloadLinkCatch,
   eventPayloadLinkThrow,
   programBoundary,
-  programChildren,
   programElement,
   programFlow,
   programSiblings,
   programTarget,
   triggerTimer,
-  workIsService,
-  workIsUser,
-  workReceive,
+  elementWaitsForInput,
   type Boundary,
   type Element,
   type ElementId,
@@ -40,7 +35,6 @@ import {
   type Program,
   type StartPayload,
 } from "../il/types.js";
-import { workReader } from "../il/types/work.js";
 
 function distinct<T>(list: readonly T[]): boolean {
   return distinctCount(list) === list.length;
@@ -278,13 +272,7 @@ export function conditionalOutflow(program: Program, flow: Flow): string | null 
  * effect's result, `feature/work.ts#arrive`), a catch Event or an Event-Based Gateway.
  */
 export function awaitsStimulus(element: Element): boolean {
-  const activity = elementActivity(element);
-  if (activity !== null) {
-    const work = activity[1].work;
-    return workIsUser(work) || workIsService(work) || workReceive(work) !== null || (workReader(work)?.script ?? null) !== null;
-  }
-  const event = elementEvent(element);
-  if (event !== null) return eventPayloadCatch(event[1]) !== null;
+  if (elementWaitsForInput(element)) return true;
   const gateway = elementGateway(element);
   return gateway !== null && routing(gateway[1]).waits;
 }
@@ -295,17 +283,6 @@ export const flowTargets = (program: Program, flows: readonly FlowId[]): readonl
   const element = target === null ? null : programElement(program, target);
   return element === null ? [] : [element];
 });
-
-/**
- * The children an occurrence of the Scope `id` begins on entry: its start Events, or, without one, the children that
- * begin implicitly (`elementBeginsImplicitly`), as `feature/scopes.ts` `implicitStart` begins them.
- */
-export function enteredChildren(program: Program, id: ElementId): readonly Element[] {
-  const children = programChildren(program, id);
-  return children.some((child) => elementStart(child) !== null)
-    ? children.filter((child) => elementStart(child) !== null)
-    : children.filter(elementBeginsImplicitly);
-}
 
 /**
  * Pinned CIB parses one initial start per process, a None or Timer Start (`BpmnParse#selectInitial`), and one start per

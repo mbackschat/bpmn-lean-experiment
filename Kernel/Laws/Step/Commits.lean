@@ -61,7 +61,7 @@ theorem running_relative {aux : State → Program → State → Prop} (contract 
       aux s program s)
     (queued : ∀ (state : State) unit, Unbatched (state.queueBatch unit)) {program : Program} {before : State}
     {input : Input} {after : State} (committed : Laws.State.Committed before)
-    (holds : inv program { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] })
+    (holds : inv program { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := before.nextCompletion })
     (ran : step hooks program (some before) input = .ok after) :
     ∃ (start : State) (settled : State × RunLog), (inv program settled.1 ∧ aux start program settled.1 ∧
       Unbatched settled.1) ∧ orderJournal program.options.branchSchedule start (.ok settled) = .ok after := by
@@ -72,7 +72,7 @@ theorem running_relative {aux : State → Program → State → Prop} (contract 
     obtain ⟨clocked, stepped, settling, made⟩ := rest
     obtain rfl := Option.some.inj present
     have entered : inv (inputCtx hooks program input).program
-        { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } := by
+        { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := before.nextCompletion } := by
       rw [inputCtx_program]
       exact holds
     have started := advanceClock_keeps phases.toBodyPhases entered clocked
@@ -100,7 +100,7 @@ theorem running_keeps {aux : State → Program → State → Prop} (contract : H
       ∀ occurrence ∈ s.occurrences, occurrence.id.scope = occurrence.scope)
     (queued : ∀ (state : State) unit, Unbatched (state.queueBatch unit)) {program : Program} {before : State}
     {input : Input} {after : State} (committed : Laws.State.Committed before)
-    (holds : inv program { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] })
+    (holds : inv program { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := before.nextCompletion })
     (ran : step hooks program (some before) input = .ok after) : inv program after ∧ Laws.State.Committed after := by
   obtain ⟨start, settled, ⟨kept, related, unbatched⟩, made⟩ := running_relative contract phases.toClosurePhases
     pipeline relative facts framing based auxBased entry queued committed holds ran
@@ -196,7 +196,7 @@ theorem step_keeps {aux : State → Program → State → Prop} (contract : Hook
       ∀ occurrence ∈ s.occurrences, occurrence.id.scope = occurrence.scope)
     (queued : ∀ (state : State) unit, Unbatched (state.queueBatch unit))
     (reset : ∀ program state, inv program state → Laws.State.Committed state →
-      inv program { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] })
+      inv program { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := state.nextCompletion })
     {program : Program}
     (initial : ∀ instanceId variables businessKey,
       inv program ((State.initial instanceId variables businessKey).signal (.armScope State.root)))

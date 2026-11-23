@@ -193,7 +193,7 @@ theorem framed_phases : Laws.Step.Phases Framed :=
 
 /-- Clearing an input's journal, intents, draft and writes keeps `Framed`. -/
 theorem framed_reset {program : Program} {s : State} (holds : Framed program s) (committed : Laws.State.Committed s) :
-    Framed program { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } :=
+    Framed program { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := s.nextCompletion } :=
   ⟨Laws.State.reset_wellFormed holds.1 committed, holds.2.carry (.equal rfl rfl rfl rfl)⟩
 
 /-- A start's fresh instance runs no body. -/
@@ -644,7 +644,7 @@ theorem composed_contract : Laws.Step.HookContract Registry.hooks Composed :=
 
 /-- Clearing an input's journal, intents, draft and writes keeps `Composed`. -/
 theorem composed_reset {program : Program} {s : State} (holds : Composed program s) (committed : Laws.State.Committed s) :
-    Composed program { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } :=
+    Composed program { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := s.nextCompletion } :=
   ⟨Laws.State.reset_wellFormed holds.1 committed, ⟨holds.2.1.1.carry (.equal rfl rfl rfl rfl), fun apart =>
     (holds.2.1.2 apart).unmoved rfl rfl rfl rfl rfl rfl rfl fun _ pending => .inl pending⟩,
     holds.2.2.same (fun _ issued => issued) rfl rfl rfl⟩

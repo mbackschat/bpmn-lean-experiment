@@ -193,6 +193,10 @@ structure State where
   /-- The next compensation completion number (`takeCompletion`), taken in run order as a record completes, which only the
   sites that order records read. -/
   nextCompletion : Nat := 1
+  /-- `nextCompletion` when the closure in progress began (`Step.onRunning`), the closure stamp of every record it
+  completes (`Compensable.closure`): records of one closure share it, and a later closure's is greater whenever an
+  earlier one completed a record. -/
+  completionBase : Nat := 1
   /-- The counter of issued order positions (DC13): an open item's `position` is the running unit's issue in the
   position slot (`issuePosition`), numbered from here at commit in the closure's position order (`ClaimSlot.position`),
   which advances it. -/

@@ -783,7 +783,7 @@ def Formed (program : Program) (s : State) : Prop :=
 
 /-- An input starts from an empty journal, intents, draft and write log (`Step.onRunning`), which keeps `Formed`. -/
 theorem formed_reset {s : State} (holds : Formed program s) (committed : Laws.State.Committed s) :
-    Formed program { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } :=
+    Formed program { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := s.nextCompletion } :=
   ⟨Laws.State.reset_wellFormed holds.1 committed, holds.2.same rfl (fun _ inside => inside) rfl⟩
 
 /-- The completion pipeline's own phases keep the lane invariant where they keep `WellFormed`. -/

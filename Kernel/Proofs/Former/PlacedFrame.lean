@@ -544,7 +544,7 @@ def PlacedForm (program : Program) (s : State) : Prop :=
 
 /-- An input starts from an empty journal, intents, draft and write log (`Step.onRunning`), which keeps `PlacedForm`. -/
 theorem placed_reset {program : Program} {s : State} (holds : PlacedForm program s) (committed : Laws.State.Committed s) :
-    PlacedForm program { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } :=
+    PlacedForm program { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := s.nextCompletion } :=
   ⟨Laws.State.reset_wellFormed holds.1 committed, fun refs => (holds.2 refs).queue rfl rfl rfl (.refl _) (fun _ member => member)
     rfl rfl listKept⟩
 

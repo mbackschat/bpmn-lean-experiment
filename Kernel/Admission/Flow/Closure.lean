@@ -235,7 +235,7 @@ def entering (reading : Reading) (program : Program) (element : Element) : List 
         if (arm.event?.bind (·.2.catch?)).any conditional then [Visit.completes arm] else []
     else []
   let nested := ((element.scope?).map fun (header, _) =>
-    (enteredChildren program header.id).map Visit.enters ++
+    (program.enteredChildren header.id).map Visit.enters ++
       (startingSubProcesses (program.children (some header.id)) conditional).map Visit.enters).getD []
   conditions ++ arms ++ nested ++ (if reading.mayRunNone element then [Visit.completes element] else [])
 
@@ -483,7 +483,7 @@ def closureWalk (reading : Reading) (program : Program) (walk : Walk) (begun : L
                 entering reading program element)
             else
               let onward := continuing program element ++
-                ((element.scope?).map fun (header, _) => enteredChildren program header.id).getD []
+                ((element.scope?).map fun (header, _) => program.enteredChildren header.id).getD []
               ({ acts element (add (runs reading program element) found) with ends := found.ends || onward.isEmpty },
                 entering reading program element ++ after reading program walk element)
         -- Opening or ending a Conditional subscription, by beginning or completing its carrier or by removing it, reads

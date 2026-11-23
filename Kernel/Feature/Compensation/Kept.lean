@@ -18,7 +18,7 @@ namespace Kernel.Feature.Compensation
 number. -/
 def keptRecords (record : Compensable) : List CompensableChild :=
   { subject := record.subject, handler := record.handler, occurrence := record.occurrence,
-    completion := record.completion, snapshot := record.snapshot } ::
+    completion := record.completion, closure := record.closure, snapshot := record.snapshot } ::
     record.children.map fun child => { child with group := record.completion :: child.group }
 
 /-- The records `direct` a begun holder kept directly, each now retained in `context` and keeping the records of
@@ -29,7 +29,7 @@ def releaseKept (context : ScopeOccurrenceId) : List CompensableChild → List C
   | child :: direct, below =>
     let (inside, rest) := below.partition (·.group.head? == some child.completion)
     { subject := child.subject, handler := child.handler, scope := context, occurrence := child.occurrence,
-      completion := child.completion, snapshot := child.snapshot,
+      completion := child.completion, closure := child.closure, snapshot := child.snapshot,
       children := inside.map fun record => { record with group := record.group.tail } } ::
       releaseKept context direct rest
 

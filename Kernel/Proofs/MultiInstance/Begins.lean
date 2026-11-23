@@ -570,7 +570,7 @@ theorem LogOrder.byRun {program : Program} {log : Step.RunLog} {element : Elemen
 theorem beginsKept_reset {program : Program} {s : State} (unbegun : IdsUnique program → UnbegunUnlooped program s)
     (occurs : IdsUnique program → ∀ element, OccurPending s element → ∀ loop, ¬ LoopOf program element loop) :
     BeginsKept program ∅
-      { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } := fun apart =>
+      { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := s.nextCompletion } := fun apart =>
   ⟨unbegun apart, occurs apart, rfl, fun _ _ _ _ => by simp [BeginsInOrder],
     fun _ _ _ _ _ _ _ inside => by simp at inside⟩
 
@@ -731,9 +731,9 @@ theorem logged_running {program : Program} {before after : State} {input : Input
   obtain ⟨clocked, stepped, settling, made⟩ := rest
   cases Option.some.inj present
   have entered : WellFormed (Laws.Step.inputCtx hooks program input).program
-        { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } ∧
+        { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := before.nextCompletion } ∧
       BeginsKept (Laws.Step.inputCtx hooks program input).program ∅
-        { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } := by
+        { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := before.nextCompletion } := by
     rw [Laws.Step.inputCtx_program]
     exact ⟨Laws.State.reset_wellFormed formedBefore committed, beginsKept_reset unbegun occurs⟩
   have done := logged_settles contract phases pipeline wellFormed formed formedPipeline framing facts

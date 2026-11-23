@@ -23,7 +23,7 @@ import {
 import type { MultiInstance } from "./types/multi-instance.js";
 import { assertNever } from "./types/expression.js";
 import type { DataOutputDecl, EffectBinding, MessageTrigger } from "./types/message.js";
-import type { FormRef, Work } from "./types/work.js";
+import { type FormRef, type Work, workIsService, workIsUser, workReader, workReceive } from "./types/work.js";
 export { integerLexeme, isAscii, parseJavaInt, parseJavaLong, signedDigits, withinJavaInt } from "./types/lexical.js";
 export {
   type InstanceCount, InstanceCountTag, type MultiInstance, MultiInstanceMode,
@@ -633,6 +633,21 @@ export function elementBeginsImplicitly(element: Element): boolean {
   const scope = elementScope(element);
   const eventSubProcess = scope !== null && scopeKindStart(scope[1].kind) !== null;
   return elementIncoming(element).length === 0 && elementStart(element) === null && !elementIsCompensationActivity(element) && !eventSubProcess;
+}
+
+/**
+ * Whether `element` waits for an input before it completes, so a token that reaches it stops in its closure: a User,
+ * Service or Receive Task, a Script or Business Rule Task whose result an external worker delivers, or a catching Event.
+ * An Event-Based Gateway passes on, since each element it leads to waits.
+ */
+export function elementWaitsForInput(element: Element): boolean {
+  const activity = elementActivity(element);
+  if (activity !== null) {
+    const work = activity[1].work;
+    return workIsUser(work) || workIsService(work) || workReceive(work) !== null || (workReader(work)?.script ?? null) !== null;
+  }
+  const event = elementEvent(element);
+  return event !== null && eventPayloadCatch(event[1]) !== null;
 }
 
 /**
