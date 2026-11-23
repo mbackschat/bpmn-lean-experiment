@@ -64,15 +64,16 @@ structure Twin (base s : State) : Prop where
   next : s.nextPosition = base.nextPosition
   ordinals : s.scopeOrdinals = base.scopeOrdinals
   occurrences : s.occurrences = base.occurrences
+  table : s.issued = base.issued
 
-theorem Twin.refl (s : State) : Twin s s := ⟨rfl, rfl, rfl, rfl, rfl⟩
+theorem Twin.refl (s : State) : Twin s s := ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩
 
-/-- Twins issued the same scope keys: issue reads only the scope occurrences and their counters. -/
+/-- Twins issued the same scope keys: issue reads only the scope occurrences, their counters and the issue table. -/
 theorem Twin.issued {base s : State} (twin : Twin base s) {x : ScopeOccurrenceId} :
     Laws.State.ScopeIssued s x ↔ Laws.State.ScopeIssued base x := by
-  show (∃ H, Laws.State.ScopeHistoryOn s.scopes s.scopeOrdinals H ∧ H x) ↔
-    ∃ H, Laws.State.ScopeHistoryOn base.scopes base.scopeOrdinals H ∧ H x
-  rw [twin.scopes, twin.ordinals]
+  show (∃ H, Laws.State.ScopeHistoryOn s.scopes s.scopeOrdinals s.issued H ∧ H x) ↔
+    ∃ H, Laws.State.ScopeHistoryOn base.scopes base.scopeOrdinals base.issued H ∧ H x
+  rw [twin.scopes, twin.ordinals, twin.table]
 
 /-- What a hook's state moved to holds of a twin's base: each scope occurrence stood in it or was not issued there. -/
 theorem Twin.scopes_moved {base s t : State} (twin : Twin base s) (moves : Moves s t) :
@@ -217,7 +218,7 @@ theorem tame_opened {s : State} (tame : Tame s) {others : List Compensable} {run
     Tame (opened s others run) := by
   refine ⟨fun record inside => tame.retained record (kept record inside), ?_, fun other inside => ?_,
     fun other inside context running => ?_, tame.scopes, fun other inside context resumed => ?_, tame.parents,
-    fun other inside context running => ?_⟩
+    fun other inside context running => ?_, tame.issuer.same rfl rfl rfl rfl, fun other inside grouped => ?_⟩
   · simp only [RunsKeyed, opened, stored, List.map_append, List.map_cons, List.map_nil]
     refine List.nodup_append.mpr ⟨tame.keyed, by simp, fun key old key' new same => ?_⟩
     obtain ⟨other, member, rfl⟩ := List.mem_map.mp old
@@ -239,6 +240,10 @@ theorem tame_opened {s : State} (tame : Tame s) {others : List Compensable} {run
     rcases inside with old | rfl
     · exact tame.runningIn other old context running
     · rw [idle] at running; cases running
+  · simp only [opened, stored, List.mem_append, List.mem_singleton] at inside
+    rcases inside with old | rfl
+    · exact tame.groupsStanding other old grouped
+    · rw [free] at grouped; cases grouped
 
 /-- Taking `taken` out of retention into a new run holding them pending and nothing running holds the same completion
 numbers. -/
@@ -301,7 +306,8 @@ theorem triggers_opened {queue s : State} {scope : ScopeOccurrenceId} {activity 
   · have old : .inr origin ∈ Laws.Step.triggersOf (Laws.State.allSignals queue) :=
       Laws.Step.triggersOf_subset later _ inside
     have ordinals : s.scopeOrdinals = queue.scopeOrdinals := by rw [shape]
-    exact (Laws.State.ScopeGrows.of_same (congrArg (List.map (·.id)) scopes) ordinals).issued (apart.issued origin old)
+    exact (Laws.State.ScopeGrows.of_same (congrArg (List.map (·.id)) scopes) ordinals (.of_eq (by rw [shape]))).issued
+      (apart.issued origin old)
   · have occurrences : s.occurrences = queue.occurrences := by rw [shape]
     have was : o ∈ queue.occurrences := by rw [← occurrences]; exact inside
     have keyed : Laws.State.key (opened s others run) o = Laws.State.key queue o := by

@@ -100,11 +100,12 @@ structure Standing (program : Program) (s : State) : Prop where
     parent ∈ scopeIds s → PlacedIn program s element parent
   calledApart : CalledApart program s
   rootBare : ∀ entry ∈ s.scopes, entry.element = none ↔ entry.parent = none
+  rootsStanding : RootsStanding s
 
 /-- A lane state's standing part. -/
 theorem PlacedLane.standing {program : Program} {s : State} (lane : PlacedLane program s) : Standing program s :=
   ⟨lane.placed.rooted, lane.placed.entered, lane.rootsApart, lane.rootsIssued, lane.rootDefinition, lane.scopes,
-    lane.calledApart, lane.rootBare⟩
+    lane.calledApart, lane.rootBare, lane.rootsStanding⟩
 
 /-- The instance root of a scope occurrence of a well-formed state was issued. -/
 theorem instanceRoot_issued {program : Program} {s : State} (formed : WellFormed program s) {x : ScopeOccurrenceId}
@@ -222,7 +223,7 @@ theorem PlacedLane.carry (formed : WellFormed program s) (lane : PlacedLane prog
     fun id selected writes rule queued => ?_, fun _ _ resumed => compensates_carry lane signals resumed,
     fun record member stands => ?_, fun run member stands record inside => ?_, standing.calledApart, standing.rootBare,
     fun run member stands => ?_, fun raised origin queued stands => ?_, fun x work => ?_,
-    fun waiting member o inside named => ?_⟩
+    fun waiting member o inside named => ?_, standing.rootsStanding⟩
   · rcases occurrences o member with old | fits
     · exact move (lying o member) (formed.owned.occurrenceScopes o old) (lane.placed.occurrences o old)
     · exact fits.placed
@@ -317,6 +318,7 @@ theorem listKept {α : Type} {P : α → Prop} {list : List α} : ∀ x ∈ list
 records and work `s` holds or `t` places. -/
 theorem PlacedLane.within (formed : WellFormed program s) (lane : PlacedLane program s) (scopes : t.scopes = s.scopes)
     (instances : t.slots.instances = s.slots.instances) (ordinals : t.scopeOrdinals = s.scopeOrdinals)
+    (table : Laws.State.TableGrows s t)
     (occurrences : ∀ o ∈ t.occurrences, o ∈ s.occurrences ∨ OccurrenceFits program s t o)
     (signals : ∀ signal ∈ (Laws.State.allSignals t), signal ∈ (Laws.State.allSignals s) ∨ SignalPlaced program t signal)
     (tokens : ∀ token ∈ (Laws.State.allQueuedTokens t), token ∈ (Laws.State.allQueuedTokens s) ∨ TokenPlaced program t token)
@@ -327,7 +329,7 @@ theorem PlacedLane.within (formed : WellFormed program s) (lane : PlacedLane pro
     (parked : ∀ waiting ∈ t.slots.parked, waiting ∈ s.slots.parked ∨ WaitPlaced program t waiting) :
     PlacedLane program t := by
   have ids : scopeIds t = scopeIds s := by unfold scopeIds; rw [scopes]
-  have grows : Laws.State.ScopeGrows s t := .of_same ids ordinals
+  have grows : Laws.State.ScopeGrows s t := .of_same ids ordinals table
   have owners : ∀ o ∈ t.occurrences, ∀ entry ∈ s.scopes, entry.occurrence = some o.id →
       ∃ old ∈ s.occurrences, old.id = o.id ∧ old.element = o.element := fun o member entry inside owns => by
     rcases occurrences o member with old | fits
@@ -340,7 +342,8 @@ theorem PlacedLane.within (formed : WellFormed program s) (lane : PlacedLane pro
   refine lane.carry formed ⟨?_, ?_, ?_, fun entry member => grows.issued (lane.rootsIssued entry
     (instances ▸ member)), ?_, fun entry member element parent named link stands =>
     (lane.scopes entry (scopes ▸ member) element parent named link (ids ▸ stands)).same scopes
-      (fun _ inside => instances ▸ inside), fun entry member called => ?_, ?_⟩ grows
+      (fun _ inside => instances ▸ inside), fun entry member called => ?_, ?_,
+    fun entry member => ids ▸ lane.rootsStanding entry (instances ▸ member)⟩ grows
     (fun _ member => .inl (ids ▸ member)) (fun x _ _ => instanceRoot_congr scopes x)
     (fun _ member => .inl (instances ▸ member)) occurrences (fun o member => ?_)
     (fun _ _ _ old => ids ▸ flow_present formed old) signals tokens runs retained bodies parked
@@ -366,6 +369,7 @@ theorem PlacedLane.shrink (formed : WellFormed program s) (lane : PlacedLane pro
     (scopes : ∀ entry, entry ∈ t.scopes ↔ entry ∈ s.scopes ∧ ¬ out entry.id)
     (instances : t.slots.instances.Sublist s.slots.instances)
     (entries : ∀ entry ∈ s.slots.instances, ¬ out entry.root → entry ∈ t.slots.instances)
+    (rootsIn : ∀ entry ∈ t.slots.instances, ¬ out entry.root)
     (grows : Laws.State.ScopeGrows s t) (occurrences : ∀ o ∈ t.occurrences, o ∈ s.occurrences ∧ ¬ out o.scope)
     (tokens : ∀ token ∈ (Laws.State.allQueuedTokens t), token ∈ (Laws.State.allQueuedTokens s) ∧ ¬ out token.busyScope)
     (signals : ∀ signal ∈ (Laws.State.allSignals t), signal ∈ (Laws.State.allSignals s))
@@ -393,7 +397,8 @@ theorem PlacedLane.shrink (formed : WellFormed program s) (lane : PlacedLane pro
     fun entry member => lane.rootDefinition entry (instances.subset member),
     fun entry member element parent named link stands => move stands (lane.scopes entry ((scopes entry).mp member).1
       element parent named link (present stands).1), fun entry member called => ?_,
-    fun entry member => lane.rootBare entry ((scopes entry).mp member).1⟩ grows
+    fun entry member => lane.rootBare entry ((scopes entry).mp member).1,
+    fun entry member => stays (lane.rootsStanding entry (instances.subset member)) (rootsIn entry member)⟩ grows
     (fun _ member => .inl (present member).1) roots (fun _ member => .inl (instances.subset member))
     (fun o member => .inl (occurrences o member).1)
     (fun o member => stays (formed.owned.occurrenceScopes o (occurrences o member).1) (occurrences o member).2)
@@ -455,7 +460,9 @@ theorem PlacedLane.grown (formed : WellFormed program s) (lane : PlacedLane prog
     rw [scopes] at member
     exact (List.mem_append.mp member).imp id List.mem_singleton.mp
   refine lane.carry formed ⟨?_, fun root member called => ?_, ?_, fun data member => ?_, fun data member => ?_,
-    fun other member element parent named link stands => ?_, fun other member called => ?_, fun other member => ?_⟩
+    fun other member element parent named link stands => ?_, fun other member called => ?_, fun other member => ?_,
+    fun data member => (newRoot data member).elim (fun old => ids ▸ List.mem_append_left _ (lane.rootsStanding data old))
+      fun new => by rw [ids, new.1]; exact List.mem_append_right _ (List.mem_singleton_self _)⟩
     fresh.2.2 (fun x member => ?_) roots (fun data member => (newRoot data member).imp id fun new => by
       rw [new.1]; exact fresh.1)
     (fun o member => .inl (occurrences ▸ member))
@@ -583,6 +590,7 @@ less, holds some of its occurrence records, and queues `s`'s signals or ones it 
 an identifier and dropping a record do, read without `WellFormed`. -/
 theorem PlacedLane.queue (lane : PlacedLane program s) (scopes : t.scopes = s.scopes)
     (instances : t.slots.instances = s.slots.instances) (ordinals : t.scopeOrdinals = s.scopeOrdinals)
+    (table : Laws.State.TableGrows s t)
     (occurrences : ∀ o ∈ t.occurrences, o ∈ s.occurrences) (tokens : Laws.State.allQueuedTokens t = Laws.State.allQueuedTokens s) (slots : t.slots = s.slots)
     (signals : ∀ signal ∈ (Laws.State.allSignals t), signal ∈ (Laws.State.allSignals s) ∨ SignalPlaced program t signal) : PlacedLane program t := by
   have place : ∀ {element x}, PlacedIn program s element x → PlacedIn program t element x :=
@@ -594,7 +602,7 @@ theorem PlacedLane.queue (lane : PlacedLane program s) (scopes : t.scopes = s.sc
   have runs : ∀ run ∈ t.slots.compensation.runs, run ∈ s.slots.compensation.runs ∨ RunHeldPlaced program t run :=
     fun _ member => .inl (slots ▸ member)
   have issued : ∀ {y : ScopeOccurrenceId}, Laws.State.ScopeIssued s y → Laws.State.ScopeIssued t y :=
-    (Laws.State.ScopeGrows.of_same ids ordinals).issued
+    (Laws.State.ScopeGrows.of_same ids ordinals table).issued
   refine ⟨⟨⟨by rw [instances]; exact lane.placed.rooted, by rw [scopes, instances]; exact lane.placed.entered,
     fun o member => place (lane.placed.occurrences o (occurrences o member))⟩, by rw [instances]; exact lane.rootsApart,
     fun entry member => issued (lane.rootsIssued entry (instances ▸ member)), by rw [instances]; exact lane.rootDefinition,
@@ -611,7 +619,8 @@ theorem PlacedLane.queue (lane : PlacedLane program s) (scopes : t.scopes = s.sc
       inside element named), fun entry member called => ?_, by rw [scopes]; exact lane.rootBare,
     fun run member stands => place (lane.runs run (slots ▸ member) (ids ▸ stands)),
     fun raised origin queued stands => ?_, fun x work => ?_,
-    fun waiting member o inside named => lane.waits waiting (slots ▸ member) o (occurrences o inside) named⟩
+    fun waiting member o inside named => lane.waits waiting (slots ▸ member) o (occurrences o inside) named,
+    fun entry member => ids ▸ lane.rootsStanding entry (instances ▸ member)⟩
   · rcases queued with signalled | deferred
     · rcases signals _ signalled with old | new
       · exact begins request (.inl old) stands
@@ -652,12 +661,12 @@ theorem PlacedLane.queue (lane : PlacedLane program s) (scopes : t.scopes = s.sc
 counter. -/
 theorem SignalPlaced.same {signal : Signal} (placed : SignalPlaced program s signal) (scopes : t.scopes = s.scopes)
     (instances : t.slots.instances = s.slots.instances) (occurrences : t.occurrences = s.occurrences)
-    (ordinals : t.scopeOrdinals = s.scopeOrdinals) : SignalPlaced program t signal := by
+    (ordinals : t.scopeOrdinals = s.scopeOrdinals) (table : Laws.State.TableGrows s t) : SignalPlaced program t signal := by
   have place : ∀ {element x}, PlacedIn program s element x → PlacedIn program t element x :=
     fun placed => placed.same scopes fun _ inside => instances ▸ inside
   have ids : scopeIds t = scopeIds s := by unfold scopeIds; rw [scopes]
   have issued : ∀ {y}, Laws.State.ScopeIssued s y → Laws.State.ScopeIssued t y :=
-    (Laws.State.ScopeGrows.of_same ids ordinals).issued
+    (Laws.State.ScopeGrows.of_same ids ordinals table).issued
   have occur : ∀ {element x leave}, OccurPlaced program s element x leave → OccurPlaced program t element x leave :=
     fun ⟨⟨placed, listed⟩, below⟩ => ⟨⟨fun stands => place (placed (ids ▸ stands)), listed⟩, issued below⟩
   refine ⟨fun request same stands => ?_, fun _ _ _ _ _ same => occur (placed.occur _ _ _ _ _ same),
@@ -677,20 +686,20 @@ theorem SignalPlaced.same {signal : Signal} (placed : SignalPlaced program s sig
 theorem PlacedLane.signalled {signal : Signal} (lane : PlacedLane program s) (placed : SignalPlaced program s signal) :
     PlacedLane program (s.signal signal) := by
   rw [Laws.State.signal_eq]
-  exact lane.queue rfl rfl rfl (fun _ member => member) rfl rfl fun x member =>
+  exact lane.queue rfl rfl rfl (.refl _) (fun _ member => member) rfl rfl fun x member =>
     listExtended (list := Laws.State.allSignals s)
-      (fun x member => by rw [List.mem_singleton.mp member]; exact placed.same rfl rfl rfl rfl) x
+      (fun x member => by rw [List.mem_singleton.mp member]; exact placed.same rfl rfl rfl rfl (.refl _)) x
       (by rwa [Laws.State.allSignals_append] at member)
 
 /-- Issuing an identifier keeps the lane. -/
 theorem PlacedLane.takePosition (lane : PlacedLane program s) : PlacedLane program s.takePosition.1 := by
   rw [Laws.State.takePosition_eq]
-  exact lane.queue rfl rfl rfl (fun _ member => member) rfl rfl listKept
+  exact lane.queue rfl rfl rfl (.refl _) (fun _ member => member) rfl rfl listKept
 
 /-- Dropping an occurrence's record keeps the lane. -/
 theorem PlacedLane.withoutRecord (lane : PlacedLane program s) (id : OccurrenceId) :
     PlacedLane program (Laws.State.withoutRecord s id) :=
-  lane.queue rfl rfl rfl (fun _ member => (List.mem_filter.mp member).1) rfl rfl listKept
+  lane.queue rfl rfl rfl (.refl _) (fun _ member => (List.mem_filter.mp member).1) rfl rfl listKept
 
 end Carry
 

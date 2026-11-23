@@ -1,30 +1,98 @@
 /**
  * Scope occurrence keys, transcribed from `Kernel/State/Key.lean`: a scope occurrence's structural identity (KD1), the
- * key of the scope occurrence it was entered in, the element it was entered for and an ordinal counted per (parent,
- * element) by `State.scopeOrdinals`. A key is held as its canonical text, so keys compare by value, never by object
- * reference, and serve as set members and map keys as they are. Modules that read keys import it; `state.ts` re-exports
- * only the key type.
+ * key of the scope occurrence it was entered in, the element it was entered for and its issue (`Issue`), once committed
+ * an ordinal counted per (parent, element) by `State.scopeOrdinals`. Inside a closure every identity is issued as the
+ * running unit's key and its index among the unit's issues, and the commit renames it to its committed ordinal (DC12,
+ * `step/commit.ts#compact`; the committed forms and the issue slots are `state/issue.ts`'s). A key is held as its
+ * canonical text, so keys compare by value, never by object reference, and serve as set members and map keys as they
+ * are. Modules that read keys import it; `state.ts` re-exports only the key type.
  */
 import { assertNever, compareStrings, type ElementId } from "../il/types.js";
 
-/** One step down the scope tree: an element and its ordinal among that element's entries in the same parent. */
-export interface ScopeSegment { readonly element: ElementId; readonly ordinal: number; }
+declare const issuerBrand: unique symbol;
+
+/**
+ * The text a fresh issue names its unit by (`issuerText`): the unit key's depth, its fingerprint as 16 hexadecimal digits,
+ * the unit's run ordinal in its closure and its root's text, `<depth>.<fingerprint>.<run>.<root>`. Lean's fresh issue
+ * holds the unit key itself, whose full path a text would repeat at every issue: as a key's text it made a deep closure's
+ * keys quadratic in its depth (the differential suite ran out of its 4 GiB heap, 2026-11-20). A closure runs a unit once
+ * (`microStep`), so the run ordinal tells its units apart exactly; the depth, fingerprint and root are Lean's order's
+ * leading fields, and the ordinal decides only between two distinct units of one closure that agree on all three.
+ */
+export type IssuerText = string & { readonly [issuerBrand]: true };
+
+/** A fresh issue (Lean's `Issue.fresh`): the `index`th issue of the unit `issuer` names, in the closure in progress. */
+export type FreshIssue = Readonly<{ issuer: IssuerText; index: number }>;
+
+/**
+ * Lean's `Issue` (DC12): committed, its slot's ordinal itself, as Lean reads a numeral as a committed issue, so a
+ * committed state holds every key part as it did before DC12; or fresh. As key text a committed issue is its ordinal's
+ * digits and a fresh one `~<index>.<length>:<issuer>`, self-delimiting wherever it stands.
+ */
+export type Issue = number | FreshIssue;
+
+/** The fresh issue `issue` is, `null` for a committed one: with `committedOrdinal`, the one reading of an issue's form. */
+export function freshIssue(issue: Issue): FreshIssue | null {
+  return typeof issue === "number" ? null : issue;
+}
+
+/** The ordinal of the committed issue `issue` is, `null` for a fresh one. */
+export function committedOrdinal(issue: Issue): number | null {
+  return typeof issue === "number" ? issue : null;
+}
+
+/** An issue's key text. */
+export function issueText(issue: Issue): string {
+  const fresh = freshIssue(issue);
+  return fresh === null ? String(issue) : `~${fresh.index}.${fresh.issuer.length}:${fresh.issuer}`;
+}
+
+/** The issue whose text starts at `at` in `text`, and where its text ends. */
+function readIssue(text: string, at: number): readonly [Issue, number] {
+  if (text.charCodeAt(at) !== 0x7e) {
+    let end = at;
+    while (end < text.length && text.charCodeAt(end) >= 0x30 && text.charCodeAt(end) <= 0x39) end += 1;
+    return [Number(text.slice(at, end)), end];
+  }
+  const dot = text.indexOf(".", at);
+  const colon = text.indexOf(":", dot);
+  const end = colon + 1 + Number(text.slice(dot + 1, colon));
+  return [{ index: Number(text.slice(at + 1, dot)), issuer: text.slice(colon + 1, end) as IssuerText }, end];
+}
+
+/** Lean's `Issue.number`: a committed issue's ordinal, a fresh one's index in its unit. */
+export function issueNumber(issue: Issue): number {
+  return committedOrdinal(issue) ?? (issue as FreshIssue).index;
+}
+
+/**
+ * Lean's `Ord Issue`: committed issues first, by ordinal; fresh ones by index, then unit (`compareIssuer`), so two
+ * issues of one unit compare without reading its key.
+ */
+export function compareIssue(left: Issue, right: Issue): number {
+  const [a, b] = [freshIssue(left), freshIssue(right)];
+  if (a === null || b === null) return (a === null ? 0 : 1) - (b === null ? 0 : 1) || issueNumber(left) - issueNumber(right);
+  return a.index - b.index || compareIssuer(a.issuer, b.issuer);
+}
+
+/** One step down the scope tree: an element and its issue among that element's entries in the same parent. */
+export interface ScopeSegment { readonly element: ElementId; readonly ordinal: Issue; }
 
 declare const scopeKeyBrand: unique symbol;
 
 /**
- * Lean's `ScopeOccurrenceId` as canonical text: its segments innermost first, each `<length>:<element>#<ordinal>/`,
- * the element's length in UTF-16 code units, so the text of a key's parent is its text after the first segment. The
- * text never leaves the kernel.
+ * Lean's `ScopeOccurrenceId` as canonical text: its segments innermost first, each `<length>:<element>#<issue>/`,
+ * the element's length in UTF-16 code units and `<issue>` its issue's text (`issueText`), so the text of a key's parent
+ * is its text after the first segment. The text never leaves the kernel.
  */
 export type ScopeOccurrenceId = string & { readonly [scopeKeyBrand]: true };
 
 /** The process instance's root scope occurrence: no segment. */
 export const rootScope = "" as ScopeOccurrenceId;
 
-/** The key of the `ordinal`th scope occurrence of `element` entered in `parent`. */
-export function childScope(parent: ScopeOccurrenceId, element: ElementId, ordinal: number): ScopeOccurrenceId {
-  return `${element.length}:${element}#${ordinal}/${parent}` as ScopeOccurrenceId;
+/** The key of the scope occurrence of `element` entered in `parent` as the issue `ordinal`. */
+export function childScope(parent: ScopeOccurrenceId, element: ElementId, ordinal: Issue): ScopeOccurrenceId {
+  return `${element.length}:${element}#${issueText(ordinal)}/${parent}` as ScopeOccurrenceId;
 }
 
 /** The first segment of `scope` and the key of its parent, `null` for the root. */
@@ -34,9 +102,8 @@ export function scopeHead(scope: ScopeOccurrenceId): readonly [ScopeSegment, Sco
   const start = colon + 1;
   const length = Number(scope.slice(0, colon));
   const element = scope.slice(start, start + length);
-  const slash = scope.indexOf("/", start + length);
-  const ordinal = Number(scope.slice(start + length + 1, slash));
-  return [{ element, ordinal }, scope.slice(slash + 1) as ScopeOccurrenceId];
+  const [ordinal, end] = readIssue(scope, start + length + 1);
+  return [{ element, ordinal }, scope.slice(end + 1) as ScopeOccurrenceId];
 }
 
 /** The key of the scope occurrence `scope` was entered in, `null` for the root (Lean's `parent?`). */
@@ -51,8 +118,9 @@ export function scopeSegments(scope: ScopeOccurrenceId): readonly ScopeSegment[]
   return segments;
 }
 
+/** Lean's `Ord ScopeSegment`: the element, then the issue. */
 function compareSegment(left: ScopeSegment, right: ScopeSegment): number {
-  return compareStrings(left.element, right.element) || left.ordinal - right.ordinal;
+  return compareStrings(left.element, right.element) || compareIssue(left.ordinal, right.ordinal);
 }
 
 /**
@@ -70,6 +138,21 @@ export function compareScopeOccurrenceId(left: ScopeOccurrenceId, right: ScopeOc
   return a.length - b.length;
 }
 
+/**
+ * Lean's order of a committed path, `List CommittedSegment`'s: the segments innermost first, lexicographically, a
+ * prefix first. A unit root names a committed scope occurrence by it (`UnitRoot.idle`, `UnitRoot.offer`).
+ */
+function compareCommittedPath(left: ScopeOccurrenceId, right: ScopeOccurrenceId): number {
+  if (left === right) return 0;
+  const a = scopeSegments(left);
+  const b = scopeSegments(right);
+  for (let index = 0; index < Math.min(a.length, b.length); index += 1) {
+    const order = compareSegment(a[index] as ScopeSegment, b[index] as ScopeSegment);
+    if (order !== 0) return order;
+  }
+  return a.length - b.length;
+}
+
 /** What an ordinal counter of `State.scopeOrdinals` counts: the scope occurrences of `element` entered in `parent`. */
 export interface ScopeSlot { readonly parent: ScopeOccurrenceId; readonly element: ElementId; }
 
@@ -82,25 +165,26 @@ declare const occurrenceKeyBrand: unique symbol;
 
 /**
  * Lean's `OccurrenceId` as canonical text: an occurrence's structural key (KD1), the scope occurrence it was issued in,
- * its element and an ordinal counted per (scope occurrence, element) by `State.occurrenceOrdinals`, written
- * `<length>:<element>#<ordinal>@<scope>`, the element's length in UTF-16 code units and `<scope>` the scope key's text.
- * Keys compare by value, never by object reference. The text never leaves the kernel.
+ * its element and its issue, once committed an ordinal counted per (scope occurrence, element) by
+ * `State.occurrenceOrdinals`, written `<length>:<element>#<issue>@<scope>`, the element's length in UTF-16 code units,
+ * `<issue>` its issue's text and `<scope>` the scope key's text. Keys compare by value, never by object reference. The
+ * text never leaves the kernel.
  */
 export type OccurrenceId = string & { readonly [occurrenceKeyBrand]: true };
 
-/** The key of the `ordinal`th occurrence of `element` issued in `scope`. */
-export function occurrenceId(scope: ScopeOccurrenceId, element: ElementId, ordinal: number): OccurrenceId {
-  return `${element.length}:${element}#${ordinal}@${scope}` as OccurrenceId;
+/** The key of the occurrence of `element` issued in `scope` as the issue `ordinal`. */
+export function occurrenceId(scope: ScopeOccurrenceId, element: ElementId, ordinal: Issue): OccurrenceId {
+  return `${element.length}:${element}#${issueText(ordinal)}@${scope}` as OccurrenceId;
 }
 
-/** The scope occurrence, element and ordinal of `id`. */
-export function occurrenceIdParts(id: OccurrenceId): Readonly<{ scope: ScopeOccurrenceId; element: ElementId; ordinal: number }> {
+/** The scope occurrence, element and issue of `id`. */
+export function occurrenceIdParts(id: OccurrenceId): Readonly<{ scope: ScopeOccurrenceId; element: ElementId; ordinal: Issue }> {
   const colon = id.indexOf(":");
   const start = colon + 1;
   const length = Number(id.slice(0, colon));
   const element = id.slice(start, start + length);
-  const at = id.indexOf("@", start + length);
-  return { scope: id.slice(at + 1) as ScopeOccurrenceId, element, ordinal: Number(id.slice(start + length + 1, at)) };
+  const [ordinal, end] = readIssue(id, start + length + 1);
+  return { scope: id.slice(end + 1) as ScopeOccurrenceId, element, ordinal };
 }
 
 /** Whether the scope occurrence `outer` is `inner` or encloses it: Lean's test that `outer`'s segments end `inner`'s. */
@@ -111,34 +195,49 @@ export function scopeEncloses(outer: ScopeOccurrenceId, inner: ScopeOccurrenceId
   return false;
 }
 
-/** The order of Lean's `Ord OccurrenceId`: the scope occurrence's key, then the element, then the ordinal. */
+/** The order of Lean's `Ord OccurrenceId`: the scope occurrence's key, then the element, then the issue. */
 export function compareOccurrenceId(left: OccurrenceId, right: OccurrenceId): number {
   if (left === right) return 0;
   const a = occurrenceIdParts(left);
   const b = occurrenceIdParts(right);
-  return compareScopeOccurrenceId(a.scope, b.scope) || compareStrings(a.element, b.element) || a.ordinal - b.ordinal;
+  return compareScopeOccurrenceId(a.scope, b.scope) || compareStrings(a.element, b.element) || compareIssue(a.ordinal, b.ordinal);
 }
 
-/** Lean's `UnitStep`: one step down a closure's unit chain, the `index`th signal or token the unit above queued. */
-export enum UnitStepTag { Signal = "signal", Token = "token" }
-export type UnitStep = Readonly<{ tag: UnitStepTag; index: number }>;
+/**
+ * Lean's `UnitStep`: one step down a closure's unit chain, the `index`th signal or token the unit above queued; or the
+ * idle check of the scope occurrence, or the `round`th offer of the parked occurrence, that the unit above issued as its
+ * `index`th issue (DC12).
+ */
+export enum UnitStepTag { Signal = "signal", Token = "token", Idle = "idle", Offer = "offer" }
+export type UnitStep =
+  | Readonly<{ tag: UnitStepTag.Signal | UnitStepTag.Token | UnitStepTag.Idle; index: number }>
+  | Readonly<{ tag: UnitStepTag.Offer; index: number; round: number }>;
 
-/** Lean's `UnitStep.rank`: signals before tokens, each by index. */
-function unitStepRank(step: UnitStep): number {
+/** Lean's `UnitStep.stepRank`: signals, tokens, idle checks, then offers, each by index, then round. */
+function unitStepRank(step: UnitStep): readonly [number, number, number] {
   switch (step.tag) {
     case UnitStepTag.Signal:
-      return 0;
+      return [0, step.index, 0];
     case UnitStepTag.Token:
-      return 1;
+      return [1, step.index, 0];
+    case UnitStepTag.Idle:
+      return [2, step.index, 0];
+    case UnitStepTag.Offer:
+      return [3, step.index, step.round];
   }
-  return assertNever(step.tag);
+  return assertNever(step);
 }
 
 function compareUnitStep(left: UnitStep, right: UnitStep): number {
-  return unitStepRank(left) - unitStepRank(right) || left.index - right.index;
+  const [a, b] = [unitStepRank(left), unitStepRank(right)];
+  return a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
 }
 
-/** Lean's `UnitRoot`: where a closure's unit chain starts (DC4), a structured root no element can take the name of. */
+/**
+ * Lean's `UnitRoot`: where a closure's unit chain starts (DC4), a structured root no element can take the name of. An
+ * idle or offer root names a committed identity, held as its key text, all of whose issues are committed; the idle
+ * check or offer of an identity issued in the closure is a step below its issuer (`UnitStepTag.Idle`, `.Offer`).
+ */
 export enum UnitRootTag { Seed = "seed", Input = "input", Idle = "idle", Offer = "offer" }
 export type UnitRoot =
   | Readonly<{ tag: UnitRootTag.Seed }>
@@ -146,7 +245,17 @@ export type UnitRoot =
   | Readonly<{ tag: UnitRootTag.Idle; scope: ScopeOccurrenceId }>
   | Readonly<{ tag: UnitRootTag.Offer; occurrence: OccurrenceId; round: number }>;
 
-/** Lean's `Ord UnitRoot`: the seed, the input, then idle completions by scope key and offers by occurrence key and round. */
+/** Lean's `Ord CommittedOccurrence`: the committed path of its scope occurrence, then the element, then the ordinal. */
+function compareCommittedOccurrence(left: OccurrenceId, right: OccurrenceId): number {
+  const a = occurrenceIdParts(left);
+  const b = occurrenceIdParts(right);
+  return compareCommittedPath(a.scope, b.scope) || compareStrings(a.element, b.element) || compareIssue(a.ordinal, b.ordinal);
+}
+
+/**
+ * Lean's `Ord UnitRoot`: the seed, the input, then idle completions by their committed path and offers by their
+ * committed occurrence and round.
+ */
 function compareUnitRoot(left: UnitRoot, right: UnitRoot): number {
   switch (left.tag) {
     case UnitRootTag.Seed:
@@ -154,16 +263,31 @@ function compareUnitRoot(left: UnitRoot, right: UnitRoot): number {
     case UnitRootTag.Input:
       return right.tag === UnitRootTag.Seed ? 1 : right.tag === UnitRootTag.Input ? 0 : -1;
     case UnitRootTag.Idle:
-      return right.tag === UnitRootTag.Idle ? compareScopeOccurrenceId(left.scope, right.scope) : right.tag === UnitRootTag.Offer ? -1 : 1;
+      return right.tag === UnitRootTag.Idle ? compareCommittedPath(left.scope, right.scope) : right.tag === UnitRootTag.Offer ? -1 : 1;
     case UnitRootTag.Offer:
-      return right.tag === UnitRootTag.Offer ? compareOccurrenceId(left.occurrence, right.occurrence) || left.round - right.round : 1;
+      return right.tag === UnitRootTag.Offer ? compareCommittedOccurrence(left.occurrence, right.occurrence) || left.round - right.round : 1;
   }
   return assertNever(left);
 }
 
+/** A root's text in an issuer's text (`issuerText`): a letter, and a committed key behind its length. */
+function rootText(root: UnitRoot): string {
+  switch (root.tag) {
+    case UnitRootTag.Seed:
+      return "S";
+    case UnitRootTag.Input:
+      return "I";
+    case UnitRootTag.Idle:
+      return `D${root.scope.length}:${root.scope}`;
+    case UnitRootTag.Offer:
+      return `O${root.round},${root.occurrence.length}:${root.occurrence}`;
+  }
+  return assertNever(root);
+}
+
 /**
  * Lean's `UnitKey` (DC4, DC20): a unit of a closure's work as one immutable node of its spine, holding its root, its
- * own step (`null` at the root), the unit that queued it, its depth, its 64-bit fingerprint, bit for bit Lean's, and a
+ * own step (`null` at the root), the unit that queued it, its depth, its 64-bit fingerprint, bit for bit Lean's, a
  * skew-binary jump pointer to an ancestor (Myers 1983), so two keys meet in O(log depth). Built only by `unitRoot` and
  * `pushUnit`; compared only by `compareUnitKey`, `sameUnitKey` and `breadthUnitKey`, never by `===` on structure, since
  * two equal keys need not be one object. Never a wire value: a unit key never outlives its closure.
@@ -185,9 +309,23 @@ export function unitRoot(root: UnitRoot): UnitKey {
 /** Lean's `Spine.jump`, with the root its own jump as Lean's `.root` is. */
 const jumpOf = (key: UnitKey): UnitKey => key.jump ?? key;
 
-/** Lean's `Spine.fingerprintStep` over `SpineStep UnitStep`'s code `2 * index + rank`: xor, then the odd factor mod 2^64. */
+/** Lean's `cantorPair`: the Cantor pairing of `index` and `round`, a bijection of pairs of naturals onto the naturals. */
+function cantorPair(index: bigint, round: bigint): bigint {
+  return (index + round) * (index + round + 1n) / 2n + round;
+}
+
+/**
+ * Lean's `UnitStep.stepCode`: its kind's rank, below 4, beside the Cantor pair of its index and round, so distinct steps
+ * have distinct codes. In `bigint`, as Lean's `Nat`, so no index loses precision before the cast mod 2^64.
+ */
+function unitStepCode(step: UnitStep): bigint {
+  const [rank, index, round] = unitStepRank(step);
+  return 4n * cantorPair(BigInt(index), BigInt(round)) + BigInt(rank);
+}
+
+/** Lean's `Spine.fingerprintStep` over `SpineStep UnitStep`'s code (`unitStepCode` mod 2^64): xor, then the odd factor mod 2^64. */
 function fingerprintStep(fingerprint: bigint, step: UnitStep): bigint {
-  return BigInt.asUintN(64, (fingerprint ^ BigInt(2 * step.index + unitStepRank(step))) * 0x9E3779B97F4A7C15n);
+  return BigInt.asUintN(64, (fingerprint ^ BigInt.asUintN(64, unitStepCode(step))) * 0x9E3779B97F4A7C15n);
 }
 
 /** Lean's `UnitKey.push` (`Spine.push`): the key of the unit `step` names below `parent`, its jump chosen by depth alone. */
@@ -202,6 +340,21 @@ export const signalUnit = (parent: UnitKey, index: number): UnitKey => pushUnit(
 
 /** Lean's `UnitKey.token`. */
 export const tokenUnit = (parent: UnitKey, index: number): UnitKey => pushUnit(parent, { tag: UnitStepTag.Token, index });
+
+/** The text a fresh issue of the unit `unit`, the `run`th unit its closure ran, names it by (`IssuerText`). */
+export function issuerText(unit: UnitKey, run: number): IssuerText {
+  return `${unit.depth}.${unit.fingerprint.toString(16).padStart(16, "0")}.${run}.${rootText(unit.root)}` as IssuerText;
+}
+
+/** The root whose text (`rootText`) is `text`. */
+function rootOfText(text: string): UnitRoot {
+  const kind = text.charAt(0);
+  if (kind === "S") return { tag: UnitRootTag.Seed };
+  if (kind === "I") return { tag: UnitRootTag.Input };
+  if (kind === "D") return { tag: UnitRootTag.Idle, scope: text.slice(text.indexOf(":") + 1) as ScopeOccurrenceId };
+  const comma = text.indexOf(",");
+  return { tag: UnitRootTag.Offer, round: Number(text.slice(1, comma)), occurrence: text.slice(text.indexOf(":", comma) + 1) as OccurrenceId };
+}
 
 /** The order of two paths of one depth, innermost step first (Lean's `List` order), a shared tail at once. */
 function comparePath(left: UnitKey, right: UnitKey): number {
@@ -220,6 +373,23 @@ export function compareUnitKey(left: UnitKey, right: UnitKey): number {
   if (left.depth !== right.depth) return left.depth - right.depth;
   if (left.fingerprint !== right.fingerprint) return left.fingerprint < right.fingerprint ? -1 : 1;
   return compareUnitRoot(left.root, right.root) || comparePath(left, right);
+}
+
+/**
+ * `compareUnitKey` over two issuers' texts (`IssuerText`): the depth, the fingerprint and the root, then, between two
+ * distinct units of one closure that agree on all three, the order they ran in.
+ */
+function compareIssuer(left: IssuerText, right: IssuerText): number {
+  if (left === right) return 0;
+  const fields = (text: IssuerText): readonly [number, string, number, string] => {
+    const depthEnd = text.indexOf(".");
+    const runEnd = text.indexOf(".", depthEnd + 18);
+    return [Number(text.slice(0, depthEnd)), text.slice(depthEnd + 1, depthEnd + 17), Number(text.slice(depthEnd + 18, runEnd)), text.slice(runEnd + 1)];
+  };
+  const [a, b] = [fields(left), fields(right)];
+  if (a[0] !== b[0]) return a[0] - b[0];
+  if (a[1] !== b[1]) return a[1] < b[1] ? -1 : 1;
+  return compareUnitRoot(rootOfText(a[3]), rootOfText(b[3])) || a[2] - b[2];
 }
 
 /** Lean's `DecidableEq UnitKey`: depth and fingerprint reject at once, then the root, then the path, a shared one at once. */

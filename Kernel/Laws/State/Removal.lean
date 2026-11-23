@@ -86,7 +86,8 @@ theorem cancelOccurrence_absent {state : State} {id : OccurrenceId} (absent : st
 theorem clearInside_grows (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
     ScopeGrows s (s.clearInside scope keep) := by
   have fewer : (s.clearInside scope keep).scopes.Sublist s.scopes := List.filter_sublist
-  refine .shrink (fun _ member => (fewer.map _).subset member) fun parent standing _ => ?_
+  refine .shrink (fun _ member => (fewer.map _).subset member) (fun parent standing _ => ?_)
+    (.of_eq (by simp [State.clearInside, State.recordCancelled]))
   simp only [State.clearInside, State.recordCancelled] at standing ⊢
   obtain ⟨entry, inside, rfl⟩ := List.mem_map.mp standing
   exact getD_filter_keep fun _ => (List.mem_filter.mp inside).2
@@ -142,7 +143,8 @@ theorem clearInside_cleared {s : State} (formed : WellFormed program s) {scope :
       signals := rfl, queues := clearInside_queues s scope keep, status := rfl, failure := rfl, journal := rfl,
       transitions := rfl, started := rfl,
       slots := ⟨fun _ member => ?_, fun _ member => ?_, fun _ member => ?_⟩,
-      bodies := by simp [State.clearInside, State.recordCancelled, featureSlotsClear_eq] }
+      bodies := by simp [State.clearInside, State.recordCancelled, featureSlotsClear_eq],
+      issued := rfl, issuing := rfl, issueNext := rfl }
   rotate_left 4
   · simp only [allQueuedTokens, State.clearInside, State.recordCancelled, Std.ExtTreeMap.toList_filter]
     exact (List.filter_sublist.map _).append List.filter_sublist
@@ -244,6 +246,16 @@ theorem leaveScope_eq (s : State) (scope : ScopeOccurrenceId) :
     (s.leaveScope scope).instanceId = s.instanceId := by
   simp [State.leaveScope, State.clearInside, State.recordCancelled]
 
+/-- Clearing a scope occurrence keeps the issue table: a removal retracts no issue (DC12). -/
+theorem clearInside_issued (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
+    (s.clearInside scope keep).issued = s.issued := by
+  simp [State.clearInside, State.recordCancelled]
+
+/-- Leaving a scope occurrence keeps the issue table. -/
+theorem leaveScope_issued (s : State) (scope : ScopeOccurrenceId) : (s.leaveScope scope).issued = s.issued := by
+  rw [(leaveScope_eq s scope).1]
+  exact clearInside_issued s scope []
+
 /-- `State.removeOccurrence` leaves the scope occurrences the occurrence owns after removing its record. -/
 theorem removeOccurrence_eq (s : State) (id : OccurrenceId) :
     s.removeOccurrence id =
@@ -298,5 +310,171 @@ theorem cancelOccurrence_ended {s : State} {id : OccurrenceId} {occurrence : Occ
     (s.cancelOccurrence id).draft.ended = ((s.withdrawOccurrence id).removeOccurrence id).draft.ended ++
       ([occurrence].filter (·.begun)).map fun o => (key ((s.withdrawOccurrence id).removeOccurrence id) o, .cancelled) := by
   simp [State.cancelOccurrence, found, State.recordCancelled, keyOf_eq]
+
+/-! ## Counters inside a closure (DC12)
+
+A closure changes a counter only by pruning it with its owner (`clearInside`, `leaveScope`, `removeOccurrence`), so the
+counters it settles with stay at most the ones it started from (`CountersFrom`). One lemma per counter writer, each
+stated per counter map, so a further counter is one more conjunct. -/
+
+/-- A filter keeps or drops each entry, so it raises no count. -/
+theorem getD_filter_le {α : Type} [Ord α] [Std.TransOrd α] [Std.LawfulEqOrd α] (m : Std.ExtTreeMap α Nat compare)
+    (f : α → Nat → Bool) (k : α) : (m.filter f).getD k 0 ≤ m.getD k 0 := by
+  rw [Std.ExtTreeMap.getD_filter', Std.ExtTreeMap.getD_eq_getD_getElem?]
+  cases m[k]? <;> simp only [Option.filter, Option.getD_none, Option.getD_some, Nat.le_refl]
+  split <;> simp
+
+/-- An erase drops one entry, so it raises no count. -/
+theorem getD_erase_le {α : Type} [Ord α] [Std.TransOrd α] [Std.LawfulEqOrd α] (m : Std.ExtTreeMap α Nat compare)
+    (id k : α) : (m.erase id).getD k 0 ≤ m.getD k 0 := by
+  rw [Std.ExtTreeMap.getD_erase]
+  split <;> simp
+
+/-- A change whose counters are each at most `s`'s keeps `CountersFrom start`. -/
+theorem CountersFrom.lower {start s t : State} (counted : CountersFrom start s)
+    (scopes : ∀ slot, t.scopeOrdinals.getD slot 0 ≤ s.scopeOrdinals.getD slot 0)
+    (occurrences : ∀ slot, t.occurrenceOrdinals.getD slot 0 ≤ s.occurrenceOrdinals.getD slot 0)
+    (items : ∀ occurrence, t.itemOrdinals.getD occurrence 0 ≤ s.itemOrdinals.getD occurrence 0) : CountersFrom start t :=
+  ⟨fun slot => Nat.le_trans (scopes slot) (counted.scopes slot),
+    fun slot => Nat.le_trans (occurrences slot) (counted.occurrences slot),
+    fun occurrence => Nat.le_trans (items occurrence) (counted.items occurrence)⟩
+
+/-- A change that leaves the three counter maps keeps `CountersFrom start`. -/
+theorem CountersFrom.same {start s t : State} (counted : CountersFrom start s) (scopes : t.scopeOrdinals = s.scopeOrdinals)
+    (occurrences : t.occurrenceOrdinals = s.occurrenceOrdinals) (items : t.itemOrdinals = s.itemOrdinals) :
+    CountersFrom start t :=
+  counted.lower (fun _ => by rw [scopes]; exact Nat.le_refl _) (fun _ => by rw [occurrences]; exact Nat.le_refl _)
+    fun _ => by rw [items]; exact Nat.le_refl _
+
+/-- `State.clearInside` prunes counters only. -/
+theorem clearInside_countersFrom {start s : State} (counted : CountersFrom start s) (scope : ScopeOccurrenceId)
+    (keep : List OccurrenceId) : CountersFrom start (s.clearInside scope keep) :=
+  counted.lower (fun _ => by simp only [State.clearInside, State.recordCancelled]; exact getD_filter_le _ _ _)
+    (fun _ => by simp only [State.clearInside, State.recordCancelled]; exact getD_filter_le _ _ _)
+    fun _ => by simp only [State.clearInside, State.recordCancelled]; exact getD_filter_le _ _ _
+
+/-- `State.leaveScope` prunes counters only. -/
+theorem leaveScope_countersFrom {start s : State} (counted : CountersFrom start s) (scope : ScopeOccurrenceId) :
+    CountersFrom start (s.leaveScope scope) :=
+  (clearInside_countersFrom counted scope []).lower
+    (fun _ => by simp only [State.leaveScope]; exact getD_filter_le _ _ _)
+    (fun _ => by simp only [State.leaveScope]; exact getD_filter_le _ _ _)
+    fun _ => by simp only [State.leaveScope]; exact Nat.le_refl _
+
+/-- Leaving scope occurrences one after another prunes counters only. -/
+theorem leaveScopes_countersFrom {start : State} :
+    ∀ (entries : List ScopeOccurrence) (s : State), CountersFrom start s →
+      CountersFrom start (entries.foldl (fun state entry => state.leaveScope entry.id) s)
+  | [], _, counted => counted
+  | entry :: rest, _, counted => leaveScopes_countersFrom rest _ (leaveScope_countersFrom counted entry.id)
+
+/-- `State.removeOccurrence` erases its item counter and leaves the scope occurrences it owned: it prunes counters only. -/
+theorem removeOccurrence_countersFrom {start s : State} (counted : CountersFrom start s) (id : OccurrenceId) :
+    CountersFrom start (s.removeOccurrence id) := by
+  unfold State.removeOccurrence
+  exact leaveScopes_countersFrom _ _
+    (counted.lower (fun _ => Nat.le_refl _) (fun _ => Nat.le_refl _) fun _ => getD_erase_le _ _ _)
+
+/-- `State.disarm` drops the item counters of the reservations it removes: it prunes counters only. -/
+theorem disarm_countersFrom {start s : State} (counted : CountersFrom start s) (host : OccurrenceId) :
+    CountersFrom start (s.disarm host) := by
+  rw [disarm_eq]
+  exact counted.lower (fun _ => Nat.le_refl _) (fun _ => Nat.le_refl _) fun _ => getD_filter_le _ _ _
+
+/-- Withdrawing an occurrence's items moves no counter but the reservations' its disarming drops. -/
+theorem withdrawOccurrence_countersFrom {start s : State} (counted : CountersFrom start s) (id : OccurrenceId) :
+    CountersFrom start (s.withdrawOccurrence id) := by
+  rw [withdrawOccurrence_eq]
+  have disarmed := disarm_countersFrom (s := s.closeOwnItems id)
+    (counted.same (by rw [closeOwnItems_eq]) (by rw [closeOwnItems_eq]) (by rw [closeOwnItems_eq])) id
+  generalize (s.closeOwnItems id).disarm id = t at disarmed ⊢
+  generalize t.scopes.filter (·.occurrence == some id) = entries
+  induction entries generalizing t with
+  | nil => exact disarmed
+  | cons entry rest ih => exact ih _ (disarmed.same (by simp only [withdrawInside_eq])
+      (by simp only [withdrawInside_eq]) (by simp only [withdrawInside_eq]))
+
+/-- `State.cancelOccurrence` withdraws and removes the occurrence: it prunes counters only. -/
+theorem cancelOccurrence_countersFrom {start s : State} (counted : CountersFrom start s) (id : OccurrenceId) :
+    CountersFrom start (s.cancelOccurrence id) := by
+  cases found : s.occurrence? id with
+  | none => rw [cancelOccurrence_absent found]; exact counted
+  | some occurrence =>
+    obtain ⟨_, _, cancels⟩ := cancelOccurrence_some found
+    rw [cancels]
+    exact (removeOccurrence_countersFrom (withdrawOccurrence_countersFrom counted id) id).same rfl rfl rfl
+
+/-! ## The issuer through the removals (DC12)
+
+A removal keeps the transitions and the issuer, which a micro-step's body and the hooks its conclusion runs keep beside
+`WellFormed` (`Laws.Step.Framed`). -/
+
+/-- `t` keeps the transitions and the issuer of `s`. -/
+structure IssuerKept (s t : State) : Prop where
+  transitions : t.transitions = s.transitions
+  issuing : t.issuing = s.issuing
+
+theorem IssuerKept.refl (s : State) : IssuerKept s s := ⟨rfl, rfl⟩
+
+theorem IssuerKept.trans {s t u : State} (first : IssuerKept s t) (second : IssuerKept t u) : IssuerKept s u :=
+  ⟨second.transitions.trans first.transitions, second.issuing.trans first.issuing⟩
+
+theorem clearInside_issuerKept (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
+    IssuerKept s (s.clearInside scope keep) :=
+  ⟨by simp [State.clearInside, State.recordCancelled], by simp [State.clearInside, State.recordCancelled]⟩
+
+theorem leaveScope_issuerKept (s : State) (scope : ScopeOccurrenceId) : IssuerKept s (s.leaveScope scope) := by
+  have cleared := clearInside_issuerKept s scope []
+  rw [(leaveScope_eq s scope).1]
+  exact ⟨cleared.transitions, cleared.issuing⟩
+
+/-- Leaving a scope occurrence keeps a fresh issuer fresh: the issue table, the issuer and the transitions stay. -/
+theorem leaveScope_issuerFresh {s : State} (fresh : IssuerFresh s) (scope : ScopeOccurrenceId) :
+    IssuerFresh (s.leaveScope scope) := by
+  have kept := leaveScope_issuerKept s scope
+  refine fresh.same ?_ kept.issuing ?_ kept.transitions <;>
+    rw [(leaveScope_eq s scope).1] <;> simp [State.clearInside, State.recordCancelled]
+
+theorem leaveScopes_issuerKept :
+    ∀ (entries : List ScopeOccurrence) (s : State),
+      IssuerKept s (entries.foldl (fun state entry => state.leaveScope entry.id) s)
+  | [], s => .refl s
+  | entry :: rest, s => (leaveScope_issuerKept s entry.id).trans (leaveScopes_issuerKept rest _)
+
+theorem removeOccurrence_issuerKept (s : State) (id : OccurrenceId) : IssuerKept s (s.removeOccurrence id) := by
+  unfold State.removeOccurrence
+  refine IssuerKept.trans ?_ (leaveScopes_issuerKept _ _)
+  exact ⟨rfl, rfl⟩
+
+/-- Disarming keeps a sublist of the occurrences: it drops only reservations hanging on the host. -/
+theorem disarm_occurrences (s : State) (host : OccurrenceId) : (s.disarm host).occurrences.Sublist s.occurrences := by
+  rw [disarm_eq]
+  exact List.filter_sublist
+
+theorem disarm_issuerKept (s : State) (host : OccurrenceId) : IssuerKept s (s.disarm host) := by
+  rw [disarm_eq]
+  exact ⟨rfl, rfl⟩
+
+theorem withdrawOccurrence_issuerKept (s : State) (id : OccurrenceId) : IssuerKept s (s.withdrawOccurrence id) := by
+  rw [withdrawOccurrence_eq]
+  have disarmed : IssuerKept s ((s.closeOwnItems id).disarm id) := by
+    have closed : IssuerKept s (s.closeOwnItems id) := by rw [closeOwnItems_eq]; exact ⟨rfl, rfl⟩
+    exact closed.trans (disarm_issuerKept _ id)
+  generalize (s.closeOwnItems id).disarm id = t at disarmed ⊢
+  generalize t.scopes.filter (·.occurrence == some id) = entries
+  induction entries generalizing t with
+  | nil => exact disarmed
+  | cons entry rest ih =>
+    have step : IssuerKept t (t.withdrawInside entry.id) := by rw [withdrawInside_eq]; exact ⟨rfl, rfl⟩
+    exact ih _ (disarmed.trans step)
+
+theorem cancelOccurrence_issuerKept (s : State) (id : OccurrenceId) : IssuerKept s (s.cancelOccurrence id) := by
+  cases found : s.occurrence? id with
+  | none => rw [cancelOccurrence_absent found]; exact .refl s
+  | some occurrence =>
+    obtain ⟨_, _, cancels⟩ := cancelOccurrence_some found
+    have removed := (withdrawOccurrence_issuerKept s id).trans (removeOccurrence_issuerKept _ id)
+    rw [cancels]
+    exact ⟨removed.transitions, removed.issuing⟩
 
 end Kernel.Laws.State

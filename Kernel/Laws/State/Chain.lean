@@ -530,10 +530,10 @@ theorem visible_enterScope (formed : WellFormed program s) {scope : ScopeOccurre
   obtain ⟨t, entered⟩ : ∃ t : State, (s.enterScope element parent locals occurrence).1 = t := ⟨_, rfl⟩
   rw [entered]
   have scopes : t.scopes = s.scopes ++
-      [{ id := parent.child element (slotCount s parent element), element := some element, occurrence }] := by
+      [{ id := parent.child element (.fresh s.issuing s.issueNext), element := some element, occurrence }] := by
     rw [← entered, enterScope_eq]
   have variables : t.variables = s.variables ++
-      [{ scope := parent.child element (slotCount s parent element), entries := keyed locals }] := by
+      [{ scope := parent.child element (.fresh s.issuing s.issueNext), entries := keyed locals }] := by
     rw [← entered, enterScope_eq]
   have record : ∀ entry ∈ s.scopes, t.scopes.find? (·.id == entry.id) = s.scopes.find? (·.id == entry.id) := by
     intro entry member
@@ -544,10 +544,8 @@ theorem visible_enterScope (formed : WellFormed program s) {scope : ScopeOccurre
     cases s.variables.find? (·.scope == entry.id) with
     | some _ => rfl
     | none =>
-      have : parent.child element (slotCount s parent element) ≠ entry.id := fun same =>
-        entered_unissued (ScopeOccurrenceId.ofSegments_eta parent ▸
-          parent_stands formed member (rest := parent.segments) (by rw [← same])) element
-          (same ▸ formed.issued.scopes entry member)
+      have : parent.child element (.fresh s.issuing s.issueNext) ≠ entry.id := fun same =>
+        entered_unissued parent element formed.issuer.next (same ▸ formed.issued.scopes entry member)
       simp [this]
   obtain ⟨later, laterStart, ⟨laterZero, laterEnded, laterStep⟩⟩ := visible_go t reading
   obtain ⟨earlier, earlierStart, ⟨earlierZero, earlierEnded, earlierStep⟩⟩ := visible_go s reading

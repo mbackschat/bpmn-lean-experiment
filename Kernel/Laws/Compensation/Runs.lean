@@ -72,9 +72,11 @@ structure RunsOps (program : Program) (inv : State → Prop) (settled : State �
     (state.enterScope element parent locals none).1.scopes = state.scopes ++
       [{ id := (state.enterScope element parent locals none).2, element := some element, occurrence := none }] ∧
     (state.enterScope element parent locals none).1.slots = state.slots
-  /-- A context entered below a scope occurrence that stands takes a key never issued, which every history then holds. -/
+  /-- A context entered below a scope occurrence that stands takes a key never issued, which every history then holds,
+  and the issue table keeps every entry (DC12). -/
   fresh : ∀ state element parent locals, inv state → parent ∈ state.scopes.map (·.id) →
-    Laws.State.ScopeFresh state (state.enterScope element parent locals none).1 (state.enterScope element parent locals none).2
+    Laws.State.ScopeFresh state (state.enterScope element parent locals none).1 (state.enterScope element parent locals none).2 ∧
+      Laws.State.TableGrows state (state.enterScope element parent locals none).1
   signalled : ∀ (state : State) signal, (state.signal signal).scopes = state.scopes ∧
     Laws.State.OccurrenceGrows state (state.signal signal) ∧ (state.signal signal).slots = state.slots
   signalGrows : ∀ (state : State) signal, Laws.State.ScopeGrows state (state.signal signal)
@@ -144,8 +146,8 @@ theorem RunsOps.enteredGrows {inv : State → Prop} {settled : State → Occurre
     {parent : ScopeOccurrenceId} (stands : parent ∈ state.scopes.map (·.id)) (locals : List (String × Value)) :
     Laws.State.OccurrenceGrows state (state.enterScope element parent locals none).1 := by
   obtain ⟨_, counters, scopesEq, _⟩ := ops.entered state element parent locals
-  obtain ⟨unissued, _, grows⟩ := ops.fresh state element parent locals holds stands
-  refine .enter grows (fun x standing => ?_) counters
+  obtain ⟨⟨unissued, _, grows⟩, table⟩ := ops.fresh state element parent locals holds stands
+  refine .enter grows (fun x standing => ?_) counters table
   change x ∈ (state.enterScope element parent locals none).1.scopes.map (·.id) at standing
   rw [scopesEq, List.map_append, List.mem_append] at standing
   rcases standing with old | new
@@ -401,7 +403,7 @@ theorem handler_keeps {inv : State → Prop} {settled : State → OccurrenceId �
         { element := handler, scope := (state.enterScope handler scope locals none).2, continuation := .compensation scope }))
       (state.enterScope handler scope locals none).2 := by
   obtain ⟨link, issuedNext, scopesEq, slotsEq⟩ := ops.entered state handler scope locals
-  obtain ⟨unissued, issuedAfter, grows⟩ := ops.fresh state handler scope locals holds stands
+  obtain ⟨⟨unissued, issuedAfter, grows⟩, -⟩ := ops.fresh state handler scope locals holds stands
   have enter := ops.enter state handler scope locals holds stands anchor
   generalize entering : state.enterScope handler scope locals none = entered
     at link issuedNext scopesEq slotsEq unissued issuedAfter grows enter runs provenance

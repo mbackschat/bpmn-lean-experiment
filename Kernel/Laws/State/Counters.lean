@@ -2,7 +2,7 @@ module
 
 public import Kernel.Laws.State.History
 public import Kernel.State.Removal
-import Kernel.Laws.State.Removal
+public import Kernel.Laws.State.Removal
 
 /-! # Laws of the kernel state: what the counter and keying equations give
 
@@ -21,13 +21,15 @@ open Kernel
 
 theorem signal_grows (state : State) (signal : Signal) : ScopeGrows state (state.signal signal) := by
   rw [signal_eq]
-  exact .of_same rfl rfl
+  exact .of_same rfl rfl (.refl _)
 
 theorem openSubscription_grows (state : State) (kind : OpenKind) (element : ElementId) (scope : ScopeOccurrenceId)
-    (host : Option OccurrenceId) (passive : Bool) : ScopeGrows state (state.openSubscription kind element scope host passive).1 := by
+    (host : Option OccurrenceId) (passive : Bool) (fresh : IssuerFresh state) :
+    ScopeGrows state (state.openSubscription kind element scope host passive).1 := by
   have reserves := reserve_reserves state element scope
   rw [openSubscription_eq]
   exact .of_same (congrArg (List.map (·.id)) reserves.scopes) reserves.scopeOrdinals
+    ((reserves.table fresh).trans (.insert (reserves.issuer fresh).next rfl))
 
 theorem keyed_single (binding : String × Value) : keyed [binding] = [binding] := by
   rw [keyed_eq.2, keyed_eq.1]

@@ -700,6 +700,8 @@ structure BodyPhases (inv : Program → State → Prop) : Prop where
   /-- Every occurrence was issued, so a reservation's key names it alone. -/
   issued : ∀ program state occurrence, inv program state → occurrence ∈ state.occurrences →
     Laws.State.OccurrenceIssued state occurrence.id
+  /-- The issue table holds none of the running unit's next issues (DC12), so a reservation's fresh key is unissued. -/
+  issuer : ∀ program state, inv program state → Laws.State.IssuerFresh state
   /-- An occurrence numbered as a Multi-Instance body is of an element with a Multi-Instance envelope, so a dispatch
   hands every other hook an occurrence of the element role (`Laws.Step.dispatch_unstarted`). -/
   bodied : ∀ program state occurrence, inv program state → occurrence ∈ state.occurrences →
@@ -768,13 +770,26 @@ structure ClosurePhases (inv : Program → State → Prop) : Prop extends BodyPh
     inv program { state with transitions := state.transitions.insert unit transition, draft := {}, writes := [] }
   /-- `Step.conclude` moves the micro-step's batches under its unit key (`State.queueBatch`). -/
   queueBatch : ∀ program state unit, inv program state → inv program (state.queueBatch unit)
+  /-- `Step.microStep` makes its unit the issuer before the body runs (DC12): a unit the closure has not run and not the
+  seed's, while the issue table holds no issue of the issuer it replaces. -/
+  enterUnit : ∀ program state unit, inv program state → state.transitions.contains unit = false →
+    unit ≠ .ofRoot .seed → (∀ index, state.issued[Issue.fresh state.issuing index]? = none) →
+    inv program { state with issuing := unit, issueNext := 0 }
+  /-- `Step.conclude` makes the seed the issuer again once the issuer's transition is journalled (DC12), while the issue
+  table holds no issue of the seed's. -/
+  leaveUnit : ∀ program state, inv program state → state.transitions.contains state.issuing = true →
+    (∀ index, state.issued[Issue.fresh (.ofRoot .seed) index]? = none) →
+    inv program { state with issuing := .ofRoot .seed, issueNext := 0 }
 
 /-- The phases of `ClosurePhases` and ordering the journal once the closure has settled (`Step.orderJournal`): what
 `Laws.Step.running_keeps` needs for an invariant of the committed state, while `Laws.Step.running_settles` gives the
-settled state before the ordering. -/
+settled state before the ordering. The ordering compacts the closure's issues onto the counters of the state the
+closure started from (`start`, DC12), which the settled state's counters never exceed (`CountersFrom`). -/
 structure Phases (inv : Program → State → Prop) : Prop extends ClosurePhases inv where
-  runOrder : ∀ program state log, inv program state → ∀ after, orderJournal (.ok (state, log)) = .ok after →
-    inv program after
+  runOrder : ∀ program start state log, inv program state → Laws.State.CountersFrom start state →
+    state.batchSignals = [] ∧ state.batchTokens = [] ∧ state.batchIntents = [] →
+    (keys : ∀ occurrence ∈ state.occurrences, occurrence.id.scope = occurrence.scope) → ∀ after,
+    orderJournal start (.ok (state, log)) = .ok after → inv program after
 
 /-- What the completion pipeline's own phases must keep of `inv` (`Step.complete`): starting the completing reservation
 and closing its items, removing its record and journalling its end. -/
@@ -821,11 +836,12 @@ structure StateFacts : Prop where
   recordEnd : ∀ (state : State) key terminal, (state.recordEnd key terminal).scopes = state.scopes ∧
     (state.recordEnd key terminal).slots.instances = state.slots.instances
   /-- A reservation adds one occurrence, of its element in its scope occurrence, under a key not issued while that scope
-  occurrence stands. -/
+  occurrence stands, when the issue table holds none of the running unit's next issues (DC12). -/
   reserve : ∀ (state : State) element scope,
     (state.reserve element scope).1.occurrences = state.occurrences ++ [(state.reserve element scope).2] ∧
     (state.reserve element scope).2.element = element ∧ (state.reserve element scope).2.scope = scope ∧
-    (scope ∈ Laws.State.standingKeys state → ¬ Laws.State.OccurrenceIssued state (state.reserve element scope).2.id) ∧
+    (Laws.State.IssuerFresh state → scope ∈ Laws.State.standingKeys state →
+      ¬ Laws.State.OccurrenceIssued state (state.reserve element scope).2.id) ∧
     (state.reserve element scope).1.scopes = state.scopes ∧
     (state.reserve element scope).1.slots.instances = state.slots.instances
   /-- Removing an occurrence keeps no scope occurrence and no instance entry it did not have. -/

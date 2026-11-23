@@ -33,16 +33,16 @@ import {
   type Binding, type Cause, type Fired, type Input,
   type InstanceFailure, type Leave, type Occurrence, type OpenItem, type Outcome,
   type Result, type ScopeOccurrence, type ScopeOccurrenceId, type Signal, type StartInput, type StartTrigger, type State,
-  type Token,
+  type Token, type Parked,
   SemanticCause, semanticFailure,
   itemAt, iterationHolds, type OccurrenceId,
-  compareUnitKey, occurrenceIdParts, orderedAny, orderedCount, orderedErase, orderedHas, orderedSize, scopeEncloses, type UnitKey,
-  unitRoot, UnitRootTag,
+  compareUnitKey, idleUnit, occurrenceIdParts, offersOccurrence, offerUnit, orderedAny, orderedCount, orderedErase, orderedHas,
+  orderedSize, scopeEncloses, issuerFor, type UnitKey, unitRoot, UnitRootTag,
 } from "./state.js";
 import {
   ScopeRole, admitThen, cancelOccurrence, chooseStart, clearInside, itemOf, removeOccurrence, type Ctx, type Hooks, type ScopeEntry,
 } from "./hooks.js";
-import { journalDraft, orderJournal } from "./step/commit.js";
+import { continuationBody, journalDraft, orderJournal } from "./step/commit.js";
 import { earliest, emptyRunLog, firstBreadth, latest, runRecord, type RunLog } from "./step/order.js";
 import { deferred, effectContinuation, timerJob } from "./step/jobs.js";
 import { advanceClock, admitChoicesThen, command, deliverEffectResult } from "./step/inputs.js";
@@ -104,14 +104,7 @@ function dispatch(hooks: Hooks, ctx: Ctx, occurrence: Occurrence, entry: ScopeEn
 function roleOf(program: Program, request: BeginRequest): ActivationRole {
   const element = programElement(program, request.element);
   const loops = (element === null ? null : elementEnvelope(element))?.multiInstance != null;
-  switch (request.continuation.tag) {
-    case ContinuationTag.MultiInstance:
-      return ActivationRole.Element;
-    case ContinuationTag.Flow:
-    case ContinuationTag.Compensation:
-      return loops ? ActivationRole.MultiInstanceBody : ActivationRole.Element;
-  }
-  return assertNever(request.continuation);
+  return continuationBody(request.continuation) === null && loops ? ActivationRole.MultiInstanceBody : ActivationRole.Element;
 }
 
 /** Lean's `Step.writeStart`: an Event Sub-Process start's values, written outward from the scope occurrence it entered. */
@@ -280,11 +273,9 @@ function absorb(hooks: Hooks, ctx: Ctx, before: number, state: State): Outcome {
 
 /**
  * Turn the draft into the transition of the unit `unit` (`journalDraft`), tell the features what the micro-step removed
- * and wrote, and queue the micro-step's batches under `unit` (`queueBatch`). A unit key the closure already ran is an
- * invariant failure: no admitted closure runs a unit twice (DC4).
+ * and wrote, and queue the micro-step's batches under `unit` (`queueBatch`).
  */
 function conclude(hooks: Hooks, ctx: Ctx, unit: UnitKey, cause: Cause, element: ElementId | null, owner: ScopeOccurrenceId, state: State): Outcome {
-  if (orderedHas(state.transitions, unit, compareUnitKey)) return semanticFailure(SemanticCause.Invariant, "unit-key-reused");
   let current = journalDraft(unit, cause, element, owner, state);
   for (const occurrence of state.draft.cancelled) {
     const notified = hooks.cancelled(ctx, occurrence, current);
@@ -292,17 +283,25 @@ function conclude(hooks: Hooks, ctx: Ctx, unit: UnitKey, cause: Cause, element: 
     current = notified.value;
   }
   const written = hooks.written(ctx, state.writes, current);
-  return written.ok ? committed(queueBatch(written.value, unit)) : written;
+  return written.ok ? committed({ ...queueBatch(written.value, unit), issuing: null, issueNext: 0 }) : written;
 }
 
 /**
  * One micro-step: run `body`, absorb its sole completion and record the transition. Each stage's failure is `deferred`
- * against the state it started from, so a boundary an earlier micro-step or stage crossed counts.
+ * against the state it started from, so a boundary an earlier micro-step or stage crossed counts. Every identity the
+ * micro-step issues is `unit`'s (DC12), numbered from 0. A unit key the closure already ran, or the seed's reserved
+ * root, is an invariant failure before the body runs, never a second transition under one key (DC4): the issuer reset
+ * needs `unit` to hold no issue yet, which a unit that never ran guarantees, so a command that commits ran each unit once
+ * and its issues are fresh; a failed command's issues are discarded with its speculative state.
  */
 function microStep(
   hooks: Hooks, ctx: Ctx, unit: UnitKey, cause: Cause, element: ElementId | null, owner: ScopeOccurrenceId,
-  body: (state: State) => Outcome, state: State,
+  body: (state: State) => Outcome, started: State,
 ): Outcome {
+  if (orderedHas(started.transitions, unit, compareUnitKey) || compareUnitKey(unit, unitRoot({ tag: UnitRootTag.Seed })) === 0) {
+    return semanticFailure(SemanticCause.Invariant, "unit-key-reused");
+  }
+  const state = { ...started, issuing: issuerFor(started, unit), issueNext: 0 };
   const before = state.batchSignals.length;
   const next = deferred(ctx.program, state, body(state));
   if (!next.ok) return next;
@@ -413,46 +412,61 @@ function nextToken(hooks: Hooks, ctx: Ctx, log: RunLog, state: State): readonly 
   return assertNever(ctx.program.options.branchSchedule);
 }
 
-type Reoffered = Readonly<{ gateway: ElementId; scope: ScopeOccurrenceId; occurrence: OccurrenceId; state: State }>;
+type Reoffered = Readonly<{ gateway: ElementId; scope: ScopeOccurrenceId; occurrence: OccurrenceId; unit: UnitKey; state: State }>;
 
 /**
- * The first parked join that fires when it is offered again, with its scope occurrence and the state it leaves.
- * Table 13.3 activates an Inclusive join by the state, not by an arrival, and `settle` offers the parked joins only
- * once no signal, token or idle scope occurrence is left, so `positions` in `Feature.Flow` sees every position: a
+ * Lean's `offerRound`: how many times the closure already offered the parked occurrence `occurrence` (`offerUnit`): the
+ * offer units among its transitions, a count, which reads no order.
+ */
+function offerRound(state: State, occurrence: OccurrenceId): number {
+  return orderedCount(state.transitions, (unit) => offersOccurrence(state.issued, occurrence, unit));
+}
+
+/**
+ * Lean's `offerParked`: the offer of the parked arrival `waiting` when no arrival parked before it fired (`reoffer`): its
+ * join is offered the latest arrival parked on that join in that scope occurrence, under the offer's unit, and fires
+ * when the offer queues a signal, `null` when it does not; a parked flow leading to no gateway is an invariant failure.
+ */
+function offerParked(hooks: Hooks, ctx: Ctx, state: State, waiting: Parked): Result<Reoffered | null> {
+  const target = programTarget(ctx.program, waiting.flow);
+  const element = target === null ? null : programElement(ctx.program, target);
+  const gateway = element === null ? null : elementGateway(element);
+  const latest = state.slots.parked
+    .filter((other) => other.scope === waiting.scope && programTarget(ctx.program, other.flow) === target).at(-1);
+  const occurrence = latest === undefined ? null : occurrenceOf(state, latest.occurrence);
+  if (gateway === null || occurrence === null) return semanticFailure(SemanticCause.Invariant, "parked-without-gateway");
+  // the offer's issues are its unit's, so its key is the one `settle` runs it under (DC12)
+  const unit = offerUnit(state.issued, occurrence.id, offerRound(state, occurrence.id));
+  if (unit === null) return semanticFailure(SemanticCause.Invariant, "offer-unit-unkeyed");
+  const offered = hooks.arriveGateway(ctx, gateway[0], gateway[1], occurrence, { ...state, issuing: issuerFor(state, unit), issueNext: 0 });
+  if (!offered.ok) return offered;
+  return committed(offered.value.batchSignals.length === 0 ? null
+    : { gateway: gateway[0].id, scope: waiting.scope, occurrence: occurrence.id, unit, state: offered.value });
+}
+
+/**
+ * The first parked join that fires when it is offered again, with its scope occurrence, its offer's unit and the state it
+ * leaves. Table 13.3 activates an Inclusive join by the state, not by an arrival, and `settle` offers the parked joins
+ * only once no signal, token or idle scope occurrence is left, so `positions` in `Feature.Flow` sees every position: a
  * completion still queued is no position it can see. Each join is offered its latest parked occurrence, in parking
  * order; a Parallel join is ready only on an arrival, so offering it never fires it.
  */
 function reoffer(hooks: Hooks, ctx: Ctx, state: State): Result<Reoffered | null> {
   for (const waiting of state.slots.parked) {
-    const target = programTarget(ctx.program, waiting.flow);
-    const element = target === null ? null : programElement(ctx.program, target);
-    const gateway = element === null ? null : elementGateway(element);
-    const latest = state.slots.parked
-      .filter((other) => other.scope === waiting.scope && programTarget(ctx.program, other.flow) === target).at(-1);
-    const occurrence = latest === undefined ? null : occurrenceOf(state, latest.occurrence);
-    if (gateway === null || occurrence === null) return semanticFailure(SemanticCause.Invariant, "parked-without-gateway");
-    const offered = hooks.arriveGateway(ctx, gateway[0], gateway[1], occurrence, state);
-    if (!offered.ok) return offered;
-    if (offered.value.batchSignals.length > 0) {
-      return committed({ gateway: gateway[0].id, scope: waiting.scope, occurrence: occurrence.id, state: offered.value });
-    }
+    const offered = offerParked(hooks, ctx, state, waiting);
+    if (!offered.ok || offered.value !== null) return offered;
   }
   return committed(null);
-}
-
-/** Lean's `offerRound`: how many times the closure already offered the parked occurrence `occurrence`, a count. */
-function offerRound(state: State, occurrence: OccurrenceId): number {
-  return orderedCount(state.transitions, (unit) => unit.step === null && unit.root.tag === UnitRootTag.Offer &&
-    unit.root.occurrence === occurrence);
 }
 
 /**
  * Signals first, in breadth-first key order (`firstBreadth`), then tokens (`nextToken`), then idle scope occurrences,
  * then the parked joins a quiescent closure offers again (`reoffer`, journalled with the `idle` cause of the join's scope
  * occurrence), then the instance's completion, once no signal is queued (DC5). Each unit runs under its unit key, and
- * the run log records when it ran; the committed closure's journal and intents are put in run order (`orderJournal`).
+ * the run log records when it ran; the committed closure's journal and intents are put in run order (`orderJournal`),
+ * its issues compacted against `opening`, the state the closure began from before its first micro-step.
  */
-function settle(hooks: Hooks, ctx: Ctx, bound: number, start: State, unit: UnitKey): Outcome {
+function settle(hooks: Hooks, ctx: Ctx, bound: number, opening: State, start: State, unit: UnitKey): Outcome {
   let state = start;
   let log = runRecord(emptyRunLog, unit);
   let work = closureWorkBound;
@@ -460,7 +474,7 @@ function settle(hooks: Hooks, ctx: Ctx, bound: number, start: State, unit: UnitK
     if (fuel === 0) return failed(FailureTag.Unsupported, "closure-bound"); // dynamic-only: a closure's length depends on the run
     work -= entryCount(state);
     if (work < 0) return failed(FailureTag.Unsupported, "closure-bound"); // dynamic-only: so does its size
-    if (state.status !== InstanceStatus.Running) return committed(orderJournal(state, log));
+    if (state.status !== InstanceStatus.Running) return orderJournal(opening, state, log);
     const signalled = firstBreadth(state.queuedSignals);
     const token = signalled === undefined ? nextToken(hooks, ctx, log, state) : undefined;
     const ready = signalled === undefined && token === undefined ? idleScope(hooks, ctx, state) : undefined;
@@ -475,7 +489,9 @@ function settle(hooks: Hooks, ctx: Ctx, bound: number, start: State, unit: UnitK
       ran = token[0];
       stepped = moveToken(hooks, ctx, token[0], token[1], { ...state, queuedTokens: orderedErase(state.queuedTokens, token[0], compareUnitKey) });
     } else if (ready !== undefined) {
-      ran = unitRoot({ tag: UnitRootTag.Idle, scope: ready.id });
+      const idling = idleUnit(state.issued, ready.id);
+      if (idling === null) return semanticFailure(SemanticCause.Invariant, "idle-unit-unkeyed");
+      ran = idling;
       stepped = microStep(hooks, ctx, ran, { tag: CauseTag.Idle, scope: ready.id }, ready.element, ready.id,
         (current) => completeIdleScope(hooks, ctx, ready, current), state);
     } else {
@@ -483,13 +499,13 @@ function settle(hooks: Hooks, ctx: Ctx, bound: number, start: State, unit: UnitK
       if (!offered.ok) return offered;
       const fired = offered.value;
       if (fired === null) {
-        if (!idle(state, root) || orderedSize(state.queuedSignals) > 0) return committed(orderJournal(state, log));
+        if (!idle(state, root) || orderedSize(state.queuedSignals) > 0) return orderJournal(opening, state, log);
         const finish = unitRoot({ tag: UnitRootTag.Idle, scope: root });
         const finished = microStep(hooks, ctx, finish, { tag: CauseTag.Idle, scope: root }, null, root,
           (current) => committed(endInstance(InstanceStatus.Completed, null, current)), state);
-        return finished.ok ? committed(orderJournal(finished.value, runRecord(log, finish))) : finished;
+        return finished.ok ? orderJournal(opening, finished.value, runRecord(log, finish)) : finished;
       }
-      ran = unitRoot({ tag: UnitRootTag.Offer, occurrence: fired.occurrence, round: offerRound(state, fired.occurrence) });
+      ran = fired.unit;
       stepped = microStep(hooks, ctx, ran, { tag: CauseTag.Idle, scope: fired.scope }, fired.gateway, fired.scope,
         () => committed(fired.state), state);
     }
@@ -515,14 +531,14 @@ function onRunning(
   if (!advanced.ok) return advanced;
   const unit = unitRoot({ tag: UnitRootTag.Input });
   const started = admitChoicesThen(hooks, ctx, () => microStep(hooks, ctx, unit, { tag: CauseTag.Input, input: tag }, null, root, transition, advanced.value));
-  return started.ok ? settle(hooks, ctx, closureBound, started.value, unit) : started;
+  return started.ok ? settle(hooks, ctx, closureBound, advanced.value, started.value, unit) : started;
 }
 
 /** `Ctx.scopeRole`: read from the slots, since the occurrences that ended there may be gone when an event arrives. */
 function scopeRole(state: State, scope: ScopeOccurrenceId): ScopeRole {
   const owned = state.scopes.find((candidate) => candidate.id === scope)?.occurrence ?? null;
   const owner = owned === null ? null : occurrenceOf(state, owned);
-  const ownedByInstance = owner !== null && ownedByMultiInstance(owner);
+  const ownedByInstance = owner !== null && continuationBody(owner.continuation) !== null;
   if (state.slots.compensation.runs.some((run) => run.running.some(([held]) => held === scope))) return ScopeRole.CompensationHandler;
   if (ownedByInstance || state.slots.multiInstances.some((run) => run.instances.some((iteration) => iterationHolds(iteration, scope)))) {
     return ScopeRole.MultiInstanceInstance;
@@ -530,16 +546,6 @@ function scopeRole(state: State, scope: ScopeOccurrenceId): ScopeRole {
   return ScopeRole.Ordinary;
 }
 
-function ownedByMultiInstance(owner: Occurrence): boolean {
-  switch (owner.continuation.tag) {
-    case ContinuationTag.MultiInstance:
-      return true;
-    case ContinuationTag.Flow:
-    case ContinuationTag.Compensation:
-      return false;
-  }
-  return assertNever(owner.continuation);
-}
 
 /** The context every hook of `program` reads, its queries filled from `hooks`. */
 export function context(hooks: Hooks, program: Program): Ctx {
@@ -578,7 +584,7 @@ export function step(hooks: Hooks, program: Program, before: State | null, input
       const unit = unitRoot({ tag: UnitRootTag.Input });
       const started = admitChoicesThen(hooks, ctx, () => microStep(hooks, ctx, unit, { tag: CauseTag.Input, input: InputTag.Start }, start.value, root,
         (state) => begin(hooks, ctx, beginRequest({ element: start.value, scope: root, trigger: payload.trigger }), state), fresh.value));
-      return started.ok ? settle(hooks, ctx, closureBound, started.value, unit) : started;
+      return started.ok ? settle(hooks, ctx, closureBound, fresh.value, started.value, unit) : started;
     }
     case InputTag.Command:
       return onRunning(hooks, ctx, input.tag, input.payload.atMs, before, (state) => command(hooks, ctx, input.payload, state));

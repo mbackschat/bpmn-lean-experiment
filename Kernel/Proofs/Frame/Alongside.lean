@@ -84,10 +84,13 @@ structure Unmoved (s t : State) : Prop where
   scopeOrdinals : t.scopeOrdinals = s.scopeOrdinals
   occurrences : t.occurrences = s.occurrences
   occurrenceOrdinals : t.occurrenceOrdinals = s.occurrenceOrdinals
+  itemOrdinals : t.itemOrdinals = s.itemOrdinals
+  table : Laws.State.TableGrows s t
   nextPosition : t.nextPosition = s.nextPosition
   activations : t.activations = s.activations
   journal : t.journal = s.journal
   transitions : t.transitions = s.transitions
+  issuing : t.issuing = s.issuing
   started : t.draft.started = s.draft.started
   ended : t.draft.ended = s.draft.ended
   instanceId : t.instanceId = s.instanceId
@@ -111,9 +114,11 @@ theorem Unmoved.same {s t : State} (scopes : t.scopes = s.scopes := by exact rfl
     (scopeOrdinals : t.scopeOrdinals = s.scopeOrdinals := by exact rfl)
     (occurrences : t.occurrences = s.occurrences := by exact rfl)
     (occurrenceOrdinals : t.occurrenceOrdinals = s.occurrenceOrdinals := by exact rfl)
+    (itemOrdinals : t.itemOrdinals = s.itemOrdinals := by exact rfl)
+    (table : Laws.State.TableGrows s t := by exact fun _ _ held => held)
     (nextPosition : t.nextPosition = s.nextPosition := by exact rfl)
     (activations : t.activations = s.activations := by exact rfl) (journal : t.journal = s.journal := by exact rfl)
-    (transitions : t.transitions = s.transitions := by exact rfl)
+    (transitions : t.transitions = s.transitions := by exact rfl) (issuing : t.issuing = s.issuing := by exact rfl)
     (started : t.draft.started = s.draft.started := by exact rfl) (ended : t.draft.ended = s.draft.ended := by exact rfl)
     (instanceId : t.instanceId = s.instanceId := by exact rfl)
     (multiInstances : t.slots.multiInstances = s.slots.multiInstances := by exact rfl)
@@ -130,7 +135,7 @@ theorem Unmoved.same {s t : State} (scopes : t.scopes = s.scopes := by exact rfl
     (parked : ∀ waiting ∈ t.slots.parked, waiting ∈ s.slots.parked := by exact fun _ held => held)
     (placings : ∀ signal ∈ Laws.State.allSignals t, Laws.Step.placing signal = true → signal ∈ Laws.State.allSignals s :=
       by exact fun _ held _ => held) : Unmoved s t :=
-  ⟨scopes, scopeOrdinals, occurrences, occurrenceOrdinals, nextPosition, activations, journal, transitions, started, ended, instanceId, multiInstances, compensation, begins,
+  ⟨scopes, scopeOrdinals, occurrences, occurrenceOrdinals, itemOrdinals, table, nextPosition, activations, journal, transitions, issuing, started, ended, instanceId, multiInstances, compensation, begins,
     triggers, resumes, deferred, queuedSignals, queuedTokens, pending, instances, flows, parked, placings⟩
 
 /-- What `Unmoved` keeps of the queued begins, in both queues. -/
@@ -466,9 +471,13 @@ structure ClosureAlongside (program : Program) (rel : State → Prop) : Prop ext
   /-- A micro-step's batches move under its unit key. -/
   queueBatch : ∀ s unit, WellFormed program s → rel s → rel (s.queueBatch unit)
 
-/-- What `Step`'s own phases keep of `rel` (`ClosureAlongside`) and ordering the journal once the closure settles. -/
+/-- What `Step`'s own phases keep of `rel` (`ClosureAlongside`) and ordering the journal once the closure settles,
+which compacts the closure's issues onto the counters of the state it started from (`Laws.Step.Phases.runOrder`). -/
 structure StepAlongside (program : Program) (rel : State → Prop) : Prop extends ClosureAlongside program rel where
-  runOrder : ∀ s log, WellFormed program s → rel s → ∀ after, Step.orderJournal (.ok (s, log)) = .ok after → rel after
+  runOrder : ∀ start s log, WellFormed program s → rel s → Laws.State.CountersFrom start s →
+    s.batchSignals = [] ∧ s.batchTokens = [] ∧ s.batchIntents = [] →
+    (keys : ∀ occurrence ∈ s.occurrences, occurrence.id.scope = occurrence.scope) → ∀ after,
+    Step.orderJournal start (.ok (s, log)) = .ok after → rel after
 
 section Items
 
@@ -481,11 +490,11 @@ theorem FrameAlongside.hold {program : Program} (side : FrameAlongside program r
   exact side.frame s _ .same kept
 
 /-- An open item is an issue and an added item. -/
-theorem FrameAlongside.openItem {program : Program} (side : FrameAlongside program rel) {s : State} (kept : rel s) (kind : OpenKind)
-    (occurrence : Occurrence) : rel (s.openItem kind occurrence) := by
+theorem FrameAlongside.openItem {program : Program} (side : FrameAlongside program rel) {s : State} (kept : rel s)
+    (fresh : Laws.State.IssuerFresh s) (kind : OpenKind) (occurrence : Occurrence) : rel (s.openItem kind occurrence) := by
   refine side.frame s.takePosition.1 _ ?_ (side.takePosition s kept)
   rw [Laws.State.openItem_eq, Laws.State.takePosition_eq]
-  exact .same
+  exact .same (table := .insert fresh.next rfl)
 
 /-- A subscription is a reservation of a reservable element, an issue and an added item. -/
 theorem FrameAlongside.openSubscription {program : Program} (side : FrameAlongside program rel)
@@ -497,7 +506,7 @@ theorem FrameAlongside.openSubscription {program : Program} (side : FrameAlongsi
   refine side.frame (s.reserve element scope).1.takePosition.1 _ ?_
     (side.takePosition _ (occurs.reserve s element scope formed stands reservable anchored kept))
   rw [Laws.State.openSubscription_eq, Laws.State.takePosition_eq]
-  exact .same
+  exact .same (table := .insert (Laws.State.reserve_reserves s element scope |>.issuer formed.issuer).next rfl)
 
 /-- Closing an item moves nothing `rel` reads. -/
 theorem FrameAlongside.closeItem {program : Program} (side : FrameAlongside program rel) {s : State} (kept : rel s)

@@ -50,25 +50,6 @@ inductive ClosureUnit where
   | offer (index : Nat)
   | finish
 
-/-- The offer of the parked arrival `waiting` that `Step.reoffer?` makes when no arrival before it fired: its join is
-offered the latest arrival parked on that join in that scope occurrence and fires when the offer queues a signal
-(`some`), `none` when it does not; a parked flow leading to no gateway is an invariant failure. `Step.reoffer?` is the
-first fire in parking order; `SettleRuns` states that the two agree.
-
-This repeats the body of `Step.reoffer?`'s fold, which a `Proofs` module cannot unfold; extracting it in `Kernel.Step`
-and its TypeScript pair would let both read one definition. -/
-def offerOf (hooks : Hooks) (ctx : Ctx) (state : State) (waiting : Parked) :
-    Except Failure (Option (ElementId × ScopeOccurrenceId × OccurrenceId × State)) :=
-  match (ctx.program.target? waiting.flow).bind ctx.program.element? with
-  | none => .error (.semanticFailure .invariant "parked-without-gateway")
-  | some element =>
-    match element.gateway?, ((state.slots.parked.filter fun other => other.scope == waiting.scope &&
-        ctx.program.target? other.flow == ctx.program.target? waiting.flow).getLast?).bind (state.occurrence? ·.occurrence) with
-    | some (header, payload), some occurrence => do
-      let offered ← hooks.arriveGateway ctx header payload occurrence state
-      .ok (if offered.batchSignals.isEmpty then none else some (header.id, waiting.scope, occurrence.id, offered))
-    | _, _ => .error (.semanticFailure .invariant "parked-without-gateway")
-
 /-- The micro-step `unit` runs on `state` with the unit key it runs under, or `none` when `unit` is not enabled there.
 Layer 0 is every queued signal batch entry and every queued token, each run as `Step.settle` runs it. Once neither is
 queued, every idle scope occurrence (`Step.idleScope?`'s gate: not the root, no queued work names it or one inside it,
@@ -87,24 +68,28 @@ def fire (hooks : Hooks) (ctx : Ctx) (unit : ClosureUnit) (state : State) : Opti
   | .idle id => (state.scopes.find? (·.id == id)).bind fun scope =>
       if quiet && id != State.root && !state.busyScopes.contains id && !Step.activityLocal ctx state scope &&
           !Step.signalsHold hooks ctx state id then
-        some ((Step.microStep hooks ctx (.ofRoot (.idle id)) (.idle id) scope.element id
-          (Step.completeIdleScope hooks ctx scope) state).map (.ofRoot (.idle id), ·))
+        match UnitKey.idleUnit? id with
+        | none => some (.error (.semanticFailure .invariant "idle-unit-unkeyed"))
+        | some key => some ((Step.microStep hooks ctx key (.idle id) scope.element id
+            (Step.completeIdleScope hooks ctx scope) state).map (key, ·))
       else none
   | .offer index =>
     if quiet && (Step.idleScope? hooks ctx state).isNone then
       state.slots.parked[index]?.bind fun waiting =>
-        match offerOf hooks ctx state waiting with
+        match Step.offerParked hooks ctx state waiting with
         | .error failure => some (.error failure)
         | .ok none => none
         | .ok (some (gateway, scope, occurrence, offered)) =>
-          let key := UnitKey.ofRoot (.offer occurrence (Step.offerRound state occurrence))
-          some ((Step.microStep hooks ctx key (.idle scope) (some gateway) scope (fun _ => .ok offered) state).map (key, ·))
+          match UnitKey.offerUnit? occurrence (Step.offerRound state occurrence) with
+          | none => some (.error (.semanticFailure .invariant "offer-unit-unkeyed"))
+          | some key =>
+            some ((Step.microStep hooks ctx key (.idle scope) (some gateway) scope (fun _ => .ok offered) state).map (key, ·))
     else none
   | .finish =>
     if quiet && (Step.idleScope? hooks ctx state).isNone && state.idle State.root then
       match Step.reoffer? hooks ctx state with
-      | .ok none => some ((Step.microStep hooks ctx (.ofRoot (.idle State.root)) (.idle State.root) none State.root
-          (fun state => .ok (Step.endInstance .completed none state)) state).map (.ofRoot (.idle State.root), ·))
+      | .ok none => some ((Step.microStep hooks ctx (.ofRoot (.idle [])) (.idle State.root) none State.root
+          (fun state => .ok (Step.endInstance .completed none state)) state).map (.ofRoot (.idle []), ·))
       | _ => none
     else none
 
@@ -252,7 +237,7 @@ def CommitsAgree (hooks : Hooks) : Prop :=
     program.options.branchSchedule = .orderInvariant → Laws.Flow.Apart program → OpensAttempt hooks program input start →
     Runs hooks (Laws.Step.inputCtx hooks program input) (Step.RunLog.record {} (.ofRoot .input)) start outcome →
     Runs hooks (Laws.Step.inputCtx hooks program input) (Step.RunLog.record {} (.ofRoot .input)) start outcome' →
-    Step.orderJournal outcome = .ok left → Step.orderJournal outcome' = .ok right →
+    Step.orderJournal start outcome = .ok left → Step.orderJournal start outcome' = .ok right →
     ∃ ids keys, ScopesRenamed start ids ∧ Activations start keys ∧ Alike ids keys left right
 
 /-- P6's failure side, commit-or-refuse agreement (KD8's settle-agreement, T42): under `orderInvariant` and the
@@ -313,7 +298,8 @@ theorem endBesideEntry {hooks : Hooks} (agree : SchedulesAgree hooks) (bridge : 
     (settled : Step.settle hooks (Laws.Step.inputCtx hooks program input) fuel work
       (Step.RunLog.record {} (.ofRoot .input)) start = .ok committed)
     (other : Runs hooks (Laws.Step.inputCtx hooks program input) (Step.RunLog.record {} (.ofRoot .input)) start outcome)
-    (journalled : Step.orderJournal (.ok committed) = .ok left) (journalled' : Step.orderJournal outcome = .ok right) :
+    (journalled : Step.orderJournal start (.ok committed) = .ok left)
+    (journalled' : Step.orderJournal start outcome = .ok right) :
     ∃ ids keys, ScopesRenamed start ids ∧ Activations start keys ∧ Alike ids keys left right :=
   agree.1 program input start left right (.ok committed) outcome invariant separate (opensAttempt_of_opens opens)
     ((bridge program input start fuel work invariant (opensAttempt_of_opens opens)).1 committed settled) other journalled

@@ -360,10 +360,12 @@ theorem RaisesSound.transport {program : Program} {before after : State} (raises
 /-- `RaisesSound` reads the queue, the scope occurrences, the counters and the occurrences. -/
 theorem RaisesSound.same {program : Program} {s t : State} (raises : RaisesSound program s)
     (signals : allSignals t = allSignals s) (ordinals : t.scopeOrdinals = s.scopeOrdinals) (scopes : t.scopes = s.scopes)
-    (counters : t.occurrenceOrdinals = s.occurrenceOrdinals) (occurrences : t.occurrences = s.occurrences) :
-    RaisesSound program t :=
-  raises.transport (fun _ _ queued => signals ▸ queued) (.of_same (congrArg (List.map ScopeOccurrence.id) scopes) ordinals)
-    (.of_same (congrArg (List.map ScopeOccurrence.id) scopes) ordinals counters) fun _ member _ => occurrences ▸ member
+    (counters : t.occurrenceOrdinals = s.occurrenceOrdinals) (occurrences : t.occurrences = s.occurrences)
+    (table : t.issued = s.issued) : RaisesSound program t :=
+  raises.transport (fun _ _ queued => signals ▸ queued)
+    (.of_same (congrArg (List.map ScopeOccurrence.id) scopes) ordinals (.of_eq table))
+    (.of_same (congrArg (List.map ScopeOccurrence.id) scopes) ordinals counters (.of_eq table))
+    fun _ member _ => occurrences ▸ member
 
 /-! ## Narrowing -/
 
@@ -383,6 +385,12 @@ structure Narrows (before after : State) : Prop where
   signals : Fewer (allSignals after) (allSignals before)
   starts : ∀ fact ∈ starts after, fact ∈ starts before
   slots : SlotsWithin before after
+  issued : after.issued = before.issued
+  issuing : after.issuing = before.issuing
+  issueNext : after.issueNext = before.issueNext
+  /-- The units that ran keep their transitions (`IssuerFresh.ran`); a change that leaves the transitions alone proves
+  it by default. -/
+  ran : ∀ unit, before.transitions.contains unit = true → after.transitions.contains unit = true := by exact fun _ => id
 
 /-- A state that narrows a well-formed one is well-formed when it starts no occurrence key twice and its variable sets
 belong to scope occurrences that stand, one per scope occurrence. -/
@@ -392,9 +400,10 @@ theorem WellFormed.reshape {before after : State} (formed : WellFormed program b
   have keys : ∀ occurrence, key after occurrence = key before occurrence := fun _ => key_congr (narrows.instances _)
   have items : itemList after.openItems ⊆ itemList before.openItems := by exact narrows.items.subset
   have grows : ScopeGrows before after :=
-    .of_same (congrArg (List.map ScopeOccurrence.id) narrows.scopes) narrows.scopeOrdinals
+    .of_same (congrArg (List.map ScopeOccurrence.id) narrows.scopes) narrows.scopeOrdinals (.of_eq narrows.issued)
   have issued : OccurrenceGrows before after :=
     .of_same (congrArg (List.map ScopeOccurrence.id) narrows.scopes) narrows.scopeOrdinals narrows.occurrenceOrdinals
+      (.of_eq narrows.issued)
   have settled := formed.settled.transport narrows.slots issued grows
     (fun _ member _ => .inl (narrows.occurrences ▸ member))
     (fun _ queued => queued.shrink narrows.signals.subset narrows.tokens.subset)
@@ -417,14 +426,19 @@ theorem WellFormed.reshape {before after : State} (formed : WellFormed program b
     exact Within.congr narrows.scopes (reach scope (narrows.scopes ▸ member))
   have raises : RaisesSound program after := formed.raises.transport (fun _ _ queued => narrows.signals.subset queued)
     grows issued fun _ member _ => narrows.occurrences ▸ member
-  exact {
-  issued := ⟨fun occurrence member => issued _ (formed.issued.occurrences occurrence (narrows.occurrences ▸ member)),
-    fun item member present => Nat.lt_of_lt_of_le
-      (formed.issued.items item (items member) (narrows.occurrences ▸ present)) (narrows.items.ordinals _),
-    fun scope member => grows.issued (formed.issued.scopes scope (narrows.scopes ▸ member))⟩
-  distinct := ⟨by simpa [occurrenceIds, narrows.occurrences] using formed.distinct.occurrences,
+  have issuer : IssuerFresh after := formed.issuer.grow narrows.issued narrows.issuing narrows.issueNext narrows.ran
+  have distinct : Distinct after := ⟨by simpa [occurrenceIds, narrows.occurrences] using formed.distinct.occurrences,
     narrows.items.keyed formed.distinct.items, by simpa [scopeIds, narrows.scopes] using formed.distinct.scopes,
     by rw [narrows.occurrences, funext keys]; exact formed.distinct.keys⟩
+  exact {
+  issued := ⟨fun occurrence member => issued _ (formed.issued.occurrences occurrence (narrows.occurrences ▸ member)),
+    fun item member =>
+      let ⟨owner, below, tabled⟩ := formed.issued.items item (items member)
+      ⟨owner, fun present n committed => Nat.lt_of_lt_of_le (below (narrows.occurrences ▸ present) n committed)
+        (narrows.items.ordinals _), fun unit index fresh => narrows.issued ▸ tabled unit index fresh⟩,
+    fun scope member => grows.issued (formed.issued.scopes scope (narrows.scopes ▸ member))⟩
+  issuer := issuer
+  distinct := distinct
   startedOnce := once
   activations := ⟨by simpa [narrows.activations] using formed.activations.keys,
     by simpa [narrows.activations] using formed.activations.positive⟩
@@ -489,7 +503,7 @@ theorem WellFormed.withStatus {s : State} (formed : WellFormed program s) {statu
       scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := instances,
       recorded := fun _ => recorded, items := .refl _, tokens := .refl _, signals := .refl _, starts := fun _ => id,
-      slots := .same rfl } rfl
+      slots := .same rfl, issued := rfl, issuing := rfl, issueNext := rfl } rfl
     formed.startedOnce
 
 /-- What `WellFormed` reads besides the variable sets: `setVariable` and `removeVariable` keep all of it. -/
@@ -512,6 +526,9 @@ structure SameButVariables (before after : State) : Prop where
   instances : ∀ scope, after.instanceOf scope = before.instanceOf scope
   instanceId : after.instanceId = before.instanceId
   slots : after.slots = before.slots
+  issued : after.issued = before.issued
+  issuing : after.issuing = before.issuing
+  issueNext : after.issueNext = before.issueNext
 
 /-- A state that differs from a well-formed one only in its variable sets is well-formed when every set belongs to a
 present scope occurrence and the sets stay keyed. -/
@@ -525,7 +542,8 @@ theorem WellFormed.ofVariables {before after : State} (formed : WellFormed progr
       items := by rw [same.items, same.ordinals]; exact .refl _, tokens := by rw [same.tokens]; exact .refl _,
       signals := by rw [same.signals]; exact .refl _,
       starts := by simp [starts, same.journal, same.transitions, same.draft],
-      slots := .same same.slots }
+      slots := .same same.slots, issued := same.issued, issuing := same.issuing, issueNext := same.issueNext,
+      ran := fun _ held => same.transitions ▸ held }
     (by simpa [StartedOnce, starts, same.journal, same.transitions, same.draft] using formed.startedOnce) located keyed
 
 /-! ## Where a queued trigger comes from
@@ -555,9 +573,10 @@ structure Steady (before after : State) : Prop where
   activations : after.activations = before.activations
   runs : ∀ run ∈ after.slots.compensation.runs, run ∈ before.slots.compensation.runs
   signals : ∃ more, allSignals after = allSignals before ++ more ∧ ∀ signal ∈ more, Untriggered signal
+  table : TableGrows before after
 
 theorem Steady.refl (state : State) : Steady state state :=
-  ⟨rfl, rfl, .refl _, rfl, fun _ => id, fun _ => rfl, rfl, fun _ => id, [], by simp, by simp⟩
+  ⟨rfl, rfl, .refl _, rfl, fun _ => id, fun _ => rfl, rfl, fun _ => id, ⟨[], by simp, by simp⟩, .refl _⟩
 
 theorem Steady.trans {first second third : State} (one : Steady first second) (two : Steady second third) :
     Steady first third := by
@@ -566,15 +585,15 @@ theorem Steady.trans {first second third : State} (one : Steady first second) (t
   refine ⟨two.occurrences.trans one.occurrences, two.scopes.trans one.scopes, one.issued.trans two.issued,
     two.ordinals.trans one.ordinals,
     fun request queued => one.queued request (two.queued request queued), fun scope => (two.instances scope).trans
-      (one.instances scope), two.activations.trans one.activations, fun run inside => one.runs run (two.runs run inside), more ++ further,
-    by rw [appendedTwo, appended, List.append_assoc], fun signal inside => ?_⟩
+      (one.instances scope), two.activations.trans one.activations, fun run inside => one.runs run (two.runs run inside),
+    ⟨more ++ further, by rw [appendedTwo, appended, List.append_assoc], fun signal inside => ?_⟩, one.table.trans two.table⟩
   rcases List.mem_append.mp inside with early | late
   · exact quiet signal early
   · exact quietTwo signal late
 
 /-- A `Steady` step keeps every scope-key history: it keeps the scope occurrences and their counters. -/
 theorem Steady.grows {before after : State} (steady : Steady before after) : ScopeGrows before after :=
-  .of_same (congrArg (List.map (·.id)) steady.scopes) steady.ordinals
+  .of_same (congrArg (List.map (·.id)) steady.scopes) steady.ordinals steady.table
 
 /-- What `Step.begin` establishes of the request it begins from `before`, for the throw its occurrence of the element
 role makes (`Step.roleOf`, `Laws.Step.HookContract.arriveThrow`): the request's scope occurrence stands and the

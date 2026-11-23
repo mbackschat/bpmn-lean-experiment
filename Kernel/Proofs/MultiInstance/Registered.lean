@@ -5,6 +5,7 @@ public import Kernel.Proofs.Step
 public import Kernel.Proofs.MultiInstance.Formed
 public import Kernel.Proofs.MultiInstance.Begins
 public import Kernel.Proofs.MultiInstance.Instances
+public import Kernel.Proofs.MultiInstance.Since
 
 /-! # Proofs: the Multi-Instance lane under the registered hooks
 
@@ -15,9 +16,9 @@ does (`multiInstanceKeeps_framed`). Beside it they keep the numbering under a pr
 (`Composed`), which supplies the numbering (`registered_numberingKept`); the lane's statements that read the slot
 invariant whole follow from it and from the registered hooks keeping the reservations of looping elements unmade
 (`registered_unbegunKept`), `RunsFramed.formed` composing them; the same relation gives `BeginOrder`
-(`Kernel.Proofs.MultiInstance.Begins`). `RunsGenerated` follows from what an input keeps of its start's bodies (`Since`),
-carried from the input's reset start. This is the lane's one module that
-imports the registry's Laws module, since it composes the registered hooks, and so stays in every feature's rebuild cone
+(`Kernel.Proofs.MultiInstance.Begins`). `RunsGenerated` follows from what an input keeps of its start's bodies
+(`Kernel.Proofs.MultiInstance.Since`), carried from the input's reset start. This is the lane's one module that imports
+the registry's Laws module, since it composes the registered hooks, and so stays in every feature's rebuild cone
 (guard 15). Nothing executable imports this module.
 -/
 
@@ -188,12 +189,12 @@ theorem framed_contract : Laws.Step.HookContract Registry.hooks Framed :=
 
 /-- `Step`'s phases keep `Framed`. -/
 theorem framed_phases : Laws.Step.Phases Framed :=
-  phases_alongside Proofs.Step.phases runsFramed_stepAlongside
+  phases_alongside Proofs.Step.phases runsFramed_stepAlongside fun _ _ _ kept => kept.carry (.equal rfl rfl rfl rfl)
 
 /-- Clearing an input's journal, intents, draft and writes keeps `Framed`. -/
-theorem framed_reset {program : Program} {s : State} (holds : Framed program s) :
+theorem framed_reset {program : Program} {s : State} (holds : Framed program s) (committed : Laws.State.Committed s) :
     Framed program { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } :=
-  ⟨Laws.State.reset_wellFormed holds.1, holds.2.carry (.equal rfl rfl rfl rfl)⟩
+  ⟨Laws.State.reset_wellFormed holds.1 committed, holds.2.carry (.equal rfl rfl rfl rfl)⟩
 
 /-- A start's fresh instance runs no body. -/
 theorem framed_initial (program : Program) (instanceId : String) (variables : List (String × Value))
@@ -208,20 +209,22 @@ theorem framed_initial (program : Program) (instanceId : String) (variables : Li
 
 /-- A committed input on a running instance keeps `Framed` under the registered hooks. -/
 theorem framed_stepKeeps {program : Program} {input : Input}
-    {before after : State} (holds : Framed program before)
-    (ran : Step.step Registry.hooks program (some before) input = .ok after) : Framed program after :=
-  Laws.Step.running_keeps framed_contract framed_phases Proofs.State.stateFacts
-    (Laws.Step.complete_keeps framed_contract framed_phases.toBodyPhases
-      (runsFramed_pipelinePhases Proofs.Step.pipelinePhases) Proofs.State.stateFacts)
-    (framed_reset holds) ran
+    {before after : State} (holds : Framed program before) (committed : Laws.State.Committed before)
+    (ran : Step.step Registry.hooks program (some before) input = .ok after) :
+    Framed program after ∧ Laws.State.Committed after :=
+  Proofs.State.running_keeps framed_contract framed_phases (Laws.Step.complete_keeps framed_contract
+      framed_phases.toBodyPhases (runsFramed_pipelinePhases Proofs.Step.pipelinePhases) Proofs.State.stateFacts)
+    Proofs.Step.registered_framing Proofs.Step.registered_keysAux (fun _ _ holds => holds.1) committed
+    (framed_reset holds committed) ran
 
 /-- A committed start makes a `Framed` state under the registered hooks. -/
 theorem framed_start {program : Program} {input : Input}
-    {after : State} (ran : Step.step Registry.hooks program none input = .ok after) : Framed program after :=
-  Laws.Step.step_keeps framed_contract framed_phases Proofs.State.stateFacts
-    (Laws.Step.complete_keeps framed_contract framed_phases.toBodyPhases
-      (runsFramed_pipelinePhases Proofs.Step.pipelinePhases) Proofs.State.stateFacts)
-    (fun _ _ => framed_reset) (framed_initial program) (fun _ given => by simp at given) ran
+    {after : State} (ran : Step.step Registry.hooks program none input = .ok after) :
+    Framed program after ∧ Laws.State.Committed after :=
+  Proofs.State.step_keeps framed_contract framed_phases (Laws.Step.complete_keeps framed_contract
+      framed_phases.toBodyPhases (runsFramed_pipelinePhases Proofs.Step.pipelinePhases) Proofs.State.stateFacts)
+    Proofs.Step.registered_framing Proofs.Step.registered_keysAux (fun _ _ holds => holds.1) (fun _ _ => framed_reset)
+    (framed_initial program) (fun _ given => by simp at given) ran
 
 /-! ## The reservations of looping elements and the order instances begin in -/
 
@@ -247,7 +250,10 @@ theorem beginsKept_phases (T : TreeMap UnitKey Transition compare) :
 /-- The registered hooks keep the reservations of looping elements unmade. -/
 theorem registered_unbegunKept : UnbegunKept Registry.hooks :=
   unbegunKept_of beginsKept_contract beginsKept_phases (beginsKept_pipelinePhases Proofs.Step.pipelinePhases)
-    Proofs.Step.phases.toClosurePhases Proofs.State.stateFacts Proofs.Step.initial_wellFormed
+    (Proofs.Step.registered_contract Proofs.Step.registeredOps_wellFormed Proofs.State.stateFacts)
+    Proofs.Step.phases.toClosurePhases Proofs.Step.pipelinePhases Proofs.Step.registered_framing Proofs.State.stateFacts
+    Proofs.Step.initial_wellFormed fun instanceId variables businessKey =>
+      (Proofs.State.initial_between instanceId variables businessKey).1
 
 /-! ## The numbering under the registered hooks
 
@@ -260,8 +266,12 @@ reads the step's own program, which places a body's begun occurrence by its elem
 here rather than through `Proofs.Frame.phases_alongside`, whose begin may read another. -/
 
 /-- The slot invariant but its numbering, and the numbering under a program whose identifiers are unique. -/
-def FramedNumbered (program : Program) (s : State) : Prop :=
+def Numbering (program : Program) (s : State) : Prop :=
   RunsFramed program s ∧ (IdsUnique program → Numbered program s)
+
+/-- `Numbering` and the continuations (`Continued`), which the commit's numbering reads. -/
+def FramedNumbered (program : Program) (s : State) : Prop :=
+  Numbering program s ∧ Continued s
 
 /-- `WellFormed`, the slot invariant but its numbering, and the numbering under a program whose identifiers are
 unique. -/
@@ -301,13 +311,13 @@ theorem Numbered.signalPending {program : Program} {s : State} {signal : Signal}
 /-- A reservation a queued `Signal.occur` or compensation resume names, a boundary or one pending in a state that kept
 the numbering, is of no looping element. -/
 theorem source_unlooped {program : Program} {element : ElementId} (apart : IdsUnique program)
-    (source : Laws.IL.BoundaryOf program element ∨ Laws.Step.PendingIn (FramedNumbered program) element) :
+    (source : Laws.IL.BoundaryOf program element ∨ Laws.Step.PendingIn (Numbering program) element) :
     ∀ loop, ¬ LoopOf program element loop :=
   source.elim (boundaryOf_unlooped apart) (PendingIn.unlooped fun _ kept => (kept.2 apart).2.occurs)
 
 /-- The state operations the hooks apply keep the numbering beside the slot invariant. -/
-theorem framedNumbered_frameAlongside (program : Program) :
-    StoresAlongside program (FramedNumbered program) where
+theorem numbering_frameAlongside (program : Program) :
+    StoresAlongside program (Numbering program) where
   frame s t moved kept := ⟨(runsFramed_frameAlongside program).frame s t moved kept.1, fun apart =>
     (kept.2 apart).unmoved moved.scopes moved.occurrences moved.multiInstances moved.begins moved.deferred
       moved.queuedSignals moved.queuedTokens fun element pending => .inl (moved.pending element pending)⟩
@@ -368,7 +378,7 @@ theorem framedNumbered_frameAlongside (program : Program) :
 
 /-- Subscriptions' reservations and queued occurrences keep the numbering beside the slot invariant: each names a
 reservable element, a boundary or one pending in a state that kept it, none looping. -/
-theorem framedNumbered_occursAlongside (program : Program) : OccursAlongside program (FramedNumbered program) where
+theorem numbering_occursAlongside (program : Program) : OccursAlongside program (Numbering program) where
   reserve s element scope formed stands reservable anchored kept :=
     ⟨(runsFramed_occursAlongside program).reserve s element scope formed stands reservable (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1,
       fun apart =>
@@ -402,9 +412,9 @@ theorem framedNumbered_occursAlongside (program : Program) : OccursAlongside pro
         (formed.owned.occurrenceScopes call member)⟩
 
 /-- Dropping a record that owns no scope occurrence keeps the numbering beside the slot invariant. -/
-theorem framedNumbered_withoutRecord {program : Program} (t : State) (id : OccurrenceId)
-    (unowned : ∀ entry ∈ t.scopes, entry.occurrence ≠ some id) (kept : FramedNumbered program t) :
-    FramedNumbered program (Laws.State.withoutRecord t id) :=
+theorem numbering_withoutRecord {program : Program} (t : State) (id : OccurrenceId)
+    (unowned : ∀ entry ∈ t.scopes, entry.occurrence ≠ some id) (kept : Numbering program t) :
+    Numbering program (Laws.State.withoutRecord t id) :=
   ⟨withoutRecord_carries unowned kept.1, fun apart => (kept.2 apart).withoutRecord id⟩
 
 /-- A queued begin that begins no instance names no reservation of a body's element in one of its instances' scope
@@ -426,7 +436,7 @@ theorem numbered_begin {program : Program} {s : State} {request : BeginRequest} 
     {sourceType : String} (apart : IdsUnique program) (formed : WellFormed program s)
     (stands : Laws.Step.ScopeStands s request.scope) (admitted : Laws.Step.Admitted s request)
     (assigned : role = Step.roleOf program request)
-    (origin : Laws.Step.BeginOrigin Composed program s request) (kept : FramedNumbered program s) :
+    (origin : Laws.Step.BeginOrigin Composed program s request) (kept : Numbering program s) :
     Numbered program (s.beginOccurrence request role sourceType).1 := by
   rcases origin with ⟨flows, fresh, _⟩ | ⟨queue, held, dequeued⟩
   · have other : ∀ body, request.continuation ≠ .multiInstance body := fun body same =>
@@ -437,34 +447,74 @@ theorem numbered_begin {program : Program} {s : State} {request : BeginRequest} 
     · obtain ⟨body, on⟩ := instance_
       obtain ⟨entry, inside, named⟩ := stands
       exact Numbered.beginInstance formed kept.1.owns (List.mem_map.mpr ⟨entry, inside, named⟩)
-        (assigned.trans (roleOf_instance on)) on (held.2.2 apart) dequeued
+        (assigned.trans (roleOf_instance on)) on (held.2.1.2 apart) dequeued
     · have other : ∀ body, request.continuation ≠ .multiInstance body := fun body same => instance_ ⟨body, same⟩
       exact (kept.2 apart).beginOther formed stands.mem admitted (fun looping => assigned.trans (roleOf_other other looping))
-        other (reservedApart_of_dequeued (held.2.2 apart) dequeued)
+        other (reservedApart_of_dequeued (held.2.1.2 apart) dequeued)
 
 /-- A change that moves nothing the slot invariant and the numbering read keeps them. -/
-theorem framedNumbered_unmoved {program : Program} {s t : State} (kept : FramedNumbered program s)
+theorem numbering_unmoved {program : Program} {s t : State} (kept : Numbering program s)
     (scopes : t.scopes = s.scopes) (occurrences : t.occurrences = s.occurrences) (slots : t.slots = s.slots)
     (signals : t.batchSignals = s.batchSignals) (tokens : t.batchTokens = s.batchTokens) (queuedSignals : t.queuedSignals = s.queuedSignals)
-    (queuedTokens : t.queuedTokens = s.queuedTokens) : FramedNumbered program t :=
+    (queuedTokens : t.queuedTokens = s.queuedTokens) : Numbering program t :=
   ⟨kept.1.carry (.equal scopes occurrences (congrArg (·.multiInstances) slots)
     (congrArg (·.compensation.runs) slots)), fun apart => (kept.2 apart).unmoved scopes occurrences
     (congrArg (·.multiInstances) slots) (congrArg _ signals) (congrArg _ tokens) queuedSignals queuedTokens
     fun _ pending => .inl (pending_kept (.of_eq signals tokens queuedSignals queuedTokens)
       (congrArg (·.compensation.runs) slots) pending)⟩
 
+/-- The state operations the hooks apply keep the numbering and the continuations. -/
+theorem framedNumbered_frameAlongside (program : Program) : StoresAlongside program (FramedNumbered program) :=
+  Proofs.Frame.storesAlongside_both (numbering_frameAlongside program) (continued_stores program)
+
+/-- Subscriptions' reservations and queued occurrences keep the numbering and the continuations. -/
+theorem framedNumbered_occursAlongside (program : Program) : OccursAlongside program (FramedNumbered program) :=
+  Proofs.Frame.occursAlongside_both (numbering_occursAlongside program) (continued_occursAlongside program)
+
+/-- Dropping a record that owns no scope occurrence keeps the numbering and the continuations. -/
+theorem framedNumbered_withoutRecord {program : Program} (t : State) (id : OccurrenceId)
+    (unowned : ∀ entry ∈ t.scopes, entry.occurrence ≠ some id) (kept : FramedNumbered program t) :
+    FramedNumbered program (Laws.State.withoutRecord t id) :=
+  ⟨numbering_withoutRecord t id unowned kept.1, kept.2.withoutRecord id⟩
+
+/-- A change that moves nothing the numbering and the continuations read keeps them. -/
+theorem framedNumbered_unmoved {program : Program} {s t : State} (kept : FramedNumbered program s)
+    (scopes : t.scopes = s.scopes) (occurrences : t.occurrences = s.occurrences) (slots : t.slots = s.slots)
+    (signals : t.batchSignals = s.batchSignals) (tokens : t.batchTokens = s.batchTokens) (queuedSignals : t.queuedSignals = s.queuedSignals)
+    (queuedTokens : t.queuedTokens = s.queuedTokens)
+    (issued : Laws.State.OccurrenceGrows s t := by exact fun _ held => held) : FramedNumbered program t :=
+  ⟨numbering_unmoved kept.1 scopes occurrences slots signals tokens queuedSignals queuedTokens,
+    kept.2.same issued occurrences (by simp only [Laws.State.allSignals, signals, queuedSignals])
+      (by simp only [Laws.State.allQueuedTokens, tokens, queuedTokens])⟩
+
+/-- `Step`'s begin keeps the numbering and the continuations beside the slot invariant. -/
+theorem framedNumbered_begin {program : Program} {s : State} {request : BeginRequest} {role : ActivationRole}
+    {sourceType : String} (holds : Composed program s) (stands : Laws.Step.ScopeStands s request.scope)
+    (admitted : Laws.Step.Admitted s request) (assigned : role = Step.roleOf program request)
+    (origin : Laws.Step.BeginOrigin Composed program s request) :
+    FramedNumbered program (s.beginOccurrence request role sourceType).1 :=
+  ⟨⟨(runsFramed_stepAlongside _).begin s request role sourceType holds.1 stands admitted assigned
+      (origin.mono fun _ held => ⟨held.1, held.2.1.1⟩) holds.2.1.1,
+      fun apart => numbered_begin apart holds.1 stands admitted assigned origin holds.2.1⟩,
+    (continued_stepAlongside _).begin s request role sourceType holds.1 stands admitted assigned
+      (origin.mono fun _ held => ⟨held.1, held.2.2⟩) holds.2.2⟩
+
 /-- The phases a micro-step's body runs keep `Composed`: those that read `WellFormed` alone read its first part, and
 the others keep the rest by what each operation keeps. -/
 theorem composed_bodyPhases : Laws.Step.BodyPhases Composed :=
   have phases := Proofs.Step.phases
   { clock := fun _ s atMs holds => ⟨phases.clock _ _ atMs holds.1, framedNumbered_unmoved holds.2 rfl rfl rfl rfl rfl rfl rfl⟩
+    issuer := fun _ _ holds => holds.1.issuer
     dequeue := fun _ s signals holds fewer => ⟨phases.dequeue _ _ signals holds.1 fewer,
-      (runsFramed_stepAlongside _).dequeue s signals holds.1 fewer holds.2.1,
-      fun apart => (holds.2.2 apart).dequeue fewer (.refl _)⟩
+      ⟨(runsFramed_stepAlongside _).dequeue s signals holds.1 fewer holds.2.1.1,
+        fun apart => (holds.2.1.2 apart).dequeue fewer (.refl _)⟩,
+      (continued_stepAlongside _).dequeue s signals holds.1 fewer holds.2.2⟩
     unqueue := fun _ s unit holds => ⟨phases.unqueue _ _ unit holds.1,
-      (runsFramed_stepAlongside _).unqueue s unit holds.1 holds.2.1, fun apart => (holds.2.2 apart).unqueue unit⟩
+      ⟨(runsFramed_stepAlongside _).unqueue s unit holds.1 holds.2.1.1, fun apart => (holds.2.1.2 apart).unqueue unit⟩,
+      (continued_stepAlongside _).unqueue s unit holds.1 holds.2.2⟩
     untoken := fun _ s unit holds => ⟨phases.untoken _ _ unit holds.1,
-      (runsFramed_stepAlongside _).untoken s unit holds.1 holds.2.1, fun apart => (holds.2.2 apart).untoken unit⟩
+      ⟨(runsFramed_stepAlongside _).untoken s unit holds.1 holds.2.1.1, fun apart => (holds.2.1.2 apart).untoken unit⟩,
+      (continued_stepAlongside _).untoken s unit holds.1 holds.2.2⟩
     queueWrite := fun _ _ scope writes rule holds =>
       ⟨phases.queueWrite _ _ scope writes rule holds.1, (framedNumbered_frameAlongside _).signal holds.2 _⟩
     queueRemove := fun _ _ scope names holds =>
@@ -494,9 +544,7 @@ theorem composed_bodyPhases : Laws.Step.BodyPhases Composed :=
     begin := fun _ s request role sourceType holds stands admitted roled bodied assigned origin =>
       have begun := phases.begin _ _ request role sourceType holds.1 stands admitted roled bodied assigned
         (origin.mono fun _ held => held.1)
-      ⟨⟨begun.1, (runsFramed_stepAlongside _).begin s request role sourceType holds.1 stands admitted assigned
-        (origin.mono fun _ held => ⟨held.1, held.2.1⟩) holds.2.1,
-        fun apart => numbered_begin apart holds.1 stands admitted assigned origin holds.2⟩, begun.2⟩
+      ⟨⟨begun.1, framedNumbered_begin holds stands admitted assigned origin⟩, begun.2⟩
     reserve := fun _ s element scope holds stands pending popped =>
       have reserved := phases.reserve _ _ element scope holds.1 stands (pending.imp fun _ => And.imp_left And.left)
         (popped.imp fun _ => Exists.imp fun _ => Exists.imp fun _ queued => queued.imp fun _ held => held.1)
@@ -513,51 +561,76 @@ theorem composed_phases : Laws.Step.Phases Composed :=
     journal := fun _ _ unit transition holds fresh started ended =>
       ⟨phases.journal _ _ unit transition holds.1 fresh started ended, framedNumbered_unmoved holds.2 rfl rfl rfl rfl rfl rfl rfl⟩
     queueBatch := fun _ s unit holds => ⟨phases.queueBatch _ _ unit holds.1,
-      (runsFramed_stepAlongside _).queueBatch s unit holds.1 holds.2.1, fun apart => (holds.2.2 apart).queueBatch unit⟩
-    runOrder := fun _ s log holds after made => ⟨phases.runOrder _ _ log holds.1 after made,
-      (runsFramed_stepAlongside _).runOrder s log holds.1 holds.2.1 after made,
-      fun apart => (holds.2.2 apart).commit made⟩ }
+      ⟨(runsFramed_stepAlongside _).queueBatch s unit holds.1 holds.2.1.1, fun apart => (holds.2.1.2 apart).queueBatch unit⟩,
+      (continued_stepAlongside _).queueBatch s unit holds.1 holds.2.2⟩
+    enterUnit := fun _ _ unit holds unrun unseeded untabled => ⟨phases.enterUnit _ _ unit holds.1 unrun unseeded untabled,
+      framedNumbered_unmoved holds.2 rfl rfl rfl rfl rfl rfl rfl⟩
+    leaveUnit := fun _ _ holds ran seed => ⟨phases.leaveUnit _ _ holds.1 ran seed,
+      framedNumbered_unmoved holds.2 rfl rfl rfl rfl rfl rfl rfl⟩
+    runOrder := fun _ start s log holds counted batches keys after made =>
+      ⟨phases.runOrder _ start s log holds.1 counted batches keys after made,
+        ⟨(runsFramed_stepAlongside _).runOrder start s log holds.1 holds.2.1.1 counted batches keys after made,
+          fun apart => orderJournal_numbered holds.1 counted batches keys (fun run member =>
+            let ⟨o, present, named, _⟩ := (holds.2.1.1.framed run member).owned.body; ⟨o, present, named⟩)
+            holds.2.2.occurrences (holds.2.1.2 apart) made⟩,
+        (continued_stepAlongside _).runOrder start s log holds.1 holds.2.2 counted batches keys after made⟩ }
 
 /-- The completion pipeline's own phases keep `Composed`. -/
 theorem composed_pipelinePhases : Laws.Step.PipelinePhases Composed :=
   have pipeline := runsFramed_pipelinePhases Proofs.Step.pipelinePhases
+  have continued := continued_pipelinePhases Proofs.Step.pipelinePhases
   { startReserved := fun _ s occurrence sourceType holds member unnamed =>
-      have started := pipeline.startReserved _ s occurrence sourceType ⟨holds.1, holds.2.1⟩ member unnamed
-      ⟨started.1, started.2, fun apart => by
+      have started := pipeline.startReserved _ s occurrence sourceType ⟨holds.1, holds.2.1.1⟩ member unnamed
+      ⟨started.1, ⟨started.2, fun apart => by
         rw [Laws.State.closeOwnItems_eq]
-        exact ((holds.2.2 apart).startReserved sourceType member).unmoved rfl rfl rfl rfl rfl rfl rfl
-          fun _ pending => .inl pending⟩
+        exact ((holds.2.1.2 apart).startReserved sourceType member).unmoved rfl rfl rfl rfl rfl rfl rfl
+          fun _ pending => .inl pending⟩,
+        (continued.startReserved _ s occurrence sourceType ⟨holds.1, holds.2.2⟩ member unnamed).2⟩
     removeOccurrence := fun _ _ occurrence holds member free =>
       have removed := Proofs.Step.pipelinePhases.removeOccurrence _ _ occurrence holds.1 member free
       ⟨⟨removed.1, (framedNumbered_frameAlongside _).removeOccurrence framedNumbered_withoutRecord holds.1 holds.2⟩,
         removed.2⟩
     recordEnd := fun _ s key terminal holds =>
-      have recorded := pipeline.recordEnd _ s key terminal ⟨holds.1, holds.2.1⟩
-      ⟨recorded.1, recorded.2, fun apart => by
+      have recorded := pipeline.recordEnd _ s key terminal ⟨holds.1, holds.2.1.1⟩
+      ⟨recorded.1, ⟨recorded.2, fun apart => by
         rw [Laws.State.recordEnd_eq]
-        exact (holds.2.2 apart).unmoved rfl rfl rfl rfl rfl rfl rfl fun _ pending => .inl pending⟩ }
+        exact (holds.2.1.2 apart).unmoved rfl rfl rfl rfl rfl rfl rfl fun _ pending => .inl pending⟩,
+        (continued.recordEnd _ s key terminal ⟨holds.1, holds.2.2⟩).2⟩ }
+
+/-- The registered Multi-Instance hooks issue no fewer keys than their before-state (`grown_alongside`), which
+`Continued` reads through them (`arriveMultiInstance_continued`, `instanceCompleted_continued`). -/
+theorem grown_keeps (s0 : State) :
+    Proofs.Step.MultiInstanceKeeps fun program s => WellFormed program s ∧ Laws.State.OccurrenceGrows s0 s :=
+  Proofs.Step.multiInstanceKeeps_of fun program =>
+    multiInstanceOps_alongside (grown_alongside s0 program) (Proofs.Step.registeredOps_wellFormed.multiInstance program)
 
 /-- The registered Multi-Instance hooks keep `Composed`: `Framed` by `multiInstanceKeeps_framed`, and the numbering by
 what `Kernel.Proofs.MultiInstance.Instances` proves each hook keeps, reading the slot invariant's ownership after each
 step it takes off `RunsFramed`. -/
 theorem multiInstanceKeeps_composed : Proofs.Step.MultiInstanceKeeps Composed where
   arrive ctx header envelope loop occurrence state after holds member begun body named looped newest unrun ran :=
-    have framed := multiInstanceKeeps_framed.arrive ctx header envelope loop occurrence state after ⟨holds.1, holds.2.1⟩
+    have framed := multiInstanceKeeps_framed.arrive ctx header envelope loop occurrence state after ⟨holds.1, holds.2.1.1⟩
       member begun body named looped newest unrun ran
-    ⟨framed.1, framed.2, fun apart => numbered_arrive (Proofs.Step.registeredOps_wellFormed.multiInstance ctx.program)
-      holds.1 holds.2.1.owns (holds.2.2 apart) member begun named looped (fun locals unarmed =>
-        (enterBody_placed holds.1 holds.2.1 member body header.id named.symm locals unarmed .null 0).1.owns) unrun ran⟩
+    ⟨framed.1, ⟨framed.2, fun apart => numbered_arrive (Proofs.Step.registeredOps_wellFormed.multiInstance ctx.program)
+      holds.1 holds.2.1.1.owns (holds.2.1.2 apart) member begun named looped (fun locals unarmed =>
+        (enterBody_placed holds.1 holds.2.1.1 member body header.id named.symm locals unarmed .null 0).1.owns) unrun ran⟩,
+      arriveMultiInstance_continued Proofs.Step.registeredOps_wellFormed.multiInstance holds.1 holds.2.2
+        ((grown_keeps state).arrive ctx header envelope loop occurrence state after ⟨holds.1, fun _ issued => issued⟩
+          member begun body named looped newest unrun ran).2 member begun named ran⟩
   completeBody ctx header envelope loop occurrence state after holds member ran :=
     have framed := multiInstanceKeeps_framed.completeBody ctx header envelope loop occurrence state after
-      ⟨holds.1, holds.2.1⟩ member ran
-    ⟨framed.1, framed.2, fun apart => numbered_completeBody (holds.2.2 apart) ran⟩
+      ⟨holds.1, holds.2.1.1⟩ member ran
+    ⟨framed.1, ⟨framed.2, fun apart => numbered_completeBody (holds.2.1.2 apart) ran⟩, completeBody_continued holds.2.2 ran⟩
   instanceCompleted ctx body occurrence writes state after holds stands ran :=
     have framed := multiInstanceKeeps_framed.instanceCompleted ctx body occurrence writes state after
-      ⟨holds.1, holds.2.1⟩ stands ran
-    ⟨framed.1, framed.2, fun apart => numbered_instanceCompleted
-      (Proofs.Step.registeredOps_wellFormed.multiInstance ctx.program) holds.1 holds.2.1.owns (holds.2.2 apart) stands
-      (fun _ _ _ _ member slot fits => (leftWith_framed holds.1 holds.2.1 member slot fits).owns)
-      (fun run member loop looped parallel => ((holds.2.1.framed run member).shaped loop looped).2.1 parallel) ran⟩
+      ⟨holds.1, holds.2.1.1⟩ stands ran
+    ⟨framed.1, ⟨framed.2, fun apart => numbered_instanceCompleted
+      (Proofs.Step.registeredOps_wellFormed.multiInstance ctx.program) holds.1 holds.2.1.1.owns (holds.2.1.2 apart) stands
+      (fun _ _ _ _ member slot fits => (leftWith_framed holds.1 holds.2.1.1 member slot fits).owns)
+      (fun run member loop looped parallel => ((holds.2.1.1.framed run member).shaped loop looped).2.1 parallel) ran⟩,
+      instanceCompleted_continued Proofs.Step.registeredOps_wellFormed.multiInstance holds.1 holds.2.2
+        ((grown_keeps state).instanceCompleted ctx body occurrence writes state after ⟨holds.1, fun _ issued => issued⟩
+          stands ran).2 stands ran⟩
 
 /-- The registered hooks keep `Composed`. -/
 theorem composed_contract : Laws.Step.HookContract Registry.hooks Composed :=
@@ -570,103 +643,101 @@ theorem composed_contract : Laws.Step.HookContract Registry.hooks Composed :=
     Proofs.State.stateFacts
 
 /-- Clearing an input's journal, intents, draft and writes keeps `Composed`. -/
-theorem composed_reset {program : Program} {s : State} (holds : Composed program s) :
+theorem composed_reset {program : Program} {s : State} (holds : Composed program s) (committed : Laws.State.Committed s) :
     Composed program { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } :=
-  ⟨Laws.State.reset_wellFormed holds.1, holds.2.1.carry (.equal rfl rfl rfl rfl), fun apart =>
-    (holds.2.2 apart).unmoved rfl rfl rfl rfl rfl rfl rfl fun _ pending => .inl pending⟩
-
-/-- A fresh instance numbers nothing: it holds no body, occurrence, queued signal or token, nor compensation run. -/
-theorem numbered_initial (program : Program) (instanceId : String) (variables : List (String × Value))
-    (businessKey : Option String) : Numbered program (State.initial instanceId variables businessKey) := by
-  have bodies := Laws.State.initial_bodies instanceId variables businessKey
-  unfold Numbered
-  refine ⟨fun _ member => by simp [bodies] at member, ?_⟩
-  constructor <;> simp [Laws.State.Queued, Laws.State.allSignals, Laws.State.allQueuedTokens, Laws.State.initial_eq,
-    OccurPending]
+  ⟨Laws.State.reset_wellFormed holds.1 committed, ⟨holds.2.1.1.carry (.equal rfl rfl rfl rfl), fun apart =>
+    (holds.2.1.2 apart).unmoved rfl rfl rfl rfl rfl rfl rfl fun _ pending => .inl pending⟩,
+    holds.2.2.same (fun _ issued => issued) rfl rfl rfl⟩
 
 /-- A start's fresh instance keeps `Composed`. -/
 theorem composed_initial (program : Program) (instanceId : String) (variables : List (String × Value))
     (businessKey : Option String) :
     Composed program ((State.initial instanceId variables businessKey).signal (.armScope State.root)) :=
   have framed := framed_initial program instanceId variables businessKey
-  ⟨framed.1, framed.2, fun _ => (numbered_initial program instanceId variables businessKey).signalPending rfl
-    fun _ inside => by cases inside⟩
+  ⟨framed.1, ⟨framed.2, fun _ => (numbered_initial program instanceId variables businessKey).signalPending rfl
+    fun _ inside => by cases inside⟩, (continued_initial instanceId variables businessKey).signal _⟩
 
 /-- A committed input on a running instance keeps `Composed` under the registered hooks. -/
 theorem composed_stepKeeps {program : Program} {input : Input}
-    {before after : State} (holds : Composed program before)
-    (ran : Step.step Registry.hooks program (some before) input = .ok after) : Composed program after :=
-  Laws.Step.running_keeps composed_contract composed_phases Proofs.State.stateFacts
-    (Laws.Step.complete_keeps composed_contract composed_phases.toBodyPhases composed_pipelinePhases
-      Proofs.State.stateFacts)
-    (composed_reset holds) ran
+    {before after : State} (holds : Composed program before) (committed : Laws.State.Committed before)
+    (ran : Step.step Registry.hooks program (some before) input = .ok after) :
+    Composed program after ∧ Laws.State.Committed after :=
+  Proofs.State.running_keeps composed_contract composed_phases (Laws.Step.complete_keeps composed_contract
+      composed_phases.toBodyPhases composed_pipelinePhases Proofs.State.stateFacts)
+    Proofs.Step.registered_framing Proofs.Step.registered_keysAux (fun _ _ holds => holds.1) committed
+    (composed_reset holds committed) ran
 
 /-- A committed start makes a `Composed` state under the registered hooks. -/
 theorem composed_start {program : Program} {input : Input}
-    {after : State} (ran : Step.step Registry.hooks program none input = .ok after) : Composed program after :=
-  Laws.Step.step_keeps composed_contract composed_phases Proofs.State.stateFacts
-    (Laws.Step.complete_keeps composed_contract composed_phases.toBodyPhases composed_pipelinePhases
-      Proofs.State.stateFacts)
+    {after : State} (ran : Step.step Registry.hooks program none input = .ok after) :
+    Composed program after ∧ Laws.State.Committed after :=
+  Proofs.State.step_keeps composed_contract composed_phases (Laws.Step.complete_keeps composed_contract
+      composed_phases.toBodyPhases composed_pipelinePhases Proofs.State.stateFacts)
+    Proofs.Step.registered_framing Proofs.Step.registered_keysAux (fun _ _ holds => holds.1)
     (fun _ _ => composed_reset) (composed_initial program) (fun _ given => by simp at given) ran
 
 /-- The registered hooks keep the numbering: the numbering lane's supply. -/
 theorem registered_numberingKept : NumberingKept Registry.hooks :=
-  ⟨fun _ _ _ _ apart formed runs ran =>
-    (composed_stepKeeps ⟨formed, runs.framed, fun _ => runs.numbered⟩ ran).2.2 apart,
-    fun _ _ _ apart ran => (composed_start ran).2.2 apart⟩
+  ⟨fun _ _ _ _ apart formed committed runs ran =>
+    (composed_stepKeeps ⟨formed, ⟨runs.framed, fun _ => runs.numbered⟩, runs.continued⟩ committed ran).1.2.1.2 apart,
+    fun _ _ _ apart ran => (composed_start ran).1.2.1.2 apart⟩
 
 /-! ## The lane's statements -/
 
 /-- The registered hooks keep every running body's instances `Apart`. -/
 theorem registered_instancesApart :
-    InstancesApart Registry.hooks := fun _ _ _ run ⟨formed, runs, _, ran⟩ member =>
-  have after := framed_stepKeeps ⟨formed, runs.framed⟩ ran
+    InstancesApart Registry.hooks := fun _ _ _ run ⟨formed, committed, runs, _, ran⟩ member =>
+  have after := (framed_stepKeeps ⟨formed, runs.framed⟩ committed ran).1
   owned_apart after.1 (after.2.framed run member).owned
 
 /-- The registered hooks keep the lane's slot invariant through a committed input. -/
 theorem registered_runsFormed {program : Program} {input : Input}
     {before after : State} (apart : IdsUnique program)
-    (formed : WellFormed program before) (runs : RunsFormed program before)
+    (formed : WellFormed program before) (committed : Laws.State.Committed before) (runs : RunsFormed program before)
     (ran : Step.step Registry.hooks program (some before) input = .ok after) :
-    WellFormed program after ∧ RunsFormed program after :=
-  have framed := framed_stepKeeps ⟨formed, runs.framed⟩ ran
-  ⟨framed.1, framed.2.formed framed.1 (registered_numberingKept.step _ _ _ _ apart formed runs ran)
-    (registered_unbegunKept.step _ _ _ _ apart formed runs.unbegun runs.queued.occurs ran)⟩
+    (WellFormed program after ∧ RunsFormed program after) ∧ Laws.State.Committed after :=
+  have framed := framed_stepKeeps ⟨formed, runs.framed⟩ committed ran
+  ⟨⟨framed.1.1, framed.1.2.formed framed.1.1 (registered_numberingKept.step _ _ _ _ apart formed committed runs ran)
+    (registered_unbegunKept.step _ _ _ _ apart formed committed runs.unbegun runs.queued.occurs ran)
+    (composed_stepKeeps ⟨formed, ⟨runs.framed, fun _ => runs.numbered⟩, runs.continued⟩ committed ran).1.2.2⟩, framed.2⟩
 
 /-- A committed start keeps the lane's slot invariant under the registered hooks. -/
 theorem registered_runsFormedAtStart : RunsFormedAtStart Registry.hooks :=
     fun _ _ _ apart ran =>
-  have framed := framed_start ran
+  have framed := (framed_start ran).1
   framed.2.formed framed.1 (registered_numberingKept.start _ _ _ apart ran)
-    (registered_unbegunKept.start _ _ _ apart ran)
+    (registered_unbegunKept.start _ _ _ apart ran) (composed_start ran).1.2.2
 
 /-- Every instance a committed population run holds keeps the lane's slot invariant under the registered hooks. -/
 theorem registered_runsFormedInPopulation :
     RunsFormedInPopulation Registry.hooks := fun _ _ _ ran member inside =>
   (Laws.Population.runStimuli_held
-    (good := fun program s => Framed program s ∧ (IdsUnique program → RunsFormed program s))
-    ⟨fun _ _ _ _ holds stepped => ⟨framed_stepKeeps holds.1 stepped, fun apart =>
-      (registered_runsFormed apart holds.1.1 (holds.2 apart) stepped).2⟩,
-      fun _ _ _ ran => ⟨framed_start ran, fun apart => registered_runsFormedAtStart _ _ _ apart ran⟩⟩
-    ran member inside).2
+    (good := fun program s => (Framed program s ∧ (IdsUnique program → RunsFormed program s)) ∧ Laws.State.Committed s)
+    ⟨fun _ _ _ _ holds stepped => ⟨⟨(framed_stepKeeps holds.1.1 holds.2 stepped).1, fun apart =>
+      (registered_runsFormed apart holds.1.1.1 holds.2 (holds.1.2 apart) stepped).1.2⟩,
+        (framed_stepKeeps holds.1.1 holds.2 stepped).2⟩,
+      fun _ _ _ ran => ⟨⟨(framed_start ran).1, fun apart => registered_runsFormedAtStart _ _ _ apart ran⟩,
+        (framed_start ran).2⟩⟩
+    ran member inside).1.2
 
 /-- Every running body after a committed input is `Shaped` by its loop under the registered hooks. -/
 theorem registered_runsShaped : RunsShaped Registry.hooks :=
-  fun _ _ _ run loop apart ⟨formed, runs, _, ran⟩ member looped =>
-    ((registered_runsFormed apart formed runs ran).2.formed run member).shaped loop looped
+  fun _ _ _ run loop apart ⟨formed, committed, runs, _, ran⟩ member looped =>
+    ((registered_runsFormed apart formed committed runs ran).1.2.formed run member).shaped loop looped
 
 /-- Within a committed input's journal the instances of a Multi-Instance element begin in generation order under the
 registered hooks. -/
-theorem registered_beginOrder : BeginOrder Registry.hooks := fun _ _ _ _ _ processInstance apart ⟨formed, runs, _, ran⟩ looped =>
+theorem registered_beginOrder : BeginOrder Registry.hooks :=
+    fun _ _ _ _ _ processInstance apart ⟨formed, committed, runs, _, ran⟩ looped =>
   beginsInOrder_of beginsKept_contract beginsKept_phases (beginsKept_pipelinePhases Proofs.Step.pipelinePhases)
-    Proofs.Step.phases.toClosurePhases Proofs.State.stateFacts processInstance apart formed runs.unbegun
-    runs.queued.occurs ran looped
+    (Proofs.Step.registered_contract Proofs.Step.registeredOps_wellFormed Proofs.State.stateFacts)
+    Proofs.Step.phases.toClosurePhases Proofs.Step.pipelinePhases Proofs.Step.registered_framing Proofs.State.stateFacts
+    processInstance apart formed committed runs.unbegun runs.queued.occurs ran looped
 
 /-- A committed input keeps its well-formed before-state's scope occurrences under the registered hooks. -/
 theorem registered_stepKeepsScopes : Proofs.Cancellation.StepKeepsScopes Registry.hooks :=
-  Proofs.Cancellation.stepKeepsScopes (Proofs.Cancellation.keepsScopes_contract Proofs.Step.registeredOps_wellFormed)
-    (Proofs.Cancellation.keepsScopes_phases Proofs.Step.phases)
-    (Proofs.Cancellation.keepsScopes_pipelinePhases Proofs.Step.pipelinePhases) Proofs.State.stateFacts
+  Proofs.Cancellation.stepKeepsScopes (Proofs.Cancellation.keepsScopesWalk_registered
+    Proofs.Step.registeredOps_wellFormed Proofs.Step.phases Proofs.Step.pipelinePhases)
 
 /-- A body whose occurrence goes takes its instances with it under the registered hooks: no slot record of it stays,
 since each running body's occurrence stands; its instances' scope occurrences go, since a standing one would keep its
@@ -674,9 +745,9 @@ parent, the body's scope occurrence, whose owner is the body's occurrence; and s
 (`Proofs.Cancellation.outside_removed`). -/
 theorem registered_endsWithInstances :
     EndsWithInstances Registry.hooks := by
-  intro program before after run index scope ⟨formed, runs, input, ran⟩ member gone slot
-  have framed := framed_stepKeeps ⟨formed, runs.framed⟩ ran
-  have kept := registered_stepKeepsScopes program input before after formed ran
+  intro program before after run index scope ⟨formed, committed, runs, input, ran⟩ member gone slot
+  have framed := (framed_stepKeeps ⟨formed, runs.framed⟩ committed ran).1
+  have kept := registered_stepKeepsScopes program input before after formed committed ran
   have each := runs.formed run member
   have removed : scope ∉ scopeIds after := fun stands => by
     obtain ⟨entry, inside, named⟩ := List.mem_map.mp stands
@@ -696,9 +767,10 @@ theorem registered_endsWithInstances :
 
 /-! ## A running body's snapshot through an input
 
-The registered hooks keep `Since` of an input's start (`Kernel.Proofs.MultiInstance.Framed`): its `Unstarted` part
-through the Multi-Instance hooks by their feature record, its `Snapshots` part by what each sets. The draft is emptied
-at each input's start, so the walk starts from that reset (`since_stepKeeps`). -/
+The registered hooks keep `Since` of an input's start (`Kernel.Proofs.MultiInstance.Since`): its `Unstarted` part
+through the Multi-Instance hooks by their feature record, its `Snapshots` part by what each sets, beside `RunsFramed`
+(`SinceFramed`), whose running bodies' occurrences ordering the journal reads. The draft is emptied at each input's
+start, so the walk starts from that reset (`since_stepKeeps`). -/
 
 section Since
 
@@ -714,157 +786,68 @@ theorem unstarted_keeps (b : State) :
     Proofs.Cancellation.multiInstanceOps_alongside (unstarted_alongside b program)
       (Proofs.Step.registeredOps_wellFormed.multiInstance program)
 
-/-- Entering instances from a record that keeps `Snapshots` sets one that keeps its snapshot and slot count. -/
-theorem beginInstances_snapshots {ctx : Ctx} {loop : MultiInstance} {items : List Value} {b state : State}
-    {base : MultiInstanceRun}
-    (entering : Laws.MultiInstance.Entering (WellFormed ctx.program) Laws.State.Settled base state base.instances [])
-    (kept : Snapshots b state)
-    (fixed : ∀ earlier ∈ b.slots.multiInstances, earlier.occurrence = base.occurrence → SnapshotFixed earlier base)
-    (generated : (∀ earlier ∈ b.slots.multiInstances, earlier.occurrence ≠ base.occurrence) → 0 < base.instances.length) :
-    Snapshots b (Feature.MultiInstance.beginInstances ctx loop items base state) := by
-  obtain ⟨queued, instances, ran, begun⟩ := Laws.MultiInstance.beginInstances_spec (ctx := ctx) (loop := loop)
-    (items := items) (Proofs.Step.registeredOps_wellFormed.multiInstance ctx.program) entering
-  have opened := opens_fixed begun.opens
-  rw [ran]
-  refine (kept.shrink fun _ inside => begun.slots ▸ inside).setRun (fun earlier member same => ?_) fun apart => ?_
-  · exact snapshotFixed_trans (fixed earlier member (same.trans opened.occurrence)) opened
-  · rw [opened.count]
-    exact generated fun earlier member same => apart earlier member (same.trans opened.occurrence.symm)
-
-/-- `Hooks.arriveMultiInstance` keeps `Snapshots`: it holds the occurrence, completes it, or sets the record of a body
-it enters, every slot waiting, of which there is at least one, keyed by the occurrence whose start the draft journalled
-last, which no body of `b` is keyed by. -/
-theorem arriveMultiInstance_snapshots {ctx : Ctx} {header : Header} {envelope : Envelope} {loop : MultiInstance}
-    {occurrence : Occurrence} {b state after : State} (formed : WellFormed ctx.program state) (unstarted : Unstarted b state)
-    (kept : Snapshots b state) (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
-    (named : header.id = occurrence.element) (newest : state.draft.started.getLast?.map (·.occurrence) = some (key state occurrence))
-    (ran : Feature.MultiInstance.arriveMultiInstance ctx header envelope loop occurrence state = .ok after) :
-    Snapshots b after := by
-  have fresh : ∀ earlier ∈ b.slots.multiInstances, earlier.occurrence ≠ occurrence.id := fun earlier inside same => by
-    obtain ⟨fact, last, named⟩ := Option.map_eq_some_iff.mp newest
-    exact unstarted.unstarted earlier inside occurrence member same.symm
-      (named ▸ List.mem_map_of_mem (List.mem_of_getLast? last))
-  rcases Laws.MultiInstance.arriveMultiInstance_spec ran with ⟨held, rfl⟩ | ⟨writes, rfl⟩ | ⟨locals, unarmed, entered⟩
-  · rw [Laws.Hooks.hold_eq]
-    exact kept.same rfl
-  · rw [Laws.State.signal_eq]
-    exact kept.same rfl
-  · obtain ⟨collection, count, items, ⟨positive, rfl⟩⟩ := entered
-    have enteredKept : Snapshots b (if unarmed then (state.enterScope header.id occurrence.scope locals (some occurrence.id)).1
-        else (state.enterScope header.id occurrence.scope locals (some occurrence.id)).1.signal
-          (.arm occurrence.id header.id occurrence.scope)) := by
-      cases unarmed <;> simp only [Bool.false_eq_true, ↓reduceIte, Laws.State.signal_eq, Laws.State.enterScope_eq] <;>
-        exact kept.same rfl
-    refine beginInstances_snapshots (enterBody_entering (Proofs.Step.registeredOps_wellFormed.multiInstance ctx.program)
-      formed member begun header.id
-      (enterBody_enters (Proofs.Step.registeredOps_wellFormed.multiInstance ctx.program) formed member begun named)
-      (fun current kept present =>
-        (Proofs.Step.registeredOps_wellFormed.multiInstance ctx.program).arm current occurrence _ kept present begun named)
-      locals unarmed collection _ fun _ inside => List.eq_of_mem_replicate inside).1
-      enteredKept (fun earlier inside same => absurd same (fresh earlier inside)) fun _ => ?_
-    simpa using positive
-
-/-- `Hooks.completeBody` keeps `Snapshots`: it queues the body's completion. -/
-theorem completeBody_snapshots {ctx : Ctx} {header : Header} {envelope : Envelope} {loop : MultiInstance}
-    {occurrence : Occurrence} {b state after : State} (kept : Snapshots b state)
-    (ran : Feature.MultiInstance.completeBody ctx header envelope loop occurrence state = .ok after) : Snapshots b after := by
-  obtain ⟨run, _, rfl⟩ := Laws.MultiInstance.completeBody_spec ran
-  obtain ⟨writes, same, _⟩ := Laws.MultiInstance.finish_spec ctx loop run state
-  rw [same, Laws.State.signal_eq]
-  exact kept.same rfl
-
-/-- `Hooks.instanceCompleted` keeps `Snapshots` for an instance in a scope occurrence that stands: it records the
-instance's output in its body's record, leaving its scope occurrence, then completes the body or enters its next
-instances. -/
-theorem instanceCompleted_snapshots {ctx : Ctx} {body : OccurrenceId} {occurrence : Occurrence} {writes : List (String × Value)}
-    {b state after : State} (formed : WellFormed ctx.program state) (kept : Snapshots b state)
-    (stands : occurrence.scope ∈ scopeIds state)
-    (ran : Feature.MultiInstance.instanceCompleted ctx body occurrence writes state = .ok after) :
-    Snapshots b after := by
-  obtain ⟨run, loop, index, found⟩ := Laws.MultiInstance.instanceCompleted_spec ran
-  obtain ⟨output, done⟩ := found
-  obtain ⟨results, counted, left, ended⟩ := done.ends
-  have member := Laws.MultiInstance.found_mem done.found
-  have filled := recorded_fixed (output := output) results done.slot
-  have fixed : ∀ earlier ∈ b.slots.multiInstances, earlier.occurrence = (recorded run index output results).occurrence →
-      SnapshotFixed earlier (recorded run index output results) := fun earlier inside same =>
-    snapshotFixed_trans (kept.fixed earlier inside run member (filled.occurrence.symm.trans same.symm)) filled
-  have generated : (∀ earlier ∈ b.slots.multiInstances, earlier.occurrence ≠ (recorded run index output results).occurrence) →
-      0 < (recorded run index output results).instances.length := fun apart => by
-    rw [filled.count]
-    exact kept.generated run member fun earlier inside same => apart earlier inside (same.trans filled.occurrence.symm)
-  have countedKept : Snapshots b counted := by
-    have leftKept : Snapshots b (Laws.MultiInstance.leftWith state occurrence.scope (recorded run index output results)) :=
-      (kept.shrink (Laws.State.leaveScope_left formed stands).slots.bodies).setRun fixed generated
-    rcases left with rfl | ⟨target, counts, rule, rfl⟩
-    · exact leftKept
-    · rw [Laws.State.signal_eq]
-      exact leftKept.same rfl
-  rcases ended with rfl | ⟨items, rfl⟩
-  · obtain ⟨written, same, _⟩ := Laws.MultiInstance.finish_spec ctx loop (recorded run index output results) counted
-    rw [same, Laws.State.signal_eq]
-    exact countedKept.same rfl
-  · obtain ⟨entering, _, present⟩ := counted_entering (Proofs.Step.registeredOps_wellFormed.multiInstance ctx.program)
-      formed stands done left
-    exact beginInstances_snapshots entering countedKept (fun earlier inside same => countedKept.fixed earlier inside _
-      present same.symm) fun apart => countedKept.generated _ present apart
-
-/-- The registered Multi-Instance hooks keep `Since`: its `WellFormed` and `Unstarted` parts by their feature record,
-its `Snapshots` part by what each hook sets. -/
-theorem since_multiInstanceKeeps (b : State) : Proofs.Step.MultiInstanceKeeps (Since b) where
+/-- The registered Multi-Instance hooks keep `SinceFramed`: its `WellFormed` and `Unstarted` parts by their feature
+record, its `Snapshots` part by what each hook sets, its `RunsFramed` part as they keep `Framed`. -/
+theorem since_multiInstanceKeeps (b : State) : Proofs.Step.MultiInstanceKeeps (SinceFramed b) where
   arrive ctx header envelope loop occurrence state after holds member begun body named looped newest unrun ran :=
-    have first := (unstarted_keeps b).arrive ctx header envelope loop occurrence state after ⟨holds.1, holds.2.1⟩ member
-      begun body named looped newest unrun ran
-    ⟨first.1, first.2, arriveMultiInstance_snapshots holds.1 holds.2.1 holds.2.2 member begun named newest ran⟩
+    have first := (unstarted_keeps b).arrive ctx header envelope loop occurrence state after ⟨holds.1, holds.2.1.1⟩
+      member begun body named looped newest unrun ran
+    ⟨first.1, ⟨first.2, arriveMultiInstance_snapshots Proofs.Step.registeredOps_wellFormed.multiInstance
+      holds.1 holds.2.1.1 holds.2.1.2 member begun named newest ran⟩, (multiInstanceKeeps_framed.arrive ctx header
+        envelope loop occurrence state after ⟨holds.1, holds.2.2⟩ member begun body named looped newest unrun ran).2⟩
   completeBody ctx header envelope loop occurrence state after holds member ran :=
-    have first := (unstarted_keeps b).completeBody ctx header envelope loop occurrence state after ⟨holds.1, holds.2.1⟩
+    have first := (unstarted_keeps b).completeBody ctx header envelope loop occurrence state after ⟨holds.1, holds.2.1.1⟩
       member ran
-    ⟨first.1, first.2, completeBody_snapshots holds.2.2 ran⟩
+    ⟨first.1, ⟨first.2, completeBody_snapshots holds.2.1.2 ran⟩, (multiInstanceKeeps_framed.completeBody ctx header
+      envelope loop occurrence state after ⟨holds.1, holds.2.2⟩ member ran).2⟩
   instanceCompleted ctx body occurrence writes state after holds stands ran :=
-    have first := (unstarted_keeps b).instanceCompleted ctx body occurrence writes state after ⟨holds.1, holds.2.1⟩
+    have first := (unstarted_keeps b).instanceCompleted ctx body occurrence writes state after ⟨holds.1, holds.2.1.1⟩
       stands ran
-    ⟨first.1, first.2, instanceCompleted_snapshots holds.1 holds.2.2 stands ran⟩
+    ⟨first.1, ⟨first.2, instanceCompleted_snapshots Proofs.Step.registeredOps_wellFormed.multiInstance
+      holds.1 holds.2.1.2 stands ran⟩, (multiInstanceKeeps_framed.instanceCompleted ctx body occurrence writes state
+        after ⟨holds.1, holds.2.2⟩ stands ran).2⟩
 
 /-! ### Through an input -/
 
-/-- The registered hooks keep `Since`. -/
-theorem since_contract (b : State) : Laws.Step.HookContract Registry.hooks (Since b) :=
+/-- The registered hooks keep `SinceFramed`. -/
+theorem since_contract (b : State) : Laws.Step.HookContract Registry.hooks (SinceFramed b) :=
+  have stores := fun program => Proofs.Frame.storesAlongside_both (since_frameAlongside b program)
+    (runsFramed_frameAlongside program)
+  have occurs := fun program => Proofs.Frame.occursAlongside_both (since_occursAlongside b program)
+    (runsFramed_occursAlongside program)
   Proofs.Step.registered_contract_of
-    (featureOps_frame Proofs.Step.registeredOps_wellFormed.toFeatureOps (fun program => (since_frameAlongside b program).toFrameAlongside)
-      (since_occursAlongside b))
-    (since_multiInstanceKeeps b)
-    (compensationKeeps_frame Proofs.Step.registeredOps_wellFormed (since_frameAlongside b) (since_occursAlongside b))
+    (featureOps_frame Proofs.Step.registeredOps_wellFormed.toFeatureOps (fun program => (stores program).toFrameAlongside)
+      occurs)
+    (since_multiInstanceKeeps b) (compensationKeeps_frame Proofs.Step.registeredOps_wellFormed stores occurs)
     Proofs.State.stateFacts
 
-/-- `Step`'s phases keep `Since`. -/
-theorem since_phases (b : State) : Laws.Step.Phases (Since b) :=
-  phases_alongside Proofs.Step.phases (since_stepAlongside b)
-
-/-- An input's start: the well-formed `b` with its journal, intents, draft and writes cleared keeps `Since b`, since
-every body's occurrence has settled (`Laws.State.SlotsSettled.bodies`) and one record per body occurrence is held. -/
-theorem since_reset {program : Program} {b : State} (formed : WellFormed program b) (keyed : RunsKeyed b) :
-    Since b program { b with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } := by
-  refine ⟨Laws.State.reset_wellFormed formed, ⟨fun earlier member => (formed.settled.bodies earlier member).1,
-    fun earlier member o inside same => (formed.settled.bodies earlier member).2.1 o inside same,
-    fun _ _ _ _ _ => by simp⟩, ⟨fun earlier member run inside same => ?_, fun run inside apart => absurd rfl
-    (apart run inside)⟩⟩
-  obtain rfl := Laws.State.nodup_map_eq keyed member inside same.symm
-  exact snapshotFixed_refl _
+/-- `Step`'s phases keep `SinceFramed` of a committed, well-formed `b` whose bodies stand in its scope occurrences. -/
+theorem since_phases {programBefore : Program} {b : State} (formedBefore : WellFormed programBefore b)
+    (committed : Laws.State.Committed b) (bodyScopes : ∀ earlier ∈ b.slots.multiInstances, earlier.scope ∈ scopeIds b) :
+    Laws.Step.Phases (SinceFramed b) :=
+  phases_alongside Proofs.Step.phases (sinceFramed_stepAlongside formedBefore committed bodyScopes) fun _ _ _ kept =>
+    ⟨⟨kept.1.1.move (.same rfl rfl rfl (.refl _) rfl), kept.1.2.same rfl⟩, kept.2.carry (.equal rfl rfl rfl rfl)⟩
 
 /-- A committed input on a running instance keeps `Since` of its before-state under the registered hooks, from the
 input's start, which `Since` holds of though the before-state's draft may not be empty. -/
 theorem since_stepKeeps {program : Program} {input : Input} {b after : State} (formed : WellFormed program b)
-    (keyed : RunsKeyed b) (ran : Step.step Registry.hooks program (some b) input = .ok after) : Since b program after :=
-  Laws.Step.running_keeps (since_contract b) (since_phases b) Proofs.State.stateFacts
-    (Laws.Step.complete_keeps (since_contract b) (since_phases b).toBodyPhases
-      (since_pipelinePhases b Proofs.Step.pipelinePhases) Proofs.State.stateFacts)
-    (since_reset formed keyed) ran
+    (committed : Laws.State.Committed b) (framed : RunsFramed program b)
+    (ran : Step.step Registry.hooks program (some b) input = .ok after) : Since b program after :=
+  have phases := since_phases formed committed fun earlier member => (framed.framed earlier member).owned.bodyScope
+  have pipeline := Proofs.Frame.pipelinePhases_both (since_pipelinePhases b Proofs.Step.pipelinePhases)
+    (runsFramed_pipelinePhases Proofs.Step.pipelinePhases)
+  have reset := since_reset formed committed framed.keyed
+  have kept := (Proofs.State.running_keeps (since_contract b) phases (Laws.Step.complete_keeps (since_contract b)
+      phases.toBodyPhases pipeline Proofs.State.stateFacts)
+    Proofs.Step.registered_framing Proofs.Step.registered_keysAux (fun _ _ holds => holds.1) committed
+    ⟨reset.1, reset.2, (framed_reset ⟨formed, framed⟩ committed).2⟩ ran).1
+  ⟨kept.1, kept.2.1⟩
 
 /-- A body begun by a committed input has at least one slot, and a body running before and after it keeps its
 snapshot, slot count and filled slots, under the registered hooks. -/
 theorem registered_runsGenerated : RunsGenerated Registry.hooks :=
-  fun _ _ _ run ⟨formed, runs, _, ran⟩ member =>
-    have since := since_stepKeeps formed runs.keyed ran
+  fun _ _ _ run ⟨formed, committed, runs, _, ran⟩ member =>
+    have since := since_stepKeeps formed committed runs.framed ran
     ⟨since.2.2.generatedOf member, fun earlier inside same => since.2.2.fixed earlier inside run member same.symm⟩
 
 end Since

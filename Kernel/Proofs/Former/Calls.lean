@@ -8,6 +8,7 @@ public import Kernel.Laws.State.Begin
 public import Kernel.Laws.Population
 public import Kernel.Proofs.Former.Placed
 public import Kernel.Proofs.Former.PlacedLane
+public import Kernel.Proofs.Former.CallsCompacts
 
 /-! # Proofs: the former lanes, Calls (P7)
 
@@ -308,7 +309,7 @@ def callItKey : OccurrenceId := { scope := (.ofSegments []), element := ⟨"Call
 
 /-- A called root of the witnesses, the `ordinal`th of `CallIt` in the process root, owned by `owner`. -/
 def witnessCalled (ordinal : Nat) (owner : Option OccurrenceId) : ScopeOccurrence :=
-  { id := (.ofSegments [{ element := ⟨"CallIt"⟩, ordinal }]), element := some ⟨"CallIt"⟩, occurrence := owner
+  { id := (.ofSegments [{ element := ⟨"CallIt"⟩, ordinal := .committed ordinal }]), element := some ⟨"CallIt"⟩, occurrence := owner
     calledInstance := some "I1-call" }
 
 /-- A called root that no occurrence owns breaks `Named`. -/
@@ -367,8 +368,8 @@ instance runs (root decision C-7, 2026-11-15): the before-state keeps the placem
 one process and its identifiers are unique (`ReferencesPlaced`). -/
 def CalledIdentityUnique (hooks : Hooks) : Prop :=
   ∀ (program : Program) (input : Input) (before after : State),
-    PublicIdsApart program → ReferencesPlaced program → WellFormed program before → CallsFormed program before →
-    PlacedLane program before → Step.step hooks program (some before) input = .ok after →
+    PublicIdsApart program → ReferencesPlaced program → WellFormed program before → Laws.State.Committed before →
+    CallsFormed program before → PlacedLane program before → Step.step hooks program (some before) input = .ok after →
     (∀ root ∈ after.scopes, root ∉ before.scopes → root.calledInstance.isSome →
       ∃ call ∈ after.occurrences, root.occurrence = some call.id ∧ root.calledInstance =
         some (State.calledInstanceId (after.instanceOf call.scope) (program.publicId call.element) call.activation)) ∧
@@ -397,8 +398,8 @@ private theorem enterLocal_facts {program : Program} {header : Header} {inputs :
         root ∈ state.scopes) ∧
       ∀ entry ∈ (Feature.Work.enterLocal header inputs occurrence state).scopes,
         entry.id ≠ occurrence.scope.child occurrence.element
-          (Laws.State.slotCount (Feature.Work.enterLocal header inputs occurrence state) occurrence.scope
-            occurrence.element) := by
+          (.fresh (Feature.Work.enterLocal header inputs occurrence state).issuing
+            (Feature.Work.enterLocal header inputs occurrence state).issueNext) := by
   have below : ∀ entry ∈ state.scopes, Laws.State.ScopeIssued state entry.id := formed.issued.scopes
   rw [Laws.Work.enterLocal_eq]
   split
@@ -411,20 +412,17 @@ private theorem enterLocal_facts {program : Program} {header : Header} {inputs :
       rcases List.mem_append.mp inside with old | new
       · exact old
       · rw [List.mem_singleton.mp new] at called; cases called
-    · have stands : occurrence.scope ∈ Laws.State.standingKeys state := formed.owned.occurrenceScopes occurrence member
-      rw [Laws.State.enterScope_eq] at inside same
+    · rw [Laws.State.enterScope_eq] at inside same
+      dsimp only at same
       rcases List.mem_append.mp inside with old | new
-      · refine Laws.State.unissued_of_count stands ?_ (by rw [← same]; exact below entry old)
-        simp only [Laws.State.slotCount, Std.ExtTreeMap.getD_insert]
-        by_cases slot : compare ({ parent := occurrence.scope, element := header.id } : ScopeSlot)
-            { parent := occurrence.scope, element := occurrence.element } = .eq
-        · simp only [slot, ↓reduceIte]; rw [Std.LawfulEqOrd.eq_of_compare slot]; omega
-        · simp only [slot, ↓reduceIte]; omega
+      · -- The scope occurrences that stood were issued, and the issuer's next issue but one is not in the table (DC12).
+        have untabled : state.issued[Issue.fresh state.issuing (state.issueNext + 1)]? = none := by
+          cases tabled : state.issued[Issue.fresh state.issuing (state.issueNext + 1)]? with
+          | none => rfl
+          | some slot => exact absurd (formed.issuer.below _ slot tabled) (by omega)
+        exact Laws.State.entered_unissued _ _ untabled (by rw [← same]; exact below entry old)
       · rw [List.mem_singleton.mp new] at same
-        simp only [Laws.State.child_eq, Laws.State.ScopeOccurrenceId.ofSegments_inj, List.cons.injEq, ScopeSegment.mk.injEq] at same
-        obtain ⟨⟨elements, counted⟩, _⟩ := same
-        rw [← elements] at counted
-        simp [Laws.State.slotCount, Std.ExtTreeMap.getD_insert_self] at counted
+        simp [Laws.State.child_eq, Laws.State.ScopeOccurrenceId.ofSegments_inj] at same
 
 theorem callInstallsSnapshot {hooks : Hooks} {workHooks : Feature.Work.WorkHooks}
     (arrive : hooks.arriveActivity = Feature.Work.arriveActivity workHooks) : CallInstallsSnapshot hooks := by
@@ -440,16 +438,16 @@ theorem callInstallsSnapshot {hooks : Hooks} {workHooks : Feature.Work.WorkHooks
   obtain ⟨made, rfl⟩ := Laws.Hooks.evaluateMappings_some evaluated
   have scopes : armed.scopes = (Feature.Work.enterLocal header inputs occurrence state).scopes ++
       [{ id := occurrence.scope.child occurrence.element
-           (Laws.State.slotCount (Feature.Work.enterLocal header inputs occurrence state) occurrence.scope
-             occurrence.element)
+           (.fresh (Feature.Work.enterLocal header inputs occurrence state).issuing
+             (Feature.Work.enterLocal header inputs occurrence state).issueNext)
          element := some occurrence.element, occurrence := some occurrence.id
          calledInstance := some (State.calledInstanceId
            ((Feature.Work.enterLocal header inputs occurrence state).instanceOf occurrence.scope)
            (ctx.program.publicId occurrence.element) occurrence.activation) }] ∧
       armed.variables = (Feature.Work.enterLocal header inputs occurrence state).variables ++
         [{ scope := occurrence.scope.child occurrence.element
-             (Laws.State.slotCount (Feature.Work.enterLocal header inputs occurrence state) occurrence.scope
-               occurrence.element),
+             (.fresh (Feature.Work.enterLocal header inputs occurrence state).issuing
+               (Feature.Work.enterLocal header inputs occurrence state).issueNext),
            entries := keyed (lastWrites made) }] := by
     rcases armedIs with rfl | rfl <;> rw [Laws.State.enterCalled_eq _ _ _ _ _ unissued] <;> simp [Laws.State.signal_eq]
   simp only [Laws.State.signal_eq] at inside ⊢
@@ -590,7 +588,7 @@ theorem CallsFormed.entered (formed : WellFormed under s) (holds : CallsFormed p
     CallsFormed program (s.enterScope element parent locals owner).1 := by
   have scopes := (Laws.State.enterScope_eq s element parent locals owner ▸ rfl :
     (s.enterScope element parent locals owner).1.scopes =
-      s.scopes ++ [{ id := parent.child element (Laws.State.slotCount s parent element), element := some element
+      s.scopes ++ [{ id := parent.child element (.fresh s.issuing s.issueNext), element := some element
                      occurrence := owner }])
   have occurrences : (s.enterScope element parent locals owner).1.occurrences = s.occurrences := by
     rw [Laws.State.enterScope_eq]
@@ -618,7 +616,7 @@ theorem CallsFormed.reserved (formed : WellFormed under s) (holds : CallsFormed 
     obtain ⟨owner, present, named, _⟩ := formed.owned.scopeOwners root member _ owned
     have below := formed.issued.occurrences owner present
     rw [named] at below
-    exact (reserves.fresh (by rw [reserves.placed]; exact stands) below).elim
+    exact (reserves.fresh formed.issuer (by rw [reserves.placed]; exact stands) below).elim
 
 /-- Beginning an admitted request keeps the lane invariant: the begun occurrence owns no scope occurrence
 (`Laws.State.begin_unowned`). -/
@@ -664,18 +662,18 @@ theorem CallsFormed.enterCalled (formed : WellFormed under s) (holds : CallsForm
     CallsFormed program (s.enterCalled program call variables definition).1 := by
   rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]
   have stays := fun {x} => instanceOf_grown (t := { s with
-      scopeOrdinals := s.scopeOrdinals.insert { parent := call.scope, element := call.element }
-        (Laws.State.slotCount s call.scope call.element + 1)
-      scopes := s.scopes ++ [{ id := call.scope.child call.element (Laws.State.slotCount s call.scope call.element)
+      issueNext := s.issueNext + 1
+      issued := s.issued.insert (.fresh s.issuing s.issueNext) (.scope { parent := call.scope, element := call.element })
+      scopes := s.scopes ++ [{ id := call.scope.child call.element (.fresh s.issuing s.issueNext)
                                element := some call.element, occurrence := some call.id
                                calledInstance := some (State.calledInstanceId (s.instanceOf call.scope)
                                  (program.publicId call.element) call.activation) }]
       variables := s.variables ++
-        [{ scope := call.scope.child call.element (Laws.State.slotCount s call.scope call.element)
+        [{ scope := call.scope.child call.element (.fresh s.issuing s.issueNext)
            entries := keyed variables }]
       slots := { s.slots with
         instances := s.slots.instances ++
-          [{ root := call.scope.child call.element (Laws.State.slotCount s call.scope call.element),
+          [{ root := call.scope.child call.element (.fresh s.issuing s.issueNext),
              definition := some definition }] } })
     (x := x) formed rfl (Laws.State.scopes_fresh formed) rfl rfl
   have only : ∀ other ∈ s.occurrences, other.id = call.id → other = call := fun other inside same =>
@@ -771,18 +769,20 @@ theorem callsFormed_stepAlongside (program : Program) : StepAlongside program (C
     held.begun formed request role sourceType stands.mem admitted.2.1
   cancel _ _ formed held := (callsFormed_alongside program).toFrameAlongside.cancelOccurrence
     (fun _ id _ kept => kept.withoutRecord id) (fun _ _ _ kept => kept.same rfl (fun _ member => member) rfl) formed held
-  runOrder _ _ _ held after made := by
-    obtain rfl := Laws.Step.orderJournal_of made
-    exact held.same rfl (fun _ member => member) rfl
+  runOrder _ _ _ formed held counted batches keys _ made :=
+    { named := orderJournal_named formed counted batches keys held.named made
+      roled := orderJournal_roled formed counted batches keys held.roled made
+      activities := orderJournal_activities formed counted batches keys held.activities made
+      ownersApart := orderJournal_ownersApart formed counted batches keys held.ownersApart made }
 
 /-- `WellFormed` and the lane invariant of called instances. -/
 def Formed (program : Program) (s : State) : Prop :=
   WellFormed program s ∧ CallsFormed program s
 
 /-- An input starts from an empty journal, intents, draft and write log (`Step.onRunning`), which keeps `Formed`. -/
-theorem formed_reset {s : State} (holds : Formed program s) :
+theorem formed_reset {s : State} (holds : Formed program s) (committed : Laws.State.Committed s) :
     Formed program { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } :=
-  ⟨Laws.State.reset_wellFormed holds.1, holds.2.same rfl (fun _ inside => inside) rfl⟩
+  ⟨Laws.State.reset_wellFormed holds.1 committed, holds.2.same rfl (fun _ inside => inside) rfl⟩
 
 /-- The completion pipeline's own phases keep the lane invariant where they keep `WellFormed`. -/
 theorem callsFormed_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellFormed) : Laws.Step.PipelinePhases Formed where
@@ -801,7 +801,7 @@ theorem callsFormed_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellForm
 
 /-- `Step`'s phases keep `WellFormed` and the lane invariant. -/
 theorem formed_phases (phases : Laws.Step.Phases WellFormed) : Laws.Step.Phases Formed :=
-  phases_alongside phases callsFormed_stepAlongside
+  phases_alongside phases callsFormed_stepAlongside fun _ _ _ held => held.same rfl (fun _ inside => inside) rfl
 
 /-- A start's fresh instance calls no instance. -/
 theorem callsFormed_initial (program : Program) (instanceId : String) (variables : List (String × Value))

@@ -1,14 +1,18 @@
 module
 
 public import Kernel.Step.Order
+public import Kernel.State.Rename
 
 /-! # Step: commit
 
 How a micro-step's effects become the input's journal: `journalDraft` turns the draft into one `Transition` of the
 closure, keyed by the unit that ran it, and `orderJournal` commits a settled closure: its transitions and intents in run
-order, read from the run log (`RunLog.runPosition`), and every family keyed by a unit key emptied, so no unit key outlives
-its closure (DC4). `Kernel.Step.conclude` applies the first before it tells the features what the micro-step removed and
-wrote, since only `Kernel.Step` calls those hooks (guard 17); neither matches a guarded type.
+order, read from the run log (`RunLog.runPosition`), every family keyed by a unit key emptied, so no unit key outlives
+its closure (DC4), and every identity the closure issued renamed to its committed ordinal (`compact`, DC12).
+`Kernel.Step.conclude` applies the first before it tells the features what the micro-step removed and wrote, since only
+`Kernel.Step` calls those hooks (guard 17). The renaming itself writes the state, so it is `Kernel.State.Rename`'s, which
+takes the continuation renaming from here: `Continuation.rekey` and `Continuation.body?` are `Kernel.Step`'s matches on
+`Continuation`; nothing else here matches a guarded type.
 -/
 
 public section
@@ -28,11 +32,121 @@ def byRun {α : Type} (log : RunLog) (entries : TreeMap UnitKey α compare) : Li
   ((entries.toList.map fun (unit, value) => (log.runPosition unit, unit, value)).mergeSort fun a b =>
     a.1 < b.1 || a.1 == b.1 && compare a.2.1 b.2.1 != .gt).map (·.2.2)
 
-/-- Commit a settled closure: its transitions as the journal and its batches' intents as the input's intents, each in the order its units
-ran, and every family keyed by a unit key emptied, so no unit key outlives its closure (DC4). Queued work an instance
-that ended mid-closure left behind is dropped with them: no input runs on an ended instance (`Step.onRunning`). -/
-def orderJournal (outcome : Except Failure (State × RunLog)) : Outcome :=
-  outcome.map fun (state, log) =>
+/-! ## Compaction at commit (DC12) -/
+
+
+/-- The Multi-Instance body occurrence an instance's occurrence completes into, `none` for any other continuation. -/
+def _root_.Kernel.Continuation.body? : Continuation → Option OccurrenceId
+  | .multiInstance body => some body
+  | .flow => none
+  | .compensation _ => none
+
+/-- A continuation with its identities renamed. -/
+def _root_.Kernel.Continuation.rekey (occurrence : OccurrenceId → OccurrenceId)
+    (scope : ScopeOccurrenceId → ScopeOccurrenceId) : Continuation → Continuation
+  | .flow => .flow
+  | .multiInstance body => .multiInstance (occurrence body)
+  | .compensation run => .compensation (scope run)
+
+/-- The renaming an assignment defines: an assigned fresh issue's committed ordinal, every other issue itself. -/
+def renameBy (assigned : TreeMap Issue Nat compare) (issue : Issue) : Issue :=
+  match issue with
+  | .committed _ => issue
+  | .fresh _ _ => match assigned.get? issue with
+    | some ordinal => .committed ordinal
+    | none => issue
+
+/-- A slot's first ordinal for the closure's issues: its counter in `state`, the closure's starting state (`compact`), or
+0 for a slot whose owner the closure issued, which has no counter yet. -/
+def slotBase (state : State) : ClaimSlot → Nat
+  | .scope slot => if slot.parent.fresh then 0 else state.scopeOrdinals.getD slot 0
+  | .occurrence slot => if slot.parent.fresh then 0 else state.occurrenceOrdinals.getD slot 0
+  | .item occurrence => if occurrence.fresh then 0 else state.itemOrdinals.getD occurrence 0
+
+/-- One issue takes its slot's next ordinal; the slot counts past it. -/
+def assignStep (base : ClaimSlot → Nat) (acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare)
+    (claim : Issue × ClaimSlot) : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare :=
+  let ordinal := acc.2.getD claim.2 (base claim.2)
+  (acc.1.insert claim.1 ordinal, acc.2.insert claim.2 (ordinal + 1))
+
+/-- The closure's issues in issue order: the order of their units in the run log, then of the issues in each unit. -/
+def issueOrder (log : RunLog) (state : State) : List (Issue × ClaimSlot) :=
+  let order := fun (claim : Issue × ClaimSlot) => ((claim.1.unit?.map log.runPosition).getD 0, claim.1.number)
+  state.issued.toList.mergeSort fun a b => let (x, y) := (order a, order b); x.1 < y.1 || x.1 == y.1 && x.2 ≤ y.2
+
+/-- Every issue's committed ordinal, per slot in issue order above the slot's base, and each advanced slot's next
+ordinal, keyed by the slot as issued. -/
+def assign (start : State) (log : RunLog) (state : State) : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare :=
+  (issueOrder log state).foldl (assignStep (slotBase start)) (∅, ∅)
+
+/-- The counters after the commit: each advanced slot's next ordinal under its renamed slot, where its renamed owner
+stands; a counter whose owner the closure removed goes, as it went with its owner (`State.clearInside`,
+`State.removeOccurrence`). A counter never decreases (`raiseCounter`): an advanced slot's next ordinal is at or above its
+committed counter, so this changes no value, and the laws need no premise that two slots rename apart. -/
+def raiseCounter {α : Type} [Ord α] [Std.TransOrd α] (counters : TreeMap α Nat compare) (slot : α) (ordinal : Nat) : TreeMap α Nat compare :=
+  counters.insert slot (max ordinal (counters.getD slot 0))
+
+def advanceCounters (r : Issue → Issue) (next : TreeMap ClaimSlot Nat compare) (renamed : State) : State :=
+  next.foldl (fun state slot ordinal =>
+    match slot with
+    | .scope slot =>
+      let slot := { slot with parent := renameScope r slot.parent }
+      if renamed.scopes.any (·.id == slot.parent) then { state with scopeOrdinals := raiseCounter state.scopeOrdinals slot ordinal }
+      else state
+    | .occurrence slot =>
+      let slot := { slot with parent := renameScope r slot.parent }
+      if renamed.scopes.any (·.id == slot.parent) then
+        { state with occurrenceOrdinals := raiseCounter state.occurrenceOrdinals slot ordinal }
+      else state
+    | .item occurrence =>
+      let occurrence := renameId r occurrence
+      if renamed.occurrences.any (·.id == occurrence) then
+        { state with itemOrdinals := raiseCounter state.itemOrdinals occurrence ordinal }
+      else state) renamed
+
+/-- Whether two fresh issues share their index and their units agree on depth, fingerprint and root. -/
+def sameIssuerName : Issue → Issue → Bool
+  | .fresh unit index, .fresh other index' =>
+    index == index' && unit.spine.level == other.spine.level && unit.spine.fingerprint == other.spine.fingerprint &&
+      unit.root == other.root
+  | _, _ => false
+
+/-- Whether two distinct units of the closure issued at a common index and agree on depth, fingerprint and root: the
+TypeScript kernel names an issuer by those fixed-size fields, so it would order such a pair otherwise than the full key
+does. Distinct steps have distinct fingerprint codes (`UnitStep.stepCode`), so only a 64-bit fingerprint collision makes
+such a pair. One pass in the table's order, which runs the fresh issues by index, then unit, and the units by depth,
+fingerprint, root and path, so such a pair has a neighbouring pair of the same kind (`Laws.Step.compact_issuersNamed`),
+and the table's keys are distinct, so the neighbours' units differ. -/
+def issuerCollision (issued : TreeMap Issue ClaimSlot compare) : Bool :=
+  (issued.foldl (init := ((none : Option Issue), false)) fun acc issue _ =>
+    (some issue, acc.2 || acc.1.any (sameIssuerName · issue))).2
+
+/-- Rename every identity the closure issued to its committed form (DC12): in issue order, every issue takes its slot's
+next ordinal above the slot's counter in `start`, the closure's starting state, so the committed keys are the ones a
+counter at issue gave, even for a slot whose owner the closure removed, which prunes its counters (`State.leaveScope`);
+the counters of owners that stand advance past them. The issue table empties. An issue no unit made (issued between
+micro-steps) is an invariant failure; two issuers a fixed-size name cannot tell apart (`issuerCollision`) are refused.
+A closure that issued nothing commits its state as it is, so only an issuing commit renames the whole state; that
+renaming walks every identity the state holds, linear in its size per issuing commit. -/
+def compact (start : State) (log : RunLog) (state : State) : Outcome :=
+  if state.issued.isEmpty then .ok state
+  else if state.issued.any (fun issue _ => issue.unit? == some (.ofRoot .seed)) then
+    .error (.semanticFailure .invariant "issue-outside-unit")
+  -- dynamic-only: a 64-bit fingerprint collision between two units of one closure, which no model property predicts
+  else if issuerCollision state.issued then .error (.unsupported "unit-fingerprint-collision")
+  else
+    let (assigned, next) := assign start log state
+    let r := renameBy assigned
+    .ok { advanceCounters r next (renameState r (Continuation.rekey (renameId r) (renameScope r)) state) with issued := ∅, issuing := .ofRoot .seed, issueNext := 0 }
+
+/-- Commit a settled closure: its transitions as the journal and its batches' intents as the input's intents, each in the
+order its units ran, every family keyed by a unit key emptied, so no unit key outlives its closure (DC4), and every
+identity it issued compacted (`compact`, DC12) against the counters of `start`, the state the closure began from.
+Queued work an instance that ended mid-closure left behind is dropped with them: no input runs on an ended instance
+(`Step.onRunning`). -/
+def orderJournal (start : State) (outcome : Except Failure (State × RunLog)) : Outcome := do
+  let (state, log) ← outcome
+  compact start log
     { state with
         journal := byRun log state.transitions, intents := (byRun log state.outboxes).flatten
         transitions := ∅, outboxes := ∅, queuedTokens := ∅, queuedSignals := ∅ }

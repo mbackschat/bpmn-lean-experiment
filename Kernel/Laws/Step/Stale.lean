@@ -45,52 +45,64 @@ theorem scopeIssued_of_issued {state : State} {scope : ScopeOccurrenceId} (issue
       Laws.State.ScopeOccurrenceId.ext (by simp [same, Laws.State.ScopeOccurrenceId.ofSegments_segments])
     rw [keyed] at held
     simp only [scopeIssued.go, parent]
-    by_cases stands : state.scopes.any (·.id == .ofSegments rest) = true
-    · simp only [stands, ite_true, decide_eq_true_eq]
-      exact history.below segment rest held (by simpa using stands)
-    · simp only [stands, Bool.false_eq_true, ite_false]
-      exact ih _ (Laws.State.ScopeOccurrenceId.ofSegments_segments rest) (history.closed segment rest held)
+    split
+    · rename_i unit index ordinal
+      simp [Std.ExtTreeMap.contains_eq_isSome_getElem?, ordinal, history.tabled segment rest unit index held ordinal]
+    · rename_i n ordinal
+      by_cases stands : state.scopes.any (·.id == .ofSegments rest) = true
+      · simp only [stands, ite_true, decide_eq_true_eq]
+        exact history.below segment rest n held ordinal (by simpa using stands)
+      · simp only [stands, Bool.false_eq_true, ite_false]
+        exact ih _ (Laws.State.ScopeOccurrenceId.ofSegments_segments rest) (history.closed segment rest held)
 
 /-- What the counters that remain read of an occurrence key issued (`Laws.State.OccurrenceIssued`): issued
 (`occurrenceIssued`), as `stale` reads it. -/
 theorem occurrenceIssued_of_issued {state : State} {id : OccurrenceId} (issued : Laws.State.OccurrenceIssued state id) :
     occurrenceIssued state id = true := by
-  obtain ⟨scopeIs, below⟩ := issued
+  obtain ⟨scopeIs, -, below, tabled⟩ := issued
   simp only [occurrenceIssued, scopeIssued_of_issued scopeIs, Bool.true_and]
-  cases standing : state.scopes.any (·.id == id.scope) with
-  | false => rfl
-  | true =>
-    simp only [Bool.not_true, Bool.false_or, decide_eq_true_eq]
-    exact below (by simpa [Laws.State.standingKeys] using standing)
+  split
+  · rename_i unit index ordinal
+    simp [Std.ExtTreeMap.contains_eq_isSome_getElem?, ordinal, tabled unit index ordinal]
+  · rename_i n ordinal
+    cases standing : state.scopes.any (·.id == id.scope) with
+    | false => rfl
+    | true =>
+      simp only [Bool.not_true, Bool.false_or, decide_eq_true_eq]
+      exact below n ordinal (by simpa [Laws.State.standingKeys] using standing)
 
-/-- The designated KD1 change: a key below a removed scope occurrence `segment` entered in `⟨outer⟩`, which stands and
-counted it, reads as issued whether or not some history holds it, since the counters that would tell went with the
-removed subtree; work naming it is stale (`stale_below_removed`), never the invariant failure of a key never issued. -/
-theorem scopeIssued_below_removed {state : State} {outer : List ScopeSegment} {segment : ScopeSegment}
-    (stands : state.scopes.any (·.id == .ofSegments outer) = true)
-    (counted : segment.ordinal < state.scopeOrdinals.getD { parent := .ofSegments outer, element := segment.element } 0)
-    (removed : ∀ rest, state.scopes.any (·.id == .ofSegments (rest ++ segment :: outer)) = false) (rest : List ScopeSegment) :
+/-- The designated KD1 change: a committed key below a removed scope occurrence `segment` entered in `⟨outer⟩`, which
+stands and counted it, reads as issued whether or not some history holds it, since the counters that would tell went
+with the removed subtree; work naming it is stale (`stale_below_removed`), never the invariant failure of a key never
+issued. A fresh key is read from the issue table instead (DC12), so the change concerns committed keys alone. -/
+theorem scopeIssued_below_removed {state : State} {outer : List ScopeSegment} {segment : ScopeSegment} {n : Nat}
+    (stands : state.scopes.any (·.id == .ofSegments outer) = true) (committed : segment.ordinal = .committed n)
+    (counted : n < state.scopeOrdinals.getD { parent := .ofSegments outer, element := segment.element } 0)
+    (removed : ∀ rest, state.scopes.any (·.id == .ofSegments (rest ++ segment :: outer)) = false) (rest : List ScopeSegment)
+    (settled : ∀ inner ∈ rest, ∃ k, inner.ordinal = .committed k) :
     scopeIssued state (.ofSegments (rest ++ segment :: outer)) = true := by
   simp only [scopeIssued]
-  suffices down : ∀ rest segments (scope : ScopeOccurrenceId) (same : scope.segments = segments),
-      segments = rest ++ segment :: outer → scopeIssued.go state segments scope same = true from
-    down rest _ _ rfl (Laws.State.ScopeOccurrenceId.ofSegments_segments _)
+  suffices down : ∀ rest, (∀ inner ∈ rest, ∃ k, inner.ordinal = .committed k) → ∀ segments (scope : ScopeOccurrenceId)
+      (same : scope.segments = segments), segments = rest ++ segment :: outer →
+        scopeIssued.go state segments scope same = true from
+    down rest settled _ _ rfl (Laws.State.ScopeOccurrenceId.ofSegments_segments _)
   intro rest
   induction rest with
   | nil =>
-    intro segments scope same keyed
+    intro _ segments scope same keyed
     subst keyed
     have parent : ∀ {head tail} (same : scope.segments = head :: tail), scope.up same = .ofSegments tail :=
       fun _ => Laws.State.ScopeOccurrenceId.ext (by simp [Laws.State.ScopeOccurrenceId.ofSegments_segments])
-    simp only [List.nil_append, scopeIssued.go, parent, stands, ite_true, decide_eq_true_eq]
+    simp only [List.nil_append, scopeIssued.go, parent, committed, stands, ite_true, decide_eq_true_eq]
     exact counted
   | cons inner rest ih =>
-    intro segments scope same keyed
+    intro settled segments scope same keyed
     subst keyed
     have parent : ∀ {head tail} (same : scope.segments = head :: tail), scope.up same = .ofSegments tail :=
       fun _ => Laws.State.ScopeOccurrenceId.ext (by simp [Laws.State.ScopeOccurrenceId.ofSegments_segments])
-    simp only [List.cons_append, scopeIssued.go, parent, removed rest, Bool.false_eq_true, ite_false]
-    exact ih _ _ (Laws.State.ScopeOccurrenceId.ofSegments_segments _) rfl
+    obtain ⟨k, innerCommitted⟩ := settled inner (.head _)
+    simp only [List.cons_append, scopeIssued.go, parent, innerCommitted, removed rest, Bool.false_eq_true, ite_false]
+    exact ih (fun other member => settled other (.tail _ member)) _ _ (Laws.State.ScopeOccurrenceId.ofSegments_segments _) rfl
 
 /-- `Step.gone` restated. -/
 theorem gone_eq {state : State} {work : SignalWork} : gone state work =
@@ -116,31 +128,35 @@ theorem perform_stale {work : SignalWork} {state : State} (refused : stale state
 /-- Work naming a key below a removed scope occurrence that its standing parent counted fails the input as stale
 (`scopeIssued_below_removed`). -/
 theorem stale_below_removed {work : SignalWork} {state : State} {outer rest : List ScopeSegment} {segment : ScopeSegment}
-    (stands : state.scopes.any (·.id == (.ofSegments outer)) = true)
-    (counted : segment.ordinal < state.scopeOrdinals.getD { parent := (.ofSegments outer), element := segment.element } 0)
+    {n : Nat} (stands : state.scopes.any (·.id == (.ofSegments outer)) = true) (committed : segment.ordinal = .committed n)
+    (counted : n < state.scopeOrdinals.getD { parent := (.ofSegments outer), element := segment.element } 0)
     (removed : ∀ rest, state.scopes.any (·.id == (.ofSegments (rest ++ segment :: outer))) = false)
+    (settled : ∀ inner ∈ rest, ∃ k, inner.ordinal = .committed k)
     (named : (.ofSegments (rest ++ segment :: outer)) ∈ work.scopes) :
     work.perform state = .error (.unsupported "interrupted-before-wait") := by
   apply perform_stale
   rw [stale_eq, Bool.or_eq_true, List.any_eq_true]
-  exact .inl ⟨_, named, by simp [scopeIssued_below_removed stands counted removed rest, removed rest]⟩
+  exact .inl ⟨_, named, by simp [scopeIssued_below_removed stands committed counted removed rest settled, removed rest]⟩
 
 /-- K0.7's designated change: an occurrence key issued in a scope occurrence below a removed one that its standing
-parent counted reads as issued whatever its ordinal, even one never issued, since the counter that would tell went
+parent counted reads as issued whatever its committed ordinal, even one never issued, since the counter that would tell went
 with the removed subtree; work naming it while it is absent fails the input as stale, never as the invariant failure
 of a key never issued (`queued-work-occurrence-gone`). -/
 theorem stale_occurrence_below_removed {work : SignalWork} {state : State} {outer rest : List ScopeSegment}
-    {segment : ScopeSegment} {id : OccurrenceId}
-    (stands : state.scopes.any (·.id == (.ofSegments outer)) = true)
-    (counted : segment.ordinal < state.scopeOrdinals.getD { parent := (.ofSegments outer), element := segment.element } 0)
+    {segment : ScopeSegment} {id : OccurrenceId} {n : Nat}
+    (stands : state.scopes.any (·.id == (.ofSegments outer)) = true) (committed : segment.ordinal = .committed n)
+    (counted : n < state.scopeOrdinals.getD { parent := (.ofSegments outer), element := segment.element } 0)
     (removed : ∀ rest, state.scopes.any (·.id == (.ofSegments (rest ++ segment :: outer))) = false)
+    (settled : ∀ inner ∈ rest, ∃ k, inner.ordinal = .committed k) (ordinal : ∃ k, id.ordinal = .committed k)
     (issuing : id.scope = (.ofSegments (rest ++ segment :: outer))) (absent : state.occurrence? id = none)
     (named : id ∈ work.occurrences) :
     work.perform state = .error (.unsupported "interrupted-before-wait") := by
   apply perform_stale
   rw [stale_eq, Bool.or_eq_true, List.any_eq_true, List.any_eq_true]
   refine .inr ⟨id, named, ?_⟩
-  simp [occurrenceIssued, issuing, scopeIssued_below_removed stands counted removed rest, removed rest, absent]
+  obtain ⟨k, ordinal⟩ := ordinal
+  simp [occurrenceIssued, issuing, ordinal, scopeIssued_below_removed stands committed counted removed rest settled,
+    removed rest, absent]
 
 theorem perform_gone {work : SignalWork} {state : State} {code : String} (fresh : stale state work = false)
     (absent : gone state work = some code) : work.perform state = .error (.semanticFailure .invariant code) := by

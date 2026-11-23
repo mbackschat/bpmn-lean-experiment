@@ -85,10 +85,7 @@ def dispatch (hooks : Hooks) (ctx : Ctx) (occurrence : Occurrence) (entry : Scop
 /-- The counter an occurrence numbers under: a Multi-Instance Activity's body apart from its instances. -/
 def roleOf (program : Program) (request : BeginRequest) : ActivationRole :=
   let loops := (((program.element? request.element).bind (·.envelope?)).bind (·.multiInstance)).isSome
-  match request.continuation with
-  | .multiInstance _ => .element
-  | .flow => if loops then .multiInstanceBody else .element
-  | .compensation _ => if loops then .multiInstanceBody else .element
+  if request.continuation.body?.isSome then .element else if loops then .multiInstanceBody else .element
 
 /-- An Event Sub-Process start's values (`BeginRequest.writes`), written outward from the scope occurrence its begun
 occurrence `occurrence` entered, never from the parent, so a name the Event Sub-Process declares an item for lands in
@@ -209,20 +206,28 @@ def absorb (hooks : Hooks) (ctx : Ctx) (before : Nat) (state : State) : Outcome 
   | _ => .ok state
 
 /-- Turn the draft into the transition of the unit `unit` (`journalDraft`), tell the features what the micro-step
-removed and wrote, and queue the micro-step's batches under `unit` (`State.queueBatch`). A unit key the closure already
-ran is an invariant failure, never a second transition under one key: no admitted closure runs a unit twice (DC4). -/
+removed and wrote, and queue the micro-step's batches under `unit` (`State.queueBatch`). `microStep` refused a unit key
+the closure already ran before its body, and nothing the body or the absorbed completion runs writes a transition, so
+the journalled key is new (DC4). -/
 def conclude (hooks : Hooks) (ctx : Ctx) (unit : UnitKey) (cause : Cause) (element : Option ElementId)
     (owner : ScopeOccurrenceId) (state : State) : Outcome := do
-  if state.transitions.contains unit then .error (.semanticFailure .invariant "unit-key-reused") else
   let journalled := journalDraft unit cause element owner state
   let journalled ← state.draft.cancelled.foldlM (fun state occurrence => hooks.cancelled ctx occurrence state) journalled
   let written ← hooks.written ctx state.writes journalled
-  .ok (written.queueBatch unit)
+  .ok { written.queueBatch unit with issuing := .ofRoot .seed, issueNext := 0 }
 
 /-- One micro-step: run `body`, absorb its sole completion and record the transition. Each stage's failure is
-`deferred` against the state it started from, so a boundary an earlier micro-step or stage crossed counts. -/
+`deferred` against the state it started from, so a boundary an earlier micro-step or stage crossed counts. Every
+identity the micro-step issues is `unit`'s (DC12), numbered from 0. A unit key the closure already ran, or the seed's
+reserved root, is an invariant failure before the body runs, never a second transition under one key (DC4): the issuer
+reset needs `unit` to hold no issue yet (`Laws.State.IssuerFresh`), which a unit that never ran guarantees, so a command
+that commits ran each unit once and its issues are fresh; a failed command's issues are discarded with its speculative
+state. -/
 def microStep (hooks : Hooks) (ctx : Ctx) (unit : UnitKey) (cause : Cause) (element : Option ElementId)
     (owner : ScopeOccurrenceId) (body : State → Outcome) (state : State) : Outcome := do
+  if state.transitions.contains unit || unit == .ofRoot .seed then
+    .error (.semanticFailure .invariant "unit-key-reused") else
+  let state := { state with issuing := unit, issueNext := 0 }
   let before := state.batchSignals.length
   let next ← deferred ctx.program state (body state)
   let absorbed ← deferred ctx.program next (absorb hooks ctx before next)
@@ -308,6 +313,29 @@ def nextToken (hooks : Hooks) (ctx : Ctx) (log : RunLog) (state : State) : Optio
   | .orderInvariant => earliest log state.queuedTokens
   | .declarationDepthFirst => if (idleScope? hooks ctx state).isSome then none else latest log state.queuedTokens
 
+/-- How many times the closure already offered the parked occurrence `occurrence` (`UnitKey.offerUnit?`): the offer
+units among its transitions, a count, which reads no order. -/
+def offerRound (state : State) (occurrence : OccurrenceId) : Nat :=
+  (state.transitions.filter fun unit _ => UnitKey.offers occurrence unit).size
+
+/-- The offer of the parked arrival `waiting` when no arrival parked before it fired (`reoffer?`): its join is offered
+the latest arrival parked on that join in that scope occurrence, under the offer's unit, and fires when the offer queues
+a signal (`some`), `none` when it does not; a parked flow leading to no gateway is an invariant failure. -/
+def offerParked (hooks : Hooks) (ctx : Ctx) (state : State) (waiting : Parked) :
+    Except Failure (Option (ElementId × ScopeOccurrenceId × OccurrenceId × State)) :=
+  match (ctx.program.target? waiting.flow).bind ctx.program.element? with
+  | none => .error (.semanticFailure .invariant "parked-without-gateway")
+  | some element =>
+    match element.gateway?, ((state.slots.parked.filter fun other => other.scope == waiting.scope &&
+        ctx.program.target? other.flow == ctx.program.target? waiting.flow).getLast?).bind (state.occurrence? ·.occurrence) with
+    | some (header, payload), some occurrence => do
+      -- the offer's issues are its unit's, so its key is the one `settle` runs it under (DC12)
+      let some unit := UnitKey.offerUnit? occurrence.id (offerRound state occurrence.id)
+        | .error (.semanticFailure .invariant "offer-unit-unkeyed")
+      let offered ← hooks.arriveGateway ctx header payload occurrence { state with issuing := unit, issueNext := 0 }
+      .ok (if offered.batchSignals.isEmpty then none else some (header.id, waiting.scope, occurrence.id, offered))
+    | _, _ => .error (.semanticFailure .invariant "parked-without-gateway")
+
 /-- The first parked join that fires when it is offered again, as the gateway, its scope occurrence and the state it
 leaves. Table 13.3 activates an Inclusive join by the state, not by an arrival, and `settle` offers the parked joins
 only once no signal, token or idle scope occurrence is left, so `Feature.Flow.positions` sees every position: a
@@ -316,21 +344,9 @@ order; a Parallel join is ready only on an arrival, so offering it never fires i
 def reoffer? (hooks : Hooks) (ctx : Ctx) (state : State) :
     Except Failure (Option (ElementId × ScopeOccurrenceId × OccurrenceId × State)) :=
   state.slots.parked.foldlM (init := none) fun found waiting =>
-    match found, (ctx.program.target? waiting.flow).bind ctx.program.element? with
-    | some _, _ => .ok found
-    | none, none => .error (.semanticFailure .invariant "parked-without-gateway")
-    | none, some element =>
-      match element.gateway?, ((state.slots.parked.filter fun other => other.scope == waiting.scope &&
-          ctx.program.target? other.flow == ctx.program.target? waiting.flow).getLast?).bind (state.occurrence? ·.occurrence) with
-      | some (header, payload), some occurrence => do
-        let offered ← hooks.arriveGateway ctx header payload occurrence state
-        .ok (if offered.batchSignals.isEmpty then none else some (header.id, waiting.scope, occurrence.id, offered))
-      | _, _ => .error (.semanticFailure .invariant "parked-without-gateway")
-
-/-- How many times the closure already offered the parked occurrence `occurrence` (`UnitRoot.offer`): the offer units
-among its transitions, a count, which reads no order. -/
-def offerRound (state : State) (occurrence : OccurrenceId) : Nat :=
-  (state.transitions.filter fun unit _ => unit.path.isEmpty && unit.root.offerOf? == some occurrence).size
+    match found with
+    | some _ => .ok found
+    | none => offerParked hooks ctx state waiting
 
 /-- Signals first, in breadth-first key order (`firstBreadth`), then tokens (`nextToken`), then idle scope occurrences,
 then the parked joins a quiescent closure offers again (`reoffer?`, journalled with the `idle` cause of the join's scope
@@ -355,19 +371,23 @@ def settle (hooks : Hooks) (ctx : Ctx) : Nat → Nat → RunLog → State → Ex
             (← moveToken hooks ctx unit token { state with queuedTokens := state.queuedTokens.erase unit })
         | none =>
           match idleScope? hooks ctx state with
-          | some scope => do
-            let unit := UnitKey.ofRoot (.idle scope.id)
-            settle hooks ctx fuel work (log.record unit) (← microStep hooks ctx unit (.idle scope.id) scope.element scope.id
-              (completeIdleScope hooks ctx scope) state)
+          | some scope =>
+            match UnitKey.idleUnit? scope.id with
+            | none => .error (.semanticFailure .invariant "idle-unit-unkeyed")
+            | some unit => do
+              settle hooks ctx fuel work (log.record unit) (← microStep hooks ctx unit (.idle scope.id) scope.element scope.id
+                (completeIdleScope hooks ctx scope) state)
           | none => do
             match ← reoffer? hooks ctx state with
             | some (gateway, scope, occurrence, offered) =>
-              let unit := UnitKey.ofRoot (.offer occurrence (offerRound state occurrence))
-              settle hooks ctx fuel work (log.record unit) (← microStep hooks ctx unit (.idle scope) (some gateway) scope
-                (fun _ => .ok offered) state)
+              match UnitKey.offerUnit? occurrence (offerRound state occurrence) with
+              | none => .error (.semanticFailure .invariant "offer-unit-unkeyed")
+              | some unit =>
+                settle hooks ctx fuel work (log.record unit) (← microStep hooks ctx unit (.idle scope) (some gateway) scope
+                  (fun _ => .ok offered) state)
             | none =>
               if state.idle State.root && state.queuedSignals.isEmpty then
-                let unit := UnitKey.ofRoot (.idle State.root)
+                let unit := UnitKey.ofRoot (.idle [])
                 return (← microStep hooks ctx unit (.idle State.root) none State.root
                   (fun state => .ok (endInstance .completed none state)) state, log.record unit)
               else .ok (state, log)
@@ -388,16 +408,13 @@ def onRunning (hooks : Hooks) (ctx : Ctx) (input : Input) (before : Option State
       let start ← advanceClock at? { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] }
       admitChoices hooks ctx
       let unit := UnitKey.ofRoot .input
-      orderJournal (settle hooks ctx closureBound closureWorkBound (RunLog.record {} unit)
+      orderJournal start (settle hooks ctx closureBound closureWorkBound (RunLog.record {} unit)
         (← microStep hooks ctx unit (.input tag) none State.root transition start))
 
 /-- `Ctx.scopeRole`: read from the slots, since the occurrences that ended there may be gone when an event arrives. -/
 def scopeRole (state : State) (scope : ScopeOccurrenceId) : ScopeRole :=
   let ownedByInstance := (((state.scopes.find? (·.id == scope)).bind (·.occurrence)).bind state.occurrence?).any fun owner =>
-    match owner.continuation with
-    | .multiInstance _ => true
-    | .flow => false
-    | .compensation _ => false
+    owner.continuation.body?.isSome
   if state.slots.compensation.runs.any (·.running.any (·.1 == scope)) then .compensationHandler
   else if ownedByInstance || state.slots.multiInstances.any (·.instances.any (·.holds scope)) then .multiInstanceInstance
   else .ordinary
@@ -431,7 +448,7 @@ def step (hooks : Hooks) (program : Program) (before : Option State) (input : In
           (.ofRoot .seed))
       admitChoices hooks ctx
       let unit := UnitKey.ofRoot .input
-      orderJournal <| settle hooks ctx closureBound closureWorkBound (RunLog.record {} unit) (← microStep hooks ctx unit
+      orderJournal initial <| settle hooks ctx closureBound closureWorkBound (RunLog.record {} unit) (← microStep hooks ctx unit
         (.input .start) (some start) State.root (begin hooks ctx { element := start, scope := State.root, trigger := payload.trigger })
         initial)
   | .command data => onRunning hooks ctx input before (command hooks ctx data)

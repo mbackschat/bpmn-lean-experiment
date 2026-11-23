@@ -29,9 +29,11 @@ before was never issued before it
 structure IssuesFresh (before after : State) : Prop where
   monotone : OccurrenceGrows before after
   occurrences : ∀ id ∈ occurrenceIds after, id ∉ occurrenceIds before → ¬ OccurrenceIssued before id
-  /-- A new item's ordinal is at or above its occurrence's counter before (KD1). -/
+  /-- A new item's committed ordinal is at or above its occurrence's counter before (KD1), and its fresh issue was not
+  in the table before (DC12). -/
   items : ∀ item ∈ itemList after.openItems, item.id ∉ (itemList before.openItems).map (·.id) →
-    before.itemOrdinals.getD item.id.occurrence 0 ≤ item.id.ordinal
+    (∀ n, item.id.ordinal = .committed n → before.itemOrdinals.getD item.id.occurrence 0 ≤ n) ∧
+      ∀ unit index, item.id.ordinal = .fresh unit index → before.issued[Issue.fresh unit index]? = none
   scopes : ∀ id ∈ scopeIds after, id ∉ scopeIds before → ¬ ScopeIssued before id
 
 /-- Activation counters only grow, so a re-entered element's next occurrence has a number no earlier one had (R8,
@@ -228,9 +230,14 @@ theorem sample_issues_fresh (kind : OpenKind) : IssuesFresh (sample kind) (clear
 /-- An identifier issued before reappearing breaks `IssuesFresh`: `innerKey` returns after `Sub#0` was cleared. -/
 theorem reuse_rejected (kind : OpenKind) : ¬ IssuesFresh (cleared kind) (sample kind) := fun fresh => by
   refine fresh.occurrences innerKey (by simp [occurrenceIds, sample, subProcess, innerTask, outerTask])
-    (by simp [occurrenceIds, cleared, subProcess, outerTask]) ⟨?_, fun _ => ?_⟩
+    (by simp [occurrenceIds, cleared, subProcess, outerTask])
+    ⟨?_, And.intro (fun _ committed => ?_) <| And.intro (fun _ committed _ => ?_) fun _ _ fresh => ?_⟩
   · exact (sample_historic kind : Historic (cleared kind)).issued_key (by simp [sample, childScope])
-  · simp [occurrenceCount, cleared, sample, sampleCounters]
+  · simp [innerKey, subScope]
+  · simp only [innerKey] at committed
+    obtain rfl := Issue.committed.inj committed
+    simp [occurrenceCount, cleared, sample, sampleCounters]
+  · simp [innerKey] at fresh
 
 theorem counts_grow (kind : OpenKind) : CountsGrow (sample kind) (sample kind) := by
   intro count member

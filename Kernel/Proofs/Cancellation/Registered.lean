@@ -4,6 +4,7 @@ public import Kernel.Proofs.Cancellation
 public import Kernel.Proofs.Cancellation.Draft
 public import Kernel.Proofs.Step.Contract
 public import Kernel.Proofs.State
+public import Kernel.Proofs.Frame.Both
 public import Kernel.Laws.State.Fire
 public import Kernel.Laws.Registry
 import Kernel.Laws.State.Counters
@@ -77,7 +78,7 @@ theorem workOps_alongside {program : Program} (side : FrameAlongside program rel
       entered.2⟩
   openItem s kind occurrence holds member begun unstarted role :=
     have opened := ops.openItem s kind occurrence holds.1 member begun unstarted role
-    ⟨⟨opened.1, side.openItem holds.2 kind occurrence⟩, opened.2⟩
+    ⟨⟨opened.1, side.openItem holds.2 holds.1.issuer kind occurrence⟩, opened.2⟩
   arm s occurrence element holds member begun named := ⟨ops.arm s occurrence element holds.1 member begun named,
     side.arm s _ _ _ holds.1 ⟨occurrence, member, rfl, named.symm, rfl⟩ holds.2⟩
   enterCalled s call variables definition holds member begun role activity unowned :=
@@ -255,7 +256,7 @@ theorem propagationOps_alongside {program : Program} (side : FrameAlongside prog
       (fun _ inside keeps strictly => strictly.2 (congrArg Occurrence.scope (Laws.State.nodup_map_eq
         holds.1.distinct.occurrences inside member (List.mem_singleton.mp keeps)))) holds.2⟩, cleared.2⟩
   openItem s kind occurrence holds member begun unstarted role :=
-    ⟨ops.openItem s kind occurrence holds.1 member begun unstarted role, side.openItem holds.2 kind occurrence⟩
+    ⟨ops.openItem s kind occurrence holds.1 member begun unstarted role, side.openItem holds.2 holds.1.issuer kind occurrence⟩
   signalOccurrences := ops.signalOccurrences
   signalFrame := ops.signalFrame
   begin s element scope holds stands anchored :=
@@ -356,9 +357,12 @@ private theorem reopened_occurrences {program : Program} {s : State} (formed : W
     have below := formed.issued.occurrences waiting present
     rw [List.mem_singleton.mp fresh, ← identity] at same
     rw [← same] at below
-    refine (reserves.fresh (by rw [reserves.placed, Laws.State.closeItem_eq]; exact stands) ?_).elim
-    exact Laws.State.OccurrenceGrows.of_same (by rw [Laws.State.closeItem_eq]) (by rw [Laws.State.closeItem_eq])
-      (by rw [Laws.State.closeItem_eq]) _ below
+    have issuer : Laws.State.IssuerFresh (s.closeItem item.id) :=
+      formed.issuer.same (by rw [Laws.State.closeItem_eq]) (by rw [Laws.State.closeItem_eq])
+        (by rw [Laws.State.closeItem_eq]) (by rw [Laws.State.closeItem_eq])
+    refine (reserves.fresh issuer (by rw [reserves.placed, Laws.State.closeItem_eq]; exact stands) ?_).elim
+    exact Laws.State.OccurrenceGrows.of_same (s := s) (t := s.closeItem item.id) (by rw [Laws.State.closeItem_eq])
+      (by rw [Laws.State.closeItem_eq]) (by rw [Laws.State.closeItem_eq]) (.of_eq (by rw [Laws.State.closeItem_eq])) _ below
 
 /-- Withdrawing an occurrence's items keeps the scope occurrences and the slots, and drops occurrences only. -/
 private theorem withdrawOccurrence_kept (s : State) (id : OccurrenceId) :
@@ -409,7 +413,7 @@ theorem subscriptionsOps_alongside {program : Program} (side : FrameAlongside pr
   awaits := ops.awaits
   disarm s host holds := ⟨ops.disarm s host holds.1, side.disarm s host holds.1 holds.2⟩
   openItem s kind occurrence holds member begun unstarted role :=
-    ⟨ops.openItem s kind occurrence holds.1 member begun unstarted role, side.openItem holds.2 kind occurrence⟩
+    ⟨ops.openItem s kind occurrence holds.1 member begun unstarted role, side.openItem holds.2 holds.1.issuer kind occurrence⟩
   openSubscription s kind element scope host passive holds stands hangs waits reservable anchored :=
     ⟨ops.openSubscription s kind element scope host passive holds.1 stands hangs waits reservable
       (anchored.mono fun _ => And.left),
@@ -504,6 +508,7 @@ theorem featureOps_frame {rel : Program → State → Prop} (ops : Proofs.Step.F
     (occurs : ∀ program, OccursAlongside program (rel program)) :
     Proofs.Step.FeatureOps fun program s => WellFormed program s ∧ rel program s where
   operations := operations_alongside side ops.operations
+  issuer program s holds := ops.issuer program s holds.1
   work _ := workOps_alongside (side _) (occurs _) (ops.work _)
   flow _ := flowOps_alongside (side _) (ops.flow _)
   join _ := joinOps_alongside (side _) (ops.join _)
@@ -537,9 +542,9 @@ theorem registeredOps_alongside {rel : State → Prop} (ops : Proofs.Step.Regist
 identity and enters none. -/
 theorem scopesKept_occursAlongside (before : State) (program : Program) :
     OccursAlongside program (ScopesKept before) where
-  reserve s element scope _ _ _ _ kept :=
+  reserve s element scope formed _ _ _ kept :=
     have reserves := Laws.State.reserve_reserves s element scope
-    kept.same reserves.scopes reserves.scopeOrdinals
+    kept.same reserves.scopes reserves.scopeOrdinals (reserves.table formed.issuer)
   occur s _ _ _ _ _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept
@@ -565,11 +570,50 @@ theorem keepsScopes_contract (ops : Proofs.Step.RegisteredOps WellFormed) (befor
   Proofs.Step.registered_contract (registeredOps_alongside ops (scopesKept_alongside before)
     (scopesKept_stores before) (scopesKept_occursAlongside before)) Proofs.State.stateFacts
 
+/-- The registered hooks and `Step`'s phases keep beside `WellFormed` the transitions and the issuer a micro-step's body
+starts from (`Laws.Step.Framing`, DC12), from the records of `Proofs.Frame.IssuerOf`. -/
+theorem framing_registered (ops : Proofs.Step.RegisteredOps WellFormed) (phases : Laws.Step.ClosurePhases WellFormed)
+    (pipeline : Laws.Step.PipelinePhases WellFormed) : Laws.Step.Framing Registry.hooks WellFormed :=
+  have contract := fun b => Proofs.Step.registered_contract (registeredOps_alongside ops (issuerOf_alongside b)
+    (issuerOf_stores b) (issuerOf_occurs b)) Proofs.State.stateFacts
+  have body := fun b => bodyPhases_alongside phases.toBodyPhases fun program => issuerOf_body b program
+  { phases, contract, body
+    pipeline := fun b => Laws.Step.complete_keeps (contract b) (body b) (issuerOf_pipelinePhases b pipeline)
+      Proofs.State.stateFacts
+    queueBatch := Laws.State.queueBatch_issuer }
+
+/-- The registered hooks and `Step`'s phases keep beside `WellFormed` the counters of the state a closure starts from
+(`Laws.State.CountersFrom`, DC12) and every occurrence keyed in its scope occurrence (`Proofs.Frame.Keyed`, DC26), for
+every start (`Laws.Step.StartKeeps`). -/
+theorem keysAux_registered (ops : Proofs.Step.RegisteredOps WellFormed) (phases : Laws.Step.ClosurePhases WellFormed)
+    (pipeline : Laws.Step.PipelinePhases WellFormed) : Laws.Step.StartKeeps Registry.hooks Proofs.State.KeysAux :=
+  have contract := fun start => Proofs.Step.registered_contract (registeredOps_alongside ops
+    (fun program => alongside_both (countersFrom_alongside start program) (keyed_alongside program))
+    (fun program => storesAlongside_both (countersFrom_stores start program) (keyed_stores program))
+    (fun program => occursAlongside_both (countersFrom_occurs start program) (keyed_occurs program))) Proofs.State.stateFacts
+  have closure := fun start => closurePhases_alongside phases
+    (fun program => closureAlongside_both (countersFrom_closure start program) (keyed_closure program))
+    countersKeyed_reissue
+  ⟨contract, closure, fun start => Laws.Step.complete_keeps (contract start) (closure start).toBodyPhases
+    (pipelinePhases_both (countersFrom_pipelinePhases start pipeline) (keyed_pipelinePhases pipeline))
+    Proofs.State.stateFacts⟩
+
+/-- The walk of `KeepsScopes` under the registered hooks, from the records and phases of `WellFormed`: an input's start
+keeps it of a committed before-state (`KeepsScopes.self`). -/
+theorem keepsScopesWalk_registered (ops : Proofs.Step.RegisteredOps WellFormed) (phases : Laws.Step.Phases WellFormed)
+    (pipeline : Laws.Step.PipelinePhases WellFormed) : KeepsScopesWalk Registry.hooks :=
+  fun _ _ before _ formed committed ran =>
+    (Proofs.State.running_keeps (keepsScopes_contract ops before) (keepsScopes_phases phases before formed committed)
+      (Laws.Step.complete_keeps (keepsScopes_contract ops before) (keepsScopes_phases phases before formed committed).toBodyPhases
+        (keepsScopes_pipelinePhases pipeline before) Proofs.State.stateFacts)
+      (framing_registered ops phases.toClosurePhases pipeline) (keysAux_registered ops phases.toClosurePhases pipeline)
+      (fun _ _ holds => holds.1) committed
+      ⟨Laws.State.reset_wellFormed formed committed, (KeepsScopes.self formed).2⟩ ran).1
+
 /-- `SubtreeRemoved` of the registered hooks, from the records and phases of `WellFormed`. -/
 theorem subtreeRemoved_registered (ops : Proofs.Step.RegisteredOps WellFormed) (phases : Laws.Step.Phases WellFormed)
     (pipeline : Laws.Step.PipelinePhases WellFormed) : SubtreeRemoved Registry.hooks :=
-  subtreeRemoved_of_keeps (keepsScopes_contract ops) (keepsScopes_phases phases) (keepsScopes_pipelinePhases pipeline)
-    Proofs.State.stateFacts
+  subtreeRemoved_of_keeps (keepsScopesWalk_registered ops phases pipeline)
 
 /-! ## End facts of the registered hooks -/
 
@@ -579,7 +623,7 @@ them (`Kernel.Laws.Step.EndsFrames`): the hooks then keep `Laws.Step.EndsInv` by
 theorem endsKept_alongside (b : State) (x : Option (OccurrenceId × OccurrenceKey)) (program : Program) {srel : State → Prop} :
     Alongside program (Laws.Step.EndsKept b x) srel where
   frame _ _ moved kept := kept.unmoved moved.occurrences moved.activations ⟨moved.scopes, moved.instanceId⟩
-    (.of_same (congrArg (List.map ScopeOccurrence.id) moved.scopes) moved.scopeOrdinals moved.occurrenceOrdinals)
+    (.of_same (congrArg (List.map ScopeOccurrence.id) moved.scopes) moved.scopeOrdinals moved.occurrenceOrdinals moved.table)
     (.of_eq (by simp only [Laws.Step.endKeys, moved.transitions, moved.ended]))
   emit s _ _ _ _ _ kept := by
     rw [Laws.State.emit_eq]
@@ -737,13 +781,16 @@ theorem microStepsKeepEnds_registered (ops : Proofs.Step.RegisteredOps WellForme
     (phases : Laws.Step.Phases WellFormed) (pipeline : Laws.Step.PipelinePhases WellFormed) :
     MicroStepsKeepEnds Registry.hooks := by
   have kept := fun b => microStepsKeep_alongside (rel := fun _ => Laws.Step.EndsKept b none) (endsInv_contract ops b none)
-    phases.toClosurePhases (endsKept_closureAlongside b) Proofs.State.stateFacts
+    phases.toClosurePhases (endsKept_closureAlongside b)
+    (fun _ => Laws.Step.EndsKept.reissue) Proofs.State.stateFacts
     (Laws.Step.complete_ends (endsInv_sourced ops b) (fun _ _ holds => ⟨holds.1, trivial⟩) phases pipeline
       Proofs.State.stateFacts)
+    (framing_registered ops phases.toClosurePhases pipeline)
   obtain ⟨cancelled, written⟩ := registered_quiet
-  refine ⟨fun ctx unit cause transition b state after runs holds ran =>
-    ⟨(kept b).1 ctx unit cause transition state after runs holds ran, Laws.Step.microStep_drafts cancelled written ran⟩,
-    fun ctx log unit b state after holds step => ⟨(kept b).2 ctx log unit state after holds step, ?_⟩⟩
+  refine ⟨fun ctx unit cause transition b state after runs holds between ran =>
+    ⟨(kept b).1 ctx unit cause transition state after runs holds between ran,
+      Laws.Step.microStep_drafts cancelled written ran⟩,
+    fun ctx log unit b state after holds between step => ⟨(kept b).2 ctx log unit state after holds between step, ?_⟩⟩
   obtain ⟨_, _, _, ⟨_, _, ran⟩⟩ := step.microStep
   exact Laws.Step.microStep_drafts cancelled written ran
 

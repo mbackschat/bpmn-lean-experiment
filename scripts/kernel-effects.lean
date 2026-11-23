@@ -214,9 +214,11 @@ structure RunLogRule where
   log : Name
   fieldOwners : List Name
 
+-- `Step.issueOrder` reads the run order of the issuing units (DC12: issue order is run order, and `CommitsAgree` holds
+-- up to the renaming), which is not `orderKey`'s (parent position, batch index) order.
 def runLogRule : RunLogRule :=
-  ⟨`Kernel.Step.RunLog.runPosition, [`Kernel.Step.orderKey, `Kernel.Step.byRun], `Kernel.Step.RunLog,
-    [`Kernel.Step.RunLog.record, `Kernel.Step.RunLog.runPosition]⟩
+  ⟨`Kernel.Step.RunLog.runPosition, [`Kernel.Step.orderKey, `Kernel.Step.byRun, `Kernel.Step.issueOrder],
+    `Kernel.Step.RunLog, [`Kernel.Step.RunLog.record, `Kernel.Step.RunLog.runPosition]⟩
 
 /-- No iteration-order read of a unit-keyed map (KD7): an operation of `map` applied at the key type `key` that is not
 in `orderFree` reads the map's iteration order, which is its key order and no order of entry, so only `owners` may

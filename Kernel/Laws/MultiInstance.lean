@@ -352,7 +352,7 @@ theorem enterInstance_opening (ops : MultiInstanceOps program inv settled) {ctx 
       cases slot'
       exact bounds.2
     have older : ∀ other, other ≠ index → instances[other]? =
-        some (.active (run.scope.child run.element (Laws.State.slotCount s run.scope run.element))) → False := by
+        some (.active (run.scope.child run.element (.fresh s.issuing s.issueNext))) → False := by
       intro other differs slot
       by_cases inside' : other ∈ done
       · exact unissued (fresh' other inside' _ slot)
@@ -376,7 +376,7 @@ theorem enterInstance_opening (ops : MultiInstanceOps program inv settled) {ctx 
       · rw [List.getElem?_set_ne at_] at two
         exact absurd two fun slot => older second (Ne.symm at_) slot
   · obtain ⟨slots, indices, requests, active⟩ := requested
-    refine ⟨slots ++ [(index, run.scope.child run.element (Laws.State.slotCount s run.scope run.element))],
+    refine ⟨slots ++ [(index, run.scope.child run.element (.fresh s.issuing s.issueNext))],
       by simp [indices], by rw [requests]; simp [instanceRequest],
       fun slot member => ?_⟩
     rcases List.mem_append.mp member with old | new

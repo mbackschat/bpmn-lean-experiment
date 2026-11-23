@@ -5,11 +5,14 @@ public import Kernel.IL.Types
 /-! # Scope occurrence and occurrence keys
 
 A scope occurrence's identity is structural (KD1): the key of the scope occurrence it was entered in, the element it
-was entered for and an ordinal counted per (parent, element) by `State.scopeOrdinals`, so no global counter issues it.
-The process root is the empty key. An occurrence's identity is the scope occurrence key it was issued in, its element and
-an ordinal counted the same way by `State.occurrenceOrdinals`. A scope occurrence key carries its path as a `Spine`
-(DC20), whose cached depth and fingerprint and whose jump pointers only accelerate: equality rejects on the cached
-fields and the order meets two keys in O(log depth), and both decide on the full path. Each key has a lawful order, so
+was entered for and its issue (`Issue`), once committed an ordinal counted per (parent, element) by
+`State.scopeOrdinals`, so no global counter issues it. The process root is the empty key. An occurrence's identity is the
+scope occurrence key it was issued in, its element and its issue, once committed an ordinal counted the same way by
+`State.occurrenceOrdinals`. Inside a closure every identity is issued as the running unit's key and its index among the
+unit's issues, the same in every schedule, and the commit renames it to its committed ordinal (DC12, `Step.compact`;
+the committed forms and the issue slots are `Kernel.State.Issue`'s). A scope occurrence key carries its path as a
+`Spine` (DC20), whose cached depth and fingerprint and whose jump pointers only accelerate: equality rejects on the
+cached fields and the order meets two keys in O(log depth), and both decide on the full path. Each key has a lawful order, so
 maps may key on it, and an order that reads only the key's value: no site may read it as an order of entry. Scope
 occurrence keys order outermost first, so a subtree is one key range (KD1). A closure's unit key (DC4) is a structured
 root and a path of unit steps on the same spine, ordered by depth, fingerprint, root and path, with the breadth-first
@@ -21,24 +24,24 @@ public section
 
 namespace Kernel
 
-/-- One step down the scope tree: the element a scope occurrence was entered for, and its ordinal among the scope
-occurrences of that element entered in the same parent. -/
-structure ScopeSegment where
+/-- A committed scope segment (DC12): an element and its committed ordinal, the form a unit root names a committed
+scope occurrence by, innermost first. -/
+structure CommittedSegment where
   element : ElementId
   ordinal : Nat
   deriving DecidableEq, Repr, Inhabited
 
-instance : Ord ScopeSegment where
+instance : Ord CommittedSegment where
   compare := compareLex (compareOn (·.element.value)) (compareOn (·.ordinal))
 
 /-- The orders a map key needs, proved inline beside the order, since an executable module holds no theorem
 (guard 6). -/
-instance : Std.TransOrd ScopeSegment := inferInstanceAs <| Std.TransCmp (compareLex _ _)
+instance : Std.TransOrd CommittedSegment := inferInstanceAs <| Std.TransCmp (compareLex _ _)
 
-instance : Std.LawfulEqOrd ScopeSegment where
+instance : Std.LawfulEqOrd CommittedSegment where
   eq_of_compare {a b} h := by
-    have h : compareLex (compareOn fun segment : ScopeSegment => segment.element.value)
-        (compareOn fun segment : ScopeSegment => segment.ordinal) a b = .eq := h
+    have h : compareLex (compareOn fun segment : CommittedSegment => segment.element.value)
+        (compareOn fun segment : CommittedSegment => segment.ordinal) a b = .eq := h
     rw [compareLex_eq_eq] at h
     obtain ⟨⟨element⟩, ordinal⟩ := a
     obtain ⟨⟨element'⟩, ordinal'⟩ := b
@@ -400,142 +403,76 @@ def outer [SpineStep α] [Ord α] [Std.LawfulEqOrd α] [DecidableEq α] :
 
 end Spine
 
-/-- A scope segment's fingerprint step: its element's hash mixed with its ordinal. -/
-instance : SpineStep ScopeSegment where
-  code segment := mixHash (hash segment.element.value) (hash segment.ordinal)
+/-! ## Unit keys -/
 
-/-- A scope occurrence's structural key: its segments from itself up to the process root, innermost first, so the
-parent's key is the tail and a key's own element and ordinal are its head, with their spine (DC20), which `child` pushes
-and `parent?` reads, so neither copies the path. The root of the process instance has none; a called instance's root is
-entered below its Call's scope occurrence like any other. Keys order outermost first (`Ord`), so a subtree is one key
-range (KD1). -/
-structure ScopeOccurrenceId where
-  segments : List ScopeSegment
-  spine : Spine ScopeSegment
-  spineOk : spine = (Spine.ofPath segments).val
-
-namespace ScopeOccurrenceId
-
-/-- The key of a path of segments, innermost first, its spine pushed segment by segment: O(length). -/
-def ofSegments (segments : List ScopeSegment) : ScopeOccurrenceId := ⟨segments, (Spine.ofPath segments).val, rfl⟩
-
-/-- The key of the `ordinal`th scope occurrence of `element` entered in `parent`: one `Spine.push`. -/
-abbrev child (parent : ScopeOccurrenceId) (element : ElementId) (ordinal : Nat) : ScopeOccurrenceId :=
-  ⟨{ element, ordinal } :: parent.segments, Spine.push { element, ordinal } parent.spine, by rw [parent.spineOk]; rfl⟩
-
-/-- The key of the scope occurrence `scope` was entered in, given `scope`'s segments: its spine's parent, read in
-constant time. -/
-abbrev up (scope : ScopeOccurrenceId) {segment : ScopeSegment} {rest : List ScopeSegment}
-    (segments : scope.segments = segment :: rest) : ScopeOccurrenceId :=
-  ⟨rest, scope.spine.parentNode, by rw [scope.spineOk, segments]; rfl⟩
-
-/-- The key of the scope occurrence this one was entered in, `none` for the root. -/
-abbrev parent? (scope : ScopeOccurrenceId) : Option ScopeOccurrenceId :=
-  match segments : scope.segments with
-  | [] => none
-  | _ :: _ => some (scope.up segments)
-
-end ScopeOccurrenceId
-
-instance : Inhabited ScopeOccurrenceId := ⟨.ofSegments []⟩
-
-instance : Repr ScopeOccurrenceId where
-  reprPrec key _ := Std.Format.bracket "{ " ("segments := " ++ repr key.segments) " }"
-
-/-- Equality rejects on depth and fingerprint at once and accepts a shared path at once; only a fingerprint collision or
-an unshared equal path walks it. No derived walk: a derived instance would also compare the spines. -/
-instance : DecidableEq ScopeOccurrenceId := fun a b =>
-  if cached : a.spine.level = b.spine.level ∧ a.spine.fingerprint = b.spine.fingerprint then
-    match withPtrEqDecEq a.segments b.segments (fun _ => inferInstance) with
-    | isTrue same => isTrue <| by
-        obtain ⟨segments, spine, ok⟩ := a
-        obtain ⟨segments', spine', ok'⟩ := b
-        simp only at same
-        subst same ok ok'
-        rfl
-    | isFalse other => isFalse fun same => other (congrArg ScopeOccurrenceId.segments same)
-  else isFalse fun same => cached ⟨congrArg (·.spine.level) same, congrArg (·.spine.fingerprint) same⟩
-
-/-- The order of scope occurrence keys, outermost segment first (`Spine.compareOuter`), with its agreement with the
-order of the reversed segments proved inline. -/
-def ScopeOccurrenceId.outerOrder :
-    { cmp : ScopeOccurrenceId → ScopeOccurrenceId → Ordering // cmp = compareOn (·.segments.reverse) } :=
-  ⟨fun a b => Spine.outer.val a.spine b.spine, by
-    funext a b
-    obtain ⟨goodA, pathA⟩ := (Spine.ofPath a.segments).property
-    obtain ⟨goodB, pathB⟩ := (Spine.ofPath b.segments).property
-    have ga := goodA; have gb := goodB
-    rw [← a.spineOk] at ga pathA
-    rw [← b.spineOk] at gb pathB
-    show Spine.outer.val a.spine b.spine = compare a.segments.reverse b.segments.reverse
-    rw [Spine.outer.property.2 _ _ ga gb, pathA, pathB]⟩
-
-instance : Ord ScopeOccurrenceId where
-  compare := ScopeOccurrenceId.outerOrder.val
-
-instance : Std.TransOrd ScopeOccurrenceId := by
-  show Std.TransCmp ScopeOccurrenceId.outerOrder.val
-  rw [ScopeOccurrenceId.outerOrder.property]
-  exact inferInstanceAs <| Std.TransCmp (compareOn _)
-
-instance : Std.LawfulEqOrd ScopeOccurrenceId where
-  eq_of_compare {a b} h := by
-    have h : compare a.segments.reverse b.segments.reverse = .eq := by
-      have order := ScopeOccurrenceId.outerOrder.property
-      rw [show compare a b = ScopeOccurrenceId.outerOrder.val a b from rfl, order] at h
-      exact h
-    have same : a.segments = b.segments := List.reverse_inj.mp (Std.LawfulEqOrd.eq_of_compare h)
-    -- A key's spine is its path's.
-    obtain ⟨segments, spine, ok⟩ := a
-    obtain ⟨segments', spine', ok'⟩ := b
-    simp only at same
-    subst same ok ok'
-    rfl
-
-/-- What an ordinal counter counts: the keys issued for `element` in the scope occurrence `parent`, the scope
-occurrences entered there (`State.scopeOrdinals`) or the occurrences issued there (`State.occurrenceOrdinals`). -/
-structure ScopeSlot where
-  parent : ScopeOccurrenceId
-  element : ElementId
+/-- One step down a closure's unit chain (DC4, DC20): the `index`th signal or token the unit above queued, its index in
+that unit's batch, so in-batch order is in the key and no order of entry is kept (DC2, DC10); or the idle check of the
+scope occurrence, or the `round`th offer of the parked occurrence, that the unit above issued as its `index`th issue
+(DC12). A unit that names an identity issued in its own closure hangs below that identity's issuer rather than at a root
+naming it: an issue names its unit, so a root naming a fresh identity would make the key types recursive. -/
+inductive UnitStep where
+  | signal (index : Nat)
+  | token (index : Nat)
+  | idle (index : Nat)
+  | offer (index : Nat) (round : Nat)
   deriving DecidableEq, Repr
 
-instance : Ord ScopeSlot where
-  compare := compareLex (compareOn (·.parent)) (compareOn (·.element.value))
+/-- A step's place in the order of steps: signals, tokens, idle checks, then offers, each by index, then round. -/
+def UnitStep.stepRank : UnitStep → Nat × Nat × Nat
+  | .signal index => (0, index, 0)
+  | .token index => (1, index, 0)
+  | .idle index => (2, index, 0)
+  | .offer index round => (3, index, round)
 
-instance : Std.TransOrd ScopeSlot := inferInstanceAs <| Std.TransCmp (compareLex _ _)
+instance : Ord UnitStep where
+  compare := compareLex (compareOn (·.stepRank.1)) <|
+    compareLex (compareOn (·.stepRank.2.1)) (compareOn (·.stepRank.2.2))
 
-instance : Std.LawfulEqOrd ScopeSlot where
+instance : Std.TransOrd UnitStep := inferInstanceAs <| Std.TransCmp (compareLex _ _)
+
+instance : Std.LawfulEqOrd UnitStep where
   eq_of_compare {a b} h := by
-    have h : compareLex (compareOn fun slot : ScopeSlot => slot.parent)
-        (compareOn fun slot : ScopeSlot => slot.element.value) a b = .eq := h
-    rw [compareLex_eq_eq] at h
-    obtain ⟨parent, ⟨element⟩⟩ := a
-    obtain ⟨parent', ⟨element'⟩⟩ := b
-    have parents : parent = parent' := Std.LawfulEqOrd.eq_of_compare h.1
-    have same : element = element' := Std.LawfulEqOrd.eq_of_compare h.2
-    subst parents same
-    rfl
+    have h : compareLex (compareOn fun step : UnitStep => step.stepRank.1)
+        (compareLex (compareOn fun step : UnitStep => step.stepRank.2.1) (compareOn fun step : UnitStep => step.stepRank.2.2))
+        a b = .eq := h
+    rw [compareLex_eq_eq, compareLex_eq_eq] at h
+    have tags : a.stepRank.1 = b.stepRank.1 := Std.LawfulEqOrd.eq_of_compare h.1
+    have indexes : a.stepRank.2.1 = b.stepRank.2.1 := Std.LawfulEqOrd.eq_of_compare h.2.1
+    have rounds : a.stepRank.2.2 = b.stepRank.2.2 := Std.LawfulEqOrd.eq_of_compare h.2.2
+    cases a <;> cases b <;> simp_all [UnitStep.stepRank]
 
-/-- An occurrence's structural key (KD1): the scope occurrence it was issued in, its element and an ordinal counted per
-(scope occurrence, element) by `State.occurrenceOrdinals`, so no global counter issues it. A reservation is issued in the
-scope occurrence that arms it and keeps its key when it begins in another (`State.beginOccurrence`).
-`State.issueOccurrence` is the one issuer. -/
-structure OccurrenceId where
-  scope : ScopeOccurrenceId
+/-- A step's index in the batch, or among the issues, of the unit above. -/
+def UnitStep.batchIndex (step : UnitStep) : Nat := step.stepRank.2.1
+
+/-- The Cantor pairing of `index` and `round`: a bijection of pairs of naturals onto the naturals. -/
+def cantorPair (index round : Nat) : Nat := (index + round) * (index + round + 1) / 2 + round
+
+/-- A unit step's code: its kind's rank, below 4, beside the Cantor pair of its index and round, so distinct steps have
+distinct codes (`Kernel.Laws.State.UnitStep.stepCode_inj`). -/
+def UnitStep.stepCode (step : UnitStep) : Nat := 4 * cantorPair step.stepRank.2.1 step.stepRank.2.2 + step.stepRank.1
+
+/-- A unit step's fingerprint code: its `stepCode`, which differs between distinct steps below 2^64. -/
+instance : SpineStep UnitStep where
+  code step := UInt64.ofNat step.stepCode
+
+/-- A committed occurrence key's parts (DC12): its scope occurrence's committed path, innermost first, its element and
+its ordinal, the form a unit root names a committed occurrence by. -/
+structure CommittedOccurrence where
+  scope : List CommittedSegment
   element : ElementId
   ordinal : Nat
-  deriving DecidableEq, Repr, Inhabited
+  deriving DecidableEq, Repr
 
-instance : Ord OccurrenceId where
+instance : Ord CommittedOccurrence where
   compare := compareLex (compareOn (·.scope)) <| compareLex (compareOn (·.element.value)) (compareOn (·.ordinal))
 
-instance : Std.TransOrd OccurrenceId := inferInstanceAs <| Std.TransCmp (compareLex _ _)
+instance : Std.TransOrd CommittedOccurrence := inferInstanceAs <| Std.TransCmp (compareLex _ _)
 
-instance : Std.LawfulEqOrd OccurrenceId where
+instance : Std.LawfulEqOrd CommittedOccurrence where
   eq_of_compare {a b} h := by
-    have h : compareLex (compareOn fun key : OccurrenceId => key.scope)
-        (compareLex (compareOn fun key : OccurrenceId => key.element.value) (compareOn fun key : OccurrenceId => key.ordinal))
-        a b = .eq := h
+    have h : compareLex (compareOn fun key : CommittedOccurrence => key.scope)
+        (compareLex (compareOn fun key : CommittedOccurrence => key.element.value)
+          (compareOn fun key : CommittedOccurrence => key.ordinal)) a b = .eq := h
     rw [compareLex_eq_eq, compareLex_eq_eq] at h
     obtain ⟨scope, ⟨element⟩, ordinal⟩ := a
     obtain ⟨scope', ⟨element'⟩, ordinal'⟩ := b
@@ -545,52 +482,19 @@ instance : Std.LawfulEqOrd OccurrenceId where
     subst scopes same ordinals
     rfl
 
-/-! ## Unit keys -/
-
-/-- One step down a closure's unit chain (DC4, DC20): the `index`th signal or token the unit above queued, its index in
-that unit's batch, so in-batch order is in the key and no order of entry is kept (DC2, DC10). -/
-inductive UnitStep where
-  | signal (index : Nat)
-  | token (index : Nat)
-  deriving DecidableEq, Repr
-
-/-- A step's place in the order of steps: signals before tokens, each by index. -/
-def UnitStep.stepRank : UnitStep → Nat × Nat
-  | .signal index => (0, index)
-  | .token index => (1, index)
-
-instance : Ord UnitStep where
-  compare := compareLex (compareOn (·.stepRank.1)) (compareOn (·.stepRank.2))
-
-instance : Std.TransOrd UnitStep := inferInstanceAs <| Std.TransCmp (compareLex _ _)
-
-instance : Std.LawfulEqOrd UnitStep where
-  eq_of_compare {a b} h := by
-    have h : compareLex (compareOn fun step : UnitStep => step.stepRank.1) (compareOn fun step : UnitStep => step.stepRank.2) a b =
-      .eq := h
-    rw [compareLex_eq_eq] at h
-    have tags : a.stepRank.1 = b.stepRank.1 := Std.LawfulEqOrd.eq_of_compare h.1
-    have indexes : a.stepRank.2 = b.stepRank.2 := Std.LawfulEqOrd.eq_of_compare h.2
-    cases a <;> cases b <;> simp_all [UnitStep.stepRank]
-
-/-- A step's index in the batch of the unit above. -/
-def UnitStep.batchIndex (step : UnitStep) : Nat := step.stepRank.2
-
-/-- A unit step's fingerprint code: its index and its kind, so a `signal` and a `token` of one index differ. -/
-instance : SpineStep UnitStep where
-  code step := UInt64.ofNat (2 * step.stepRank.2 + step.stepRank.1)
-
 /-- Where a closure's unit chain starts (DC4): the work queued before an input's own transition (a start's arming of the
-root's Event Sub-Process starts), the input's own transition, the completion of an idle scope occurrence (the process
-root's is the instance's completion), or a parked join offered again, named by the latest occurrence parked there and
-the round, the number of times the closure offered that occurrence before: a join that consumes the first arrival
-parked on a flow leaves the latest one parked, so one occurrence can be offered more than once in a closure. A
-structured root, never a tagged element identifier, so no element can take a root's name (T56). -/
+root's Event Sub-Process starts), the input's own transition, the completion of an idle committed scope occurrence (the
+process root's is the instance's completion), or a parked committed occurrence's join offered again, named by the
+occurrence and the round, the number of times the closure offered that occurrence before: a join that consumes the
+first arrival parked on a flow leaves the latest one parked, so one occurrence can be offered more than once in a
+closure. A root names a committed identity in its committed form; the idle check or offer of an identity issued in the
+closure is a step below its issuer (`UnitStep.idle`, `UnitStep.offer`). A structured root, never a tagged element
+identifier, so no element can take a root's name (T56). -/
 inductive UnitRoot where
   | seed
   | input
-  | idle (scope : ScopeOccurrenceId)
-  | offer (occurrence : OccurrenceId) (round : Nat)
+  | idle (scope : List CommittedSegment)
+  | offer (occurrence : CommittedOccurrence) (round : Nat)
   deriving DecidableEq, Repr
 
 /-- A root's place in the order of roots: the seed first, so its batch runs before the input's (`Step.settle`), then
@@ -601,11 +505,11 @@ def UnitRoot.rootRank : UnitRoot → Nat
   | .idle _ => 2
   | .offer _ _ => 3
 
-def UnitRoot.idleOf? : UnitRoot → Option ScopeOccurrenceId
+def UnitRoot.idleOf? : UnitRoot → Option (List CommittedSegment)
   | .idle scope => some scope
   | .seed | .input | .offer _ _ => none
 
-def UnitRoot.offerOf? : UnitRoot → Option OccurrenceId
+def UnitRoot.offerOf? : UnitRoot → Option CommittedOccurrence
   | .offer occurrence _ => some occurrence
   | .seed | .input | .idle _ => none
 
@@ -761,5 +665,243 @@ def UnitKey.breadth : { cmp : UnitKey → UnitKey → Ordering //
     funext a b
     have outer := Spine.outer.property.2 _ _ (good a).1 (good b).1
     simp only [compareLex, compareOn, level, outer, (good a).2, (good b).2]⟩
+
+
+/-! ## Issues -/
+
+/-- How an identity was issued (DC12): committed, an ordinal of its slot (`ClaimSlot`); or inside the closure in
+progress, as the `index`th issue of the unit `unit` (`State.issue`). A unit runs once in a committed closure
+(`Step.conclude` fails the command on a key that ran) and numbers its issues from 0, so a fresh issue is issued once,
+and as the same issue in every schedule; the commit renames every fresh issue to a committed one (`Step.compact`), so no committed state holds one. -/
+inductive Issue where
+  | committed (ordinal : Nat)
+  | fresh (unit : UnitKey) (index : Nat)
+  deriving DecidableEq, Repr
+
+namespace Issue
+
+/-- Committed before fresh. -/
+def tag : Issue → Nat
+  | .committed _ => 0
+  | .fresh _ _ => 1
+
+/-- A committed issue's ordinal, a fresh one's index in its unit. -/
+def number : Issue → Nat
+  | .committed ordinal => ordinal
+  | .fresh _ index => index
+
+/-- A fresh issue's unit. -/
+def unit? : Issue → Option UnitKey
+  | .committed _ => none
+  | .fresh unit _ => some unit
+
+/-- Whether it was issued in the closure in progress. -/
+def isFresh : Issue → Bool
+  | .committed _ => false
+  | .fresh _ _ => true
+
+/-- A scope segment's fingerprint step reads it: a committed ordinal's hash, as before DC12, a fresh issue's unit's
+cached fields mixed with its index. -/
+def code : Issue → UInt64
+  | .committed ordinal => hash ordinal
+  | .fresh unit index => mixHash (mixHash unit.spine.fingerprint (hash unit.spine.level)) (hash index)
+
+end Issue
+
+instance : Inhabited Issue := ⟨.committed 0⟩
+
+/-- A numeral is a committed ordinal, as every key a committed state holds. -/
+instance (n : Nat) : OfNat Issue n := ⟨.committed n⟩
+
+/-- Committed issues first, by ordinal; fresh ones by index, then unit, so two issues of one unit compare without walking
+its key. -/
+instance : Ord Issue where
+  compare := compareLex (compareOn Issue.tag) <| compareLex (compareOn Issue.number) (compareOn Issue.unit?)
+
+instance : Std.TransOrd Issue := inferInstanceAs <| Std.TransCmp (compareLex _ _)
+
+instance : Std.LawfulEqOrd Issue where
+  eq_of_compare {a b} h := by
+    have h : compareLex (compareOn Issue.tag) (compareLex (compareOn Issue.number) (compareOn Issue.unit?)) a b = .eq := h
+    rw [compareLex_eq_eq, compareLex_eq_eq] at h
+    have tags : a.tag = b.tag := Std.LawfulEqOrd.eq_of_compare h.1
+    have numbers : a.number = b.number := Std.LawfulEqOrd.eq_of_compare h.2.1
+    have units : a.unit? = b.unit? := Std.LawfulEqOrd.eq_of_compare h.2.2
+    cases a <;> cases b <;> simp_all [Issue.tag, Issue.number, Issue.unit?]
+
+/-- One step down the scope tree: the element a scope occurrence was entered for, and its issue among the scope
+occurrences of that element entered in the same parent, an ordinal once committed. -/
+structure ScopeSegment where
+  element : ElementId
+  ordinal : Issue
+  deriving DecidableEq, Repr, Inhabited
+
+instance : Ord ScopeSegment where
+  compare := compareLex (compareOn (·.element.value)) (compareOn (·.ordinal))
+
+instance : Std.TransOrd ScopeSegment := inferInstanceAs <| Std.TransCmp (compareLex _ _)
+
+instance : Std.LawfulEqOrd ScopeSegment where
+  eq_of_compare {a b} h := by
+    have h : compareLex (compareOn fun segment : ScopeSegment => segment.element.value)
+        (compareOn fun segment : ScopeSegment => segment.ordinal) a b = .eq := h
+    rw [compareLex_eq_eq] at h
+    obtain ⟨⟨element⟩, ordinal⟩ := a
+    obtain ⟨⟨element'⟩, ordinal'⟩ := b
+    have same : element = element' := Std.LawfulEqOrd.eq_of_compare h.1
+    have ordinals : ordinal = ordinal' := Std.LawfulEqOrd.eq_of_compare h.2
+    subst same ordinals
+    rfl
+
+/-- A scope segment's fingerprint step: its element's hash mixed with its issue's code. -/
+instance : SpineStep ScopeSegment where
+  code segment := mixHash (hash segment.element.value) segment.ordinal.code
+
+/-- A segment's committed form, `none` for one issued in the closure in progress. -/
+def ScopeSegment.committed? (segment : ScopeSegment) : Option CommittedSegment :=
+  match segment.ordinal with
+  | .committed ordinal => some { element := segment.element, ordinal }
+  | .fresh _ _ => none
+
+/-- A scope occurrence's structural key: its segments from itself up to the process root, innermost first, so the
+parent's key is the tail and a key's own element and ordinal are its head, with their spine (DC20), which `child` pushes
+and `parent?` reads, so neither copies the path. The root of the process instance has none; a called instance's root is
+entered below its Call's scope occurrence like any other. Keys order outermost first (`Ord`), so a subtree is one key
+range (KD1). -/
+structure ScopeOccurrenceId where
+  segments : List ScopeSegment
+  spine : Spine ScopeSegment
+  spineOk : spine = (Spine.ofPath segments).val
+
+namespace ScopeOccurrenceId
+
+/-- The key of a path of segments, innermost first, its spine pushed segment by segment: O(length). -/
+def ofSegments (segments : List ScopeSegment) : ScopeOccurrenceId := ⟨segments, (Spine.ofPath segments).val, rfl⟩
+
+/-- The key of the `ordinal`th scope occurrence of `element` entered in `parent`: one `Spine.push`. -/
+abbrev child (parent : ScopeOccurrenceId) (element : ElementId) (ordinal : Issue) : ScopeOccurrenceId :=
+  ⟨{ element, ordinal } :: parent.segments, Spine.push { element, ordinal } parent.spine, by rw [parent.spineOk]; rfl⟩
+
+/-- The key of the scope occurrence `scope` was entered in, given `scope`'s segments: its spine's parent, read in
+constant time. -/
+abbrev up (scope : ScopeOccurrenceId) {segment : ScopeSegment} {rest : List ScopeSegment}
+    (segments : scope.segments = segment :: rest) : ScopeOccurrenceId :=
+  ⟨rest, scope.spine.parentNode, by rw [scope.spineOk, segments]; rfl⟩
+
+/-- The key of the scope occurrence this one was entered in, `none` for the root. -/
+abbrev parent? (scope : ScopeOccurrenceId) : Option ScopeOccurrenceId :=
+  match segments : scope.segments with
+  | [] => none
+  | _ :: _ => some (scope.up segments)
+
+end ScopeOccurrenceId
+
+instance : Inhabited ScopeOccurrenceId := ⟨.ofSegments []⟩
+
+instance : Repr ScopeOccurrenceId where
+  reprPrec key _ := Std.Format.bracket "{ " ("segments := " ++ repr key.segments) " }"
+
+/-- Equality rejects on depth and fingerprint at once and accepts a shared path at once; only a fingerprint collision or
+an unshared equal path walks it. No derived walk: a derived instance would also compare the spines. -/
+instance : DecidableEq ScopeOccurrenceId := fun a b =>
+  if cached : a.spine.level = b.spine.level ∧ a.spine.fingerprint = b.spine.fingerprint then
+    match withPtrEqDecEq a.segments b.segments (fun _ => inferInstance) with
+    | isTrue same => isTrue <| by
+        obtain ⟨segments, spine, ok⟩ := a
+        obtain ⟨segments', spine', ok'⟩ := b
+        simp only at same
+        subst same ok ok'
+        rfl
+    | isFalse other => isFalse fun same => other (congrArg ScopeOccurrenceId.segments same)
+  else isFalse fun same => cached ⟨congrArg (·.spine.level) same, congrArg (·.spine.fingerprint) same⟩
+
+/-- The order of scope occurrence keys, outermost segment first (`Spine.compareOuter`), with its agreement with the
+order of the reversed segments proved inline. -/
+def ScopeOccurrenceId.outerOrder :
+    { cmp : ScopeOccurrenceId → ScopeOccurrenceId → Ordering // cmp = compareOn (·.segments.reverse) } :=
+  ⟨fun a b => Spine.outer.val a.spine b.spine, by
+    funext a b
+    obtain ⟨goodA, pathA⟩ := (Spine.ofPath a.segments).property
+    obtain ⟨goodB, pathB⟩ := (Spine.ofPath b.segments).property
+    have ga := goodA; have gb := goodB
+    rw [← a.spineOk] at ga pathA
+    rw [← b.spineOk] at gb pathB
+    show Spine.outer.val a.spine b.spine = compare a.segments.reverse b.segments.reverse
+    rw [Spine.outer.property.2 _ _ ga gb, pathA, pathB]⟩
+
+instance : Ord ScopeOccurrenceId where
+  compare := ScopeOccurrenceId.outerOrder.val
+
+instance : Std.TransOrd ScopeOccurrenceId := by
+  show Std.TransCmp ScopeOccurrenceId.outerOrder.val
+  rw [ScopeOccurrenceId.outerOrder.property]
+  exact inferInstanceAs <| Std.TransCmp (compareOn _)
+
+instance : Std.LawfulEqOrd ScopeOccurrenceId where
+  eq_of_compare {a b} h := by
+    have h : compare a.segments.reverse b.segments.reverse = .eq := by
+      have order := ScopeOccurrenceId.outerOrder.property
+      rw [show compare a b = ScopeOccurrenceId.outerOrder.val a b from rfl, order] at h
+      exact h
+    have same : a.segments = b.segments := List.reverse_inj.mp (Std.LawfulEqOrd.eq_of_compare h)
+    -- A key's spine is its path's.
+    obtain ⟨segments, spine, ok⟩ := a
+    obtain ⟨segments', spine', ok'⟩ := b
+    simp only at same
+    subst same ok ok'
+    rfl
+
+/-- What an ordinal counter counts: the keys issued for `element` in the scope occurrence `parent`, the scope
+occurrences entered there (`State.scopeOrdinals`) or the occurrences issued there (`State.occurrenceOrdinals`). -/
+structure ScopeSlot where
+  parent : ScopeOccurrenceId
+  element : ElementId
+  deriving DecidableEq, Repr
+
+instance : Ord ScopeSlot where
+  compare := compareLex (compareOn (·.parent)) (compareOn (·.element.value))
+
+instance : Std.TransOrd ScopeSlot := inferInstanceAs <| Std.TransCmp (compareLex _ _)
+
+instance : Std.LawfulEqOrd ScopeSlot where
+  eq_of_compare {a b} h := by
+    have h : compareLex (compareOn fun slot : ScopeSlot => slot.parent)
+        (compareOn fun slot : ScopeSlot => slot.element.value) a b = .eq := h
+    rw [compareLex_eq_eq] at h
+    obtain ⟨parent, ⟨element⟩⟩ := a
+    obtain ⟨parent', ⟨element'⟩⟩ := b
+    have parents : parent = parent' := Std.LawfulEqOrd.eq_of_compare h.1
+    have same : element = element' := Std.LawfulEqOrd.eq_of_compare h.2
+    subst parents same
+    rfl
+
+/-- An occurrence's structural key (KD1): the scope occurrence it was issued in, its element and an ordinal counted per
+(scope occurrence, element) by `State.occurrenceOrdinals`, so no global counter issues it. A reservation is issued in the
+scope occurrence that arms it and keeps its key when it begins in another (`State.beginOccurrence`).
+`State.issueOccurrence` is the one issuer. -/
+structure OccurrenceId where
+  scope : ScopeOccurrenceId
+  element : ElementId
+  ordinal : Issue
+  deriving DecidableEq, Repr, Inhabited
+
+instance : Ord OccurrenceId where
+  compare := compareLex (compareOn (·.scope)) <| compareLex (compareOn (·.element.value)) (compareOn (·.ordinal))
+
+instance : Std.TransOrd OccurrenceId := inferInstanceAs <| Std.TransCmp (compareLex _ _)
+
+instance : Std.LawfulEqOrd OccurrenceId where
+  eq_of_compare {a b} h := by
+    have h : compareLex (compareOn fun key : OccurrenceId => key.scope)
+        (compareLex (compareOn fun key : OccurrenceId => key.element.value) (compareOn fun key : OccurrenceId => key.ordinal))
+        a b = .eq := h
+    rw [compareLex_eq_eq, compareLex_eq_eq] at h
+    obtain ⟨scope, ⟨element⟩, ordinal⟩ := a
+    obtain ⟨scope', ⟨element'⟩, ordinal'⟩ := b
+    have scopes : scope = scope' := Std.LawfulEqOrd.eq_of_compare h.1
+    have same : element = element' := Std.LawfulEqOrd.eq_of_compare h.2.1
+    have ordinals : ordinal = ordinal' := Std.LawfulEqOrd.eq_of_compare h.2.2
+    subst scopes same ordinals
+    rfl
 
 end Kernel

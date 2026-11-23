@@ -54,11 +54,14 @@ structure Cleared (before after : State) (scope : ScopeOccurrenceId) (keep : Lis
   slots : SlotsWithin before after
   /-- The Multi-Instance bodies that stay are those whose scope occurrence does not lie within `scope`. -/
   bodies : after.slots.multiInstances = before.slots.multiInstances.filter (!(before.subtree scope).contains ·.scope)
+  issued : after.issued = before.issued
+  issuing : after.issuing = before.issuing
+  issueNext : after.issueNext = before.issueNext
 
 /-- A clearing keeps every occurrence key issued: what stands stood, and its counters stay. -/
 theorem Cleared.occurrenceGrows {before after : State} {scope : ScopeOccurrenceId} {keep : List OccurrenceId}
     (cleared : Cleared before after scope keep) : OccurrenceGrows before after :=
-  .of_scopes cleared.scopeGrows (fun x standing _ => by
+  .of_scopes (table := .of_eq cleared.issued) cleared.scopeGrows (fun x standing _ => by
       obtain ⟨entry, inside, named⟩ := List.mem_map.mp standing
       exact List.mem_map.mpr ⟨entry, cleared.scopesSublist.subset inside, named⟩)
     fun x standing element => Nat.le_of_eq (cleared.counters x standing element).symm
@@ -109,7 +112,8 @@ theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {k
   constructor
   · exact ⟨fun occurrence member => cleared.occurrenceGrows _ (formed.issued.occurrences occurrence
         (cleared.occurrencesSublist.subset member)),
-      issuedItems_transport cleared.openItemsSub (fun _ member => cleared.occurrencesSublist.subset member) cleared.ordinals formed.issued.items,
+      issuedItems_transport cleared.openItemsSub (fun _ member => cleared.occurrencesSublist.subset member) cleared.ordinals
+        (.of_eq cleared.issued) formed.issued.items,
       fun entry member => cleared.scopeGrows.issued (formed.issued.scopes entry (cleared.scopesSublist.subset member))⟩
   · refine ⟨formed.distinct.occurrences.sublist (cleared.occurrencesSublist.map _),
       cleared.openItemsSub.keyed formed.distinct.items,
@@ -218,6 +222,7 @@ theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {k
   · exact formed.bodyRoles.shrink fun _ member => cleared.occurrencesSublist.subset member
   · exact formed.itemRoles.shrink (fun _ member => cleared.openItemsSub.items member)
       fun _ member => cleared.occurrencesSublist.subset member
+  · exact formed.issuer.same cleared.issued cleared.issuing cleared.issueNext cleared.transitions
 
 /-! ## Pruning occurrences and items -/
 
@@ -247,12 +252,15 @@ structure Prunes (before after : State) : Prop where
     (occurrence.id = item.id.occurrence ∨ item.attachedTo = some occurrence.id) → occurrence ∈ after.occurrences
   owners : ∀ entry ∈ after.scopes, ∀ occurrence ∈ before.occurrences, entry.occurrence = some occurrence.id →
     occurrence ∈ after.occurrences
+  issued : after.issued = before.issued
+  issuing : after.issuing = before.issuing
+  issueNext : after.issueNext = before.issueNext
 
 theorem Prunes.wellFormed {before after : State} (formed : WellFormed program before) (prunes : Prunes before after) :
     WellFormed program after := by
   have keys : ∀ occurrence, key after occurrence = key before occurrence := fun _ => key_congr (prunes.instances _)
   have grows : ScopeGrows before after :=
-    .of_same (congrArg (List.map ScopeOccurrence.id) prunes.scopes) prunes.scopeOrdinals
+    .of_same (congrArg (List.map ScopeOccurrence.id) prunes.scopes) prunes.scopeOrdinals (.of_eq prunes.issued)
   have sameStarts : starts after = starts before := by simp [starts, prunes.journal, prunes.transitions, prunes.started]
   have kept := prunes.occurrences.subset
   have items : itemList after.openItems ⊆ itemList before.openItems := by exact prunes.items.subset
@@ -260,10 +268,11 @@ theorem Prunes.wellFormed {before after : State} (formed : WellFormed program be
     simpa [scopeIds, prunes.scopes] using formed.owned.occurrenceScopes occurrence (kept member)
   refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,
     ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled, ?attachedReserved, ?typed,
-    ?worked, ?roles, ?raises, ?bodyRoles, ?itemRoles⟩
+    ?worked, ?roles, ?raises, ?bodyRoles, ?itemRoles, ?issuer⟩
   case issued =>
     exact ⟨fun occurrence member => prunes.occurrenceGrows _ (formed.issued.occurrences occurrence (kept member)),
-      issuedItems_transport prunes.items (fun _ member => prunes.occurrences.subset member) prunes.ordinals formed.issued.items,
+      issuedItems_transport prunes.items (fun _ member => prunes.occurrences.subset member) prunes.ordinals
+        (.of_eq prunes.issued) formed.issued.items,
       fun scope member => grows.issued (formed.issued.scopes scope (prunes.scopes ▸ member))⟩
   case distinct =>
     refine ⟨formed.distinct.occurrences.sublist (prunes.occurrences.map _),
@@ -334,6 +343,7 @@ theorem Prunes.wellFormed {before after : State} (formed : WellFormed program be
   case roles => exact formed.roles.shrink fun _ member => kept member
   case bodyRoles => exact formed.bodyRoles.shrink fun _ member => kept member
   case itemRoles => exact formed.itemRoles.shrink (fun _ member => items member) fun _ member => kept member
+  case issuer => exact formed.issuer.same prunes.issued prunes.issuing prunes.issueNext prunes.transitions
   case raises =>
     exact formed.raises.transport (fun _ _ queued => prunes.signals ▸ queued) grows prunes.occurrenceGrows fun _ member _ => kept member
 
@@ -375,6 +385,9 @@ structure Left (before after : State) (scope : ScopeOccurrenceId) : Prop where
   transitions : after.transitions = before.transitions
   started : after.draft.started = before.draft.started
   slots : SlotsWithin before after
+  issued : after.issued = before.issued
+  issuing : after.issuing = before.issuing
+  issueNext : after.issueNext = before.issueNext
 
 /-- A scope occurrence that lies within `State.root` and not within a left `scope` still does after leaving it:
 nothing on its way up lies within `scope`, or it would itself. -/
@@ -407,10 +420,11 @@ theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (form
   have kept := left.occurrencesSublist.subset
   refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,
     ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled, ?attachedReserved, ?typed,
-    ?worked, ?roles, ?raises, ?bodyRoles, ?itemRoles⟩
+    ?worked, ?roles, ?raises, ?bodyRoles, ?itemRoles, ?issuer⟩
   case issued =>
     exact ⟨fun occurrence member => left.occurrenceGrows _ (formed.issued.occurrences occurrence (kept member)),
-      issuedItems_transport left.openItemsSub (fun _ member => left.occurrencesSublist.subset member) left.ordinals formed.issued.items,
+      issuedItems_transport left.openItemsSub (fun _ member => left.occurrencesSublist.subset member) left.ordinals
+        (.of_eq left.issued) formed.issued.items,
       fun entry member => grows.issued (formed.issued.scopes entry (left.scopesSublist.subset member))⟩
   case distinct =>
     refine ⟨formed.distinct.occurrences.sublist (left.occurrencesSublist.map _),
@@ -496,5 +510,6 @@ theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (form
     exact formed.itemRoles.shrink (fun _ member => left.openItemsSub.items member) fun _ member => kept member
   case raises =>
     exact formed.raises.transport (fun _ _ queued => left.signals ▸ queued) grows left.occurrenceGrows fun _ member _ => kept member
+  case issuer => exact formed.issuer.same left.issued left.issuing left.issueNext left.transitions
 
 end Kernel.Laws.State

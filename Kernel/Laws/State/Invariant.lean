@@ -23,7 +23,7 @@ the `State` contract documents, since matching `Token` is `Step`'s
 
 Besides the laws, it holds what follows from them over the fields alone: that a well-formed state's scope occurrences
 form a tree (`Depth`). The frames through which a change of the fields keeps `WellFormed` are
-`Kernel.Laws.State.Frames`', `Kernel.Laws.State.Clear`'s and `Kernel.Laws.State.Issue`'s. Each law is followed by
+`Kernel.Laws.State.Frames`', `Kernel.Laws.State.Clear`'s and `Kernel.Laws.State.Begins`'s. Each law is followed by
 its non-vacuity witness: a small state that satisfies it and, where the law could otherwise hold of everything, one that
 violates it. Nothing here reads a `State` operation's body, so this module sees none; the lemmas about the operations
 are `Kernel.Laws.State`'s, and the witnesses that read `State.root`'s value or the program, the sample instance's
@@ -88,11 +88,48 @@ def starts (s : State) : List StartedFact :=
 identities: an occurrence's identity is never reused ([scopes, SRE-FRESH-01](../../../docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md#concurrent-activations-and-re-entry)). -/
 structure IssuedBelow (s : State) : Prop where
   occurrences : ∀ occurrence ∈ s.occurrences, OccurrenceIssued s occurrence.id
-  /-- An item of a present occurrence has an ordinal below that occurrence's counter (KD1); a removed occurrence's
-  counter goes with it, and its identity never recurs (`occurrences`). -/
-  items : ∀ item ∈ itemList s.openItems, (∃ occurrence ∈ s.occurrences, occurrence.id = item.id.occurrence) →
-    item.id.ordinal < s.itemOrdinals.getD item.id.occurrence 0
+  /-- An item's key was issued (`ItemIssued`): an item of a present occurrence has a committed ordinal below that
+  occurrence's counter (KD1), a fresh one is in the issue table (DC12); a removed occurrence's counter goes with it, and
+  its identity never recurs (`occurrences`). -/
+  items : ∀ item ∈ itemList s.openItems, ItemIssued s item.id
   scopes : ∀ scope ∈ s.scopes, ScopeIssued s scope.id
+
+/-- The issue table and the issuer (DC12, `IssuerFresh`): the table holds fresh issues only, none of the running
+unit's at or above its next index, so the next issue (`State.issue`) is not in the table, and only the issues of a
+unit that ran or is running, so a unit that has not run yet, once it becomes the issuer and restarts at index 0, finds
+none of its own in the table (`ran`). -/
+structure IssuerFresh (s : State) : Prop where
+  fresh : ∀ (issue : Issue) (slot : ClaimSlot), s.issued[issue]? = some slot → ∃ unit index, issue = Issue.fresh unit index
+  below : ∀ (index : Nat) (slot : ClaimSlot), s.issued[Issue.fresh s.issuing index]? = some slot → index < s.issueNext
+  ran : ∀ (unit : UnitKey) (index : Nat) (slot : ClaimSlot), s.issued[Issue.fresh unit index]? = some slot →
+    s.transitions.contains unit = true ∨ unit = s.issuing
+
+/-- A state with the issue table and the issuer of one that keeps `IssuerFresh`, and every transition key of it, keeps
+`IssuerFresh`. -/
+theorem IssuerFresh.grow {s t : State} (fresh : IssuerFresh s) (issued : t.issued = s.issued)
+    (issuing : t.issuing = s.issuing) (issueNext : t.issueNext = s.issueNext)
+    (ran : ∀ unit, s.transitions.contains unit = true → t.transitions.contains unit = true) : IssuerFresh t :=
+  ⟨fun issue slot held => fresh.fresh issue slot (issued ▸ held),
+    fun index slot held => issueNext ▸ fresh.below index slot (by rw [← issuing, ← issued]; exact held),
+    fun unit index slot held => (fresh.ran unit index slot (issued ▸ held)).imp (ran unit) (·.trans issuing.symm)⟩
+
+/-- A state with the issue table, the issuer and the transitions of one that keeps `IssuerFresh` keeps it. -/
+theorem IssuerFresh.same {s t : State} (fresh : IssuerFresh s) (issued : t.issued = s.issued)
+    (issuing : t.issuing = s.issuing) (issueNext : t.issueNext = s.issueNext) (transitions : t.transitions = s.transitions) :
+    IssuerFresh t :=
+  fresh.grow issued issuing issueNext fun _ => (transitions ▸ ·)
+
+/-- A closure's starting counters bound the ones it settles with (DC12): inside a closure a counter changes only when it
+is pruned with its owner (`State.clearInside`, `State.leaveScope`, `State.removeOccurrence`), so every counter of `s`
+is at most `start`'s. The premise of each law that compares a renamed fresh issue, which `Step.compact start` numbers from
+`start`'s counter, with a committed key below a counter of `s`. -/
+structure CountersFrom (start s : State) : Prop where
+  scopes : ∀ slot, s.scopeOrdinals.getD slot 0 ≤ start.scopeOrdinals.getD slot 0
+  occurrences : ∀ slot, s.occurrenceOrdinals.getD slot 0 ≤ start.occurrenceOrdinals.getD slot 0
+  items : ∀ occurrence, s.itemOrdinals.getD occurrence 0 ≤ start.itemOrdinals.getD occurrence 0
+
+theorem CountersFrom.refl (s : State) : CountersFrom s s :=
+  ⟨fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _⟩
 
 /-- No two occurrences, open items or scope occurrences share an identifier, and no two occurrences a key: each
 activation numbers one occurrence. -/
@@ -464,13 +501,16 @@ structure WellFormed (program : Program) (s : State) : Prop where
   raises : RaisesSound program s
   bodyRoles : BodyRoles program s
   itemRoles : ItemRoles s
+  issuer : IssuerFresh s
 
-/-- An open item of a well-formed state has an ordinal below its occurrence's counter: its occurrence stands
-(`Owned.itemOccurrences`). -/
+/-- An open item of a well-formed state with a committed ordinal has it below its occurrence's counter: its occurrence
+stands (`Owned.itemOccurrences`). -/
 theorem WellFormed.itemBelow {program : Program} {s : State} (formed : WellFormed program s) {item : OpenItem}
-    (member : item ∈ itemList s.openItems) : item.id.ordinal < s.itemOrdinals.getD item.id.occurrence 0 :=
-  formed.issued.items item member <|
-    let ⟨occurrence, present, same, _⟩ := formed.owned.itemOccurrences item member; ⟨occurrence, present, same⟩
+    (member : item ∈ itemList s.openItems) {n : Nat} (committed : item.id.ordinal = .committed n) :
+    n < s.itemOrdinals.getD item.id.occurrence 0 :=
+  (formed.issued.items item member).2.1
+    (let ⟨occurrence, present, same, _⟩ := formed.owned.itemOccurrences item member; ⟨occurrence, present, same⟩)
+    n committed
 
 /-! ## The scope tree of a well-formed state
 
@@ -637,10 +677,18 @@ theorem sample_historic (kind : OpenKind) : Historic (sample kind) :=
     (fun segment rest member => by
       simp [sample, rootScope, childScope, processRoot, subScope] at member ⊢
       exact .inl member.2)
-    (fun segment rest member => by
+    (fun segment rest n member committed => by
       simp [sample, rootScope, childScope, processRoot, subScope] at member
       obtain ⟨rfl, rfl⟩ := member
+      cases committed
       simp [slotCount, sample, processRoot, Std.ExtTreeMap.getD_insert_self])
+    (fun segment rest unit index member fresh => by
+      simp [sample, rootScope, childScope, processRoot, subScope] at member
+      obtain ⟨rfl, rfl⟩ := member
+      cases fresh)
+    (fun x member => by
+      simp [sample, rootScope, childScope, processRoot, subScope] at member
+      rcases member with rfl | rfl <;> simp [Layered])
 
 /-- The sample's key `Sub#9` lies beyond its root's counter of `Sub`, so it was never issued. -/
 theorem sample_unissued {kind : OpenKind} {s : State} (issued : ScopeIssued s (.ofSegments [{ element := ⟨"Sub"⟩, ordinal := 9 }]))

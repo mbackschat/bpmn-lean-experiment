@@ -41,9 +41,15 @@ theorem sample_wellFormed (kind : OpenKind) {program : Program}
       simp only [sample, List.mem_cons, List.not_mem_nil, or_false] at member
       rcases member with rfl | rfl | rfl <;>
         refine ⟨(sample_historic kind).issued_key
-          (by simp [sample, rootScope, childScope, subProcess, innerTask, outerTask]), fun _ => ?_⟩ <;>
+          (by simp [sample, rootScope, childScope, subProcess, innerTask, outerTask]),
+          .committed rfl (by simp [subProcess, innerTask, outerTask, processRoot, subScope]) fun _ => ?_⟩ <;>
         simp [occurrenceCount, sample, sampleCounters, subProcess, innerTask, outerTask, Std.ExtTreeMap.getD_insert],
-    by simp [sample, innerItem, outerItem, Std.ExtTreeMap.getD_insert],
+    fun item member => by
+      simp only [sample, mem_ofItems (show ([innerItem kind, outerItem kind].map (·.id)).Nodup by
+        simp [innerItem, outerItem]), List.mem_cons, List.not_mem_nil, or_false] at member
+      rcases member with rfl | rfl <;>
+        exact .committed rfl (by simp [innerItem, outerItem, OccurrenceId.fresh_eq, processRoot, subScope])
+          fun _ => by simp [sample, innerItem, outerItem, Std.ExtTreeMap.getD_insert],
     fun _ member => (sample_historic kind).issued member⟩
   distinct := ⟨by simp [occurrenceIds, sample, subProcess, innerTask, outerTask], keyedBy_ofItems _,
     by simp [scopeIds, sample, rootScope, childScope, processRoot, subScope],
@@ -95,6 +101,8 @@ theorem sample_wellFormed (kind : OpenKind) {program : Program}
   raises := by simp [RaisesSound, sample]
   bodyRoles := by simp [BodyRoles, sample, subProcess, innerTask, outerTask]
   itemRoles := by simp [ItemRoles, sample, subProcess, innerTask, outerTask]
+  issuer := ⟨fun _ _ held => by simp [sample] at held, fun _ _ held => by simp [sample] at held,
+    fun _ _ _ held => by simp [sample] at held⟩
 
 /-- A start fact carrying the armed reservation's key breaks `ReservationsUnstarted`. -/
 theorem early_start_rejected (kind : OpenKind) :
@@ -209,7 +217,7 @@ theorem thrower_raisable (kind : OpenKind) {program : Program} :
     Raisable program (sample kind)
       { element := ⟨"Outer"⟩, scope := processRoot, activation := 1, thrower := outerKey } := fun _ => by
   refine ⟨(sample_historic kind).issued_key (by simp [sample, rootScope]),
-    ⟨(sample_historic kind).issued_key (by simp [sample, rootScope]), fun _ => by
+    ⟨(sample_historic kind).issued_key (by simp [sample, rootScope]), .committed rfl (by simp [processRoot]) fun _ => by
       simp [occurrenceCount, sample, sampleCounters, Std.ExtTreeMap.getD_insert]⟩, ?_⟩
   simp only [sample, List.mem_cons, List.not_mem_nil, or_false]
   rintro occurrence (rfl | rfl | rfl) <;> simp [subProcess, innerTask, outerTask]

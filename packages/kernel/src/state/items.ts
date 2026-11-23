@@ -4,7 +4,7 @@
  * which re-exports it.
  */
 import { type ElementId } from "../il/types.js";
-import { compareOccurrenceId, type OccurrenceId, type ScopeOccurrenceId } from "./slots.js";
+import { compareIssue, compareOccurrenceId, type Issue, issueText, type OccurrenceId, type ScopeOccurrenceId } from "./slots.js";
 import { type OpenKind } from "./wait.js";
 
 /** The role an open item plays for its occurrence (KD1's item role). */
@@ -17,18 +17,21 @@ export enum ItemRole {
 
 const itemRoleIndex: Readonly<Record<ItemRole, number>> = { [ItemRole.Wait]: 0, [ItemRole.Subscription]: 1 };
 
-/** An open item's structural key (KD1): its occurrence, its role and a per-occurrence ordinal (`itemOrdinals`). */
-export interface ItemKey { readonly occurrence: OccurrenceId; readonly role: ItemRole; readonly ordinal: number; }
+/**
+ * An open item's structural key (KD1): its occurrence, its role and its issue, once committed a per-occurrence ordinal
+ * (`itemOrdinals`, DC12).
+ */
+export interface ItemKey { readonly occurrence: OccurrenceId; readonly role: ItemRole; readonly ordinal: Issue; }
 
 /** The lexicographic key order of `Kernel.ItemKey`'s `Ord`. */
 export function compareItemKey(left: ItemKey, right: ItemKey): number {
   return compareOccurrenceId(left.occurrence, right.occurrence) || itemRoleIndex[left.role] - itemRoleIndex[right.role] ||
-    left.ordinal - right.ordinal;
+    compareIssue(left.ordinal, right.ordinal);
 }
 
 /** A key as text, for sets and maps keyed by value. */
 export function itemKeyText(key: ItemKey): string {
-  return `${key.role}/${key.ordinal}/${key.occurrence}`;
+  return `${key.role}/${issueText(key.ordinal)}/${key.occurrence}`;
 }
 
 /** Two keys are one when their text forms are: keys never compare by object reference. */

@@ -159,20 +159,24 @@ export const kernelPort: KernelPort<Program, State, HostInput> = {
   // Without the last input's journal and intents: the host published them when it committed the input, and `step` empties
   // both before every input (`onRunning`, `initial`), so no later input reads them; carried, they would charge the state
   // and continuation bounds with a second copy of the publication (2,066,022 of long-burst's 2,067,466 bytes, 2026-11-13).
-  // Nor the closure's unit-keyed families and the running micro-step's batches: every committed state holds them empty
-  // (`orderJournal`, DC4; `queueBatch`), and a unit key is never a wire value.
+  // Nor the closure's unit-keyed families, the running micro-step's batches and the closure's issuer and issue table:
+  // every committed state holds them empty, the issuer the seed's (`orderJournal`, DC4; `queueBatch`; `compact`, DC12),
+  // and a unit key is never a wire value.
   encodeState: (state) => {
-    const { queuedTokens, queuedSignals, outboxes, transitions, batchTokens, batchSignals, batchIntents, ...committed } = state;
+    const {
+      queuedTokens, queuedSignals, outboxes, transitions, batchTokens, batchSignals, batchIntents, issuing, issueNext, issued, ...committed
+    } = state;
     if (queuedTokens !== null || queuedSignals !== null || outboxes !== null || transitions !== null) {
       throw new Error("a committed state holds a unit key");
     }
+    if (issued !== null || issueNext !== 0 || issuing !== null) throw new Error("a committed state holds an issue");
     if (batchTokens.length > 0 || batchSignals.length > 0 || batchIntents.length > 0) throw new Error("a committed state holds a running batch");
     return internStrings(toWire({ ...committed, journal: [], intents: [] }));
   },
   // The host decodes only what `encodeState` produced for this program.
   decodeState: (json): State => ({
     ...(fromWire(expandStrings(json)) as State), batchTokens: [], batchSignals: [], batchIntents: [], queuedTokens: null, queuedSignals: null,
-    outboxes: null, transitions: null,
+    outboxes: null, transitions: null, issuing: null, issueNext: 0, issued: null,
   }),
   scriptOf,
 };

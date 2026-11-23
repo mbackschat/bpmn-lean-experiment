@@ -1,5 +1,6 @@
 module
 
+public import Kernel.State.Issue
 public import Kernel.State.Items
 public import Kernel.State.Journal
 public import Kernel.State.Failure
@@ -216,14 +217,23 @@ structure State where
   queuedTokens : TreeMap UnitKey Token compare := ∅
   variables : List ScopeVariables := []
   openItems : OpenItems := ∅
-  /-- The next item ordinal of each occurrence that opened an item, pruned with the occurrence (KD1). -/
-  itemOrdinals : TreeMap OccurrenceId Nat compare := ∅
-  /-- The next ordinal of each element in each scope occurrence that entered one, pruned with the scope occurrence
-  (KD1). -/
-  scopeOrdinals : TreeMap ScopeSlot Nat compare := ∅
-  /-- The next ordinal of each element in each scope occurrence that issued an occurrence of it, pruned with the scope
+  /-- The next item ordinal of each occurrence that opened an item, advanced at commit (DC12) and pruned with the
   occurrence (KD1). -/
+  itemOrdinals : TreeMap OccurrenceId Nat compare := ∅
+  /-- The next ordinal of each element in each scope occurrence that entered one, advanced at commit (DC12) and pruned
+  with the scope occurrence (KD1). -/
+  scopeOrdinals : TreeMap ScopeSlot Nat compare := ∅
+  /-- The next ordinal of each element in each scope occurrence that issued an occurrence of it, advanced at commit (DC12)
+  and pruned with the scope occurrence (KD1). -/
   occurrenceOrdinals : TreeMap ScopeSlot Nat compare := ∅
+  /-- The running micro-step's unit, whose issues are `Issue.fresh issuing n`, and the index of its next issue (DC12):
+  set when a micro-step begins (`Step.microStep`; `Step.reoffer?` for an offer it computes first) and reset when it
+  concludes, so between micro-steps they read the seed's key, which no micro-step runs under, and 0. -/
+  issuing : UnitKey := .ofRoot .seed
+  issueNext : Nat := 0
+  /-- Every identity issued in the closure in progress, with the slot it takes its committed ordinal in: written at issue,
+  emptied by the commit's compaction, which renames each to its ordinal (`Step.compact`, DC12). Empty at commit. -/
+  issued : TreeMap Issue ClaimSlot compare := ∅
   activations : List ActivationCount := []
   /-- The next order position: an open item's `position` and a compensation record's `completion`, which only the sites
   that order them read. It names no identity; the issue log replaces it (K0.8). -/
@@ -298,12 +308,17 @@ def deferBegins (state : State) (requests : List BeginRequest) : State :=
 def takePosition (state : State) : State × Nat :=
   ({ state with nextPosition := state.nextPosition + 1 }, state.nextPosition)
 
-/-- A fresh key for an occurrence of `element` issued in `scope`: the next ordinal of its counter, counted up. The one
-issuer of occurrence keys (KD1). -/
+/-- The one issuer of every identity inside a closure (DC12): the running unit's next issue, recorded in the issue table
+with the slot it takes its committed ordinal in at commit. -/
+def issue (state : State) (slot : ClaimSlot) : State × Issue :=
+  let issue := Issue.fresh state.issuing state.issueNext
+  ({ state with issueNext := state.issueNext + 1, issued := state.issued.insert issue slot }, issue)
+
+/-- A fresh key for an occurrence of `element` issued in `scope`: the running unit's next issue, which the commit renames
+to the next ordinal of its (scope occurrence, element) counter. The one issuer of occurrence keys (KD1, DC12). -/
 def issueOccurrence (state : State) (scope : ScopeOccurrenceId) (element : ElementId) : State × OccurrenceId :=
-  let slot : ScopeSlot := { parent := scope, element }
-  let ordinal := state.occurrenceOrdinals.getD slot 0
-  ({ state with occurrenceOrdinals := state.occurrenceOrdinals.insert slot (ordinal + 1) }, { scope, element, ordinal })
+  let (state, ordinal) := state.issue (.occurrence { parent := scope, element })
+  (state, { scope, element, ordinal })
 
 def signal (state : State) (signal : Signal) : State :=
   { state with batchSignals := state.batchSignals ++ [signal] }
@@ -408,14 +423,24 @@ private def recordStart (state : State) (occurrence : Occurrence) (sourceType : 
 def recordEnd (state : State) (key : OccurrenceKey) (terminal : Terminal) : State :=
   { state with draft := { state.draft with ended := state.draft.ended ++ [(key, terminal)] } }
 
-/-- Begin what `request` names: its reservation, placed in the request's scope, or a fresh occurrence numbered under
-`role`. A reservation keeps its activation, so an armed subscription's number is its occurrence's number. -/
+/-- Begin what `request` names: its reservation, placed in the request's scope and re-keyed there when its key leads
+with another scope occurrence (DC26), or a fresh occurrence numbered under `role`. A reservation keeps its activation,
+so an armed subscription's number is its occurrence's number. -/
 def beginOccurrence (state : State) (request : BeginRequest) (role : ActivationRole) (sourceType : String) :
     State × Occurrence :=
   let reservedOccurrence := request.reserved.bind state.occurrence?
   let (state, occurrence) :=
     match reservedOccurrence with
-    | some reserved => (state, reserved)
+    | some reserved =>
+      if reserved.id.scope == request.scope then (state, reserved)
+      else
+        -- DC26: a reservation begun in a scope occurrence other than the one its key leads with (an Event
+        -- Sub-Process start, reserved in the parent) takes the running unit's next issue there, keeping its element,
+        -- activation and role; its old record and item counter go, as `State.removeOccurrence` drops them.
+        let (state, id) := { state with
+            occurrences := state.occurrences.filter (·.id != reserved.id)
+            itemOrdinals := state.itemOrdinals.erase reserved.id }.issueOccurrence request.scope reserved.element
+        (state, { reserved with id })
     | none =>
       let (state, activation) := state.activate (state.instanceOf request.scope) request.element role
       let (state, id) := state.issueOccurrence request.scope request.element
@@ -433,10 +458,11 @@ def startReserved (state : State) (occurrence : Occurrence) (sourceType : String
     (recordStart { state with occurrences := state.occurrences.map fun other =>
       if other.id == begun.id then begun else other } begun sourceType, begun)
 
-/-- A fresh key for an item of `occurrence` in `role`: the occurrence's next ordinal, counted up. -/
+/-- A fresh key for an item of `occurrence` in `role`: the running unit's next issue, which the commit renames to the
+occurrence's next item ordinal (DC12). -/
 def issueItem (state : State) (occurrence : OccurrenceId) (role : ItemRole) : State × ItemKey :=
-  let ordinal := state.itemOrdinals.getD occurrence 0
-  ({ state with itemOrdinals := state.itemOrdinals.insert occurrence (ordinal + 1) }, { occurrence, role, ordinal })
+  let (state, ordinal) := state.issue (.item occurrence)
+  (state, { occurrence, role, ordinal })
 
 /-- Add `item` under its own key. -/
 def putItem (state : State) (item : OpenItem) : State :=
@@ -481,11 +507,9 @@ def disarm (state : State) (host : OccurrenceId) : State :=
 belongs to `occurrence`, when it has one. -/
 def enterScope (state : State) (element : ElementId) (parent : ScopeOccurrenceId)
     (locals : List (String × Value)) (occurrence : Option OccurrenceId) : State × ScopeOccurrenceId :=
-  let slot : ScopeSlot := { parent, element }
-  let ordinal := state.scopeOrdinals.getD slot 0
+  let (state, ordinal) := state.issue (.scope { parent, element })
   let id := parent.child element ordinal
   ({ state with
-      scopeOrdinals := state.scopeOrdinals.insert slot (ordinal + 1)
       scopes := state.scopes ++ [{ id, element := some element, occurrence }]
       variables := state.variables ++ [{ scope := id, entries := keyed locals }] }, id)
 

@@ -557,12 +557,12 @@ theorem runs_keep {inv : State → Prop} {settled : State → OccurrenceId → P
           · cases ran
             exact endedStore.queue ops
               (ops.occur _ _ _ _ _ _ endedStore.1 (held_pending holds member resumed)
-                ⟨state, holds, .of_same rfl rfl, fun _ inside => inside, fun _ inside => inside, run, member,
+                ⟨state, holds, .of_same rfl rfl (.of_eq rfl), fun _ inside => inside, fun _ inside => inside, run, member,
                   resumed⟩)
           · cases ran
             exact (endedCancel _).queue ops
               (ops.occur _ _ _ _ _ _ (endedCancel _).1 (held_pending holds member resumed)
-                ⟨state, holds, by refine .trans ?_ (ops.signalGrows _ (.cancel cancelled)); exact .of_same rfl rfl,
+                ⟨state, holds, by refine .trans ?_ (ops.signalGrows _ (.cancel cancelled)); exact .of_same rfl rfl (.of_eq rfl),
                   fun _ inside => by rw [(ops.signalled _ _).1] at inside; exact inside,
                   fun _ inside => by rw [(ops.signalled _ _).2.2] at inside; exact inside, run, member,
                   resumed⟩)
@@ -711,7 +711,7 @@ theorem runs_keep {inv : State → Prop} {settled : State → OccurrenceId → P
           Follows settled state (state.enterScope element scope record.snapshot none).1 :=
         fun element anchor => by
           obtain ⟨_, issuedNext, scopesEq, slotsEq⟩ := ops.entered state element scope record.snapshot
-          obtain ⟨unissued, -, grows⟩ := ops.fresh state element scope record.snapshot holds stands
+          obtain ⟨⟨unissued, -, grows⟩, -⟩ := ops.fresh state element scope record.snapshot holds stands
           refine ⟨ops.enteredGrows holds stands record.snapshot, fun entry member => ?_,
             (ops.enter state element scope record.snapshot holds stands anchor).2,
             fun body member => by rw [slotsEq] at member; exact member, grows⟩
@@ -727,7 +727,7 @@ theorem runs_keep {inv : State → Prop} {settled : State → OccurrenceId → P
         · rename_i nestedAfter nested
           cases ran
           obtain ⟨link, issuedNext, scopesEq, slotsEq⟩ := ops.entered state record.subject scope record.snapshot
-          obtain ⟨unissued, issuedAfter, -⟩ := ops.fresh state record.subject scope record.snapshot holds stands
+          obtain ⟨⟨unissued, issuedAfter, -⟩, -⟩ := ops.fresh state record.subject scope record.snapshot holds stands
           have subject : Laws.Flow.RecordAnchor state record.subject scope := ⟨owner, owned, own, record, pending, .inl rfl⟩
           have entering := follows record.subject subject
           have enter := ops.enter state record.subject scope record.snapshot holds stands subject

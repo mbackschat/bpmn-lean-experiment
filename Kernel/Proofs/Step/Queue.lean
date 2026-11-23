@@ -182,7 +182,7 @@ theorem hold_wellFormed {state : State} (formed : Laws.State.WellFormed program 
   exact slotted.narrow {
       scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := fun _ => by apply Laws.State.instanceOf_congr <;> rfl, recorded := id, items := .refl _,
-      tokens := .refl _, signals := .refl _, starts := fun _ => id, slots := .same rfl } rfl slotted.startedOnce
+      tokens := .refl _, signals := .refl _, starts := fun _ => id, slots := .same rfl, issued := rfl, issuing := rfl, issueNext := rfl } rfl slotted.startedOnce
 
 /-- The scope occurrence an occurrence runs in stands. -/
 theorem housed_of {state : State} (formed : Laws.State.WellFormed program state) {occurrence : Occurrence}

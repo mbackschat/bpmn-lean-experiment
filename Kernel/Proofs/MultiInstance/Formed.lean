@@ -2,6 +2,7 @@ module
 
 public import Kernel.Proofs.MultiInstance.Framed
 public import Kernel.Proofs.MultiInstance.Hooks
+public import Kernel.Proofs.MultiInstance.Continued
 public import Kernel.Laws.MultiInstance
 public import Kernel.Laws.Scopes
 
@@ -348,12 +349,260 @@ and after a committed start, every running body numbers its instances in item or
 occurrence of the Activity in its scope occurrence, and the instance begins still queued are in order, under a program
 whose identifiers are unique. The registered hooks supply it (`registered_numberingKept`). -/
 structure NumberingKept (hooks : Hooks) : Prop where
-  step : ∀ program input before after, IdsUnique program → WellFormed program before →
+  step : ∀ program input before after, IdsUnique program → WellFormed program before → Laws.State.Committed before →
     RunsFormed program before → Step.step hooks program (some before) input = .ok after →
       (∀ run ∈ after.slots.multiInstances, NumberedInOrder after run ∧ InstancesPlaced after run) ∧
         BeginsQueued program after
   start : ∀ program input after, IdsUnique program → Step.step hooks program none input = .ok after →
     (∀ run ∈ after.slots.multiInstances, NumberedInOrder after run ∧ InstancesPlaced after run) ∧
       BeginsQueued program after
+
+/-! ## What the Multi-Instance hooks keep of a running body's snapshot
+
+`Snapshots` (`Kernel.Proofs.MultiInstance.Since`) through each Multi-Instance hook, by what it sets, from the operations
+record of `WellFormed` (`Laws.MultiInstance.MultiInstanceOps`). -/
+
+section Snapshots
+
+open Kernel.Laws.State (key)
+open Kernel.Laws.MultiInstance (SnapshotFixed recorded)
+
+/-- Entering instances from a record that keeps `Snapshots` sets one that keeps its snapshot and slot count. -/
+theorem beginInstances_snapshots (mi : ∀ program, Laws.MultiInstance.MultiInstanceOps program (WellFormed program) Laws.State.Settled)
+    {ctx : Ctx} {loop : MultiInstance} {items : List Value} {b state : State}
+    {base : MultiInstanceRun}
+    (entering : Laws.MultiInstance.Entering (WellFormed ctx.program) Laws.State.Settled base state base.instances [])
+    (kept : Snapshots b state)
+    (fixed : ∀ earlier ∈ b.slots.multiInstances, earlier.occurrence = base.occurrence → SnapshotFixed earlier base)
+    (generated : (∀ earlier ∈ b.slots.multiInstances, earlier.occurrence ≠ base.occurrence) → 0 < base.instances.length) :
+    Snapshots b (Feature.MultiInstance.beginInstances ctx loop items base state) := by
+  obtain ⟨queued, instances, ran, begun⟩ := Laws.MultiInstance.beginInstances_spec (ctx := ctx) (loop := loop)
+    (items := items) (mi ctx.program) entering
+  have opened := opens_fixed begun.opens
+  rw [ran]
+  refine (kept.shrink fun _ inside => begun.slots ▸ inside).setRun (fun earlier member same => ?_) fun apart => ?_
+  · exact snapshotFixed_trans (fixed earlier member (same.trans opened.occurrence)) opened
+  · rw [opened.count]
+    exact generated fun earlier member same => apart earlier member (same.trans opened.occurrence.symm)
+
+/-- `Hooks.arriveMultiInstance` keeps `Snapshots`: it holds the occurrence, completes it, or sets the record of a body
+it enters, every slot waiting, of which there is at least one, keyed by the occurrence whose start the draft journalled
+last, which no body of `b` is keyed by. -/
+theorem arriveMultiInstance_snapshots (mi : ∀ program, Laws.MultiInstance.MultiInstanceOps program (WellFormed program) Laws.State.Settled)
+    {ctx : Ctx} {header : Header} {envelope : Envelope} {loop : MultiInstance}
+    {occurrence : Occurrence} {b state after : State} (formed : WellFormed ctx.program state) (unstarted : Unstarted b state)
+    (kept : Snapshots b state) (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
+    (named : header.id = occurrence.element) (newest : state.draft.started.getLast?.map (·.occurrence) = some (key state occurrence))
+    (ran : Feature.MultiInstance.arriveMultiInstance ctx header envelope loop occurrence state = .ok after) :
+    Snapshots b after := by
+  have fresh : ∀ earlier ∈ b.slots.multiInstances, earlier.occurrence ≠ occurrence.id := fun earlier inside same => by
+    obtain ⟨fact, last, named⟩ := Option.map_eq_some_iff.mp newest
+    exact unstarted.unstarted earlier inside occurrence member same.symm
+      (named ▸ List.mem_map_of_mem (List.mem_of_getLast? last))
+  rcases Laws.MultiInstance.arriveMultiInstance_spec ran with ⟨held, rfl⟩ | ⟨writes, rfl⟩ | ⟨locals, unarmed, entered⟩
+  · rw [Laws.Hooks.hold_eq]
+    exact kept.same rfl
+  · rw [Laws.State.signal_eq]
+    exact kept.same rfl
+  · obtain ⟨collection, count, items, ⟨positive, rfl⟩⟩ := entered
+    have enteredKept : Snapshots b (if unarmed then (state.enterScope header.id occurrence.scope locals (some occurrence.id)).1
+        else (state.enterScope header.id occurrence.scope locals (some occurrence.id)).1.signal
+          (.arm occurrence.id header.id occurrence.scope)) := by
+      cases unarmed <;> simp only [Bool.false_eq_true, ↓reduceIte, Laws.State.signal_eq, Laws.State.enterScope_eq] <;>
+        exact kept.same rfl
+    refine beginInstances_snapshots mi (enterBody_entering (mi ctx.program)
+      formed member begun header.id
+      (enterBody_enters (mi ctx.program) formed member begun named)
+      (fun current kept present =>
+        (mi ctx.program).arm current occurrence _ kept present begun named)
+      locals unarmed collection _ fun _ inside => List.eq_of_mem_replicate inside).1
+      enteredKept (fun earlier inside same => absurd same (fresh earlier inside)) fun _ => ?_
+    simpa using positive
+
+/-- `Hooks.completeBody` keeps `Snapshots`: it queues the body's completion. -/
+theorem completeBody_snapshots {ctx : Ctx} {header : Header} {envelope : Envelope} {loop : MultiInstance}
+    {occurrence : Occurrence} {b state after : State} (kept : Snapshots b state)
+    (ran : Feature.MultiInstance.completeBody ctx header envelope loop occurrence state = .ok after) : Snapshots b after := by
+  obtain ⟨run, _, rfl⟩ := Laws.MultiInstance.completeBody_spec ran
+  obtain ⟨writes, same, _⟩ := Laws.MultiInstance.finish_spec ctx loop run state
+  rw [same, Laws.State.signal_eq]
+  exact kept.same rfl
+
+/-- `Hooks.instanceCompleted` keeps `Snapshots` for an instance in a scope occurrence that stands: it records the
+instance's output in its body's record, leaving its scope occurrence, then completes the body or enters its next
+instances. -/
+theorem instanceCompleted_snapshots (mi : ∀ program, Laws.MultiInstance.MultiInstanceOps program (WellFormed program) Laws.State.Settled)
+    {ctx : Ctx} {body : OccurrenceId} {occurrence : Occurrence} {writes : List (String × Value)}
+    {b state after : State} (formed : WellFormed ctx.program state) (kept : Snapshots b state)
+    (stands : occurrence.scope ∈ scopeIds state)
+    (ran : Feature.MultiInstance.instanceCompleted ctx body occurrence writes state = .ok after) :
+    Snapshots b after := by
+  obtain ⟨run, loop, index, found⟩ := Laws.MultiInstance.instanceCompleted_spec ran
+  obtain ⟨output, done⟩ := found
+  obtain ⟨results, counted, left, ended⟩ := done.ends
+  have member := Laws.MultiInstance.found_mem done.found
+  have filled := recorded_fixed (output := output) results done.slot
+  have fixed : ∀ earlier ∈ b.slots.multiInstances, earlier.occurrence = (recorded run index output results).occurrence →
+      SnapshotFixed earlier (recorded run index output results) := fun earlier inside same =>
+    snapshotFixed_trans (kept.fixed earlier inside run member (filled.occurrence.symm.trans same.symm)) filled
+  have generated : (∀ earlier ∈ b.slots.multiInstances, earlier.occurrence ≠ (recorded run index output results).occurrence) →
+      0 < (recorded run index output results).instances.length := fun apart => by
+    rw [filled.count]
+    exact kept.generated run member fun earlier inside same => apart earlier inside (same.trans filled.occurrence.symm)
+  have countedKept : Snapshots b counted := by
+    have leftKept : Snapshots b (Laws.MultiInstance.leftWith state occurrence.scope (recorded run index output results)) :=
+      (kept.shrink (Laws.State.leaveScope_left formed stands).slots.bodies).setRun fixed generated
+    rcases left with rfl | ⟨target, counts, rule, rfl⟩
+    · exact leftKept
+    · rw [Laws.State.signal_eq]
+      exact leftKept.same rfl
+  rcases ended with rfl | ⟨items, rfl⟩
+  · obtain ⟨written, same, _⟩ := Laws.MultiInstance.finish_spec ctx loop (recorded run index output results) counted
+    rw [same, Laws.State.signal_eq]
+    exact countedKept.same rfl
+  · obtain ⟨entering, _, present⟩ := counted_entering (mi ctx.program)
+      formed stands done left
+    exact beginInstances_snapshots mi entering countedKept (fun earlier inside same => countedKept.fixed earlier inside _
+      present same.symm) fun apart => countedKept.generated _ present apart
+
+end Snapshots
+
+/-! ## What the Multi-Instance hooks keep of the continuations
+
+`Continued` (`Kernel.Proofs.MultiInstance.Continued`) through each Multi-Instance hook: it keeps or removes occurrences,
+queues no begin but its instances', which continue into a body occurrence that has settled and so was issued, and,
+beside it, issues no fewer keys (`grown_alongside`). -/
+
+section Continuations
+
+open Kernel.Laws.State (OccurrenceGrows OccurrenceIssued Queued allSignals allQueuedTokens)
+open Kernel.Laws.MultiInstance (recorded)
+
+/-- Entering instances keeps every occurrence and queues only begins continuing into the body's occurrence, which has
+settled. -/
+theorem beginInstances_continuedFrame
+    (mi : ∀ program, Laws.MultiInstance.MultiInstanceOps program (WellFormed program) Laws.State.Settled)
+    {ctx : Ctx} {loop : MultiInstance} {items : List Value} {state : State} {base : MultiInstanceRun}
+    (entering : Laws.MultiInstance.Entering (WellFormed ctx.program) Laws.State.Settled base state base.instances []) :
+    ContinuedFrame state (Feature.MultiInstance.beginInstances ctx loop items base state) := by
+  obtain ⟨queued, instances, ran, begun⟩ := Laws.MultiInstance.beginInstances_spec (ctx := ctx) (loop := loop)
+    (items := items) (mi ctx.program) entering
+  obtain ⟨requests, requested, asQueued⟩ := begun.queues
+  have fromRequests : ∀ request ∈ requests, ∀ body, request.continuation = .multiInstance body →
+      OccurrenceIssued queued body := by
+    intro request member body on
+    obtain ⟨slots, _, rfl, _⟩ := requested
+    obtain ⟨slot, _, rfl⟩ := List.mem_map.mp member
+    simp only [Laws.MultiInstance.instanceRequest, Continuation.multiInstance.injEq] at on
+    exact on ▸ begun.entering.2.1.1
+  rw [ran, Laws.MultiInstance.setRun_eq]
+  refine ⟨fun o inside => ?_, fun request inside body on => ?_⟩
+  · have held : o ∈ queued.occurrences := inside
+    rw [begun.occurrences] at held
+    exact held
+  rcases inside with signal | token
+  · change Signal.begin request ∈ allSignals queued at signal
+    rw [allSignals, begun.keyed.1] at signal
+    rcases List.mem_append.mp signal with keyed | batch
+    · exact .inl (.inl (List.mem_append_left _ keyed))
+    rcases asQueued with ⟨signals, _⟩ | ⟨_, _, signals, _⟩ <;> rw [signals] at batch
+    · rcases List.mem_append.mp batch with old | new
+      · exact .inl (.inl (List.mem_append_right _ old))
+      · obtain ⟨made, madeIn, same⟩ := List.mem_map.mp new
+        cases same
+        exact .inr (fromRequests _ madeIn body on)
+    · exact .inl (.inl (List.mem_append_right _ batch))
+  · change Token.begin request ∈ allQueuedTokens queued at token
+    rw [allQueuedTokens, begun.keyed.2] at token
+    rcases List.mem_append.mp token with keyed | batch
+    · exact .inl (.inr (List.mem_append_left _ keyed))
+    rcases asQueued with ⟨_, tokens⟩ | ⟨_, _, _, tokens⟩ <;> rw [tokens] at batch
+    · exact .inl (.inr (List.mem_append_right _ batch))
+    · rcases List.mem_append.mp batch with old | new
+      · exact .inl (.inr (List.mem_append_right _ old))
+      · obtain ⟨made, madeIn, same⟩ := List.mem_map.mp (List.mem_reverse.mp new)
+        cases same
+        exact .inr (fromRequests _ madeIn body on)
+
+/-- `Hooks.arriveMultiInstance` keeps `Continued` where it issues no fewer keys: it holds the occurrence, completes it,
+or enters its body and its instances. -/
+theorem arriveMultiInstance_continued
+    (mi : ∀ program, Laws.MultiInstance.MultiInstanceOps program (WellFormed program) Laws.State.Settled)
+    {ctx : Ctx} {header : Header} {envelope : Envelope} {loop : MultiInstance} {occurrence : Occurrence}
+    {state after : State} (formed : WellFormed ctx.program state) (kept : Continued state)
+    (grows : OccurrenceGrows state after) (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
+    (named : header.id = occurrence.element)
+    (ran : Feature.MultiInstance.arriveMultiInstance ctx header envelope loop occurrence state = .ok after) :
+    Continued after := by
+  rcases Laws.MultiInstance.arriveMultiInstance_spec ran with ⟨held, rfl⟩ | ⟨writes, rfl⟩ | ⟨locals, unarmed, entered⟩
+  · rw [Laws.Hooks.hold_eq]
+    exact kept.same (fun _ issued => issued) rfl rfl rfl
+  · exact kept.signal _
+  obtain ⟨collection, count, items, ⟨_, rfl⟩⟩ := entered
+  have frame := beginInstances_continuedFrame mi (loop := loop) (items := items) (enterBody_entering (mi ctx.program)
+    formed member begun header.id (enterBody_enters (mi ctx.program) formed member begun named)
+    (fun current kept present => (mi ctx.program).arm current occurrence _ kept present begun named)
+    locals unarmed collection (List.replicate count .waiting) fun _ inside => List.eq_of_mem_replicate inside).1
+  refine kept.hooked grows ⟨fun o inside => ?_, fun request inside body on => ?_⟩
+  · have held := frame.occurrences o inside
+    cases unarmed <;> simpa [Laws.State.signal_eq, Laws.State.enterScope_eq] using held
+  · refine (frame.queued request inside body on).imp_left fun old => ?_
+    cases unarmed
+    · simp only [Bool.false_eq_true, ↓reduceIte] at old
+      have entered := queued_signal old
+      rw [Laws.State.enterScope_eq] at entered
+      exact entered
+    · simp only [↓reduceIte] at old
+      rw [Laws.State.enterScope_eq] at old
+      exact old
+
+/-- `Hooks.completeBody` keeps `Continued`: it queues the body's completion. -/
+theorem completeBody_continued {ctx : Ctx} {header : Header} {envelope : Envelope} {loop : MultiInstance}
+    {occurrence : Occurrence} {state after : State} (kept : Continued state)
+    (ran : Feature.MultiInstance.completeBody ctx header envelope loop occurrence state = .ok after) : Continued after := by
+  obtain ⟨run, _, rfl⟩ := Laws.MultiInstance.completeBody_spec ran
+  obtain ⟨writes, same, _⟩ := Laws.MultiInstance.finish_spec ctx loop run state
+  rw [same]
+  exact kept.signal _
+
+/-- `Hooks.instanceCompleted` keeps `Continued` for an instance in a scope occurrence that stands, where it issues no
+fewer keys: it leaves the instance's scope occurrence, then completes the body or enters its next instances. -/
+theorem instanceCompleted_continued
+    (mi : ∀ program, Laws.MultiInstance.MultiInstanceOps program (WellFormed program) Laws.State.Settled)
+    {ctx : Ctx} {body : OccurrenceId} {occurrence : Occurrence} {writes : List (String × Value)} {state after : State}
+    (formed : WellFormed ctx.program state) (kept : Continued state) (grows : OccurrenceGrows state after)
+    (stands : occurrence.scope ∈ scopeIds state)
+    (ran : Feature.MultiInstance.instanceCompleted ctx body occurrence writes state = .ok after) : Continued after := by
+  obtain ⟨run, loop, index, found⟩ := Laws.MultiInstance.instanceCompleted_spec ran
+  obtain ⟨output, done⟩ := found
+  obtain ⟨results, counted, left, ended⟩ := done.ends
+  have leftOf := Laws.State.leaveScope_left formed stands
+  have back : (∀ o ∈ (Laws.MultiInstance.leftWith state occurrence.scope (recorded run index output results)).occurrences,
+      o ∈ state.occurrences) ∧ ∀ request,
+      Queued (Laws.MultiInstance.leftWith state occurrence.scope (recorded run index output results)) request →
+        Queued state request := by
+    unfold Laws.MultiInstance.leftWith
+    rw [Laws.MultiInstance.setRun_eq]
+    exact ⟨fun _ inside => leftOf.occurrencesSublist.subset inside, fun _ inside => inside.shrink
+      (fun _ held => leftOf.signals ▸ held) fun _ held => leftOf.tokensSublist.subset held⟩
+  have countedBack : (∀ o ∈ counted.occurrences, o ∈ state.occurrences) ∧
+      ∀ request, Queued counted request → Queued state request := by
+    rcases left with rfl | ⟨target, counts, rule, rfl⟩
+    · exact back
+    · exact ⟨fun o inside => back.1 o (signal_occurrences _ _ ▸ inside),
+        fun request inside => back.2 request (queued_signal inside)⟩
+  rcases ended with rfl | ⟨items, rfl⟩
+  · obtain ⟨written, same, _⟩ := Laws.MultiInstance.finish_spec ctx loop (recorded run index output results) counted
+    rw [same] at grows ⊢
+    exact kept.hooked grows ⟨fun o inside => countedBack.1 o (signal_occurrences _ _ ▸ inside), fun request inside _ _ =>
+      .inl (countedBack.2 request (queued_signal inside))⟩
+  · obtain ⟨entering, _, _⟩ := counted_entering (mi ctx.program) formed stands done left
+    have frame : ContinuedFrame counted
+        (Feature.MultiInstance.beginInstances ctx loop items (recorded run index output results) counted) :=
+      beginInstances_continuedFrame mi entering
+    exact kept.hooked grows ⟨fun o inside => countedBack.1 o (frame.occurrences o inside), fun request inside body on =>
+      (frame.queued request inside body on).imp_left (countedBack.2 request)⟩
+
+end Continuations
 
 end Kernel.Proofs.MultiInstance

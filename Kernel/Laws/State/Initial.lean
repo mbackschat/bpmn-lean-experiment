@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Laws.State.Derived
+public import Kernel.Laws.State.Committed
 
 /-! # Laws of the kernel state: the fresh instance
 
@@ -29,12 +30,19 @@ theorem initial_variablesKeyed (instanceId : String) (variables : List (String �
 /-- The fresh instance's one key, the root, is a history. -/
 private theorem initial_historic (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
     Historic (State.initial instanceId variables businessKey) :=
-  historic_of_standing (by simp [initial_eq, root_eq]) (by simp [initial_eq, root_eq])
+  historic_of_standing (by simp [initial_eq, root_eq]) (by simp [initial_eq, root_eq]) (by simp [initial_eq, root_eq])
+    (by simp [initial_eq, root_eq, Layered])
 
 section Initial
 
 /- The fresh instance queues nothing under a unit key, so its queue views are its batches. -/
 attribute [local simp] allSignals allQueuedTokens
+
+/-- A start's fresh instance is committed: it has no transition and an empty issue table, so a run's every before-state
+is committed (`Laws.Step.orderJournal_committed` for every other). -/
+theorem initial_committed (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
+    Committed (State.initial instanceId variables businessKey) :=
+  ⟨by simp [initial_eq], by simp [initial_eq], by simp [initial_eq]⟩
 
 /-- A start's fresh instance; `Kernel.Proofs.Step` queues its root's arming (`signal_queueSound`). -/
 theorem initial_wellFormed (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
@@ -55,6 +63,8 @@ theorem initial_wellFormed (instanceId : String) (variables : List (String × Va
     subst member
     exact keyed_names variables⟩
   failure := by simp [FailureRecorded, initial_eq]
+  issuer := ⟨fun _ _ held => by simp [initial_eq] at held, fun _ _ held => by simp [initial_eq] at held,
+    fun _ _ _ held => by simp [initial_eq] at held⟩
   queue := ⟨by simp [initial_eq], by simp [initial_eq], by simp [initial_eq], by simp [initial_eq],
     by simp [initial_eq]⟩
   counted := by simp [StartsCounted, starts, initial_eq]

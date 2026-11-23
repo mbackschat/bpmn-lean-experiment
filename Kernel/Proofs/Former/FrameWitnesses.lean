@@ -68,27 +68,44 @@ theorem topCalled_boundary : definitionAt (topCalled program definition) sharedX
 theorem rootOnly_historic {s : State} (scopes : s.scopes = [{ id := State.root, element := none }]) :
     Laws.State.Historic s :=
   Laws.State.historic_of_standing (fun _ _ member => by simp [Laws.State.standingKeys, scopes, Laws.State.root_eq] at member)
-    fun _ _ member => by simp [Laws.State.standingKeys, scopes, Laws.State.root_eq] at member
+    (fun _ _ _ member => by simp [Laws.State.standingKeys, scopes, Laws.State.root_eq] at member)
+    (fun _ _ _ _ member => by simp [Laws.State.standingKeys, scopes, Laws.State.root_eq] at member)
+    fun _ member => by
+      simp only [Laws.State.standingKeys, scopes, List.map_cons, List.map_nil, List.mem_singleton] at member
+      subst member
+      simp [Laws.State.root_eq, Laws.State.Layered]
 
-/-- A key below a standing parent whose ordinal is below its parent's counter is one some history of a historic state
-holds: a key issued there and left. -/
+/-- A committed key below a standing committed parent whose ordinal is below its parent's counter is one some history of
+a historic state holds: a key issued there and left. -/
 theorem issued_of_count {s : State} (historic : Laws.State.Historic s) {parent : ScopeOccurrenceId}
-    (standing : parent ∈ Laws.State.standingKeys s) {element : ElementId} {ordinal : Nat}
-    (below : ordinal < Laws.State.slotCount s parent element) : Laws.State.ScopeIssued s (parent.child element ordinal) := by
+    (standing : parent ∈ Laws.State.standingKeys s) (committed : ∀ above ∈ parent.segments, above.ordinal.isFresh = false)
+    {element : ElementId} {ordinal : Nat} (below : ordinal < Laws.State.slotCount s parent element) :
+    Laws.State.ScopeIssued s (parent.child element (.committed ordinal)) := by
   obtain ⟨H, history⟩ := historic
-  refine ⟨fun x => H x ∨ x = parent.child element ordinal,
+  refine ⟨fun x => H x ∨ x = parent.child element (.committed ordinal),
     ⟨fun scope member => .inl (history.standing scope member), fun segment rest held => ?_,
-      fun segment rest held stands => ?_⟩, .inr rfl⟩
+      fun segment rest n held named stands => ?_, fun segment rest unit index held fresh => ?_,
+      fun x held => ?_⟩, .inr rfl⟩
   · rcases held with old | new
     · exact .inl (history.closed segment rest old)
     · simp only [Laws.State.child_eq, Laws.State.ScopeOccurrenceId.ofSegments_inj, List.cons.injEq] at new
       obtain ⟨-, rfl⟩ := new
       exact .inl (by rw [Laws.State.ScopeOccurrenceId.ofSegments_eta]; exact history.standing_key standing)
   · rcases held with old | new
-    · exact history.below segment rest old stands
+    · exact history.below segment rest n old named stands
     · simp only [Laws.State.child_eq, Laws.State.ScopeOccurrenceId.ofSegments_inj, List.cons.injEq] at new
       obtain ⟨rfl, rfl⟩ := new
+      obtain rfl : ordinal = n := by simpa using named
       simpa [Laws.State.slotCount] using below
+  · rcases held with old | new
+    · exact history.tabled segment rest unit index old fresh
+    · simp only [Laws.State.child_eq, Laws.State.ScopeOccurrenceId.ofSegments_inj, List.cons.injEq] at new
+      obtain ⟨rfl, -⟩ := new
+      cases fresh
+  · rcases held with old | rfl
+    · exact history.layered x old
+    · rw [Laws.State.child_eq, Laws.State.ScopeOccurrenceId.ofSegments_segments]
+      exact ⟨fun _ => committed, history.layered parent (history.standing_key standing)⟩
 
 /-- The process root is its own instance root in every state holding only it. -/
 theorem rootOnly_root {s : State} (scopes : s.scopes = [{ id := State.root, element := none }]) :
@@ -136,7 +153,7 @@ theorem unpaired_emit_rejected (f : FlowId) (ends : (topCalled program definitio
     (rootOnly_root (by simp [staleComplete])) (by simp [staleComplete]) (topCalled_placed program definition)
 
 /-- The key a first scope occurrence of `Y` takes below the process root. -/
-abbrev freshKey : ScopeOccurrenceId := State.root.child ⟨"Y"⟩ 0
+abbrev freshKey : ScopeOccurrenceId := State.root.child ⟨"Y"⟩ (.fresh (.ofRoot .seed) 0)
 
 /-- The process root holding an occurrence of `Y`, and a reservation of `T` queued for the key a scope occurrence of
 `Y` entered there takes next. -/
@@ -163,7 +180,7 @@ theorem unissued_enter_rejected :
   have entered := Laws.State.enterScope_eq pendingFresh ⟨"Y"⟩ State.root [] none
   have scopes : (pendingFresh.enterScope ⟨"Y"⟩ State.root [] none).1.scopes =
       [{ id := State.root, element := none }, freshEntry] := by
-    rw [entered]; simp [freshEntry, pendingFresh, Laws.State.slotCount, Std.ExtTreeMap.getD_empty]
+    rw [entered]; simp [freshEntry, pendingFresh]
   have placed := (lane.occurs ⟨"T"⟩ freshKey .outgoing (.inl ⟨[], .outward, by rw [entered]; simp [Laws.State.allSignals, pendingFresh]⟩)).1
     (by simp [Laws.State.scopeIds, scopes, freshEntry])
   have reading : Laws.State.InstanceIn (pendingFresh.enterScope ⟨"Y"⟩ State.root [] none).1 freshKey
@@ -199,7 +216,8 @@ theorem rootOnly_lane {s : State} (scopes : s.scopes = [{ id := State.root, elem
   refine ⟨⟨⟨⟨{ root := State.root }, by simp [instances], rfl⟩, ?_, by simp [occurrences]⟩, by simp [instances],
     by simpa [instances] using (rootOnly_historic scopes).issued_key (by simp [Laws.State.standingKeys, scopes]), by simp [instances, Laws.State.root_eq], ?_, by simp [occurrences], by simp [parked],
     by simp [compensation]⟩, by simp [tokens], ?_, ?_, ?_, ?_, ?_, ?_, by simp [compensation], by simp [compensation],
-    ?_, ?_, fun run member stands => absurd (only _ stands) (runs run member).1, ?_, ?_, by simp [parked]⟩
+    ?_, ?_, fun run member stands => absurd (only _ stands) (runs run member).1, ?_, ?_, by simp [parked],
+    by simp [RootsStanding, instances, Laws.State.scopeIds, scopes]⟩
   · intro entry member called; simp [scopes] at member; subst member; simp at called
   · intro entry member element parent named; simp [scopes] at member; subst member; simp at named
   · intro request queued
@@ -266,7 +284,7 @@ theorem rootOnly_lane {s : State} (scopes : s.scopes = [{ id := State.root, elem
     · exact (runs run member).2
 
 /-- The key of a scope occurrence of `S` entered below the process root and left. -/
-abbrev leftKey : ScopeOccurrenceId := State.root.child ⟨"S"⟩ 0
+abbrev leftKey : ScopeOccurrenceId := State.root.child ⟨"S"⟩ (.committed 0)
 
 /-- The counters of a state that entered `S` once below the process root. -/
 def leftOrdinals : TreeMap ScopeSlot Nat compare :=
@@ -276,7 +294,7 @@ def leftOrdinals : TreeMap ScopeSlot Nat compare :=
 theorem leftKey_issued {s : State} (scopes : s.scopes = [{ id := State.root, element := none }])
     (ordinals : s.scopeOrdinals = leftOrdinals) : Laws.State.ScopeIssued s leftKey :=
   issued_of_count (rootOnly_historic scopes) (by simp [Laws.State.standingKeys, scopes])
-    (by simp [Laws.State.slotCount, ordinals, leftOrdinals, Std.ExtTreeMap.getD_insert_self])
+    (fun _ member => by simp [Laws.State.root_eq] at member) (by simp [Laws.State.slotCount, ordinals, leftOrdinals, Std.ExtTreeMap.getD_insert_self])
 
 /-- The process root and a reservation of `T` queued for `leftKey`, issued and left. -/
 def leftReservation : State :=

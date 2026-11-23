@@ -25,7 +25,7 @@ theorem onRunning_ok {hooks : Hooks} {ctx : Ctx} {input : Input} {before : Optio
       advanceClock (inputHead input).2.1 { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } = .ok start ∧
       microStep hooks ctx (.ofRoot .input) (.input (inputHead input).1) none State.root transition start = .ok moved ∧
       settle hooks ctx closureBound closureWorkBound (RunLog.record {} (.ofRoot .input)) moved = .ok settled ∧
-      orderJournal (.ok settled) = .ok after := by
+      orderJournal start (.ok settled) = .ok after := by
   rw [onRunning_eq] at ran
   split at ran
   · simp at ran
@@ -75,13 +75,16 @@ theorem step_ok {hooks : Hooks} {program : Program} {before : Option State} {inp
   · simp at ran
 
 /-- Queued work whose scope occurrence is gone fails its closure micro-step with `queued-work-scope-gone`, after a
-transaction boundary too: the input's outcome is that invariant failure, never `unsupported` (#121, #148). -/
+transaction boundary too: the input's outcome is that invariant failure, never `unsupported` (#121, #148), for a unit
+the closure has not run. The body reads the state under the micro-step's unit as issuer (DC12). -/
 theorem microStep_scope_gone {hooks : Hooks} {ctx : Ctx} {unit : UnitKey} {signal : Signal} {state : State}
-    (fresh : stale state (signalWork hooks ctx signal) = false)
-    (absent : gone state (signalWork hooks ctx signal) = some "queued-work-scope-gone") :
+    (unrun : state.transitions.contains unit = false) (unseeded : unit ≠ .ofRoot .seed)
+    (fresh : stale { state with issuing := unit, issueNext := 0 } (signalWork hooks ctx signal) = false)
+    (absent : gone { state with issuing := unit, issueNext := 0 } (signalWork hooks ctx signal) =
+      some "queued-work-scope-gone") :
     microStep hooks ctx unit (.signal (signalName signal)) none State.root (dispatchSignal hooks ctx signal) state =
       .error (.semanticFailure .invariant "queued-work-scope-gone") :=
-  microStep_invariant (dispatchSignal_eq ▸ perform_gone fresh absent)
+  microStep_invariant unrun unseeded (dispatchSignal_eq ▸ perform_gone fresh absent)
 
 /-! ### Inputs no lookup addresses
 
@@ -111,8 +114,9 @@ theorem onRunning_rejects {hooks : Hooks} {ctx : Ctx} {input : Input} {state : S
         obtain ⟨code, rfl⟩ := admitChoices_error chose
         exact ⟨code, by simp [bind, Except.bind]⟩
       | ok _ =>
-        obtain ⟨code, rejected⟩ := rejects start agrees
-        exact ⟨code, by simp [bind, Except.bind, microStep_rejected rejected]⟩
+        obtain ⟨code, rejected⟩ := rejects { start with issuing := .ofRoot .input, issueNext := 0 } agrees
+        have empty : start.transitions = ∅ := by rcases advanceClock_ok clock with rfl | ⟨_, rfl⟩ <;> rfl
+        exact ⟨code, by simp [bind, Except.bind, microStep_rejected (by simp [empty]) (by simp) rejected]⟩
 
 /-- An addressed input whose occurrence reference neither `occurrenceOf?` nor `itemDetail?` finds, on any state that
 agrees with the before-state on what they read, is rejected. -/

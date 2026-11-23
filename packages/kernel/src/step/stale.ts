@@ -5,9 +5,9 @@
  */
 import {
   FailureTag, SemanticCause, failed, semanticFailure, stands, type Outcome, type ScopeOccurrenceId, type State,
+  committedOrdinal, compareIssue, compareScopeSlot, occurrenceIdParts, type OccurrenceId, scopeHead,
 } from "../state.js";
-import { compareScopeSlot, occurrenceIdParts, type OccurrenceId, scopeHead } from "../state/key.js";
-import { treeMapGetD } from "../state/map.js";
+import { orderedHas, treeMapGetD } from "../state/map.js";
 
 /**
  * An occurrence begins only in a scope occurrence that stands: a begin into one that is gone is an invariant failure,
@@ -21,14 +21,16 @@ export function requireScope(state: State, scope: ScopeOccurrenceId): Outcome | 
 /**
  * Whether the scope occurrence key `scope` was issued, as far as the counters that remain can tell: the ordinal below
  * its deepest standing ancestor is below that ancestor's counter for its element. A counter goes with its scope
- * occurrence, so of a key below a removed subtree only this is known (KD1, `stale`).
+ * occurrence, so of a key below a removed subtree only this is known (KD1, `stale`). A segment issued in the closure in
+ * progress was issued exactly when the issue table holds it, since nothing the closure issues leaves it before the commit
+ * (DC12).
  */
 function scopeIssued(state: State, scope: ScopeOccurrenceId): boolean {
   for (let head = scopeHead(scope); head !== null; head = scopeHead(head[1])) {
-    const [segment, parent] = head;
-    if (stands(state, parent)) {
-      return segment.ordinal < treeMapGetD(state.scopeOrdinals, { parent, element: segment.element }, compareScopeSlot, 0);
-    }
+    const [{ element, ordinal }, parent] = head;
+    const committed = committedOrdinal(ordinal);
+    if (committed === null) return orderedHas(state.issued, ordinal, compareIssue);
+    if (stands(state, parent)) return committed < treeMapGetD(state.scopeOrdinals, { parent, element }, compareScopeSlot, 0);
   }
   return true;
 }
@@ -37,11 +39,14 @@ function scopeIssued(state: State, scope: ScopeOccurrenceId): boolean {
  * Whether the occurrence key `id` was issued, as far as the counters that remain can tell: its scope occurrence key was
  * issued (`scopeIssued`) and, while that scope occurrence stands, its ordinal is below the scope occurrence's counter for
  * its element. A counter goes with its scope occurrence, so of a key issued in a removed one only that is known (KD1).
+ * One issued in the closure in progress was issued exactly when the issue table holds it (DC12).
  */
 function occurrenceIssued(state: State, id: OccurrenceId): boolean {
   const { scope, element, ordinal } = occurrenceIdParts(id);
-  return scopeIssued(state, scope) &&
-    (!stands(state, scope) || ordinal < treeMapGetD(state.occurrenceOrdinals, { parent: scope, element }, compareScopeSlot, 0));
+  if (!scopeIssued(state, scope)) return false;
+  const committed = committedOrdinal(ordinal);
+  if (committed === null) return orderedHas(state.issued, ordinal, compareIssue);
+  return !stands(state, scope) || committed < treeMapGetD(state.occurrenceOrdinals, { parent: scope, element }, compareScopeSlot, 0);
 }
 
 /**

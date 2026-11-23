@@ -155,7 +155,7 @@ theorem compensate_shape {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : Opt
     obtain ⟨entry, inside, named⟩ := List.mem_map.mp stands
     exact named ▸ before.issued.scopes entry inside
   have tame := tame_opened (others := others) (run := { trigger, scope, pending := record :: rest, leave, resume })
-    (tame_of before formed.retained formed.keyed formed.runsIssued)
+    (tame_of before formed.retained formed.keyed formed.runsIssued formed.groupsStanding)
     (fun kept inside => perm.subset (List.mem_append_right _ inside)) fresh.1 issued rfl fresh.2
   obtain ⟨less, run, _, rest'⟩ := Laws.Compensation.advance_spec advanced
   obtain ⟨first, ended | progressed⟩ := rest'
@@ -257,7 +257,7 @@ theorem handlerCompleted_inOrder {ctx : Ctx} {occurrence : Occurrence}
   obtain ⟨less, _, fuel, _⟩ := Laws.Compensation.release_spec ran
   rw [fuel] at ran
   have post := (runs_form (precedes_depends ctx) (less + 1)).2.1 _ _ _
-    (tame_of before formed.retained formed.keyed formed.runsIssued) (List.mem_map.mpr stands) ran
+    (tame_of before formed.retained formed.keyed formed.runsIssued formed.groupsStanding) (List.mem_map.mpr stands) ran
   rcases post.steps next inside with late | ⟨source, sourceIn, rest⟩
   · have below := formed.runsIssued run member
     rw [← sameScope] at below
@@ -427,13 +427,16 @@ theorem registeredFormed_contract : Laws.Step.HookContract Registry.hooks Regist
 
 /-- `Step`'s phases keep `RegisteredFormed`. -/
 theorem registeredFormed_phases : Laws.Step.Phases RegisteredFormed :=
-  phases_alongside Proofs.Step.phases fun program =>
-    formed_stepAlongside (DependsIn Registry.hooks footprintReads footprintWrites program) program
+  phases_alongside Proofs.Step.phases
+    (fun program => formed_stepAlongside (DependsIn Registry.hooks footprintReads footprintWrites program) program
+      fun _ _ _ _ precede => precede)
+    fun _ => Formed.reissue
 
 /-- Clearing an input's journal, intents, draft and writes keeps `RegisteredFormed`. -/
-theorem registeredFormed_reset {program : Program} {s : State} (holds : RegisteredFormed program s) :
+theorem registeredFormed_reset {program : Program} {s : State} (holds : RegisteredFormed program s)
+    (committed : Laws.State.Committed s) :
     RegisteredFormed program { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } :=
-  ⟨Laws.State.reset_wellFormed holds.1, holds.2.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)⟩
+  ⟨Laws.State.reset_wellFormed holds.1 committed, holds.2.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)⟩
 
 /-- A start's fresh instance holds no record, run or trigger. -/
 theorem formed_initial (precedes : Compensable → Compensable → Prop) (instanceId : String)
@@ -441,28 +444,32 @@ theorem formed_initial (precedes : Compensable → Compensable → Prop) (instan
     Formed precedes ((State.initial instanceId variables businessKey).signal (.armScope State.root)) := by
   refine Formed.signal ?_ _
   rw [Laws.State.initial_eq]
-  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ⟨?_, ?_, ?_, ?_, ?_⟩, ?_⟩ <;>
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ⟨?_, ?_, ?_, ?_, ?_⟩, ?_, ?_⟩ <;>
     simp [ClaimsApart, RetainedPresent, RunsUnfinished, CompletionsApart, CompletionsIssued, completions, completionsIn,
-      RunsSettled, RunsKeyed, RunsIssued, heldTriggers, queuedTriggers, QueuedUngrouped, Laws.State.allSignals,
+      RunsSettled, RunsKeyed, RunsIssued, GroupsStanding, heldTriggers, queuedTriggers, QueuedUngrouped, Laws.State.allSignals,
       Laws.Step.triggersOf_nil]
 
 /-- A committed input keeps `RegisteredFormed` under the registered hooks. -/
 theorem registeredFormed_stepKeeps {program : Program} {input : Input} {before after : State}
-    (holds : RegisteredFormed program before)
-    (ran : Step.step Registry.hooks program (some before) input = .ok after) : RegisteredFormed program after :=
-  Laws.Step.running_keeps registeredFormed_contract registeredFormed_phases Proofs.State.stateFacts
+    (holds : RegisteredFormed program before) (committed : Laws.State.Committed before)
+    (ran : Step.step Registry.hooks program (some before) input = .ok after) :
+    RegisteredFormed program after ∧ Laws.State.Committed after :=
+  Proofs.State.running_keeps registeredFormed_contract registeredFormed_phases
     (Laws.Step.complete_keeps registeredFormed_contract registeredFormed_phases.toBodyPhases
       (formed_pipelinePhases (fun program => DependsIn Registry.hooks footprintReads footprintWrites program)
         Proofs.Step.pipelinePhases) Proofs.State.stateFacts)
-    (registeredFormed_reset holds) ran
+    Proofs.Step.registered_framing Proofs.Step.registered_keysAux (fun _ _ holds => holds.1) committed
+    (registeredFormed_reset holds committed) ran
 
 /-- A committed start makes a `RegisteredFormed` state under the registered hooks. -/
 theorem registeredFormed_start {program : Program} {input : Input} {after : State}
-    (ran : Step.step Registry.hooks program none input = .ok after) : RegisteredFormed program after :=
-  Laws.Step.step_keeps registeredFormed_contract registeredFormed_phases Proofs.State.stateFacts
+    (ran : Step.step Registry.hooks program none input = .ok after) :
+    RegisteredFormed program after ∧ Laws.State.Committed after :=
+  Proofs.State.step_keeps registeredFormed_contract registeredFormed_phases
     (Laws.Step.complete_keeps registeredFormed_contract registeredFormed_phases.toBodyPhases
       (formed_pipelinePhases (fun program => DependsIn Registry.hooks footprintReads footprintWrites program)
         Proofs.Step.pipelinePhases) Proofs.State.stateFacts)
+    Proofs.Step.registered_framing Proofs.Step.registered_keysAux (fun _ _ holds => holds.1)
     (fun _ _ => registeredFormed_reset)
     (fun instanceId variables businessKey => ⟨Proofs.Step.initial_wellFormed program instanceId variables businessKey,
       formed_initial _ instanceId variables businessKey⟩)
@@ -472,8 +479,8 @@ theorem registeredFormed_start {program : Program} {input : Input} {after : Stat
 theorem registered_commits {program : Program} {before after : State}
     (commits : Commits Registry.hooks footprintReads footprintWrites program before after) :
     RegisteredFormed program after :=
-  have ⟨formed, relation, _, ran⟩ := commits
-  registeredFormed_stepKeeps ⟨formed, relation⟩ ran
+  have ⟨formed, committed, relation, ⟨_, ran⟩⟩ := commits
+  (registeredFormed_stepKeeps ⟨formed, relation⟩ committed ran).1
 
 /-- No record a run claimed is retained again under the registered hooks. -/
 theorem registered_claimsStayApart : ClaimsStayApart Registry.hooks footprintReads footprintWrites :=
@@ -490,13 +497,14 @@ theorem registered_noFinishedRunLeft : NoFinishedRunLeft Registry.hooks footprin
 /-- A committed start keeps the lane relation under the registered hooks. -/
 theorem registered_compensationsFormedAtStart :
     CompensationsFormedAtStart Registry.hooks footprintReads footprintWrites :=
-  fun _ _ _ ran => (registeredFormed_start ran).2
+  fun _ _ _ ran => (registeredFormed_start ran).1.2
 
 /-- Every instance a committed population run holds keeps the lane relation under the registered hooks. -/
 theorem registered_compensationsFormedInPopulation :
     CompensationsFormedInPopulation Registry.hooks footprintReads footprintWrites := fun _ _ _ ran member inside =>
-  (Laws.Population.runStimuli_held (good := RegisteredFormed)
-    ⟨fun _ _ _ _ holds stepped => registeredFormed_stepKeeps holds stepped, fun _ _ _ ran => registeredFormed_start ran⟩
-    ran member inside).2
+  (Laws.Population.runStimuli_held (good := fun program s => RegisteredFormed program s ∧ Laws.State.Committed s)
+    ⟨fun _ _ _ _ holds stepped => registeredFormed_stepKeeps holds.1 holds.2 stepped,
+      fun _ _ _ ran => registeredFormed_start ran⟩
+    ran member inside).1.2
 
 end Kernel.Proofs.Compensation

@@ -594,13 +594,14 @@ test("the unit-key guard (KD7) holds a node to its two builders and each compara
 test("the run-log guard (KD7) holds the log to its one reader and a unit-keyed map's order to its owners, and fails on an empty tree", () => {
   const owners = ["packages/kernel/src/step/order.ts", "packages/kernel/src/step/commit.ts", "packages/kernel/src/state.ts"];
   const real: Record<string, string> = Object.fromEntries(owners.map((file) => [file, readFileSync(path.join(tree.root, file), "utf8")]));
-  assert.deepEqual(runLogFindings(fixture(real)), []);
-  seeded(runLogFindings, { ...real, "packages/kernel/src/feature/work.ts": "export function peek(log, key) { return runPosition(log, key); }\n" },
-    /KD7 run log packages\/kernel\/src\/feature\/work\.ts:1: reads the run log through runPosition outside orderKey and byRun/u);
-  seeded(runLogFindings, { ...real, "packages/kernel/src/step/peek.ts": "export function size(log) { return log.positions; }\n" },
-    /KD7 run log packages\/kernel\/src\/step\/peek\.ts:1: reads the run log's positions outside runRecord and runPosition/u);
-  seeded(runLogFindings, { ...real, "packages/kernel/src/step/first.ts": "export function first(state) { return orderedEntries(state.queuedSignals)[0]; }\n" },
-    /KD7 run log packages\/kernel\/src\/step\/first\.ts:1: reads the iteration order of a unit-keyed map/u);
+  assert.deepEqual(runLogFindings(fixture({ ...real, "packages/kernel/src/step/issues.ts": "export const issues = (state) => orderedEntries(state.issued);\n" })), [], "the issue table is keyed by issue");
+  for (const [module, text, pattern] of [
+    ["feature/work", "export function peek(log, key) { return runPosition(log, key); }", /KD7 run log packages\/kernel\/src\/feature\/work\.ts:1: reads the run log through runPosition outside orderKey, byRun and issueOrder/u],
+    ["step/peek", "export function size(log) { return log.positions; }", /KD7 run log packages\/kernel\/src\/step\/peek\.ts:1: reads the run log's positions outside runRecord and runPosition/u],
+    ["step/first", "export function first(state) { return orderedEntries(state.queuedSignals)[0]; }", /KD7 run log packages\/kernel\/src\/step\/first\.ts:1: reads the iteration order of a unit-keyed map/u],
+    ["step/last", "export const last = (q: OrderedMap<UnitKey, T>) => orderedEntries(q);", /last\.ts:1: reads the iteration order of a unit-keyed map/u],
+    ["step/alias", "type Queue = OrderedMap<UnitKey, T>;\ntype Keyed<K, V> = OrderedMap<K, V>;", /alias\.ts:1: aliases a map keyed by unit \(Queue\)[^]*alias\.ts:2: aliases a map keyed by unit \(Keyed\)/u],
+  ] as const) seeded(runLogFindings, { ...real, [`packages/kernel/src/${module}.ts`]: `${text}\n` }, pattern);
   assert.notDeepEqual(runLogFindings(emptyFixture()), [], "an empty tree must fail");
 });
 

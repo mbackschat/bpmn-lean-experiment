@@ -42,18 +42,19 @@ theorem begin_unowned {state : State} (formed : WellFormed program state) (reque
   have begins := beginOccurrence_begins formed.activations request role sourceType
   rw [begins.scopes] at member
   obtain ⟨owner, present, named, begun⟩ := formed.owned.scopeOwners scope member _ owned
-  rcases begins.source with ⟨reserved, facts⟩ | fresh
+  have below := formed.issued.occurrences owner present
+  rw [named] at below
+  rcases begins.source with ⟨reserved, facts⟩ | ⟨_, rekeyed⟩ | issued
   · have unbegun := ((admitted reserved.id (by simp [names, facts.named])).1.2 owner present (named.trans facts.id)).1
     rw [begun] at unbegun
     cases unbegun
-  · have below := formed.issued.occurrences owner present
-    rw [named] at below
-    exact fresh.fresh stands below
+  · exact rekeyed.fresh formed.issuer stands below
+  · exact issued.fresh formed.issuer stands below
 
 /-- An admitted request's start Event reservation stays beginnable, unclaimed and placed after its begin in a scope
 occurrence that stands, in the scope occurrence the begun occurrence runs in. -/
 theorem Begins.entry {before after : State} {request : BeginRequest} {role : ActivationRole} {sourceType : String}
-    {begun : Occurrence} (begins : Begins before after request role sourceType begun)
+    {begun : Occurrence} (begins : Begins before after request role sourceType begun) (issuer : IssuerFresh before)
     (stands : request.scope ∈ scopeIds before) (nodup : (names request).Nodup)
     (admitted : ∀ id ∈ names request, Beginnable before request.scope id ∧ Unclaimed before id)
     (placed : InnerPlaced before request) :
@@ -63,17 +64,18 @@ theorem Begins.entry {before after : State} {request : BeginRequest} {role : Act
   have named : id ∈ names request := List.mem_append_right _ inner
   obtain ⟨⟨below, facts⟩, unclaimed⟩ := admitted id named
   have other : begun.id ≠ id := by
-    rcases begins.source with ⟨reserved, reservation⟩ | fresh
+    rcases begins.source with ⟨reserved, reservation⟩ | ⟨_, rekeyed⟩ | issued
     · intro equal
       have apart := (List.nodup_append.mp nodup).2.2
       exact apart reserved.id (by simp [reservation.named]) id inner (reservation.id ▸ equal)
-    · intro equal
-      exact fresh.fresh stands (by rw [equal]; exact below)
+    · exact fun equal => rekeyed.fresh issuer stands (by rw [equal]; exact below)
+    · exact fun equal => issued.fresh issuer stands (by rw [equal]; exact below)
   have issued : OccurrenceGrows before after := by
-    rcases begins.source with ⟨_, reservation⟩ | fresh
+    rcases begins.source with ⟨_, reservation⟩ | ⟨_, rekeyed⟩ | issued
     · exact .of_same (congrArg (List.map ScopeOccurrence.id) begins.scopes) begins.scopeOrdinals
-        reservation.occurrenceOrdinals
-    · exact fresh.occurrenceGrows
+        reservation.occurrenceOrdinals (begins.table issuer)
+    · exact rekeyed.occurrenceGrows issuer
+    · exact issued.occurrenceGrows issuer
   refine ⟨⟨issued _ below, fun occurrence member same => ?_⟩, ?_, fun occurrence member same => ?_⟩
   · rw [begins.occurrences] at member
     rcases List.mem_append.mp member with old | new
@@ -102,7 +104,7 @@ theorem begin_entry {state : State} (formed : WellFormed program state) (request
       Unclaimed (state.beginOccurrence request role sourceType).1 id ∧
       ∀ occurrence ∈ (state.beginOccurrence request role sourceType).1.occurrences, occurrence.id = id →
         occurrence.scope = (state.beginOccurrence request role sourceType).2.scope :=
-  (beginOccurrence_begins formed.activations request role sourceType).entry stands nodup admitted placed
+  (beginOccurrence_begins formed.activations request role sourceType).entry formed.issuer stands nodup admitted placed
 
 /-- A reservation in a scope occurrence that stands, which nothing queued names. -/
 theorem reserve_wellFormed {state : State} (formed : WellFormed program state) (element : ElementId)
@@ -150,7 +152,8 @@ theorem startReserved_closeOwnItems_wellFormed {state : State} (formed : WellFor
         itemMap := ⟨by simp [starts_.itemMap.1], starts_.itemMap.2⟩, tokens := starts_.tokens,
         signals := starts_.signals, queues := ⟨starts_.queues.signals, starts_.queues.tokens, starts_.queues.queuedSignals,
           starts_.queues.queuedTokens⟩, variables := starts_.variables, journal := starts_.journal, transitions := starts_.transitions, ended := starts_.ended,
-        status := starts_.status, failure := starts_.failure, slots := starts_.slots } member begun (fun request queued => unnamed request queued)
+        status := starts_.status, failure := starts_.failure, slots := starts_.slots, issued := starts_.issued,
+        issuing := starts_.issuing, issueNext := starts_.issueNext } member begun (fun request queued => unnamed request queued)
       fun item inside => by simpa using (mem_itemList_filter_val.mp (inside)).2
     have filtered : State.instanceOf { state with openItems := state.openItems.filter fun _ item => item.id.occurrence != occurrence.id }
         occurrence.scope = state.instanceOf occurrence.scope := by apply instanceOf_congr <;> rfl

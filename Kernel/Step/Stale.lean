@@ -21,23 +21,30 @@ def requireScope (state : State) (scope : ScopeOccurrenceId) : Except Failure Un
 
 /-- Whether the scope occurrence key `scope` was issued, as far as the counters that remain can tell: the ordinal
 below its deepest standing ancestor is below that ancestor's counter for its element. A counter goes with its scope
-occurrence, so of a key below a removed subtree only this is known (KD1, `stale`). -/
+occurrence, so of a key below a removed subtree only this is known (KD1, `stale`). A segment issued in the closure in
+progress was issued exactly when the issue table holds it, since nothing the closure issues leaves it before the commit
+(DC12). -/
 def scopeIssued (state : State) (scope : ScopeOccurrenceId) : Bool :=
   let rec go : (segments : List ScopeSegment) → (scope : ScopeOccurrenceId) → scope.segments = segments → Bool
     | [], _, _ => true
     | segment :: rest, scope, segments =>
       let parent := scope.up segments
-      if state.scopes.any (·.id == parent) then
-        segment.ordinal < state.scopeOrdinals.getD { parent, element := segment.element } 0
-      else go rest parent rfl
+      match segment.ordinal with
+      | .fresh _ _ => state.issued.contains segment.ordinal
+      | .committed ordinal =>
+        if state.scopes.any (·.id == parent) then ordinal < state.scopeOrdinals.getD { parent, element := segment.element } 0
+        else go rest parent rfl
   go scope.segments scope rfl
 
 /-- Whether the occurrence key `id` was issued, as far as the counters that remain can tell: its scope occurrence key was
 issued (`scopeIssued`) and, while that scope occurrence stands, its ordinal is below the scope occurrence's counter for
-its element. A counter goes with its scope occurrence, so of a key issued in a removed one only that is known (KD1). -/
+its element. A counter goes with its scope occurrence, so of a key issued in a removed one only that is known (KD1). One
+issued in the closure in progress was issued exactly when the issue table holds it (DC12). -/
 def occurrenceIssued (state : State) (id : OccurrenceId) : Bool :=
-  scopeIssued state id.scope && (!state.scopes.any (·.id == id.scope) ||
-    decide (id.ordinal < state.occurrenceOrdinals.getD { parent := id.scope, element := id.element } 0))
+  scopeIssued state id.scope && match id.ordinal with
+    | .fresh _ _ => state.issued.contains id.ordinal
+    | .committed ordinal => !state.scopes.any (·.id == id.scope) ||
+      decide (ordinal < state.occurrenceOrdinals.getD { parent := id.scope, element := id.element } 0)
 
 /-- What a queued signal does, whether it is a completion, the one kind `absorb` runs inside the micro-step, the scope
 occurrences and occurrences it does it in or on (`stale`), and the scope occurrences it acts from and the occurrences it

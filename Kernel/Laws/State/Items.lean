@@ -1,6 +1,7 @@
 module
 
 public import Kernel.State
+public import Kernel.Laws.State.History
 import all Kernel.State.Items
 
 /-! # Laws of the open-item map
@@ -210,19 +211,20 @@ theorem ItemsSub.subset {after before : OpenItems} (sub : ItemsSub after before)
 theorem ItemsSub.items {before after : State} (sub : ItemsSub after.openItems before.openItems) :
     itemList after.openItems ⊆ itemList before.openItems := sub.subset
 
-/-- The ordinal clause of `IssuedBelow` carries to a state whose items are some of `before`'s, whose occurrences are
-some of `before`'s, and whose counters agree with `before`'s on every occurrence that stays. -/
+/-- The item clause of `IssuedBelow` carries to a state whose items are some of `before`'s, whose occurrences are
+some of `before`'s, whose counters agree with `before`'s on every occurrence that stays, and whose issue table grows. -/
 theorem issuedItems_transport {before after : State} (sub : ItemsSub after.openItems before.openItems)
     (occurrences : ∀ occurrence ∈ after.occurrences, occurrence ∈ before.occurrences)
     (ordinals : ∀ occurrence ∈ after.occurrences,
       after.itemOrdinals.getD occurrence.id 0 = before.itemOrdinals.getD occurrence.id 0)
-    (issued : ∀ item ∈ itemList before.openItems, (∃ occurrence ∈ before.occurrences, occurrence.id = item.id.occurrence) →
-      item.id.ordinal < before.itemOrdinals.getD item.id.occurrence 0) :
-    ∀ item ∈ itemList after.openItems, (∃ occurrence ∈ after.occurrences, occurrence.id = item.id.occurrence) →
-      item.id.ordinal < after.itemOrdinals.getD item.id.occurrence 0 := by
-  rintro item member ⟨occurrence, present, same⟩
+    (table : TableGrows before after)
+    (issued : ∀ item ∈ itemList before.openItems, ItemIssued before item.id) :
+    ∀ item ∈ itemList after.openItems, ItemIssued after item.id := by
+  intro item member
+  obtain ⟨owner, below, tabled⟩ := issued item (sub.subset member)
+  refine ⟨owner, fun ⟨occurrence, present, same⟩ n committed => ?_, fun unit index fresh => table _ _ (tabled unit index fresh)⟩
   rw [← same, ordinals occurrence present, same]
-  exact issued item (sub.subset member) ⟨occurrence, occurrences occurrence present, same⟩
+  exact below ⟨occurrence, occurrences occurrence present, same⟩ n committed
 
 theorem getD_filter_keep {α : Type} [Ord α] [Std.TransOrd α] [Std.LawfulEqOrd α] {m : Std.ExtTreeMap α Nat compare}
     {f : α → Nat → Bool} {k : α} {d : Nat}

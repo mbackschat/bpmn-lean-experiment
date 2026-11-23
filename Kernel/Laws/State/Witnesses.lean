@@ -22,7 +22,7 @@ attribute [local simp] allSignals allQueuedTokens
 states. -/
 theorem stale_counter_rejected (kind : OpenKind) : ¬ IssuedBelow { sample kind with occurrenceOrdinals := ∅ } :=
   fun issued => by
-  have := (issued.occurrences outerTask (by simp [sample])).2 (by simp [sample, rootScope, outerTask])
+  have := (issued.occurrences outerTask (by simp [sample])).2.2.1 _ rfl (by simp [sample, rootScope, outerTask])
   simp [occurrenceCount] at this
 
 /-- A root wait with an armed reservation `timerKey` beside it, and the start facts of the begun waits in the draft. -/
@@ -99,7 +99,7 @@ theorem unissued_arming (kind : OpenKind) : ¬ WellFormed program { sample kind 
 /-- So does a completion of an identity never issued: a reservation made later would be completed. -/
 theorem unissued_completion (kind : OpenKind) :
     ¬ WellFormed program { sample kind with batchSignals := [.complete ghostKey .outgoing [] .outward] } := fun formed => by
-  have := (formed.queue.completes ghostKey .outgoing [] .outward (by simp)).2 (by simp [sample, rootScope])
+  have := (formed.queue.completes ghostKey .outgoing [] .outward (by simp)).2.2.1 _ rfl (by simp [sample, rootScope])
   simp [occurrenceCount, sample, sampleCounters, Std.ExtTreeMap.getD_insert] at this
 
 /-- An arming of the Sub-Process occurrence `subKey`'s boundaries in its own scope occurrence `Sub#0` breaks `QueueSound`: its host
@@ -176,7 +176,7 @@ theorem shared_reservation_rejected (kind : OpenKind) :
       fun claimed => by
   have := claimed.attached
     { id := ⟨timerKey, .subscription, 0⟩, position := 8, kind, element := ⟨"Timer"⟩, scope := processRoot, attachedTo := some outerKey }
-    (by simp) rfl ⟨reservation, by simp [armedState], by simp [reservation], rfl⟩
+    (by rw [mem_ofItems (by simp)]; simp) rfl ⟨reservation, by simp [armedState], by simp [reservation], rfl⟩
     { id := ⟨timerKey, .subscription, 1⟩, position := 9, kind, element := ⟨"Timer"⟩, scope := processRoot }
     (by simp) (by simp)
   simp at this
@@ -222,8 +222,11 @@ theorem parked_reservation_rejected (kind : OpenKind) :
 
 /-- The root's task `outerKey` was issued in the armed state. -/
 theorem armed_outer_issued (kind : OpenKind) : OccurrenceIssued (armedState kind) outerKey :=
-  ⟨(sample_historic kind : Historic (armedState kind)).issued_key (by simp [sample, rootScope]), fun _ => by
-    simp [occurrenceCount, armedState, sampleCounters, Std.ExtTreeMap.getD_insert]⟩
+  ⟨(sample_historic kind : Historic (armedState kind)).issued_key (by simp [sample, rootScope]), fun _ _ => by simp [processRoot],
+    fun n same _ => by
+      cases (Issue.committed.inj same : 0 = n)
+      simp [occurrenceCount, armedState, sampleCounters, Std.ExtTreeMap.getD_insert],
+    fun _ _ same => Issue.noConfusion same⟩
 
 /-- A parked begun occurrence settles. -/
 theorem parked_begun_settled (kind : OpenKind) :

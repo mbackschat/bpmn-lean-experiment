@@ -79,6 +79,13 @@ def resumesGroup : Option Resume → Bool
   | some (.occur _ _ _) => false
   | none => false
 
+/-- A group's nested run stands in its context: `Compensation.beginHandler` enters the context before it adds the
+run, and `Compensation.advance` drops the run before `Compensation.release` leaves the context. The commit keeps two
+runs of one trigger apart only against a standing key (`Laws.Step.renameScope_apart`), which `RunsKeyed` reads across
+it. -/
+def GroupsStanding (s : State) : Prop :=
+  ∀ run ∈ s.slots.compensation.runs, resumesGroup run.resume = true → run.scope ∈ scopeIds s
+
 /-- The trigger a queued compensation or Cancel raise (`Laws.Step.triggersOf`) names in `s`: a compensation's own, and
 for a Cancel raise its thrower while the raise's scope occurrence stands, the trigger of the compensation its catch
 queues (`Feature.Propagation.leaveOccurrence`). -/
@@ -151,6 +158,7 @@ structure Formed (precedes : Compensable → Compensable → Prop) (s : State) :
   runsIssued : RunsIssued s
   triggers : TriggersApart s
   ungrouped : QueuedUngrouped s
+  groupsStanding : GroupsStanding s
 
 /-! ## Non-vacuity of the lane relation's strengthening
 

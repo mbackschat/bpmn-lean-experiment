@@ -280,14 +280,14 @@ theorem enterScope_inner {s : State} (formed : WellFormed program s) (element : 
   have present := formed.owned.occurrenceScopes occurrence member
   have formedAfter := enterScope_wellFormed formed element present locals
     fun id named => ⟨occurrence, member, Option.some.inj named, begun, rfl⟩
-  have issued := enterScope_occurrenceGrows formed.historic element present locals (some occurrence.id)
+  have issued := enterScope_occurrenceGrows formed.historic formed.issuer element present locals (some occurrence.id)
   rw [enterScope_eq] at formedAfter issued ⊢
   dsimp only at formedAfter issued ⊢
-  generalize keyIs : occurrence.scope.child element (slotCount s occurrence.scope element) = key at formedAfter issued ⊢
+  generalize keyIs : occurrence.scope.child element (.fresh s.issuing s.issueNext) = key at formedAfter issued ⊢
   generalize entryIs : ScopeOccurrence.mk key (some element) (some occurrence.id) none = entry at formedAfter issued ⊢
   generalize afterIs : ({ s with
-      scopeOrdinals := s.scopeOrdinals.insert { parent := occurrence.scope, element }
-        (slotCount s occurrence.scope element + 1)
+      issueNext := s.issueNext + 1
+      issued := s.issued.insert (.fresh s.issuing s.issueNext) (.scope { parent := occurrence.scope, element })
       scopes := s.scopes ++ [entry]
       variables := s.variables ++ [ScopeVariables.mk key (keyed locals)] } : State) = t at formedAfter issued ⊢
   have scopes : t.scopes = s.scopes ++ [entry] := by rw [← afterIs]

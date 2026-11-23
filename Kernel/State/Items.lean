@@ -32,7 +32,7 @@ ordinal, issued by `State.itemOrdinals`. -/
 structure ItemKey where
   occurrence : OccurrenceId
   role : ItemRole
-  ordinal : Nat
+  ordinal : Issue
   deriving DecidableEq, Repr
 
 instance : Ord ItemKey where

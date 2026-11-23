@@ -344,13 +344,47 @@ export function unitKeyFindings(tree: KernelTree): string[] {
   return findings;
 }
 
-/** A use of the run log or of a unit-keyed map's order that only the named functions of one module may make. */
-type OwnedUse = Readonly<{ what: string; owners: Readonly<Record<string, readonly string[]>>; at: (tokens: readonly Token[], index: number) => boolean }>;
+/**
+ * A use of the run log or of a unit-keyed map's order that only the named functions of one module may make; `unitKeyed`
+ * holds the names the kernel declares as maps keyed by unit (`unitKeyedNames`).
+ */
+type OwnedUse = Readonly<{
+  what: string;
+  owners: Readonly<Record<string, readonly string[]>>;
+  at: (tokens: readonly Token[], index: number, unitKeyed: ReadonlySet<string>) => boolean;
+}>;
+
+/** The last identifier of the call argument opening at token `open`, the map an `orderedEntries` call reads. */
+function argumentName(tokens: readonly Token[], open: number): string {
+  let name = "";
+  for (let depth = 0, k = open; k < tokens.length; k += 1) {
+    const text = tokens[k]?.text ?? "";
+    if (text === "(") depth += 1;
+    else if (text === ")" && --depth === 0) return name;
+    else if (tokens[k]?.kind === TokenKind.Word) name = text;
+  }
+  return name;
+}
+
+/**
+ * The names the kernel declares as maps keyed by unit (`OrderedMap<UnitKey, …>`: a field, a parameter or a type's
+ * member), the maps whose iteration order the third rule holds, as Lean's rule holds `TreeMap UnitKey` alone: a map
+ * keyed otherwise, such as the issue table (DC12), is in its key order, which is no order of entry.
+ */
+function unitKeyedNames(tree: KernelTree): ReadonlySet<string> {
+  const names = new Set<string>();
+  for (const source of tree.typeScript) {
+    for (const match of source.text.matchAll(/\b(\w+)\??\s*:\s*OrderedMap<\s*UnitKey\b/gu)) names.add(match[1] ?? "");
+  }
+  return names;
+}
 
 const ownedUses: readonly OwnedUse[] = [
   {
-    what: "reads the run log through runPosition outside orderKey and byRun",
-    owners: { "step/order": ["orderKey"], "step/commit": ["byRun"] },
+    // DC12's issue order is the run order of the issuing units, so the commit's compaction reads it (CommitsAgree holds up
+    // to renaming), as `scripts/kernel-effects.lean`'s rule lists `Kernel.Step.issueOrder`.
+    what: "reads the run log through runPosition outside orderKey, byRun and issueOrder",
+    owners: { "step/order": ["orderKey"], "step/commit": ["byRun", "issueOrder"] },
     at: (tokens, index) => tokens[index]?.text === "runPosition" && tokens[index + 1]?.text === "(" &&
       tokens[index - 1]?.text !== "function",
   },
@@ -360,13 +394,28 @@ const ownedUses: readonly OwnedUse[] = [
     at: (tokens, index) => tokens[index]?.text === "positions" && tokens[index - 1]?.text === ".",
   },
   {
-    // `OrderedMap` holds only the closure's unit-keyed families, whose entry order is their key order, no order of entry.
     what: "reads the iteration order of a unit-keyed map outside the choices, the commit and allTokens",
     owners: { "step/order": ["earliest", "latest", "firstBreadth"], "step/commit": ["byRun"], state: ["allTokens"] },
-    at: (tokens, index) => tokens[index]?.text === "orderedEntries" && tokens[index + 1]?.text === "(" &&
-      tokens[index - 1]?.text !== "function",
+    at: (tokens, index, unitKeyed) => tokens[index]?.text === "orderedEntries" && tokens[index + 1]?.text === "(" &&
+      tokens[index - 1]?.text !== "function" && unitKeyed.has(argumentName(tokens, index + 1)),
   },
 ];
+
+/**
+ * The type aliases of a map keyed by unit (`type Q = OrderedMap<UnitKey, …>`, or an alias generic in the key, which a use
+ * can instantiate at `UnitKey`): `unitKeyedNames` reads declarations by their text, so a name declared through an alias
+ * would escape the third rule, while Lean's rule reads the type. Line and alias name of each.
+ */
+function unitKeyedAliases(text: string): (readonly [number, string])[] {
+  const found: (readonly [number, string])[] = [];
+  for (const match of text.matchAll(/\btype\s+(\w+)\s*(?:<([^>=]*)>)?\s*=\s*OrderedMap<\s*(\w+)/gu)) {
+    const parameters = (match[2] ?? "").split(",").map((parameter) => parameter.trim().split(/\s/u)[0]);
+    if (match[3] === "UnitKey" || parameters.includes(match[3])) {
+      found.push([text.slice(0, match.index).split("\n").length, match[1] ?? ""]);
+    }
+  }
+  return found;
+}
 
 /** The innermost top-level function of `bodies` whose body holds token `index`. */
 function enclosing(bodies: Map<string, readonly [number, number]>, index: number): string | undefined {
@@ -383,23 +432,27 @@ function enclosing(bodies: Map<string, readonly [number, number]>, index: number
 
 /**
  * The TypeScript halves of KD7's run-log rules (DC4; `scripts/kernel-effects.lean` holds the Lean halves): the run log is
- * read only through `runPosition`, which only the token order (`orderKey`) and the commit (`byRun`) call, and its
- * positions only by its reader and writer, so no unit's body reads when another ran; and no function but the choices
- * that break every tie by the key, the commit's sort by position then key and the queued tokens' multiset view reads
- * the iteration order of a unit-keyed map.
+ * read only through `runPosition`, which only the token order (`orderKey`) and the commit (`byRun`, `issueOrder`) call,
+ * and its positions only by its reader and writer, so no unit's body reads when another ran; and no function but the
+ * choices that break every tie by the key, the commit's sort by position then key and the queued tokens' multiset view
+ * reads the iteration order of a map keyed by unit, and no type alias names such a map (`unitKeyedAliases`).
  */
 export function runLogFindings(tree: KernelTree): string[] {
   const label = "KD7 run log";
   const findings: string[] = [];
   const owned = ownedUses.map(() => 0);
+  const unitKeyed = unitKeyedNames(tree);
   for (const source of tree.typeScript) {
     if (!source.file.startsWith(kernelPrefix) || source.file === `${kernelPrefix}state/map.ts`) continue;
+    for (const [line, alias] of unitKeyedAliases(source.text)) {
+      findings.push(`${label} ${source.file}:${line}: aliases a map keyed by unit (${alias}), which the unit-keyed map rule reads by declaration`);
+    }
     const module = moduleOf(source);
     const bodies = functionBodies(source);
     const { tokens } = source;
     for (let i = 0; i < tokens.length; i += 1) {
       ownedUses.forEach((use, rule) => {
-        if (!use.at(tokens, i)) return;
+        if (!use.at(tokens, i, unitKeyed)) return;
         const within = enclosing(bodies, i);
         if (within !== undefined && (use.owners[module] ?? []).includes(within)) owned[rule] = (owned[rule] ?? 0) + 1;
         else findings.push(`${label} ${source.file}:${tokens[i]?.line}: ${use.what}`);

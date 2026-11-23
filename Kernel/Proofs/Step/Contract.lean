@@ -119,6 +119,8 @@ theorem registered_startsFired : ∀ ctx input fired, Registry.hooks.startsFired
 invariant. -/
 structure FeatureOps (inv : Program → State → Prop) : Prop where
   operations : Laws.Step.Operations inv
+  /-- The issuer is fresh (DC12): a subscription's reservation takes the next issue, which the table does not hold. -/
+  issuer : ∀ program s, inv program s → Laws.State.IssuerFresh s
   work : ∀ program, Laws.Work.WorkOps program (inv program)
   flow : ∀ program, Laws.Flow.FlowOps program (inv program)
   join : ∀ program, Laws.Flow.JoinOps program (inv program) Laws.State.Settled
@@ -272,8 +274,8 @@ theorem dropWithin_steady {inv : State → Prop} {program : Program} (ops : Laws
       issued := ops.issued
       fail := fun t _ kept => by rw [Laws.State.signal_eq]; exact kept } ctx scope (state := state) (fun _ => id)
   rw [same] at kept ⊢
-  exact ⟨rfl, rfl, .refl _, rfl, fun _ queued => queued, Laws.State.instanceOf_congr rfl rfl, rfl, kept, [],
-    by simp [Laws.State.allSignals], by simp⟩
+  exact ⟨rfl, rfl, .refl _, rfl, fun _ queued => queued, Laws.State.instanceOf_congr rfl rfl, rfl, kept,
+    ⟨[], by simp [Laws.State.allSignals], by simp⟩, .of_eq rfl⟩
 
 /-- `Hooks.failCompensation` keeps `inv`. -/
 theorem failCompensation_keeps {inv : State → Prop} {program : Program} (ops : Laws.Compensation.CompensationOps program inv)
@@ -346,7 +348,7 @@ theorem compensationKeeps_of (compensation : ∀ program, Laws.Compensation.Comp
       (fun next same => ?_) ran
     obtain ⟨queue, _, kept, rest₁⟩ := popped
     obtain ⟨found, same'⟩ := rest₁
-    refine ⟨queue, kept, by rw [same']; exact .of_same rfl rfl, ?_, by rw [same'], by rw [same']⟩
+    refine ⟨queue, kept, by rw [same']; exact .of_same rfl rfl (.of_eq rfl), ?_, by rw [same'], by rw [same']⟩
     exact Laws.Step.mem_resumesOf.mpr ⟨_, _, _, _, same ▸ Laws.State.mem_allSignals_of found⟩
   handlerCompleted _ _ _ _ holds stands ran := by
     obtain ⟨entry, inside, named⟩ := stands
@@ -364,11 +366,12 @@ theorem untriggered_complete (id : OccurrenceId) (leave : Leave) (writes : List 
 theorem steady_of_same {before after : State} (same : Laws.State.SameButVariables before after) :
     Laws.State.Steady before after :=
   ⟨same.occurrences, same.scopes,
-    .of_same (congrArg (List.map ScopeOccurrence.id) same.scopes) same.scopeOrdinals same.occurrenceOrdinals,
+    .of_same (congrArg (List.map ScopeOccurrence.id) same.scopes) same.scopeOrdinals same.occurrenceOrdinals
+      (.of_eq same.issued),
     same.scopeOrdinals, fun _ named => by
     unfold Laws.State.Queued at named ⊢
-    rwa [same.signals, same.tokens] at named, same.instances, same.activations, fun _ inside => same.slots ▸ inside, [],
-    by simp [same.signals], by simp⟩
+    rwa [same.signals, same.tokens] at named, same.instances, same.activations, fun _ inside => same.slots ▸ inside,
+    ⟨[], by simp [same.signals], by simp⟩, .of_eq same.issued⟩
 
 /-- The hooks the registered raise's search takes keep `inv` and what the search reads
 (`Laws.Propagation.SearchHooks`): Data's writes change only variables, Work's Error-path leave then completes its
@@ -407,8 +410,8 @@ theorem registeredSearch (ops : FeatureOps inv) (compensation : CompensationKeep
         rw [Laws.State.signal_eq]
         exact ⟨rfl, rfl, .refl _, rfl, fun request named => named.elim (fun named =>
           .inl ((List.mem_append.mp (Laws.State.allSignals_append _ _ ▸ named)).resolve_right (by simp))) .inr,
-          Laws.State.instanceOf_congr rfl rfl, rfl, fun _ => id, [_], Laws.State.allSignals_append _ _,
-          fun signal inside => List.mem_singleton.mp inside ▸ untriggered_complete _ _ _ _⟩
+          Laws.State.instanceOf_congr rfl rfl, rfl, fun _ => id, ⟨[_], Laws.State.allSignals_append _ _,
+          fun signal inside => List.mem_singleton.mp inside ▸ untriggered_complete _ _ _ _⟩, .of_eq rfl⟩
     writeCaught := fun _ _ _ _ holds ran => outward _ _ _ _ holds (caught _ _ _ ▸ ran)
     callOutputs := fun _ _ _ holds ran => by
       rw [call] at ran
@@ -437,7 +440,7 @@ theorem raise_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.Propagat
     obtain ⟨linked, listed⟩ := Laws.Propagation.boundariesOf_sourced inside
     exact (Laws.Propagation.boundaryFire_keeps ops _ _ _ _ kept (Laws.Propagation.boundariesOf_boundaryOf inside)
       (Laws.Flow.Anchored.held queued
-        ((show Laws.State.ScopeGrows queue state by rw [shape]; exact .of_same rfl rfl).trans steady.grows)
+        ((show Laws.State.ScopeGrows queue state by rw [shape]; exact .of_same rfl rfl (.of_eq rfl)).trans steady.grows)
         (fun _ member => by rw [steady.scopes, scopes] at member; exact member)
         (fun _ member => by rw [instances, entries] at member; exact member) linked
         (.inr (.inr (.inr ⟨raised, origin, Laws.State.mem_allSignals_of heads, rfl, rfl⟩)))) listed).1
@@ -504,13 +507,13 @@ theorem registered_contract_of {inv : Program → State → Prop} (ops : Feature
     exact Laws.Subscriptions.trigger_keeps (ops.subscriptions _) holds member ran
   arm _ _ _ _ _ _ holds stands placed hosted popped ran := by
     rw [Laws.Registry.hooks_arm] at ran
-    exact Laws.Subscriptions.arm_keeps (ops.subscriptions _) holds (hosted_of stands placed hosted) popped ran
+    exact Laws.Subscriptions.arm_keeps (ops.subscriptions _) (ops.issuer _) holds (hosted_of stands placed hosted) popped ran
   armScope _ _ _ _ holds placed ran := by
     rw [Laws.Registry.hooks_armScope] at ran
-    exact Laws.Subscriptions.armScope_keeps (ops.subscriptions _) holds placed ran
+    exact Laws.Subscriptions.armScope_keeps (ops.subscriptions _) (ops.issuer _) holds placed ran
   armGateway _ _ _ _ _ _ holds stands placed hosted popped ran := by
     rw [Laws.Registry.hooks_armGateway] at ran
-    exact Laws.Subscriptions.armGateway_keeps (ops.subscriptions _) holds (hosted_of stands placed hosted) popped ran
+    exact Laws.Subscriptions.armGateway_keeps (ops.subscriptions _) (ops.issuer _) holds (hosted_of stands placed hosted) popped ran
   raise ctx _ _ _ _ holds raisable settled popped ran := by
     rw [Laws.Registry.hooks_raise] at ran
     exact raise_keeps (ops.propagation _) (registeredSearch ops compensation facts ctx (by simp only)

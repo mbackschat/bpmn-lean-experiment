@@ -297,7 +297,8 @@ theorem Numbered.reserve {program other : Program} {s : State} {element : Elemen
   have reserves := Laws.State.reserve_reserves s element scope
   have unnamed : ∀ request, Laws.State.Queued s request → (s.reserve element scope).2.id ∉ Laws.State.names request :=
     fun request queued named => by
-      exact reserves.fresh (by rw [reserves.placed]; exact stands) ((formed.claimed.named request queued).2 _ named).1
+      exact reserves.fresh formed.issuer (by rw [reserves.placed]; exact stands)
+        ((formed.claimed.named request queued).2 _ named).1
   refine held.addOne (o := (s.reserve element scope).2) ⟨fun x inside => ?_, reserves.scopes,
     congrArg (·.multiInstances) reserves.slots, reserves.queues,
     congrArg (·.compensation.runs) reserves.slots, fun body same => ?_, fun run member _ named _ => ?_,
@@ -413,19 +414,24 @@ theorem Numbered.beginOther {program : Program} {s : State} {request : BeginRequ
     rcases List.mem_append.mp inside with old | new
     · exact .inl (List.mem_filter.mp old).1
     · exact .inr (List.mem_singleton.mp new)
-  · rcases begins.source with ⟨reserved, source⟩ | fresh
+  · rcases begins.source with ⟨reserved, source⟩ | ⟨reserved, source⟩ | fresh
+    · exact apart reserved source.member source.named run member (begins.scope ▸ active)
+        (source.element ▸ named) (source.role ▸ role')
     · exact apart reserved source.member source.named run member (begins.scope ▸ active)
         (source.element ▸ named) (source.role ▸ role')
     · obtain ⟨loop, looped⟩ := held.2.looped run member
       have body : role = .multiInstanceBody := bodied (by rw [← fresh.element, named, looped]; exact Option.isSome_some)
       rw [fresh.roled, body] at role'
       cases role'
-  · rcases begins.source with ⟨reserved, source⟩ | fresh
-    · exact (admitted.2.1 reserved.id (by simp [Laws.State.names, source.named])).2.1 request' inQueue
-        (by simp [Laws.State.names, named, source.id])
-    · have below := ((formed.claimed.named request' inQueue).2 (s.beginOccurrence request role sourceType).2.id
-        (by simp [Laws.State.names, named])).1
-      exact fresh.fresh stands below
+  · have below : Laws.State.OccurrenceIssued s (s.beginOccurrence request role sourceType).2.id → False := fun issued =>
+      by
+      rcases begins.source with ⟨reserved, source⟩ | ⟨_, source⟩ | fresh
+      · exact (admitted.2.1 reserved.id (by simp [Laws.State.names, source.named])).2.1 request' inQueue
+          (by simp [Laws.State.names, named, source.id])
+      · exact source.fresh formed.issuer stands issued
+      · exact fresh.fresh formed.issuer stands issued
+    exact below ((formed.claimed.named request' inQueue).2 (s.beginOccurrence request role sourceType).2.id
+      (by simp [Laws.State.names, named])).1
 
 
 /-- The begin of an instance taken off a queue that kept `Numbered` keeps it: the begin targets an active slot of its
@@ -520,7 +526,10 @@ theorem Numbered.beginInstance {program : Program} {queue s : State} {request : 
   have begins := Laws.State.beginOccurrence_begins formed.activations request role sourceType
   obtain fresh : Laws.State.Issued s (s.beginOccurrence request role sourceType).1 request role
       (s.beginOccurrence request role sourceType).2 := by
-    rcases begins.source with ⟨_, source⟩ | fresh
+    rcases begins.source with ⟨_, source⟩ | ⟨_, source⟩ | fresh
+    · have named := source.named
+      rw [unreserved] at named
+      cases named
     · have named := source.named
       rw [unreserved] at named
       cases named
@@ -597,7 +606,7 @@ theorem Numbered.beginInstance {program : Program} {queue s : State} {request : 
       · have below := ((formed.claimed.named request' (queuedAfter request' inQueue)).2 id
           (by simp [Laws.State.names, named])).1
         rw [← xid] at below
-        exact fresh.fresh stands below
+        exact fresh.fresh formed.issuer stands below
     reservations := fun x inside unbegun => by
       rcases occIn x inside with old | rfl
       · exact qs.reservations x old unbegun

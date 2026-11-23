@@ -68,10 +68,10 @@ def CompensationsFormedInPopulation (hooks : Hooks) (reads writes : Ctx → Elem
     Population.runStimuli hooks admission stimuli = .ok result →
     ∀ instance_ ∈ result.instances, Formed (DependsIn hooks reads writes instance_.deployment.program) instance_.state
 
-/-- A committed input from `before` to `after`, from a well-formed before-state that keeps the lane relation. -/
+/-- A committed input from `before` to `after`, from a well-formed, committed before-state that keeps the lane relation. -/
 def Commits (hooks : Hooks) (reads writes : Ctx → ElementId → List String) (program : Program) (before after : State) :
     Prop :=
-  WellFormed program before ∧ Formed (DependsIn hooks reads writes program) before ∧
+  WellFormed program before ∧ Laws.State.Committed before ∧ Formed (DependsIn hooks reads writes program) before ∧
     ∃ input, Step.step hooks program (some before) input = .ok after
 
 /-- Single take-out across triggers: no record a run claimed is retained again, so no second trigger compensates it

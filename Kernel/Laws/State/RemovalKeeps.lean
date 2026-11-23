@@ -24,7 +24,8 @@ open Kernel
 theorem leaveScope_grows (s : State) (scope : ScopeOccurrenceId) : ScopeGrows s (s.leaveScope scope) := by
   have shape := (leaveScope_eq s scope).1
   refine (clearInside_grows s scope []).trans (.shrink
-    (fun _ member => by rw [shape] at member; exact (List.filter_sublist.map _).subset member) fun _ standing _ => ?_)
+    (fun _ member => by rw [shape] at member; exact (List.filter_sublist.map _).subset member) (fun _ standing _ => ?_)
+    (.of_eq (by rw [leaveScope_issued, clearInside_issued])))
   rw [shape] at standing ⊢
   obtain ⟨entry, inside, rfl⟩ := List.mem_map.mp standing
   exact getD_filter_keep fun _ => (List.mem_filter.mp inside).2
@@ -35,14 +36,17 @@ theorem leaveScope_occurrenceGrows (s : State) (scope : ScopeOccurrenceId) : Occ
   have shape := (leaveScope_eq s scope).1
   have cleared : OccurrenceGrows s (s.clearInside scope) :=
     .of_scopes (clearInside_grows s scope []) (fun _ member _ => ((clearInside_shrinks s scope []).1.map _).subset member)
-      fun x member element => Nat.le_of_eq (clearInside_counters s scope [] x member element).symm
+      (fun x member element => Nat.le_of_eq (clearInside_counters s scope [] x member element).symm)
+      (.of_eq (clearInside_issued s scope []))
+  have table : TableGrows (s.clearInside scope) (s.leaveScope scope) :=
+    .of_eq (by rw [leaveScope_issued, clearInside_issued])
   have grows : ScopeGrows (s.clearInside scope) (s.leaveScope scope) := .shrink
-    (fun _ member => by rw [shape] at member; exact (List.filter_sublist.map _).subset member) fun _ standing _ => by
+    (fun _ member => by rw [shape] at member; exact (List.filter_sublist.map _).subset member) (fun _ standing _ => by
       rw [shape] at standing ⊢
       obtain ⟨entry, inside, rfl⟩ := List.mem_map.mp standing
-      exact getD_filter_keep fun _ => (List.mem_filter.mp inside).2
+      exact getD_filter_keep fun _ => (List.mem_filter.mp inside).2) table
   refine cleared.trans (.of_scopes grows (fun _ member _ => by
-    rw [shape] at member; exact (List.filter_sublist.map _).subset member) fun _ standing _ => ?_)
+    rw [shape] at member; exact (List.filter_sublist.map _).subset member) (fun _ standing _ => ?_) table)
   rw [shape] at standing ⊢
   obtain ⟨entry, inside, rfl⟩ := List.mem_map.mp standing
   exact Nat.le_of_eq (getD_filter_keep fun _ => (List.mem_filter.mp inside).2).symm
@@ -70,6 +74,8 @@ theorem leaveScope_left {s : State} (formed : WellFormed program s) {scope : Sco
       tokensSublist := by rw [shape]; exact cleared.tokensSublist,
       variablesSublist := by rw [shape]; exact List.filter_sublist.trans cleared.variablesSublist,
       instances := fun x member => ?_, activations := by rw [shape]; exact cleared.activations,
+      issued := by rw [shape]; exact cleared.issued, issuing := by rw [shape]; exact cleared.issuing,
+      issueNext := by rw [shape]; exact cleared.issueNext,
       occurrenceGrows := leaveScope_occurrenceGrows s scope, scopeGrows := leaveScope_grows s scope,
       signals := by rw [shape]; exact cleared.signals, queues := by
         rw [shape]
@@ -150,7 +156,7 @@ theorem withoutRecord_wellFormed {s : State} (formed : WellFormed program s) {id
       scopes := rfl, scopeOrdinals := rfl, instances := instanceOf_congr rfl rfl, occurrences := List.filter_sublist,
       items := ItemsSub.refl _, ordinals := ordinals, tokens := rfl, signals := rfl, variables := rfl,
       activations := rfl, occurrenceGrows := .refl _, journal := rfl, transitions := rfl, started := rfl, status := rfl, failure := rfl,
-      slots := rfl, waited := fun item member occurrence inside link => ?_,
+      slots := rfl, issued := rfl, issuing := rfl, issueNext := rfl, waited := fun item member occurrence inside link => ?_,
       owners := fun entry member occurrence inside owned => ?_ }
   · refine kept occurrence inside fun same => ?_
     rcases link with waits | hangs
@@ -243,7 +249,7 @@ theorem disarm_wellFormed {s : State} (formed : WellFormed program s) (host : Oc
       scopes := rfl, scopeOrdinals := rfl, instances := instanceOf_congr rfl rfl, occurrences := List.filter_sublist,
       items := ItemsSub.filter _ _, ordinals := fun occurrence member => getD_filter_keep fun _ => ?_, tokens := rfl,
       signals := rfl, variables := rfl, activations := rfl, occurrenceGrows := .refl _, journal := rfl, transitions := rfl, started := rfl,
-      status := rfl, failure := rfl, slots := rfl, waited := fun item member occurrence inside link => ?_,
+      status := rfl, failure := rfl, slots := rfl, issued := rfl, issuing := rfl, issueNext := rfl, waited := fun item member occurrence inside link => ?_,
       owners := fun entry _ occurrence inside owned => ?_ }
   · obtain ⟨present, kept⟩ := List.mem_filter.mp member
     simp only [Bool.not_eq_eq_eq_not, Bool.not_true, List.any_eq_false, Bool.and_eq_true, beq_iff_eq]
@@ -288,7 +294,7 @@ theorem withdrawAll : ∀ (scopes : List ScopeOccurrence) (t : State), WellForme
       exact formed.narrow {
           scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
           instances := instanceOf_congr rfl rfl, recorded := id, items := .filter _, tokens := .refl _,
-          signals := .refl _, starts := fun _ => id, slots := .same rfl } rfl formed.startedOnce
+          signals := .refl _, starts := fun _ => id, slots := .same rfl, issued := rfl, issuing := rfl, issueNext := rfl } rfl formed.startedOnce
     obtain ⟨kept, fewer, same⟩ := withdrawAll rest _ step
     refine ⟨kept, ItemsSub.trans ?_ fewer, same.trans ?_⟩
     · rw [withdrawInside_eq]
@@ -301,7 +307,7 @@ theorem draftEnds_wellFormed {s : State} (formed : WellFormed program s) (ended 
   formed.narrow {
       scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl, instances := instanceOf_congr rfl rfl,
       recorded := id, items := .refl _, tokens := .refl _, signals := .refl _, starts := fun _ => id,
-      slots := .same rfl }
+      slots := .same rfl, issued := rfl, issuing := rfl, issueNext := rfl }
     rfl formed.startedOnce
 
 /-- Cancelling an occurrence keeps a state well-formed: its items and the subscriptions on it are withdrawn first, so
@@ -364,17 +370,18 @@ private theorem removeOccurrence_shrinks (s : State) (id : OccurrenceId) :
       ScopeGrows s (s.removeOccurrence id) := by
   rw [removeOccurrence_eq]
   obtain ⟨fewer, same, grows⟩ := leaveAll_shrinks _ (withoutRecord s id)
-  exact ⟨fewer, same, (ScopeGrows.of_same (t := withoutRecord s id) rfl rfl).trans grows⟩
+  exact ⟨fewer, same, (ScopeGrows.of_same (t := withoutRecord s id) rfl rfl (.refl _)).trans grows⟩
 
 private theorem withdrawAll_shrinks : ∀ (scopes : List ScopeOccurrence) (t : State),
     (scopes.foldl (fun t entry => t.withdrawInside entry.id) t).scopes = t.scopes ∧
       (scopes.foldl (fun t entry => t.withdrawInside entry.id) t).nextPosition = t.nextPosition ∧
-      (scopes.foldl (fun t entry => t.withdrawInside entry.id) t).scopeOrdinals = t.scopeOrdinals
-  | [], _ => ⟨rfl, rfl, rfl⟩
+      (scopes.foldl (fun t entry => t.withdrawInside entry.id) t).scopeOrdinals = t.scopeOrdinals ∧
+      (scopes.foldl (fun t entry => t.withdrawInside entry.id) t).issued = t.issued
+  | [], _ => ⟨rfl, rfl, rfl, rfl⟩
   | entry :: rest, t => by
-    obtain ⟨scopes, issued, ordinals⟩ := withdrawAll_shrinks rest (t.withdrawInside entry.id)
-    exact ⟨scopes.trans (by simp [withdrawInside_eq]), issued.trans (by simp [withdrawInside_eq]),
-      ordinals.trans (by simp [withdrawInside_eq])⟩
+    obtain ⟨scopes, position, ordinals, table⟩ := withdrawAll_shrinks rest (t.withdrawInside entry.id)
+    exact ⟨scopes.trans (by simp [withdrawInside_eq]), position.trans (by simp [withdrawInside_eq]),
+      ordinals.trans (by simp [withdrawInside_eq]), table.trans (by simp [withdrawInside_eq])⟩
 
 /-- The removal operations drop scope occurrences, take no position and keep every scope occurrence key issued. -/
 theorem removal_shrinks (s : State) :
@@ -395,10 +402,10 @@ theorem removal_shrinks (s : State) :
   | some occurrence =>
     obtain ⟨_, _, cancels⟩ := cancelOccurrence_some found
     obtain ⟨fewer, same, grows⟩ := removeOccurrence_shrinks (s.withdrawOccurrence id) id
-    obtain ⟨scopes, issued, ordinals⟩ := withdrawAll_shrinks _ ((s.closeOwnItems id).disarm id)
-    rw [← withdrawOccurrence_eq, disarm_eq, closeOwnItems_eq] at scopes issued ordinals
+    obtain ⟨scopes, position, ordinals, table⟩ := withdrawAll_shrinks _ ((s.closeOwnItems id).disarm id)
+    rw [← withdrawOccurrence_eq, disarm_eq, closeOwnItems_eq] at scopes position ordinals table
     rw [cancels]
-    exact ⟨fewer.trans (scopes ▸ .refl _), same.trans issued,
-      (ScopeGrows.of_same (congrArg (List.map ScopeOccurrence.id) scopes) ordinals).trans grows⟩
+    exact ⟨fewer.trans (scopes ▸ .refl _), same.trans position,
+      (ScopeGrows.of_same (congrArg (List.map ScopeOccurrence.id) scopes) ordinals (.of_eq table)).trans grows⟩
 
 end Kernel.Laws.State

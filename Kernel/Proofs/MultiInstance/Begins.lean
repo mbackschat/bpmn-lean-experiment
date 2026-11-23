@@ -1,9 +1,10 @@
 module
 
-public import Kernel.Laws.Step.Keeps
+public import Kernel.Laws.Step.Commits
 public import Kernel.Laws.State.RemovalKeeps
 public import Kernel.Proofs.MultiInstance.Occurs
 public import Kernel.Proofs.Frame
+public import Kernel.Proofs.MultiInstance.NumberedCompacts
 
 /-! # Proofs: the reservations of looping elements and the order instances begin in
 
@@ -224,6 +225,11 @@ theorem BeginsKept.draft {program : Program} {s : State} (draft : Draft) (starte
     (held : BeginsKept program T s) : BeginsKept program T { s with draft } :=
   held.frame (fun _ inside => inside) (fun _ named => named) rfl started
 
+/-- Moving the issuer keeps `BeginsKept`. -/
+theorem BeginsKept.issuer {program : Program} {s : State} (unit : UnitKey) (next : Nat) (held : BeginsKept program T s) :
+    BeginsKept program T { s with issuing := unit, issueNext := next } :=
+  held.frame (fun _ inside => inside) (fun _ named => named) rfl rfl
+
 /-! ## The phases a closure runs -/
 
 /-- A start fact of the closure's transitions or of the draft is one of the input's start facts. -/
@@ -322,7 +328,12 @@ theorem BeginsKept.begin {program other : Program} {s : State} {request : BeginR
       ⟨earlierInstance, earlierElement, earlierRole⟩
     rw [named] at instanceNamed elementNamed roled ⊢
     simp only [Laws.State.key] at instanceNamed elementNamed roled
-    rcases begins.source with ⟨reserved, reservation⟩ | issued
+    rcases begins.source with ⟨reserved, reservation⟩ | ⟨reserved, reservation⟩ | issued
+    · have named : reserved.id ∈ Laws.State.names request := by
+        simp [Laws.State.names, reservation.named]
+      have unbegun := ((admitted.2.1 reserved.id named).1.2 reserved reservation.member rfl).1
+      rw [reservation.element] at elementNamed
+      exact absurd (elementNamed ▸ looped) (kept.unbegun reserved reservation.member unbegun loop)
     · have named : reserved.id ∈ Laws.State.names request := by
         simp [Laws.State.names, reservation.named]
       have unbegun := ((admitted.2.1 reserved.id named).1.2 reserved reservation.member rfl).1
@@ -570,11 +581,12 @@ theorem beginsKept_initial (program : Program) (instanceId : String) (variables 
       fun _ _ _ _ _ _ _ inside => by simp [Laws.State.initial_eq] at inside⟩
   exact empty.signal _ fun _ _ inside => absurd inside List.not_mem_nil
 
-/-- What the reservations of looping elements need of a committed input: after one from a well-formed state none is
-made or still to be made, and after a committed start none is made, under a program whose identifiers are unique. -/
+/-- What the reservations of looping elements need of a committed input: after one from a well-formed committed state
+none is made or still to be made, and after a committed start none is made, under a program whose identifiers are
+unique. -/
 structure UnbegunKept (hooks : Hooks) : Prop where
-  step : ∀ program input before after, IdsUnique program → WellFormed program before → UnbegunUnlooped program before →
-    (∀ element, OccurPending before element → ∀ loop, ¬ LoopOf program element loop) →
+  step : ∀ program input before after, IdsUnique program → WellFormed program before → Laws.State.Committed before →
+    UnbegunUnlooped program before → (∀ element, OccurPending before element → ∀ loop, ¬ LoopOf program element loop) →
     Step.step hooks program (some before) input = .ok after → UnbegunUnlooped program after
   start : ∀ program input after, IdsUnique program → Step.step hooks program none input = .ok after →
     UnbegunUnlooped program after
@@ -585,125 +597,211 @@ variable {hooks : Hooks}
   (contract : ∀ T, Laws.Step.HookContract hooks fun program s => WellFormed program s ∧ BeginsKept program T s)
   (phases : ∀ T, Laws.Step.BodyPhases fun program s => WellFormed program s ∧ BeginsKept program T s)
   (pipeline : ∀ T, Laws.Step.PipelinePhases fun program s => WellFormed program s ∧ BeginsKept program T s)
-  (formed : Laws.Step.ClosurePhases WellFormed)
+  (wellFormed : Laws.Step.HookContract hooks WellFormed) (formed : Laws.Step.ClosurePhases WellFormed)
+  (formedPipeline : Laws.Step.PipelinePhases WellFormed) (framing : Laws.Step.Framing hooks WellFormed)
   (facts : Laws.Step.StateFacts)
 
 include contract formed in
-/-- A micro-step's conclusion from a state that keeps `BeginsKept` of the closure's transitions `T` journals its draft
-under its unit, which the run log records last: the state it commits keeps `Logged`. -/
+/-- A micro-step's conclusion from a well-formed state that keeps `BeginsKept` of the closure's transitions `T`, which
+do not hold its unit, journals its draft under its unit, which the run log records last: the state it commits keeps
+`Logged`'s order. -/
 theorem logged_conclude {ctx : Ctx} {log : Step.RunLog} {unit : UnitKey} {cause : Cause}
     {element : Option ElementId} {owner : ScopeOccurrenceId} {mid after : State}
-    (holds : WellFormed ctx.program mid ∧ BeginsKept ctx.program T mid)
+    (holds : WellFormed ctx.program mid ∧ BeginsKept ctx.program T mid) (fresh : T.contains unit = false)
     (order : IdsUnique ctx.program → LogOrder ctx.program log T)
-    (ran : Step.conclude hooks ctx unit cause element owner mid = .ok after) : Logged ctx.program (log.record unit) after := by
-  obtain ⟨fresh, notified, written, rest₁⟩ := Laws.Step.conclude_ok ran
-  obtain ⟨notifying, writing, made⟩ := rest₁
+    (ran : Step.conclude hooks ctx unit cause element owner mid = .ok after) :
+    IdsUnique ctx.program → Unlooped ctx.program after.transitions after ∧
+      LogOrder ctx.program (log.record unit) after.transitions := fun apart => by
+  obtain ⟨notified, written, rest⟩ := Laws.Step.conclude_ok ran
+  obtain ⟨notifying, writing, made⟩ := rest
   subst made
+  have before := holds.2 apart
+  have unrun : mid.transitions.contains unit = false := by rw [before.transitions]; exact fresh
   let transition : Transition := ⟨cause, element, owner, mid.draft.started, mid.draft.ended, mid.draft.ready⟩
   have journalled := And.intro
-    (formed.journal _ mid unit transition holds.1 (Laws.State.getElem?_of_contains fresh) (by simp [transition])
+    (formed.journal _ mid unit transition holds.1 (Laws.State.getElem?_of_contains unrun) (by simp [transition])
       (by simp [transition]))
     (holds.2.journal unit transition)
   have kept := (contract (mid.transitions.insert unit transition)).written _ _ _ _
     (Laws.Step.foldlM_keeps
       (inv := fun program s => WellFormed program s ∧ BeginsKept program (mid.transitions.insert unit transition) s)
       (fun _ _ _ kept ran => (contract _).cancelled _ _ _ _ kept ran) _ _ _ journalled notifying) writing
-  refine ⟨formed.queueBatch _ _ _ kept.1, fun apart => ?_⟩
-  have queued := kept.2.queueBatch unit apart
-  have before := holds.2 apart
+  have queued := ((kept.2.queueBatch unit).issuer (.ofRoot .seed) 0) apart
   rw [queued.transitions]
   refine ⟨queued, ?_⟩
   rw [before.transitions]
-  exact (order apart).record before (by rw [← before.transitions]; exact Laws.State.getElem?_of_contains fresh)
+  exact (order apart).record before (by rw [← before.transitions]; exact Laws.State.getElem?_of_contains unrun)
     (by simp [transition])
 
-include contract phases pipeline formed facts in
-/-- A closure micro-step keeps `Logged`, the run log gaining the unit it ran: its body sees the transitions as a
-snapshot, which `Laws.Step.BodyPhases` keep, and its conclusion journals the draft under the unit. -/
-theorem logged_step {ctx : Ctx} {log : Step.RunLog} {unit : UnitKey} {before after : State}
-    (holds : Logged ctx.program log before) (step : Laws.Step.ClosureStep hooks ctx log unit before after) :
-    Logged ctx.program (log.record unit) after := by
-  obtain ⟨mid, _, _, rest₁⟩ := Laws.Step.closureStep_concludes (contract before.transitions)
-    (phases before.transitions) facts
-    (Laws.Step.complete_keeps (contract _) (phases _) (pipeline _) facts) ⟨holds.1, fun apart => (holds.2 apart).1⟩ step
-  obtain ⟨_, kept, concluded⟩ := rest₁
-  exact logged_conclude contract formed kept (fun apart => (holds.2 apart).2) concluded
+include contract phases pipeline wellFormed formed formedPipeline framing facts in
+/-- A micro-step whose body every hook contract and body phases keep keeps `Logged` and leaves the closure `Between`
+micro-steps, the run log gaining its unit: its body sees the transitions as a snapshot, which `Laws.Step.BodyPhases`
+keep, and its conclusion journals the draft under the unit. -/
+theorem logged_micro {ctx : Ctx} {log : Step.RunLog} {unit : UnitKey} {cause : Cause} {element : Option ElementId}
+    {owner : ScopeOccurrenceId} {body : State → Outcome} {before after : State} (holds : Logged ctx.program log before)
+    (between : Laws.Step.Between before)
+    (byBody : ∀ (keep : Program → State → Prop), Laws.Step.HookContract hooks keep → Laws.Step.BodyPhases keep →
+      keep ctx.program { before with issuing := unit, issueNext := 0 } →
+      ∀ next, body { before with issuing := unit, issueNext := 0 } = .ok next → keep ctx.program next)
+    (ran : Step.microStep hooks ctx unit cause element owner body before = .ok after) :
+    Logged ctx.program (log.record unit) after ∧ Laws.Step.Between after := by
+  obtain ⟨unrun, unseeded, -⟩ := Laws.Step.microStep_ok ran
+  have keeps := Laws.Step.complete_keeps (contract before.transitions) (phases _) (pipeline _) facts
+  have carried := Laws.Step.microStep_carries wellFormed formed
+    (Laws.Step.complete_keeps wellFormed formed.toBodyPhases formedPipeline facts) framing (fun _ _ held => held) holds.1
+    between byBody ran
+  have entered : WellFormed ctx.program { before with issuing := unit, issueNext := 0 } ∧
+      BeginsKept ctx.program before.transitions { before with issuing := unit, issueNext := 0 } :=
+    ⟨formed.enterUnit _ _ _ holds.1 unrun unseeded between.untabled,
+      BeginsKept.issuer _ _ fun apart => (holds.2 apart).1⟩
+  obtain ⟨mid, ⟨kept, -⟩, concluded⟩ := Laws.Step.microStep_concludes (phases _) keeps (phases _) keeps
+    (fun next made => ⟨byBody _ (contract _) (phases _) entered next made, byBody _ (contract _) (phases _) entered next made⟩)
+    ran
+  exact ⟨⟨carried.1, logged_conclude contract formed kept unrun (fun apart => (holds.2 apart).2) concluded⟩, carried.2⟩
 
-include contract phases pipeline formed facts in
+include contract phases pipeline wellFormed formed formedPipeline framing facts in
+/-- A closure micro-step keeps `Logged` and leaves the closure `Between` micro-steps, the run log gaining the unit it
+ran. -/
+theorem logged_step {ctx : Ctx} {log : Step.RunLog} {unit : UnitKey} {before after : State}
+    (holds : Logged ctx.program log before) (between : Laws.Step.Between before)
+    (step : Laws.Step.ClosureStep hooks ctx log unit before after) :
+    Logged ctx.program (log.record unit) after ∧ Laws.Step.Between after := by
+  obtain ⟨unrun, unseeded⟩ := Laws.Step.closureStep_fresh step
+  have keeps := Laws.Step.complete_keeps (contract before.transitions) (phases _) (pipeline _) facts
+  have carried := Laws.Step.closureStep_carries wellFormed formed facts
+    (Laws.Step.complete_keeps wellFormed formed.toBodyPhases formedPipeline facts) framing (fun _ _ held => held) holds.1
+    between step
+  have entered : WellFormed ctx.program { before with issuing := unit, issueNext := 0 } ∧
+      BeginsKept ctx.program before.transitions { before with issuing := unit, issueNext := 0 } :=
+    ⟨formed.enterUnit _ _ _ holds.1 unrun unseeded between.untabled,
+      BeginsKept.issuer _ _ fun apart => (holds.2 apart).1⟩
+  obtain ⟨mid, _, _, rest⟩ := Laws.Step.closureStep_concludes (contract _) (phases _) keeps
+    (contract _) (phases _) keeps facts entered entered step
+  obtain ⟨_, ⟨kept, -⟩, concluded⟩ := rest
+  exact ⟨⟨carried.1, logged_conclude contract formed kept unrun (fun apart => (holds.2 apart).2) concluded⟩, carried.2⟩
+
+include contract phases pipeline wellFormed formed formedPipeline framing facts in
+/-- An input's first micro-step and the closure after it settle in a state that keeps `Logged` under its run log, from
+a well-formed start `Between` micro-steps that keeps `BeginsKept` of no transitions. -/
+theorem logged_settles {ctx : Ctx} {unit : UnitKey} {cause : Cause} {element : Option ElementId} {body : State → Outcome}
+    {start moved : State} {settled : State × Step.RunLog}
+    (started : WellFormed ctx.program start ∧ BeginsKept ctx.program ∅ start) (between : Laws.Step.Between start)
+    (byBody : ∀ (keep : Program → State → Prop), Laws.Step.HookContract hooks keep → Laws.Step.BodyPhases keep →
+      keep ctx.program { start with issuing := unit, issueNext := 0 } →
+      ∀ next, body { start with issuing := unit, issueNext := 0 } = .ok next → keep ctx.program next)
+    (stepped : Step.microStep hooks ctx unit cause element State.root body start = .ok moved)
+    (settling : Step.settle hooks ctx Step.closureBound Step.closureWorkBound (Step.RunLog.record {} unit) moved =
+      .ok settled) :
+    Logged ctx.program settled.2 settled.1 := by
+  have logged : Logged ctx.program {} start := ⟨started.1, fun apart => by
+    have held := started.2 apart
+    rw [held.transitions]
+    exact ⟨held, LogOrder.empty _⟩⟩
+  have movedLogged := logged_micro contract phases pipeline wellFormed formed formedPipeline framing facts logged between
+    byBody stepped
+  exact (Laws.Step.settle_induction_log (fun log s => Logged ctx.program log s ∧ Laws.Step.Between s)
+    (fun _ _ _ _ holds step =>
+      logged_step contract phases pipeline wellFormed formed formedPipeline framing facts holds.1 holds.2 step)
+    _ _ _ _ _ movedLogged settling).1
+
+include contract phases pipeline wellFormed formed formedPipeline framing facts in
 /-- A committed input on a running instance settles in a state that keeps `Logged` under its run log, which
-`Step.orderJournal` commits, from a well-formed before-state whose reservations, made or still to be made, name no
-looping element. -/
+`Step.orderJournal` commits, from a well-formed committed before-state whose reservations, made or still to be made,
+name no looping element. -/
 theorem logged_running {program : Program} {before after : State} {input : Input}
-    (formedBefore : WellFormed program before) (unbegun : IdsUnique program → UnbegunUnlooped program before)
+    (formedBefore : WellFormed program before) (committed : Laws.State.Committed before)
+    (unbegun : IdsUnique program → UnbegunUnlooped program before)
     (occurs : IdsUnique program → ∀ element, OccurPending before element → ∀ loop, ¬ LoopOf program element loop)
     (ran : Step.step hooks program (some before) input = .ok after) :
-    ∃ settled : State × Step.RunLog, Logged program settled.2 settled.1 ∧ Step.orderJournal (.ok settled) = .ok after := by
-  obtain ⟨mid, _, _, rest₁⟩ := Laws.Step.running_concludes (contract ∅)
-    (phases ∅) (Laws.Step.complete_keeps (contract ∅) (phases ∅) (pipeline ∅) facts)
-    ⟨Laws.State.reset_wellFormed formedBefore, beginsKept_reset unbegun occurs⟩ ran
-  obtain ⟨_, _, settled, rest₂⟩ := rest₁
-  obtain ⟨kept, concluded, settling, made⟩ := rest₂
-  have done := Laws.Step.settle_induction_log (Logged (Laws.Step.inputCtx hooks program input).program)
-    (fun _ _ _ _ holds step => logged_step contract phases pipeline formed facts holds step) _ _ _ _ _
-    (logged_conclude contract formed kept (fun _ => LogOrder.empty _) concluded) settling
+    ∃ (start : State) (settled : State × Step.RunLog), Logged program settled.2 settled.1 ∧
+      Step.orderJournal start (.ok settled) = .ok after := by
+  rcases Laws.Step.step_ok ran with ⟨_, _, fresh, _⟩ | ⟨_, _, runs, ran⟩
+  · simp at fresh
+  obtain ⟨_, start, moved, rest⟩ := Laws.Step.onRunning_ok ran
+  obtain ⟨settled, present, _, rest⟩ := rest
+  obtain ⟨clocked, stepped, settling, made⟩ := rest
+  cases Option.some.inj present
+  have entered : WellFormed (Laws.Step.inputCtx hooks program input).program
+        { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } ∧
+      BeginsKept (Laws.Step.inputCtx hooks program input).program ∅
+        { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } := by
+    rw [Laws.Step.inputCtx_program]
+    exact ⟨Laws.State.reset_wellFormed formedBefore committed, beginsKept_reset unbegun occurs⟩
+  have done := logged_settles contract phases pipeline wellFormed formed formedPipeline framing facts
+    (Laws.Step.advanceClock_keeps (phases ∅) entered clocked)
+    (Laws.Step.advanceClock_between (Laws.Step.reset_between committed) clocked)
+    (fun _ keeps keepPhases kept _ transitioned => Laws.Step.transition_keeps keeps keepPhases runs kept transitioned)
+    stepped settling
   rw [Laws.Step.inputCtx_program] at done
-  exact ⟨settled, done, made⟩
+  exact ⟨start, settled, done, made⟩
 
-include contract phases pipeline formed facts in
+include contract phases pipeline wellFormed formed formedPipeline framing facts in
 /-- A committed start settles in a state that keeps `Logged` under its run log, which `Step.orderJournal` commits. -/
 theorem logged_start
     (initial : ∀ program instanceId variables businessKey,
       WellFormed program ((State.initial instanceId variables businessKey).signal (.armScope State.root)))
+    (fresh : ∀ instanceId variables businessKey,
+      Laws.Step.Between (((State.initial instanceId variables businessKey).signal (.armScope State.root)).queueBatch
+        (.ofRoot .seed)))
     {program : Program} {input : Input} {after : State} (ran : Step.step hooks program none input = .ok after) :
-    ∃ settled : State × Step.RunLog, Logged program settled.2 settled.1 ∧ Step.orderJournal (.ok settled) = .ok after := by
-  obtain ⟨mid, _, _, rest₁⟩ := Laws.Step.start_concludes (contract ∅)
-    (phases ∅) facts (Laws.Step.complete_keeps (contract ∅) (phases ∅) (pipeline ∅) facts)
-    (fun _ _ _ => ⟨formed.queueBatch _ _ _ (initial _ _ _ _), (beginsKept_initial _ _ _ _).queueBatch _⟩) ran
-  obtain ⟨_, _, settled, rest₂⟩ := rest₁
-  obtain ⟨kept, concluded, settling, made⟩ := rest₂
-  have done := Laws.Step.settle_induction_log (Logged (Laws.Step.inputCtx hooks program input).program)
-    (fun _ _ _ _ holds step => logged_step contract phases pipeline formed facts holds step) _ _ _ _ _
-    (logged_conclude contract formed kept (fun _ => LogOrder.empty _) concluded) settling
-  rw [Laws.Step.inputCtx_program] at done
-  exact ⟨settled, done, made⟩
+    ∃ (start : State) (settled : State × Step.RunLog), Logged program settled.2 settled.1 ∧
+      Step.orderJournal start (.ok settled) = .ok after := by
+  rcases Laws.Step.step_ok ran with ⟨payload, same, _, started⟩ | ⟨_, _, _, ran⟩
+  · subst same
+    obtain ⟨start, moved, settled, rest⟩ := Laws.Step.start_body facts started
+    obtain ⟨clocked, _, _, rest⟩ := rest
+    obtain ⟨byBody, stepped, settling, made⟩ := rest
+    have queued : WellFormed (Laws.Step.inputCtx hooks program (.start payload)).program
+          (((State.initial payload.instanceId payload.variables payload.businessKey).signal
+            (.armScope State.root)).queueBatch (.ofRoot .seed)) ∧
+        BeginsKept (Laws.Step.inputCtx hooks program (.start payload)).program ∅
+          (((State.initial payload.instanceId payload.variables payload.businessKey).signal
+            (.armScope State.root)).queueBatch (.ofRoot .seed)) := by
+      rw [Laws.Step.inputCtx_program]
+      exact ⟨formed.queueBatch _ _ _ (initial _ _ _ _), (beginsKept_initial _ _ _ _).queueBatch _⟩
+    have done := logged_settles contract phases pipeline wellFormed formed formedPipeline framing facts
+      (Laws.Step.advanceClock_keeps (phases ∅) queued clocked) (Laws.Step.advanceClock_between (fresh _ _ _) clocked)
+      byBody stepped settling
+    rw [Laws.Step.inputCtx_program] at done
+    exact ⟨start, settled, done, made⟩
+  · obtain ⟨_, _, rest⟩ := Laws.Step.onRunning_ok ran
+    obtain ⟨_, _, present, _⟩ := rest
+    simp at present
 
-include contract phases pipeline formed facts in
-/-- Hooks that keep `BeginsKept` beside `WellFormed` keep the reservations of looping elements unmade. -/
+include contract phases pipeline wellFormed formed formedPipeline framing facts in
+/-- Hooks that keep `BeginsKept` beside `WellFormed` keep the reservations of looping elements unmade: the commit keeps
+every unbegun occurrence's element and flag (`orderJournal_unbegunUnlooped`). -/
 theorem unbegunKept_of
     (initial : ∀ program instanceId variables businessKey,
-      WellFormed program ((State.initial instanceId variables businessKey).signal (.armScope State.root))) :
+      WellFormed program ((State.initial instanceId variables businessKey).signal (.armScope State.root)))
+    (fresh : ∀ instanceId variables businessKey,
+      Laws.Step.Between (((State.initial instanceId variables businessKey).signal (.armScope State.root)).queueBatch
+        (.ofRoot .seed))) :
     UnbegunKept hooks where
-  step _ _ _ _ apart formedBefore unbegun occurs ran := by
-    obtain ⟨settled, kept, made⟩ := logged_running contract phases pipeline formed facts formedBefore (fun _ => unbegun)
-      (fun _ => occurs) ran
-    obtain ⟨_, _, same, made'⟩ := Laws.Step.orderJournal_ok made
-    subst made'
-    cases same
-    exact ((kept.2 apart).1).unbegun
+  step _ _ _ _ apart formedBefore committed unbegun occurs ran := by
+    obtain ⟨_, _, kept, made⟩ := logged_running contract phases pipeline wellFormed formed formedPipeline framing facts
+      formedBefore committed (fun _ => unbegun) (fun _ => occurs) ran
+    exact orderJournal_unbegunUnlooped ((kept.2 apart).1).unbegun made
   start _ _ _ apart ran := by
-    obtain ⟨settled, kept, made⟩ := logged_start contract phases pipeline formed facts initial ran
-    obtain ⟨_, _, same, made'⟩ := Laws.Step.orderJournal_ok made
-    subst made'
-    cases same
-    exact ((kept.2 apart).1).unbegun
+    obtain ⟨_, _, kept, made⟩ := logged_start contract phases pipeline wellFormed formed formedPipeline framing facts
+      initial fresh ran
+    exact orderJournal_unbegunUnlooped ((kept.2 apart).1).unbegun made
 
-include contract phases pipeline formed facts in
+include contract phases pipeline wellFormed formed formedPipeline framing facts in
 /-- Under hooks that keep `BeginsKept` beside `WellFormed`, a committed input's start facts of a looping element under
-the element role carry increasing activations in journal order, from a well-formed before-state whose reservations,
-made or still to be made, name no looping element: the journal lists the transitions in the order their units ran
-(`Step.byRun`), which `LogOrder` orders. -/
+the element role carry increasing activations in journal order, from a well-formed committed before-state whose
+reservations, made or still to be made, name no looping element: the settled closure lists the transitions in the
+order their units ran (`Step.byRun`), which `LogOrder` orders, and the commit keeps every fact's occurrence key
+(`orderJournal_beginsInOrder`). -/
 theorem beginsInOrder_of {program : Program} {before after : State} {input : Input} {element : ElementId}
     {loop : MultiInstance} (processInstance : String) (apart : IdsUnique program) (formedBefore : WellFormed program before)
-    (unbegun : UnbegunUnlooped program before)
+    (committed : Laws.State.Committed before) (unbegun : UnbegunUnlooped program before)
     (occurs : ∀ element, OccurPending before element → ∀ loop, ¬ LoopOf program element loop)
     (ran : Step.step hooks program (some before) input = .ok after) (looped : LoopOf program element loop) :
     BeginsInOrder (after.journal.flatMap (·.started)) processInstance element := by
-  obtain ⟨settled, kept, made⟩ := logged_running contract phases pipeline formed facts formedBefore (fun _ => unbegun)
-    (fun _ => occurs) ran
-  obtain ⟨state, log, same, made'⟩ := Laws.Step.orderJournal_ok made
-  subst made'
-  cases same
-  exact ((kept.2 apart).2).byRun processInstance looped
+  obtain ⟨_, _, kept, made⟩ := logged_running contract phases pipeline wellFormed formed formedPipeline framing facts
+    formedBefore committed (fun _ => unbegun) (fun _ => occurs) ran
+  exact orderJournal_beginsInOrder (((kept.2 apart).2).byRun processInstance looped) made
 
 end Walk
 

@@ -2,6 +2,7 @@ module
 
 public import Kernel.Proofs.MultiInstance.Occurs
 public import Kernel.Laws.Population
+public import Kernel.Laws.State.Keeps
 
 /-! # Proofs: Multi-Instance (P4)
 
@@ -64,6 +65,16 @@ structure RunFormed (program : Program) (s : State) (run : MultiInstanceRun) : P
   unheld : InstancesUnheld s run
   placed : InstancesPlaced s run
 
+/-- Every occurrence and every queued begin that continues into a Multi-Instance body names a body occurrence key that
+was issued (`Laws.State.OccurrenceIssued`, which reads issue histories, counters and the issue table, not the occurrences
+that stand), so the commit renames a continuation onto a body's key only when it is that body's
+(`Laws.Step.renamed_apart`). `queued` is its inductive strengthening: an instance begun from a queued request takes the
+request's continuation (`State.beginOccurrence`); a commit leaves nothing queued. -/
+structure Continued (s : State) : Prop where
+  occurrences : ∀ o ∈ s.occurrences, ∀ body, o.continuation = .multiInstance body → Laws.State.OccurrenceIssued s body
+  queued : ∀ request, Laws.State.Queued s request → ∀ body, request.continuation = .multiInstance body →
+    Laws.State.OccurrenceIssued s body
+
 /-- The lane's slot invariant: one running body per body occurrence (`RunsKeyed`), each `RunFormed`, and the instance
 begins still queued in the order the numbering needs (`BeginsQueued`). It is a lane
 premise beside `WellFormed`, not a clause of it, since feature slot entries are each feature's own laws; the lane
@@ -74,16 +85,20 @@ body whose occurrence is no Multi-Instance element's would outlive its occurrenc
 let a completion fill one and finish the other (root decision, 2026-11-14), without `BeginsQueued` a before-state
 whose queues hold begins out of slot order would number its instances out of order (root decision, 2026-11-14), and
 without `UnbegunUnlooped` a reservation of a looping element begun after a fresh instance would journal its lower
-activation last (root decision, 2026-11-14). -/
+activation last (root decision, 2026-11-14), and without `Continued` a commit could rename an instance's
+continuation onto another body's key (F9). -/
 structure RunsFormed (program : Program) (s : State) : Prop where
   keyed : RunsKeyed s
   formed : ∀ run ∈ s.slots.multiInstances, RunFormed program s run
   queued : BeginsQueued program s
   unbegun : UnbegunUnlooped program s
+  continued : Continued s
 
-/-- A committed input from `before` to `after`, from a well-formed before-state that keeps the lane's slot invariant. -/
+/-- A committed input from `before` to `after`, from a well-formed committed before-state that keeps the lane's slot
+invariant. -/
 def Commits (hooks : Hooks) (program : Program) (before after : State) : Prop :=
-  WellFormed program before ∧ RunsFormed program before ∧ ∃ input, Step.step hooks program (some before) input = .ok after
+  WellFormed program before ∧ Laws.State.Committed before ∧ RunsFormed program before ∧
+    ∃ input, Step.step hooks program (some before) input = .ok after
 
 /-- A committed start keeps the lane's slot invariant, under a program whose identifiers are unique. -/
 def RunsFormedAtStart (hooks : Hooks) : Prop :=

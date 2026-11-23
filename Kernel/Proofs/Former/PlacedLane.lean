@@ -70,6 +70,11 @@ def CalledApart (program : Program) (s : State) : Prop :=
       ∀ owner ∈ s.occurrences, entry.occurrence = some owner.id →
         ((program.element? owner.element).bind (·.scope?)).isNone
 
+/-- Every instance entry's root stands: an entry goes with its root (`State.leaveScope`, `FeatureSlots.clear`), and the
+commit keeps instance roots apart only against a standing key (`Laws.Step.renameScope_apart`), which
+`PlacedCore.rootsApart` reads across it. -/
+def RootsStanding (s : State) : Prop := ∀ entry ∈ s.slots.instances, entry.root ∈ scopeIds s
+
 /-- The placement lane: `PlacedCore` and the queued and held work placed where it will run. -/
 structure PlacedLane (program : Program) (s : State) : Prop extends PlacedCore program s where
   tokens : ∀ flow scope target, Token.flow flow scope ∈ (Laws.State.allQueuedTokens s) → program.target? flow = some target →
@@ -109,13 +114,14 @@ structure PlacedLane (program : Program) (s : State) : Prop extends PlacedCore p
   offered where the wait lies is offered where its occurrence does (`Proofs.Former.split_wait_rejected`). -/
   waits : ∀ waiting ∈ s.slots.parked, ∀ occurrence ∈ s.occurrences, occurrence.id = waiting.occurrence →
     occurrence.scope = waiting.scope
+  rootsStanding : RootsStanding s
 
 /-- An update of nothing the lane reads keeps it (`Proofs.Frame.Unmoved`). -/
 theorem PlacedLane.frame {program : Program} {s t : State} (moved : Proofs.Frame.Unmoved s t)
     (held : PlacedLane program s) : PlacedLane program t := by
   have instances : ∀ entry ∈ t.slots.instances, entry ∈ s.slots.instances := fun _ inside => moved.instances ▸ inside
   have grows : Laws.State.ScopeGrows s t :=
-    .of_same (congrArg (List.map ScopeOccurrence.id) moved.scopes) moved.scopeOrdinals
+    .of_same (congrArg (List.map ScopeOccurrence.id) moved.scopes) moved.scopeOrdinals moved.table
   have place : ∀ {element scope}, PlacedIn program s element scope → PlacedIn program t element scope :=
     fun placed => placed.same moved.scopes instances
   have present : ∀ {scope}, scope ∈ scopeIds t → scope ∈ scopeIds s := fun inside => by
@@ -125,7 +131,8 @@ theorem PlacedLane.frame {program : Program} {s t : State} (moved : Proofs.Frame
     fun _ inside => moved.resumes ▸ inside
   refine ⟨⟨⟨?_, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
     fun waiting member occurrence inside named =>
-      held.waits waiting (moved.parked waiting member) occurrence (moved.occurrences ▸ inside) named⟩
+      held.waits waiting (moved.parked waiting member) occurrence (moved.occurrences ▸ inside) named,
+    fun entry member => by simpa [scopeIds, moved.scopes] using held.rootsStanding entry (instances entry member)⟩
   · rw [moved.instances]; exact held.placed.rooted
   · intro root member called
     rw [moved.instances]

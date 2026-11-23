@@ -270,10 +270,13 @@ root. The witnesses below read the ordinal of an item's occurrence as its public
 decidable by evaluation and a function of the item's identity, as `Commits` requires; distinct members carry distinct
 ordinals and elements. -/
 def member (n : Nat) (name : String) : OpenItem :=
-  { id := ⟨{ scope := (.ofSegments []), element := ⟨name⟩, ordinal := n }, .subscription, 0⟩, position := n,
+  { id := ⟨{ scope := (.ofSegments []), element := ⟨name⟩, ordinal := .committed n }, .subscription, 0⟩, position := n,
     kind := .conditional {}, element := ⟨name⟩, scope := (.ofSegments []) }
 
-def key (item : OpenItem) : Nat := item.id.occurrence.ordinal
+def key (item : OpenItem) : Nat :=
+  match item.id.occurrence.ordinal with
+  | .committed n => n
+  | .fresh _ n => n
 
 /-- `level-both-eligible`'s pair: the non-interrupting `Warn_Level` and the interrupting `Stop_Level`, which withdraws it. -/
 def warn : OpenItem := member 1 "Warn_Level"

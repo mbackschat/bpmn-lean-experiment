@@ -1,13 +1,16 @@
 module
 
 public import Kernel.Laws.Step.Inputs
+public import Kernel.Laws.State.Committed
+public import Kernel.Laws.Step.CompactKeyed
 
 /-! # Laws of the step function: preservation through a step
 
 `Step.step` keeps a state invariant `inv` for hooks that keep their contract (`HookContract`) when the phases of `Step`
 keep it (`Phases`), the completion pipeline keeps it (`PipelineKeeps`, which `complete_keeps` gives from the pipeline's
 own phases, `PipelinePhases`) and an input's reset keeps it: each body of `Step` keeps it by what `Kernel.Laws.Step` says
-the committed body ran, and `step_keeps` composes them one closure micro-step at a time (`closureStep_keeps`), so a
+the committed body ran, and `Kernel.Laws.Step.Commits` composes them one closure micro-step at a time
+(`closureStep_carries`) through the commit (`step_keeps`), so a
 proof of an invariant proves the obligations and never opens `Kernel.Step`. The pipeline is a premise of the walk
 because an invariant of an input's end facts holds across it only as a unit (`Kernel.Laws.Step.Ends`). It reads no body
 itself. Nothing executable imports this module.
@@ -21,17 +24,18 @@ open Kernel Kernel.Step
 
 /-! ## The closure from its bodies -/
 
-/-- An invariant that a micro-step's body, its absorbed completion and its transition each preserve is preserved by
-the micro-step. -/
+/-- An invariant that a micro-step's body under its unit as the issuer, its absorbed completion and its transition each
+preserve is preserved by the micro-step. -/
 theorem microStep_preserves {hooks : Hooks} {ctx : Ctx} {unit : UnitKey} {cause : Cause} {element : Option ElementId}
     {owner : ScopeOccurrenceId} {body : State → Outcome} (invariant : State → Prop)
-    (byBody : ∀ state next, invariant state → body state = .ok next → invariant next)
+    (byBody : ∀ state next, invariant state → body { state with issuing := unit, issueNext := 0 } = .ok next →
+      invariant next)
     (byAbsorb : ∀ before state next, invariant state → absorb hooks ctx before state = .ok next → invariant next)
     (byConclude : ∀ state next, invariant state → conclude hooks ctx unit cause element owner state = .ok next →
       invariant next)
     {state after : State} (holds : invariant state)
     (ran : microStep hooks ctx unit cause element owner body state = .ok after) : invariant after := by
-  obtain ⟨next, absorbed, body_, ⟨absorbed_, concluded⟩⟩ := microStep_ok ran
+  obtain ⟨_, _, next, ⟨absorbed, body_, absorbed_, concluded⟩⟩ := microStep_ok ran
   exact byConclude _ _ (byAbsorb _ _ _ (byBody _ _ holds body_) absorbed_) concluded
 
 section Keeps
@@ -257,7 +261,7 @@ theorem signal_keeps (contract : HookContract hooks inv) (phases : BodyPhases in
     rcases List.mem_append.mp member with old | new
     · have := phases.issued _ _ _ popped old
       rw [named] at this
-      exact (fresh stands.mem this).elim
+      exact (fresh (phases.issuer _ _ popped) stands.mem this).elim
     rw [List.mem_singleton.mp new]
     exact ⟨queue, holds, fun entry kept => instances ▸ kept, fun entry kept => scopes ▸ kept,
       .inr ⟨_, _, _, by rw [element, scope]; exact head, fun selected same flow inside =>
@@ -285,14 +289,17 @@ theorem completeIdleScope_keeps (contract : HookContract hooks inv) (facts : Sta
   · exact contract.completeCall _ _ _ _ _ _ _ holds member owned link ran
   · exact contract.completeBody _ _ _ _ _ _ _ holds owned ran
 
-/-- A parked join offered again keeps `inv`: its gateway's hook ran on the state the closure reached, for an occurrence
-that stands. -/
+/-- A parked join offered again keeps `inv`: its gateway's hook ran on the state the closure reached under the offer's
+unit as the issuer, for an occurrence that stands. -/
 theorem reoffer_keeps (contract : HookContract hooks inv) (phases : BodyPhases inv) (facts : StateFacts) {ctx : Ctx}
     {state : State} {gateway : ElementId} {scope : ScopeOccurrenceId} {named : OccurrenceId} {offered : State}
-    (holds : inv ctx.program state) (ran : reoffer? hooks ctx state = .ok (some (gateway, scope, named, offered))) :
-    inv ctx.program offered := by
+    {unit : UnitKey} (holds : inv ctx.program { state with issuing := unit, issueNext := 0 })
+    (ran : reoffer? hooks ctx state = .ok (some (gateway, scope, named, offered)))
+    (keyed : UnitKey.offerUnit? named (offerRound state named) = some unit) : inv ctx.program offered := by
   obtain ⟨_, occurrence, _, rest⟩ := reoffer_ok ran
-  obtain ⟨_, ⟨waiting, parked, named, gateway⟩, found, offering⟩ := rest
+  obtain ⟨_, ⟨waiting, parked, named, gateway⟩, found, ⟨same, offerUnit, keyedOffer, offering⟩⟩ := rest
+  subst same
+  obtain rfl : offerUnit = unit := Option.some.inj (keyedOffer.symm.trans keyed)
   obtain ⟨element, targeted, isGateway⟩ := gateway
   obtain ⟨member, same⟩ := facts.found _ _ _ found
   exact contract.arriveGateway _ _ _ _ _ _ holds member
@@ -335,17 +342,6 @@ theorem foldlM_keeps {α : Type} {program : Program} {f : State → α → Outco
     obtain ⟨mid, stepped, ran⟩ := bind_ok ran
     exact foldlM_keeps each rest mid after (each _ _ _ holds stepped) ran
 
-theorem conclude_keeps (contract : HookContract hooks inv) (phases : ClosurePhases inv) {ctx : Ctx} {unit : UnitKey}
-    {cause : Cause} {element : Option ElementId} {owner : ScopeOccurrenceId} {state after : State}
-    (holds : inv ctx.program state) (ran : conclude hooks ctx unit cause element owner state = .ok after) :
-    inv ctx.program after := by
-  obtain ⟨fresh, notified, written, rest₁⟩ := conclude_ok ran
-  obtain ⟨notifying, writing, rfl⟩ := rest₁
-  have journalled := phases.journal _ state unit ⟨cause, element, owner, state.draft.started, state.draft.ended,
-    state.draft.ready⟩ holds (Laws.State.getElem?_of_contains fresh) (by simp) (by simp)
-  exact phases.queueBatch _ _ _ (contract.written _ _ _ _ (foldlM_keeps (fun _ _ _ kept ran =>
-    contract.cancelled _ _ _ _ kept ran) _ _ _ journalled notifying) writing)
-
 theorem absorb_keeps (phases : BodyPhases inv) (pipeline : PipelineKeeps hooks inv) {ctx : Ctx} {before : Nat}
     {state after : State} (holds : inv ctx.program state) (ran : absorb hooks ctx before state = .ok after) :
     inv ctx.program after := by
@@ -362,103 +358,294 @@ theorem absorb_keeps (phases : BodyPhases inv) (pipeline : PipelineKeeps hooks i
         .inl ⟨⟨occurrence, member, rfl, rfl, rfl⟩, fun selected same flow inside => .inr ⟨selected, _, _, inside,
           by rw [named, ← same]; exact queued⟩⟩⟩) completed
 
-/-- A micro-step whose body keeps `inv` concludes from a state that keeps it. -/
-theorem microStep_concludes (phases : BodyPhases inv) (pipeline : PipelineKeeps hooks inv) {ctx : Ctx} {unit : UnitKey}
-    {cause : Cause} {element : Option ElementId} {owner : ScopeOccurrenceId} {body : State → Outcome} {state after : State}
-    (byBody : ∀ next, body state = .ok next → inv ctx.program next)
-    (ran : microStep hooks ctx unit cause element owner body state = .ok after) :
-    ∃ mid, inv ctx.program mid ∧ conclude hooks ctx unit cause element owner mid = .ok after := by
-  obtain ⟨next, absorbed, body_, ⟨absorbed_, concluded⟩⟩ := microStep_ok ran
-  exact ⟨absorbed, absorb_keeps phases pipeline (byBody _ body_) absorbed_, concluded⟩
+/-! ### The issuer between micro-steps (DC12)
 
-/-- A micro-step whose body keeps `inv` keeps it. -/
-theorem microStep_keeps (contract : HookContract hooks inv) (phases : ClosurePhases inv) (pipeline : PipelineKeeps hooks inv)
+A micro-step's body runs under its unit as the issuer (`ClosurePhases.enterUnit`), and its conclusion makes the seed the
+issuer again (`ClosurePhases.leaveUnit`). Both resets need what `inv` does not say: the unit has not run, and the issue
+table holds no issue of the issuer replaced. Between micro-steps the closure keeps `Between`; through a body and its
+conclusion the hooks keep the transitions and the issuer the body started from beside a base invariant every `inv`
+implies (`Framed`), for every start (`Framing`), so every walk runs that second track beside its own `inv`. -/
+
+/-- What holds of a closure between its micro-steps (DC12): the issue table holds no issue of the issuer, and the seed's
+root unit has no transition. -/
+structure Between (s : State) : Prop where
+  untabled : ∀ index, s.issued[Issue.fresh s.issuing index]? = none
+  seed : s.transitions.contains (.ofRoot .seed) = false
+
+/-- `base` of a state with the transitions and the issuer of `b`: what a micro-step's body and the hooks its conclusion
+runs keep of the state the body started from. -/
+abbrev Framed (base : Program → State → Prop) (b : State) (program : Program) (s : State) : Prop :=
+  base program s ∧ s.transitions = b.transitions ∧ s.issuing = b.issuing
+
+/-- What the hooks and phases keep of `base` and, beside it, of the transitions and the issuer a body starts from, for
+every start; and that `State.queueBatch` moves neither (`Laws.State.queueBatch_eq`, which this module cannot read). -/
+structure Framing (hooks : Hooks) (base : Program → State → Prop) : Prop where
+  phases : ClosurePhases base
+  contract : ∀ b, HookContract hooks (Framed base b)
+  body : ∀ b, BodyPhases (Framed base b)
+  pipeline : ∀ b, PipelineKeeps hooks (Framed base b)
+  queueBatch : ∀ (s : State) unit, (s.queueBatch unit).transitions = s.transitions ∧
+    (s.queueBatch unit).issuing = s.issuing
+
+/-- Journalling a unit other than `other` adds no transition of `other`. -/
+theorem contains_insert_ne {m : TreeMap UnitKey Transition compare} {unit other : UnitKey} {transition : Transition}
+    (ne : unit ≠ other) (absent : m.contains other = false) : (m.insert unit transition).contains other = false := by
+  rw [Std.ExtTreeMap.contains_insert, absent, Bool.or_false]
+  simpa using ne
+
+section Walk
+
+variable {base : Program → State → Prop}
+
+/-- A micro-step's conclusion from a state that keeps `inv`, and beside `base` the transitions and the issuer of the
+state `b` its body started from, keeps `inv` and leaves the closure `Between` micro-steps: it journals the unit, which
+`b` has not run, and makes the seed the issuer again, whose issues the table cannot hold, since the seed's unit never
+runs. -/
+theorem conclude_carries (contract : HookContract hooks inv) (phases : ClosurePhases inv) (framing : Framing hooks base)
     {ctx : Ctx} {unit : UnitKey} {cause : Cause} {element : Option ElementId} {owner : ScopeOccurrenceId}
-    {body : State → Outcome} {state after : State} (byBody : ∀ next, body state = .ok next → inv ctx.program next)
-    (ran : microStep hooks ctx unit cause element owner body state = .ok after) : inv ctx.program after := by
-  obtain ⟨mid, holds, concluded⟩ := microStep_concludes phases.toBodyPhases pipeline byBody ran
-  exact conclude_keeps contract phases holds concluded
+    {b state after : State} (issuing : b.issuing = unit) (unrun : b.transitions.contains unit = false)
+    (unseeded : unit ≠ .ofRoot .seed) (seed : b.transitions.contains (.ofRoot .seed) = false)
+    (holds : inv ctx.program state) (framed : Framed base b ctx.program state)
+    (ran : conclude hooks ctx unit cause element owner state = .ok after) : inv ctx.program after ∧ Between after := by
+  obtain ⟨based, transitions, issuer⟩ := framed
+  obtain ⟨notified, written, ⟨notifying, writing, rfl⟩⟩ := conclude_ok ran
+  have fresh : state.transitions.contains unit = false := by rw [transitions]; exact unrun
+  let transition : Transition := ⟨cause, element, owner, state.draft.started, state.draft.ended, state.draft.ready⟩
+  have journalled := phases.journal _ state unit transition holds (Laws.State.getElem?_of_contains fresh)
+    (by simp [transition]) (by simp [transition])
+  have journalledBase := framing.phases.journal _ state unit transition based (Laws.State.getElem?_of_contains fresh)
+    (by simp [transition]) (by simp [transition])
+  have kept := contract.written _ _ _ _ (foldlM_keeps (fun _ _ _ kept ran => contract.cancelled _ _ _ _ kept ran)
+    _ _ _ journalled notifying) writing
+  have framedWritten := (framing.contract _).written _ _ _ _ (foldlM_keeps
+    (fun _ _ _ kept ran => (framing.contract _).cancelled _ _ _ _ kept ran) _ _ _
+    (⟨journalledBase, rfl, rfl⟩ : Framed base
+      { state with transitions := state.transitions.insert unit transition, draft := {}, writes := [] } ctx.program
+      { state with transitions := state.transitions.insert unit transition, draft := {}, writes := [] }) notifying) writing
+  have queued := phases.queueBatch _ _ unit kept
+  obtain ⟨queuedTransitions, queuedIssuing⟩ := framing.queueBatch written unit
+  have recorded : (written.queueBatch unit).transitions = state.transitions.insert unit transition :=
+    queuedTransitions.trans framedWritten.2.1
+  have issued : (written.queueBatch unit).issuing = unit :=
+    queuedIssuing.trans (framedWritten.2.2.trans (issuer.trans issuing))
+  have seedAbsent : (written.queueBatch unit).transitions.contains (.ofRoot .seed) = false := by
+    rw [recorded]
+    exact contains_insert_ne unseeded (by rw [transitions]; exact seed)
+  have untabled : ∀ index, (written.queueBatch unit).issued[Issue.fresh (.ofRoot .seed) index]? = none := fun index => by
+    cases tabled : (written.queueBatch unit).issued[Issue.fresh (.ofRoot .seed) index]? with
+    | none => rfl
+    | some slot =>
+      rcases (phases.issuer _ _ queued).ran _ index slot tabled with contains | same
+      · rw [seedAbsent] at contains
+        cases contains
+      · exact absurd (same.trans issued).symm unseeded
+  have closed : (written.queueBatch unit).transitions.contains (written.queueBatch unit).issuing = true := by
+    rw [recorded, issued]
+    exact Std.ExtTreeMap.contains_insert_self
+  exact ⟨phases.leaveUnit _ _ queued closed untabled, untabled, seedAbsent⟩
 
-/-- A moved token's micro-step concludes from a state that keeps `inv`. -/
-theorem moveToken_concludes (contract : HookContract hooks inv) (phases : BodyPhases inv) (facts : StateFacts)
-    (pipeline : PipelineKeeps hooks inv) {ctx : Ctx} {unit : UnitKey} {token : Token} {state after : State}
-    (holds : inv ctx.program state) (admitted : ∀ request, token = .begin request → Admitted state request)
-    (taken : ∃ queue, inv ctx.program queue ∧ TokenTaken ctx.program queue token state)
+/-- A micro-step whose body keeps `inv` and a side invariant concludes from a state that keeps both. -/
+theorem microStep_concludes {side : Program → State → Prop} (phases : BodyPhases inv) (pipeline : PipelineKeeps hooks inv)
+    (sidePhases : BodyPhases side) (sidePipeline : PipelineKeeps hooks side) {ctx : Ctx} {unit : UnitKey}
+    {cause : Cause} {element : Option ElementId} {owner : ScopeOccurrenceId} {body : State → Outcome} {state after : State}
+    (byBody : ∀ next, body { state with issuing := unit, issueNext := 0 } = .ok next →
+      inv ctx.program next ∧ side ctx.program next)
+    (ran : microStep hooks ctx unit cause element owner body state = .ok after) :
+    ∃ mid, (inv ctx.program mid ∧ side ctx.program mid) ∧ conclude hooks ctx unit cause element owner mid = .ok after := by
+  obtain ⟨_, _, next, ⟨absorbed, body_, absorbed_, concluded⟩⟩ := microStep_ok ran
+  have kept := byBody _ body_
+  exact ⟨absorbed, ⟨absorb_keeps phases pipeline kept.1 absorbed_, absorb_keeps sidePhases sidePipeline kept.2 absorbed_⟩,
+    concluded⟩
+
+/-- A micro-step whose body keeps every invariant its hooks and phases keep keeps `inv`, and leaves the closure
+`Between` micro-steps, from a state that keeps `inv` between them. -/
+theorem microStep_carries (contract : HookContract hooks inv) (phases : ClosurePhases inv)
+    (pipeline : PipelineKeeps hooks inv) (framing : Framing hooks base) (based : ∀ program s, inv program s → base program s)
+    {ctx : Ctx} {unit : UnitKey} {cause : Cause} {element : Option ElementId} {owner : ScopeOccurrenceId}
+    {body : State → Outcome} {state after : State} (holds : inv ctx.program state) (between : Between state)
+    (byBody : ∀ (keep : Program → State → Prop), HookContract hooks keep → BodyPhases keep →
+      keep ctx.program { state with issuing := unit, issueNext := 0 } →
+      ∀ next, body { state with issuing := unit, issueNext := 0 } = .ok next → keep ctx.program next)
+    (ran : microStep hooks ctx unit cause element owner body state = .ok after) :
+    inv ctx.program after ∧ Between after := by
+  obtain ⟨unrun, unseeded, -⟩ := microStep_ok ran
+  have entered := phases.enterUnit _ _ _ holds unrun unseeded between.untabled
+  have framed : Framed base { state with issuing := unit, issueNext := 0 } ctx.program
+      { state with issuing := unit, issueNext := 0 } :=
+    ⟨framing.phases.enterUnit _ _ _ (based _ _ holds) unrun unseeded between.untabled, rfl, rfl⟩
+  obtain ⟨mid, ⟨kept, framedMid⟩, concluded⟩ := microStep_concludes phases.toBodyPhases pipeline (framing.body _)
+    (framing.pipeline _) (fun next ran => ⟨byBody _ contract phases.toBodyPhases entered next ran,
+      byBody _ (framing.contract _) (framing.body _) framed next ran⟩) ran
+  exact conclude_carries (b := { state with issuing := unit, issueNext := 0 }) contract phases framing rfl unrun unseeded
+    between.seed kept framedMid concluded
+
+end Walk
+
+/-- A moved token's micro-step concludes from a state that keeps `inv` and a side invariant, each under the unit as the
+issuer. -/
+theorem moveToken_concludes {side : Program → State → Prop} (contract : HookContract hooks inv) (phases : BodyPhases inv)
+    (pipeline : PipelineKeeps hooks inv) (sideContract : HookContract hooks side) (sidePhases : BodyPhases side)
+    (sidePipeline : PipelineKeeps hooks side) (facts : StateFacts) {ctx : Ctx} {unit : UnitKey} {token : Token}
+    {state after : State} (holds : inv ctx.program { state with issuing := unit, issueNext := 0 })
+    (sideHolds : side ctx.program { state with issuing := unit, issueNext := 0 })
+    (admitted : ∀ request, token = .begin request → Admitted { state with issuing := unit, issueNext := 0 } request)
+    (queue : State) (held : inv ctx.program queue) (sideHeld : side ctx.program queue)
+    (taken : TokenTaken ctx.program queue token { state with issuing := unit, issueNext := 0 })
     (ran : moveToken hooks ctx unit token state = .ok after) :
-    ∃ mid cause element owner, inv ctx.program mid ∧ conclude hooks ctx unit cause element owner mid = .ok after := by
-  obtain ⟨queue, held, taken⟩ := taken
+    ∃ mid cause element owner, (inv ctx.program mid ∧ side ctx.program mid) ∧
+      conclude hooks ctx unit cause element owner mid = .ok after := by
   cases token with
   | flow flow scope =>
-    obtain ⟨mid, kept, concluded⟩ := microStep_concludes phases pipeline (fun next arrived => by
+    obtain ⟨mid, kept, concluded⟩ := microStep_concludes phases pipeline sidePhases sidePipeline (fun next arrived => by
       obtain ⟨_, target, begun⟩ := arrive_ok arrived
-      exact begin_keeps contract phases facts holds admitted_fresh
-        (.inl ⟨rfl, rfl, .inl ⟨queue, flow, held, ⟨target, rfl⟩, taken⟩⟩) begun) (moveToken_flow ran)
+      exact ⟨begin_keeps contract phases facts holds admitted_fresh
+          (.inl ⟨rfl, rfl, .inl ⟨queue, flow, held, ⟨target, rfl⟩, taken⟩⟩) begun,
+        begin_keeps sideContract sidePhases facts sideHolds admitted_fresh
+          (.inl ⟨rfl, rfl, .inl ⟨queue, flow, sideHeld, ⟨target, rfl⟩, taken⟩⟩) begun⟩) (moveToken_flow ran)
     exact ⟨mid, _, _, _, kept, concluded⟩
   | begin request =>
-    obtain ⟨mid, kept, concluded⟩ := microStep_concludes phases pipeline
-      (fun _ dispatched => begin_keeps contract phases facts holds (admitted request rfl) (.inr ⟨queue, held, .inr taken⟩)
-        (dispatchBegin_ok dispatched))
+    obtain ⟨mid, kept, concluded⟩ := microStep_concludes phases pipeline sidePhases sidePipeline
+      (fun _ dispatched => ⟨begin_keeps contract phases facts holds (admitted request rfl)
+          (.inr ⟨queue, held, .inr taken⟩) (dispatchBegin_ok dispatched),
+        begin_keeps sideContract sidePhases facts sideHolds (admitted request rfl)
+          (.inr ⟨queue, sideHeld, .inr taken⟩) (dispatchBegin_ok dispatched)⟩)
       (moveToken_begin ran)
     exact ⟨mid, _, _, _, kept, concluded⟩
 
-/-- A closure micro-step concludes, under its unit, from a state that keeps `inv`: a queued signal's, a moved token's,
-an idle scope occurrence's completion, a parked join's offer and the instance's completion. -/
-theorem closureStep_concludes (contract : HookContract hooks inv) (phases : BodyPhases inv) (facts : StateFacts)
-    (pipeline : PipelineKeeps hooks inv) {ctx : Ctx} {log : RunLog} {unit : UnitKey} {state after : State}
-    (holds : inv ctx.program state) (step : ClosureStep hooks ctx log unit state after) :
-    ∃ mid cause element owner, inv ctx.program mid ∧ conclude hooks ctx unit cause element owner mid = .ok after := by
+/-- A moved token's micro-step runs a unit the closure has not run and that is not the seed's (`Step.microStep`, DC4). -/
+theorem moveToken_fresh {ctx : Ctx} {unit : UnitKey} {token : Token} {state after : State}
+    (ran : moveToken hooks ctx unit token state = .ok after) :
+    state.transitions.contains unit = false ∧ unit ≠ .ofRoot .seed := by
+  cases token with
+  | flow => exact ⟨(microStep_ok (moveToken_flow ran)).1, (microStep_ok (moveToken_flow ran)).2.1⟩
+  | begin => exact ⟨(microStep_ok (moveToken_begin ran)).1, (microStep_ok (moveToken_begin ran)).2.1⟩
+
+/-- A closure micro-step runs a unit the closure has not run and that is not the seed's (`Step.microStep`, DC4). -/
+theorem closureStep_fresh {ctx : Ctx} {log : RunLog} {unit : UnitKey} {state after : State}
+    (step : ClosureStep hooks ctx log unit state after) :
+    state.transitions.contains unit = false ∧ unit ≠ .ofRoot .seed := by
   cases step with
-  | signal _ queued ran =>
-    obtain ⟨mid, kept, concluded⟩ := microStep_concludes phases pipeline
-      (fun _ dispatched => signal_keeps contract phases facts pipeline holds queued dispatched) ran
+  | signal _ _ ran => exact ⟨(microStep_ok ran).1, (microStep_ok ran).2.1⟩
+  | token _ _ _ ran =>
+    have fresh := moveToken_fresh ran
+    exact fresh
+  | idle _ _ _ _ _ ran => exact ⟨(microStep_ok ran).1, (microStep_ok ran).2.1⟩
+  | reoffer _ _ _ _ _ _ ran => exact ⟨(microStep_ok ran).1, (microStep_ok ran).2.1⟩
+  | finish _ _ _ _ _ _ _ ran => exact ⟨(microStep_ok ran).1, (microStep_ok ran).2.1⟩
+
+/-- A closure micro-step concludes, under its unit, from a state that keeps `inv` and a side invariant under the unit as
+the issuer: a queued signal's, a moved token's, an idle scope occurrence's completion, a parked join's offer and the
+instance's completion. -/
+theorem closureStep_concludes {side : Program → State → Prop} (contract : HookContract hooks inv)
+    (phases : BodyPhases inv) (pipeline : PipelineKeeps hooks inv) (sideContract : HookContract hooks side)
+    (sidePhases : BodyPhases side) (sidePipeline : PipelineKeeps hooks side) (facts : StateFacts) {ctx : Ctx}
+    {log : RunLog} {unit : UnitKey} {state after : State}
+    (holds : inv ctx.program { state with issuing := unit, issueNext := 0 })
+    (sideHolds : side ctx.program { state with issuing := unit, issueNext := 0 })
+    (step : ClosureStep hooks ctx log unit state after) :
+    ∃ mid cause element owner, (inv ctx.program mid ∧ side ctx.program mid) ∧
+      conclude hooks ctx unit cause element owner mid = .ok after := by
+  cases step with
+  | signal _ heads ran =>
+    obtain ⟨mid, kept, concluded⟩ := microStep_concludes phases pipeline sidePhases sidePipeline
+      (fun _ dispatched => ⟨signal_keeps contract phases facts pipeline holds heads dispatched,
+        signal_keeps sideContract sidePhases facts sidePipeline sideHolds heads dispatched⟩) ran
     exact ⟨mid, _, _, _, kept, concluded⟩
   | token _ quiet next ran =>
-    have taken : TokenTaken ctx.program state _ { state with queuedTokens := state.queuedTokens.erase unit } :=
+    have taken : TokenTaken ctx.program { state with issuing := unit, issueNext := 0 } _
+        { { state with queuedTokens := state.queuedTokens.erase unit } with issuing := unit, issueNext := 0 } :=
       ⟨quiet, unit, log, (nextToken_mem next).2, rfl⟩
-    exact moveToken_concludes contract phases facts pipeline (phases.untoken _ _ _ holds)
-      (fun request same => phases.admittedToken _ _ _ _ holds (same ▸ taken)) ⟨_, holds, taken⟩ ran
-  | idle _ _ _ idle ran =>
-    obtain ⟨mid, kept, concluded⟩ := microStep_concludes phases pipeline
-      (fun _ completed => completeIdleScope_keeps contract facts holds (idleScope_mem idle) completed) ran
+    exact moveToken_concludes contract phases pipeline sideContract sidePhases sidePipeline facts
+      (phases.untoken _ _ _ holds) (sidePhases.untoken _ _ _ sideHolds)
+      (fun request same => phases.admittedToken _ _ _ _ holds (same ▸ taken)) _ holds sideHolds taken ran
+  | idle _ _ _ idle _ ran =>
+    have member := idleScope_mem idle
+    obtain ⟨mid, kept, concluded⟩ := microStep_concludes phases pipeline sidePhases sidePipeline
+      (fun _ completed => ⟨completeIdleScope_keeps contract facts holds member completed,
+        completeIdleScope_keeps sideContract facts sideHolds member completed⟩) ran
     exact ⟨mid, _, _, _, kept, concluded⟩
-  | reoffer _ _ _ _ offered ran =>
-    obtain ⟨mid, kept, concluded⟩ := microStep_concludes phases pipeline (fun next made => by
+  | reoffer _ _ _ _ offered keyed ran =>
+    obtain ⟨mid, kept, concluded⟩ := microStep_concludes phases pipeline sidePhases sidePipeline (fun next made => by
       simp only [Except.ok.injEq] at made
-      exact made ▸ reoffer_keeps contract phases facts holds offered) ran
+      subst made
+      exact ⟨reoffer_keeps contract phases facts holds offered keyed,
+        reoffer_keeps sideContract sidePhases facts sideHolds offered keyed⟩) ran
     exact ⟨mid, _, _, _, kept, concluded⟩
   | finish _ _ _ _ _ _ _ ran =>
-    obtain ⟨mid, kept, concluded⟩ := microStep_concludes phases pipeline (fun next ended => by
+    obtain ⟨mid, kept, concluded⟩ := microStep_concludes phases pipeline sidePhases sidePipeline (fun next ended => by
       simp only [Except.ok.injEq] at ended
-      exact ended ▸ phases.endInstance _ _ _ _ holds (by simp)) ran
+      subst ended
+      exact ⟨phases.endInstance _ _ _ _ holds (by simp), sidePhases.endInstance _ _ _ _ sideHolds (by simp)⟩) ran
     exact ⟨mid, _, _, _, kept, concluded⟩
 
-/-- A closure micro-step keeps `inv`. -/
-theorem closureStep_keeps (contract : HookContract hooks inv) (phases : ClosurePhases inv) (facts : StateFacts)
-    (pipeline : PipelineKeeps hooks inv) {ctx : Ctx} {log : RunLog} {unit : UnitKey} {state after : State}
-    (holds : inv ctx.program state) (step : ClosureStep hooks ctx log unit state after) : inv ctx.program after := by
-  obtain ⟨mid, _, _, rest₁⟩ := closureStep_concludes contract phases.toBodyPhases facts pipeline holds step
-  obtain ⟨_, kept, concluded⟩ := rest₁
-  exact conclude_keeps contract phases kept concluded
+section Walk
 
-/-- The closure keeps `inv`. -/
-theorem settle_keeps (contract : HookContract hooks inv) (phases : ClosurePhases inv) (facts : StateFacts)
-    (pipeline : PipelineKeeps hooks inv) {ctx : Ctx} :
+variable {base : Program → State → Prop}
+
+/-- A closure micro-step keeps `inv` between micro-steps. -/
+theorem closureStep_carries (contract : HookContract hooks inv) (phases : ClosurePhases inv) (facts : StateFacts)
+    (pipeline : PipelineKeeps hooks inv) (framing : Framing hooks base)
+    (based : ∀ program s, inv program s → base program s) {ctx : Ctx} {log : RunLog} {unit : UnitKey}
+    {state after : State} (holds : inv ctx.program state) (between : Between state)
+    (step : ClosureStep hooks ctx log unit state after) : inv ctx.program after ∧ Between after := by
+  obtain ⟨unrun, unseeded⟩ := closureStep_fresh step
+  have framed : Framed base { state with issuing := unit, issueNext := 0 } ctx.program
+      { state with issuing := unit, issueNext := 0 } :=
+    ⟨framing.phases.enterUnit _ _ _ (based _ _ holds) unrun unseeded between.untabled, rfl, rfl⟩
+  obtain ⟨mid, _, _, ⟨_, ⟨kept, framedMid⟩, concluded⟩⟩ := closureStep_concludes contract phases.toBodyPhases pipeline
+    (framing.contract _) (framing.body _) (framing.pipeline _) facts
+    (phases.enterUnit _ _ _ holds unrun unseeded between.untabled) framed step
+  exact conclude_carries (b := { state with issuing := unit, issueNext := 0 }) contract phases framing rfl unrun unseeded
+    between.seed kept framedMid concluded
+
+/-- The closure keeps `inv` between micro-steps. -/
+theorem settle_carries (contract : HookContract hooks inv) (phases : ClosurePhases inv) (facts : StateFacts)
+    (pipeline : PipelineKeeps hooks inv) (framing : Framing hooks base)
+    (based : ∀ program s, inv program s → base program s) {ctx : Ctx} :
     ∀ (fuel work : Nat) (log : RunLog) (state : State) (after : State × RunLog), inv ctx.program state →
-      settle hooks ctx fuel work log state = .ok after → inv ctx.program after.1 :=
-  settle_induction (inv ctx.program) fun _ _ _ _ holds step => closureStep_keeps contract phases facts pipeline holds step
+      Between state → settle hooks ctx fuel work log state = .ok after → inv ctx.program after.1 ∧ Between after.1 :=
+  fun fuel work log state after holds between ran =>
+    settle_induction (fun s => inv ctx.program s ∧ Between s)
+      (fun _ _ _ _ holds step => closureStep_carries contract phases facts pipeline framing based holds.1 holds.2 step)
+      fuel work log state after ⟨holds, between⟩ ran
 
-/-- `Step.step` on a running instance concludes its input's micro-step, under the input's unit, from a state that keeps
-`inv`, for hooks that keep their contract, when the input's start keeps it; the closure then settles from what the
-conclusion commits, under the run log that records the input's unit, and the commit orders it. A lane that reads which
-unit journalled a transition walks the closure from here (`settle_induction_log`). -/
-theorem running_concludes (contract : HookContract hooks inv) (phases : BodyPhases inv)
-    (pipeline : PipelineKeeps hooks inv) {program : Program} {before : State} {input : Input} {after : State}
+/-- An input's start on a running instance holds no issue and no transition when the before-state is committed. -/
+theorem reset_between {before : State} (committed : Laws.State.Committed before) :
+    Between { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } :=
+  ⟨fun index => by simp [committed.issued], by simp⟩
+
+/-- The clock moves neither the issue table nor the transitions. -/
+theorem advanceClock_between {at? : Option Nat} {state after : State} (between : Between state)
+    (ran : advanceClock at? state = .ok after) : Between after := by
+  rcases advanceClock_ok ran with rfl | ⟨_, rfl⟩
+  · exact between
+  · exact ⟨between.untabled, between.seed⟩
+
+/-- An input's micro-step and the closure after it keep `inv` between micro-steps, from a start that keeps it. -/
+theorem input_carries (contract : HookContract hooks inv) (phases : ClosurePhases inv) (facts : StateFacts)
+    (pipeline : PipelineKeeps hooks inv) (framing : Framing hooks base)
+    (based : ∀ program s, inv program s → base program s) {ctx : Ctx} {transition : State → Outcome}
+    (runs : RunsTransition hooks ctx transition) {cause : Cause} {start moved : State} {settled : State × RunLog}
+    (started : inv ctx.program start) (between : Between start)
+    (stepped : microStep hooks ctx (.ofRoot .input) cause none State.root transition start = .ok moved)
+    (settling : settle hooks ctx closureBound closureWorkBound (RunLog.record {} (.ofRoot .input)) moved = .ok settled) :
+    inv ctx.program settled.1 ∧ Between settled.1 :=
+  have movedHolds := microStep_carries contract phases pipeline framing based started between
+    (fun _ keeps keepPhases kept _ transitioned => transition_keeps keeps keepPhases runs kept transitioned) stepped
+  settle_carries contract phases facts pipeline framing based _ _ _ _ _ movedHolds.1 movedHolds.2 settling
+
+/-- `Step.step` on a running instance settles in a state that keeps `inv` of the program it runs, whose journal and
+intents ordered by the run log (`Step.orderJournal`) are the committed state's, for hooks that keep their contract,
+from a committed before-state whose input start keeps it. It needs no `Phases.runOrder`, so an invariant of the
+closure's keyed content holds there. -/
+theorem running_settles (contract : HookContract hooks inv) (phases : ClosurePhases inv) (facts : StateFacts)
+    (pipeline : PipelineKeeps hooks inv) (framing : Framing hooks base)
+    (based : ∀ program s, inv program s → base program s) {program : Program} {before : State} {input : Input}
+    {after : State} (committed : Laws.State.Committed before)
     (holds : inv program { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] })
     (ran : step hooks program (some before) input = .ok after) :
-    ∃ mid cause element owner moved settled, inv (inputCtx hooks program input).program mid ∧
-      conclude hooks (inputCtx hooks program input) (.ofRoot .input) cause element owner mid = .ok moved ∧
-      settle hooks (inputCtx hooks program input) closureBound closureWorkBound (RunLog.record {} (.ofRoot .input)) moved =
-        .ok settled ∧ orderJournal (.ok settled) = .ok after := by
+    ∃ (start : State) (settled : State × RunLog), (inv program settled.1 ∧ Between settled.1) ∧
+      orderJournal start (.ok settled) = .ok after := by
   rcases step_ok ran with ⟨_, _, fresh, _⟩ | ⟨_, _, runs, ran⟩
   · simp at fresh
   · obtain ⟨state, start, moved, rest⟩ := onRunning_ok ran
@@ -469,111 +656,13 @@ theorem running_concludes (contract : HookContract hooks inv) (phases : BodyPhas
         { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] } := by
       rw [inputCtx_program]
       exact holds
-    have started := advanceClock_keeps phases entered clocked
-    obtain ⟨mid, kept, concluded⟩ := microStep_concludes phases pipeline
-      (fun _ transitioned => transition_keeps contract phases runs started transitioned) stepped
-    exact ⟨mid, _, _, _, moved, settled, kept, concluded, settling, made⟩
-
-/-- `Step.step` on a running instance settles in a state that keeps `inv` of the program it runs, whose journal and
-intents ordered by the run log (`Step.orderJournal`) are the committed state's, for hooks that keep their contract,
-when the input's start keeps it. It needs no `Phases.runOrder`, so an invariant of the closure's keyed content holds
-there. -/
-theorem running_settles (contract : HookContract hooks inv) (phases : ClosurePhases inv) (facts : StateFacts)
-    (pipeline : PipelineKeeps hooks inv) {program : Program} {before : State} {input : Input} {after : State}
-    (holds : inv program { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] })
-    (ran : step hooks program (some before) input = .ok after) :
-    ∃ settled : State × RunLog, inv program settled.1 ∧ orderJournal (.ok settled) = .ok after := by
-  obtain ⟨mid, _, _, rest₁⟩ :=
-    running_concludes contract phases.toBodyPhases pipeline holds ran
-  obtain ⟨_, _, settled, rest₂⟩ := rest₁
-  obtain ⟨kept, concluded, settling, made⟩ := rest₂
-  have done := settle_keeps contract phases facts pipeline _ _ _ _ _ (conclude_keeps contract phases kept concluded)
-    settling
-  rw [inputCtx_program] at done
-  exact ⟨settled, done, made⟩
-
-/-- `Step.step` on a running instance keeps `inv` of the program it runs for hooks that keep their contract, when the
-input's start keeps it: the before-state with an empty journal, intents, draft and write log. An invariant relative to
-the before-state may hold there though not of the before-state itself. A start never runs here, so `inv` need not hold
-of a fresh instance. -/
-theorem running_keeps (contract : HookContract hooks inv) (phases : Phases inv) (facts : StateFacts)
-    (pipeline : PipelineKeeps hooks inv) {program : Program} {before : State} {input : Input} {after : State}
-    (holds : inv program { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] })
-    (ran : step hooks program (some before) input = .ok after) : inv program after := by
-  obtain ⟨settled, kept, made⟩ := running_settles contract phases.toClosurePhases facts pipeline holds ran
-  exact phases.runOrder _ _ settled.2 kept _ made
-
-/-- A start concludes its input's micro-step, the begin of the start Event it picks, under the input's unit, from a
-state that keeps `inv`, for hooks that keep their contract, when a fresh instance with its root's Event Sub-Process
-starts queued for arming keeps it; the closure then settles from what the conclusion commits, under the run log that
-records the input's unit, and the commit orders it. -/
-theorem start_concludes (contract : HookContract hooks inv) (phases : BodyPhases inv) (facts : StateFacts)
-    (pipeline : PipelineKeeps hooks inv) {program : Program}
-    (initial : ∀ instanceId variables businessKey,
-      inv program (((State.initial instanceId variables businessKey).signal (.armScope State.root)).queueBatch (.ofRoot .seed)))
-    {input : Input} {after : State} (ran : step hooks program none input = .ok after) :
-    ∃ mid cause element owner moved settled, inv (inputCtx hooks program input).program mid ∧
-      conclude hooks (inputCtx hooks program input) (.ofRoot .input) cause element owner mid = .ok moved ∧
-      settle hooks (inputCtx hooks program input) closureBound closureWorkBound (RunLog.record {} (.ofRoot .input)) moved =
-        .ok settled ∧ orderJournal (.ok settled) = .ok after := by
-  rcases step_ok ran with ⟨payload, rfl, _, ⟨_, _, _, settled, clocked, stepped, settling, made, chosen⟩⟩ | ⟨_, _, _, ran⟩
-  · have fresh : inv (inputCtx hooks program (.start payload)).program
-        (((State.initial payload.instanceId payload.variables payload.businessKey).signal
-          (.armScope State.root)).queueBatch (.ofRoot .seed)) := by
-      rw [inputCtx_program]
-      exact initial _ _ _
-    obtain ⟨fired, admittedFired, picked⟩ := chosen
-    rw [admittedStartsFired_eq] at admittedFired
-    have firedRoot : hooks.startsFired (inputCtx hooks program (.start payload)) payload = .ok fired := by
-      cases admitting : admitValues (inputCtx hooks program (.start payload)).program.options.bounds
-          (payload.variables.map (·.2)) <;>
-        simp_all [SeqRight.seqRight, Except.bind]
-    have rooted := contract.startsFired _ _ _ firedRoot _ (Laws.Hooks.chooseStart_mem picked)
-    obtain ⟨mid, kept, concluded⟩ := microStep_concludes phases pipeline
-      (fun _ begun => begin_keeps contract phases facts (advanceClock_keeps phases fresh clocked) admitted_fresh
-        (.inl ⟨rfl, rfl, .inr ⟨rfl, rfl, rooted⟩⟩) begun)
-      stepped
-    exact ⟨mid, _, _, _, _, settled, kept, concluded, settling, made⟩
-  · obtain ⟨_, _, rest⟩ := onRunning_ok ran
-    obtain ⟨_, _, present, _⟩ := rest
-    simp at present
-
-/-- `Step.step` settles in a state that keeps `inv` of the program it runs, whose journal and intents ordered by the
-run log are the committed state's, for hooks that keep their contract, from a before-state that keeps it, or, for a start, when a fresh instance
-with its root's Event Sub-Process starts queued for arming keeps it. -/
-theorem step_settles (contract : HookContract hooks inv) (phases : ClosurePhases inv) (facts : StateFacts)
-    (pipeline : PipelineKeeps hooks inv)
-    (reset : ∀ program state, inv program state →
-      inv program { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] }) {program : Program}
-    (initial : ∀ instanceId variables businessKey,
-      inv program ((State.initial instanceId variables businessKey).signal (.armScope State.root)))
-    {before : Option State} {input : Input} {after : State} (entry : ∀ state, before = some state → inv program state)
-    (ran : step hooks program before input = .ok after) :
-    ∃ settled : State × RunLog, inv program settled.1 ∧ orderJournal (.ok settled) = .ok after := by
-  cases before with
-  | some state => exact running_settles contract phases facts pipeline (reset _ _ (entry state rfl)) ran
-  | none =>
-    obtain ⟨mid, _, _, rest₁⟩ := start_concludes contract phases.toBodyPhases
-      facts pipeline (fun _ _ _ => phases.queueBatch _ _ _ (initial _ _ _)) ran
-    obtain ⟨_, _, settled, rest₂⟩ := rest₁
-    obtain ⟨kept, concluded, settling, made⟩ := rest₂
-    have done := settle_keeps contract phases facts pipeline _ _ _ _ _ (conclude_keeps contract phases kept concluded)
-      settling
+    have done := input_carries contract phases facts pipeline framing based runs
+      (advanceClock_keeps phases.toBodyPhases entered clocked) (advanceClock_between (reset_between committed) clocked)
+      stepped settling
     rw [inputCtx_program] at done
-    exact ⟨settled, done, made⟩
+    exact ⟨start, settled, done, made⟩
 
-/-- `Step.step` keeps `inv` of the program it runs for hooks that keep their contract, from a before-state that keeps
-it, or, for a start, when a fresh instance with its root's Event Sub-Process starts queued for arming keeps it. -/
-theorem step_keeps (contract : HookContract hooks inv) (phases : Phases inv) (facts : StateFacts)
-    (pipeline : PipelineKeeps hooks inv)
-    (reset : ∀ program state, inv program state →
-      inv program { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] }) {program : Program}
-    (initial : ∀ instanceId variables businessKey,
-      inv program ((State.initial instanceId variables businessKey).signal (.armScope State.root)))
-    {before : Option State} {input : Input} {after : State} (entry : ∀ state, before = some state → inv program state)
-    (ran : step hooks program before input = .ok after) : inv program after := by
-  obtain ⟨settled, kept, made⟩ := step_settles contract phases.toClosurePhases facts pipeline reset initial entry ran
-  exact phases.runOrder _ _ settled.2 kept _ made
+end Walk
 
 end Keeps
 

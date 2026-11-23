@@ -1,6 +1,6 @@
 module
 
-public import Kernel.Laws.Step.Keeps
+public import Kernel.Laws.Step.Commits
 public import Kernel.Laws.State.Begin
 public import Kernel.Laws.State.Chain
 public import Kernel.Laws.State.Variables
@@ -45,15 +45,16 @@ namespace Kernel.Proofs.State
 open Kernel
 open Kernel.Laws.State (WellFormed)
 
-/-- A committed input keeps the state well-formed under the program it runs. -/
+/-- A committed input keeps a committed state well-formed under the program it runs, and commits one. -/
 def StepKeepsWellFormed (hooks : Hooks) : Prop :=
   ∀ (program : Program) (input : Input) (before after : State),
-    WellFormed program before → Step.step hooks program (some before) input = .ok after → WellFormed program after
+    WellFormed program before → Laws.State.Committed before → Step.step hooks program (some before) input = .ok after →
+      WellFormed program after ∧ Laws.State.Committed after
 
-/-- A committed start makes a state well-formed under the program it runs. -/
+/-- A committed start makes a committed state well-formed under the program it runs. -/
 def StartIsWellFormed (hooks : Hooks) : Prop :=
   ∀ (program : Program) (input : Input) (after : State),
-    Step.step hooks program none input = .ok after → WellFormed program after
+    Step.step hooks program none input = .ok after → WellFormed program after ∧ Laws.State.Committed after
 
 /-- Every instance a committed population run holds is well-formed under its deployment's program: `Population`
 reaches an instance only through `Step.step` of that program, from no state or from one it holds. -/
@@ -97,7 +98,7 @@ theorem stateFacts : Laws.Step.StateFacts where
   reserve state element scope := by
     have reserves := Laws.State.reserve_reserves state element scope
     exact ⟨reserves.occurrences, reserves.kind, reserves.placed,
-      fun standing => reserves.fresh (by rw [reserves.placed]; exact standing), reserves.scopes,
+      fun fresh standing => reserves.fresh fresh (by rw [reserves.placed]; exact standing), reserves.scopes,
       by rw [Laws.State.reserve_slots]⟩
   removeOccurrence state id := by
     rw [Laws.State.removeOccurrence_eq]
@@ -131,28 +132,87 @@ theorem endInstance_wellFormed {program : Program} {state : State} {status : Ins
     WellFormed program (Step.endInstance status failure state) :=
   Laws.Step.endInstance_eq ▸ Laws.State.endInstance_wellFormed formed recorded
 
+/-- What a closure keeps relative to the state it starts from beside `WellFormed`: the counters the commit compacts
+under and every occurrence under its own scope occurrence's key (`Laws.Step.Phases.runOrder`, DC12, DC26). -/
+abbrev KeysAux (start : State) (program : Program) (s : State) : Prop :=
+  WellFormed program s ∧ Laws.State.CountersFrom start s ∧
+    ∀ occurrence ∈ s.occurrences, occurrence.id.scope = occurrence.scope
+
+/-- A start's fresh instance with its root's Event Sub-Process starts queued for arming holds no issue, no transition
+and no occurrence, as every fresh instance (`Laws.State.initial_committed`). -/
+theorem initial_between (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
+    Laws.Step.Between
+      (((State.initial instanceId variables businessKey).signal (.armScope State.root)).queueBatch (.ofRoot .seed)) ∧
+      ∀ occurrence ∈ (((State.initial instanceId variables businessKey).signal (.armScope State.root)).queueBatch
+        (.ofRoot .seed)).occurrences, occurrence.id.scope = occurrence.scope := by
+  have committed := Laws.State.initial_committed instanceId variables businessKey
+  rw [Laws.State.queueBatch_eq, Laws.State.signal_eq]
+  exact ⟨⟨fun _ => by simp [committed.issued], by simp [committed.closed]⟩, committed.keyed⟩
+
+/-- `Step.step` keeps `inv`, an invariant beside `WellFormed`, for hooks that keep their contract, from a committed
+before-state that keeps it, or, for a start, when a fresh instance with its root's Event Sub-Process starts queued for
+arming keeps it, and commits: the walk of `Laws.Step.step_keeps`, with the closure's start relative to `KeysAux`. -/
+theorem step_keeps {hooks : Hooks} {inv : Program → State → Prop} (contract : Laws.Step.HookContract hooks inv)
+    (phases : Laws.Step.Phases inv) (pipeline : Laws.Step.PipelineKeeps hooks inv)
+    (framing : Laws.Step.Framing hooks WellFormed) (counters : Laws.Step.StartKeeps hooks KeysAux)
+    (based : ∀ program s, inv program s → WellFormed program s)
+    (reset : ∀ program state, inv program state → Laws.State.Committed state →
+      inv program { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] })
+    {program : Program}
+    (initial : ∀ instanceId variables businessKey,
+      inv program ((State.initial instanceId variables businessKey).signal (.armScope State.root)))
+    {before : Option State} {input : Input} {after : State}
+    (held : ∀ state, before = some state → inv program state ∧ Laws.State.Committed state)
+    (ran : Step.step hooks program before input = .ok after) : inv program after ∧ Laws.State.Committed after :=
+  Laws.Step.step_keeps contract phases stateFacts pipeline counters framing based (fun _ _ _ held => held.1)
+    (fun _ _ formed keys => ⟨based _ _ formed, .refl _, keys⟩) (fun _ _ _ held => held.2.1)
+    (fun _ _ _ held _ => held.2.2) (fun state unit => Laws.State.queueBatch_unbatched state unit) reset initial
+    initial_between held ran
+
+/-- `Step.step` on a running instance keeps `inv`, an invariant beside `WellFormed`, for hooks that keep their contract,
+from a committed before-state whose input start keeps it, and leaves a committed state: the walk of
+`Laws.Step.running_keeps`, with the closure's start relative to `KeysAux`. -/
+theorem running_keeps {hooks : Hooks} {inv : Program → State → Prop} (contract : Laws.Step.HookContract hooks inv)
+    (phases : Laws.Step.Phases inv) (pipeline : Laws.Step.PipelineKeeps hooks inv)
+    (framing : Laws.Step.Framing hooks WellFormed) (counters : Laws.Step.StartKeeps hooks KeysAux)
+    (based : ∀ program s, inv program s → WellFormed program s) {program : Program} {before : State} {input : Input}
+    {after : State} (committed : Laws.State.Committed before)
+    (holds : inv program { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [] })
+    (ran : Step.step hooks program (some before) input = .ok after) : inv program after ∧ Laws.State.Committed after :=
+  Laws.Step.running_keeps contract phases stateFacts pipeline counters framing based (fun _ _ _ held => held.1)
+    (fun _ _ formed keys => ⟨based _ _ formed, .refl _, keys⟩) (fun _ _ _ held => held.2.1)
+    (fun _ _ _ held _ => held.2.2) (fun state unit => Laws.State.queueBatch_unbatched state unit) committed holds ran
+
 /-- The composition of the state-invariant lane: hooks that keep their contract (`Laws.Step.HookContract`) and the
-phases of `Step` (`Laws.Step.Phases`, `Laws.Step.PipelinePhases`) keep `WellFormed` through every committed input. -/
+phases of `Step` (`Laws.Step.Phases`, `Laws.Step.PipelinePhases`) keep `WellFormed` through every committed input, with
+the issuer resets (`Laws.Step.Framing`) and what the commit compacts under (`KeysAux`). -/
 theorem stepKeepsWellFormed {hooks : Hooks} (contract : Laws.Step.HookContract hooks WellFormed)
-    (phases : Laws.Step.Phases WellFormed) (pipeline : Laws.Step.PipelinePhases WellFormed) : StepKeepsWellFormed hooks :=
-  fun _ _ _ _ formed ran => Laws.Step.running_keeps contract phases stateFacts
-    (Laws.Step.complete_keeps contract phases.toBodyPhases pipeline stateFacts) (Laws.State.reset_wellFormed formed) ran
+    (phases : Laws.Step.Phases WellFormed) (pipeline : Laws.Step.PipelinePhases WellFormed)
+    (framing : Laws.Step.Framing hooks WellFormed) (counters : Laws.Step.StartKeeps hooks KeysAux) :
+    StepKeepsWellFormed hooks :=
+  fun _ _ _ _ formed committed ran => running_keeps contract phases
+    (Laws.Step.complete_keeps contract phases.toBodyPhases pipeline stateFacts) framing counters (fun _ _ => id)
+    committed (Laws.State.reset_wellFormed formed committed) ran
 
 /-- A committed start makes a well-formed state, from the same obligations and a well-formed fresh instance with its
 root's Event Sub-Process starts queued for arming. -/
 theorem startIsWellFormed {hooks : Hooks} (contract : Laws.Step.HookContract hooks WellFormed)
     (phases : Laws.Step.Phases WellFormed) (pipeline : Laws.Step.PipelinePhases WellFormed)
+    (framing : Laws.Step.Framing hooks WellFormed) (counters : Laws.Step.StartKeeps hooks KeysAux)
     (initial : ∀ program instanceId variables businessKey,
       WellFormed program ((State.initial instanceId variables businessKey).signal (.armScope State.root))) :
     StartIsWellFormed hooks :=
-  fun program _ _ ran => Laws.Step.step_keeps contract phases stateFacts
-    (Laws.Step.complete_keeps contract phases.toBodyPhases pipeline stateFacts) (fun _ _ => Laws.State.reset_wellFormed)
-    (initial program) (fun _ given => by simp at given) ran
+  fun program _ _ ran => step_keeps contract phases (Laws.Step.complete_keeps contract phases.toBodyPhases pipeline
+    stateFacts) framing counters (fun _ _ => id) (fun _ _ => Laws.State.reset_wellFormed) (initial program)
+    (fun _ given => by simp at given) ran
 
 /-- A population run keeps every instance well-formed under its deployment's program when `Step.step` does
-(`Laws.Population.runStimuli_held`). -/
+(`Laws.Population.runStimuli_held`): every state it holds is committed, so each step starts from a committed one. -/
 theorem populationKeepsWellFormed {hooks : Hooks} (steps : StepKeepsWellFormed hooks) (starts : StartIsWellFormed hooks) :
     PopulationKeepsWellFormed hooks :=
-  fun _ _ _ ran => Laws.Population.runStimuli_held ⟨steps, starts⟩ ran
+  fun _ _ _ ran instance_ member =>
+    (Laws.Population.runStimuli_held (good := fun program s => WellFormed program s ∧ Laws.State.Committed s)
+      ⟨fun _ _ _ _ holds stepped => steps _ _ _ _ holds.1 holds.2 stepped, fun _ _ _ stepped => starts _ _ _ stepped⟩
+      ran instance_ member).1
 
 end Kernel.Proofs.State

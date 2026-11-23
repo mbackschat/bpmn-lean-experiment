@@ -79,16 +79,18 @@ private theorem keys_nodup (formed : WellFormed program s) {gone : List Occurren
 private theorem held_record (kept : EndsKept b x s) (step : EndsStep s t spare) {o : Occurrence}
     (member : o ∈ b.occurrences) (begun : o.begun = true) {o' : Occurrence} (inside : o' ∈ t.occurrences)
     (same : o'.id = o.id) : o' = o ∧ o ∈ s.occurrences ∧ key t o' = key s o := by
-  rcases step.held o' inside with ⟨old, held, named, ⟨keyed, unchanged⟩⟩ | ⟨fresh, _⟩
+  rcases step.held o' inside with ⟨old, held, named, ⟨keyed, unchanged⟩⟩ | ⟨fresh, _⟩ | ⟨_, _, takes⟩
   · obtain rfl := kept.records o member begun old held (named.symm.trans same)
     obtain rfl := unchanged begun
     exact ⟨rfl, held, keyed⟩
   · exact absurd (by rw [same]; exact kept.issued _ (kept.below o member)) fresh
+  · exact absurd (by rw [same]; exact kept.issued _ (kept.below o member)) takes.fresh
 
 /-- The parts of `EndsKept` that no exemption reads pass through an operation that frames the end facts. -/
 private theorem advance_common (formed : WellFormed program s) (kept : EndsKept b x s) (step : EndsStep s t spare)
     {gone : List Occurrence} (perm : (endKeys t).Perm (endKeys s ++ gone.map (key s)))
-    (ids : (gone.map (·.id)).Nodup) (within : ∀ o ∈ gone, o ∈ s.occurrences ∧ spare ≠ some o.id ∧ o.id ∉ occurrenceIds t) :
+    (ids : (gone.map (·.id)).Nodup)
+    (within : ∀ o ∈ gone, o ∈ s.occurrences ∧ spare ≠ some o.id ∧ o.id ∉ occurrenceIds t ∧ o.begun = true) :
     (∀ o ∈ b.occurrences, o.begun = true → ∀ o' ∈ t.occurrences, o'.id = o.id → o' = o) ∧
     (∀ o ∈ b.occurrences, o.begun = true → o ∈ t.occurrences → key t o = key b o) ∧
     (endKeys t).Nodup ∧ (∀ o ∈ t.occurrences, key t o ∉ endKeys t) ∧ ∀ k ∈ endKeys t, Counted t k := by
@@ -102,14 +104,17 @@ private theorem advance_common (formed : WellFormed program s) (kept : EndsKept 
     obtain ⟨o, inside, rfl⟩ := List.mem_map.mp new
     exact kept.present o (within o inside).1 (same ▸ old)
   · rcases List.mem_append.mp (perm.mem_iff.mp ended) with old | new
-    · rcases step.held o' inside with ⟨o, held, _, ⟨keyed, _⟩⟩ | ⟨_, uncounted⟩
+    · rcases step.held o' inside with ⟨o, held, _, ⟨keyed, _⟩⟩ | ⟨_, uncounted⟩ | ⟨o, held, takes⟩
       · exact kept.present o held (keyed ▸ old)
       · exact uncounted (kept.counted _ old)
+      · exact kept.present o held (takes.keyed ▸ old)
     · obtain ⟨g, inGone, keyed⟩ := List.mem_map.mp new
-      rcases step.held o' inside with ⟨o, held, named, ⟨keyedHeld, _⟩⟩ | ⟨_, uncounted⟩
+      rcases step.held o' inside with ⟨o, held, named, ⟨keyedHeld, _⟩⟩ | ⟨_, uncounted⟩ | ⟨o, held, takes⟩
       · obtain rfl := Laws.State.nodup_map_eq formed.distinct.keys (within g inGone).1 held (keyed.trans keyedHeld)
-        exact (within g inGone).2.2 (named ▸ List.mem_map.mpr ⟨o', inside, rfl⟩)
+        exact (within g inGone).2.2.1 (named ▸ List.mem_map.mpr ⟨o', inside, rfl⟩)
       · exact uncounted (keyed ▸ goneCounted g inGone)
+      · obtain rfl := Laws.State.nodup_map_eq formed.distinct.keys (within g inGone).1 held (keyed.trans takes.keyed)
+        exact absurd (within g inGone).2.2.2 (by simp [takes.unbegun])
   · rcases List.mem_append.mp (perm.mem_iff.mp ended) with old | new
     · exact counted_grow step.grow (kept.counted k old)
     · obtain ⟨g, inGone, rfl⟩ := List.mem_map.mp new
@@ -146,16 +151,18 @@ theorem EndsKept.step (formed : WellFormed program s) (kept : EndsKept b x s) (s
   refine ⟨step.issued _ issued, fun held => ?_, fun ended => ?_, fun o' inside same => ?_,
     counted_grow step.grow countedY, keyed⟩
   · obtain ⟨o', inside, same⟩ := List.mem_map.mp held
-    rcases step.held o' inside with ⟨o, old, named, ⟨_, _⟩⟩ | ⟨fresh, _⟩
+    rcases step.held o' inside with ⟨o, old, named, ⟨_, _⟩⟩ | ⟨fresh, _⟩ | ⟨_, _, takes⟩
     · exact absent (List.mem_map.mpr ⟨o, old, named.symm.trans same⟩)
     · exact fresh (by rw [same]; exact issued)
+    · exact takes.fresh (by rw [same]; exact issued)
   · rcases List.mem_append.mp (perm.mem_iff.mp ended) with old | new
     · exact unended old
     · obtain ⟨g, inGone, keyed⟩ := List.mem_map.mp new
       exact unheld g (within g inGone).1 keyed
-  · rcases step.held o' inside with ⟨o, old, _, ⟨keyedHeld, _⟩⟩ | ⟨_, uncounted⟩
+  · rcases step.held o' inside with ⟨o, old, _, ⟨keyedHeld, _⟩⟩ | ⟨_, uncounted⟩ | ⟨o, old, takes⟩
     · exact unheld o old (keyedHeld ▸ same)
     · exact uncounted (same ▸ countedY)
+    · exact unheld o old (takes.keyed ▸ same)
 
 /-- Removing the begun occurrence `occurrence` without journalling its end exempts it: it is gone, and its key is
 neither ended nor held. -/
@@ -177,10 +184,12 @@ theorem EndsKept.remove (formed : WellFormed program s) (kept : EndsKept b none 
     · obtain ⟨g, inGone, keyed⟩ := List.mem_map.mp new
       obtain rfl := Laws.State.nodup_map_eq formed.distinct.keys (within g inGone).1 member keyed
       exact (within g inGone).2.1 rfl
-  · rcases step.held o' inside with ⟨o, old, sameId, ⟨keyedHeld, _⟩⟩ | ⟨_, uncounted⟩
+  · rcases step.held o' inside with ⟨o, old, sameId, ⟨keyedHeld, _⟩⟩ | ⟨_, uncounted⟩ | ⟨o, old, takes⟩
     · obtain rfl := Laws.State.nodup_map_eq formed.distinct.keys old member (keyedHeld.symm.trans same)
       exact gone (sameId ▸ List.mem_map.mpr ⟨o', inside, rfl⟩)
     · exact uncounted (same ▸ formed.occurrencesCounted occurrence member)
+    · obtain rfl := Laws.State.nodup_map_eq formed.distinct.keys old member (takes.keyed.symm.trans same)
+      exact takes.spared rfl
   · obtain rfl := kept.records o inB begun occurrence member named.symm
     exact (kept.keys occurrence inB begun member).symm
 
@@ -246,6 +255,11 @@ theorem EndsKept.unmoved {b s t : State} {x : Option (OccurrenceId × Occurrence
   · obtain ⟨below, absent, unended, ⟨unheld, countedY, keyed⟩⟩ := kept.pending y named
     exact ⟨issued _ below, ids ▸ absent, fun ended => unended (ends.mem_iff.mp ended),
       fun o inside => (same o) ▸ unheld o (occurrences ▸ inside), Laws.State.Counted.congr counters countedY, keyed⟩
+
+/-- Moving the issuer keeps `EndsKept`. -/
+theorem EndsKept.reissue {b : State} {x : Option (OccurrenceId × OccurrenceKey)} (s : State) (unit : UnitKey)
+    (kept : EndsKept b x s) : EndsKept b x { s with issuing := unit, issueNext := 0 } :=
+  kept.unmoved rfl rfl ⟨rfl, rfl⟩ (.refl _) (.refl _)
 
 /-! ### The completion pipeline -/
 
@@ -358,8 +372,8 @@ theorem ClosureStep.microStep {hooks : Hooks} {ctx : Ctx} {log : RunLog} {unit :
     obtain ⟨cause, element, owner, rest₁⟩ := moveToken_microStep ran
     obtain ⟨body, moved⟩ := rest₁
     exact ⟨cause, element, owner, body, _, moved⟩
-  | idle _ _ _ _ ran => exact ⟨_, _, _, _, _, ran⟩
-  | reoffer _ _ _ _ _ ran => exact ⟨_, _, _, _, _, ran⟩
+  | idle _ _ _ _ _ ran => exact ⟨_, _, _, _, _, ran⟩
+  | reoffer _ _ _ _ _ _ ran => exact ⟨_, _, _, _, _, ran⟩
   | finish _ _ _ _ _ _ _ ran => exact ⟨_, _, _, _, _, ran⟩
 
 /-- A committed micro-step leaves a draft `keeps` holds of when it holds of the empty draft and the hooks
@@ -371,8 +385,8 @@ theorem microStep_draft {hooks : Hooks} {keeps : Draft → Prop} (empty : keeps 
       keeps after.draft)
     {ctx : Ctx} {unit : UnitKey} {cause : Cause} {element : Option ElementId} {owner : ScopeOccurrenceId}
     {body : State → Outcome} {state after : State} (ran : microStep hooks ctx unit cause element owner body state = .ok after) : keeps after.draft := by
-  obtain ⟨_, _, _, ⟨_, concluded⟩⟩ := microStep_ok ran
-  obtain ⟨_, notified, written', rest₁⟩ := conclude_ok concluded
+  obtain ⟨_, _, _, ⟨_, _, _, concluded⟩⟩ := microStep_ok ran
+  obtain ⟨notified, written', rest₁⟩ := conclude_ok concluded
   obtain ⟨notifying, writing, rfl⟩ := rest₁
   have fold : ∀ (occurrences : List Occurrence) (start finish : State), keeps start.draft →
       occurrences.foldlM (fun state occurrence => hooks.cancelled ctx occurrence state) start = .ok finish →

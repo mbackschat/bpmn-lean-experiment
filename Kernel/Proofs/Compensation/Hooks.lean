@@ -468,7 +468,12 @@ theorem advance_formed {precedes : Compensable → Compensable → Prop} {ctx : 
           fun (run : CompensationRun) => (run.scope, run.trigger)) := by simp
     refine ⟨⟨post.tame.retained, ?_, fun other inside => ?_, fun other inside context running => ?_, post.tame.scopes,
       fun other inside context resumed' => ?_, post.tame.parents,
-      fun other inside context running entry entered named => ?_⟩, ?_, fun n => ?_, fun other inside => ?_,
+      fun other inside context running entry entered named => ?_, post.tame.issuer.same rfl rfl rfl rfl,
+      fun other inside grouped => by
+        rcases List.mem_append.mp inside with old | new
+        · exact post.tame.groupsStanding other (List.mem_filter.mp old).1 grouped
+        · rw [List.mem_singleton.mp new] at grouped ⊢; exact post.tame.groupsStanding run member grouped⟩,
+      ?_, fun n => ?_, fun other inside => ?_,
       fun _ other inside differs => ?_, fun other inside keyed' => ?_, fun other inside differs' => ?_,
       fun _ => ⟨fun record below => post.retained record below, fun other inside => ?_⟩,
       fun _ entry inside => post.scopesKept entry inside⟩
@@ -498,7 +503,7 @@ theorem advance_formed {precedes : Compensable → Compensable → Prop} {ctx : 
         · exact post.tame.runningIn run member context held entry entered named
         · show entry.id.parent? = some run.scope
           rw [named, post.parented context begun', first.1.1]
-    · refine post.moves.trans ⟨Nat.le_refl _, .of_same rfl rfl, fun entry inside => .inl inside, rfl, rfl,
+    · refine post.moves.trans ⟨Nat.le_refl _, .of_same rfl rfl (.of_eq rfl), fun entry inside => .inl inside, rfl, rfl,
         ⟨[], by simp [stored, Laws.State.allSignals], by simp⟩,
         fun key => ?_, fun other inside => ?_, fun _ inside => inside⟩
       · have same := ((split.filter (!resumesGroup ·.resume)).map (·.trigger)).count_eq key
@@ -637,10 +642,10 @@ theorem released_formed (hooks : Hooks) {ctx : Ctx} {context : ScopeOccurrenceId
     Formed (DependsIn hooks footprintReads footprintWrites ctx.program) t := by
   obtain ⟨less, _, rfl, _⟩ := Laws.Compensation.release_spec ran
   have post := (runs_form (precedes_dependsIn hooks ctx) (less + 1)).2.1 _ _ _
-    (tame_of before formed.retained formed.keyed formed.runsIssued) stands ran
+    (tame_of before formed.retained formed.keyed formed.runsIssued formed.groupsStanding) stands ran
   exact formed_of formed post.tame.retained post.tame.keyed post.tame.runsIssued
     (apart_of_counts post.counted formed.completions formed.issued post.moves.issued) post.runs
-    (triggers_moved before (.refl s) after post.moves formed.triggers formed.ungrouped)
+    (triggers_moved before (.refl s) after post.moves formed.triggers formed.ungrouped) post.tame.groupsStanding
 
 theorem handlerCompleted_formed (hooks : Hooks) {ctx : Ctx} {occurrence : Occurrence}
     {s t : State} (before : WellFormed ctx.program s)
@@ -667,12 +672,13 @@ theorem dropWithin_formed (hooks : Hooks) {ctx : Ctx} {scope : ScopeOccurrenceId
     Formed (DependsIn hooks footprintReads footprintWrites ctx.program) (Feature.Compensation.dropWithin ctx scope s) := by
   have fewer := List.filter_sublist (p := fun run => !(s.subtree scope).contains run.scope)
     (l := s.slots.compensation.runs)
-  have tame := tame_fewer (tame_of before formed.retained formed.keyed formed.runsIssued) fewer
+  have tame := tame_fewer (tame_of before formed.retained formed.keyed formed.runsIssued formed.groupsStanding) fewer
   have moves := moves_fewer s fewer
   rw [Laws.Compensation.dropWithin_spec, store_stored] at after ⊢
   exact formed_of formed tame.retained tame.keyed tame.runsIssued
     (apart_of_counts (counted_fewer s fewer) formed.completions formed.issued moves.issued)
     (fun run inside => .inl (fewer.subset inside)) (triggers_moved before (.refl s) after moves formed.triggers formed.ungrouped)
+    tame.groupsStanding
 
 theorem failCompensation_formed (hooks : Hooks) {ctx : Ctx} {handler : ScopeOccurrenceId} {code : String}
     {message : Option String} {origin : Origin} {s t : State}
@@ -687,7 +693,7 @@ theorem failCompensation_formed (hooks : Hooks) {ctx : Ctx} {handler : ScopeOccu
 /-- Retaining other records in place of `s`'s, the counter stepped by `issued`, moves nothing else. -/
 theorem moves_retained (s : State) (retained : List Compensable) {next : Nat} (issued : s.nextPosition ≤ next) :
     Moves s (stored { s with nextPosition := next } { s.slots.compensation with retained }) :=
-  ⟨issued, .of_same rfl rfl, fun _ inside => .inl inside, rfl, rfl, ⟨[], by simp [stored, Laws.State.allSignals], by simp⟩, fun _ => Nat.le_refl _,
+  ⟨issued, .of_same rfl rfl (.of_eq rfl), fun _ inside => .inl inside, rfl, rfl, ⟨[], by simp [stored, Laws.State.allSignals], by simp⟩, fun _ => Nat.le_refl _,
     fun run inside => ⟨run, inside, rfl⟩, fun _ inside => inside⟩
 
 theorem completed_formed (hooks : Hooks) {ctx : Ctx} {occurrence : Occurrence} {s t : State}
@@ -713,7 +719,7 @@ theorem completed_formed (hooks : Hooks) {ctx : Ctx} {occurrence : Occurrence} {
     have moves := moves_retained s (outer ++ inner.map fun record => { record with scope := target }) (Nat.le_refl _)
     refine formed_of formed (fun record inside => ?_) formed.keyed formed.runsIssued
       (apart_of_counts (fun n => ?_) formed.completions formed.issued (Nat.le_refl _)) (fun _ inside => .inl inside)
-      (triggers_moved before (.refl s) after moves formed.triggers formed.ungrouped)
+      (triggers_moved before (.refl s) after moves formed.triggers formed.ungrouped) formed.groupsStanding
     · simp only [stored, List.mem_append, List.mem_map] at inside
       rcases inside with old | ⟨_, _, rfl⟩
       · exact outerPresent record old
@@ -729,7 +735,7 @@ theorem completed_formed (hooks : Hooks) {ctx : Ctx} {occurrence : Occurrence} {
     refine formed_of formed (fun record' inside => ?_) formed.keyed
       (fun run inside => formed.runsIssued run inside)
       (apart_of_fresh (fun n => ?_) formed.completions formed.issued rfl) (fun _ inside => .inl inside)
-      (triggers_moved before (.refl s) after moves formed.triggers formed.ungrouped)
+      (triggers_moved before (.refl s) after moves formed.triggers formed.ungrouped) formed.groupsStanding
     · simp only [stored, List.mem_append, List.mem_singleton] at inside
       rcases inside with old | rfl
       · exact outerPresent record' old
@@ -780,7 +786,7 @@ theorem compensate_formed (hooks : Hooks) {ctx : Ctx} {scope : ScopeOccurrenceId
     obtain ⟨entry, inside, rfl⟩ := stands
     exact before.issued.scopes entry inside
   have opening := tame_opened (others := others) (run := { trigger, scope, pending := taken, leave, resume })
-    (tame_of before formed.retained formed.keyed formed.runsIssued)
+    (tame_of before formed.retained formed.keyed formed.runsIssued formed.groupsStanding)
     (fun record inside => perm.subset (List.mem_append_right _ inside)) fresh.1 below rfl fresh.2
   have post := (runs_form (precedes_dependsIn hooks ctx) (less + 1)).1 _ _ _ _ opening (List.mem_map.mpr stands) advanced
   have triggers := triggers_opened (others := others) (run := { trigger, scope, pending := taken, leave, resume })
@@ -788,8 +794,8 @@ theorem compensate_formed (hooks : Hooks) {ctx : Ctx} {scope : ScopeOccurrenceId
   refine formed_of formed post.tame.retained post.tame.keyed post.tame.runsIssued
     (apart_of_counts (fun n => Nat.le_trans (post.counted n) (Nat.le_of_eq (count_opened perm rfl rfl n))) formed.completions
       formed.issued post.moves.issued) (fun run inside => ?_)
-    (triggers_moved before (⟨rfl, rfl, rfl, rfl, rfl⟩ : Twin s (opened s others _)) after post.moves triggers.1
-      triggers.2)
+    (triggers_moved before (⟨rfl, rfl, rfl, rfl, rfl, rfl⟩ : Twin s (opened s others _)) after post.moves triggers.1
+      triggers.2) post.tame.groupsStanding
   rcases post.runs run inside with ⟨held, other⟩ | good
   · simp only [opened, stored, List.mem_append, List.mem_singleton] at held
     rcases held with old | rfl

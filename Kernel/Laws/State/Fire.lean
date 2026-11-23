@@ -37,7 +37,7 @@ theorem closeItem_fired {s : State} (formed : WellFormed program s) {item : Open
   refine ⟨formed.narrow {
       scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := fun _ => by apply instanceOf_congr <;> rfl, recorded := id, items := .erase _, tokens := .refl _,
-      signals := .refl _, starts := fun _ => id, slots := .same rfl } rfl formed.startedOnce, ?_⟩
+      signals := .refl _, starts := fun _ => id, slots := .same rfl, issued := rfl, issuing := rfl, issueNext := rfl } rfl formed.startedOnce, ?_⟩
   obtain ⟨waited, present, named, ⟨_, placed⟩⟩ := formed.owned.itemOccurrences item member
   have closed : ∀ other ∈ itemList ({ s with openItems := s.openItems.erase item.id } : State).openItems,
       other ∈ itemList s.openItems ∧ other ≠ item :=
@@ -164,7 +164,7 @@ theorem withdrawInside_fired {s : State} (formed : WellFormed program s) {item :
       scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := instanceOf_congr rfl rfl,
       recorded := id, items := .filter _, tokens := .refl _, signals := .refl _, starts := fun _ => id,
-      slots := .same rfl } rfl formed.startedOnce,
+      slots := .same rfl, issued := rfl, issuing := rfl, issueNext := rfl } rfl formed.startedOnce,
     fired.shrink rfl rfl rfl rfl (.refl _) rfl (fun _ inside => (mem_itemList_filter_val.mp (inside)).1) fun _ => id⟩
 
 /-- Disarming a host keeps what a fired item leaves. -/
@@ -216,8 +216,11 @@ theorem openSubscription_fired {s : State} (formed : WellFormed program s) {item
   generalize s.reserve element scope = pair at reserves
   obtain ⟨t, reservation⟩ := pair
   dsimp only at reserves ⊢
-  have fresh : ¬ OccurrenceIssued s reservation.id := reserves.fresh (reserves.placed ▸ stands)
-  refine fired.transport reserves.occurrenceGrows reserves.scopes
+  have fresh : ¬ OccurrenceIssued s reservation.id := reserves.fresh formed.issuer (reserves.placed ▸ stands)
+  have item : OccurrenceGrows t { t with issueNext := t.issueNext + 1
+                                         issued := t.issued.insert (.fresh t.issuing t.issueNext) (.item reservation.id) } :=
+    .of_same rfl rfl rfl (.insert (reserves.issuer formed.issuer).next rfl)
+  refine fired.transport ((reserves.occurrenceGrows formed.issuer).trans item) reserves.scopes
     (fun x => by rw [← reserves.instances x]; apply instanceOf_congr <;> rfl) (fun found inside => ?_)
     (fun other inside => ?_) (fun _ queued => queued.shrink (fun _ member => reserves.signals ▸ member) (fun _ member => reserves.tokens ▸ member))
     (fun _ _ _ queued => reserves.signals ▸ queued) (.same reserves.slots)
@@ -229,7 +232,7 @@ theorem openSubscription_fired {s : State} (formed : WellFormed program s) {item
       exact .inr fresh
   · have keyedT : KeyedBy t.openItems := by rw [reserves.itemMap.1]; exact formed.distinct.items
     rcases (mem_itemList_insert keyedT (item := other) (new :=
-        { id := ⟨reservation.id, .subscription, t.itemOrdinals.getD reservation.id 0⟩, position := t.nextPosition, kind,
+        { id := ⟨reservation.id, .subscription, .fresh t.issuing t.issueNext⟩, position := t.nextPosition, kind,
           element, scope, attachedTo := host, passive })).mp
       (inside) with new | ⟨old, _⟩
     · subst new

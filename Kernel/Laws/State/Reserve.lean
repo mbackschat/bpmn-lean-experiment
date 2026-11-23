@@ -1,6 +1,6 @@
 module
 
-public import Kernel.Laws.State.Issue
+public import Kernel.Laws.State.Begins
 
 /-! # Laws of the kernel state: reserving and starting where it stands
 
@@ -21,9 +21,9 @@ counters are keyed, joins the occurrences. Nothing else changes. -/
 structure Reserves (before after : State) (element : ElementId) (scope : ScopeOccurrenceId) (reserved : Occurrence) :
     Prop where
   occurrences : after.occurrences = before.occurrences ++ [reserved]
-  fresh : reserved.scope ∈ standingKeys before → ¬ OccurrenceIssued before reserved.id
-  issued : ScopeIssued before reserved.scope → OccurrenceIssued after reserved.id
-  occurrenceGrows : OccurrenceGrows before after
+  fresh : IssuerFresh before → reserved.scope ∈ standingKeys before → ¬ OccurrenceIssued before reserved.id
+  issued : IssuerFresh before → ScopeIssued before reserved.scope → OccurrenceIssued after reserved.id
+  occurrenceGrows : IssuerFresh before → OccurrenceGrows before after
   kind : reserved.element = element
   placed : reserved.scope = scope
   role : reserved.role = .element
@@ -32,6 +32,7 @@ structure Reserves (before after : State) (element : ElementId) (scope : ScopeOc
     Activated before after (before.instanceOf scope) element .element reserved.activation
   scopes : after.scopes = before.scopes
   scopeOrdinals : after.scopeOrdinals = before.scopeOrdinals
+  occurrenceOrdinals : after.occurrenceOrdinals = before.occurrenceOrdinals
   instances : ∀ x, after.instanceOf x = before.instanceOf x
   instanceId : after.instanceId = before.instanceId
   itemMap : after.openItems = before.openItems ∧ after.itemOrdinals = before.itemOrdinals
@@ -41,11 +42,17 @@ structure Reserves (before after : State) (element : ElementId) (scope : ScopeOc
   variables : after.variables = before.variables
   journal : after.journal = before.journal
   transitions : after.transitions = before.transitions
+  issuing : after.issuing = before.issuing
   draft : after.draft = before.draft
   status : after.status = before.status
   failure : after.failure = before.failure
   slots : after.slots = before.slots
   continued : reserved.continuation = .flow
+  /-- A reservation is keyed in the scope occurrence it is made in (DC26). -/
+  keyed : reserved.id.scope = scope
+  /-- The issue table only grows under a well-formed issuer, and a well-formed issuer stays one (DC12). -/
+  table : IssuerFresh before → TableGrows before after
+  issuer : IssuerFresh before → IssuerFresh after
 
 /-- The item list stays: the item map does (`itemMap`). -/
 theorem Reserves.items {before after : State} {element : ElementId} {scope : ScopeOccurrenceId} {reserved : Occurrence}
@@ -60,11 +67,11 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
     WellFormed program after ∧ ∀ request, Queued after request → reserved.id ∉ names request := by
   have keys : ∀ occurrence, key after occurrence = key before occurrence := fun _ => key_congr (reserves.instances _)
   have grows : ScopeGrows before after :=
-    .of_same (congrArg (List.map ScopeOccurrence.id) reserves.scopes) reserves.scopeOrdinals
-  have occurrenceGrows := reserves.occurrenceGrows
+    .of_same (congrArg (List.map ScopeOccurrence.id) reserves.scopes) reserves.scopeOrdinals (reserves.table formed.issuer)
+  have occurrenceGrows := reserves.occurrenceGrows formed.issuer
   have standsReserved : reserved.scope ∈ standingKeys before := reserves.placed ▸ stands
-  have fresh := reserves.fresh standsReserved
-  have issuedReserved : OccurrenceIssued after reserved.id := reserves.issued <| by
+  have fresh := reserves.fresh formed.issuer standsReserved
+  have issuedReserved : OccurrenceIssued after reserved.id := reserves.issued formed.issuer <| by
     obtain ⟨standing, member, named⟩ := List.mem_map.mp standsReserved
     exact named ▸ formed.issued.scopes standing member
   have activated := reserves.activated formed.activations
@@ -90,13 +97,23 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
   · exact fresh ((formed.claimed.named request (queuedBefore request queued)).2 _ named).1
   refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,
     ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled, ?attachedReserved, ?typed,
-    ?worked, ?roles, ?raises, ?bodyRoles, ?itemRoles⟩
+    ?worked, ?roles, ?raises, ?bodyRoles, ?itemRoles, ?issuer⟩
   case issued =>
     exact ⟨fun occurrence member => by
         rcases members occurrence member with rfl | old
         · exact issuedReserved
         · exact occurrenceGrows _ (formed.issued.occurrences occurrence old),
-      fun item member _ => reserves.itemMap.2 ▸ formed.itemBelow (reserves.items ▸ member),
+      fun item member => by
+        have member' := reserves.items ▸ member
+        obtain ⟨owner, below, tabled⟩ := formed.issued.items item member'
+        refine ⟨owner, fun ⟨found, present, same⟩ n committed => ?_,
+          fun unit index fresh => (reserves.table formed.issuer) _ _ (tabled unit index fresh)⟩
+        rw [reserves.itemMap.2]
+        rcases members found present with rfl | old
+        · obtain ⟨occurrence, inside, parts⟩ := formed.owned.itemOccurrences item member'
+          obtain ⟨named, -, -⟩ := parts
+          exact absurd (named.trans same.symm) (above occurrence inside)
+        · exact below ⟨found, old, same⟩ n committed,
       fun entry member => grows.issued (formed.issued.scopes entry (reserves.scopes ▸ member))⟩
   case distinct =>
     refine ⟨?_, reserves.itemMap.1 ▸ formed.distinct.items,
@@ -243,6 +260,7 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
     rcases members found inside with rfl | old
     · cases reserves.role.symm.trans body
     · exact .inr ⟨found, old, rfl, rfl⟩
+  case issuer => exact reserves.issuer formed.issuer
   case itemRoles =>
     intro item member found inside named
     rcases members found inside with rfl | old
@@ -281,6 +299,9 @@ structure StartsReserved (before after : State) (occurrence : Occurrence) (sourc
   status : after.status = before.status
   failure : after.failure = before.failure
   slots : after.slots = before.slots
+  issued : after.issued = before.issued
+  issuing : after.issuing = before.issuing
+  issueNext : after.issueNext = before.issueNext
 
 /-- The item list stays: the item map does (`itemMap`). -/
 theorem StartsReserved.items {before after : State} {occurrence : Occurrence} {sourceType : String}
@@ -295,9 +316,10 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
     (waitless : ∀ item ∈ itemList before.openItems, item.id.occurrence ≠ occurrence.id) : WellFormed program after := by
   have keys : ∀ other, key after other = key before other := fun _ => key_congr (starts_.instances _)
   have grows : ScopeGrows before after :=
-    .of_same (congrArg (List.map ScopeOccurrence.id) starts_.scopes) starts_.scopeOrdinals
+    .of_same (congrArg (List.map ScopeOccurrence.id) starts_.scopes) starts_.scopeOrdinals (.of_eq starts_.issued)
   have issued : OccurrenceGrows before after :=
     .of_same (congrArg (List.map ScopeOccurrence.id) starts_.scopes) starts_.scopeOrdinals starts_.occurrenceOrdinals
+      (.of_eq starts_.issued)
   have queuedBefore : ∀ request, Queued after request → Queued before request := fun request queued => by
     simpa [Queued, starts_.signals, starts_.tokens] using queued
   -- An occurrence after is the started one or one before with another identity.
@@ -325,13 +347,21 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
     fun old held other same => other (by rw [nodup_map_eq formed.distinct.keys held member same])
   refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,
     ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled, ?attachedReserved, ?typed,
-    ?worked, ?roles, ?raises, ?bodyRoles, ?itemRoles⟩
+    ?worked, ?roles, ?raises, ?bodyRoles, ?itemRoles, ?issuer⟩
   case issued =>
     exact ⟨fun found inside => by
         rcases members found inside with rfl | ⟨old, _⟩
         · exact issued _ (formed.issued.occurrences occurrence member)
         · exact issued _ (formed.issued.occurrences found old),
-      fun item inside _ => starts_.itemMap.2 ▸ formed.itemBelow (starts_.items ▸ inside),
+      fun item inside => by
+        have inside' := starts_.items ▸ inside
+        obtain ⟨owner, below, tabled⟩ := formed.issued.items item inside'
+        refine ⟨owner, fun ⟨found, present, same⟩ n committed => ?_,
+          fun unit index fresh => by rw [starts_.issued]; exact tabled unit index fresh⟩
+        rw [starts_.itemMap.2]
+        rcases members found present with rfl | ⟨held, _⟩
+        · exact below ⟨occurrence, member, same⟩ n committed
+        · exact below ⟨found, held, same⟩ n committed,
       fun entry inside => grows.issued (formed.issued.scopes entry (starts_.scopes ▸ inside))⟩
   case distinct =>
     refine ⟨?_, starts_.itemMap.1 ▸ formed.distinct.items,
@@ -500,6 +530,7 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
     rcases members found inside with rfl | ⟨old, _⟩
     · exact .inr ⟨occurrence, member, rfl, rfl⟩
     · exact .inr ⟨found, old, rfl, rfl⟩
+  case issuer => exact formed.issuer.same starts_.issued starts_.issuing starts_.issueNext starts_.transitions
   case itemRoles =>
     intro item held found inside named
     rcases members found inside with rfl | ⟨old, _⟩

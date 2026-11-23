@@ -66,22 +66,29 @@ export {
 };
 
 import {
-  childScope, compareOccurrenceId, compareScopeSlot, compareUnitKey, occurrenceId, type OccurrenceId, rootScope, scopeParent,
-  type ScopeSlot, signalUnit, tokenUnit, type UnitKey,
+  childScope, compareIssue, compareUnitKey, type Issue, occurrenceId, type OccurrenceId, occurrenceIdParts, rootScope, scopeParent,
+  issuerText, type ScopeSlot, signalUnit, tokenUnit, type UnitKey,
 } from "./state/key.js";
 export { type OccurrenceId };
+import { type ClaimSlot, ClaimSlotTag, type Issuer, type IssueTable, seedUnit } from "./state/issue.js";
 import {
   compareItemKey, insertItem, type ItemKey, itemAt, itemKeyText, ItemRole, itemsByPosition, type OpenItem, type OpenItems, sameItemKey,
 } from "./state/items.js";
 export {
   compareItemKey, insertItem, type ItemKey, itemAt, itemKeyText, ItemRole, itemsByPosition, type OpenItem, type OpenItems, sameItemKey,
 };
-import {
-  type OrderedMap, orderedAny, orderedEntries, orderedInsert, orderedSize, type TreeMap, treeMapGetD, treeMapInsert,
-} from "./state/map.js";
+import { type OrderedMap, orderedAny, orderedEntries, orderedInsert, orderedSize, type TreeMap } from "./state/map.js";
 export { type TreeMap };
 // The closure's unit keys and keyed maps reach the step through this hub, as `Kernel.State` re-exports them (guard 15).
-export { breadthUnitKey, compareUnitKey, occurrenceIdParts, scopeEncloses, scopeParent, type UnitKey, unitRoot, UnitRootTag } from "./state/key.js";
+export {
+  breadthUnitKey, childScope, compareIssue, compareOccurrenceId, compareScopeSlot, compareUnitKey, committedOrdinal, freshIssue,
+  type Issue, issueNumber, issuerText, occurrenceId, occurrenceIdParts, sameUnitKey, scopeEncloses, scopeHead, scopeParent, type UnitKey,
+  unitRoot, UnitRootTag,
+} from "./state/key.js";
+export {
+  type ClaimSlot, ClaimSlotTag, compareClaimSlot, committedScope, idleUnit, type Issued, type Issuer, type IssueTable,
+  occurrenceFresh, offersOccurrence, offerUnit, scopeFresh, seedUnit,
+} from "./state/issue.js";
 export {
   type OrderedMap, orderedAny, orderedCount, orderedEntries, orderedErase, orderedGet, orderedHas, orderedInsert, orderedSize,
 } from "./state/map.js";
@@ -357,12 +364,26 @@ export interface State {
   readonly queuedTokens: OrderedMap<UnitKey, Token>;
   readonly variables: readonly ScopeVariables[];
   readonly openItems: OpenItems;
-  /** The next item ordinal of each occurrence that opened an item, in occurrence key order, pruned with the occurrence. */
+  /** The next item ordinal of each occurrence that opened an item, advanced at commit (DC12), pruned with it. */
   readonly itemOrdinals: TreeMap<OccurrenceId, number>;
-  /** The next ordinal of each element in each scope occurrence that entered one, pruned with the scope occurrence. */
+  /** The next ordinal of each element in each scope occurrence that entered one, advanced at commit, pruned with it. */
   readonly scopeOrdinals: TreeMap<ScopeSlot, number>;
-  /** The next ordinal of each element in each scope occurrence that issued an occurrence of it, pruned with it. */
+  /** The next ordinal of each element in each scope occurrence that issued an occurrence of it, likewise. */
   readonly occurrenceOrdinals: TreeMap<ScopeSlot, number>;
+  /**
+   * The running micro-step's unit, whose issues are its fresh issues, and the index of its next issue (DC12): set when a
+   * micro-step begins (`microStep`; `reoffer` for an offer it computes first) and reset when it concludes. Between
+   * micro-steps Lean's reads the seed's key, which no micro-step runs under; this one reads `null`, which `issue` reads as
+   * the seed's, so a state carries no unit key between micro-steps.
+   */
+  readonly issuing: Issuer | null;
+  readonly issueNext: number;
+  /**
+   * Every identity issued in the closure in progress, with the slot it takes its committed ordinal in and its issuer:
+   * written at issue, emptied by the commit's compaction, which renames each to its ordinal (`step/commit.ts#compact`).
+   * Empty at commit.
+   */
+  readonly issued: IssueTable;
   readonly activations: readonly ActivationCount[];
   /** The next order position of an open item or a compensation record, read only by the sites that order them (K0.8). */
   readonly nextPosition: number;
@@ -425,6 +446,14 @@ export function keyed(bindings: readonly Binding[]): readonly Binding[] {
 
 export const root: ScopeOccurrenceId = rootScope;
 
+/**
+ * The issuer of the micro-step of `unit` that starts on `state`: its run ordinal in the closure is the number of
+ * transitions the closure journalled before it, since every unit that ran journalled one (`journalDraft`).
+ */
+export function issuerFor(state: State, unit: UnitKey): Issuer {
+  return { unit, text: issuerText(unit, orderedSize(state.transitions)) };
+}
+
 /** A fresh process instance: one root scope occurrence with the given variables, `keyed`. */
 export function initial(instanceId: string, variables: readonly Binding[], businessKey: string | null = null): State {
   return {
@@ -439,6 +468,9 @@ export function initial(instanceId: string, variables: readonly Binding[], busin
     itemOrdinals: [],
     scopeOrdinals: [],
     occurrenceOrdinals: [],
+    issuing: null,
+    issueNext: 0,
+    issued: null,
     activations: [],
     nextPosition: 1,
     logicalTimeMs: 0,
@@ -480,12 +512,24 @@ export function takePosition(state: State): readonly [State, number] {
   return [{ ...state, nextPosition: state.nextPosition + 1 }, state.nextPosition];
 }
 
-/** A fresh key for an occurrence of `element` issued in `scope`, the one issuer of occurrence keys (KD1). */
+/**
+ * Lean's `State.issue`, the one issuer of every identity inside a closure (DC12): the running unit's next issue, recorded
+ * in the issue table with the slot it takes its committed ordinal in at commit.
+ */
+export function issue(state: State, slot: ClaimSlot): readonly [State, Issue] {
+  const issuer = state.issuing ?? issuerFor(state, seedUnit);
+  const fresh: Issue = { issuer: issuer.text, index: state.issueNext };
+  const issued = orderedInsert(state.issued, fresh, { slot, unit: issuer.unit }, compareIssue);
+  return [{ ...state, issueNext: state.issueNext + 1, issued }, fresh];
+}
+
+/**
+ * A fresh key for an occurrence of `element` issued in `scope`: the running unit's next issue, which the commit renames
+ * to the next ordinal of its (scope occurrence, element) counter. The one issuer of occurrence keys (KD1, DC12).
+ */
 export function issueOccurrence(state: State, scope: ScopeOccurrenceId, element: ElementId): readonly [State, OccurrenceId] {
-  const slot: ScopeSlot = { parent: scope, element };
-  const ordinal = treeMapGetD(state.occurrenceOrdinals, slot, compareScopeSlot, 0);
-  const occurrenceOrdinals = treeMapInsert(state.occurrenceOrdinals, slot, ordinal + 1, compareScopeSlot);
-  return [{ ...state, occurrenceOrdinals }, occurrenceId(scope, element, ordinal)];
+  const [issued, ordinal] = issue(state, { tag: ClaimSlotTag.Occurrence, slot: { parent: scope, element } });
+  return [issued, occurrenceId(scope, element, ordinal)];
 }
 
 export function signal(state: State, next: Signal): State { return { ...state, batchSignals: [...state.batchSignals, next] }; }
@@ -651,7 +695,8 @@ export function recordEnd(state: State, key: OccurrenceKey, terminal: Terminal):
 
 /**
  * Begin what `request` names: its reservation, placed in the request's scope, or a fresh occurrence numbered under
- * `role`. A reservation keeps its activation, so an armed subscription's number is its occurrence's number.
+ * `role`. A reservation keeps its activation, so an armed subscription's number is its occurrence's number; one keyed
+ * in another scope occurrence (an Event Sub-Process start, reserved in the parent) takes the unit's next issue there (DC26).
  */
 export function beginOccurrence(
   state: State,
@@ -662,7 +707,12 @@ export function beginOccurrence(
   const reserved = request.reserved === null ? null : occurrenceOf(state, request.reserved);
   let current = state;
   let occurrence: Occurrence;
-  if (reserved !== null) { occurrence = reserved; } else {
+  if (reserved !== null && occurrenceIdParts(reserved.id).scope === request.scope) { occurrence = reserved; } else if (reserved !== null) {
+    const occurrences = state.occurrences.filter((other) => other.id !== reserved.id);
+    const itemOrdinals = state.itemOrdinals.filter(([owner]) => owner !== reserved.id);
+    const [issued, id] = issueOccurrence({ ...state, occurrences, itemOrdinals }, request.scope, reserved.element);
+    [current, occurrence] = [issued, { ...reserved, id }];
+  } else {
     const [activated, activation] = activate(state, instanceOf(state, request.scope), request.element, role);
     const [issued, id] = issueOccurrence(activated, request.scope, request.element);
     current = issued;
@@ -696,11 +746,13 @@ export function startReserved(state: State, occurrence: Occurrence, sourceType: 
   return [recordStart({ ...state, occurrences }, begun, sourceType), begun];
 }
 
-/** A fresh key for an item of `occurrence` in `role`: the occurrence's next ordinal, counted up. */
+/**
+ * A fresh key for an item of `occurrence` in `role`: the running unit's next issue, which the commit renames to the
+ * occurrence's next item ordinal (DC12).
+ */
 export function issueItem(state: State, occurrence: OccurrenceId, role: ItemRole): readonly [State, ItemKey] {
-  const ordinal = treeMapGetD(state.itemOrdinals, occurrence, compareOccurrenceId, 0);
-  const itemOrdinals = treeMapInsert(state.itemOrdinals, occurrence, ordinal + 1, compareOccurrenceId);
-  return [{ ...state, itemOrdinals }, { occurrence, role, ordinal }];
+  const [issued, ordinal] = issue(state, { tag: ClaimSlotTag.Item, occurrence });
+  return [issued, { occurrence, role, ordinal }];
 }
 
 /** Add `item` under its own key, replacing an item with that key. */
@@ -766,13 +818,11 @@ export function enterScope(
   locals: readonly Binding[],
   occurrence: OccurrenceId | null,
 ): readonly [State, ScopeOccurrenceId] {
-  const slot: ScopeSlot = { parent, element };
-  const ordinal = treeMapGetD(state.scopeOrdinals, slot, compareScopeSlot, 0);
+  const [issued, ordinal] = issue(state, { tag: ClaimSlotTag.Scope, slot: { parent, element } });
   const id = childScope(parent, element, ordinal);
   return [
     {
-      ...state,
-      scopeOrdinals: treeMapInsert(state.scopeOrdinals, slot, ordinal + 1, compareScopeSlot),
+      ...issued,
       scopes: [...state.scopes, { id, element, occurrence, calledInstance: null }],
       variables: [...state.variables, { scope: id, entries: keyed(locals) }],
     },

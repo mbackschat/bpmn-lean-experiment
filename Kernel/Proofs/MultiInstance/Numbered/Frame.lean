@@ -128,17 +128,6 @@ theorem Numbered.unmoved {program : Program} {s t : State} (held : Numbered prog
   held.shrink ⟨runs ▸ .refl _, fun _ inside => occurrences ▸ inside, fun _ inside => .inl (scopes ▸ inside),
     fun _ _ outside => absurd (runs ▸ ‹_›) outside, .same begins deferred queuedSignals queuedTokens, pending⟩
 
-/-- Committing a closure keeps `Numbered`: it empties the keyed queues and moves nothing else `Numbered` reads. -/
-theorem Numbered.commit {program : Program} {s : State} {log : Step.RunLog} {after : State}
-    (made : Step.orderJournal (.ok (s, log)) = .ok after) (held : Numbered program s) : Numbered program after := by
-  obtain ⟨state, log', same, made'⟩ := Laws.Step.orderJournal_ok made
-  subst made'
-  cases same
-  refine held.shrink ⟨.refl _, fun _ inside => inside, fun _ inside => .inl inside, fun _ _ outside => absurd ‹_› outside,
-    .of_kept ?kept, fun _ pending => .inl (pending_of_sublist (Laws.State.QueuesKept.signal_mem ?kept)
-      (fun _ member => member) pending)⟩
-  case kept => exact ⟨.refl _, .refl _, fun _ _ found => by simp at found, fun _ _ found => by simp at found⟩
-
 /-- Entering a scope occurrence at a key not issued keeps `Numbered`: no active instance and no queued begin names the
 fresh key, each issued. -/
 theorem Numbered.enter {program other : Program} {s t : State} (formed : WellFormed other s) (owns : SlotsOwned s)
@@ -164,7 +153,7 @@ theorem Numbered.enterScope {program other : Program} {s : State} (formed : Well
     (element : ElementId) (parent : ScopeOccurrenceId) (locals : List (String × Value)) (owner : Option OccurrenceId)
     (stands : parent ∈ Laws.State.scopeIds s) (held : Numbered program s) :
     Numbered program (s.enterScope element parent locals owner).1 := by
-  have fresh := (Laws.State.enterScope_fresh formed.historic element stands locals owner).1
+  have fresh := (Laws.State.enterScope_fresh formed.historic formed.issuer element stands locals owner).1
   rw [Laws.State.enterScope_eq] at fresh ⊢
   exact held.enter formed owns (fun entry inside => (List.mem_append.mp inside).imp_right fun new => by
     rw [List.mem_singleton.mp new]; exact fresh) rfl rfl (.of_eq rfl rfl rfl rfl) rfl
@@ -346,5 +335,14 @@ theorem Numbered.queueBatch {program : Program} {s : State} (unit : UnitKey) (he
       · exact (ordered.apart first second first' second' (.inl (List.mem_of_getElem? atX)) a two (.inr old') b).elim
       · exact (ordered.apart second first second' first' (.inr (List.mem_of_getElem? atY)) b one (.inl old) a).elim
       · exact ordered.keyedQueues one two first second first' second' old old' a b }
+
+/-- A fresh instance numbers nothing: it holds no body, occurrence, queued signal or token, nor compensation run. -/
+theorem numbered_initial (program : Program) (instanceId : String) (variables : List (String × Value))
+    (businessKey : Option String) : Numbered program (State.initial instanceId variables businessKey) := by
+  have bodies := Laws.State.initial_bodies instanceId variables businessKey
+  unfold Numbered
+  refine ⟨fun _ member => by simp [bodies] at member, ?_⟩
+  constructor <;> simp [Laws.State.Queued, Laws.State.allSignals, Laws.State.allQueuedTokens, Laws.State.initial_eq,
+    OccurPending]
 
 end Kernel.Proofs.MultiInstance
