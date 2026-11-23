@@ -85,7 +85,7 @@ theorem frameAlongside_both (a : FrameAlongside program A) (b : FrameAlongside p
   signalBegin s request formed fits anchored held :=
     ⟨a.signalBegin s request formed fits (anchored.mono left) held.1,
       b.signalBegin s request formed fits (anchored.mono right) held.2⟩
-  takePosition s held := ⟨a.takePosition s held.1, b.takePosition s held.2⟩
+  takeCompletion s held := ⟨a.takeCompletion s held.1, b.takeCompletion s held.2⟩
   enterScope s element parent locals owner formed stands anchored held :=
     ⟨a.enterScope s element parent locals owner formed stands (anchored.mono left) held.1,
       b.enterScope s element parent locals owner formed stands (anchored.mono right) held.2⟩

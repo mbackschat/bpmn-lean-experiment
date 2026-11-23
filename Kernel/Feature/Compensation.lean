@@ -90,7 +90,7 @@ def completed (ctx : Ctx) (occurrence : Occurrence) (state : State) : Outcome :=
     if handler.isNone && !grouped then
       .ok (store state { compensation with retained := outer ++ inner.map fun record => { record with scope := target } })
     else
-      let (state, completion) := state.takePosition
+      let (state, completion) := state.takeCompletion
       let inside := handler.all fun handler =>
         ((ctx.program.element? handler).bind (·.header.parent)) == some occurrence.element
       let locals (scope : ScopeOccurrenceId) := ((state.variables.find? (·.scope == scope)).map (·.entries)).getD []
@@ -105,53 +105,18 @@ def completed (ctx : Ctx) (occurrence : Occurrence) (state : State) : Outcome :=
           children := inner.flatMap keptRecords }
       .ok (store state { compensation with retained := outer ++ [record] })
 
-/-- Every element declared inside `element`, at any depth. -/
-def interior (ctx : Ctx) (element : Element) : List Element :=
-  let rec go : Nat → List ElementId → List Element
-    | 0, _ => []
-    | fuel + 1, ids => ids.flatMap fun id =>
-      match ctx.program.element? id with
-      | some inner => inner :: go fuel ((inner.scope?.map (·.2.children)).getD [])
-      | none => []
-  go ctx.program.elements.length ((element.scope?.map (·.2.children)).getD [])
-
-/-- What `element` itself reads and writes over its whole run, over-approximated: the IL's one account of its run
-(`footprint`, with its work's own reads, `workReads`), what it writes when it runs (`writes`) and what its boundaries
-write when they fire (`catchWrites`), a Multi-Instance element's output data item, every name a User Task installs under
-`SubmissionRule.installsVariables`, and every name for work whose data the model does not show, a plain or Manual Task
-(none of User, Service, Call, Receive, Script or Business Rule work), as COMPENSATION-SEMANTICS-SPEC D1 (c) reads it:
-the account says such work touches no name, which holds for the closure, not for §13.5.5's dependency. -/
-def ownData (ctx : Ctx) (element : Element) : Footprint :=
-  let boundaries := ((element.envelope?.map (·.boundaries)).getD []).flatMap (catchWrites ·.subscription)
-  let item := ((element.envelope?.bind (·.multiInstance)).bind (·.outputDataItem)).toList
-  let caught : Footprint := { writes := (writes element).union { names := boundaries ++ item } }
-  let work : Footprint := match element.activity? with
-    | some (_, payload) =>
-      let abstract := !(payload.work.isUser || payload.work.isService || payload.work.call?.isSome ||
-        payload.work.receive?.isSome || payload.work.reader?.isSome)
-      let installs := payload.work.isUser && ctx.program.options.submission == .installsVariables
-      { reads := { all := abstract }, writes := { all := abstract || installs } }
-    | none => {}
-  ((footprint ctx.program element).union caught).union work
-
-/-- What a run of `subject` reads and writes: its own and, for a Scope, its interior's. -/
-def data (ctx : Ctx) (subject : ElementId) : Footprint :=
-  match ctx.program.element? subject with
-  | some element => (element :: interior ctx element).foldl (fun found inner => found.union (ownData ctx inner)) {}
-  | none => {}
-
 /-- `record`'s subject ran before `other`'s in a way §13.5.5 orders, so `other`'s handler completes before `record`'s
 starts: (b) a Sequence Flow path (`flowReaches`) leads from a boundary Event attached to `record`'s subject to
 `other`'s, a different one, whose record may complete while the subject still runs; or `record` completed first and
 (a) a Sequence Flow path leads from its subject to `other`'s, (c) `other`'s subject reads a name `record`'s can write
-(`data`), or (d) both are records of one subject, run in reverse completion order. -/
+(`subjectData`), or (d) both are records of one subject, run in reverse completion order. -/
 def precedes (ctx : Ctx) (record other : Compensable) : Bool :=
   let boundaries := (((ctx.program.element? record.subject).bind (·.envelope?)).map fun envelope =>
     envelope.boundaries.map (·.id)).getD []
   (record.subject != other.subject && flowReaches ctx.program boundaries other.subject) ||
     (record.completion < other.completion &&
       (record.subject == other.subject || flowReaches ctx.program [record.subject] other.subject ||
-        (data ctx other.subject).reads.meets (data ctx record.subject).writes))
+        (subjectData ctx.program other.subject).reads.meets (subjectData ctx.program record.subject).writes))
 
 def position (ctx : Ctx) (element : ElementId) : Nat :=
   (ctx.program.elements.map (·.header.id)).idxOf element

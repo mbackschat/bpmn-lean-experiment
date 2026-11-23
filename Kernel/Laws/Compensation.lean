@@ -39,25 +39,15 @@ theorem precedes_spec (ctx : Ctx) (record other : Compensable) :
             envelope.boundaries.map (·.id)).getD []) other.subject = true) ∨
         (record.completion < other.completion ∧
           (record.subject = other.subject ∨ flowReaches ctx.program [record.subject] other.subject = true ∨
-            (Feature.Compensation.data ctx other.subject).reads.meets (Feature.Compensation.data ctx record.subject).writes = true)) := by
+            (subjectData ctx.program other.subject).reads.meets (subjectData ctx.program record.subject).writes = true)) := by
   unfold Feature.Compensation.precedes
   simp only [Bool.or_eq_true, Bool.and_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq, beq_iff_eq, or_assoc]
 
 /-- The kernel's dependency reads only the program, so every context of one program orders records alike. -/
 theorem precedes_congr {ctx other : Ctx} (same : ctx.program = other.program) :
     Feature.Compensation.precedes ctx = Feature.Compensation.precedes other := by
-  have alike : ∀ fuel ids, Feature.Compensation.interior.go ctx fuel ids = Feature.Compensation.interior.go other fuel ids := by
-    intro fuel
-    induction fuel with
-    | zero => intro ids; rfl
-    | succ fuel ih => intro ids; simp only [Feature.Compensation.interior.go, same, ih]
   funext record later
-  simp only [Feature.Compensation.precedes, Feature.Compensation.data, Feature.Compensation.interior,
-    Feature.Compensation.ownData, same, alike]
-
-/-- A subject the program does not declare reads and writes nothing. -/
-theorem data_missing {ctx : Ctx} {subject : ElementId} (missing : ctx.program.element? subject = none) :
-    Feature.Compensation.data ctx subject = {} := by simp [Feature.Compensation.data, missing]
+  simp only [Feature.Compensation.precedes, same]
 
 /-- `store` replaces the compensation slot and nothing else. -/
 theorem store_eq (state : State) (compensation : Compensations) :
@@ -392,9 +382,9 @@ theorem completed_spec {ctx : Ctx} {occurrence : Occurrence} {state after : Stat
         ((Retains true handler grouped none ∧ after = Feature.Compensation.store state { state.slots.compensation with
             retained := outer ++ inner.map fun record => { record with scope := target } }) ∨
           ∃ record, Retains true handler grouped (some record) ∧ record.subject = occurrence.element ∧
-            record.scope = target ∧ record.completion = state.takePosition.2 ∧
+            record.scope = target ∧ record.completion = state.takeCompletion.2 ∧
             record.children = inner.flatMap Feature.Compensation.keptRecords ∧
-            after = Feature.Compensation.store state.takePosition.1 { state.slots.compensation with retained := outer ++ [record] }) := by
+            after = Feature.Compensation.store state.takeCompletion.1 { state.slots.compensation with retained := outer ++ [record] }) := by
   unfold Feature.Compensation.completed at ran
   split at ran
   · rename_i none
@@ -421,7 +411,7 @@ theorem completed_spec {ctx : Ctx} {occurrence : Occurrence} {state after : Stat
         cases ran
         exact .inl ⟨Retains.moved plain, rfl⟩
       · rename_i kept
-        rcases issued : state.takePosition with ⟨issuedState, completion⟩
+        rcases issued : state.takeCompletion with ⟨issuedState, completion⟩
         simp only [issued] at ran
         cases ran
         refine .inr ⟨?record, ?retains, ?subject, ?scope, ?completion, ?children, ?stored⟩

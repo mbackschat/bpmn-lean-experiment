@@ -97,7 +97,7 @@ in scope occurrences that stand, queues the same triggers and resumes, and makes
 activation. -/
 theorem Formed.shrink {precedes : Compensable → Compensable → Prop} {s t : State} (formed : Formed precedes s)
     (scopes : ∀ x ∈ scopeIds t, Laws.State.ScopeIssued s x → x ∈ scopeIds s ∧ t.instanceOf x = s.instanceOf x)
-    (issued : s.nextPosition ≤ t.nextPosition) (grows : Laws.State.ScopeGrows s t)
+    (issued : s.nextCompletion ≤ t.nextCompletion) (grows : Laws.State.ScopeGrows s t)
     (counted : ∀ key, Counted s key → Counted t key)
     (retained : t.slots.compensation.retained.Sublist s.slots.compensation.retained)
     (runs : t.slots.compensation.runs.Sublist s.slots.compensation.runs) (present : RetainedPresent t)
@@ -147,7 +147,7 @@ theorem Formed.unmoved {precedes : Compensable → Compensable → Prop} {s t : 
     (moved : Unmoved s t) : Formed precedes t :=
   formed.shrink (fun x present _ => ⟨by rwa [scopeIds, moved.scopes] at present,
       Laws.State.instanceOf_congr moved.scopes moved.instanceId x⟩)
-    (Nat.le_of_eq moved.nextPosition.symm)
+    (Nat.le_of_eq moved.nextCompletion.symm)
     (.of_same (congrArg (List.map ScopeOccurrence.id) moved.scopes) moved.scopeOrdinals moved.table)
     (fun _ held => Laws.State.Counted.congr moved.activations held)
     (by rw [moved.compensation]; exact .refl _) (by rw [moved.compensation]; exact .refl _)
@@ -162,7 +162,7 @@ theorem Formed.unmoved {precedes : Compensable → Compensable → Prop} {s t : 
 /-- `Formed` carries over to a state that keeps the slot, the counts, the scope occurrences and the instance identity,
 issues only upward and keeps a sublist of the queue. -/
 theorem Formed.same {precedes : Compensable → Compensable → Prop} {s t : State} (formed : Formed precedes s)
-    (scopes : t.scopes = s.scopes) (instanceId : t.instanceId = s.instanceId) (issued : s.nextPosition ≤ t.nextPosition)
+    (scopes : t.scopes = s.scopes) (instanceId : t.instanceId = s.instanceId) (issued : s.nextCompletion ≤ t.nextCompletion)
     (activations : t.activations = s.activations) (compensation : t.slots.compensation = s.slots.compensation)
     (signals : Laws.State.Fewer (Laws.State.allSignals t) (Laws.State.allSignals s))
     (occurrences : ∀ o ∈ t.occurrences, o ∈ s.occurrences := by exact fun _ held => held)
@@ -202,7 +202,7 @@ keep their process instances. -/
 theorem Formed.enter {precedes : Compensable → Compensable → Prop} {program : Program} {s t : State}
     {entry : ScopeOccurrence} (formed : Formed precedes s) (well : WellFormed program s)
     (scopes : t.scopes = s.scopes ++ [entry]) (fresh : Laws.State.ScopeFresh s t entry.id) (placed : entry.parent.isSome)
-    (nextPosition : t.nextPosition = s.nextPosition) (activations : t.activations = s.activations)
+    (nextCompletion : t.nextCompletion = s.nextCompletion) (activations : t.activations = s.activations)
     (instanceId : t.instanceId = s.instanceId) (compensation : t.slots.compensation = s.slots.compensation)
     (signals : Laws.State.allSignals t = Laws.State.allSignals s) (occurrences : t.occurrences = s.occurrences) : Formed precedes t := by
   have ids : scopeIds t = scopeIds s ++ [entry.id] := by simp [scopeIds, scopes]
@@ -222,7 +222,7 @@ theorem Formed.enter {precedes : Compensable → Compensable → Prop} {program 
   have keptIn : ∀ x ∈ scopeIds s, t.instanceOf x = s.instanceOf x := fun x old =>
     Laws.State.instanceOf_kept well nodup parentless instanceId old fun other member _ => by
       rw [scopes]; exact List.mem_append_left _ member
-  refine formed.shrink (fun x present below => ?_) (Nat.le_of_eq nextPosition.symm) fresh.2.2
+  refine formed.shrink (fun x present below => ?_) (Nat.le_of_eq nextCompletion.symm) fresh.2.2
     (fun _ held => Laws.State.Counted.congr activations held)
     (by rw [compensation]; exact .refl _) (by rw [compensation]; exact .refl _) (fun record member => ?_)
     (by rw [signals]; exact .refl _) (fun _ inside => signals ▸ inside)
@@ -363,8 +363,8 @@ theorem formed_frameAlongside (precedes : Compensable → Compensable → Prop) 
   armGateway _ _ _ _ _ _ _ kept := kept.signal _
   raise _ _ _ _ cancel _ kept := kept.signal _ (by rw [Laws.Step.triggersOf_raise, cancel]; rfl)
   signalBegin _ _ _ _ _ kept := kept.signal _
-  takePosition s kept := by
-    rw [Laws.State.takePosition_eq]
+  takeCompletion s kept := by
+    rw [Laws.State.takeCompletion_eq]
     exact kept.same rfl rfl (Nat.le_succ _) rfl rfl (.refl _)
   enterScope s element parent locals owner well stands _ kept := by
     have fresh := Laws.State.enterScope_fresh well.historic well.issuer element stands locals owner

@@ -439,4 +439,8 @@ theorem rule_il_reads_inputs (program : Program) (header : Header) (work : RuleW
       · cases inputs
     simp [footprint, beginReads, workReads, Work.reader?, Element.activity?, Element.envelope?, inputs, NameSet.union, mem]
 
+/-- A subject the program does not declare reads and writes nothing. -/
+theorem subjectData_missing {program : Program} {subject : ElementId} (missing : program.element? subject = none) :
+    subjectData program subject = {} := by simp [subjectData, missing]
+
 end Kernel.Laws.IL

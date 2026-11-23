@@ -235,9 +235,9 @@ structure State where
   emptied by the commit's compaction, which renames each to its ordinal (`Step.compact`, DC12). Empty at commit. -/
   issued : TreeMap Issue ClaimSlot compare := ∅
   activations : List ActivationCount := []
-  /-- The next compensation completion number (`takePosition`), taken in run order as a record completes, which only the
+  /-- The next compensation completion number (`takeCompletion`), taken in run order as a record completes, which only the
   sites that order records read. -/
-  nextPosition : Nat := 1
+  nextCompletion : Nat := 1
   /-- The counter of issued order positions (DC13): an open item's `position` is the running unit's issue in the
   position slot (`issuePosition`), numbered from here at commit in the closure's position order (`ClaimSlot.position`),
   which advances it. -/
@@ -308,9 +308,9 @@ def emit (state : State) (flows : List FlowId) (scope : ScopeOccurrenceId) : Sta
 def deferBegins (state : State) (requests : List BeginRequest) : State :=
   { state with batchTokens := state.batchTokens ++ (requests.map Token.begin).reverse }
 
-/-- The next compensation completion number (`nextPosition`), counted up in run order. -/
-def takePosition (state : State) : State × Nat :=
-  ({ state with nextPosition := state.nextPosition + 1 }, state.nextPosition)
+/-- The next compensation completion number (`nextCompletion`), counted up in run order. -/
+def takeCompletion (state : State) : State × Nat :=
+  ({ state with nextCompletion := state.nextCompletion + 1 }, state.nextCompletion)
 
 /-- The one issuer of every identity inside a closure (DC12): the running unit's next issue, recorded in the issue table
 with the slot it takes its committed ordinal in at commit. -/

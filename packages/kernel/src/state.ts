@@ -385,8 +385,8 @@ export interface State {
    */
   readonly issued: IssueTable;
   readonly activations: readonly ActivationCount[];
-  /** The next compensation completion number (`takePosition`), taken in run order as a record completes. */
-  readonly nextPosition: number;
+  /** The next compensation completion number (`takeCompletion`), taken in run order as a record completes. */
+  readonly nextCompletion: number;
   /**
    * The counter of issued order positions (DC13): an open item's `position` is the running unit's issue in the position
    * slot (`issuePosition`), numbered from here at commit in the closure's position order, which advances it.
@@ -477,7 +477,7 @@ export function initial(instanceId: string, variables: readonly Binding[], busin
     issueNext: 0,
     issued: null,
     activations: [],
-    nextPosition: 1,
+    nextCompletion: 1,
     nextOrder: 1,
     logicalTimeMs: 0,
     batchSignals: [],
@@ -513,9 +513,9 @@ export function deferBegins(state: State, requests: readonly BeginRequest[]): St
   return { ...state, batchTokens: [...state.batchTokens, ...deferred.reverse()] };
 }
 
-/** The next compensation completion number (`nextPosition`), counted up in run order. */
-export function takePosition(state: State): readonly [State, number] {
-  return [{ ...state, nextPosition: state.nextPosition + 1 }, state.nextPosition];
+/** The next compensation completion number (`nextCompletion`), counted up in run order. */
+export function takeCompletion(state: State): readonly [State, number] {
+  return [{ ...state, nextCompletion: state.nextCompletion + 1 }, state.nextCompletion];
 }
 
 /**

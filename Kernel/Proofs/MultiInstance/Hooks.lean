@@ -60,7 +60,7 @@ theorem finish_keeps (ops : MultiInstanceOps program inv settled)
 
 /-- A body's completion takes no position. -/
 theorem finish_issue (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) (state : State) :
-    (Feature.MultiInstance.finish ctx loop run state).nextPosition = state.nextPosition := by
+    (Feature.MultiInstance.finish ctx loop run state).nextCompletion = state.nextCompletion := by
   obtain ⟨_, same, _⟩ := finish_spec ctx loop run state
   rw [same, Laws.State.signal_eq]
 
@@ -108,9 +108,9 @@ theorem enterBody_entering (ops : MultiInstanceOps program inv settled) {occurre
       (if unarmed then (state.enterScope element occurrence.scope locals (some occurrence.id)).1
         else (state.enterScope element occurrence.scope locals (some occurrence.id)).1.signal
           (.arm occurrence.id element occurrence.scope)).slots = state.slots ∧
-      state.nextPosition ≤ (if unarmed then (state.enterScope element occurrence.scope locals (some occurrence.id)).1
+      state.nextCompletion ≤ (if unarmed then (state.enterScope element occurrence.scope locals (some occurrence.id)).1
         else (state.enterScope element occurrence.scope locals (some occurrence.id)).1.signal
-          (.arm occurrence.id element occurrence.scope)).nextPosition := by
+          (.arm occurrence.id element occurrence.scope)).nextCompletion := by
   obtain ⟨entered, carry⟩ := enters locals
   have carried := carry _ (ops.begun _ _ holds member begun)
   rw [Laws.State.enterScope_eq] at entered carried ⊢
@@ -164,14 +164,14 @@ theorem arriveMultiInstance_keeps (ops : MultiInstanceOps program inv settled) {
 
 /-- An instance's completion leaves the position counter where it was. -/
 theorem leftWith_position (state : State) (scope : ScopeOccurrenceId) (next : MultiInstanceRun) :
-    (leftWith state scope next).nextPosition = state.nextPosition := by
+    (leftWith state scope next).nextCompletion = state.nextCompletion := by
   rw [leftWith, setRun_eq]
-  show (state.leaveScope scope).nextPosition = state.nextPosition
+  show (state.leaveScope scope).nextCompletion = state.nextCompletion
   rw [(Laws.State.leaveScope_eq state scope).1]
   exact (Laws.State.clearInside_shrinks state scope []).2
 
 /-- A signal takes no position. -/
-theorem signal_position (state : State) (signal : Signal) : (state.signal signal).nextPosition = state.nextPosition := by
+theorem signal_position (state : State) (signal : Signal) : (state.signal signal).nextCompletion = state.nextCompletion := by
   rw [Laws.State.signal_eq]
 
 /-- Recording an instance's slot in a scope occurrence that stands, and writing the body's counters or not (`counted`),
@@ -182,7 +182,7 @@ theorem counted_entering {ctx : Ctx} (ops : MultiInstanceOps ctx.program inv set
     (stands : scope ∈ Laws.State.scopeIds state) (done : Completes ctx body scope state after run loop index output)
     (left : Laws.MultiInstance.Counted state scope (recorded run index output results) counted) :
     Entering inv settled (recorded run index output results) counted (recorded run index output results).instances [] ∧
-      counted.nextPosition = state.nextPosition ∧ recorded run index output results ∈ counted.slots.multiInstances := by
+      counted.nextCompletion = state.nextCompletion ∧ recorded run index output results ∈ counted.slots.multiInstances := by
   obtain ⟨kept, carried, standing, placed⟩ := ops.record state run index scope output results holds
     (Laws.MultiInstance.found_mem done.found) done.slot stands done.fits
   have base : Entering inv settled (recorded run index output results)
@@ -203,7 +203,7 @@ theorem instanceCompleted_entering {ctx : Ctx} (ops : MultiInstanceOps ctx.progr
     {output : Option Value} (holds : inv state) (stands : scope ∈ Laws.State.scopeIds state)
     (done : Completes ctx body scope state after run loop index output) :
     ∃ results counted, Entering inv settled (recorded run index output results) counted
-        (recorded run index output results).instances [] ∧ counted.nextPosition = state.nextPosition ∧
+        (recorded run index output results).instances [] ∧ counted.nextCompletion = state.nextCompletion ∧
       recorded run index output results ∈ counted.slots.multiInstances ∧
       (after = Feature.MultiInstance.finish ctx loop (recorded run index output results) counted ∨
         ∃ items, after = Feature.MultiInstance.beginInstances ctx loop items (recorded run index output results)

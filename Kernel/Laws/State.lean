@@ -171,9 +171,9 @@ theorem root_eq : State.root = .ofSegments [] := by
 theorem signal_eq (state : State) (signal : Signal) : state.signal signal = { state with batchSignals := state.batchSignals ++ [signal] } := by
   simp only [State.signal]
 
-theorem takePosition_eq (state : State) :
-    state.takePosition = ({ state with nextPosition := state.nextPosition + 1 }, state.nextPosition) := by
-  simp only [State.takePosition]
+theorem takeCompletion_eq (state : State) :
+    state.takeCompletion = ({ state with nextCompletion := state.nextCompletion + 1 }, state.nextCompletion) := by
+  simp only [State.takeCompletion]
 
 theorem issue_eq (state : State) (slot : ClaimSlot) : state.issue slot =
     ({ state with issueNext := state.issueNext + 1
@@ -806,14 +806,14 @@ theorem beginOccurrence_begins {state : State} (keyed : ActivationsKeyed state) 
         (by simp [State.recordStart, State.issueOccurrence, State.issue])).2.2
     exact ⟨by simpa [State.recordStart, State.issueOccurrence, State.issue] using activated.activations, activated.above, activated.positive⟩
 
-/-- The operations that take no position leave the position counter where it was: only `State.takePosition` advances it
+/-- The operations that take no position leave the position counter where it was: only `State.takeCompletion` advances it
 (items issue their positions, DC13). The one law of the run-order counter the compensation proofs read beside it. -/
 theorem positions_kept (state : State) :
-    (∀ element scope, (state.reserve element scope).1.nextPosition = state.nextPosition) ∧
-    (∀ request role sourceType, (state.beginOccurrence request role sourceType).1.nextPosition = state.nextPosition) ∧
-    (∀ occurrence sourceType, (state.startReserved occurrence sourceType).1.nextPosition = state.nextPosition) ∧
-    (∀ target name value, (state.setVariable target name value).nextPosition = state.nextPosition) ∧
-    ∀ target name, (state.removeVariable target name).nextPosition = state.nextPosition := by
+    (∀ element scope, (state.reserve element scope).1.nextCompletion = state.nextCompletion) ∧
+    (∀ request role sourceType, (state.beginOccurrence request role sourceType).1.nextCompletion = state.nextCompletion) ∧
+    (∀ occurrence sourceType, (state.startReserved occurrence sourceType).1.nextCompletion = state.nextCompletion) ∧
+    (∀ target name value, (state.setVariable target name value).nextCompletion = state.nextCompletion) ∧
+    ∀ target name, (state.removeVariable target name).nextCompletion = state.nextCompletion := by
   refine ⟨fun _ _ => by simp [State.reserve, State.activate, State.issueOccurrence, State.issue], fun request role sourceType => ?_,
     fun occurrence _ => ?_, fun target name value => ?_, fun _ _ => rfl⟩
   · simp only [State.beginOccurrence, State.recordStart]

@@ -721,8 +721,8 @@ theorem callsFormed_alongside (program : Program) : Alongside program (CallsForm
   armGateway _ occurrence header _ _ _ _ held := held.signal (.armGateway occurrence.id header.id occurrence.scope)
   raise _ raised origin _ _ _ held := held.signal (.raise raised origin)
   signalBegin _ request _ _ _ held := held.signal (.begin request)
-  takePosition _ held := held.same (by rw [Laws.State.takePosition_eq]) (by rw [Laws.State.takePosition_eq]; exact fun _ member => member)
-    (by rw [Laws.State.takePosition_eq])
+  takeCompletion _ held := held.same (by rw [Laws.State.takeCompletion_eq]) (by rw [Laws.State.takeCompletion_eq]; exact fun _ member => member)
+    (by rw [Laws.State.takeCompletion_eq])
   enterScope _ element parent locals owner formed _ _ held := held.entered formed element parent locals owner
   reserve _ element _ formed stands _ _ held := held.reserved formed element stands.mem
   leaveScope _ _ formed present _ held := held.left formed (Laws.State.leaveScope_left formed present)

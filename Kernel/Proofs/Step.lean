@@ -476,8 +476,8 @@ theorem subscriptionsOps : Laws.Subscriptions.SubscriptionsOps program (Laws.Sta
 /-- The compensation hooks' operations record (`Laws.Compensation.CompensationOps`) of `WellFormed`. -/
 theorem compensationOps : Laws.Compensation.CompensationOps program (Laws.State.WellFormed program) where
   store _ _ formed runs _ := Laws.State.compensation_wellFormed formed runs
-  takePosition _ formed := Laws.State.takePosition_wellFormed formed
-  issued state := by rw [Laws.State.takePosition_eq]; exact ⟨rfl, rfl, rfl, rfl⟩
+  takeCompletion _ formed := Laws.State.takeCompletion_wellFormed formed
+  issued state := by rw [Laws.State.takeCompletion_eq]; exact ⟨rfl, rfl, rfl, rfl⟩
   fail _ _ formed := queue_wellFormed formed (by simp [Queueable])
 
 /-- The compensation runs' operations record (`Laws.Compensation.RunsOps`) of `WellFormed`. -/

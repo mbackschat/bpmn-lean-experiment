@@ -61,7 +61,7 @@ theorem instanceOf_moved {program : Program} {base t : State} (before : WellForm
 structure Twin (base s : State) : Prop where
   scopes : s.scopes = base.scopes
   named : s.instanceId = base.instanceId
-  next : s.nextPosition = base.nextPosition
+  next : s.nextCompletion = base.nextCompletion
   ordinals : s.scopeOrdinals = base.scopeOrdinals
   occurrences : s.occurrences = base.occurrences
   table : s.issued = base.issued
@@ -165,24 +165,24 @@ theorem triggers_moved {program : Program} {base s t : State} (before : WellForm
 next, issuing once more. -/
 theorem apart_of_fresh {s t : State}
     (counted : ∀ n, (completions t.slots.compensation).count n ≤
-      (completions s.slots.compensation).count n + [s.nextPosition].count n)
-    (apart : CompletionsApart s.slots.compensation) (issued : CompletionsIssued s) (next : t.nextPosition = s.nextPosition + 1) :
+      (completions s.slots.compensation).count n + [s.nextCompletion].count n)
+    (apart : CompletionsApart s.slots.compensation) (issued : CompletionsIssued s) (next : t.nextCompletion = s.nextCompletion + 1) :
     CompletionsApart t.slots.compensation ∧ CompletionsIssued t := by
-  have none : (completions s.slots.compensation).count s.nextPosition = 0 :=
+  have none : (completions s.slots.compensation).count s.nextCompletion = 0 :=
     List.count_eq_zero.mpr fun inside => Nat.lt_irrefl _ (issued _ inside)
   refine ⟨List.nodup_iff_count.mpr fun n => ?_, fun n inside => ?_⟩
   · have bound := counted n
     have once := List.nodup_iff_count.mp apart n
-    by_cases fresh : n = s.nextPosition
+    by_cases fresh : n = s.nextCompletion
     · subst fresh
       rw [none, List.count_singleton_self] at bound
       exact bound
-    · have other : [s.nextPosition].count n = 0 := List.count_eq_zero.mpr (by simpa using fresh)
+    · have other : [s.nextCompletion].count n = 0 := List.count_eq_zero.mpr (by simpa using fresh)
       omega
   · rw [next]
-    by_cases fresh : n = s.nextPosition
+    by_cases fresh : n = s.nextCompletion
     · rw [fresh]; exact Nat.lt_succ_self _
-    · have other : [s.nextPosition].count n = 0 := List.count_eq_zero.mpr (by simpa using fresh)
+    · have other : [s.nextCompletion].count n = 0 := List.count_eq_zero.mpr (by simpa using fresh)
       have bound := counted n
       have positive := List.count_pos_iff.mpr inside
       exact Nat.lt_succ_of_lt (issued n (List.count_pos_iff.mp (by omega)))
@@ -267,7 +267,7 @@ theorem triggers_opened {queue s : State} {scope : ScopeOccurrenceId} {activity 
   have slots : s.slots = queue.slots := by rw [shape]
   have scopes : s.scopes = queue.scopes := by rw [shape]
   have instance_ : s.instanceId = queue.instanceId := by rw [shape]
-  have next : s.nextPosition = queue.nextPosition := by rw [shape]
+  have next : s.nextCompletion = queue.nextCompletion := by rw [shape]
   have activations : s.activations = queue.activations := by rw [shape]
   have queuedEq : (queuedTriggers queue).Perm (trigger :: queuedTriggers (opened s others run)) := by
     refine (queuedTriggers_pop found).trans ?_

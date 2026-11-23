@@ -124,8 +124,8 @@ theorem BeginsKept.signalBegin {program : Program} {s : State} (held : BeginsKep
     BeginsKept program T (s.signal (.begin request)) :=
   held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
 
-theorem BeginsKept.takePosition {program : Program} {s : State} (held : BeginsKept program T s) : BeginsKept program T s.takePosition.1 := by
-  rw [Laws.State.takePosition_eq]
+theorem BeginsKept.takeCompletion {program : Program} {s : State} (held : BeginsKept program T s) : BeginsKept program T s.takeCompletion.1 := by
+  rw [Laws.State.takeCompletion_eq]
   exact held.frame (fun _ inside => inside) (fun _ named => named) rfl rfl
 
 theorem BeginsKept.enterScope {program : Program} {s : State} (held : BeginsKept program T s) (element : ElementId)
@@ -830,7 +830,7 @@ theorem beginsKept_alongside (program : Program) (T : TreeMap UnitKey Transition
   armGateway _ _ _ _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
   raise _ _ _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
   signalBegin _ request _ _ _ held := held.signalBegin request
-  takePosition _ held := held.takePosition
+  takeCompletion _ held := held.takeCompletion
   enterScope _ element parent locals owner _ _ _ held := held.enterScope element parent locals owner
   reserve _ _ scope _ _ pending _ held :=
     held.reserve (fun apart => PendingIn.unlooped (fun _ kept => (kept apart).occurs) pending) scope

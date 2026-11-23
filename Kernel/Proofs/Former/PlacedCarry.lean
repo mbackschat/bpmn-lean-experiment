@@ -692,8 +692,8 @@ theorem PlacedLane.signalled {signal : Signal} (lane : PlacedLane program s) (pl
       (by rwa [Laws.State.allSignals_append] at member)
 
 /-- Issuing an identifier keeps the lane. -/
-theorem PlacedLane.takePosition (lane : PlacedLane program s) : PlacedLane program s.takePosition.1 := by
-  rw [Laws.State.takePosition_eq]
+theorem PlacedLane.takeCompletion (lane : PlacedLane program s) : PlacedLane program s.takeCompletion.1 := by
+  rw [Laws.State.takeCompletion_eq]
   exact lane.queue rfl rfl rfl (.refl _) (fun _ member => member) rfl rfl listKept
 
 /-- Dropping an occurrence's record keeps the lane. -/

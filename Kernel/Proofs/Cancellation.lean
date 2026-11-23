@@ -92,7 +92,7 @@ structure Inert (before after : State) : Prop where
   signals : Laws.State.allSignals after = Laws.State.allSignals before
   slots : after.slots = before.slots
   occurrenceOrdinals : after.occurrenceOrdinals = before.occurrenceOrdinals
-  nextPosition : after.nextPosition = before.nextPosition
+  nextCompletion : after.nextCompletion = before.nextCompletion
   activations : after.activations = before.activations
   status : after.status = before.status
   failure : after.failure = before.failure
@@ -333,8 +333,8 @@ theorem scopesKept_alongside (before : State) (program : Program) : Alongside pr
   signalBegin s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept
-  takePosition s kept := by
-    rw [Laws.State.takePosition_eq]
+  takeCompletion s kept := by
+    rw [Laws.State.takeCompletion_eq]
     exact kept.shrink (.refl _) (.refl _)
   enterScope s element parent locals owner formed stands _ kept := by
     have fresh := Laws.State.enterScope_fresh formed.historic formed.issuer element stands locals owner

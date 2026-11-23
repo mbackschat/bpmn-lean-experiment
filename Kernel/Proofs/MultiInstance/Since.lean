@@ -210,8 +210,8 @@ theorem unstarted_alongside (b : State) (program : Program) : Alongside program 
   signalBegin s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.move (.same rfl rfl rfl (.refl _) rfl)
-  takePosition s kept := by
-    rw [Laws.State.takePosition_eq]
+  takeCompletion s kept := by
+    rw [Laws.State.takeCompletion_eq]
     exact kept.move (.same rfl rfl rfl (.refl _) rfl)
   enterScope s element parent locals owner formed stands _ kept :=
     kept.move (.ofEnds (Laws.Step.enterScope_frame formed element stands locals owner) (by rw [Laws.State.enterScope_eq]))
@@ -266,8 +266,8 @@ theorem snapshots_frameAlongside (b : State) (program : Program) : StoresAlongsi
   signalBegin s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.same rfl
-  takePosition s kept := by
-    rw [Laws.State.takePosition_eq]
+  takeCompletion s kept := by
+    rw [Laws.State.takeCompletion_eq]
     exact kept.same rfl
   enterScope s element parent locals owner _ _ _ kept := by
     rw [Laws.State.enterScope_eq]
@@ -309,7 +309,7 @@ theorem since_frameAlongside (b : State) (program : Program) :
     signalBegin := fun s request formed fits anchored kept =>
       ⟨one.signalBegin s request formed fits (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1,
         two.signalBegin s request formed fits (anchored.mono fun _ held => ⟨held.1, held.2.2⟩) kept.2⟩
-    takePosition := fun s kept => ⟨one.takePosition s kept.1, two.takePosition s kept.2⟩
+    takeCompletion := fun s kept => ⟨one.takeCompletion s kept.1, two.takeCompletion s kept.2⟩
     enterScope := fun s element parent locals owner formed stands anchored kept =>
       ⟨one.enterScope s element parent locals owner formed stands (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1,
         two.enterScope s element parent locals owner formed stands (anchored.mono fun _ held => ⟨held.1, held.2.2⟩)

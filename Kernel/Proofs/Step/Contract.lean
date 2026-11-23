@@ -238,9 +238,9 @@ theorem completed_keeps {inv : State → Prop} {ctx : Ctx} (ops : Laws.Compensat
       exact .narrow (moved source held) (fun _ named => by
         rw [← Laws.Compensation.keptRecords_elements]; exact List.mem_flatMap.mpr ⟨child, kept, named⟩) (.refl _)
   rw [Laws.Compensation.store_eq]
-  exact ⟨ops.store _ _ (ops.takePosition state holds) (fun _ member => slots ▸ member)
+  exact ⟨ops.store _ _ (ops.takeCompletion state holds) (fun _ member => slots ▸ member)
       (stored.congr scopes occurrences (congrArg (·.compensation) slots)), scopes, occurrences, items,
-    show state.takePosition.1.slots.instances = _ by rw [slots]⟩
+    show state.takeCompletion.1.slots.instances = _ by rw [slots]⟩
 
 /-- Dropping the runs inside a scope occurrence an interrupting catcher decided on (`Feature.Compensation.dropWithin`)
 keeps `inv` and changes only the compensation slot. -/
@@ -270,7 +270,7 @@ theorem dropWithin_steady {inv : State → Prop} {program : Program} (ops : Laws
   obtain ⟨kept, _, same⟩ := dropWithin_keeps
     (inv := fun t => ∀ run ∈ t.slots.compensation.runs, run ∈ state.slots.compensation.runs) (program := program)
     { store := fun _ _ kept within _ run inside => kept run (within run inside)
-      takePosition := fun t kept => by rw [(ops.issued t).2.2.2]; exact kept
+      takeCompletion := fun t kept => by rw [(ops.issued t).2.2.2]; exact kept
       issued := ops.issued
       fail := fun t _ kept => by rw [Laws.State.signal_eq]; exact kept } ctx scope (state := state) (fun _ => id)
   rw [same] at kept ⊢

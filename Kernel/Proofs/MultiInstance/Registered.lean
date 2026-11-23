@@ -345,7 +345,7 @@ theorem numbering_frameAlongside (program : Program) :
   signalBegin s request formed fits anchored kept := ⟨(runsFramed_frameAlongside program).signalBegin s
     request formed fits (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1,
     fun apart => (kept.2 apart).signalBegin kept.1.owns fits.1 fits.2⟩
-  takePosition s kept := ⟨(runsFramed_frameAlongside program).takePosition s kept.1, fun apart => (kept.2 apart).takePosition⟩
+  takeCompletion s kept := ⟨(runsFramed_frameAlongside program).takeCompletion s kept.1, fun apart => (kept.2 apart).takeCompletion⟩
   enterScope s element parent locals owner formed stands anchored kept :=
     ⟨(runsFramed_frameAlongside program).enterScope s element parent locals owner formed stands
       (anchored.mono fun _ held => ⟨held.1, held.2.1⟩) kept.1,

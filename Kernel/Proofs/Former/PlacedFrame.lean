@@ -452,7 +452,7 @@ theorem placedAlongside (program : Program) : Alongside program (Placing program
     exact ⟨fun _ => occurrence_placed (held refs) member, present_issued formed (formed.owned.occurrenceScopes o member)⟩))
   signalBegin _ _ formed _ anchored held refs :=
     (held refs).signalled (.ofBegin (beginAnchored_placed refs formed (held refs) anchored))
-  takePosition _ held refs := (held refs).takePosition
+  takeCompletion _ held refs := (held refs).takeCompletion
   enterScope _ _ _ _ _ formed stands anchored held refs := (held refs).entered refs formed stands anchored
   reserve _ _ _ formed stands _ popped held refs :=
     (held refs).reserved formed (stands_present stands) (popped_placed refs popped (stands_present stands))

@@ -124,7 +124,7 @@ theorem allQueuedTokens_clearInside (s : State) (scope : ScopeOccurrenceId) (kee
 
 /-- Clearing drops scope occurrences and takes no position, whatever it clears. -/
 theorem clearInside_shrinks (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
-    (s.clearInside scope keep).scopes.Sublist s.scopes ∧ (s.clearInside scope keep).nextPosition = s.nextPosition := by
+    (s.clearInside scope keep).scopes.Sublist s.scopes ∧ (s.clearInside scope keep).nextCompletion = s.nextCompletion := by
   obtain ⟨_, made⟩ := clearInside_eq s scope keep
   rw [made]
   exact ⟨List.filter_sublist, rfl⟩
@@ -182,7 +182,7 @@ theorem leaveScope_compensation (s : State) (scope : ScopeOccurrenceId) :
     (s.leaveScope scope).slots.compensation.runs = s.slots.compensation.runs.filter (!(s.subtree scope).contains ·.scope) ∧
     (s.leaveScope scope).scopes = (s.scopes.filter fun entry =>
       !((s.subtree scope).filter (· != scope)).contains entry.id).filter (·.id != scope) ∧
-    (s.leaveScope scope).activations = s.activations ∧ (s.leaveScope scope).nextPosition = s.nextPosition := by
+    (s.leaveScope scope).activations = s.activations ∧ (s.leaveScope scope).nextCompletion = s.nextCompletion := by
   obtain ⟨_, made⟩ := clearInside_eq s scope []
   rw [leaveScope_slots_eq, (leaveScope_eq s scope).1, made]
   exact ⟨rfl, rfl, rfl, rfl, rfl⟩

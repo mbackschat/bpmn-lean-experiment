@@ -352,14 +352,14 @@ theorem cancel_wellFormed {s : State} (formed : WellFormed program s) (id : Occu
 /-! ## What removal shrinks -/
 
 private theorem leaveScope_shrinks (s : State) (scope : ScopeOccurrenceId) :
-    (s.leaveScope scope).scopes.Sublist s.scopes ∧ (s.leaveScope scope).nextPosition = s.nextPosition := by
+    (s.leaveScope scope).scopes.Sublist s.scopes ∧ (s.leaveScope scope).nextCompletion = s.nextCompletion := by
   obtain ⟨fewer, same⟩ := clearInside_shrinks s scope []
   rw [(leaveScope_eq s scope).1]
   exact ⟨List.filter_sublist.trans fewer, same⟩
 
 private theorem leaveAll_shrinks : ∀ (scopes : List ScopeOccurrence) (t : State),
     (scopes.foldl (fun t entry => t.leaveScope entry.id) t).scopes.Sublist t.scopes ∧
-      (scopes.foldl (fun t entry => t.leaveScope entry.id) t).nextPosition = t.nextPosition ∧
+      (scopes.foldl (fun t entry => t.leaveScope entry.id) t).nextCompletion = t.nextCompletion ∧
       ScopeGrows t (scopes.foldl (fun t entry => t.leaveScope entry.id) t)
   | [], _ => ⟨.refl _, rfl, .refl _⟩
   | entry :: rest, t => by
@@ -368,7 +368,7 @@ private theorem leaveAll_shrinks : ∀ (scopes : List ScopeOccurrence) (t : Stat
     exact ⟨fewer.trans fewer', same.trans same', (leaveScope_grows t entry.id).trans grows⟩
 
 private theorem removeOccurrence_shrinks (s : State) (id : OccurrenceId) :
-    (s.removeOccurrence id).scopes.Sublist s.scopes ∧ (s.removeOccurrence id).nextPosition = s.nextPosition ∧
+    (s.removeOccurrence id).scopes.Sublist s.scopes ∧ (s.removeOccurrence id).nextCompletion = s.nextCompletion ∧
       ScopeGrows s (s.removeOccurrence id) := by
   rw [removeOccurrence_eq]
   obtain ⟨fewer, same, grows⟩ := leaveAll_shrinks _ (withoutRecord s id)
@@ -376,7 +376,7 @@ private theorem removeOccurrence_shrinks (s : State) (id : OccurrenceId) :
 
 private theorem withdrawAll_shrinks : ∀ (scopes : List ScopeOccurrence) (t : State),
     (scopes.foldl (fun t entry => t.withdrawInside entry.id) t).scopes = t.scopes ∧
-      (scopes.foldl (fun t entry => t.withdrawInside entry.id) t).nextPosition = t.nextPosition ∧
+      (scopes.foldl (fun t entry => t.withdrawInside entry.id) t).nextCompletion = t.nextCompletion ∧
       (scopes.foldl (fun t entry => t.withdrawInside entry.id) t).scopeOrdinals = t.scopeOrdinals ∧
       (scopes.foldl (fun t entry => t.withdrawInside entry.id) t).issued = t.issued
   | [], _ => ⟨rfl, rfl, rfl, rfl⟩
@@ -388,12 +388,12 @@ private theorem withdrawAll_shrinks : ∀ (scopes : List ScopeOccurrence) (t : S
 /-- The removal operations drop scope occurrences, take no position and keep every scope occurrence key issued. -/
 theorem removal_shrinks (s : State) :
     (∀ scope keep, (s.clearInside scope keep).scopes.Sublist s.scopes ∧
-      (s.clearInside scope keep).nextPosition = s.nextPosition ∧ ScopeGrows s (s.clearInside scope keep)) ∧
-    (∀ scope, (s.leaveScope scope).scopes.Sublist s.scopes ∧ (s.leaveScope scope).nextPosition = s.nextPosition ∧
+      (s.clearInside scope keep).nextCompletion = s.nextCompletion ∧ ScopeGrows s (s.clearInside scope keep)) ∧
+    (∀ scope, (s.leaveScope scope).scopes.Sublist s.scopes ∧ (s.leaveScope scope).nextCompletion = s.nextCompletion ∧
       ScopeGrows s (s.leaveScope scope)) ∧
-    (∀ id, (s.removeOccurrence id).scopes.Sublist s.scopes ∧ (s.removeOccurrence id).nextPosition = s.nextPosition ∧
+    (∀ id, (s.removeOccurrence id).scopes.Sublist s.scopes ∧ (s.removeOccurrence id).nextCompletion = s.nextCompletion ∧
       ScopeGrows s (s.removeOccurrence id)) ∧
-    ∀ id, (s.cancelOccurrence id).scopes.Sublist s.scopes ∧ (s.cancelOccurrence id).nextPosition = s.nextPosition ∧
+    ∀ id, (s.cancelOccurrence id).scopes.Sublist s.scopes ∧ (s.cancelOccurrence id).nextCompletion = s.nextCompletion ∧
       ScopeGrows s (s.cancelOccurrence id) := by
   refine ⟨fun scope keep => ⟨(clearInside_shrinks s scope keep).1, (clearInside_shrinks s scope keep).2,
       clearInside_grows s scope keep⟩,

@@ -86,7 +86,7 @@ structure Unmoved (s t : State) : Prop where
   occurrenceOrdinals : t.occurrenceOrdinals = s.occurrenceOrdinals
   itemOrdinals : t.itemOrdinals = s.itemOrdinals
   table : Laws.State.TableGrows s t
-  nextPosition : t.nextPosition = s.nextPosition
+  nextCompletion : t.nextCompletion = s.nextCompletion
   nextOrder : t.nextOrder = s.nextOrder
   activations : t.activations = s.activations
   journal : t.journal = s.journal
@@ -117,7 +117,7 @@ theorem Unmoved.same {s t : State} (scopes : t.scopes = s.scopes := by exact rfl
     (occurrenceOrdinals : t.occurrenceOrdinals = s.occurrenceOrdinals := by exact rfl)
     (itemOrdinals : t.itemOrdinals = s.itemOrdinals := by exact rfl)
     (table : Laws.State.TableGrows s t := by exact fun _ _ held => held)
-    (nextPosition : t.nextPosition = s.nextPosition := by exact rfl)
+    (nextCompletion : t.nextCompletion = s.nextCompletion := by exact rfl)
     (nextOrder : t.nextOrder = s.nextOrder := by exact rfl)
     (activations : t.activations = s.activations := by exact rfl) (journal : t.journal = s.journal := by exact rfl)
     (transitions : t.transitions = s.transitions := by exact rfl) (issuing : t.issuing = s.issuing := by exact rfl)
@@ -137,7 +137,7 @@ theorem Unmoved.same {s t : State} (scopes : t.scopes = s.scopes := by exact rfl
     (parked : ∀ waiting ∈ t.slots.parked, waiting ∈ s.slots.parked := by exact fun _ held => held)
     (placings : ∀ signal ∈ Laws.State.allSignals t, Laws.Step.placing signal = true → signal ∈ Laws.State.allSignals s :=
       by exact fun _ held _ => held) : Unmoved s t :=
-  ⟨scopes, scopeOrdinals, occurrences, occurrenceOrdinals, itemOrdinals, table, nextPosition, nextOrder, activations, journal, transitions, issuing, started, ended, instanceId, multiInstances, compensation, begins,
+  ⟨scopes, scopeOrdinals, occurrences, occurrenceOrdinals, itemOrdinals, table, nextCompletion, nextOrder, activations, journal, transitions, issuing, started, ended, instanceId, multiInstances, compensation, begins,
     triggers, resumes, deferred, queuedSignals, queuedTokens, pending, instances, flows, parked, placings⟩
 
 /-- What `Unmoved` keeps of the queued begins, in both queues. -/
@@ -271,7 +271,7 @@ structure FrameAlongside (program : Program) (rel : State → Prop) (srel : Stat
   signalBegin : ∀ s request, WellFormed program s → BeginFits s request →
     Laws.Flow.BeginAnchored (fun t => WellFormed program t ∧ rel t) program s request → rel s →
     rel (s.signal (.begin request))
-  takePosition : ∀ s, rel s → rel s.takePosition.1
+  takeCompletion : ∀ s, rel s → rel s.takeCompletion.1
   /-- Entering, below a scope occurrence that stands, a scope occurrence of an element anchored where it is entered
   (`Laws.Flow.Anchored`). -/
   enterScope : ∀ s element parent locals owner, WellFormed program s → parent ∈ Laws.State.scopeIds s →

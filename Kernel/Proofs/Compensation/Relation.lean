@@ -54,7 +54,7 @@ def CompletionsApart (compensation : Compensations) : Prop :=
 
 /-- Every completion number held was issued, so the next completion's is held by no record. -/
 def CompletionsIssued (s : State) : Prop :=
-  ∀ completion ∈ completions s.slots.compensation, completion < s.nextPosition
+  ∀ completion ∈ completions s.slots.compensation, completion < s.nextCompletion
 
 /-- No run holds a pending record that may start under `precedes` (`Laws.Compensation.Ready`): every advance starts the
 ones that may (`Laws.Compensation.Advances`), and every other change to a run leaves it settled or drops it. -/
@@ -181,7 +181,7 @@ def pendingRun : CompensationRun := { trigger := thrownBy, scope := rootScope, p
 
 /-- A state holding `compensation` and queuing `signals`, its root scope occurrence and the counter of `T` at 1. -/
 def holdingState (compensation : Compensations) (signals : List Signal) : State :=
-  { instanceId := "p", scopes := [{ id := rootScope, element := none }], nextPosition := 8, batchSignals := signals,
+  { instanceId := "p", scopes := [{ id := rootScope, element := none }], nextCompletion := 8, batchSignals := signals,
     activations := [{ processInstance := "p", element := thrower, role := .element, count := 1 }],
     slots := { compensation } }
 
@@ -192,7 +192,7 @@ theorem shared_completion_rejected :
 
 /-- A completion number not yet issued breaks `CompletionsIssued`. -/
 theorem unissued_completion_rejected :
-    ¬ CompletionsIssued { holdingState { retained := [recordA] } [] with nextPosition := 1 } := by
+    ¬ CompletionsIssued { holdingState { retained := [recordA] } [] with nextCompletion := 1 } := by
   simp [CompletionsIssued, completions, completionsIn, completionsOf, Laws.Compensation.heldCompletions, holdingState, recordA]
 
 /-- A run whose pending record may start breaks `RunsSettled`. -/

@@ -64,7 +64,7 @@ theorem keyed_frame : FrameAlongside program Keyed where
   armGateway _ _ _ _ _ _ _ held := by rw [Laws.State.signal_eq]; exact held
   raise _ _ _ _ _ _ held := by rw [Laws.State.signal_eq]; exact held
   signalBegin _ _ _ _ _ held := by rw [Laws.State.signal_eq]; exact held
-  takePosition _ held := by rw [Laws.State.takePosition_eq]; exact held
+  takeCompletion _ held := by rw [Laws.State.takeCompletion_eq]; exact held
   enterScope _ _ _ _ _ _ _ _ held := by rw [Laws.State.enterScope_eq]; exact held
   reserve _ element scope _ _ _ _ held := keyed_reserve held element scope
   leaveScope s scope _ _ _ held := held.sublist (Laws.State.leaveScope_occurrences s scope)

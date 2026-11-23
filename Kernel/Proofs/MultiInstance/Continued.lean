@@ -175,8 +175,8 @@ theorem continued_stores (program : Program) : StoresAlongside program Continued
     have named : other ∈ [request] := Laws.Step.mem_beginsOf.mpr new
     rw [List.mem_singleton.mp named]
     exact fits.1 body
-  takePosition s kept := by
-    rw [Laws.State.takePosition_eq]
+  takeCompletion s kept := by
+    rw [Laws.State.takeCompletion_eq]
     exact kept.same (fun _ issued => issued) rfl rfl rfl
   enterScope s element _ locals owner formed stands _ kept := by
     have issued := (Laws.Step.enterScope_frame formed element stands locals owner).issued
@@ -241,8 +241,8 @@ theorem grown_alongside (s0 : State) (program : Program) : Alongside program (Oc
   signalBegin s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept
-  takePosition s kept := by
-    rw [Laws.State.takePosition_eq]
+  takeCompletion s kept := by
+    rw [Laws.State.takeCompletion_eq]
     exact kept
   enterScope s element _ locals owner formed stands _ kept :=
     kept.trans (Laws.Step.enterScope_frame formed element stands locals owner).issued

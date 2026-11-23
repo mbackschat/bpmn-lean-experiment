@@ -668,7 +668,7 @@ def sampleCounters : TreeMap ScopeSlot Nat compare :=
 def sample (kind : OpenKind) : State :=
   { instanceId := "p", scopes := [rootScope, childScope], occurrences := [subProcess, innerTask, outerTask]
     variables := [{ scope := processRoot, entries := [("a", .int 1)] }, { scope := subScope, entries := [] }]
-    openItems := ofItems [innerItem kind, outerItem kind], nextPosition := 7
+    openItems := ofItems [innerItem kind, outerItem kind], nextCompletion := 7
     itemOrdinals := ((∅ : Std.ExtTreeMap OccurrenceId Nat compare).insert innerKey 1).insert outerKey 1
     occurrenceOrdinals := sampleCounters
     scopeOrdinals := (∅ : Std.ExtTreeMap ScopeSlot Nat compare).insert { parent := processRoot, element := ⟨"Sub"⟩ } 1

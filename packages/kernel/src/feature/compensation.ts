@@ -29,7 +29,6 @@
 import {
   CompensationHandlerFailureTag,
   ImplicitCompensation,
-  SubmissionRule,
   assertNever,
   elementActivity,
   elementEnvelope,
@@ -37,15 +36,9 @@ import {
   elementScope,
   mergeSort,
   programElement,
-  workCall,
-  workIsService,
-  workIsUser,
-  workReceive,
-  type Element,
   type ElementId,
 } from "../il/types.js";
-import { workReader } from "../il/types/work.js";
-import { catchWrites, footprint, joined, meets, noNames, union, writes, type Footprint } from "../il/footprint.js";
+import { meets, subjectData } from "../il/footprint.js";
 import { flowReaches } from "../il/paths.js";
 import {
   scopeOccurrenceParent,
@@ -61,7 +54,7 @@ import {
   enterScope,
   failed,
   instanceOf,
-  takePosition,
+  takeCompletion,
   signal,
   type Compensable,
   type CompensationRun,
@@ -149,7 +142,7 @@ export function completed(ctx: Ctx, occurrence: Occurrence, state: State): Outco
   if (handler === null && !grouped) {
     return committed(store(state, { ...compensation, retained: [...outer, ...inner.map((record) => ({ ...record, scope: target }))] }));
   }
-  const [issued, completion] = takePosition(state);
+  const [issued, completion] = takeCompletion(state);
   const handlerElement = handler === null ? null : programElement(ctx.program, handler);
   const inside = handler === null || (handlerElement !== null && elementHeader(handlerElement).parent === occurrence.element);
   const locals = (scope: ScopeOccurrenceId): Compensable["snapshot"] =>
@@ -166,52 +159,12 @@ export function completed(ctx: Ctx, occurrence: Occurrence, state: State): Outco
   return committed(store(issued, { ...compensation, retained: [...outer, record] }));
 }
 
-/** Every element declared inside `element`, at any depth. */
-function interior(ctx: Ctx, element: Element): Element[] {
-  const go = (fuel: number, ids: readonly ElementId[]): Element[] =>
-    fuel === 0 ? [] : ids.flatMap((id) => {
-      const inner = programElement(ctx.program, id);
-      return inner === null ? [] : [inner, ...go(fuel - 1, elementScope(inner)?.[1].children ?? [])];
-    });
-  return go(ctx.program.elements.length, elementScope(element)?.[1].children ?? []);
-}
-
-/**
- * What `element` itself reads and writes over its whole run, over-approximated: the IL's one account of its run
- * (`footprint`, with its work's own reads, `workReads`), what it writes when it runs (`writes`) and what its boundaries
- * write when they fire (`catchWrites`), a Multi-Instance element's output data item, every name a User Task installs
- * under `SubmissionRule.InstallsVariables`, and every name for work whose data the model does not show, a plain or
- * Manual Task (none of User, Service, Call, Receive, Script or Business Rule work), as COMPENSATION-SEMANTICS-SPEC D1 (c)
- * reads it: the account says such work touches no name, which holds for the closure, not for §13.5.5's dependency.
- */
-function ownData(ctx: Ctx, element: Element): Footprint {
-  const boundaries = (elementEnvelope(element)?.boundaries ?? []).flatMap((boundary) => catchWrites(boundary.subscription));
-  const item = elementEnvelope(element)?.multiInstance?.outputDataItem ?? null;
-  const caught: Footprint = { reads: noNames, writes: union(writes(element), { names: [...boundaries, ...(item === null ? [] : [item])], all: false }) };
-  const activity = elementActivity(element);
-  let work: Footprint = { reads: noNames, writes: noNames };
-  if (activity !== null) {
-    const kind = activity[1].work;
-    const abstract = !(workIsUser(kind) || workIsService(kind) || workCall(kind) !== null || workReceive(kind) !== null || workReader(kind) !== null);
-    const installs = workIsUser(kind) && ctx.program.options.submission === SubmissionRule.InstallsVariables;
-    work = { reads: { names: [], all: abstract }, writes: { names: [], all: abstract || installs } };
-  }
-  return joined(joined(footprint(ctx.program, element), caught), work);
-}
-
-/** What a run of `subject` reads and writes: its own and, for a Scope, its interior's. */
-function data(ctx: Ctx, subject: ElementId): Footprint {
-  const element = programElement(ctx.program, subject);
-  return element === null ? { reads: noNames, writes: noNames }
-    : [element, ...interior(ctx, element)].reduce((found, inner) => joined(found, ownData(ctx, inner)), { reads: noNames, writes: noNames });
-}
-
 /**
  * `record`'s subject ran before `other`'s in a way §13.5.5 orders, so `other`'s handler completes before `record`'s
  * starts: (b) a Sequence Flow path (`flowReaches`) leads from a boundary Event attached to `record`'s subject to
  * `other`'s, a different one, whose record may complete while the subject still runs; or `record` completed first and
  * (a) a Sequence Flow path leads from its subject to `other`'s, (c) `other`'s subject reads a name `record`'s can write
- * (`data`), or (d) both are records of one subject, run in reverse completion order.
+ * (`subjectData`), or (d) both are records of one subject, run in reverse completion order.
  */
 function precedes(ctx: Ctx, record: Compensable, other: Compensable): boolean {
   const subject = programElement(ctx.program, record.subject);
@@ -219,7 +172,7 @@ function precedes(ctx: Ctx, record: Compensable, other: Compensable): boolean {
   return (record.subject !== other.subject && flowReaches(ctx.program, boundaries, other.subject)) ||
     (record.completion < other.completion &&
       (record.subject === other.subject || flowReaches(ctx.program, [record.subject], other.subject) ||
-        meets(data(ctx, other.subject).reads, data(ctx, record.subject).writes)));
+        meets(subjectData(ctx.program, other.subject).reads, subjectData(ctx.program, record.subject).writes)));
 }
 
 function position(ctx: Ctx, element: ElementId): number {

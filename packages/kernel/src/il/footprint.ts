@@ -13,6 +13,7 @@ import {
   ExpressionTag,
   SignalPayload,
   SimpleBooleanTag,
+  SubmissionRule,
   assertNever,
   elementActivity,
   elementEnvelope,
@@ -23,15 +24,20 @@ import {
   eventPayloadCatch,
   eventPayloadThrow,
   programDecision,
+  programElement,
   programFlow,
   scopeKindStart,
   throwView,
   triggerView,
   workCall,
+  workIsService,
+  workIsUser,
+  workReceive,
   workResults,
   valueSourceLiteral,
   type ConditionTrigger,
   type Element,
+  type ElementId,
   type Expression,
   type Mapping,
   type Program,
@@ -238,6 +244,50 @@ export function writes(element: Element): NameSet {
       ...(collection === null ? [] : [collection])],
     all: thrown?.installsAll === true,
   };
+}
+
+/** Every element declared inside `element`, at any depth. */
+export function programInterior(program: Program, element: Element): Element[] {
+  const go = (fuel: number, ids: readonly ElementId[]): Element[] =>
+    fuel === 0 ? [] : ids.flatMap((id) => {
+      const inner = programElement(program, id);
+      return inner === null ? [] : [inner, ...go(fuel - 1, elementScope(inner)?.[1].children ?? [])];
+    });
+  return go(program.elements.length, elementScope(element)?.[1].children ?? []);
+}
+
+/**
+ * What `element` itself reads and writes over its whole run, over-approximated: the IL's one account of its run
+ * (`footprint`, with its work's own reads, `workReads`), what it writes when it runs (`writes`) and what its boundaries
+ * write when they fire (`catchWrites`), a Multi-Instance element's output data item, every name a User Task installs
+ * under `SubmissionRule.InstallsVariables`, and every name for work whose data the model does not show, a plain or
+ * Manual Task (none of User, Service, Call, Receive, Script or Business Rule work), as COMPENSATION-SEMANTICS-SPEC D1 (c)
+ * reads it: the account says such work touches no name, which holds for the closure, not for §13.5.5's dependency.
+ */
+export function runData(program: Program, element: Element): Footprint {
+  const boundaries = (elementEnvelope(element)?.boundaries ?? []).flatMap((boundary) => catchWrites(boundary.subscription));
+  const item = elementEnvelope(element)?.multiInstance?.outputDataItem ?? null;
+  const caught: Footprint = { reads: noNames, writes: union(writes(element), { names: [...boundaries, ...(item === null ? [] : [item])], all: false }) };
+  const activity = elementActivity(element);
+  let work: Footprint = { reads: noNames, writes: noNames };
+  if (activity !== null) {
+    const kind = activity[1].work;
+    const abstract = !(workIsUser(kind) || workIsService(kind) || workCall(kind) !== null || workReceive(kind) !== null || workReader(kind) !== null);
+    const installs = workIsUser(kind) && program.options.submission === SubmissionRule.InstallsVariables;
+    work = { reads: { names: [], all: abstract }, writes: { names: [], all: abstract || installs } };
+  }
+  return joined(joined(footprint(program, element), caught), work);
+}
+
+/**
+ * What a run of the compensation subject `subject` reads and writes, §13.5.5's data dependency, which
+ * `feature/compensation.ts`'s `precedes` and admission's compensation order both read: its own and, for a Scope, its
+ * interior's.
+ */
+export function subjectData(program: Program, subject: ElementId): Footprint {
+  const element = programElement(program, subject);
+  return element === null ? { reads: noNames, writes: noNames }
+    : [element, ...programInterior(program, element)].reduce((found, inner) => joined(found, runData(program, inner)), { reads: noNames, writes: noNames });
 }
 
 /**

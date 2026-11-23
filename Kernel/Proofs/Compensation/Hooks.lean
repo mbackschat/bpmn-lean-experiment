@@ -26,27 +26,27 @@ open Kernel.Laws.Compensation (ClaimsApart Advances Ready Keyed Holds FirstOf Be
 
 /-! ## §13.5.5's data dependency over the footprints -/
 
-/-- Every name the footprints of the program's elements read or write (`Compensation.data`), after one that no
+/-- Every name the footprints of the program's elements read or write (`subjectData`), after one that no
 footprint needs to name: what a footprint of every name (`NameSet.all`) lists. -/
 def footprintNames (ctx : Ctx) : List String :=
   "" :: ctx.program.elements.flatMap fun element =>
-    (Feature.Compensation.data ctx element.header.id).reads.names ++
-      (Feature.Compensation.data ctx element.header.id).writes.names
+    (subjectData ctx.program element.header.id).reads.names ++
+      (subjectData ctx.program element.header.id).writes.names
 
 /-- The names a run of `subject` reads, every name for a footprint that reads every name (`Laws.IL.listed`). -/
 def footprintReads (ctx : Ctx) (subject : ElementId) : List String :=
-  Laws.IL.listed (footprintNames ctx) (Feature.Compensation.data ctx subject).reads
+  Laws.IL.listed (footprintNames ctx) (subjectData ctx.program subject).reads
 
 /-- The names a run of `subject` writes, every name for a footprint that writes every name. -/
 def footprintWrites (ctx : Ctx) (subject : ElementId) : List String :=
-  Laws.IL.listed (footprintNames ctx) (Feature.Compensation.data ctx subject).writes
+  Laws.IL.listed (footprintNames ctx) (subjectData ctx.program subject).writes
 
 /-- A subject's footprint names only names `footprintNames` holds. -/
 theorem footprint_listed (ctx : Ctx) (subject : ElementId) :
-    (∀ name ∈ (Feature.Compensation.data ctx subject).reads.names, name ∈ footprintNames ctx) ∧
-      ∀ name ∈ (Feature.Compensation.data ctx subject).writes.names, name ∈ footprintNames ctx := by
+    (∀ name ∈ (subjectData ctx.program subject).reads.names, name ∈ footprintNames ctx) ∧
+      ∀ name ∈ (subjectData ctx.program subject).writes.names, name ∈ footprintNames ctx := by
   cases found : ctx.program.element? subject with
-  | none => rw [Laws.Compensation.data_missing found]; exact ⟨nofun, nofun⟩
+  | none => rw [Laws.IL.subjectData_missing found]; exact ⟨nofun, nofun⟩
   | some element =>
     have member := Laws.IL.element?_mem found
     have named := Laws.IL.element?_header found
@@ -691,8 +691,8 @@ theorem failCompensation_formed (hooks : Hooks) {ctx : Ctx} {handler : ScopeOccu
   exact formed.signal _
 
 /-- Retaining other records in place of `s`'s, the counter stepped by `issued`, moves nothing else. -/
-theorem moves_retained (s : State) (retained : List Compensable) {next : Nat} (issued : s.nextPosition ≤ next) :
-    Moves s (stored { s with nextPosition := next } { s.slots.compensation with retained }) :=
+theorem moves_retained (s : State) (retained : List Compensable) {next : Nat} (issued : s.nextCompletion ≤ next) :
+    Moves s (stored { s with nextCompletion := next } { s.slots.compensation with retained }) :=
   ⟨issued, .of_same rfl rfl (.of_eq rfl), fun _ inside => .inl inside, rfl, rfl, ⟨[], by simp [stored, Laws.State.allSignals], by simp⟩, fun _ => Nat.le_refl _,
     fun run inside => ⟨run, inside, rfl⟩, fun _ inside => inside⟩
 
@@ -729,9 +729,9 @@ theorem completed_formed (hooks : Hooks) {ctx : Ctx} {occurrence : Occurrence} {
       omega
   · obtain ⟨_, placedAt, numbered, rest⟩ := rest
     obtain ⟨children, rfl⟩ := rest
-    rw [store_stored, Laws.State.takePosition_eq] at after ⊢
-    rw [Laws.State.takePosition_eq] at numbered
-    have moves := moves_retained s (outer ++ [record]) (Nat.le_succ s.nextPosition)
+    rw [store_stored, Laws.State.takeCompletion_eq] at after ⊢
+    rw [Laws.State.takeCompletion_eq] at numbered
+    have moves := moves_retained s (outer ++ [record]) (Nat.le_succ s.nextCompletion)
     refine formed_of formed (fun record' inside => ?_) formed.keyed
       (fun run inside => formed.runsIssued run inside)
       (apart_of_fresh (fun n => ?_) formed.completions formed.issued rfl) (fun _ inside => .inl inside)

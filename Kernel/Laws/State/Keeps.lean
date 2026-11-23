@@ -244,12 +244,12 @@ theorem rekind_wellFormed {s : State} (formed : WellFormed program s) {change : 
       exact free old oldInside
 
 /-- Taking a position keeps a state well-formed: no clause reads the position counter. -/
-theorem takePosition_wellFormed {s : State} (formed : WellFormed program s) : WellFormed program s.takePosition.1 := by
-  rw [takePosition_eq]
-  show WellFormed program { s with nextPosition := s.nextPosition + 1 }
-  have keys : key { s with nextPosition := s.nextPosition + 1 } = key s :=
+theorem takeCompletion_wellFormed {s : State} (formed : WellFormed program s) : WellFormed program s.takeCompletion.1 := by
+  rw [takeCompletion_eq]
+  show WellFormed program { s with nextCompletion := s.nextCompletion + 1 }
+  have keys : key { s with nextCompletion := s.nextCompletion + 1 } = key s :=
     funext fun _ => key_congr (by apply instanceOf_congr <;> rfl)
-  have sameItems : (itemList ({ s with nextPosition := s.nextPosition + 1 } : State).openItems) = itemList s.openItems :=
+  have sameItems : (itemList ({ s with nextCompletion := s.nextCompletion + 1 } : State).openItems) = itemList s.openItems :=
     items_congr rfl
   exact {
   issued := ⟨formed.issued.occurrences, fun item member => formed.issued.items item (items_same member rfl),
@@ -263,7 +263,7 @@ theorem takePosition_wellFormed {s : State} (formed : WellFormed program s) : We
     fun item member => formed.owned.attachments item (items_same member rfl), formed.owned.scopeOwners,
     formed.owned.variableScopes, formed.owned.tokenScopes⟩
   rooted := ⟨formed.rooted.1, formed.rooted.2.1, fun scope member =>
-    Within.congr (s := s) (t := { s with nextPosition := s.nextPosition + 1 }) rfl (formed.rooted.2.2 scope member)⟩
+    Within.congr (s := s) (t := { s with nextCompletion := s.nextCompletion + 1 }) rfl (formed.rooted.2.2 scope member)⟩
   variables := ⟨formed.variables.scopes, formed.variables.names⟩
   failure := formed.failure
   queue := ⟨formed.queue.arm, formed.queue.armScope, formed.queue.armGateway, formed.queue.ends,

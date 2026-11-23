@@ -33,7 +33,7 @@ section Compacts
 variable {schedule : BranchSchedule} {start : State} {log : RunLog} {s t : State}
 
 /-- A commit keeps the next position. -/
-theorem compact_nextPosition (ran : compact schedule start log s = .ok t) : t.nextPosition = s.nextPosition := by
+theorem compact_nextCompletion (ran : compact schedule start log s = .ok t) : t.nextCompletion = s.nextCompletion := by
   rcases compact_cases ran with ⟨_, rfl⟩ | ⟨_, rfl⟩
   · rfl
   have same := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2
@@ -153,7 +153,7 @@ theorem orderJournal_formed {precedes : Compensable → Compensable → Prop} (f
   case issued =>
     intro completion member
     rw [same] at member
-    rw [compact_nextPosition ran]
+    rw [compact_nextCompletion ran]
     exact held.issued completion member
   case settled =>
     rintro run' member record' ⟨pending, ready⟩

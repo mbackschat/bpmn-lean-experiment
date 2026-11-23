@@ -313,8 +313,8 @@ theorem runsFramed_frameAlongside (program : Program) : StoresAlongside program 
   signalBegin s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.carry (.equal rfl rfl rfl rfl)
-  takePosition s kept := by
-    rw [Laws.State.takePosition_eq]
+  takeCompletion s kept := by
+    rw [Laws.State.takeCompletion_eq]
     exact kept.carry (.equal rfl rfl rfl rfl)
   enterScope s element parent locals owner formed stands _ kept := by
     rw [Laws.State.enterScope_eq]

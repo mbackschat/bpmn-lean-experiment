@@ -110,8 +110,8 @@ theorem Numbered.removeVariable {program : Program} {s : State} (target : ScopeO
       (congrArg (·.compensation.runs) same.slots) pending))
 
 /-- Issuing an identity keeps `Numbered`. -/
-theorem Numbered.takePosition {program : Program} {s : State} (held : Numbered program s) : Numbered program s.takePosition.1 := by
-  rw [Laws.State.takePosition_eq]
+theorem Numbered.takeCompletion {program : Program} {s : State} (held : Numbered program s) : Numbered program s.takeCompletion.1 := by
+  rw [Laws.State.takeCompletion_eq]
   exact held.shrink (.same (.refl _) (fun _ inside => inside) (.refl _) (.of_kept (.of_eq rfl rfl rfl rfl))
     fun _ pending => .inl pending)
 

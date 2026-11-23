@@ -393,10 +393,10 @@ structure CompensationOps (program : Program) (inv : State → Prop) : Prop wher
   /-- The retained records replaced, from where `StoredFrom` says, and the runs by some of them. -/
   store : ∀ state compensation, inv state → (∀ run ∈ compensation.runs, run ∈ state.slots.compensation.runs) →
     StoredFrom program state (fun _ => False) compensation → inv { state with slots := { state.slots with compensation } }
-  takePosition : ∀ state, inv state → inv state.takePosition.1
+  takeCompletion : ∀ state, inv state → inv state.takeCompletion.1
   /-- Taking a position keeps the scope occurrences, the occurrences, the open items and the slots. -/
-  issued : ∀ state : State, state.takePosition.1.scopes = state.scopes ∧ state.takePosition.1.occurrences = state.occurrences ∧
-    state.takePosition.1.openItems = state.openItems ∧ state.takePosition.1.slots = state.slots
+  issued : ∀ state : State, state.takeCompletion.1.scopes = state.scopes ∧ state.takeCompletion.1.occurrences = state.occurrences ∧
+    state.takeCompletion.1.openItems = state.openItems ∧ state.takeCompletion.1.slots = state.slots
   fail : ∀ state failure, inv state → inv (state.signal (.endInstance .failed (some failure)))
 
 end Kernel.Laws.Compensation

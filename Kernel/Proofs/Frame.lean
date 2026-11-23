@@ -116,7 +116,7 @@ theorem countersFrom_frame : FrameAlongside program (Laws.State.CountersFrom sta
   armGateway _ _ _ _ _ _ _ held := by rw [Laws.State.signal_eq]; exact held.same rfl rfl rfl
   raise _ _ _ _ _ _ held := by rw [Laws.State.signal_eq]; exact held.same rfl rfl rfl
   signalBegin _ _ _ _ _ held := by rw [Laws.State.signal_eq]; exact held.same rfl rfl rfl
-  takePosition _ held := by rw [Laws.State.takePosition_eq]; exact held.same rfl rfl rfl
+  takeCompletion _ held := by rw [Laws.State.takeCompletion_eq]; exact held.same rfl rfl rfl
   enterScope _ _ _ _ _ _ _ _ held := by rw [Laws.State.enterScope_eq]; exact held.same rfl rfl rfl
   reserve s element scope _ _ _ _ held :=
     have reserves := Laws.State.reserve_reserves s element scope
@@ -222,7 +222,7 @@ theorem issuerOf_frame : FrameAlongside program (IssuerOf b) where
   armGateway _ _ _ _ _ _ _ held := by rw [Laws.State.signal_eq]; exact held
   raise _ _ _ _ _ _ held := by rw [Laws.State.signal_eq]; exact held
   signalBegin _ _ _ _ _ held := by rw [Laws.State.signal_eq]; exact held
-  takePosition _ held := by rw [Laws.State.takePosition_eq]; exact held
+  takeCompletion _ held := by rw [Laws.State.takeCompletion_eq]; exact held
   enterScope _ _ _ _ _ _ _ _ held := by rw [Laws.State.enterScope_eq]; exact held
   reserve s element scope _ _ _ _ held :=
     have reserves := Laws.State.reserve_reserves s element scope

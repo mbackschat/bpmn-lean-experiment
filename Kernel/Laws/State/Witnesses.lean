@@ -37,7 +37,7 @@ def startFact (occurrence : Occurrence) : StartedFact :=
 
 def armedState (kind : OpenKind) : State :=
   { sample kind with
-    occurrences := [subProcess, innerTask, outerTask, reservation], nextPosition := 8,
+    occurrences := [subProcess, innerTask, outerTask, reservation], nextCompletion := 8,
     occurrenceOrdinals := sampleCounters.insert { parent := processRoot, element := ⟨"Timer"⟩ } 1,
     draft := { started := [startFact innerTask, startFact outerTask] } }
 

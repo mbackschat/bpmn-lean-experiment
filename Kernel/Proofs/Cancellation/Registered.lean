@@ -491,7 +491,7 @@ theorem compensationOps_alongside {program : Program} (side : StoresAlongside pr
       (fun run member _ inside => .inl ⟨run, runs run member, inside⟩)
       (fun run member _ at_ leave resumed => .inl (.inr (.inr ⟨run, runs run member, at_, leave, resumed⟩)))
       (provenance.mono fun _ => False.elim) holds.2⟩
-  takePosition s holds := ⟨ops.takePosition s holds.1, side.takePosition s holds.2⟩
+  takeCompletion s holds := ⟨ops.takeCompletion s holds.1, side.takeCompletion s holds.2⟩
   issued := ops.issued
   fail s failure holds := ⟨ops.fail s failure holds.1, side.signal holds.2 _⟩
 
@@ -644,8 +644,8 @@ theorem endsKept_alongside (b : State) (x : Option (OccurrenceId × OccurrenceKe
   signalBegin s _ _ _ _ kept := by
     rw [Laws.State.signal_eq]
     exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (.refl _) (.refl _)
-  takePosition _ kept := by
-    rw [Laws.State.takePosition_eq]
+  takeCompletion _ kept := by
+    rw [Laws.State.takeCompletion_eq]
     exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (.refl _) (.refl _)
   enterScope s element parent locals owner formed stands _ kept :=
     kept.step formed (Laws.Step.enterScope_frame formed element stands locals owner)
