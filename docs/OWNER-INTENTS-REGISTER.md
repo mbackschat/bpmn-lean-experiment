@@ -18,6 +18,10 @@ The owner's standing intents, priorities, concerns and working mode, in the owne
 - **Bounds change later (2026-11-17).** Every value, state and capacity bound is expected to change later; the architecture keeps each in one owner and changeable without rework.
 - **Own models (2026-11-17).** The owner may add their own models to the goal's census at any time; the plan does not wait for them, and the root asks for them at a later stage.
 - **Docs are part of the product.** `docs/` and `docs/kernel/` are reworked with the design; every document gets a keep, revise, replace or retire verdict.
+- **No cost jumps mid-work (2026-11-23).** A design choice is accepted only once its costs and downsides are measured, not estimated; a finding during the work that adds several agent-days is a show stopper. An accepted range is a ceiling: the causal compensation order (candidate (i)) was accepted at about 18–39 agent hours, never more than 40 in total.
+- **No new hubs (2026-11-23).** A mechanism that makes every feature carry a cross-cutting obligation, or that makes later changes costly, repeats the reasons for the rewrite; that downside counts against a design whatever its hours.
+- **Safer over cheaper (2026-11-23).** Extra hours are acceptable for the safer solution, within a measured bound.
+- **The highest risk is measured first (2026-11-23).** P6's unproved settle-agreement diamond is assessed in depth, with measured spikes, before work builds on it.
 
 ## Working mode (2026-11-17)
 
