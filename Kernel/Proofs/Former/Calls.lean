@@ -64,7 +64,7 @@ def CallInstallsSnapshot (hooks : Hooks) : Prop :=
     hooks.arriveActivity ctx header payload occurrence state = .ok after →
     root ∈ after.scopes → root.calledInstance.isSome → root.occurrence = some occurrence.id → root ∉ state.scopes →
     ∃ installed, ctx.evaluateMappings (state.evalContext ctx.program occurrence.scope) work.inputs = .ok (some installed) ∧
-      ∃ frame ∈ after.variables, frame.scope = root.id ∧ frame.entries = installed
+      after.variables[root.id]? = some installed
 
 /-- PC-SCOPE-05 (`CALLN-RETURN-01`, `CALLN-OUTSIDE-01`): a called root that is idle continues exactly the Call
 occurrence that owns it, found by its own `occurrence`, never by the called definition, and keeps every other scope
@@ -452,18 +452,18 @@ theorem callInstallsSnapshot {hooks : Hooks} {workHooks : Feature.Work.WorkHooks
          calledInstance := some (State.calledInstanceId
            ((Feature.Work.enterLocal header inputs occurrence state).instanceOf occurrence.scope)
            (ctx.program.publicId occurrence.element) occurrence.activation) }] ∧
-      armed.variables = (Feature.Work.enterLocal header inputs occurrence state).variables ++
-        [{ scope := occurrence.scope.child occurrence.element
-             (.fresh (Feature.Work.enterLocal header inputs occurrence state).issuing
-               (Feature.Work.enterLocal header inputs occurrence state).issueNext),
-           entries := keyed (lastWrites made) }] := by
+      armed.variables = (Feature.Work.enterLocal header inputs occurrence state).variables.insert
+        (occurrence.scope.child occurrence.element
+          (.fresh (Feature.Work.enterLocal header inputs occurrence state).issuing
+            (Feature.Work.enterLocal header inputs occurrence state).issueNext))
+        (keyed (lastWrites made)) := by
     rcases armedIs with rfl | rfl <;> rw [Laws.State.enterCalled_eq _ _ _ _ _ unissued] <;> simp [Laws.State.signal_eq]
   simp only [Laws.State.signal_eq] at inside ⊢
   rw [scopes.1] at inside
   rcases List.mem_append.mp inside with old | new
   · exact absurd (rootsKept root old isCalled) fresh
   · rw [List.mem_singleton.mp new, scopes.2, keyed_lastWrites]
-    exact ⟨_, List.mem_append_right _ (List.mem_singleton_self _), rfl, rfl⟩
+    exact Std.ExtTreeMap.getElem?_insert_self
 
 theorem returnContinuesCaller {hooks : Hooks} (call : hooks.completeCall = Feature.Work.completeCall) :
     ReturnContinuesCaller hooks := by
@@ -678,9 +678,7 @@ theorem CallsFormed.enterCalled (formed : WellFormed under s) (holds : CallsForm
                                occurrence := some call.id
                                calledInstance := some (State.calledInstanceId (s.instanceOf call.scope)
                                  (program.publicId call.element) call.activation) }]
-      variables := s.variables ++
-        [{ scope := call.scope.child call.element (.fresh s.issuing s.issueNext)
-           entries := keyed variables }]
+      variables := s.variables.insert (call.scope.child call.element (.fresh s.issuing s.issueNext)) (keyed variables)
       slots := { s.slots with
         instances := s.slots.instances ++
           [{ root := call.scope.child call.element (.fresh s.issuing s.issueNext),

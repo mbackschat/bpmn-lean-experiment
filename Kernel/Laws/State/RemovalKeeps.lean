@@ -72,11 +72,10 @@ theorem leaveScope_left {s : State} (formed : WellFormed program s) {scope : Sco
     exact List.filter_sublist.trans cleared.scopesSublist
   refine {
       scopes := scopes, occurrences := fun occurrence => ?_, items := fun item => ?_, tokens := fun token => ?_,
-      variables := fun variables => ?_, scopesSublist := fewer,
+      variables := fun x entries => ?_, scopesSublist := fewer,
       occurrencesSublist := by rw [shape]; exact cleared.occurrencesSublist,
       openItemsSub := by rw [shape]; exact cleared.openItemsSub, ordinals := by rw [shape]; exact cleared.ordinals,
       tokensSublist := by rw [shape]; exact cleared.tokensSublist,
-      variablesSublist := by rw [shape]; exact List.filter_sublist.trans cleared.variablesSublist,
       instances := fun x member => ?_, activations := by rw [shape]; exact cleared.activations,
       issued := by rw [shape]; exact cleared.issued, issuing := by rw [shape]; exact cleared.issuing,
       issueNext := by rw [shape]; exact cleared.issueNext,
@@ -97,10 +96,10 @@ theorem leaveScope_left {s : State} (formed : WellFormed program s) {scope : Sco
   · rw [shape]
     exact cleared.tokens token
   · rw [shape]
-    simp only [List.mem_filter, cleared.variables variables, bne_iff_ne, ne_eq, StrictlyWithin]
-    by_cases same : variables.scope = scope
-    · simp [same, Within.refl]
-    · simp [same]
+    simp only [Std.ExtTreeMap.getElem?_erase, Std.LawfulEqCmp.compare_eq_iff_eq]
+    by_cases same : x = scope
+    · subst same; simp [Within.refl]
+    · rw [ite_eq_right (Ne.symm same), cleared.variables x entries]; simp [StrictlyWithin, same]
   · obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
     obtain ⟨old, outside⟩ := (scopes entry).mp inside
     refine named ▸ instanceOf_kept formed (formed.distinct.scopes.sublist (fewer.map _))

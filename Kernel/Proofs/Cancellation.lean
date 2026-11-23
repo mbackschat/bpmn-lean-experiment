@@ -46,7 +46,7 @@ def SubtreeRemoved (hooks : Hooks) : Prop :=
     (∀ token ∈ Laws.State.allQueuedTokens after, ¬ Within before token.busyScope removed) ∧
     (∀ item ∈ itemList after.openItems, ¬ Within before item.scope removed) ∧
     (∀ occurrence ∈ after.occurrences, ¬ Within before occurrence.scope removed) ∧
-    (∀ variables ∈ after.variables, ¬ Within before variables.scope removed)
+    (∀ x ∈ after.variables, ¬ Within before x removed)
 
 /-- The occurrence `occurrence` of `state` has the public identity `ref`: its element, activation and process instance
 are the reference's, it is numbered under its element's counter, and it has begun or an open item waits for it. The

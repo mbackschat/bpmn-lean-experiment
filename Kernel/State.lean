@@ -23,11 +23,6 @@ public section
 
 namespace Kernel
 
-structure ScopeVariables where
-  scope : ScopeOccurrenceId
-  entries : List (String × Value)
-  deriving Repr
-
 inductive InstanceStatus where
   | running
   | completed
@@ -170,7 +165,8 @@ structure State where
   /-- The closure's queued tokens, each keyed by the unit that queued it and its index in that unit's batch: content, with
   no order of entry. Which runs next is `Step.nextToken`'s, through the run log; empty at commit (DC4). -/
   queuedTokens : TreeMap UnitKey Token compare := ∅
-  variables : List ScopeVariables := []
+  /-- Each scope occurrence's own variables, keyed by the scope occurrence (DC25): content, with no order of entry. -/
+  variables : TreeMap ScopeOccurrenceId (List (String × Value)) compare := ∅
   openItems : OpenItems := ∅
   /-- The next item ordinal of each occurrence that opened an item, advanced at commit (DC12) and pruned with the
   occurrence (KD1). -/
@@ -256,7 +252,7 @@ def root : ScopeOccurrenceId := .ofSegments []
 def initial (instanceId : String) (variables : List (String × Value)) (businessKey : Option String := none) : State :=
   { instanceId
     scopes := [{ id := root, element := none, position := 0 }]
-    variables := [{ scope := root, entries := keyed variables }]
+    variables := (∅ : TreeMap ScopeOccurrenceId (List (String × Value)) compare).insert root (keyed variables)
     slots := { instances := [{ root, businessKey }] } }
 
 def emit (state : State) (flows : List FlowId) (scope : ScopeOccurrenceId) : State :=
@@ -470,7 +466,7 @@ def enterScope (state : State) (element : ElementId) (parent : ScopeOccurrenceId
   let (state, position) := state.issuePosition
   ({ state with
       scopes := state.scopes ++ [{ id, element := some element, position, occurrence }]
-      variables := state.variables ++ [{ scope := id, entries := keyed locals }] }, id)
+      variables := state.variables.insert id (keyed locals) }, id)
 
 /-- The elements the scope occurrence `scope` declares: for a called root, the process-level elements of the process its
 Call bound (its `slots.instances` entry), not the Call Activity's, since a called Process behaves as a normal Process
@@ -493,7 +489,7 @@ def shows (state : State) (program : Program) (scope : ScopeOccurrenceId) (name 
 
 /-- The bindings the frame of `scope` shows (`shows`). -/
 def frame (state : State) (program : Program) (scope : ScopeOccurrenceId) : List (String × Value) :=
-  (((state.variables.find? (·.scope == scope)).map (·.entries)).getD []).filter (state.shows program scope ·.1)
+  (state.variables.getD scope []).filter (state.shows program scope ·.1)
 
 /-- Variables visible from `scope`, innermost first, up to the root of its process instance, each frame's as it
 `shows` them. -/

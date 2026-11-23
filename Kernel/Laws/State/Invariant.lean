@@ -195,7 +195,7 @@ structure Owned (s : State) : Prop where
     occurrence.id = host ∧ occurrence.begun = true ∧ occurrence.scope = item.scope
   scopeOwners : ∀ scope ∈ s.scopes, ∀ owner, scope.occurrence = some owner → ∃ occurrence ∈ s.occurrences,
     occurrence.id = owner ∧ occurrence.begun = true
-  variableScopes : ∀ variables ∈ s.variables, variables.scope ∈ scopeIds s
+  variableScopes : ∀ scope ∈ s.variables, scope ∈ scopeIds s
   tokenScopes : ∀ token ∈ allQueuedTokens s, token.busyScope ∈ scopeIds s
 
 /-- The scope occurrences form one tree rooted at `State.root`: it is present, it is the only one without a parent, and
@@ -206,13 +206,14 @@ def Rooted (s : State) : Prop :=
   State.root ∈ scopeIds s ∧ (∀ scope ∈ s.scopes, scope.parent = none ↔ scope.id = State.root) ∧
     ∀ scope ∈ s.scopes, Within s scope.id State.root
 
-/-- One variable set per scope occurrence, each binding a name at most once: a scope occurrence owns its data, and a
-name declared again in a nested scope shadows the outer one rather than repeating in it
+/-- Each variable set binds a name at most once: a scope occurrence owns its data, and a name declared again in a nested
+scope shadows the outer one rather than repeating in it; that a scope occurrence has one set holds by construction, since
+the sets are keyed by it (DC25)
 ([data, scope data](../../../docs/kernel/semantics/DATA-SEMANTICS-SPEC.md#scope-data),
 [CIB-EXT-0020](../../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-ext-0020--nested-embedded-scope-locals-and-nearest-owner-writes)). -/
 structure VariablesKeyed (s : State) : Prop where
-  scopes : (s.variables.map (·.scope)).Nodup
-  names : ∀ variables ∈ s.variables, (variables.entries.map (·.1)).Nodup
+  names : ∀ (scope : ScopeOccurrenceId) (entries : List (String × Value)), s.variables[scope]? = some entries →
+    (entries.map (·.1)).Nodup
 
 /-- A failure is recorded exactly when the instance failed. -/
 def FailureRecorded (s : State) : Prop :=
@@ -678,7 +679,7 @@ def sampleCounters : TreeMap ScopeSlot Nat compare :=
 
 def sample (kind : OpenKind) : State :=
   { instanceId := "p", scopes := [rootScope, childScope], occurrences := [subProcess, innerTask, outerTask]
-    variables := [{ scope := processRoot, entries := [("a", .int 1)] }, { scope := subScope, entries := [] }]
+    variables := ((∅ : TreeMap ScopeOccurrenceId (List (String × Value)) compare).insert processRoot [("a", .int 1)]).insert subScope []
     openItems := ofItems [innerItem kind, outerItem kind], nextCompletion := 7
     itemOrdinals := ((∅ : Std.ExtTreeMap OccurrenceId Nat compare).insert innerKey 1).insert outerKey 1
     occurrenceOrdinals := sampleCounters

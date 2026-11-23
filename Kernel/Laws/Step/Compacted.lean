@@ -72,17 +72,24 @@ theorem compact_kept (ran : compact schedule start log s = .ok t) : CommitKept s
   rw [same, renameState_eq]
   exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
-/-- The variable sets a commit leaves: the settled state's, renamed. -/
-theorem compact_variables (ran : compact schedule start log s = .ok t) :
-    t.variables = s.variables.map fun variables =>
-      { variables with scope := renameScope (commitRenaming schedule start log s) variables.scope } := by
+/-- A variable set a commit leaves is one of the settled state's, under its key renamed. -/
+theorem compact_variables (ran : compact schedule start log s = .ok t) {y : ScopeOccurrenceId} {entries : List (String × Value)}
+    (found : t.variables[y]? = some entries) :
+    ∃ x, renameScope (commitRenaming schedule start log s) x = y ∧ s.variables[x]? = some entries := by
   rcases compact_cases ran with ⟨empty, rfl⟩ | ⟨_, rfl⟩
-  · have same := commitRenaming_empty (schedule := schedule) (start := start) (log := log) empty
-    exact ((List.map_congr_left fun _ _ => by simp [renameScope_id same]).trans (List.map_id _)).symm
+  · exact ⟨y, renameScope_id (commitRenaming_empty (schedule := schedule) (start := start) (log := log) empty) y, found⟩
   have frame := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2
     (renameState (commitRenaming schedule start log s) (commitRekey schedule start log s) s)
-  unfold compacted
-  rw [frame, renameState_eq]
+  unfold compacted at found
+  rw [frame, renameState_eq] at found
+  exact renameKeys_getElem? found
+
+/-- A variable key a commit leaves is a settled state's key, renamed. -/
+theorem compact_variables_mem (ran : compact schedule start log s = .ok t) {y : ScopeOccurrenceId} (member : y ∈ t.variables) :
+    ∃ x ∈ s.variables, renameScope (commitRenaming schedule start log s) x = y := by
+  obtain ⟨entries, found⟩ := Option.isSome_iff_exists.mp (Std.ExtTreeMap.mem_iff_isSome_getElem?.mp member)
+  obtain ⟨x, renamed, was⟩ := compact_variables ran found
+  exact ⟨x, Std.ExtTreeMap.mem_iff_isSome_getElem?.mpr (by simp [was]), renamed⟩
 
 /-- A commit leaves the issue table empty. -/
 theorem compact_issued (ran : compact schedule start log s = .ok t) : t.issued = ∅ := by
@@ -508,9 +515,8 @@ theorem compact_owned (ran : compact schedule start log s = .ok t) (owned : Owne
     have id' := mapped.id
     have begun' := mapped.begun
     exact ⟨renamed, kept, by rw [id', id], by rw [begun', begun]⟩
-  variableScopes variables member := by
-    rw [compact_variables ran] at member
-    obtain ⟨old, inside, rfl⟩ := List.mem_map.mp member
+  variableScopes scope member := by
+    obtain ⟨old, inside, rfl⟩ := compact_variables_mem ran member
     change _ ∈ standingKeys t
     rw [compact_scopes ran]
     exact List.mem_map_of_mem (owned.variableScopes old inside)
@@ -551,22 +557,11 @@ theorem compact_rooted (ran : compact schedule start log s = .ok t) (issued : Is
       rw [← renamedId]
       exact .parent renamed _ _ renamedIn renamedLink (ih root)
 
-/-- **`VariablesKeyed` across the commit** (`variables`, two fields): variable sets of standing scope occurrences, whose
-keys rename apart. -/
-theorem compact_variablesKeyed (ran : compact schedule start log s = .ok t) (counted : CountersFrom start s)
-    (issued : IssuedBelow s) (owned : Owned s) (rooted : Rooted s) (keyed : VariablesKeyed s) : VariablesKeyed t := by
-  have historic := historic_of issued rooted
-  refine ⟨?_, fun variables member => ?_⟩
-  · have scopes := keyed.scopes
-    rw [compact_variables ran, List.map_map]
-    unfold List.Nodup at scopes ⊢
-    rw [List.pairwise_map] at scopes ⊢
-    refine scopes.imp_of_mem fun {a b} am bm apart same => apart ?_
-    exact renameScope_apart counted rooted (historic.issued_key (owned.variableScopes a am)) (owned.variableScopes b bm)
-      (by simpa using same)
-  · rw [compact_variables ran] at member
-    obtain ⟨old, inside, rfl⟩ := List.mem_map.mp member
-    exact keyed.names old inside
+/-- **`VariablesKeyed` across the commit** (`variables`): every renamed set is a settled one. -/
+theorem compact_variablesKeyed (ran : compact schedule start log s = .ok t) (keyed : VariablesKeyed s) : VariablesKeyed t where
+  names _ _ found := by
+    obtain ⟨_, _, was⟩ := compact_variables ran found
+    exact keyed.names _ _ was
 
 /-- **`OwnedBelow` across the commit** (`ownedBelow`): a scope occurrence's owner is renamed with it. -/
 theorem compact_ownedBelow (ran : compact schedule start log s = .ok t) (counted : CountersFrom start s) (issued : IssuedBelow s)

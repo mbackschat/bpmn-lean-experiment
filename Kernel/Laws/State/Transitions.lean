@@ -58,21 +58,22 @@ structure ClearsInside (before after : State) (scope : ScopeOccurrenceId) (keep 
   occurrencesOutside : ∀ occurrence ∈ before.occurrences, ¬ Within before occurrence.scope scope →
     occurrence ∈ after.occurrences
   itemsOutside : ∀ item ∈ itemList before.openItems, ¬ Within before item.scope scope → item ∈ itemList after.openItems
-  variablesOutside : ∀ variables ∈ before.variables, ¬ Within before variables.scope scope →
-    variables ∈ after.variables
-  variablesOwn : ∀ variables ∈ before.variables, variables.scope = scope → variables ∈ after.variables
+  variablesOutside : ∀ x entries, before.variables[x]? = some entries → ¬ Within before x scope →
+    after.variables[x]? = some entries
+  variablesOwn : ∀ entries, before.variables[scope]? = some entries → after.variables[scope]? = some entries
   tokensOutside : ∀ token ∈ allQueuedTokens before, ¬ Within before token.busyScope scope → token ∈ allQueuedTokens after
   scopesInside : ∀ inner ∈ after.scopes, StrictlyWithin before inner.id scope →
     ∃ owner ∈ keep, inner.occurrence = some owner
   occurrencesInside : ∀ occurrence ∈ after.occurrences, Within before occurrence.scope scope → occurrence.id ∈ keep
   itemsInside : ∀ item ∈ itemList after.openItems, Within before item.scope scope → item.id.occurrence ∈ keep
-  variablesInside : ∀ variables ∈ after.variables, StrictlyWithin before variables.scope scope →
-    ∃ owner ∈ keep, ∃ inner ∈ after.scopes, inner.id = variables.scope ∧ inner.occurrence = some owner
+  variablesInside : ∀ x ∈ after.variables, StrictlyWithin before x scope →
+    ∃ owner ∈ keep, ∃ inner ∈ after.scopes, inner.id = x ∧ inner.occurrence = some owner
   tokensInside : ∀ token ∈ allQueuedTokens after, ¬ Within before token.busyScope scope
   noNewScopes : ∀ inner ∈ after.scopes, inner ∈ before.scopes
   noNewOccurrences : ∀ occurrence ∈ after.occurrences, occurrence ∈ before.occurrences
   noNewItems : ∀ item ∈ itemList after.openItems, item ∈ itemList before.openItems
-  noNewVariables : ∀ variables ∈ after.variables, variables ∈ before.variables
+  noNewVariables : ∀ (x : ScopeOccurrenceId) (entries : List (String × Value)), after.variables[x]? = some entries →
+    before.variables[x]? = some entries
   noIssue : ∀ x ∈ scopeIds after, ∀ element, occurrenceCount after x element = occurrenceCount before x element
   instanceKept : after.instanceId = before.instanceId
 
@@ -129,8 +130,8 @@ theorem sample_clears (kind : OpenKind) : ClearsInside (sample kind) (cleared ki
     rintro item (rfl | rfl) outside
     · exact absurd (.refl _) outside
     · simp [cleared]
-  variablesOutside := fun variables member _ => by simpa [cleared] using member
-  variablesOwn := fun variables member _ => by simpa [cleared] using member
+  variablesOutside := fun _ _ held _ => held
+  variablesOwn := fun _ held => held
   tokensOutside := by simp [sample]
   scopesInside := by
     simp only [cleared, sample, List.mem_cons, List.not_mem_nil, or_false]
@@ -145,15 +146,17 @@ theorem sample_clears (kind : OpenKind) : ClearsInside (sample kind) (cleared ki
     rintro item rfl within
     exact absurd within (root_outside rfl)
   variablesInside := by
-    simp only [cleared, sample, List.mem_cons, List.not_mem_nil, or_false]
-    rintro variables (rfl | rfl) ⟨within, distinct⟩
-    · exact absurd within (root_outside rfl)
+    intro x member ⟨within, distinct⟩
+    simp only [cleared, sample, Std.ExtTreeMap.mem_insert, Std.LawfulEqCmp.compare_eq_iff_eq, Std.ExtTreeMap.not_mem_empty,
+      or_false] at member
+    rcases member with rfl | rfl
     · exact absurd rfl distinct
+    · exact absurd within (root_outside rfl)
   tokensInside := by simp [cleared, sample]
   noNewScopes := by simp [cleared, sample]
   noNewOccurrences := by simp [cleared, sample]
   noNewItems := by simp [cleared, sample]
-  noNewVariables := fun variables member => by simpa [cleared] using member
+  noNewVariables := fun _ _ held => by simpa [cleared] using held
   noIssue := fun _ _ _ => rfl
   instanceKept := rfl
 
@@ -190,8 +193,8 @@ theorem terminate_clears (kind : OpenKind) : ClearsInside (terminating kind) (te
     rintro item (rfl | rfl) outside
     · exact absurd (.refl _) outside
     · simp [terminated]
-  variablesOutside := fun variables member _ => by simpa [terminated, terminating] using member
-  variablesOwn := fun variables member _ => by simpa [terminated, terminating] using member
+  variablesOutside := fun _ _ held _ => by simpa [terminated, terminating] using held
+  variablesOwn := fun _ held => by simpa [terminated, terminating] using held
   tokensOutside := by simp [terminating, sample]
   scopesInside := by
     simp only [terminated, terminating, sample, List.mem_cons, List.not_mem_nil, or_false]
@@ -209,15 +212,17 @@ theorem terminate_clears (kind : OpenKind) : ClearsInside (terminating kind) (te
     rintro item rfl within
     exact absurd within (root_outside rfl)
   variablesInside := by
-    simp only [terminated, terminating, sample, List.mem_cons, List.not_mem_nil, or_false]
-    rintro variables (rfl | rfl) ⟨within, distinct⟩
-    · exact absurd within (root_outside rfl)
+    intro x member ⟨within, distinct⟩
+    simp only [terminated, terminating, sample, Std.ExtTreeMap.mem_insert, Std.LawfulEqCmp.compare_eq_iff_eq,
+      Std.ExtTreeMap.not_mem_empty, or_false] at member
+    rcases member with rfl | rfl
     · exact absurd rfl distinct
+    · exact absurd within (root_outside rfl)
   tokensInside := by simp [terminated, terminating, sample]
   noNewScopes := by simp [terminated, terminating]
   noNewOccurrences := by simp [terminated, terminating]
   noNewItems := by simp [terminated, terminating, sample]
-  noNewVariables := fun variables member => by simpa [terminated, terminating] using member
+  noNewVariables := fun _ _ held => by simpa [terminated, terminating] using held
   noIssue := fun _ _ _ => rfl
   instanceKept := rfl
 

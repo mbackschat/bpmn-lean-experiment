@@ -36,7 +36,7 @@ test("a Call's locals and its called root, entered under one parent for one elem
   assert.equal(locals.calledInstance, null);
   assert.notEqual(root.calledInstance, null);
   assert.notEqual(locals.id, root.id);
-  assert.ok(outcome.value.variables.some((frame) => frame.scope === locals.id && frame.entries.some(([name]) => name === "P")));
+  assert.ok(outcome.value.variables.some(([scope, entries]) => scope === locals.id && entries.some(([name]) => name === "P")));
   const keys = outcome.value.scopes.map((scope) => scope.id);
   assert.equal(new Set(keys).size, keys.length);
   assert.ok(keys.includes(rootScope));

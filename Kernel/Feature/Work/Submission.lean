@@ -29,7 +29,7 @@ def declared (state : State) (scope : ScopeOccurrenceId) : List String :=
     | fuel + 1 =>
       if current == top then []
       else
-        let own := ((state.variables.find? (·.scope == current)).map (·.entries.map (·.1))).getD []
+        let own := (state.variables.getD current []).map (·.1)
         match (state.scopes.find? (·.id == current)).bind (·.parent) with
         | some parent => own ++ go fuel parent
         | none => own

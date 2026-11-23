@@ -157,16 +157,18 @@ theorem clearInside_cleared {s : State} (formed : WellFormed program s) {scope :
     simp [stays] at kept
   refine {
       scopes := scopes, occurrences := fun occurrence => ?_, items := fun item => ?_, tokens := fun token => ?_,
-      variables := fun variables => ?_, scopesSublist := fewer, occurrencesSublist := List.filter_sublist,
+      variables := fun x entries => by
+        simp [State.clearInside, State.recordCancelled, -Std.ExtTreeMap.getElem?_filter, Std.ExtTreeMap.getElem?_filter',
+          Option.filter_eq_some_iff, mem, StrictlyWithin], scopesSublist := fewer, occurrencesSublist := List.filter_sublist,
       scopeGrows := clearInside_grows s scope keep,
       openItemsSub := ItemsSub.filter _ _, ordinals := ordinals, tokensSublist := ?_,
-      variablesSublist := List.filter_sublist, instances := fun x member => ?_, activations := rfl, counters := clearInside_counters s scope keep,
+      instances := fun x member => ?_, activations := rfl, counters := clearInside_counters s scope keep,
       signals := rfl, queues := clearInside_queues s scope keep, status := rfl, failure := rfl, journal := rfl,
       transitions := rfl, started := rfl,
       slots := ⟨fun _ member => ?_, fun _ member => ?_, fun _ member => ?_⟩,
       bodies := by simp [State.clearInside, State.recordCancelled, featureSlotsClear_eq, mem_subtree_inside],
       issued := rfl, issuing := rfl, issueNext := rfl }
-  rotate_left 4
+  rotate_left 3
   · simp only [allQueuedTokens, State.clearInside, State.recordCancelled, Std.ExtTreeMap.toList_filter]
     exact (List.filter_sublist.map _).append List.filter_sublist
   · obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
@@ -181,8 +183,8 @@ theorem clearInside_cleared {s : State} (formed : WellFormed program s) {scope :
   iterate 3
     · simp only [State.clearInside, State.recordCancelled, featureSlotsClear_eq] at member
       exact (List.mem_filter.mp member).1
-  all_goals simp [State.clearInside, State.recordCancelled, mem, StrictlyWithin,
-    mem_itemList_filter formed.distinct.items, allQueuedTokens, Std.ExtTreeMap.toList_filter, or_and_right]
+  all_goals simp [State.clearInside, State.recordCancelled, mem, mem_itemList_filter formed.distinct.items,
+    allQueuedTokens, Std.ExtTreeMap.toList_filter, or_and_right]
 
 /-- Clearing a present scope occurrence of a well-formed state journals each begun occurrence it removes once, under
 its key: those within the scope occurrence that it does not keep. -/
@@ -235,7 +237,7 @@ theorem clearInside_eq (s : State) (scope : ScopeOccurrenceId) (keep : List Occu
       scopeOrdinals := s.scopeOrdinals.filter fun slot _ => !((s.subtree le scope).filter (· != scope)).contains slot.parent
       occurrenceOrdinals :=
         s.occurrenceOrdinals.filter fun slot _ => !((s.subtree le scope).filter (· != scope)).contains slot.parent
-      variables := s.variables.filter (!((s.subtree le scope).filter (· != scope)).contains ·.scope)
+      variables := s.variables.filter fun x _ => !((s.subtree le scope).filter (· != scope)).contains x
       slots := {
         parked := s.slots.parked.filter (!(s.subtree le scope).contains ·.scope)
         held := s.slots.held.filter (!(s.subtree le scope).contains ·.scope)
@@ -262,7 +264,7 @@ theorem leaveScope_eq (s : State) (scope : ScopeOccurrenceId) :
       scopes := (s.clearInside le scope).scopes.filter (·.id != scope)
       scopeOrdinals := (s.clearInside le scope).scopeOrdinals.filter fun slot _ => slot.parent != scope
       occurrenceOrdinals := (s.clearInside le scope).occurrenceOrdinals.filter fun slot _ => slot.parent != scope
-      variables := (s.clearInside le scope).variables.filter (·.scope != scope)
+      variables := (s.clearInside le scope).variables.erase scope
       slots := (s.leaveScope le scope).slots } ∧
     (s.leaveScope le scope).instanceId = s.instanceId := by
   simp [State.leaveScope, State.clearInside, State.recordCancelled]

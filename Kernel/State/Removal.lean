@@ -55,7 +55,7 @@ def clearInside (state : State) (le : Issue → Issue → Bool) (scope : ScopeOc
       scopes := journalled.scopes.filter (!nested.contains ·.id)
       scopeOrdinals := journalled.scopeOrdinals.filter fun slot _ => !nested.contains slot.parent
       occurrenceOrdinals := journalled.occurrenceOrdinals.filter fun slot _ => !nested.contains slot.parent
-      variables := journalled.variables.filter (!nested.contains ·.scope)
+      variables := journalled.variables.filter fun scope _ => !nested.contains scope
       slots := journalled.slots.clear inside nested }
 
 /-- Leave `scope`: clear it and remove the occurrence, its variables and the compensation records it retains, so the
@@ -69,7 +69,7 @@ def leaveScope (state : State) (le : Issue → Issue → Bool) (scope : ScopeOcc
       scopes := cleared.scopes.filter (·.id != scope)
       scopeOrdinals := cleared.scopeOrdinals.filter fun slot _ => slot.parent != scope
       occurrenceOrdinals := cleared.occurrenceOrdinals.filter fun slot _ => slot.parent != scope
-      variables := cleared.variables.filter (·.scope != scope)
+      variables := cleared.variables.erase scope
       slots := { cleared.slots with
         compensation := { cleared.slots.compensation with
           retained := cleared.slots.compensation.retained.filter (·.scope != scope) }

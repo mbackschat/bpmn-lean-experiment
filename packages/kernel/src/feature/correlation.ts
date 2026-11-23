@@ -37,7 +37,7 @@ import {
   type OpenItem,
   type Result,
   type ScopeOccurrenceId,
-  type State,
+  type State, scopeVariables,
 } from "../state.js";
 import { EvaluationTag, evalContext, subscriptionOf, type Ctx } from "../hooks.js";
 import { criteriaRefusal } from "../state/criteria.js";
@@ -133,7 +133,7 @@ function sameKindAndValue(left: Value, right: Value): boolean {
 function criterionHolds(state: State, scope: ScopeOccurrenceId, criterion: CorrelationMatch): boolean {
   const instance = instanceRoot(state, scope);
   const holds = (owner: ScopeOccurrenceId, name: string): boolean => {
-    const held = state.variables.find((entry) => entry.scope === owner)?.entries.find(([key]) => key === name);
+    const held = scopeVariables(state, owner).find(([key]) => key === name);
     return held !== undefined && sameKindAndValue(held[1], criterion.expected);
   };
   const names = (actual: string | null): boolean => {

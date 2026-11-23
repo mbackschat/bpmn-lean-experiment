@@ -77,7 +77,7 @@ test("under CIB's reading an uncaught Error ends only its path, and the instance
   const forked = committed(failUnmatched(withOptions(withSibling(thrower(reservation)(base())), cib), result));
   assert.equal(forked.status, "running");
   assert.deepEqual(forked.openItems.map((item) => item.element), ["W"]);
-  assert.deepEqual(forked.variables.flatMap((scope) => scope.entries), [["reservation", { tag: "string", value: "none" }]]);
+  assert.deepEqual(forked.variables.flatMap(([, entries]) => entries), [["reservation", { tag: "string", value: "none" }]]);
 });
 
 test("under CIB's reading the last path of the instance ending with the thrower's outputs is refused", () => {

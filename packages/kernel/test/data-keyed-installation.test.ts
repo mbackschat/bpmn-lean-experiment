@@ -42,7 +42,7 @@ const twice = (name: string): Json[] =>
   [{ name, value: { kind: "string", value: "first" } }, { name, value: { kind: "string", value: "second" } }];
 const begin = (variables: Json[] = []): Json => ({ kind: "start", commandId: "start", instanceId: "I", variables });
 /** The bindings of the variable set of the scope occurrence `scope`. */
-const frame = (state: State, scope: ScopeOccurrenceId): unknown => state.variables.find((vars) => vars.scope === scope)?.entries;
+const frame = (state: State, scope: ScopeOccurrenceId): unknown => new Map(state.variables).get(scope);
 
 const reply = message({ messageRef: "M", name: text("M") });
 /** `S -> T -> E`, `T` a User Task, beside the non-interrupting Message Event Sub-Process `H`, whose start `HS` leads to

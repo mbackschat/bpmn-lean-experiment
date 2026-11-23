@@ -25,7 +25,7 @@ def byName (entries : List (String × Value)) : List (String × Value) :=
 
 /-- The instance root's variables, ordered by name. -/
 def variables (state : State) : List (String × Value) :=
-  byName (((state.variables.find? (·.scope == State.root)).map (·.entries)).getD [])
+  byName (state.variables.getD State.root [])
 
 /-- What a published variable scope is. A scope is named by the occurrence it belongs to: `activity` is an Activity
 occurrence's own scope (a Sub-Process's, or an Activity's local variables), `multiInstanceBody` a Multi-Instance body's;
@@ -95,7 +95,7 @@ def publishedScope (state : State) (scope : ScopeOccurrence) (variables : List (
 canonical order. -/
 def scopes (program : Program) (state : State) : List PublishedScope :=
   (state.scopes.filterMap fun scope =>
-    match ((state.variables.find? (·.scope == scope.id)).map (·.entries)).getD [] with
+    match state.variables.getD scope.id [] with
     | [] => none
     | entries => (publishedScope state scope (byName entries)).map fun published =>
       { published with element := published.element.map program.publicId }).mergeSort PublishedScope.le

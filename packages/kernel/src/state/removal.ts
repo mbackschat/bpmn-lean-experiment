@@ -62,7 +62,7 @@ export function clearInside(state: State, le: PositionLe, scope: ScopeOccurrence
     scopes: journalled.scopes.filter((candidate) => !nested.includes(candidate.id)),
     scopeOrdinals: journalled.scopeOrdinals.filter(([slot]) => !nested.includes(slot.parent)),
     occurrenceOrdinals: journalled.occurrenceOrdinals.filter(([slot]) => !nested.includes(slot.parent)),
-    variables: journalled.variables.filter((entry) => !nested.includes(entry.scope)),
+    variables: journalled.variables.filter(([scope]) => !nested.includes(scope)),
     slots: featureSlotsClear(journalled.slots, inside, nested),
   };
 }
@@ -81,7 +81,7 @@ export function leaveScope(state: State, le: PositionLe, scope: ScopeOccurrenceI
     scopes: cleared.scopes.filter((candidate) => candidate.id !== scope),
     scopeOrdinals: cleared.scopeOrdinals.filter(([slot]) => slot.parent !== scope),
     occurrenceOrdinals: cleared.occurrenceOrdinals.filter(([slot]) => slot.parent !== scope),
-    variables: cleared.variables.filter((entry) => entry.scope !== scope),
+    variables: cleared.variables.filter(([key]) => key !== scope),
     slots: {
       ...cleared.slots,
       compensation: {

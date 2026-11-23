@@ -101,7 +101,7 @@ function afterReview(json: Json, values: Record<string, string> | ReadonlyArray<
     if (!outcome.ok) return outcome.failure;
     state = outcome.value;
   }
-  const rootEntries = state!.variables.find((entry) => entry.scope === rootScope)?.entries ?? [];
+  const rootEntries = new Map(state!.variables).get(rootScope) ?? [];
   return {
     root: Object.fromEntries(rootEntries.map(([name, value]) => [name, (value as { value: unknown }).value])),
     open: state!.openItems.map((item) => item.element).sort(),

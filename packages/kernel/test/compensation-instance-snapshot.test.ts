@@ -68,9 +68,9 @@ const ran: Json[] = [complete("T", 1), complete("T", 2), complete("U", 1, [["ite
 
 /** The inputs the waiting handler Task captured. */
 function seen(outcome: Outcome, input: string): unknown {
-  const scoped = committedState(outcome).variables.find((vars) => vars.entries.some(([name]) => name === input));
+  const scoped = committedState(outcome).variables.find(([, entries]) => entries.some(([name]) => name === input));
   assert.ok(scoped !== undefined, `the handler Task holds ${input}: ${JSON.stringify(outcome)}`);
-  return Object.fromEntries(scoped.entries)[input];
+  return Object.fromEntries(scoped[1])[input];
 }
 
 /** What each of the two handler runs captured as `input`, the first run first. */

@@ -214,7 +214,7 @@ theorem queueInstances_keeps (ops : MultiInstanceOps program inv settled)
 `loopCounter = index` (CIB-INT-0018). -/
 def CounterIn (ctx : Ctx) (loop : MultiInstance) (s : State) (index : Nat) (scope : ScopeOccurrenceId) : Prop :=
   ctx.program.options.multiInstanceCounters = .cibLocals → Feature.MultiInstance.itemName ctx loop ≠ some "loopCounter" →
-    ∃ locals ∈ s.variables, locals.scope = scope ∧ ("loopCounter", Value.int index) ∈ locals.entries
+    ∃ entries, s.variables[scope]? = some entries ∧ ("loopCounter", Value.int index) ∈ entries
 
 /-- What entering the instances `done`, the first of those `MultiInstance.opening` names, keeps and records from the
 state `start` the entering began in: `Entering`, the occurrence counters, the feature slots, the occurrences,
@@ -339,13 +339,19 @@ theorem enterInstance_opening (ops : MultiInstanceOps program inv settled) {ctx 
       obtain ⟨stands, counter⟩ := rest
       refine ⟨scope, by rw [List.getElem?_set_ne differs]; exact slot, ⟨bounds.1, grows.issued bounds.2⟩,
         by simp [Laws.State.scopeIds] at stands ⊢; exact .inl stands, fun cib named => ?_⟩
-      obtain ⟨locals', present, at_, entry⟩ := counter cib named
-      exact ⟨locals', List.mem_append_left _ present, at_, entry⟩
+      obtain ⟨entries, present, entry⟩ := counter cib named
+      refine ⟨entries, ?_, entry⟩
+      simp only [Std.ExtTreeMap.getElem?_insert]
+      rw [ite_eq_right ?_]
+      · exact present
+      · intro same
+        obtain rfl := Std.LawfulEqCmp.compare_eq_iff_eq.mp same
+        exact unissued bounds.2
     · rw [List.mem_singleton.mp new]
       refine ⟨_, by rw [List.getElem?_set_self below], ⟨unissuedStart, issuedAfter⟩,
         by simp [Laws.State.scopeIds], fun cib named => ?_⟩
       obtain ⟨earlier, later, split, last⟩ := counted cib named
-      refine ⟨⟨_, keyed locals⟩, by simp, rfl, ?_⟩
+      refine ⟨keyed locals, by simp only [Std.ExtTreeMap.getElem?_insert_self], ?_⟩
       rw [split]
       exact Laws.State.mem_keyed earlier last
   · have fresh' : ∀ other, other ∈ done → ∀ scope', instances[other]? = some (.active scope') →
@@ -498,8 +504,8 @@ theorem beginInstances_spec (ops : MultiInstanceOps program inv settled) {ctx : 
       rw [slot] at slot'
       obtain rfl := Iteration.active.inj (Option.some.inj slot')
       refine .inr ⟨bounds.1, fun cib named => ?_⟩
-      obtain ⟨locals, present, at_, entry⟩ := rest.2 cib named
-      exact ⟨locals, variables ▸ present, at_, entry⟩
+      obtain ⟨entries, present, entry⟩ := rest.2 cib named
+      exact ⟨entries, variables ▸ present, entry⟩
     · rw [opened.untouched index inside] at slot
       exact .inl slot
 

@@ -89,7 +89,7 @@ import {
   type WriteEvent,
   SemanticCause,
   semanticFailure,
-  issueNotAfter, type Issue, itemsInOrder, type OccurrenceId, type UnitKey,
+  issueNotAfter, type Issue, itemsInOrder, type OccurrenceId, type UnitKey, scopeVariables,
 } from "./state.js";
 // Lean's `Kernel.Hooks` re-exports `Kernel.State.Removal` to the features and `Kernel.Step`; so does this module, which
 // keeps the removal module's direct importers to this hub (guard 15).
@@ -371,7 +371,7 @@ export function evalContext(state: State, program: Program, scope: ScopeOccurren
 
 /** The variables `scope` itself holds, without the chain behind it. */
 export function ownVariables(state: State, scope: ScopeOccurrenceId): readonly Binding[] {
-  return state.variables.find((entry) => entry.scope === scope)?.entries ?? [];
+  return scopeVariables(state, scope);
 }
 
 /** How a catch trigger catches a raised event: its precedence, lower first, and the variables it writes. */

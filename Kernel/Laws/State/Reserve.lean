@@ -170,8 +170,7 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
     intro x member
     exact Within.congr reserves.scopes (reach x (reserves.scopes ▸ member))
   case variables =>
-    exact ⟨by simpa [reserves.variables] using formed.variables.scopes,
-      by simpa [reserves.variables] using formed.variables.names⟩
+    exact ⟨by simpa [reserves.variables] using formed.variables.names⟩
   case failure => simpa [FailureRecorded, reserves.failure, reserves.status] using formed.failure
   case queue =>
     have queue := formed.queue
@@ -435,8 +434,7 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
     intro x inside
     exact Within.congr starts_.scopes (reach x (starts_.scopes ▸ inside))
   case variables =>
-    exact ⟨by simpa [starts_.variables] using formed.variables.scopes,
-      by simpa [starts_.variables] using formed.variables.names⟩
+    exact ⟨by simpa [starts_.variables] using formed.variables.names⟩
   case failure => simpa [FailureRecorded, starts_.failure, starts_.status] using formed.failure
   case queue =>
     have queue := formed.queue

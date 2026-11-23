@@ -47,7 +47,7 @@ function after(stimulus: Json): Outcome {
 }
 
 const root = (outcome: Outcome): unknown => outcome.ok
-  ? Object.fromEntries((outcome.value.variables.find((entry) => entry.scope === rootScope)?.entries ?? []).map(([name, value]) => [name, value]))
+  ? Object.fromEntries((new Map(outcome.value.variables).get(rootScope) ?? []).map(([name, value]) => [name, value]))
   : outcome.failure;
 
 test("a completion naming the task's own local commits, and the local ends with the task", () => {

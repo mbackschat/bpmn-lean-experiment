@@ -11,7 +11,7 @@ const codec = await import(new URL("../dist/wire-codec.js", import.meta.url).hre
 test("plain data and big decimal coefficients round-trip exactly", () => {
   const state = {
     instanceId: "I",
-    variables: [{ scope: 0, entries: [["amount", { tag: "decimal", coefficient: 123456789012345678901234567890n, scale: 2 }]] }],
+    variables: [["", [["amount", { tag: "decimal", coefficient: 123456789012345678901234567890n, scale: 2 }]]]],
     failure: null,
     flags: [true, false],
   };

@@ -64,7 +64,9 @@ theorem sample_wellFormed (kind : OpenKind) {program : Program}
     itemOccurrences := by simp [sample, innerItem, outerItem, subProcess, innerTask, outerTask]
     attachments := by simp [sample, innerItem, outerItem]
     scopeOwners := by simp [sample, rootScope, childScope, subProcess, innerTask, outerTask]
-    variableScopes := by simp [sample, scopeIds, rootScope, childScope]
+    variableScopes := by
+      simp [sample, scopeIds, rootScope, childScope]
+      rintro _ (rfl | rfl) <;> simp
     tokenScopes := by simp [sample] }
   rooted := ⟨by simp [scopeIds, sample, rootScope, processRoot, root_eq],
     by simp [sample, rootScope, childScope, processRoot, subScope, root_eq], by
@@ -72,7 +74,13 @@ theorem sample_wellFormed (kind : OpenKind) {program : Program}
       rintro scope (rfl | rfl) <;> rw [root_eq]
       · exact .refl _
       · exact sub_within⟩
-  variables := ⟨by simp [sample, processRoot, subScope], by simp [sample]⟩
+  variables := ⟨fun x entries found => by
+    simp only [sample, Std.ExtTreeMap.getElem?_insert, Std.ExtTreeMap.getElem?_empty] at found
+    split at found
+    · cases found; simp
+    · split at found
+      · cases found; simp
+      · cases found⟩
   failure := by simp [FailureRecorded, sample]
   queue := ⟨by simp [sample], by simp [sample], by simp [sample], by simp [sample], by simp [sample]⟩
   counted := by simp [StartsCounted, starts, sample]

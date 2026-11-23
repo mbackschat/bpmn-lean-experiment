@@ -54,7 +54,7 @@ function run(outputDataItem: string | null, completions: ReadonlyArray<readonly 
   }));
   assert.ok(started.ok, JSON.stringify(started));
   const seen = (state: State): unknown => ({
-    root: Object.fromEntries((state.variables.find((entry) => entry.scope === rootScope)?.entries ?? [])
+    root: Object.fromEntries((new Map(state.variables).get(rootScope) ?? [])
       .filter(([name]) => name !== "items").map(([name, value]) => [name, (value as { value: unknown }).value])),
     open: state.status === "running"
       ? state.openItems.map((item) => state.occurrences.find((entry) => entry.id === item.id.occurrence)?.activation)

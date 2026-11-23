@@ -201,7 +201,7 @@ test("a Signal start carrying variables is rejected while a Signal carries no da
   assert.deepEqual(rejected(run(startingOn(signal()), null, startWith(trigger))),
     { tag: "rejected", code: "signal-variables-not-admitted" });
   const started = committed(run(startingOn(signal(), { signalPayload: "variables" }), null, startWith(trigger)));
-  assert.deepEqual(started.variables.find((entry) => entry.scope === rootScope)?.entries.map(([name]) => name), ["shift"]);
+  assert.deepEqual(new Map(started.variables).get(rootScope)?.map(([name]) => name), ["shift"]);
 });
 
 test("a Message root start requires a payload exactly when it writes one", () => {
@@ -211,7 +211,7 @@ test("a Message root start requires a payload exactly when it writes one", () =>
   const writing = startingOn(named, {}, [mapping("received", variable("payload"))]);
   assert.deepEqual(rejected(run(writing, null, startWith(carrying()))), { tag: "rejected", code: "message-payload-required" });
   const started = committed(run(writing, null, startWith(carrying(integer(7)))));
-  assert.deepEqual(started.variables.find((entry) => entry.scope === rootScope)?.entries, [["received", { tag: "int", value: 7 }]]);
+  assert.deepEqual(new Map(started.variables).get(rootScope), [["received", { tag: "int", value: 7 }]]);
   assert.deepEqual(rejected(run(startingOn(named), null, startWith(carrying(integer(7))))),
     { tag: "rejected", code: "message-payload-not-accepted" });
 });

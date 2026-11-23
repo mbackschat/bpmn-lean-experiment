@@ -35,7 +35,7 @@ instances a called root records (`State.enterScope`, `State.enterCalled`). -/
 structure ScopeAppended (before after : State) (entry : ScopeOccurrence) (locals : List (String × Value)) : Prop where
   occurrenceOrdinals : after.occurrenceOrdinals = before.occurrenceOrdinals
   scopes : after.scopes = before.scopes ++ [entry]
-  variables : after.variables = before.variables ++ [{ scope := entry.id, entries := keyed locals }]
+  variables : after.variables = before.variables.insert entry.id (keyed locals)
   occurrences : after.occurrences = before.occurrences
   itemMap : after.openItems = before.openItems ∧ after.itemOrdinals = before.itemOrdinals
   tokens : allQueuedTokens after = allQueuedTokens before
@@ -163,12 +163,12 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
       · exact formed.owned.scopeOwners found old id link
       · obtain ⟨occurrence, inside, named, begun⟩ := ownerBegun id link
         exact ⟨occurrence, inside, named, begun.1⟩,
-    fun variables member => by
-      rw [hVars] at member
-      rcases List.mem_append.mp member with old | new
-      · exact idsGrow _ (formed.owned.variableScopes variables old)
-      · rw [List.mem_singleton.mp new, ids]
-        simp,
+    fun x member => by
+      rw [hVars, Std.ExtTreeMap.mem_insert, Std.LawfulEqCmp.compare_eq_iff_eq] at member
+      rcases member with rfl | old
+      · rw [ids]
+        simp
+      · exact idsGrow _ (formed.owned.variableScopes x old),
     fun token member => by
       rw [hTokens] at member
       exact idsGrow _ (formed.owned.tokenScopes token member)⟩
@@ -181,20 +181,12 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
       · exact (formed.rooted.2.2 found old).grow grows
       · exact .parent _ parent _ (by rw [scopes]; exact List.mem_append_right _ (List.mem_singleton_self _)) entryParent
           (parentWithin.grow grows)⟩
-  have variables : VariablesKeyed after := ⟨by
-      rw [hVars, List.map_append, List.nodup_append]
-      refine ⟨formed.variables.scopes, by simp, fun a old b new same => ?_⟩
-      obtain ⟨found, inside, rfl⟩ := List.mem_map.mp old
-      have := below _ (formed.owned.variableScopes found inside)
-      simp at new
-      rw [same, new] at this
-      exact enters.unissued this,
-    fun found member => by
-      rw [hVars] at member
-      rcases List.mem_append.mp member with old | new
-      · exact formed.variables.names found old
-      · rw [List.mem_singleton.mp new]
-        exact keyed_names locals⟩
+  have variables : VariablesKeyed after := ⟨fun x entries found => by
+      rw [hVars, Std.ExtTreeMap.getElem?_insert] at found
+      split at found
+      · rw [← Option.some.inj found]
+        exact keyed_names locals
+      · exact formed.variables.names x entries found⟩
   have queue : QueueSound after := ⟨fun host element scope member => by
       rw [hSignals] at member
       obtain ⟨hostBelow, scopeBelow, placed⟩ := formed.queue.arm host element scope member
@@ -639,7 +631,7 @@ theorem deferBegins_wellFormed {s : State} (formed : WellFormed program s) {requ
       (List.mem_append.mp (allQueuedTokens_append s _ ▸ member)).elim (formed.owned.tokenScopes token) (housed token)⟩
   rooted := ⟨formed.rooted.1, formed.rooted.2.1, fun scope member =>
     Within.congr (s := s) (t := { s with batchTokens := s.batchTokens ++ added }) rfl (formed.rooted.2.2 scope member)⟩
-  variables := ⟨formed.variables.scopes, formed.variables.names⟩
+  variables := ⟨formed.variables.names⟩
   failure := formed.failure
   queue := ⟨formed.queue.arm, formed.queue.armScope, formed.queue.armGateway, formed.queue.ends, formed.queue.completes⟩
   counted := formed.counted

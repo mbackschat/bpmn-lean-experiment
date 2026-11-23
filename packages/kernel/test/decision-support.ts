@@ -81,5 +81,5 @@ export function started(program: Json, variables: Record<string, Json>): Outcome
 /** The root variable `name` after a committed start, `undefined` when absent. */
 export function rootValue(outcome: Outcome, name: string): unknown {
   assert.ok(outcome.ok, outcome.ok ? "" : JSON.stringify(outcome));
-  return outcome.value.variables.find((entry) => entry.scope === rootScope)?.entries.find(([key]) => key === name)?.[1];
+  return new Map(outcome.value.variables).get(rootScope)?.find(([key]) => key === name)?.[1];
 }

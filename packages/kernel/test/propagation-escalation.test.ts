@@ -51,7 +51,7 @@ function committed(json: Json): State {
 const open = (state: State): string[] => state.openItems.map((item) => item.element);
 const rootVariables = (state: State): Record<string, unknown> => {
   const root = state.scopes.find((entry) => entry.id === rootScope);
-  return Object.fromEntries(state.variables.find((entry) => entry.scope === root?.id)?.entries ?? []);
+  return Object.fromEntries((root === undefined ? undefined : new Map(state.variables).get(root.id)) ?? []);
 };
 const code = { tag: "string", value: "X" };
 

@@ -398,7 +398,7 @@ structure Narrows (before after : State) : Prop where
 /-- A state that narrows a well-formed one is well-formed when it starts no occurrence key twice and its variable sets
 belong to scope occurrences that stand, one per scope occurrence. -/
 theorem WellFormed.reshape {before after : State} (formed : WellFormed program before) (narrows : Narrows before after)
-    (once : StartedOnce after) (located : ∀ variables ∈ after.variables, variables.scope ∈ scopeIds after)
+    (once : StartedOnce after) (located : ∀ x ∈ after.variables, x ∈ scopeIds after)
     (keyed : VariablesKeyed after) : WellFormed program after := by
   have keys : ∀ occurrence, key after occurrence = key before occurrence := fun _ => key_congr (narrows.instances _)
   have items : itemList after.openItems ⊆ itemList before.openItems := by exact narrows.items.subset
@@ -490,7 +490,7 @@ twice. -/
 theorem WellFormed.narrow {before after : State} (formed : WellFormed program before) (narrows : Narrows before after)
     (variables : after.variables = before.variables) (once : StartedOnce after) : WellFormed program after :=
   formed.reshape narrows once (by simpa [scopeIds, variables, narrows.scopes] using formed.owned.variableScopes)
-    ⟨by simpa [variables] using formed.variables.scopes, by simpa [variables] using formed.variables.names⟩
+    ⟨by simpa [variables] using formed.variables.names⟩
 
 /-- Start facts that are a permutation of a well-formed state's, with nothing else but the journal and the draft
 changed, keep it well-formed. -/
@@ -537,7 +537,7 @@ structure SameButVariables (before after : State) : Prop where
 /-- A state that differs from a well-formed one only in its variable sets is well-formed when every set belongs to a
 present scope occurrence and the sets stay keyed. -/
 theorem WellFormed.ofVariables {before after : State} (formed : WellFormed program before) (same : SameButVariables before after)
-    (located : ∀ variables ∈ after.variables, variables.scope ∈ scopeIds after) (keyed : VariablesKeyed after) :
+    (located : ∀ x ∈ after.variables, x ∈ scopeIds after) (keyed : VariablesKeyed after) :
     WellFormed program after :=
   formed.reshape {
       scopes := same.scopes, scopeOrdinals := same.scopeOrdinals, occurrences := same.occurrences, activations := same.activations,

@@ -183,7 +183,7 @@ function stateAfterStart(json: Json, collection: Json): State {
 }
 
 const locals = (state: State): unknown[] =>
-  state.variables.filter((entry) => entry.scope !== rootScope).map((entry) => entry.entries).filter((entries) => entries.length > 0);
+  state.variables.filter(([scope]) => scope !== rootScope).map(([, entries]) => entries).filter((entries) => entries.length > 0);
 
 test("the loop-reference binding reads the loop's collection variable and gives each instance its item by name", () => {
   const state = stateAfterStart(program(), items("same", "other"));

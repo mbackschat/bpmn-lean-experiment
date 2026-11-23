@@ -74,9 +74,10 @@ theorem misfiled_item_rejected (kind : OpenKind) :
 
 /-- A name bound twice in one variable set breaks `VariablesKeyed`. -/
 theorem repeated_name_rejected (kind : OpenKind) :
-    ¬ VariablesKeyed { sample kind with variables := [{ scope := processRoot, entries := [("a", .int 1), ("a", .int 2)] }] } :=
+    ¬ VariablesKeyed
+      { sample kind with variables := (∅ : TreeMap ScopeOccurrenceId _ compare).insert processRoot [("a", .int 1), ("a", .int 2)] } :=
   fun keyed => by
-    have := keyed.names { scope := processRoot, entries := [("a", .int 1), ("a", .int 2)] } (by simp)
+    have := keyed.names processRoot [("a", .int 1), ("a", .int 2)] Std.ExtTreeMap.getElem?_insert_self
     simp at this
 
 /-- A start fact pending without its counter breaks `StartsCounted`. -/

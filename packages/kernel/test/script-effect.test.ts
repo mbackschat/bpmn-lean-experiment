@@ -58,7 +58,7 @@ const result = (outputs: [string, Json][]): Json => ({
 
 /** The variables `state` holds, by owning scope element (`null` for the instance root). */
 function holdings(state: State): Record<string, Record<string, unknown>> {
-  return Object.fromEntries(state.variables.map(({ scope: id, entries }) => {
+  return Object.fromEntries(state.variables.map(([id, entries]) => {
     const element = state.scopes.find((entry) => entry.id === id)?.element ?? null;
     return [String(element), Object.fromEntries(entries)];
   }));

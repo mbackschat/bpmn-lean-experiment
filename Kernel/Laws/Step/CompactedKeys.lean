@@ -200,7 +200,7 @@ theorem compact_wellFormed {program : Program} {start state : State} {log : RunL
         rw [keyed]; exact formed.reservations occurrence member unbegun fact (fewer.subset started)
     owned := compact_owned ran owned quiet.2
     rooted := compact_rooted ran issued rooted
-    variables := compact_variablesKeyed ran counted issued owned rooted ⟨formed.variables.1, formed.variables.2⟩
+    variables := compact_variablesKeyed ran ⟨formed.variables.names⟩
     failure := compact_failure ran formed.failure
     queue := quiet_queueSound quiet.1
     counted := compact_startsCounted ran fun fact started => formed.counted fact (fewer.subset started)

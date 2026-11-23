@@ -46,41 +46,17 @@ theorem names_after_set (entries : List (String × Value)) (name : String) (valu
 /-- `setVariable` keeps the variable sets keyed, whichever scope occurrence it writes to. -/
 theorem setVariable_variablesKeyed {state : State} {target : ScopeOccurrenceId} {name : String} {value : Value}
     (keyed : VariablesKeyed state) : VariablesKeyed (state.setVariable target name value) := by
-  constructor
-  · rw [setVariable_variables]
-    split
-    · rw [List.map_map]
-      have same : ((·.scope) ∘ fun (vars : ScopeVariables) => if vars.scope == target then
-          { vars with entries := if vars.entries.any (·.1 == name) then
-              vars.entries.map fun entry => if entry.1 == name then (name, value) else entry
-            else vars.entries ++ [(name, value)] } else vars) = (·.scope) := by
-        funext vars
-        by_cases targeted : vars.scope = target <;> simp [targeted]
-      rw [same]; exact keyed.scopes
-    · rename_i absent
-      simp only [List.any_eq_true, beq_iff_eq, not_exists, not_and] at absent
-      rw [List.map_append, List.nodup_append]
-      refine ⟨keyed.scopes, by simp, ?_⟩
-      intro first member second other
-      simp only [List.map_cons, List.map_nil, List.mem_singleton] at other
-      obtain ⟨vars, inside, located⟩ := List.mem_map.mp member
-      subst other; subst located
-      exact fun targeted => absent vars inside targeted
-  · intro vars member
-    rw [setVariable_variables] at member
-    split at member
-    · obtain ⟨old, inside, made⟩ := List.mem_map.mp member
-      subst made
-      by_cases targeted : old.scope = target
-      · simp only [targeted, beq_self_eq_true, ite_true]
-        exact names_after_set old.entries name value (keyed.names old inside)
-      · simp only [beq_iff_eq, targeted, ite_false]
-        exact keyed.names old inside
-    · rcases List.mem_append.mp member with old | fresh
-      · exact keyed.names vars old
-      · simp only [List.mem_singleton] at fresh
-        subst fresh
-        simp
+  refine ⟨fun x entries held => ?_⟩
+  rw [setVariable_variables, Std.ExtTreeMap.getElem?_insert] at held
+  split at held
+  · rename_i same
+    obtain rfl := Std.LawfulEqCmp.compare_eq_iff_eq.mp same
+    obtain rfl := Option.some.inj held
+    refine names_after_set _ name value ?_
+    cases found : state.variables[target]? with
+    | none => simp [Std.ExtTreeMap.getD_eq_getD_getElem?, found]
+    | some old => simpa [Std.ExtTreeMap.getD_eq_getD_getElem?, found] using keyed.names target old found
+  · exact keyed.names x entries held
 
 /-- `setVariable` keeps a state well-formed when the scope occurrence it writes to is present. -/
 theorem setVariable_wellFormed {state : State} {target : ScopeOccurrenceId} {name : String} {value : Value}
@@ -88,47 +64,29 @@ theorem setVariable_wellFormed {state : State} {target : ScopeOccurrenceId} {nam
     WellFormed program (state.setVariable target name value) := by
   have same := setVariable_same state target name value
   refine formed.ofVariables same ?_ (setVariable_variablesKeyed formed.variables)
-  intro vars member
+  intro x member
   rw [scopeIds, same.scopes]
-  rw [setVariable_variables] at member
-  split at member
-  · obtain ⟨old, inside, made⟩ := List.mem_map.mp member
-    subst made
-    have := formed.owned.variableScopes old inside
-    by_cases targeted : old.scope = target <;> simpa [targeted, scopeIds] using this
-  · rcases List.mem_append.mp member with old | fresh
-    · exact formed.owned.variableScopes vars old
-    · simp only [List.mem_singleton] at fresh
-      subst fresh
-      exact present
+  rw [setVariable_variables, Std.ExtTreeMap.mem_insert, Std.LawfulEqCmp.compare_eq_iff_eq] at member
+  rcases member with rfl | old
+  · exact present
+  · exact formed.owned.variableScopes x old
 
 /-- `removeVariable` keeps a state well-formed. -/
 theorem removeVariable_wellFormed {state : State} {target : ScopeOccurrenceId} {name : String}
     (formed : WellFormed program state) : WellFormed program (state.removeVariable target name) := by
-  refine formed.ofVariables (removeVariable_same state target name) ?_ ⟨?_, ?_⟩
-  · intro vars member
-    rw [removeVariable_variables] at member
-    obtain ⟨old, inside, made⟩ := List.mem_map.mp member
-    subst made
-    have := formed.owned.variableScopes old inside
+  refine formed.ofVariables (removeVariable_same state target name) ?_ ⟨?_⟩
+  · intro x member
+    rw [removeVariable_variables, Std.ExtTreeMap.mem_modify] at member
     rw [scopeIds, (removeVariable_same state target name).scopes]
-    by_cases targeted : old.scope = target <;> simpa [targeted, scopeIds] using this
-  · have same : ((state.removeVariable target name).variables.map (·.scope)) = state.variables.map (·.scope) := by
-      simp only [removeVariable_variables, List.map_map]
-      apply List.map_congr_left
-      intro vars _
-      by_cases targeted : vars.scope = target <;> simp [targeted]
-    rw [same]; exact formed.variables.scopes
-  · intro vars member
-    rw [removeVariable_variables] at member
-    obtain ⟨old, inside, made⟩ := List.mem_map.mp member
-    subst made
-    have nodup := formed.variables.names old inside
-    by_cases targeted : old.scope = target
-    · simp only [targeted, beq_self_eq_true, ite_true]
-      exact nodup.sublist ((List.filter_sublist).map _)
-    · simp only [beq_iff_eq, targeted, ite_false]
-      exact nodup
+    exact formed.owned.variableScopes x member
+  · intro x entries held
+    rw [removeVariable_variables, Std.ExtTreeMap.getElem?_modify] at held
+    split at held
+    · rename_i same
+      obtain rfl := Std.LawfulEqCmp.compare_eq_iff_eq.mp same
+      obtain ⟨old, found, rfl⟩ := Option.map_eq_some_iff.mp held
+      exact (formed.variables.names target old found).sublist ((List.filter_sublist).map _)
+    · exact formed.variables.names x entries held
 
 /-- `setVariable` changes no scope occurrence, occurrence or open item. -/
 theorem setVariable_frame (state : State) (target : ScopeOccurrenceId) (name : String) (value : Value) :

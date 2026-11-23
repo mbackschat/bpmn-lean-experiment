@@ -5,7 +5,10 @@
  * it directly.
  */
 import { type ElementId, type Value, VariableEvent } from "../il/types.js";
-import { type Binding, calledRoot, type ScopeOccurrenceId, scopeParent, type State, stands } from "../state.js";
+import {
+  type Binding, calledRoot, compareScopeOccurrenceId, type ScopeOccurrenceId, scopeParent, scopeVariables, type State, stands,
+  treeMapInsert,
+} from "../state.js";
 
 /**
  * The nearest occurrence of the Scope `element` from `scope` outward, up to the root of its process instance: the
@@ -22,7 +25,7 @@ export function declaring(state: State, scope: ScopeOccurrenceId, element: Eleme
 
 /** Whether the own variables of `scope` bind `name`. */
 export function bindsOwn(state: State, scope: ScopeOccurrenceId, name: string): boolean {
-  return state.variables.find((entry) => entry.scope === scope)?.entries.some(([key]) => key === name) ?? false;
+  return scopeVariables(state, scope).some(([key]) => key === name);
 }
 
 /** The innermost scope visible from `scope` that declares `name`, up to the root of its process instance. */
@@ -40,16 +43,13 @@ export function setVariable(state: State, target: ScopeOccurrenceId, name: strin
     entries.some(([key]) => key === name)
       ? entries.map((entry) => (entry[0] === name ? ([name, value] as const) : entry))
       : [...entries, [name, value] as const];
-  const kind = bindsOwn(state, target, name) ? VariableEvent.Update : VariableEvent.Create;
-  const written: State = { ...state, writes: [...state.writes, { scope: target, name, kind }] };
-  if (written.variables.some((entry) => entry.scope === target)) {
-    return {
-      ...written,
-      variables: written.variables.map((entry) =>
-        entry.scope === target ? { ...entry, entries: replace(entry.entries) } : entry),
-    };
-  }
-  return { ...written, variables: [...written.variables, { scope: target, entries: [[name, value] as const] }] };
+  const current = scopeVariables(state, target);
+  const kind = current.some(([key]) => key === name) ? VariableEvent.Update : VariableEvent.Create;
+  return {
+    ...state,
+    writes: [...state.writes, { scope: target, name, kind }],
+    variables: treeMapInsert(state.variables, target, replace(current), compareScopeOccurrenceId),
+  };
 }
 
 /** Delete `name` from `target`'s own variables and log the deletion. */
@@ -57,7 +57,8 @@ export function removeVariable(state: State, target: ScopeOccurrenceId, name: st
   return {
     ...state,
     writes: [...state.writes, { scope: target, name, kind: VariableEvent.Delete }],
-    variables: state.variables.map((entry) =>
-      entry.scope === target ? { ...entry, entries: entry.entries.filter(([key]) => key !== name) } : entry),
+    // Lean's `TreeMap.modify`: a scope that holds no variables stays without an entry.
+    variables: state.variables.map(([scope, entries]) =>
+      scope === target ? [scope, entries.filter(([key]) => key !== name)] as const : [scope, entries] as const),
   };
 }

@@ -857,8 +857,7 @@ structure StateFacts : Prop where
   /-- A scope occurrence a lookup finds stands, or, for `State.owner?`, holds a variable set. -/
   declaring : ∀ (state : State) scope element found, state.declaring? scope element = some found →
     ScopeStands state found
-  owner : ∀ (state : State) scope name found, state.owner? scope name = some found →
-    ∃ variables ∈ state.variables, variables.scope = found
+  owner : ∀ (state : State) scope name found, state.owner? scope name = some found → found ∈ state.variables
   /-- The scope occurrence an occurrence owns stands. -/
   localScope : ∀ (state : State) host scope, state.localScope? host = some scope → ScopeStands state scope
   /-- An instance root is the process root or a scope occurrence that stands. -/
@@ -873,7 +872,7 @@ module documentation). An operation enters when a feature proof first needs it. 
 structure Operations (inv : Program → State → Prop) : Prop where
   /-- Every variable set belongs to a scope occurrence that stands. -/
   variablesHoused : ∀ program state, inv program state →
-    ∀ variables ∈ state.variables, ScopeStands state variables.scope
+    ∀ scope ∈ state.variables, ScopeStands state scope
   /-- The process root stands. -/
   rootStands : ∀ program state, inv program state → ScopeStands state State.root
   /-- A write to a scope occurrence that stands. -/

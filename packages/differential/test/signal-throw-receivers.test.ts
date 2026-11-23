@@ -124,7 +124,7 @@ test("a throw's camunda:in copies install where the catch writes, and travel wit
   const { state, last } = run(target, [start, complete("Dispatch")]);
   assert.ok(last.ok, JSON.stringify(last));
   assert.deepEqual(waiting(state), ["Catch_Other", "Notify"]);
-  const root = state!.variables.find((scope) => scope.scope === rootScope)?.entries ?? [];
+  const root = new Map(state!.variables).get(rootScope) ?? [];
   assert.deepEqual(root.find(([name]) => name === "notified"), ["notified", { tag: "string", value: "ACME" }]);
   assert.deepEqual(state!.intents.map((intent) => [intent.address, intent.variables]), [
     [{ tag: "named", name: "order-shipped" }, [["notified", { tag: "string", value: "ACME" }]]],

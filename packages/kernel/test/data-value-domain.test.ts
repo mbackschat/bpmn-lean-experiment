@@ -128,7 +128,7 @@ test("a completion with one value over a bound is rejected whole, and the task t
   assert.ok(committed(started!));
   assert.deepEqual(overflow, outside);
   assert.ok(completed !== undefined && completed.ok);
-  assert.deepEqual(completed.value.variables.find((entry) => entry.scope === rootScope)?.entries.map(([name]) => name).sort(), ["accepted", "payload"]);
+  assert.deepEqual(new Map(completed.value.variables).get(rootScope)?.map(([name]) => name).sort(), ["accepted", "payload"]);
 });
 
 test("a variable update and an effect result outside the domain are rejected", () => {

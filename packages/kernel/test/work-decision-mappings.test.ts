@@ -58,7 +58,7 @@ function started(json: Json, score: string): Outcome {
 
 const after = (outcome: Outcome): unknown => outcome.ok
   ? {
-    root: Object.fromEntries((outcome.value.variables.find((scope) => scope.scope === rootScope)?.entries ?? [])
+    root: Object.fromEntries((new Map(outcome.value.variables).get(rootScope) ?? [])
       .filter(([name]) => name !== "score").map(([name, value]) => [name, (value as { value: unknown }).value])),
     open: outcome.value.openItems.map((item) => item.element),
     status: outcome.value.status,
@@ -100,7 +100,7 @@ function overwritten(inputs: Json[]): Json {
 }
 
 const seen = (outcome: Outcome): unknown => outcome.ok
-  ? (outcome.value.variables.find((scope) => scope.scope === rootScope)?.entries ?? []).find(([name]) => name === "seen")?.[1]
+  ? (new Map(outcome.value.variables).get(rootScope) ?? []).find(([name]) => name === "seen")?.[1]
   : outcome.failure;
 
 test("a later output reads an earlier one's write of the result's name, which the result reached outward", () => {

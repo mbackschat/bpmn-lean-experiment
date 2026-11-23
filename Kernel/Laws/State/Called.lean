@@ -33,8 +33,8 @@ theorem enterCalled_eq (state : State) (program : Program) (call : Occurrence) (
                                        occurrence := some call.id
                                        calledInstance := some (State.calledInstanceId (state.instanceOf call.scope)
                                          (program.publicId call.element) call.activation) }]
-          variables := state.variables ++
-            [{ scope := call.scope.child call.element (.fresh state.issuing state.issueNext), entries := keyed variables }]
+          variables := state.variables.insert (call.scope.child call.element (.fresh state.issuing state.issueNext))
+            (keyed variables)
           slots := { state.slots with
             instances := state.slots.instances ++
               [{ root := call.scope.child call.element (.fresh state.issuing state.issueNext), definition := some definition }] } },

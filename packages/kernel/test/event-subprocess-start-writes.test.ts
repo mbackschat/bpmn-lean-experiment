@@ -48,9 +48,9 @@ function committed(outcome: Outcome): State {
 
 /** The value each frame binds to `name`, by the element of the scope occurrence holding it (`root` for the process). */
 function bindings(state: State, name: string): Record<string, unknown> {
-  return Object.fromEntries(state.variables.flatMap((frame) => {
-    const value = frame.entries.find(([key]) => key === name)?.[1];
-    const element = state.scopes.find((entry) => entry.id === frame.scope)?.element ?? "root";
+  return Object.fromEntries(state.variables.flatMap(([scope, entries]) => {
+    const value = entries.find(([key]) => key === name)?.[1];
+    const element = state.scopes.find((entry) => entry.id === scope)?.element ?? "root";
     return value === undefined ? [] : [[element, value]];
   }));
 }

@@ -42,7 +42,7 @@ def Reads (visible : List (String × Value)) (name : String) (result : Option Va
 
 /-- `owner`'s own variables bind `name`. -/
 def Declares (s : State) (owner : ScopeOccurrenceId) (name : String) : Prop :=
-  ∃ frame ∈ s.variables, frame.scope = owner ∧ ∃ value, (name, value) ∈ frame.entries
+  ∃ entries, s.variables[owner]? = some entries ∧ ∃ value, (name, value) ∈ entries
 
 /-- `owner` is the nearest scope occurrence from `scope` outward, within the instance rooted at `root`, that declares
 `name`; a called instance's write never reaches its caller (`CVM-ISOLATE-01`). -/
@@ -52,13 +52,11 @@ def NearestOwner (s : State) (root scope : ScopeOccurrenceId) (name : String) (o
 
 /-- `owner`'s frame exists and binds `name` to `value` alone. -/
 def HoldsOnly (s : State) (owner : ScopeOccurrenceId) (name : String) (value : Value) : Prop :=
-  (∃ frame ∈ s.variables, frame.scope = owner) ∧
-    ∀ frame ∈ s.variables, frame.scope = owner → ∀ old, (name, old) ∈ frame.entries ↔ old = value
+  owner ∈ s.variables ∧ ∀ entries, s.variables[owner]? = some entries → ∀ old, (name, old) ∈ entries ↔ old = value
 
 /-- Every frame but `owner`'s is the same before and after. -/
 def OthersKept (before after : State) (owner : ScopeOccurrenceId) : Prop :=
-  (∀ frame ∈ before.variables, frame.scope ≠ owner → frame ∈ after.variables) ∧
-    ∀ frame ∈ after.variables, frame.scope ≠ owner → frame ∈ before.variables
+  ∀ x, x ≠ owner → after.variables[x]? = before.variables[x]?
 
 /-- A write of `name` from `scope` reaches the nearest owner and replaces its value there, creating no local and
 touching no other frame (`NSD-WRITE-01`). -/
@@ -80,7 +78,7 @@ def UndeclaredWrite (declared refused : Bool) (root scope : ScopeOccurrenceId) (
 def RemovesNearest (root scope : ScopeOccurrenceId) (name : String) (owner : ScopeOccurrenceId) (before after : State) :
     Prop :=
   NearestOwner before root scope name owner →
-    (∀ frame ∈ after.variables, frame.scope = owner → ∀ value, (name, value) ∉ frame.entries) ∧
+    (∀ entries, after.variables[owner]? = some entries → ∀ value, (name, value) ∉ entries) ∧
     OthersKept before after owner
 
 /-- Removing a name no frame of the instance declares changes no variable. -/
@@ -120,7 +118,7 @@ queued work whose scope occurrence is gone). -/
 set is housed, the process root stands), that a write to a standing scope occurrence and a removal keep `inv`, and the
 invariant-free facts of the variable operations and the lookups the hooks read. -/
 structure StateOps (inv : State → Prop) : Prop where
-  housed : ∀ state, inv state → ∀ variables ∈ state.variables, ∃ entry ∈ state.scopes, entry.id = variables.scope
+  housed : ∀ state, inv state → ∀ x ∈ state.variables, ∃ entry ∈ state.scopes, entry.id = x
   rooted : ∀ state, inv state → ∃ entry ∈ state.scopes, entry.id = State.root
   set : ∀ state target name value, inv state → (∃ entry ∈ state.scopes, entry.id = target) →
     inv (state.setVariable target name value)
@@ -133,8 +131,7 @@ structure StateOps (inv : State → Prop) : Prop where
     (state.removeVariable target name).openItems = state.openItems
   declaring : ∀ (state : State) scope element found, state.declaring? scope element = some found →
     ∃ entry ∈ state.scopes, entry.id = found
-  owner : ∀ (state : State) scope name found, state.owner? scope name = some found →
-    ∃ variables ∈ state.variables, variables.scope = found
+  owner : ∀ (state : State) scope name found, state.owner? scope name = some found → found ∈ state.variables
   instanceRoot : ∀ (state : State) scope,
     state.instanceRoot scope = State.root ∨ ∃ entry ∈ state.scopes, entry.id = state.instanceRoot scope
 
@@ -164,8 +161,7 @@ private theorem write_lands {inv : State → Prop} (ops : StateOps inv) {ctx : C
       cases nearest : state.owner? scope name with
       | some owner =>
         simp only [nearest] at ran
-        obtain ⟨variables, member, same⟩ := ops.owner _ _ _ _ nearest
-        exact ⟨owner, same ▸ ops.housed state holds variables member, (Except.ok.inj ran).symm⟩
+        exact ⟨owner, ops.housed state holds owner (ops.owner _ _ _ _ nearest), (Except.ok.inj ran).symm⟩
       | none =>
         simp only [nearest] at ran
         repeat' split at ran
@@ -292,51 +288,66 @@ theorem outer_read_rejected : ¬ Reads [("a", .null), ("a", .int 1)] "a" (some (
 
 theorem absent_reads_nothing : Reads [("a", .int 1)] "b" none := ⟨fun _ none => by simp at none, fun _ => by simp⟩
 
-def rootFrame (entries : List (String × Value)) : ScopeVariables := { scope := processRoot, entries }
-
-def subFrame : ScopeVariables := { scope := subScope, entries := [("b", .int 2)] }
+/-- The variables of the root and the Sub-Process scope occurrence. -/
+def framesOf (rootEntries subEntries : List (String × Value)) : TreeMap ScopeOccurrenceId (List (String × Value)) compare :=
+  ((∅ : TreeMap ScopeOccurrenceId _ compare).insert processRoot rootEntries).insert subScope subEntries
 
 def framesWith (entries : List (String × Value)) : State :=
-  { instanceId := "p", scopes := [rootScope, childScope], variables := [rootFrame entries, subFrame] }
+  { instanceId := "p", scopes := [rootScope, childScope], variables := framesOf entries [("b", .int 2)] }
 
 def frames (rootValue : Value) : State := framesWith [("a", rootValue)]
+
+theorem framesOf_getElem? (rootEntries subEntries : List (String × Value)) (x : ScopeOccurrenceId) :
+    (framesOf rootEntries subEntries)[x]? =
+      if subScope = x then some subEntries else if processRoot = x then some rootEntries else none := by
+  simp only [framesOf, Std.ExtTreeMap.getElem?_insert, Std.ExtTreeMap.getElem?_empty, Std.LawfulEqCmp.compare_eq_iff_eq]
+
+theorem framesOf_root {rootEntries subEntries : List (String × Value)} :
+    (framesOf rootEntries subEntries)[processRoot]? = some rootEntries := by
+  simp [framesOf_getElem?, subScope, processRoot]
+
+theorem framesOf_sub {rootEntries subEntries : List (String × Value)} :
+    (framesOf rootEntries subEntries)[subScope]? = some subEntries := by
+  simp [framesOf_getElem?]
+
+/-- Every key but the Sub-Process's is the root's or absent: the two maps agree there when their root entries do. -/
+theorem framesOf_other {rootEntries subEntries subEntries' : List (String × Value)} {x : ScopeOccurrenceId}
+    (other : x ≠ subScope) : (framesOf rootEntries subEntries)[x]? = (framesOf rootEntries subEntries')[x]? := by
+  simp [framesOf_getElem?, Ne.symm other]
+
+/-- A Declares lookup in a map of the two frames is one of the two entries. -/
+theorem framesOf_cases {rootEntries subEntries entries : List (String × Value)} {x : ScopeOccurrenceId}
+    (found : (framesOf rootEntries subEntries)[x]? = some entries) :
+    (x = subScope ∧ entries = subEntries) ∨ (x = processRoot ∧ entries = rootEntries) := by
+  rw [framesOf_getElem?] at found
+  split at found
+  · next same => exact .inl ⟨same.symm, (Option.some.inj found).symm⟩
+  · split at found
+    · next same => exact .inr ⟨same.symm, (Option.some.inj found).symm⟩
+    · cases found
 
 theorem sub_within_root {v : Value} : Within (frames v) subScope processRoot :=
   .parent childScope processRoot processRoot (by simp [frames, framesWith]) (by simp [childScope, subScope, processRoot])
     (.refl _)
 
-/-- Only the root and the Sub-Process frame exist, so a frame other than the root's is the Sub-Process's. -/
-theorem only_frames {entries : List (String × Value)} {frame : ScopeVariables}
-    (mem : frame ∈ (framesWith entries).variables) (other : frame.scope ≠ processRoot) : frame = subFrame := by
-  simp only [framesWith, List.mem_cons, List.not_mem_nil, or_false] at mem
-  rcases mem with rfl | rfl
-  · exact absurd rfl other
-  · rfl
-
 theorem root_owns_a {v : Value} : NearestOwner (frames v) processRoot subScope "a" processRoot :=
-  ⟨sub_within_root, .refl _, ⟨rootFrame [("a", v)], by simp [frames, framesWith], rfl, v, by simp [rootFrame]⟩,
-    fun nearer _ _ declares => by
-      obtain ⟨frame, mem, owned, bound⟩ := declares
-      obtain ⟨_, bound⟩ := bound
-      simp only [frames, framesWith, List.mem_cons, List.not_mem_nil, or_false] at mem
-      rcases mem with rfl | rfl
-      · exact owned.symm
-      · simp [subFrame] at bound⟩
+  ⟨sub_within_root, .refl _, ⟨[("a", v)], framesOf_root, v, by simp⟩, fun nearer _ _ declares => by
+      obtain ⟨entries, found, _, bound⟩ := declares
+      rcases framesOf_cases found with ⟨_, rfl⟩ | ⟨same, _⟩
+      · simp at bound
+      · exact same⟩
 
 /-- Rewriting the root's entries alone keeps every other frame. -/
 theorem root_rewrite_keeps (old new : List (String × Value)) :
-    OthersKept (framesWith old) (framesWith new) processRoot :=
-  ⟨fun frame mem other => by rw [only_frames mem other]; simp [framesWith],
-    fun frame mem other => by rw [only_frames mem other]; simp [framesWith]⟩
+    OthersKept (framesWith old) (framesWith new) processRoot := fun x other => by
+  simp [framesWith, framesOf_getElem?, Ne.symm other]
 
 /-- The root frame of `framesWith entries` holds `name` alone with `value` when `entries` binds it so. -/
 theorem root_holds {entries : List (String × Value)} {name : String} {value : Value}
     (only : ∀ old, (name, old) ∈ entries ↔ old = value) : HoldsOnly (framesWith entries) processRoot name value :=
-  ⟨⟨rootFrame entries, by simp [framesWith], rfl⟩, fun frame mem owned old => by
-    simp only [framesWith, List.mem_cons, List.not_mem_nil, or_false] at mem
-    rcases mem with rfl | rfl
-    · exact only old
-    · simp [subFrame, subScope, processRoot] at owned⟩
+  ⟨Std.ExtTreeMap.mem_iff_isSome_getElem?.mpr (by simp [framesWith, framesOf_root]), fun found held old => by
+    obtain rfl := Option.some.inj (framesOf_root.symm.trans held)
+    exact only old⟩
 
 theorem writes_nearest : WritesNearest processRoot subScope "a" (.int 5) processRoot (frames (.int 1)) (frames (.int 5)) :=
   fun _ => ⟨root_holds (by simp), root_rewrite_keeps _ _⟩
@@ -344,17 +355,15 @@ theorem writes_nearest : WritesNearest processRoot subScope "a" (.int 5) process
 /-- A write that creates a local in the writing scope instead of reaching the owner is rejected. -/
 theorem local_write_rejected :
     ¬ WritesNearest processRoot subScope "a" (.int 5) processRoot (frames (.int 1))
-      { frames (.int 1) with variables := [rootFrame [("a", .int 1)], { subFrame with entries := [("b", .int 2), ("a", .int 5)] }] } :=
+      { frames (.int 1) with variables := framesOf [("a", .int 1)] [("b", .int 2), ("a", .int 5)] } :=
   fun law => by
-    have := (law root_owns_a).1.2 (rootFrame [("a", .int 1)]) (by simp) rfl (.int 1)
-    simp [rootFrame] at this
+    have := (law root_owns_a).1.2 [("a", .int 1)] framesOf_root (.int 1)
+    simp at this
 
 theorem nobody_declares_z : ∀ owner, ¬ NearestOwner (frames (.int 1)) processRoot subScope "z" owner :=
   fun _ nearest => by
-    obtain ⟨frame, mem, _, bound⟩ := nearest.2.2.1
-    obtain ⟨_, bound⟩ := bound
-    simp only [frames, framesWith, List.mem_cons, List.not_mem_nil, or_false] at mem
-    rcases mem with rfl | rfl <;> simp [rootFrame, subFrame] at bound
+    obtain ⟨entries, found, _, bound⟩ := nearest.2.2.1
+    rcases framesOf_cases found with ⟨_, rfl⟩ | ⟨_, rfl⟩ <;> simp at bound
 
 theorem undeclared_refused :
     UndeclaredWrite false true processRoot subScope "z" (.int 5) (frames (.int 1)) (.error (.semanticFailure .model "undeclared-write")) :=
@@ -375,29 +384,29 @@ theorem undeclared_at_root :
 def removed : State := framesWith []
 
 theorem removes_nearest : RemovesNearest processRoot subScope "a" processRoot (frames (.int 1)) removed :=
-  fun _ => ⟨fun frame mem owned value => by
-      simp only [removed, framesWith, List.mem_cons, List.not_mem_nil, or_false] at mem
-      rcases mem with rfl | rfl
-      · simp [rootFrame]
-      · simp [subFrame, subScope, processRoot] at owned,
+  fun _ => ⟨fun entries found value => by
+      obtain rfl := Option.some.inj (framesOf_root.symm.trans found)
+      simp,
     root_rewrite_keeps _ _⟩
 
 /-- A removal that leaves the owner's binding is rejected. -/
 theorem kept_binding_rejected : ¬ RemovesNearest processRoot subScope "a" processRoot (frames (.int 1)) (frames (.int 1)) :=
-  fun law => (law root_owns_a).1 (rootFrame [("a", .int 1)]) (by simp [frames, framesWith]) rfl (.int 1) (by simp [rootFrame])
+  fun law => (law root_owns_a).1 [("a", .int 1)] framesOf_root (.int 1) (by simp)
 
 theorem removes_nothing : RemovesNothing processRoot subScope "z" (frames (.int 1)) (frames (.int 1)) := fun _ => rfl
 
 /-- Removing an undeclared name from another frame is rejected. -/
 theorem removes_other_rejected : ¬ RemovesNothing processRoot subScope "z" (frames (.int 1)) removed :=
-  fun law => by simpa [removed, frames, framesWith, rootFrame] using law nobody_declares_z
+  fun law => by
+    have := framesOf_root.symm.trans ((congrArg (·[processRoot]?) (law nobody_declares_z)).trans framesOf_root)
+    simp at this
 
 /-- The Sub-Process `Sub` declares the item `P`; the root binds the identifier `P` as a variable, and `Sub`'s frame does not
 bind it yet. -/
 def itemBefore : State := framesWith [("P", .int 1)]
 
 def itemAfter : State :=
-  { itemBefore with variables := [rootFrame [("P", .int 1)], { subFrame with entries := [("b", .int 2), ("P", .int 5)] }] }
+  { itemBefore with variables := framesOf [("P", .int 1)] [("b", .int 2), ("P", .int 5)] }
 
 /-- The root occurrence has no parent, so it lies inside no other occurrence. -/
 theorem root_within {target : ScopeOccurrenceId} (within : Within itemBefore processRoot target) : target = processRoot :=
@@ -420,26 +429,15 @@ theorem sub_declares_p : DeclaringOccurrence itemBefore subScope ⟨"Sub"⟩ sub
         exact absurd (root_within within) (by simp [subScope, processRoot])⟩
 
 theorem writes_item : WritesItem subScope ⟨"Sub"⟩ "P" (.int 5) subScope itemBefore itemAfter := fun _ =>
-  ⟨⟨⟨{ subFrame with entries := [("b", .int 2), ("P", .int 5)] }, by simp [itemAfter], rfl⟩, fun frame mem owned old => by
-      simp only [itemAfter, List.mem_cons, List.not_mem_nil, or_false] at mem
-      rcases mem with rfl | rfl
-      · simp [rootFrame, subScope, processRoot] at owned
-      · simp⟩,
-    ⟨fun frame mem other => by
-      simp only [itemBefore, framesWith, List.mem_cons, List.not_mem_nil, or_false] at mem
-      rcases mem with rfl | rfl
-      · simp [itemAfter]
-      · exact absurd rfl other,
-    fun frame mem other => by
-      simp only [itemAfter, List.mem_cons, List.not_mem_nil, or_false] at mem
-      rcases mem with rfl | rfl
-      · simp [itemBefore, framesWith]
-      · exact absurd rfl other⟩⟩
+  ⟨⟨Std.ExtTreeMap.mem_iff_isSome_getElem?.mpr (by simp [itemAfter, framesOf_sub]), fun entries found old => by
+      obtain rfl := Option.some.inj (framesOf_sub.symm.trans found)
+      simp⟩,
+    fun _ other => (framesOf_other other).symm⟩
 
 /-- A write the root's binding of the identifier captures, as a lookup by name would, is rejected. -/
 theorem captured_item_write_rejected :
     ¬ WritesItem subScope ⟨"Sub"⟩ "P" (.int 5) subScope itemBefore (framesWith [("P", .int 5)]) := fun law => by
-  have := (law sub_declares_p).1.2 subFrame (by simp [framesWith]) rfl (.int 5)
-  simp [subFrame] at this
+  have := (law sub_declares_p).1.2 [("b", .int 2)] framesOf_sub (.int 5)
+  simp at this
 
 end Kernel.Laws.Data

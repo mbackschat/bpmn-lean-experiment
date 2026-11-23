@@ -68,9 +68,9 @@ function committed(outcome: Outcome): State {
 
 /** The value each frame binds to `name`, by the element of the scope occurrence holding it (`root` for the process). */
 function bindings(state: State, name: string): Record<string, unknown> {
-  return Object.fromEntries(state.variables.flatMap((frame) => {
-    const value = frame.entries.find(([key]) => key === name)?.[1];
-    const element = state.scopes.find((entry) => entry.id === frame.scope)?.element ?? "root";
+  return Object.fromEntries(state.variables.flatMap(([scope, entries]) => {
+    const value = entries.find(([key]) => key === name)?.[1];
+    const element = state.scopes.find((entry) => entry.id === scope)?.element ?? "root";
     return value === undefined ? [] : [[element, value]];
   }));
 }
@@ -122,7 +122,7 @@ test("each Multi-Instance instance of the declaring Scope holds its own item", (
       start("TS", null, [], "T"), activity("A", userWork(), writesP, "T"), activity("B", userWork(), {}, "T"), end("TE", "none", "T")),
     flow("t1", "TS", "A"), flow("t2", "A", "B"), flow("t3", "B", "TE")));
   const state = committed(run(program, [begin, complete("A", [["y", str("first")]], 1), complete("A", [["y", str("second")]], 2)]));
-  const held = state.variables.flatMap((frame) => frame.entries.filter(([key]) => key === "P").map(([, value]) => value));
+  const held = state.variables.flatMap(([, entries]) => entries.filter(([key]) => key === "P").map(([, value]) => value));
   assert.deepEqual(held, [{ tag: "string", value: "first" }, { tag: "string", value: "second" }]);
   assert.deepEqual(open(state), ["B", "B"]);
 });

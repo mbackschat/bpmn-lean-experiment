@@ -15,7 +15,7 @@ import {
   type Binding,
   type ScopeOccurrence,
   type ScopeOccurrenceId,
-  type State,
+  type State, scopeVariables,
 } from "./state.js";
 
 export function statusName(status: InstanceStatus): string {
@@ -38,7 +38,7 @@ function byName(entries: readonly Binding[]): readonly Binding[] {
 
 /** The instance root's variables, ordered by name. */
 export function variables(state: State): readonly Binding[] {
-  return byName(state.variables.find((vars) => vars.scope === root)?.entries ?? []);
+  return byName(scopeVariables(state, root));
 }
 
 /**
@@ -139,7 +139,7 @@ function publishedScope(state: State, scope: ScopeOccurrence, entries: readonly 
  * canonical order. */
 export function scopes(program: Program, state: State): readonly PublishedScope[] {
   const published = state.scopes.flatMap((scope) => {
-    const entries = state.variables.find((vars) => vars.scope === scope.id)?.entries ?? [];
+    const entries = scopeVariables(state, scope.id);
     const found = entries.length === 0 ? null : publishedScope(state, scope, byName(entries));
     return found === null ? [] : [{ ...found, element: found.element === null ? null : programPublicId(program, found.element) }];
   });

@@ -42,7 +42,7 @@ function resultWithReceipt(envelope: Json, effectResultValues: string): Outcome 
 }
 
 const rootNames = (outcome: Outcome): unknown =>
-  outcome.ok ? outcome.value.variables.find((entry) => entry.scope === rootScope)?.entries.map(([name]) => name) : outcome;
+  outcome.ok ? new Map(outcome.value.variables).get(rootScope)?.map(([name]) => name) : outcome;
 
 const mapped = { inputs: [mapping("correlationId", variable("order"))] };
 

@@ -31,15 +31,14 @@ structure Cleared (before after : State) (scope : ScopeOccurrenceId) (keep : Lis
   items : ∀ item, item ∈ itemList after.openItems ↔
     item ∈ itemList before.openItems ∧ (¬ Within before item.scope scope ∨ item.id.occurrence ∈ keep)
   tokens : ∀ token, token ∈ allQueuedTokens after ↔ token ∈ allQueuedTokens before ∧ ¬ Within before token.busyScope scope
-  variables : ∀ variables, variables ∈ after.variables ↔
-    variables ∈ before.variables ∧ ¬ StrictlyWithin before variables.scope scope
+  variables : ∀ x entries, after.variables[x]? = some entries ↔
+    before.variables[x]? = some entries ∧ ¬ StrictlyWithin before x scope
   scopesSublist : after.scopes.Sublist before.scopes
   occurrencesSublist : after.occurrences.Sublist before.occurrences
   openItemsSub : ItemsSub after.openItems before.openItems
   ordinals : ∀ occurrence ∈ after.occurrences,
     after.itemOrdinals.getD occurrence.id 0 = before.itemOrdinals.getD occurrence.id 0
   tokensSublist : (allQueuedTokens after).Sublist (allQueuedTokens before)
-  variablesSublist : after.variables.Sublist before.variables
   instances : ∀ x ∈ scopeIds after, after.instanceOf x = before.instanceOf x
   activations : after.activations = before.activations
   /-- The occurrence counters of what stands stay: nothing is issued. -/
@@ -167,9 +166,10 @@ theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {k
         have entryInside : Within before entry.id scope := .parent entry occurrence.scope scope old link within
         have same : entry.id = scope := Classical.byContradiction fun distinct => outside ⟨entryInside, distinct⟩
         exact parent_not_within formed old link (same ▸ within)
-    · intro variables member
-      obtain ⟨old, outside⟩ := (cleared.variables variables).mp member
-      exact stays _ (formed.owned.variableScopes variables old) outside
+    · intro x member
+      obtain ⟨entries, held⟩ := Option.isSome_iff_exists.mp (Std.ExtTreeMap.mem_iff_isSome_getElem?.mp member)
+      obtain ⟨old, outside⟩ := (cleared.variables x entries).mp held
+      exact stays _ (formed.owned.variableScopes x (Std.ExtTreeMap.mem_iff_isSome_getElem?.mpr (by simp [old]))) outside
     · intro token member
       obtain ⟨old, outside⟩ := (cleared.tokens token).mp member
       exact stays _ (formed.owned.tokenScopes token old) (notStrict _ outside)
@@ -180,8 +180,7 @@ theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {k
       (cleared.scopesSublist.subset member), fun entry member => ?_⟩
     obtain ⟨old, outside⟩ := (cleared.scopes entry).mp member
     exact cleared.reaches formed (reach entry old) outside
-  · exact ⟨formed.variables.scopes.sublist (cleared.variablesSublist.map _),
-      fun variables member => formed.variables.names variables (cleared.variablesSublist.subset member)⟩
+  · exact ⟨fun x entries held => formed.variables.names x entries ((cleared.variables x entries).mp held).1⟩
   · simpa [FailureRecorded, cleared.status, cleared.failure] using formed.failure
   · have queue := formed.queue
     refine ⟨fun host element scope queued => ?_,
@@ -309,8 +308,7 @@ theorem Prunes.wellFormed {before after : State} (formed : WellFormed program be
     intro x member
     exact Within.congr prunes.scopes (reach x (prunes.scopes ▸ member))
   case variables =>
-    exact ⟨by simpa [prunes.variables] using formed.variables.scopes,
-      by simpa [prunes.variables] using formed.variables.names⟩
+    exact ⟨by simpa [prunes.variables] using formed.variables.names⟩
   case failure => simpa [FailureRecorded, prunes.failure, prunes.status] using formed.failure
   case queue =>
     have queue := formed.queue
@@ -367,15 +365,14 @@ structure Left (before after : State) (scope : ScopeOccurrenceId) : Prop where
     occurrence ∈ before.occurrences ∧ ¬ Within before occurrence.scope scope
   items : ∀ item, item ∈ itemList after.openItems ↔ item ∈ itemList before.openItems ∧ ¬ Within before item.scope scope
   tokens : ∀ token, token ∈ allQueuedTokens after ↔ token ∈ allQueuedTokens before ∧ ¬ Within before token.busyScope scope
-  variables : ∀ variables, variables ∈ after.variables ↔
-    variables ∈ before.variables ∧ ¬ Within before variables.scope scope
+  variables : ∀ x entries, after.variables[x]? = some entries ↔
+    before.variables[x]? = some entries ∧ ¬ Within before x scope
   scopesSublist : after.scopes.Sublist before.scopes
   occurrencesSublist : after.occurrences.Sublist before.occurrences
   openItemsSub : ItemsSub after.openItems before.openItems
   ordinals : ∀ occurrence ∈ after.occurrences,
     after.itemOrdinals.getD occurrence.id 0 = before.itemOrdinals.getD occurrence.id 0
   tokensSublist : (allQueuedTokens after).Sublist (allQueuedTokens before)
-  variablesSublist : after.variables.Sublist before.variables
   instances : ∀ x ∈ scopeIds after, after.instanceOf x = before.instanceOf x
   activations : after.activations = before.activations
   occurrenceGrows : OccurrenceGrows before after
@@ -458,8 +455,10 @@ theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (form
       obtain ⟨occurrence, inside, named, begunFlag⟩ := formed.owned.scopeOwners entry old owner owned
       refine ⟨occurrence, (left.occurrences occurrence).mpr ⟨inside, fun within => outside ?_⟩, named, begunFlag⟩
       exact .parent entry occurrence.scope scope old (formed.ownedBelow entry old occurrence inside (named ▸ owned)) within
-    · obtain ⟨old, outside⟩ := (left.variables variables).mp member
-      exact stays _ (formed.owned.variableScopes variables old) outside
+    · obtain ⟨entries, held⟩ := Option.isSome_iff_exists.mp (Std.ExtTreeMap.mem_iff_isSome_getElem?.mp member)
+      obtain ⟨old, outside⟩ := (left.variables variables entries).mp held
+      exact stays _ (formed.owned.variableScopes variables (Std.ExtTreeMap.mem_iff_isSome_getElem?.mpr (by simp [old])))
+        outside
     · obtain ⟨old, outside⟩ := (left.tokens token).mp member
       exact stays _ (formed.owned.tokenScopes token old) outside
   case rooted =>
@@ -471,8 +470,7 @@ theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (form
     obtain ⟨old, outside⟩ := (left.scopes entry).mp member
     exact left.reaches (reach entry old) outside
   case variables =>
-    exact ⟨formed.variables.scopes.sublist (left.variablesSublist.map _),
-      fun variables member => formed.variables.names variables (left.variablesSublist.subset member)⟩
+    exact ⟨fun x entries held => formed.variables.names x entries ((left.variables x entries).mp held).1⟩
   case failure => simpa [FailureRecorded, left.status, left.failure] using formed.failure
   case queue =>
     have queue := formed.queue

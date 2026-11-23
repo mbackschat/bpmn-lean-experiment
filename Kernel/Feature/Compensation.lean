@@ -95,7 +95,7 @@ def completed (ctx : Ctx) (occurrence : Occurrence) (state : State) : Outcome :=
       let (state, completion) := state.takeCompletion
       let inside := handler.all fun handler =>
         ((ctx.program.element? handler).bind (·.header.parent)) == some occurrence.element
-      let locals (scope : ScopeOccurrenceId) := ((state.variables.find? (·.scope == scope)).map (·.entries)).getD []
+      let locals (scope : ScopeOccurrenceId) := state.variables.getD scope []
       let own := (owned.map (locals ·.id)).getD []
       let iteration := if isInstance ctx occurrence state then locals occurrence.scope else []
       let snapshot := if inside then own ++ iteration.filter (fun entry => !own.any (·.1 == entry.1)) else []

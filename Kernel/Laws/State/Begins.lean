@@ -501,8 +501,7 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
     intro scope member
     exact Within.congr begins.scopes (reach scope (begins.scopes ▸ member))
   case variables =>
-    exact ⟨by simpa [begins.variables] using formed.variables.scopes,
-      by simpa [begins.variables] using formed.variables.names⟩
+    exact ⟨by simpa [begins.variables] using formed.variables.names⟩
   case failure => simpa [FailureRecorded, begins.failure, begins.status] using formed.failure
   case queue =>
     have queue := formed.queue

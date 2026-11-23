@@ -41,16 +41,24 @@ def secondInstance : Occurrence :=
 
 def firstOwned : ScopeOccurrence := { id := firstScope, element := some review, position := 0 }
 def secondOwned : ScopeOccurrence := { id := secondScope, element := some review, position := 0 }
-def firstLocals : ScopeVariables := { scope := firstScope, entries := [("item", .string "x"), ("loopCounter", .int 0)] }
-def secondLocals : ScopeVariables := { scope := secondScope, entries := [("item", .string "x"), ("loopCounter", .int 1)] }
+def firstLocals : List (String × Value) := [("item", .string "x"), ("loopCounter", .int 0)]
+def secondLocals : List (String × Value) := [("item", .string "x"), ("loopCounter", .int 1)]
 
 def entered : State :=
   { instanceId := "p"
     scopes := [{ id := root, element := none, position := 0 },
       { id := bodyScope, element := some review, position := 0, occurrence := some bodyKey }, firstOwned, secondOwned]
     occurrences := [bodyOccurrence, firstInstance, secondInstance]
-    variables := [firstLocals, secondLocals]
+    variables := ((∅ : TreeMap ScopeOccurrenceId _ compare).insert firstScope firstLocals).insert secondScope secondLocals
     slots := { multiInstances := [running] } }
+
+theorem entered_second : entered.variables[secondScope]? = some secondLocals := Std.ExtTreeMap.getElem?_insert_self
+
+theorem entered_first : entered.variables[firstScope]? = some firstLocals := by
+  have apart : compare secondScope firstScope ≠ .eq := by
+    rw [Ne, Std.LawfulEqCmp.compare_eq_iff_eq]; simp [firstScope, secondScope, Laws.State.ScopeOccurrenceId.ofSegments_inj]
+  simp only [entered]
+  rw [Std.ExtTreeMap.getElem?_insert, ite_eq_right apart, Std.ExtTreeMap.getElem?_insert_self]
 
 theorem two_generated : Generated running 2 := ⟨rfl, by omega⟩
 
@@ -201,24 +209,23 @@ theorem slots_counted : SlotsCounted { entered with scopes := entered.scopes.tak
   simp only [entered, List.mem_singleton] at member
   subst member
   match index with
-  | 0 => simp [running] at slot; subst slot; exact ⟨firstLocals, by simp [entered], rfl, by simp [firstLocals]⟩
-  | 1 => simp [running] at slot; subst slot; exact ⟨secondLocals, by simp [entered], rfl, by simp [secondLocals]⟩
+  | 0 => simp [running] at slot; subst slot; exact ⟨firstLocals, entered_first, by simp [firstLocals]⟩
+  | 1 => simp [running] at slot; subst slot; exact ⟨secondLocals, entered_second, by simp [secondLocals]⟩
   | _ + 2 => simp [running] at slot
 
 /-- A one-based `loopCounter` breaks `SlotsCounted`. -/
 theorem one_based_rejected :
     ¬ SlotsCounted { entered with scopes := entered.scopes.take 2 }
-      { entered with variables := [{ scope := firstScope, entries := [("loopCounter", .int 1)] }] } :=
+      { entered with variables := (∅ : TreeMap ScopeOccurrenceId _ compare).insert firstScope [("loopCounter", .int 1)] } :=
   fun counted => by
-    obtain ⟨locals, member, _, entry⟩ :=
+    obtain ⟨_, found, entry⟩ :=
       counted running (by simp [entered]) 0 firstScope (by simp [running])
         (by
           rw [show firstScope = bodyScope.child review 0 by
             rw [Laws.State.child_eq]; simp [firstScope, bodyScope]]
           exact Laws.State.unissued_of_count (parent := bodyScope) (element := review) (ordinal := 0) (by simp [entered])
             (by simp [Laws.State.slotCount, entered]))
-    simp only [List.mem_singleton] at member
-    subst member
+    obtain rfl := Option.some.inj ((Std.ExtTreeMap.getElem?_insert_self (t := ∅)).symm.trans found)
     simp at entry
 
 def bodyLocals : List (String × Value) :=
@@ -226,17 +233,17 @@ def bodyLocals : List (String × Value) :=
 
 def reviews (mode : MultiInstanceMode) : MultiInstance := { mode, count := .cardinality (.literal (.int 2)) }
 
-theorem counters_held : CountersHeld firstLocals.entries bodyLocals running (reviews .parallel) 0 :=
+theorem counters_held : CountersHeld firstLocals bodyLocals running (reviews .parallel) 0 :=
   ⟨rfl, rfl, rfl, rfl⟩
 
 /-- A sequential body counts one active instance, so two break `CountersHeld`. -/
-theorem sequential_active_rejected : ¬ CountersHeld firstLocals.entries bodyLocals running (reviews .sequential) 0 :=
+theorem sequential_active_rejected : ¬ CountersHeld firstLocals bodyLocals running (reviews .sequential) 0 :=
   fun ⟨_, _, active, _⟩ => by
     have : some (Value.int 2) = some (Value.int (1 : Nat)) := active
     simp at this
 
 /-- The second instance's `loopCounter` read for the first breaks `CountersHeld`. -/
-theorem other_counter_rejected : ¬ CountersHeld secondLocals.entries bodyLocals running (reviews .parallel) 0 :=
+theorem other_counter_rejected : ¬ CountersHeld secondLocals bodyLocals running (reviews .parallel) 0 :=
   fun ⟨counter, _⟩ => by
     have : some (Value.int 1) = some (Value.int (0 : Nat)) := counter
     simp at this

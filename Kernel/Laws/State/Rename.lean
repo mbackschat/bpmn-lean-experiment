@@ -81,8 +81,39 @@ theorem renameState_occurrences (r : Issue → Issue) (c : Continuation → Cont
   unfold renameState; rfl
 
 theorem renameState_variables (r : Issue → Issue) (c : Continuation → Continuation) (s : State) :
-    (renameState r c s).variables = s.variables.map fun variables => { variables with scope := renameScope r variables.scope } := by
+    (renameState r c s).variables =
+      s.variables.foldl (fun renamed scope entries => renamed.insert (renameScope r scope) entries) ∅ := by
   unfold renameState; rfl
+
+theorem insertAll_getElem? {β : Type} (f : ScopeOccurrenceId → ScopeOccurrenceId) {y : ScopeOccurrenceId} {v : β} :
+    ∀ (entries : List (ScopeOccurrenceId × β)) (acc : TreeMap ScopeOccurrenceId β compare),
+      (entries.foldl (fun renamed entry => renamed.insert (f entry.1) entry.2) acc)[y]? = some v →
+        acc[y]? = some v ∨ ∃ entry ∈ entries, f entry.1 = y ∧ entry.2 = v
+  | [], _, found => .inl found
+  | entry :: entries, acc, found => by
+    rcases insertAll_getElem? f entries _ found with here | ⟨other, member, renamed, value⟩
+    · rw [Std.ExtTreeMap.getElem?_insert] at here
+      split at here
+      · next same => exact .inr ⟨entry, List.mem_cons_self, Std.LawfulEqCmp.compare_eq_iff_eq.mp same, Option.some.inj here⟩
+      · exact .inl here
+    · exact .inr ⟨other, List.mem_cons_of_mem _ member, renamed, value⟩
+
+/-- A key-renamed map's entry is an original entry under a key renamed to it: renaming keys moves values, never
+makes one. -/
+theorem renameKeys_getElem? {β : Type} {f : ScopeOccurrenceId → ScopeOccurrenceId} {m : TreeMap ScopeOccurrenceId β compare}
+    {y : ScopeOccurrenceId} {v : β} (found : (m.foldl (fun (renamed : TreeMap ScopeOccurrenceId β compare) x v => renamed.insert (f x) v) ∅)[y]? = some v) :
+    ∃ x, f x = y ∧ m[x]? = some v := by
+  rw [Std.ExtTreeMap.foldl_eq_foldl_toList] at found
+  rcases insertAll_getElem? f _ _ found with empty | ⟨⟨x, w⟩, member, renamed, rfl⟩
+  · simp at empty
+  · exact ⟨x, renamed, Std.ExtTreeMap.mem_toList_iff_getElem?_eq_some.mp member⟩
+
+/-- A key of a key-renamed map is an original key renamed. -/
+theorem renameKeys_mem {β : Type} {f : ScopeOccurrenceId → ScopeOccurrenceId} {m : TreeMap ScopeOccurrenceId β compare}
+    {y : ScopeOccurrenceId} (member : y ∈ m.foldl (fun (renamed : TreeMap ScopeOccurrenceId β compare) x v => renamed.insert (f x) v) ∅) : ∃ x ∈ m, f x = y := by
+  obtain ⟨v, found⟩ := Option.isSome_iff_exists.mp (Std.ExtTreeMap.mem_iff_isSome_getElem?.mp member)
+  obtain ⟨x, renamed, was⟩ := renameKeys_getElem? found
+  exact ⟨x, Std.ExtTreeMap.mem_iff_isSome_getElem?.mpr (by simp [was]), renamed⟩
 
 theorem renameState_openItems (r : Issue → Issue) (c : Continuation → Continuation) (s : State) : (renameState r c s).openItems = s.openItems.foldl
     (fun renamed _ item =>
@@ -109,7 +140,7 @@ theorem renameState_eq (r : Issue → Issue) (c : Continuation → Continuation)
     occurrences := s.occurrences.map fun occurrence =>
       { occurrence with id := renameId r occurrence.id, scope := renameScope r occurrence.scope
                         continuation := c occurrence.continuation }
-    variables := s.variables.map fun variables => { variables with scope := renameScope r variables.scope }
+    variables := s.variables.foldl (fun renamed scope entries => renamed.insert (renameScope r scope) entries) ∅
     openItems := s.openItems.foldl (fun renamed _ item =>
       let item := { item with id := renameItemKey r item.id, position := r item.position, scope := renameScope r item.scope
                               attachedTo := item.attachedTo.map (renameId r) }

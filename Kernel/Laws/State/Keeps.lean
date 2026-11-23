@@ -166,7 +166,7 @@ theorem rekind_wellFormed {s : State} (formed : WellFormed program s) {change : 
   have keeps : ∀ x, (change x).id.occurrence = x.id.occurrence ∧ (change x).element = x.element ∧
       (change x).scope = x.scope ∧ (change x).attachedTo = x.attachedTo := fun x => by rw [kept x]; simp
   refine ⟨?issued, ?distinct, formed.startedOnce, ⟨formed.activations.keys, formed.activations.positive⟩, ?reservations,
-    ?owned, ?rooted, ⟨formed.variables.scopes, formed.variables.names⟩, formed.failure,
+    ?owned, ?rooted, ⟨formed.variables.names⟩, formed.failure,
     ⟨formed.queue.arm, formed.queue.armScope, formed.queue.armGateway, formed.queue.ends, formed.queue.completes⟩, formed.counted,
     ?occurrencesCounted, formed.ownedBelow, ?claimed,
     formed.settled.transport (.same rfl) (.refl _) (.refl _) (fun _ member _ => .inl member) (fun _ queued => queued)
@@ -264,7 +264,7 @@ theorem takeCompletion_wellFormed {s : State} (formed : WellFormed program s) : 
     formed.owned.variableScopes, formed.owned.tokenScopes⟩
   rooted := ⟨formed.rooted.1, formed.rooted.2.1, fun scope member =>
     Within.congr (s := s) (t := { s with nextCompletion := s.nextCompletion + 1 }) rfl (formed.rooted.2.2 scope member)⟩
-  variables := ⟨formed.variables.scopes, formed.variables.names⟩
+  variables := ⟨formed.variables.names⟩
   failure := formed.failure
   queue := ⟨formed.queue.arm, formed.queue.armScope, formed.queue.armGateway, formed.queue.ends,
     formed.queue.completes⟩
@@ -320,7 +320,7 @@ theorem signal_wellFormed {s : State} {signal : Signal} (formed : WellFormed pro
     fun item member => formed.owned.attachments item (items_same member rfl), formed.owned.scopeOwners, formed.owned.variableScopes, formed.owned.tokenScopes⟩
   rooted := ⟨formed.rooted.1, formed.rooted.2.1, fun scope member =>
     Within.congr (s := s) (t := { s with batchSignals := s.batchSignals ++ [signal] }) rfl (formed.rooted.2.2 scope member)⟩
-  variables := ⟨formed.variables.scopes, formed.variables.names⟩
+  variables := ⟨formed.variables.names⟩
   failure := formed.failure
   queue := queue
   counted := formed.counted
@@ -522,7 +522,7 @@ theorem addItem_wellFormed {s : State} (formed : WellFormed program s) {item : O
     · exact differ rfl
   refine ⟨?issued, ?distinct, formed.startedOnce, ⟨formed.activations.keys, formed.activations.positive⟩,
     by unfold ReservationsUnstarted; rw [keys]; exact formed.reservations, ?owned, ?rooted,
-    ⟨formed.variables.scopes, formed.variables.names⟩, formed.failure,
+    ⟨formed.variables.names⟩, formed.failure,
     ⟨formed.queue.arm, formed.queue.armScope, formed.queue.armGateway, formed.queue.ends, formed.queue.completes⟩, formed.counted,
     by unfold OccurrencesCounted; rw [keys]; exact formed.occurrencesCounted, formed.ownedBelow, ?claimed,
     formed.settled.transport (.same rfl) (.refl _) (.refl _) (fun _ member _ => .inl member) (fun _ queued => queued)
@@ -719,7 +719,7 @@ theorem slots_wellFormed {s : State} (formed : WellFormed program s) {slots : Fe
     fun item member => formed.owned.attachments item (items_same member rfl), formed.owned.scopeOwners, formed.owned.variableScopes, formed.owned.tokenScopes⟩
   rooted := ⟨formed.rooted.1, formed.rooted.2.1, fun scope member =>
     Within.congr (s := s) (t := { s with slots }) rfl (formed.rooted.2.2 scope member)⟩
-  variables := ⟨formed.variables.scopes, formed.variables.names⟩
+  variables := ⟨formed.variables.names⟩
   failure := formed.failure
   queue := ⟨formed.queue.arm, formed.queue.armScope, formed.queue.armGateway, formed.queue.ends, formed.queue.completes⟩
   counted := formed.counted
@@ -772,7 +772,7 @@ theorem emit_wellFormed {s : State} (formed : WellFormed program s) (flows : Lis
       formed.owned.scopeOwners, formed.owned.variableScopes, fun token member => ?_⟩,
     ⟨formed.rooted.1, formed.rooted.2.1, fun x member => Within.congr (s := s)
       (t := { s with batchTokens := s.batchTokens ++ flows.map (Token.flow · scope) }) rfl (formed.rooted.2.2 x member)⟩,
-    ⟨formed.variables.scopes, formed.variables.names⟩, formed.failure,
+    ⟨formed.variables.names⟩, formed.failure,
     ⟨formed.queue.arm, formed.queue.armScope, formed.queue.armGateway, formed.queue.ends, formed.queue.completes⟩, formed.counted,
     by unfold OccurrencesCounted; rw [keys]; exact formed.occurrencesCounted, formed.ownedBelow,
     ⟨(fun item member attached reserved other inside same => formed.claimed.attached item

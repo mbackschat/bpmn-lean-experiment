@@ -29,7 +29,7 @@ def declaring? (state : State) (scope : ScopeOccurrenceId) (element : ElementId)
 
 /-- Whether the own variables of `scope` bind `name`. -/
 def bindsOwn (state : State) (scope : ScopeOccurrenceId) (name : String) : Bool :=
-  ((state.variables.find? (·.scope == scope)).map (·.entries.any (·.1 == name))).getD false
+  (state.variables.getD scope []).any (·.1 == name)
 
 /-- The innermost scope visible from `scope` that declares `name`, up to the root of its process instance. -/
 def owner? (state : State) (scope : ScopeOccurrenceId) (name : String) : Option ScopeOccurrenceId :=
@@ -47,22 +47,17 @@ def setVariable (state : State) (target : ScopeOccurrenceId) (name : String) (va
   let replace (entries : List (String × Value)) :=
     if entries.any (·.1 == name) then entries.map fun entry => if entry.1 == name then (name, value) else entry
     else entries ++ [(name, value)]
-  let kind : VariableEvent :=
-    if ((state.variables.find? (·.scope == target)).map (·.entries.any (·.1 == name))).getD false then .update
-    else .create
-  let written := { state with writes := state.writes ++ [({ scope := target, name, kind } : WriteEvent)] }
-  if written.variables.any (·.scope == target) then
-    { written with variables := written.variables.map fun vars =>
-        if vars.scope == target then { vars with entries := replace vars.entries } else vars }
-  else
-    { written with variables := written.variables ++ [{ scope := target, entries := [(name, value)] }] }
+  let current := state.variables.getD target []
+  let kind : VariableEvent := if current.any (·.1 == name) then .update else .create
+  { state with
+      writes := state.writes ++ [({ scope := target, name, kind } : WriteEvent)]
+      variables := state.variables.insert target (replace current) }
 
 /-- Delete `name` from `target`'s own variables and log the deletion. -/
 def removeVariable (state : State) (target : ScopeOccurrenceId) (name : String) : State :=
   { state with
       writes := state.writes ++ [({ scope := target, name, kind := .delete } : WriteEvent)]
-      variables := state.variables.map fun vars =>
-        if vars.scope == target then { vars with entries := vars.entries.filter (·.1 != name) } else vars }
+      variables := state.variables.modify target (·.filter (·.1 != name)) }
 
 end State
 

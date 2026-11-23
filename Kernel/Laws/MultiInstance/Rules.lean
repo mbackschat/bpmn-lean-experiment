@@ -225,7 +225,7 @@ occurrence was issued since `before` has a variable set there binding it. -/
 def SlotsCounted (before after : State) : Prop :=
   ∀ run ∈ after.slots.multiInstances, ∀ (index : Nat) (scope : ScopeOccurrenceId),
     run.instances[index]? = some (.active scope) → ¬ Laws.State.ScopeIssued before scope →
-    ∃ locals ∈ after.variables, locals.scope = scope ∧ ("loopCounter", Value.int index) ∈ locals.entries
+    ∃ entries, after.variables[scope]? = some entries ∧ ("loopCounter", Value.int index) ∈ entries
 
 /-- The number of a body's filled slots. -/
 def filledCount (run : MultiInstanceRun) : Nat :=

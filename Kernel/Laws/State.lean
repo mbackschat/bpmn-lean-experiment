@@ -89,24 +89,20 @@ theorem setVariable_same (state : State) (target : ScopeOccurrenceId) (name : St
     SameButVariables state (state.setVariable target name value) := by
   unfold State.setVariable
   dsimp only
-  split <;> split <;> exact {
+  split <;> exact {
       scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, items := rfl, ordinals := rfl, tokens := rfl, activations := rfl,
       occurrenceOrdinals := rfl, journal := rfl, transitions := rfl, draft := rfl, status := rfl, failure := rfl, signals := rfl,
       queues := .of_eq rfl rfl rfl rfl, instances := fun _ => by apply instanceOf_congr <;> rfl, instanceId := rfl,
       slots := rfl, issued := rfl, issuing := rfl, issueNext := rfl }
 
-/-- The variable sets after `setVariable`: the target's set rebinds or appends the name, or a new set holds it. -/
+/-- The variable sets after `setVariable`: the target's set, empty if it held none, rebinds or appends the name. -/
 theorem setVariable_variables (state : State) (target : ScopeOccurrenceId) (name : String) (value : Value) :
-    (state.setVariable target name value).variables =
-      if state.variables.any (·.scope == target) then
-        state.variables.map fun vars => if vars.scope == target then
-          { vars with entries := if vars.entries.any (·.1 == name) then
-              vars.entries.map fun entry => if entry.1 == name then (name, value) else entry
-            else vars.entries ++ [(name, value)] } else vars
-      else state.variables ++ [{ scope := target, entries := [(name, value)] }] := by
+    (state.setVariable target name value).variables = state.variables.insert target
+      (if (state.variables.getD target []).any (·.1 == name) then
+        (state.variables.getD target []).map fun entry => if entry.1 == name then (name, value) else entry
+      else state.variables.getD target [] ++ [(name, value)]) := by
   unfold State.setVariable
-  dsimp only
-  split <;> split <;> rfl
+  rfl
 
 /-- `removeVariable` changes only the variable sets and the write log. -/
 theorem removeVariable_same (state : State) (target : ScopeOccurrenceId) (name : String) :
@@ -235,8 +231,7 @@ theorem enterScope_eq (state : State) (element : ElementId) (parent : ScopeOccur
           scopes := state.scopes ++
             [{ id := parent.child element (.fresh state.issuing state.issueNext), element := some element,
                position := .fresh state.issuing (state.issueNext + 1), occurrence }]
-          variables := state.variables ++
-            [{ scope := parent.child element (.fresh state.issuing state.issueNext), entries := keyed locals }] },
+          variables := state.variables.insert (parent.child element (.fresh state.issuing state.issueNext)) (keyed locals) },
         parent.child element (.fresh state.issuing state.issueNext)) := by
   simp only [State.enterScope, State.issuePosition, State.issue]
 
@@ -305,8 +300,7 @@ theorem closeOwnItems_eq (state : State) (id : OccurrenceId) :
   simp only [State.closeOwnItems]
 
 theorem removeVariable_variables (state : State) (target : ScopeOccurrenceId) (name : String) :
-    (state.removeVariable target name).variables = state.variables.map fun vars =>
-      if vars.scope == target then { vars with entries := vars.entries.filter (·.1 != name) } else vars := by
+    (state.removeVariable target name).variables = state.variables.modify target (·.filter (·.1 != name)) := by
   simp only [State.removeVariable]
 
 /-! ### What the hooks read of the operations they apply
@@ -438,7 +432,7 @@ theorem visible_go (state : State) (program : Program) :
     ∃ go : Nat → Option ScopeOccurrenceId → List (String × Value),
       (∀ scope, state.visible program scope = go (scope.segments.length + 1) (some scope)) ∧ (∀ current, go 0 current = []) ∧
       (∀ fuel, go (fuel + 1) none = []) ∧ ∀ fuel id, go (fuel + 1) (some id) =
-        (((state.variables.find? (·.scope == id)).map (·.entries)).getD []).filter (state.shows program id ·.1) ++
+        (state.variables.getD id []).filter (state.shows program id ·.1) ++
           if state.calledRoot id then [] else go fuel ((state.scopes.find? (·.id == id)).bind (·.parent)) :=
   ⟨visibleWalk state program, fun scope => visible_walk state program scope.segments scope rfl _ (by omega),
     fun _ => by simp [visibleWalk], fun _ => rfl, fun _ _ => by simp only [visibleWalk, State.frame]⟩
@@ -448,7 +442,7 @@ theorem owner?_go (state : State) (name : String) :
     ∃ go : Nat → ScopeOccurrenceId → Option ScopeOccurrenceId,
       (∀ scope, state.owner? scope name = go (scope.segments.length + 1) scope) ∧ (∀ current, go 0 current = none) ∧
       ∀ fuel current, go (fuel + 1) current =
-        if ((state.variables.find? (·.scope == current)).map (·.entries.any (·.1 == name))).getD false then some current
+        if (state.variables.getD current []).any (·.1 == name) then some current
         else if state.calledRoot current then none
         else ((state.scopes.find? (·.id == current)).bind (·.parent)).bind (go fuel) :=
   ⟨ownerWalk state name, fun scope => owner_walk state name scope.segments scope rfl _ (by omega), fun _ => rfl,
@@ -484,7 +478,7 @@ theorem initial_eq (instanceId : String) (variables : List (String × Value)) (b
     State.initial instanceId variables businessKey =
       { instanceId
         scopes := [{ id := State.root, element := none, position := 0 }]
-        variables := [{ scope := State.root, entries := keyed variables }]
+        variables := (∅ : TreeMap ScopeOccurrenceId (List (String × Value)) compare).insert State.root (keyed variables)
         slots := { instances := [{ root := State.root, businessKey }] } } := by
   simp only [State.initial]
 
@@ -824,7 +818,6 @@ theorem positions_kept (state : State) :
     split <;> simp [State.recordStart]
   · unfold State.setVariable
     dsimp only
-    split <;> split <;> rfl
 
 /-- The same operations leave the issued positions' counter where it was: inside a closure only the commit raises it
 (`Step.advanceCounters`), which `CountersFrom.positions` reads. -/
@@ -842,7 +835,6 @@ theorem orders_kept (state : State) :
     split <;> simp [State.recordStart]
   · unfold State.setVariable
     dsimp only
-    split <;> split <;> rfl
 
 /-! ## Removing occurrences -/
 

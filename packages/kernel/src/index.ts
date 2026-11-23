@@ -53,7 +53,7 @@ export {
   DeliveryTriggerTag, EffectOutcomeTag, FailureTag, InputTag, LeaveTag, SignalAddressTag, SignalReach, StartTriggerTag,
   itemKeyText, leaveFlows, recorded,
 } from "./state.js";
-export { rootScope, scopeParent } from "./state/key.js";
+export { compareScopeOccurrenceId, rootScope, scopeParent } from "./state/key.js";
 export { criteriaRefusal, startCriteriaRefusal } from "./state/criteria.js";
 export type {
   Binding, BroadcastIntent, ConditionChoice, CorrelationMatch, EffectOutcome, Failure, Input, Leave, MessageChannel, OccurrenceRef,

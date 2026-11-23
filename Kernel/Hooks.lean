@@ -187,7 +187,7 @@ def State.evalContext (state : State) (program : Program) (scope : ScopeOccurren
 
 /-- The variables `scope` itself holds, without the chain behind it. -/
 def State.ownVariables (state : State) (scope : ScopeOccurrenceId) : List (String × Value) :=
-  ((state.variables.find? (·.scope == scope)).map (·.entries)).getD []
+  state.variables.getD scope []
 
 /-- How a catch trigger catches a raised event: its precedence, lower first, and the variables it writes. -/
 structure Catch where

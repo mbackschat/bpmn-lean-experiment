@@ -66,8 +66,8 @@ export {
 };
 
 import {
-  childScope, compareIssue, compareUnitKey, type Issue, occurrenceId, type OccurrenceId, occurrenceIdParts, rootScope, scopeParent,
-  issuerText, type ScopeSlot, signalUnit, tokenUnit, type UnitKey,
+  childScope, compareIssue, compareScopeOccurrenceId, compareUnitKey, type Issue, occurrenceId, type OccurrenceId, occurrenceIdParts,
+  rootScope, scopeParent, issuerText, type ScopeSlot, signalUnit, tokenUnit, type UnitKey,
 } from "./state/key.js";
 export { type OccurrenceId };
 import {
@@ -81,11 +81,14 @@ import {
 export {
   compareItemKey, insertItem, type ItemKey, itemAt, itemKeyText, ItemRole, itemsInOrder, type OpenItem, type OpenItems, sameItemKey,
 };
-import { type OrderedMap, orderedAny, orderedEntries, orderedInsert, orderedSize, type TreeMap } from "./state/map.js";
-export { type TreeMap };
+import {
+  type OrderedMap, orderedAny, orderedEntries, orderedInsert, orderedSize, type TreeMap, treeMapGetD, treeMapInsert,
+} from "./state/map.js";
+export { type TreeMap, treeMapInsert };
 // The closure's unit keys and keyed maps reach the step through this hub, as `Kernel.State` re-exports them (guard 15).
 export {
-  breadthUnitKey, childScope, compareIssue, compareOccurrenceId, compareScopeSlot, compareUnitKey, committedOrdinal, freshIssue,
+  breadthUnitKey, childScope, compareIssue, compareOccurrenceId, compareScopeOccurrenceId, compareScopeSlot, compareUnitKey,
+  committedOrdinal, freshIssue,
   type Issue, issueNumber, issuerText, occurrenceId, occurrenceIdParts, sameUnitKey, scopeEncloses, scopeHead, scopeParent, type UnitKey,
   unitRoot, UnitRootTag,
 } from "./state/key.js";
@@ -102,8 +105,6 @@ import {
 export {
   committed, type Failure, failed, failedWith, FailureTag, type RecordedFailure, recorded, type Result, SemanticCause, semanticFailure,
 };
-
-export interface ScopeVariables { readonly scope: ScopeOccurrenceId; readonly entries: readonly Binding[]; }
 
 export enum InstanceStatus { Running = "running", Completed = "completed", Cancelled = "cancelled", Failed = "failed" }
 
@@ -308,7 +309,8 @@ export interface State {
   readonly batchTokens: readonly Token[];
   /** The closure's queued tokens, each keyed by the unit that queued it and its index in its batch; empty at commit. */
   readonly queuedTokens: OrderedMap<UnitKey, Token>;
-  readonly variables: readonly ScopeVariables[];
+  /** Each scope occurrence's own variables, keyed by the scope occurrence (DC25): content, with no order of entry. */
+  readonly variables: TreeMap<ScopeOccurrenceId, readonly Binding[]>;
   readonly openItems: OpenItems;
   /** The next item ordinal of each occurrence that opened an item, advanced at commit (DC12), pruned with it. */
   readonly itemOrdinals: TreeMap<OccurrenceId, number>;
@@ -420,7 +422,7 @@ export function initial(instanceId: string, variables: readonly Binding[], busin
     occurrences: [],
     batchTokens: [],
     queuedTokens: null,
-    variables: [{ scope: root, entries: keyed(variables) }],
+    variables: [[root, keyed(variables)]],
     openItems: [],
     itemOrdinals: [],
     scopeOrdinals: [],
@@ -779,7 +781,7 @@ export function enterScope(
     {
       ...positioned,
       scopes: [...state.scopes, { id, element, position, occurrence, calledInstance: null }],
-      variables: [...state.variables, { scope: id, entries: keyed(locals) }],
+      variables: treeMapInsert(state.variables, id, keyed(locals), compareScopeOccurrenceId),
     },
     id,
   ];
@@ -800,8 +802,9 @@ export function childrenOf(state: State, program: Program, scope: ScopeOccurrenc
   return programChildren(program, occurrence?.element ?? null);
 }
 
-function ownEntries(state: State, scope: ScopeOccurrenceId): readonly Binding[] | null {
-  return state.variables.find((entry) => entry.scope === scope)?.entries ?? null;
+/** The own variables of `scope`, none when it holds none: Lean's `state.variables.getD scope []`. */
+export function scopeVariables(state: State, scope: ScopeOccurrenceId): readonly Binding[] {
+  return treeMapGetD(state.variables, scope, compareScopeOccurrenceId, []);
 }
 
 /**
@@ -819,7 +822,7 @@ export function visible(state: State, program: Program, scope: ScopeOccurrenceId
   const out: Binding[] = [];
   for (let current: ScopeOccurrenceId | null = scope; current !== null;) {
     const frame = current;
-    out.push(...(ownEntries(state, frame) ?? []).filter(([name]) => shows(state, program, frame, name)));
+    out.push(...scopeVariables(state, frame).filter(([name]) => shows(state, program, frame, name)));
     if (frame === root || calledRoot(state, frame) || !stands(state, frame)) break;
     current = scopeParent(frame);
   }

@@ -79,7 +79,7 @@ function complete(json: Json): unknown {
 
 test("a write to a declared process item lands at the instance root", () => {
   assert.deepEqual(complete(program("Property_Outcome", ["Property_Outcome"])),
-    [{ scope: rootScope, entries: [["Property_Outcome", { tag: "string", value: "recorded" }]] }]);
+    [[rootScope, [["Property_Outcome", { tag: "string", value: "recorded" }]]]]);
 });
 
 test("a write to an undeclared name is refused under the standards reading", () => {

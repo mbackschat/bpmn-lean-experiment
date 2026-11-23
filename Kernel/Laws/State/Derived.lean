@@ -73,15 +73,15 @@ theorem keyed_of_nodup : ∀ {bindings : List (String × Value)}, (bindings.map 
 /-- The variable set a new scope occurrence installs binds each name at most once, whatever locals it was given (#147). -/
 theorem enterScope_names (state : State) (element : ElementId) (parent : ScopeOccurrenceId)
     (locals : List (String × Value)) (occurrence : Option OccurrenceId)
-    (names : ∀ vars ∈ state.variables, (vars.entries.map (·.1)).Nodup) :
-    ∀ vars ∈ (state.enterScope element parent locals occurrence).1.variables, (vars.entries.map (·.1)).Nodup := by
-  intro vars member
-  rw [enterScope_eq] at member
-  simp only [List.mem_append, List.mem_singleton] at member
-  rcases member with old | fresh
-  · exact names vars old
-  · subst fresh
+    (names : ∀ (x : ScopeOccurrenceId) (entries : List (String × Value)), state.variables[x]? = some entries → (entries.map (·.1)).Nodup) :
+    ∀ (x : ScopeOccurrenceId) (entries : List (String × Value)), (state.enterScope element parent locals occurrence).1.variables[x]? = some entries →
+      (entries.map (·.1)).Nodup := by
+  intro x entries found
+  rw [enterScope_eq, Std.ExtTreeMap.getElem?_insert] at found
+  split at found
+  · rw [← Option.some.inj found]
     exact keyed_names locals
+  · exact names x entries found
 
 /-- A scope occurrence with a child is busy (`State.busyScopes`). -/
 theorem busyScopes_parent (state : State) (child : ScopeOccurrence) (member : child ∈ state.scopes)

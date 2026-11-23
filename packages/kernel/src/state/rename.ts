@@ -7,7 +7,7 @@
 import {
   CauseTag, childScope, compareItemKey, type Cause, type Compensable, type Continuation, type FeatureSlots, freshIssue,
   type Issue, type ItemKey, type Iteration, IterationTag, type OccurrenceId, occurrenceId, occurrenceIdParts,
-  type Resume, ResumeTag, type ScopeOccurrenceId, scopeHead, type State, type Transition,
+  type Resume, ResumeTag, type ScopeOccurrenceId, scopeHead, type State, type Transition, compareScopeOccurrenceId, treeMapInsert,
 } from "../state.js";
 import { assertNever } from "../il/types.js";
 
@@ -119,7 +119,9 @@ export function renameState(rename: Rename, continuation: (continuation: Continu
     occurrences: state.occurrences.map((occurrence) => ({
       ...occurrence, id: id(occurrence.id), scope: scope(occurrence.scope), continuation: continuation(occurrence.continuation),
     })),
-    variables: state.variables.map((variables) => ({ ...variables, scope: scope(variables.scope) })),
+    // Renamed keys are inserted afresh, in the renamed key order, as Lean's fold into an empty map inserts them.
+    variables: state.variables.reduce<State["variables"]>((renamed, [key, entries]) =>
+      treeMapInsert(renamed, scope(key), entries, compareScopeOccurrenceId), []),
     // Renamed keys are inserted afresh, in the renamed key order, as Lean's fold into an empty map inserts them.
     openItems: state.openItems.map((item) => ({
       ...item, id: renameItemKey(rename, item.id), position: rename(item.position), scope: scope(item.scope),

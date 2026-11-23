@@ -83,7 +83,7 @@ theorem declaring?_stands {state : State} {scope found : ScopeOccurrenceId} {ele
 
 /-- The owner `State.owner?` finds holds a variable set. -/
 theorem owner?_holds {state : State} {scope found : ScopeOccurrenceId} {name : String}
-    (ran : state.owner? scope name = some found) : ∃ variables ∈ state.variables, variables.scope = found := by
+    (ran : state.owner? scope name = some found) : found ∈ state.variables := by
   obtain ⟨go, start, zero, step⟩ := owner?_go state name
   rw [start] at ran
   generalize scope.segments.length + 1 = fuel at ran
@@ -93,11 +93,9 @@ theorem owner?_holds {state : State} {scope found : ScopeOccurrenceId} {name : S
     rw [step] at ran
     split at ran
     · rename_i declares
-      cases search : state.variables.find? (·.scope == scope) with
-      | none => simp [search] at declares
-      | some variables =>
-        cases ran
-        exact ⟨variables, List.mem_of_find?_eq_some search, by simpa using List.find?_some search⟩
+      obtain rfl := Option.some.inj ran
+      refine Classical.byContradiction fun outside => ?_
+      simp [Std.ExtTreeMap.getD_eq_fallback outside] at declares
     · split at ran
       · simp at ran
       · obtain ⟨parent, _, recursed⟩ := Option.bind_eq_some_iff.mp ran
@@ -422,30 +420,19 @@ frame binds `name`. -/
 theorem owner?_spec (formed : WellFormed program s) {scope root : ScopeOccurrenceId}
     (inInstance : InstanceRoot s scope root) (name : String) (owner : ScopeOccurrenceId) :
     s.owner? scope name = some owner ↔ Within s scope owner ∧ Within s owner root ∧
-      (∃ frame ∈ s.variables, frame.scope = owner ∧ ∃ value, (name, value) ∈ frame.entries) ∧
+      (∃ entries, s.variables[owner]? = some entries ∧ ∃ value, (name, value) ∈ entries) ∧
       ∀ nearer, Within s scope nearer → Within s nearer owner →
-        (∃ frame ∈ s.variables, frame.scope = nearer ∧ ∃ value, (name, value) ∈ frame.entries) → nearer = owner := by
+        (∃ entries, s.variables[nearer]? = some entries ∧ ∃ value, (name, value) ∈ entries) → nearer = owner := by
   obtain ⟨go, start, zero, step⟩ := owner?_go s name
-  have binds : ∀ current, ((s.variables.find? (·.scope == current)).map (·.entries.any (·.1 == name))).getD false =
-      true ↔ ∃ frame ∈ s.variables, frame.scope = current ∧ ∃ value, (name, value) ∈ frame.entries := by
+  have binds : ∀ current, (s.variables.getD current []).any (·.1 == name) = true ↔
+      ∃ entries, s.variables[current]? = some entries ∧ ∃ value, (name, value) ∈ entries := by
     intro current
-    constructor
-    · intro bound
-      cases search : s.variables.find? (·.scope == current) with
-      | none => simp [search] at bound
-      | some frame =>
-        simp only [search, Option.map_some, Option.getD_some, List.any_eq_true, beq_iff_eq] at bound
-        obtain ⟨⟨named, value⟩, member, rfl⟩ := bound
-        exact ⟨frame, List.mem_of_find?_eq_some search, by simpa using List.find?_some search, value, member⟩
-    · rintro ⟨frame, member, rfl, ⟨value, bound⟩⟩
-      cases search : s.variables.find? (·.scope == frame.scope) with
-      | none => exact absurd (List.find?_eq_none.mp search frame member) (by simp)
-      | some found =>
-        have := nodup_map_eq (f := ScopeVariables.scope) formed.variables.scopes (List.mem_of_find?_eq_some search)
-          member (by simpa using List.find?_some search)
-        subst this
-        simp only [Option.map_some, Option.getD_some, List.any_eq_true, beq_iff_eq]
-        exact ⟨_, bound, rfl⟩
+    rw [Std.ExtTreeMap.getD_eq_getD_getElem?]
+    cases s.variables[current]? with
+    | none => simp
+    | some entries =>
+      simp only [Option.getD_some, List.any_eq_true, beq_iff_eq, Option.some.injEq, exists_eq_left']
+      exact ⟨fun ⟨⟨named, value⟩, member, same⟩ => ⟨value, same ▸ member⟩, fun ⟨value, member⟩ => ⟨_, member, rfl⟩⟩
   rw [start, search_spec formed ⟨zero, step⟩ inInstance owner, binds]
   simp only [binds]
 
@@ -479,8 +466,8 @@ and shows. -/
 theorem visible_spec (formed : WellFormed program s) {scope root : ScopeOccurrenceId}
     (inInstance : InstanceRoot s scope root) {reading : Program} {binding : String × Value}
     (seen : binding ∈ s.visible reading scope) :
-    ∃ frame ∈ s.variables, Within s scope frame.scope ∧ Within s frame.scope root ∧ binding ∈ frame.entries ∧
-      s.shows reading frame.scope binding.1 = true := by
+    ∃ frame entries, s.variables[frame]? = some entries ∧ Within s scope frame ∧ Within s frame root ∧ binding ∈ entries ∧
+      s.shows reading frame binding.1 = true := by
   obtain ⟨go, start, ⟨zero, ended, step⟩⟩ := visible_go s reading
   have absent : ∀ fuel, go fuel none = [] := fun fuel => by cases fuel <;> simp [zero, ended]
   have onward : ∀ current, Within s current root → s.calledRoot current = false → ∀ parent,
@@ -496,8 +483,8 @@ theorem visible_spec (formed : WellFormed program s) {scope root : ScopeOccurren
     · simp [(formed.rooted.2.1 entry member).mpr (same.trans isRoot)] at linked
   rw [start] at seen
   suffices walk : ∀ fuel current, Within s scope current → Within s current root → binding ∈ go fuel (some current) →
-      ∃ frame ∈ s.variables, Within s scope frame.scope ∧ Within s frame.scope root ∧ binding ∈ frame.entries ∧
-        s.shows reading frame.scope binding.1 = true from
+      ∃ frame entries, s.variables[frame]? = some entries ∧ Within s scope frame ∧ Within s frame root ∧
+        binding ∈ entries ∧ s.shows reading frame binding.1 = true from
     walk _ scope (.refl _) inInstance.1 seen
   intro fuel
   induction fuel with
@@ -506,13 +493,12 @@ theorem visible_spec (formed : WellFormed program s) {scope root : ScopeOccurren
     intro current down up seen
     rw [step] at seen
     rcases List.mem_append.mp seen with own | further
-    · cases search : s.variables.find? (·.scope == current) with
+    · rw [Std.ExtTreeMap.getD_eq_getD_getElem?] at own
+      cases search : s.variables[current]? with
       | none => simp [search] at own
-      | some frame =>
-        simp only [search, Option.map_some, Option.getD_some, List.mem_filter] at own
-        have named : frame.scope = current := by simpa using List.find?_some search
-        subst named
-        exact ⟨frame, List.mem_of_find?_eq_some search, down, up, own⟩
+      | some entries =>
+        simp only [search, Option.getD_some, List.mem_filter] at own
+        exact ⟨current, entries, search, down, up, own⟩
     · by_cases called : s.calledRoot current = true
       · simp [called] at further
       · simp only [Bool.not_eq_true] at called
@@ -533,21 +519,16 @@ theorem visible_enterScope (formed : WellFormed program s) {scope : ScopeOccurre
       [{ id := parent.child element (.fresh s.issuing s.issueNext), element := some element,
          position := .fresh s.issuing (s.issueNext + 1), occurrence }] := by
     rw [← entered, enterScope_eq]
-  have variables : t.variables = s.variables ++
-      [{ scope := parent.child element (.fresh s.issuing s.issueNext), entries := keyed locals }] := by
+  have variables : t.variables = s.variables.insert (parent.child element (.fresh s.issuing s.issueNext)) (keyed locals) := by
     rw [← entered, enterScope_eq]
   have record : ∀ entry ∈ s.scopes, t.scopes.find? (·.id == entry.id) = s.scopes.find? (·.id == entry.id) := by
     intro entry member
     rw [scopes, List.find?_append, find?_record formed.distinct.scopes member]; rfl
-  have frame : ∀ entry ∈ s.scopes, t.variables.find? (·.scope == entry.id) = s.variables.find? (·.scope == entry.id) := by
+  have frame : ∀ entry ∈ s.scopes, t.variables.getD entry.id [] = s.variables.getD entry.id [] := by
     intro entry member
-    rw [variables, List.find?_append]
-    cases s.variables.find? (·.scope == entry.id) with
-    | some _ => rfl
-    | none =>
-      have : parent.child element (.fresh s.issuing s.issueNext) ≠ entry.id := fun same =>
-        entered_unissued parent element formed.issuer.next (same ▸ formed.issued.scopes entry member)
-      simp [this]
+    have apart : parent.child element (.fresh s.issuing s.issueNext) ≠ entry.id := fun same =>
+      entered_unissued parent element formed.issuer.next (same ▸ formed.issued.scopes entry member)
+    rw [variables, Std.ExtTreeMap.getD_insert, ite_eq_right (by rwa [Std.LawfulEqCmp.compare_eq_iff_eq])]
   obtain ⟨later, laterStart, ⟨laterZero, laterEnded, laterStep⟩⟩ := visible_go t reading
   obtain ⟨earlier, earlierStart, ⟨earlierZero, earlierEnded, earlierStep⟩⟩ := visible_go s reading
   have laterAbsent : ∀ fuel, later fuel none = [] := fun fuel => by cases fuel <;> simp [laterZero, laterEnded]

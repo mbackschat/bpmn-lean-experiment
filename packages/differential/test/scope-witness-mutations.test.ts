@@ -23,8 +23,8 @@ import {
   foldSynchronousEffects,
 } from "@bpmn-lean/differential";
 import {
-  FailureTag, decodeProgram, elementHeader, failureCode, failureName, hooks, itemKeyText, observationJson, scopeParent, step,
-  stimulusFromJson,
+  FailureTag, compareScopeOccurrenceId, decodeProgram, elementHeader, failureCode, failureName, hooks, itemKeyText, observationJson,
+  scopeParent, step, stimulusFromJson,
 } from "@bpmn-lean/kernel";
 import type { Program, ScopeOccurrenceId, State } from "@bpmn-lean/kernel";
 
@@ -168,7 +168,8 @@ function restore(before: State, after: State, scopes: ReadonlySet<ScopeOccurrenc
     scopes: back(before.scopes, after.scopes, (scope) => scope.id),
     occurrences: back(before.occurrences, after.occurrences, (occurrence) => occurrence.scope),
     batchTokens: back(before.batchTokens, after.batchTokens, (token) => token.scope),
-    variables: back(before.variables, after.variables, (entry) => entry.scope),
+    // The variables are a map in key order (`TreeMap`), so the rows put back take their place in it.
+    variables: back(before.variables, after.variables, ([scope]) => scope).sort(([left], [right]) => compareScopeOccurrenceId(left, right)),
     openItems: back(before.openItems, after.openItems, (item) => item.scope),
   };
 }

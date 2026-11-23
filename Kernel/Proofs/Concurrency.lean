@@ -143,8 +143,9 @@ renamed key, and the intents, each as a multiset. -/
 structure Alike (ids : ScopeOccurrenceId → ScopeOccurrenceId) (keys : OccurrenceKey → OccurrenceKey) (left right : State) : Prop where
   status : left.status = right.status
   failure : left.failure = right.failure
-  variables : ∃ matched : List ScopeVariables, matched.Perm right.variables ∧ matched.length = left.variables.length ∧
-    ∀ pair ∈ left.variables.zip matched, pair.2.scope = ids pair.1.scope ∧ pair.1.entries.Perm pair.2.entries
+  variables : ∃ matched : List (ScopeOccurrenceId × List (String × Value)), matched.Perm right.variables.toList ∧
+    matched.length = left.variables.size ∧
+    ∀ pair ∈ left.variables.toList.zip matched, pair.2.1 = ids pair.1.1 ∧ pair.1.2.Perm pair.2.2
   started : ((left.journal.flatMap (·.started)).map fun fact => keys fact.occurrence).Perm
     ((right.journal.flatMap (·.started)).map (·.occurrence))
   ended : ((left.journal.flatMap (·.ended)).map fun fact => (keys fact.1, fact.2)).Perm (right.journal.flatMap (·.ended))

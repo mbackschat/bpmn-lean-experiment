@@ -64,9 +64,9 @@ function run(program: Program, raws: readonly Json[]): Outcome {
 function bindings(outcome: Outcome, name: string): Record<string, unknown> {
   assert.ok(outcome.ok, JSON.stringify(outcome));
   const state = outcome.value;
-  return Object.fromEntries(state.variables.flatMap((frame) => {
-    const value = frame.entries.find(([key]) => key === name)?.[1];
-    const element = state.scopes.find((entry) => entry.id === frame.scope)?.element ?? "root";
+  return Object.fromEntries(state.variables.flatMap(([scope, entries]) => {
+    const value = entries.find(([key]) => key === name)?.[1];
+    const element = state.scopes.find((entry) => entry.id === scope)?.element ?? "root";
     return value === undefined ? [] : [[element, value]];
   }));
 }

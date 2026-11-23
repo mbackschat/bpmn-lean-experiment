@@ -30,9 +30,9 @@ const program = chain([
 
 /** The inputs the handler's User Task captured. */
 function handlerInputs(outcome: Outcome): Record<string, unknown> {
-  const entries = committedState(outcome).variables.find((scoped) => scoped.entries.some(([name]) => name === "seenOwn"));
-  assert.ok(entries !== undefined, "the handler's User Task holds its inputs");
-  return Object.fromEntries(entries.entries);
+  const scoped = committedState(outcome).variables.find(([, entries]) => entries.some(([name]) => name === "seenOwn"));
+  assert.ok(scoped !== undefined, "the handler's User Task holds its inputs");
+  return Object.fromEntries(scoped[1]);
 }
 
 test("a Sub-Process's handler restores its own variables and reads an outer name live", () => {
@@ -54,5 +54,5 @@ test("a boundary handler of a Sub-Process restores no context", () => {
   const state = committedState(driveFrom(boundaried, [{ name: "x", value: text("early") }], complete("PT"), complete("U", 1, [["x", text("late")]])));
   const context = state.scopes.find((scoped) => scoped.element === "HB" && scoped.occurrence === null);
   assert.ok(context !== undefined, "the handler runs in a context scope occurrence");
-  assert.deepEqual(state.variables.find((scoped) => scoped.scope === context.id)?.entries, []);
+  assert.deepEqual(new Map(state.variables).get(context.id), []);
 });

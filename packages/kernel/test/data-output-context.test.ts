@@ -50,7 +50,7 @@ function after(json: Json, stimulus: Json): Outcome {
 }
 
 const root = (outcome: Outcome): unknown => outcome.ok
-  ? Object.fromEntries((outcome.value.variables.find((entry) => entry.scope === rootScope)?.entries ?? []).map(([name, value]) => [name, value]))
+  ? Object.fromEntries((new Map(outcome.value.variables).get(rootScope) ?? []).map(([name, value]) => [name, value]))
   : outcome.failure;
 
 const captured = mapping("out", variable("captured"));

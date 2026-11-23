@@ -268,8 +268,8 @@ theorem begun_counted {ctx : Ctx} {loop : MultiInstance}
     exact absurd (others other held scope (List.mem_of_getElem? slot)) fresh
   · rcases begun.counted index scope slot with earlier | ⟨_, counter⟩
     · exact absurd (old scope (List.mem_of_getElem? earlier)) fresh
-    · obtain ⟨locals, present, at_, entry⟩ := counter cib apart
-      exact ⟨locals, by rw [setRun_eq]; exact present, at_, entry⟩
+    · obtain ⟨entries, present, entry⟩ := counter cib apart
+      exact ⟨entries, by rw [setRun_eq]; exact present, entry⟩
 
 /-- Beginning a body's instances enters each anew holding its counter, as `begun_counted` says. -/
 theorem beginInstances_counted (ops : MultiInstanceOps program inv settled) {ctx : Ctx} {loop : MultiInstance}
