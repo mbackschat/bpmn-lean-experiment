@@ -34,6 +34,7 @@ import {
   programProcessChildren,
   programProcessOf,
   programSiblings,
+  programTarget,
   scopeKindStart,
   throwView,
   triggerCondition,
@@ -323,9 +324,83 @@ function againstHolders(program: Program, held: readonly ElementId[], wake: Clos
     : null;
 }
 
-/** A resumption against itself, when its subscription may be open twice at once (`holders`, `againstHolders`). */
-function againstItself(reading: Reading, program: Program, visit: Visit, wake: Closure): string | null {
-  return againstHolders(program, holders(reading, program, visit), wake);
+/**
+ * Whether two tokens may arrive at `element` within one occurrence of its level, each beginning an occurrence while the
+ * other may still be open: two flows of one split lead to it, a boundary that does not interrupt, and so may fire beside
+ * its host and again, leads to it, a boundary leads to it along two flows, or two of the level's starts or implicitly
+ * begun children do (`reaches`, through Activities and boundary flows). One token reaches an element again only after
+ * the occurrence it left completed, so a loop without a split adds none.
+ */
+function arrivesTwice(program: Program, element: Element): boolean {
+  const id = elementHeader(element).id;
+  const arrives = (source: Element): boolean => elementHeader(source).id === id ||
+    reaches(program, [elementHeader(source).id, ...(elementEnvelope(source)?.boundaries ?? []).map((attached) => attached.id)], id);
+  const leads = (flow: FlowId): boolean => {
+    const target = programTarget(program, flow);
+    const reached = target === null ? null : programElement(program, target);
+    return reached !== null && arrives(reached);
+  };
+  const level = programSiblings(program, elementHeader(element));
+  const begun = level.some((other) => elementStart(other) !== null)
+    ? level.filter((other) => elementStart(other) !== null)
+    : level.filter(elementBeginsImplicitly);
+  return begun.filter(arrives).length >= 2 || level.some((other) => {
+    const gateway = elementGateway(other);
+    return ((gateway === null || routing(gateway[1]).concurrent) && elementOutgoing(other).filter(leads).length >= 2) ||
+      (elementEnvelope(other)?.boundaries ?? []).some((attached) =>
+        (!attached.interrupting && attached.outgoing.some(leads)) || attached.outgoing.filter(leads).length >= 2);
+  });
+}
+
+/**
+ * Whether two occurrences of `element` may be open at once: a parallel loop's instances, a compensation handler, begun
+ * once per record, an Event Sub-Process that does not interrupt, which may start again, two tokens arriving in one
+ * occurrence of its level (`arrivesTwice`), or that level open twice: its Scope's, or a called process's that two Calls,
+ * or one Call that runs twice, call. Running out of fuel, which only a Call cycle does, answers yes.
+ */
+function runsTwice(reading: Reading, program: Program, fuel: number, element: Element): boolean {
+  if (fuel === 0) return true;
+  const scope = elementScope(element);
+  if (((elementEnvelope(element)?.multiInstance ?? null) !== null && !reading.nextInstance(element)) || handler(reading, element) ||
+    (scope !== null && scopeKindStart(scope[1].kind) !== null && !reading.interrupts(element)) || arrivesTwice(program, element)) {
+    return true;
+  }
+  const header = elementHeader(element);
+  if (header.parent !== null) {
+    const parent = programElement(program, header.parent);
+    return parent !== null && runsTwice(reading, program, fuel - 1, parent);
+  }
+  const process = programProcessOf(program, header);
+  if (process === null) return false;
+  const calls = callers(program, process);
+  return calls.length >= 2 || calls.some((call) => runsTwice(reading, program, fuel - 1, call));
+}
+
+/**
+ * Whether two open occurrences of a subscription inside `holder`, a Scope or a Call, may lie in distinct occurrences of
+ * it, each completing beside the other: the holder may run twice (`runsTwice`), or a process it calls has two Calls.
+ */
+function heldTwice(reading: Reading, program: Program, holder: Element): boolean {
+  if (runsTwice(reading, program, program.elements.length + 1, holder)) return true;
+  const activity = elementActivity(holder);
+  const work = activity === null ? null : workCall(activity[1].work);
+  return work !== null && programCalledProcessFor(program, program.options.calledElementResolution,
+    programCallerDeployment(program, elementHeader(holder)), work).some((process) => callers(program, process).length >= 2);
+}
+
+/**
+ * A resumption against itself, when its subscription may be open twice at once (`holders`, `againstHolders`), along a
+ * path that ascends into the completions of the Scopes and Calls that may hold the two occurrences apart (`heldTwice`,
+ * #194): each such holder may complete in this closure beside the other occurrence's, while one holding both completes
+ * only after both, as a pair's ascent stops below what the pair shares (`signalFanOut`).
+ */
+function againstItself(reading: Reading, program: Program, visit: Visit): string | null {
+  const apart = (id: ElementId): boolean => {
+    const holder = programElement(program, id);
+    return holder !== null && heldTwice(reading, program, holder);
+  };
+  return againstHolders(program, holders(reading, program, visit),
+    closureWalk(reading, program, { stop: awaitsStimulus, ascends: true, ascendsInto: apart }, [visit]));
 }
 
 /** The walk of a resumption's or catcher's path: a branch's, stopping where it waits and passing every join. */
@@ -349,7 +424,8 @@ function continuation(reading: Reading, program: Program, element: Element): Clo
  * §10.5.1 lets one Signal reach every catcher; issue #81). A resumption whose first visit removes the thrower
  * (`preempts`) is not held against the continuation: that removal is a queued signal, which runs before any token the
  * thrower's completion emits, whatever the schedule. A resumption that cannot be open while the thrower runs
- * (`closedAt`) is dropped, and one whose subscription may be open twice at once is held against itself (`againstItself`).
+ * (`closedAt`) is dropped, and one whose subscription may be open twice at once is held against itself (`againstItself`),
+ * ascending into the holders that may keep its two occurrences apart.
  * A resumption is compared with the continuation, and two resumptions pairwise, along paths that ascend into the
  * completions of the Scopes and Calls not enclosing both (`enclosingAcross`, `Walk.ascendsInto`): one that holds only one
  * of them may complete in this closure, its completion running beside the other, while one enclosing both completes
@@ -361,8 +437,7 @@ function signalFanOut(reading: Reading, program: Program, element: Element): str
   const thrown = event === null ? null : eventPayloadThrow(event[1]);
   if (thrown === null || throwView(thrown).signal === null) return null;
   const wakes = program.elements.flatMap((other) => catching(signalled, other))
-    .filter((visit) => !closedAt(reading, program, element, visit))
-    .map((visit) => [visit, pathOf(reading, program, [visit])] as const);
+    .filter((visit) => !closedAt(reading, program, element, visit));
   const own = continuation(reading, program, element);
   const around = (visit: Visit): ElementId[] => {
     const anchor = anchorOf(program, visit);
@@ -381,9 +456,8 @@ function signalFanOut(reading: Reading, program: Program, element: Element): str
     }
     return null;
   };
-  return firstOf(wakes.filter(([visit]) => !preempts(reading, program, visit, element)), ([visit]) => conflict(program, own, ascending(visit, thrower))) ??
-    pairs(wakes.map(([visit]) => visit)) ??
-    firstOf(wakes, ([visit, wake]) => againstItself(reading, program, visit, wake));
+  return firstOf(wakes.filter((visit) => !preempts(reading, program, visit, element)), (visit) => conflict(program, own, ascending(visit, thrower))) ??
+    pairs(wakes) ?? firstOf(wakes, (visit) => againstItself(reading, program, visit));
 }
 
 /**
@@ -537,7 +611,7 @@ function writeFanOut(reading: Reading, program: Program, element: Element): stri
     (program.options.conditionalRetrigger === ConditionalRetrigger.EachWrite || meets(reads(left), reads(right)));
   const rivals = (): string | null => firstOf(catching(conditional, element), (visit) => {
     const wake = pathOf(reading, program, [visit]);
-    return againstItself(reading, program, visit, wake) ??
+    return againstItself(reading, program, visit) ??
       firstOf(conditionalCatches(program).filter(together(visit)), (other) => conflict(program, wake, pathOf(reading, program, [other])));
   });
   return own() ?? fired() ?? rivals();

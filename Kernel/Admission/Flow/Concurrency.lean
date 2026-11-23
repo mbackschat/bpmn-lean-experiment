@@ -198,9 +198,54 @@ def againstHolders (program : Program) (held : List ElementId) (wake : Closure) 
     some "flow.concurrentInterference"
   else none
 
-/-- A resumption against itself, when its subscription may be open twice at once (`holders`, `againstHolders`). -/
-def againstItself (reading : Reading) (program : Program) (visit : Visit) (wake : Closure) : Option String :=
-  againstHolders program (holders reading program visit) wake
+/-- Whether two tokens may arrive at `element` within one occurrence of its level, each beginning an occurrence while
+the other may still be open: two flows of one split lead to it, a boundary that does not interrupt, and so may fire
+beside its host and again, leads to it, a boundary leads to it along two flows, or two of the level's starts or
+implicitly begun children do (`reaches`, through Activities and boundary flows). One token reaches an element again only
+after the occurrence it left completed, so a loop without a split adds none. -/
+def arrivesTwice (program : Program) (element : Element) : Bool :=
+  let id := element.header.id
+  let arrives (source : Element) : Bool := source.header.id == id ||
+    reaches program (source.header.id :: ((source.envelope?.map (·.boundaries)).getD []).map (·.id)) id
+  let leads (flow : FlowId) : Bool := ((program.target? flow).bind program.element?).any arrives
+  let level := program.siblings element.header
+  let begun := if level.any (·.start?.isSome) then level.filter (·.start?.isSome) else level.filter (·.beginsImplicitly)
+  (begun.filter arrives).length ≥ 2 || level.any fun other =>
+    ((other.gateway?.all fun (_, payload) => (routing payload).concurrent) && (other.outgoing.filter leads).length ≥ 2) ||
+      ((other.envelope?.map (·.boundaries)).getD []).any fun boundary =>
+        (!boundary.interrupting && boundary.outgoing.any leads) || (boundary.outgoing.filter leads).length ≥ 2
+
+/-- Whether two occurrences of `element` may be open at once: a parallel loop's instances, a compensation handler, begun
+once per record, an Event Sub-Process that does not interrupt, which may start again, two tokens arriving in one
+occurrence of its level (`arrivesTwice`), or that level open twice: its Scope's, or a called process's that two Calls,
+or one Call that runs twice, call. Running out of fuel, which only a Call cycle does, answers yes. -/
+def runsTwice (reading : Reading) (program : Program) : Nat → Element → Bool
+  | 0, _ => true
+  | fuel + 1, element =>
+    (((element.envelope?).bind (·.multiInstance)).isSome && !reading.nextInstance element) || handler reading element ||
+      (((element.scope?).bind fun (_, payload) => payload.kind.start?).isSome && !reading.interrupts element) ||
+      arrivesTwice program element ||
+      match element.header.parent with
+      | some parent => (program.element? parent).any (runsTwice reading program fuel)
+      | none => ((program.processOf element.header).map fun process =>
+          (callers program process).length ≥ 2 || (callers program process).any (runsTwice reading program fuel)).getD false
+
+/-- Whether two open occurrences of a subscription inside `holder`, a Scope or a Call, may lie in distinct occurrences of
+it, each completing beside the other: the holder may run twice (`runsTwice`), or a process it calls has two Calls. -/
+def heldTwice (reading : Reading) (program : Program) (holder : Element) : Bool :=
+  runsTwice reading program (program.elements.length + 1) holder ||
+    ((holder.activity?.bind fun (_, payload) => payload.work.call?).map fun work =>
+      (program.calledProcessFor program.options.calledElementResolution (program.callerDeployment holder.header) work).any
+        fun process => (callers program process).length ≥ 2).getD false
+
+/-- A resumption against itself, when its subscription may be open twice at once (`holders`, `againstHolders`), along a
+path that ascends into the completions of the Scopes and Calls that may hold the two occurrences apart (`heldTwice`,
+#194): each such holder may complete in this closure beside the other occurrence's, while one holding both completes
+only after both, as a pair's ascent stops below what the pair shares (`signalFanOut`). -/
+def againstItself (reading : Reading) (program : Program) (visit : Visit) : Option String :=
+  let apart (id : ElementId) : Bool := (program.element? id).any (heldTwice reading program)
+  againstHolders program (holders reading program visit)
+    (closureWalk reading program { stop := awaitsStimulus, ascends := true, ascendsInto := apart } [visit])
 
 /-- The walk of a resumption's or catcher's path: a branch's, stopping where it waits and passing every join. -/
 def pathOf (reading : Reading) (program : Program) (begun : List Visit) : Closure :=
@@ -219,7 +264,8 @@ program as `Kernel.Admission.Flow.beyond` counts, which the closure runs in armi
 (BPMN 2.0.2 §10.5.1 lets one Signal reach every catcher; issue #81). A resumption whose first visit removes the thrower
 (`preempts`) is not held against the continuation: that removal is a queued signal, which runs before any token the
 thrower's completion emits, whatever the schedule. A resumption that cannot be open while the thrower runs (`closedAt`)
-is dropped, and one whose subscription may be open twice at once is held against itself (`againstItself`). A
+is dropped, and one whose subscription may be open twice at once is held against itself (`againstItself`), ascending
+into the holders that may keep its two occurrences apart. A
 resumption is compared with the continuation, and two resumptions pairwise, along paths that ascend into the
 completions of the Scopes and Calls not enclosing both (`enclosingAcross`, `Walk.ascendsInto`): one that holds only
 one of them may complete in this closure, its completion running beside the other, while one enclosing both completes
@@ -228,8 +274,7 @@ held against itself. -/
 def signalFanOut (reading : Reading) (program : Program) (element : Element) : Option String :=
   if !((element.event?.bind (·.2.throw?)).any fun thrown => (throwView thrown).signal.isSome) then none
   else
-    let wakes := ((program.elements.flatMap (catching signalled)).filter (!closedAt reading program element ·)).map
-      fun visit => (visit, pathOf reading program [visit])
+    let wakes := (program.elements.flatMap (catching signalled)).filter (!closedAt reading program element ·)
     let own := continuation reading program element
     let around (visit : Visit) : List ElementId :=
       ((anchorOf program visit).map (enclosingAcross program (program.processes.length + 1))).getD []
@@ -241,10 +286,8 @@ def signalFanOut (reading : Reading) (program : Program) (element : Element) : O
       | [] => none
       | visit :: rest => rest.findSome? (fun other =>
           conflict program (ascending visit (around other)) (ascending other (around visit))) <|> pairs rest
-    (wakes.filter fun (visit, _) => !preempts reading program visit element).findSome?
-        (fun (visit, _) => conflict program own (ascending visit thrower)) <|>
-      pairs (wakes.map (·.1)) <|>
-      wakes.findSome? fun (visit, wake) => againstItself reading program visit wake
+    (wakes.filter (!preempts reading program · element)).findSome? (fun visit => conflict program own (ascending visit thrower)) <|>
+      pairs wakes <|> wakes.findSome? (againstItself reading program)
 
 /-- Under `BranchSchedule.orderInvariant`, an Escalation thrower's continuation may not conflict with what a catcher
 that does not interrupt it runs: BPMN 2.0.2 §10.5.1 continues the thrower, an End Event's Scope included, while the
@@ -359,7 +402,7 @@ def writeFanOut (reading : Reading) (program : Program) (element : Element) : Op
       (program.options.conditionalRetrigger == .eachWrite || (reads left).meets (reads right))
   let rivals := (catching conditional element).findSome? fun visit =>
     let wake := pathOf reading program [visit]
-    againstItself reading program visit wake <|>
+    againstItself reading program visit <|>
       ((conditionalCatches program).filter (together visit)).findSome? fun other =>
         conflict program wake (pathOf reading program [other])
   own <|> fired <|> rivals

@@ -2,9 +2,10 @@
  * Refusal tests of the Conditional lifetime class (CIB-OP-0016): under `BranchSchedule.orderInvariant` a write that one
  * unit makes and the opening or end of a Conditional subscription that a concurrent unit makes are ordered by nothing
  * BPMN states (Table 13.1, §13.3.1, §13.3.4, Tables 10.86, 10.89, 10.90), so a model whose result depends on that order
- * is refused with `flow.concurrentWrite`; a write that can only make the condition true before an opening, a holder
- * that outlives its descendant writer, two wakes below one shared Scope or Call, and a holder's own boundary stay
- * admitted.
+ * is refused with `flow.concurrentWrite`, and so are two open occurrences of one subscription whose holders' completions
+ * write after one broadcast (#194); a write that can only make the condition true before an opening, a holder that
+ * outlives its descendant writer, two wakes below one shared Scope or Call, a holder's own boundary, and a holder that
+ * runs once or whose twin occurrences write nothing stay admitted.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -201,6 +202,42 @@ const wakesInOneCall = (): Json => model([
   flow("q3", "QC1", "QE1"), flow("q4", "QC2", "QE2"), flow("ce", "CA", "E1"), flow("u", "U", "TH"), flow("th", "TH", "E2")])(program([],
   [{ definition: definitionRef("Q"), children: ["QS", "QF", "QC1", "QC2", "QE1", "QE2"], variables: ["din"], executable: true }]));
 
+/**
+ * Issue #194: the Calls CA1 and CA2 of one process Q, each begun after its own User Task, so in a closure of its own,
+ * wait at Q's Signal catch until one broadcast wakes both; each Call's completion writes x, CA1's "1" and CA2's "2", and
+ * the committed x is the one written last. Without `outputs` the Calls map no data, so the twins' completions write
+ * nothing.
+ */
+const twoCallsWoken = (outputs = true): Json => {
+  const call = (id: string, value: string): Json => activity(id, callWork({ calledElement: text("Q"),
+    ...(outputs ? { inputs: [mapping("din", literalValue({ kind: "string", value }), "dataAssociation")],
+      outputs: [mapping("x", variable("din"), "dataAssociation")] } : {}) }));
+  return model([
+    start("S"), gateway("P", "parallel"), activity("U1", userWork()), activity("U2", userWork()), activity("U3", userWork()),
+    call("CA1", "1"), call("CA2", "2"), throwing("TH", signalThrow), end("E1"), end("E2"), end("E3"),
+    start("QS"), catchEvent("QC", signal()), end("QE"),
+  ], [flow("f1", "S", "P"), flow("p1", "P", "U1"), flow("p2", "P", "U2"), flow("p3", "P", "U3"), flow("u1", "U1", "CA1"),
+    flow("u2", "U2", "CA2"), flow("c1", "CA1", "E1"), flow("c2", "CA2", "E2"), flow("u3", "U3", "TH"), flow("th", "TH", "E3"),
+    flow("q1", "QS", "QC"), flow("q2", "QC", "QE")])(program(["x"],
+    [{ definition: definitionRef("Q"), children: ["QS", "QC", "QE"], variables: ["din"], executable: true }]));
+};
+
+/**
+ * Issue #194, one holder entered twice: U1 and U2 each set k and lead into the Sub-Process H, whose occurrence copies k
+ * into its local z and, completing after one broadcast wakes its catch, writes x from z. `twice` false leads U2 elsewhere,
+ * so H is entered once.
+ */
+const oneHolderTwice = (twice = true): Json => model([
+  start("S"), gateway("P", "parallel"),
+  activity("U1", userWork(), { outputs: [mapping("k", literalValue({ kind: "string", value: "1" }))] }),
+  activity("U2", userWork(), { outputs: [mapping("k", literalValue({ kind: "string", value: "2" }))] }), activity("U3", userWork()),
+  scope("H", "embedded", {}, { inputs: [mapping("z", variable("k"))], outputs: [mapping("x", variable("z"))] }),
+  start("HS", null, [], "H"), catchEvent("HC", signal(), [], "H"), end("HE", "none", "H"),
+  throwing("TH", signalThrow), end("E1"), ...(twice ? [] : [end("E2")]), end("E3"),
+], [flow("f1", "S", "P"), flow("p1", "P", "U1"), flow("p2", "P", "U2"), flow("p3", "P", "U3"), flow("u1", "U1", "H"),
+  flow("u2", "U2", twice ? "H" : "E2"), flow("h1", "HS", "HC"), flow("h2", "HC", "HE"), flow("he", "H", "E1"), flow("u3", "U3", "TH"),
+  flow("th", "TH", "E3")])(program(["k", "x"]));
+
 const refused: ReadonlyArray<readonly [string, () => Json]> = [
   ["two completing Sub-Processes, boundary on A, write on B, A's flow first", () => closingPair("A", "B", true)],
   ["two completing Sub-Processes, boundary on A, write on B, B's flow first", () => closingPair("A", "B", false)],
@@ -218,6 +255,8 @@ const refused: ReadonlyArray<readonly [string, () => Json]> = [
   ["two writes beside an Event-Based Gateway whose Conditional arms they make true, writer's flow first", () => gatewayContest(true)],
   ["two writes beside an Event-Based Gateway whose Conditional arms they make true, writer's flow last", () => gatewayContest(false)],
   ["a woken holder completing beside the thrower's writing continuation", wakeBesideContinuation],
+  ["two Calls of one process, begun apart, whose completions one broadcast lets write in either order", () => twoCallsWoken()],
+  ["one Sub-Process entered twice apart, whose occurrences' completions one broadcast lets write in either order", () => oneHolderTwice()],
 ];
 
 for (const [description, build] of refused) {
@@ -230,6 +269,8 @@ const admitted: ReadonlyArray<readonly [string, () => Json]> = [
   ["two Signal wakes inside one Sub-Process with an output mapping and its own boundary", twoWakesInOne],
   ["a holder's own boundary against its own output", ownBoundary],
   ["two Signal wakes at the top of one called process whose Call has an output mapping", wakesInOneCall],
+  ["two Calls of one process, begun apart and woken together, whose completions write nothing", () => twoCallsWoken(false)],
+  ["a Sub-Process entered once beside the thrower, whose woken completion writes", () => oneHolderTwice(false)],
 ];
 
 for (const [description, build] of admitted) {

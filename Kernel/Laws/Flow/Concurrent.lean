@@ -216,13 +216,71 @@ def continuationOf (program : Program) (element : Element) : WorkUnit :=
 def enteredFrom (program : Program) (scope : ElementId) (walk : Walk) : WorkUnit :=
   { walk, start := fun visit => ∃ child, EnteredChildren program scope child ∧ visit = .enters child }
 
-/-- A path from `visit` against a second occurrence of itself that the elements `held` tell apart: a removal reaches it
-only through a holder, and only names and removals are compared. -/
-def itselfHeld (program : Program) (visit : Visit) (held : ElementId → Prop) : Account :=
-  { (pathFrom (· = visit)).account program with exposed := held, resumes := fun _ => False, compensates := fun _ => False }
+/-- A token leaving `source`, or one of its boundary Events, may reach the element `id`, or `source` is it. -/
+def Arrives (program : Program) (source : Element) (id : ElementId) : Prop :=
+  source.header.id = id ∨ Goes program source.header.id id ∨
+    ∃ envelope boundary, source.envelope? = some envelope ∧ boundary ∈ envelope.boundaries ∧ Goes program boundary.id id
 
-/-- A resumption against a second open occurrence of its own subscription. -/
-def itselfAt (program : Program) (visit : Visit) : Account := itselfHeld program visit (Holder program visit)
+/-- `flow` leads to the element `id`. -/
+def LeadsTo (program : Program) (flow : FlowId) (id : ElementId) : Prop :=
+  ∃ target, Targets program flow target ∧ Arrives program target id
+
+/-- Two tokens may arrive at `element` within one occurrence of its level: two flows of one split, a boundary that does
+not interrupt, a boundary's two flows, or two of the level's starts or implicitly begun children lead to it
+(`Kernel.Admission.Flow.Concurrency.arrivesTwice`). -/
+def ArrivesTwice (program : Program) (element : Element) : Prop :=
+  let level := program.siblings element.header
+  let begun (child : Element) : Prop :=
+    child.start?.isSome = true ∨ (level.any (·.start?.isSome) = false ∧ child.beginsImplicitly = true)
+  (∃ first ∈ level, ∃ second ∈ level, first.header.id ≠ second.header.id ∧ begun first ∧ begun second ∧
+      Arrives program first element.header.id ∧ Arrives program second element.header.id) ∨
+    ∃ other ∈ level,
+      ((∀ header payload, other.gateway? = some (header, payload) → Forking payload.kind) ∧
+        ∃ first ∈ other.outgoing, ∃ second ∈ other.outgoing, first ≠ second ∧
+          LeadsTo program first element.header.id ∧ LeadsTo program second element.header.id) ∨
+      ∃ envelope boundary, other.envelope? = some envelope ∧ boundary ∈ envelope.boundaries ∧
+        ((boundary.interrupting = false ∧ ∃ flow ∈ boundary.outgoing, LeadsTo program flow element.header.id) ∨
+          ∃ first ∈ boundary.outgoing, ∃ second ∈ boundary.outgoing, first ≠ second ∧
+            LeadsTo program first element.header.id ∧ LeadsTo program second element.header.id)
+
+/-- Two occurrences of `element` may be open at once (`Kernel.Admission.Flow.Concurrency.runsTwice`): a parallel
+loop's instances, a compensation handler, an Event Sub-Process that does not interrupt, two tokens arriving in one
+occurrence of its level, or that level open twice, its Scope's or a called process's with two Calls or a Call that runs
+twice. -/
+inductive RunsTwice (program : Program) : Element → Prop where
+  | loop {element : Element} {loop : MultiInstance} : Loop element loop → ¬ NextInstance program element →
+      RunsTwice program element
+  | handler {element : Element} : Handler element → RunsTwice program element
+  | started {element : Element} : EventSubProcess element → ¬ Interrupts element → RunsTwice program element
+  | arrives {element : Element} : ArrivesTwice program element → RunsTwice program element
+  | within {element scope : Element} {parent : ElementId} : element.header.parent = some parent →
+      program.element? parent = some scope → RunsTwice program scope → RunsTwice program element
+  | caller {element call : Element} {process : CalledProcess} : element.header.parent = none →
+      program.processOf element.header = some process → call ∈ program.elements → Calls program call process →
+      RunsTwice program call → RunsTwice program element
+  | callers {element first second : Element} {process : CalledProcess} : element.header.parent = none →
+      program.processOf element.header = some process → first ∈ program.elements → second ∈ program.elements →
+      first.header.id ≠ second.header.id → Calls program first process → Calls program second process →
+      RunsTwice program element
+
+/-- Two open occurrences of a subscription inside the Scope or Call `id` may lie in distinct occurrences of it: it runs
+twice, or a process it calls has two Calls (`Kernel.Admission.Flow.Concurrency.heldTwice`). -/
+def HeldTwice (program : Program) (id : ElementId) : Prop :=
+  ∃ holder, program.element? id = some holder ∧ (RunsTwice program holder ∨
+    ∃ process, Calls program holder process ∧ ∃ first ∈ program.elements, ∃ second ∈ program.elements,
+      first.header.id ≠ second.header.id ∧ Calls program first process ∧ Calls program second process)
+
+/-- A path of `walk` from `visit` against a second occurrence of itself that the elements `held` tell apart: a removal
+reaches it only through a holder, and only names and removals are compared. -/
+def itselfHeld (program : Program) (walk : Walk) (visit : Visit) (held : ElementId → Prop) : Account :=
+  { ({ walk, start := (· = visit) } : WorkUnit).account program with
+      exposed := held, resumes := fun _ => False, compensates := fun _ => False }
+
+/-- A resumption against a second open occurrence of its own subscription, ascending into the completions of the Scopes
+and Calls that may hold the two occurrences apart (`HeldTwice`, #194); one holding both completes only after both. -/
+def itselfAt (program : Program) (visit : Visit) : Account :=
+  itselfHeld program { stop := AwaitsStimulus, ascends := true, ascendsInto := HeldTwice program } visit
+    (Holder program visit)
 
 /-- The body with every instance in it, which an instance's completion removes once the completion condition holds
 (BPMN 2.0.2 §13.3.7). -/
@@ -480,8 +538,8 @@ inductive Concurrent (program : Program) : QueuingMechanism → Account → Acco
   /-- Two occurrences of one Inclusive join that two occurrences of its holder park at once (`JoinHolder`). -/
   | rejoinedItself {join : Element} {holder : ElementId} : join ∈ program.elements → InclusiveJoin join →
       JoinHolder program join holder →
-      Concurrent program .rejoined (itselfHeld program (.completes join) (JoinHolder program join))
-        (itselfHeld program (.completes join) (JoinHolder program join))
+      Concurrent program .rejoined (itselfHeld program branchWalk (.completes join) (JoinHolder program join))
+        (itselfHeld program branchWalk (.completes join) (JoinHolder program join))
 
 /-- P6's order-invariance premise: no two units one closure may hold together race on a name or act on each other's
 work, so the order `Step.settle` runs them in is immaterial. An Error no catcher takes ends every unit (Table 10.88),
