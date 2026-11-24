@@ -214,16 +214,12 @@ test("one byte pair through the Update validator: a state of exactly 256 KiB com
     const host = createMemoryProcessHost({ taskQueue: "measure" });
     const phases = journey(knob);
     await host.start({ workflowId: "W", program, config: external(null), start: phases.start });
-    for (const stimulus of [...phases.commercial, ...phases.compliance]) await host.command("W", stimulus);
+    for (const stimulus of [...phases.commercial, ...phases.compliance]) {
+      assert.equal((await host.command("W", stimulus)).outcome, "committed", `knob ${String(knob)}`);
+    }
     return canonicalBytes(await host.state("W"));
   };
-  // The interning codec makes a pad character one byte only once each pad String has 8 or more characters, so the knob is
-  // found from a first estimate by correction, as `memory-host-capacity.test.ts` does.
-  let knob = 30_000;
-  for (let attempt = 0; attempt < 4 && await memoryState(knob) !== chainCapacity.stateBytes; attempt += 1) {
-    knob += chainCapacity.stateBytes - await memoryState(knob);
-  }
-  assert.equal(await memoryState(knob), chainCapacity.stateBytes);
+  const knob = await fx.exactly(chainCapacity.stateBytes, memoryState, 0);
   for (const [label, padding, outcome] of [["fits", knob, "committed"], ["over", knob + 1, "rejected"]] as const) {
     const id = workflowId(`state-${label}`);
     const phases = journey(padding);

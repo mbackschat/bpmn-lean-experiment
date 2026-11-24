@@ -69,17 +69,6 @@ async function pair(setup: () => Promise<Readonly<{ host: MemoryProcessHost; pro
   return fitting.host;
 }
 
-/** The knob in [low, high] whose measure is `target`, the measure rising by one per unit of the knob. */
-async function exactly(target: number, measure: (knob: number) => Promise<number>, start: number): Promise<number> {
-  let knob = start;
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    const measured = await measure(knob);
-    if (measured === target) return knob;
-    knob += target - measured;
-  }
-  throw new Error(`no knob measures ${String(target)}`);
-}
-
 test("the realistic sixteen-body parallel journey fits every bound, with sixteen effects pending at once", async () => {
   const program = await fx.scenarioProgram(fx.parallelModel);
   const journey = fx.realisticJourney();
@@ -108,7 +97,7 @@ test("committed state: exactly 256 KiB commits, one byte more refuses the sixtee
     await drive(host, program, durable, [phases.start, ...phases.commercial, ...phases.compliance.slice(0, 15)]);
     return { host, program, config: durable };
   };
-  const knob = await exactly(chainCapacity.stateBytes, async (candidate) => {
+  const knob = await fx.exactly(chainCapacity.stateBytes, async (candidate) => {
     const { host } = await before(candidate);
     assert.equal((await host.command(workflowId, journey(candidate).compliance[15]!)).outcome, "committed");
     return canonicalBytes(await host.state(workflowId));
@@ -193,7 +182,7 @@ test("effect request: an Activity request of exactly 64 KiB is planned, one byte
     return { host, program, config: durable };
   };
   const open = fx.completeTask("fill-2", "Fill2", 1);
-  const knob = await exactly(chainCapacity.effectRequestBytes, async (candidate) => {
+  const knob = await fx.exactly(chainCapacity.effectRequestBytes, async (candidate) => {
     const { host } = await before(candidate)();
     assert.equal((await host.command(workflowId, open)).outcome, "committed");
     const view = (await host.hostView(workflowId)).view;

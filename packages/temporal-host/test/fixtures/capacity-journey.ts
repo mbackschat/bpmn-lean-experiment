@@ -56,6 +56,22 @@ export function padLengths(total: number, strings = 16): number[] {
   return lengths;
 }
 
+/**
+ * The knob whose measure is `target`, corrected from `start` by the measure's distance at most four times; the measure
+ * rises by one per unit of the knob once every pad String is long enough to be written once (`pad`). A measure must
+ * assert that every input it drives committed: a refused input leaves the state it measures one input short, and the
+ * correction then converges on that shorter journey's knob.
+ */
+export async function exactly(target: number, measure: (knob: number) => Promise<number>, start: number): Promise<number> {
+  let knob = start;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const measured = await measure(knob);
+    if (measured === target) return knob;
+    knob += target - measured;
+  }
+  throw new Error(`no knob measures ${String(target)}`);
+}
+
 export function invoiceHeader(index: number): JsonValue {
   return map([
     ["invoiceNo", str(`INV-2026-${String(100_000 + index)}`)],
