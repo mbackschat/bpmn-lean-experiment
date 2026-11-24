@@ -104,21 +104,10 @@ theorem compact_queues (ran : compact schedule start log s = .ok t) :
   simp only [allSignals, allQueuedTokens, kept.batchSignals, kept.batchTokens, kept.queuedSignals, kept.queuedTokens,
     and_self]
 
-/-- A commit keeps the occurrence keys the start facts of the input record. -/
+/-- A commit keeps the occurrence keys the start facts of the closure record. -/
 theorem compact_starts (ran : compact schedule start log s = .ok t) :
     (starts t).map (·.occurrence) = (starts s).map (·.occurrence) := by
-  have transitions := (compact_frame ran).2.2.1
-  have draft := (compact_kept ran).draft
-  rcases compact_cases ran with ⟨_, same⟩ | ⟨_, same⟩
-  · rw [same]
-  have journal : t.journal = s.journal.map (renameTransition (commitRenaming schedule start log s)) := by
-    have frame := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2
-      (renameState (commitRenaming schedule start log s) (commitRekey schedule start log s) s)
-    rw [same]
-    unfold compacted
-    rw [frame, renameState_eq]
-  simp only [starts, List.map_append, journal, transitions, draft, List.flatMap_map, renameTransition_eq,
-    List.map_flatMap, List.map_map, Function.comp_def]
+  simp only [starts, (compact_frame ran).2.2.1, (compact_kept ran).draft]
 
 /-! ## The settled state's tree and history -/
 

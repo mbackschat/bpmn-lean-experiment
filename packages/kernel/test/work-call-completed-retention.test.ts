@@ -1,7 +1,8 @@
 /**
- * A completed called instance leaves no feature slot entry in its caller's state (DC24, #169): leaving the called root
- * removes its instance entry, so a loop of Calls holds the same slots whatever number of calls it completed
- * (`Kernel.Laws.State.leaveScope_instances`). The loop `S → U → T → U` waits at the User Task `U`; each completion of
+ * A completed called instance leaves no feature slot entry and no activation counter in its caller's committed state
+ * (DC24, #169): leaving the called root removes its instance entry (`Kernel.Laws.State.leaveScope_instances`), and the
+ * commit drops the counters of every instance no scope occurrence stands in (`Kernel.Step.pruneCounters`), so a loop of
+ * Calls holds the same slots and counters whatever number of calls it completed. The loop `S → U → T → U` waits at the User Task `U`; each completion of
  * `U` runs the Call `T`, whose called process `Called` runs `CS → CE` and completes in the same input.
  */
 import assert from "node:assert/strict";
@@ -54,4 +55,10 @@ test("a loop of completed calls keeps the process root's instance entry alone", 
   assert.deepEqual(five.slots, two.slots);
   assert.deepEqual(five.slots.instances.map((entry) => entry.root), [rootScope]);
   assert.deepEqual(five.openItems.map((item) => item.element), ["U"]);
+});
+
+test("a loop of completed calls keeps the process instance's activation counters alone", () => {
+  const one = afterCalls(1);
+  assert.deepEqual([...new Set(one.activations.map((count) => count.processInstance))], ["I"]);
+  assert.deepEqual(afterCalls(4).activations.length, one.activations.length);
 });

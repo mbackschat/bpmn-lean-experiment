@@ -59,8 +59,8 @@ theorem journal_wellFormed {s : State} (formed : WellFormed program s) {unit : U
       (starts s) := by
     have inserted := (values_insert_perm (value := transition) fresh).flatMap_right (·.started)
     rw [List.flatMap_cons, started] at inserted
-    simp only [starts, List.append_nil, List.append_assoc]
-    exact (inserted.trans List.perm_append_comm).append_left _
+    simp only [starts, List.append_nil]
+    exact inserted.trans List.perm_append_comm
   formed.permuted {
       scopeMap := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := fun _ => by apply instanceOf_congr <;> rfl, recorded := id, items := .refl _, tokens := .refl _,

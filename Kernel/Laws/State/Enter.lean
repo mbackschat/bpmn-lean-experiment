@@ -113,7 +113,7 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
   have hTokens := enters.tokens
   have hSignals := enters.signals
   have hVars := enters.variables
-  have startsEq : starts after = starts s := by simp [starts, enters.journal, enters.transitions, enters.draft]
+  have startsEq : starts after = starts s := by simp [starts, enters.transitions, enters.draft]
   have countedEq : ∀ k, Counted after k ↔ Counted s k := by simp [Counted, enters.activations]
   have queuedEq : ∀ request, Queued after request ↔ Queued s request := by simp [Queued, hSignals, hTokens]
   have parentless : ∀ found ∈ after.scopes, found.parent = none → found.id = State.root := fun found inside orphan => by

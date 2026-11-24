@@ -82,10 +82,12 @@ def key (s : State) (occurrence : Occurrence) : OccurrenceKey :=
   { processInstanceId := s.instanceOf occurrence.scope, element := occurrence.element,
     activation := occurrence.activation, role := occurrence.role }
 
-/-- The start facts of the input in progress: a committed input's journal, the transitions of the closure in progress,
-keyed by unit (DC4), and the draft. -/
+/-- The start facts of the closure in progress: its transitions, keyed by unit (DC4), and the draft. A committed input's
+journal is not among them: the commit drops the counters of the instances the closure left (DC24, `Step.orderJournal`),
+so counters no longer bound the journal's facts, which stay distinct as the closure's were
+(`Laws.Step.orderJournal_journalOnce`), and the next input empties the journal before it activates anything. -/
 def starts (s : State) : List StartedFact :=
-  s.journal.flatMap (·.started) ++ (s.transitions.toList.map (·.2)).flatMap (·.started) ++ s.draft.started
+  (s.transitions.toList.map (·.2)).flatMap (·.started) ++ s.draft.started
 
 /-- Every identifier the state holds was issued (`OccurrenceIssued`, `ScopeIssued`), so a counter names only fresh
 identities: an occurrence's identity is never reused ([scopes, SRE-FRESH-01](../../../docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md#concurrent-activations-and-re-entry)). -/
@@ -160,8 +162,8 @@ structure Distinct (s : State) : Prop where
 theorem Distinct.scopes {s : State} (distinct : Distinct s) : (scopeIds s).Nodup := by
   rw [scopeIds, scopes_eq]; exact scopeList_nodup distinct.scopesKeyed
 
-/-- Within one input's journal no occurrence key starts twice: re-entry and repetition give a new activation, never a
-reused one ([scopes, SRE-FRESH-01](../../../docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md#concurrent-activations-and-re-entry)). -/
+/-- Within one closure no occurrence key starts twice: re-entry and repetition give a new activation, never a reused one,
+and the input's journal keeps the closure's facts (`Laws.Step.orderJournal_journalOnce`) ([scopes, SRE-FRESH-01](../../../docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md#concurrent-activations-and-re-entry)). -/
 def StartedOnce (s : State) : Prop :=
   ((starts s).map (·.occurrence)).Nodup
 

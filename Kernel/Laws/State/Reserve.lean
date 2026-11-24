@@ -93,7 +93,7 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
       · exact .inl (List.mem_singleton.mp new)
   have above : ∀ occurrence ∈ before.occurrences, occurrence.id ≠ reserved.id := fun occurrence member same =>
     fresh (same ▸ formed.issued.occurrences occurrence member)
-  have startsAfter : starts after = starts before := by simp [starts, reserves.journal, reserves.transitions, reserves.draft]
+  have startsAfter : starts after = starts before := by simp [starts, reserves.transitions, reserves.draft]
   have keyFresh : ∀ k, Counted before k → k ≠ key before reserved := fun k counted => by
     rw [keyed]
     exact activated.fresh counted
@@ -350,7 +350,7 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
     nodup_map_eq formed.distinct.occurrences held member same
   have startsAfter : starts after =
       starts before ++ [{ occurrence := key before occurrence, owner := occurrence.scope, sourceType }] := by
-    simp [starts, starts_.journal, starts_.transitions, starts_.started, keys]
+    simp [starts, starts_.transitions, starts_.started, keys]
   have keysOther : ∀ old ∈ before.occurrences, old.id ≠ occurrence.id → key before old ≠ key before occurrence :=
     fun old held other same => other (by rw [nodup_map_eq formed.distinct.keys held member same])
   refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,

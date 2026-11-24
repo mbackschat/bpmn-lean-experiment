@@ -552,7 +552,7 @@ theorem WellFormed.ofVariables {before after : State} (formed : WellFormed progr
       recorded := by simp [FailureRecorded, same.failure, same.status],
       items := by rw [same.items, same.ordinals]; exact .refl _, tokens := by rw [same.tokens]; exact .refl _,
       signals := by rw [same.signals]; exact .refl _,
-      starts := by simp [starts, same.journal, same.transitions, same.draft],
+      starts := by simp [starts, same.transitions, same.draft],
       slots := .same same.slots, issued := same.issued, issuing := same.issuing, issueNext := same.issueNext,
       ran := fun _ held => same.transitions ▸ held }
     (by simpa [StartedOnce, starts, same.journal, same.transitions, same.draft] using formed.startedOnce) located keyed

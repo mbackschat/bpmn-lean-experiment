@@ -512,7 +512,7 @@ theorem sinceFramed_stepAlongside {programBefore : Program} {b : State} (formedB
       have bodies : ∀ run ∈ s.slots.multiInstances, ∃ occurrence ∈ s.occurrences, occurrence.id = run.occurrence :=
         fun run member => (held.2.framed run member).owned.body.imp fun _ found => ⟨found.1, found.2.1⟩
       have unstarted := orderJournal_unstarted formedBefore committed formed counted batches keys held.1.1.below
-        held.1.1.begun held.1.1.unstarted made
+        held.1.1.begun made
       have snapshots := orderJournal_snapshots formedBefore committed bodyScopes formed counted batches keys bodies
         held.1.1.below (fun earlier member run inside same => let fixed := held.1.2.fixed earlier member run inside same
           ⟨fixed.collection, fixed.count, fixed.scope, fixed.element, fixed.occurrence, fixed.filledStays⟩)

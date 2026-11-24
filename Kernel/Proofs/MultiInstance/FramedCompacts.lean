@@ -273,15 +273,13 @@ theorem before_fixed {programBefore : Program} {b : State} (formedBefore : WellF
   id_fixed committed.issued (formedBefore.settled.bodies earlier member).1 (renameBy_fixes _)
 
 /-- **`Unstarted b` across the commit** (its three fields, stated over their bodies): the before-state's bodies' keys
-are fixed, issued and begun after the commit, and an occurrence keyed by one keeps its key and its draft. -/
+are fixed, issued and begun after the commit, and the draft the commit leaves is empty. -/
 theorem orderJournal_unstarted {programBefore : Program} {b : State} (formedBefore : WellFormed programBefore b) (committed : Committed b)
     (formed : WellFormed program state) (counted : CountersFrom start state)
     (batches : state.batchSignals = [] ∧ state.batchTokens = [] ∧ state.batchIntents = [])
     (keys : ∀ occurrence ∈ state.occurrences, occurrence.id.scope = occurrence.scope)
     (below : ∀ earlier ∈ b.slots.multiInstances, OccurrenceIssued state earlier.occurrence)
     (begun : ∀ earlier ∈ b.slots.multiInstances, ∀ o ∈ state.occurrences, o.id = earlier.occurrence → o.begun = true)
-    (unstarted : ∀ earlier ∈ b.slots.multiInstances, ∀ o ∈ state.occurrences, o.id = earlier.occurrence →
-      key state o ∉ state.draft.started.map (·.occurrence))
     (made : orderJournal schedule start (.ok (state, log)) = .ok after) :
     (∀ earlier ∈ b.slots.multiInstances, OccurrenceIssued after earlier.occurrence) ∧
     (∀ earlier ∈ b.slots.multiInstances, ∀ o ∈ after.occurrences, o.id = earlier.occurrence → o.begun = true) ∧
@@ -293,25 +291,14 @@ theorem orderJournal_unstarted {programBefore : Program} {b : State} (formedBefo
   have issued := facts.issued
   have owned := facts.owned
   have rooted := facts.rooted
-  refine ⟨fun earlier member => ?_, fun earlier member => ?_, fun earlier member o present named => ?_⟩
+  refine ⟨fun earlier member => ?_, fun earlier member => ?_, fun _ _ _ _ _ => ?_⟩
   · have renamed := compact_occurrenceIssued ran counted' (rooted_parents rooted) (below earlier member)
     rwa [before_fixed formedBefore committed member] at renamed
   · have renamed := renamed_begun ran counted' issued owned rooted keys (below earlier member) (begun earlier member)
     rwa [before_fixed formedBefore committed member] at renamed
-  · obtain ⟨old, oldIn, mapped⟩ := compact_occurrence_of ran present
-    have oldId := mapped.id
-    have oldScope := mapped.scope
-    have oldElement := mapped.element
-    have oldRole := mapped.role
-    have oldActivation := mapped.activation
-    have same : earlier.occurrence = old.id := renamed_apart counted' issued owned rooted keys (below earlier member) oldIn
-      (by rw [before_fixed formedBefore committed member, ← named, oldId])
-    have keyed : key after o = key state old := by
-      simp only [key, oldScope, oldElement, oldRole, oldActivation,
-        compact_instanceOf ran counted' formed rfl rfl issued rooted formed.distinct.scopes
-          (formed.owned.occurrenceScopes old oldIn), instanceOf_congr (s := state) (t := ordered log state) rfl rfl]
-    rw [keyed, (compact_kept ran).draft]
-    exact unstarted earlier member old oldIn same.symm
+  · -- The commit empties the draft (`Step.orderJournal`).
+    rw [(compact_kept ran).draft]
+    simp
 
 /-- **`Snapshots b` across the commit** (its two fields, stated over their bodies, `SnapshotFixed`'s six included): a
 before-state's body keeps its snapshot, renamed onto itself, and a body issued since has a slot. `bodies` and

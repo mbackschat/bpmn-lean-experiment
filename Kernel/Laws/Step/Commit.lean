@@ -36,10 +36,12 @@ theorem journalDraft_eq {unit : UnitKey} {cause : Cause} {element : Option Eleme
   simp only [journalDraft]
 
 /-- A settled closure before compaction: its transitions and intents in run order (`byRun`), every unit-keyed family
-emptied, so no unit key outlives its closure (DC4). -/
+and the draft emptied, so no unit key outlives its closure (DC4), and the counters of the instances it left dropped
+(DC24). -/
 abbrev ordered (log : RunLog) (state : State) : State :=
   { state with journal := byRun log state.transitions, intents := (byRun log state.outboxes).flatten
-               transitions := ∅, outboxes := ∅, queuedTokens := ∅, queuedSignals := ∅ }
+               transitions := ∅, outboxes := ∅, queuedTokens := ∅, queuedSignals := ∅, draft := {}
+               activations := state.activations.filter (countLive state) }
 
 /-- A committed closure: the settled one ordered, then compacted. -/
 theorem orderJournal_ok {start : State} {outcome : Except Failure (State × RunLog)} {after : State} (ran : orderJournal schedule start outcome = .ok after) :

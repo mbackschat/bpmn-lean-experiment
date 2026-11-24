@@ -206,14 +206,29 @@ export function compact(schedule: BranchSchedule, start: State, log: RunLog, sta
 }
 
 /**
+ * The process instances Lean's `countLive` keeps the activation counters of: the process instance itself, every one a
+ * standing scope occurrence calls, and the thrower's of every compensation run in progress, which in an admitted model
+ * is the run's own instance and so adds none.
+ */
+function liveInstances(state: State): ReadonlySet<string> {
+  const live = new Set<string>([state.instanceId]);
+  for (const scope of state.scopes) if (scope.calledInstance !== null) live.add(scope.calledInstance);
+  for (const run of state.slots.compensation.runs) live.add(run.trigger.processInstanceId);
+  return live;
+}
+
+/**
  * Lean's `orderJournal`: commit a settled closure, its transitions as the journal and its batches' intents as the input's
  * intents, each in the order its units ran, every family keyed by a unit key emptied, and every identity it issued
  * compacted (`compact`) against the counters of `start`, the state the closure began from. Queued work an instance that ended mid-closure left behind is dropped with them: no input runs
- * on an ended instance.
+ * on an ended instance. The activation counters of every called instance the closure left go (DC24), and the draft goes
+ * with the transitions.
  */
 export function orderJournal(schedule: BranchSchedule, start: State, state: State, log: RunLog): Outcome {
+  const live = liveInstances(state);
   return compact(schedule, start, log, {
     ...state, journal: byRun(log, state.transitions), intents: byRun<readonly BroadcastIntent[]>(log, state.outboxes).flat(),
-    transitions: null, outboxes: null, queuedTokens: null, queuedSignals: null,
+    transitions: null, outboxes: null, queuedTokens: null, queuedSignals: null, draft: emptyDraft,
+    activations: state.activations.filter((count) => live.has(count.processInstance)),
   });
 }

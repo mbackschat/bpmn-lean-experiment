@@ -143,16 +143,30 @@ def compact (schedule : BranchSchedule) (start : State) (log : RunLog) (state : 
     let r := renameBy assigned
     .ok { advanceCounters r next (renameState r (Continuation.rekey (renameId r) (renameScope r)) state) with issued := ∅, issuing := .ofRoot .seed, issueNext := 0 }
 
+/-- Whether a record of `state` still names the process instance of the activation counter `count`: the process
+instance itself, one a standing scope occurrence calls, which `State.instanceOf` gives every standing scope occurrence,
+or the thrower's of a compensation run in progress, whose key the counter keeps bounding
+(`Proofs.Compensation.TriggersApart.counted`). In an admitted model a run's thrower runs in the run's own instance, so the
+last clause keeps no counter the first two drop; the lane does not prove that relation, which would tie a caught
+Cancel's trigger to its Transaction's instance (`Feature.Propagation.leaveOccurrence`). -/
+@[expose] def countLive (state : State) (count : ActivationCount) : Bool :=
+  count.processInstance == state.instanceId || state.scopes.any (·.calledInstance == some count.processInstance) ||
+    state.slots.compensation.runs.any (·.trigger.processInstanceId == count.processInstance)
+
 /-- Commit a settled closure: its transitions as the journal and its batches' intents as the input's intents, each in the
 order its units ran, every family keyed by a unit key emptied, so no unit key outlives its closure (DC4), and every
 identity it issued compacted (`compact`, DC12) against the counters of `start`, the state the closure began from.
 Queued work an instance that ended mid-closure left behind is dropped with them: no input runs on an ended instance
-(`Step.onRunning`). -/
+(`Step.onRunning`). The activation counters of every called instance the closure left go (DC24): no scope occurrence
+stands in it, so nothing activates in it again, and its start facts are the journal's, which counters no longer bound
+(`Laws.State.starts`). The draft goes with the transitions, as every micro-step's `conclude` already empties it, so the
+committed state holds no start fact a counter must bound. -/
 def orderJournal (schedule : BranchSchedule) (start : State) (outcome : Except Failure (State × RunLog)) : Outcome := do
   let (state, log) ← outcome
   compact schedule start log
     { state with
         journal := byRun log state.transitions, intents := (byRun log state.outboxes).flatten
-        transitions := ∅, outboxes := ∅, queuedTokens := ∅, queuedSignals := ∅ }
+        transitions := ∅, outboxes := ∅, queuedTokens := ∅, queuedSignals := ∅, draft := {}
+        activations := state.activations.filter (countLive state) }
 
 end Kernel.Step

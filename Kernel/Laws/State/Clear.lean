@@ -95,7 +95,7 @@ theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {k
       item.attachedTo = some host → ∀ occurrence ∈ before.occurrences, occurrence.id = host →
         ¬ Within before occurrence.scope scope ∨ host ∈ keep) :
     WellFormed program after := by
-  have sameStarts : starts after = starts before := by simp [starts, cleared.journal, cleared.transitions, cleared.started]
+  have sameStarts : starts after = starts before := by simp [starts, cleared.transitions, cleared.started]
   -- A scope occurrence of `before` that is no strict descendant of `scope` stands after the clearing.
   have stays : ∀ id, id ∈ scopeIds before → ¬ StrictlyWithin before id scope → id ∈ scopeIds after := fun id member outside => by
     obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
@@ -270,7 +270,7 @@ theorem Prunes.wellFormed {before after : State} (formed : WellFormed program be
   have keys : ∀ occurrence, key after occurrence = key before occurrence := fun _ => key_congr (prunes.instances _)
   have grows : ScopeGrows before after :=
     .of_same (congrArg (List.map ScopeOccurrence.id) prunes.scopes) prunes.scopeOrdinals (.of_eq prunes.issued)
-  have sameStarts : starts after = starts before := by simp [starts, prunes.journal, prunes.transitions, prunes.started]
+  have sameStarts : starts after = starts before := by simp [starts, prunes.transitions, prunes.started]
   have kept := prunes.occurrences.subset
   have items : itemList after.openItems ⊆ itemList before.openItems := by exact prunes.items.subset
   have housed : ∀ occurrence ∈ after.occurrences, occurrence.scope ∈ scopeIds after := fun occurrence member => by
@@ -419,7 +419,7 @@ and a scope occurrence lies directly below its owner's. -/
 theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (formed : WellFormed program before)
     (left : Left before after scope) (present : scope ∈ scopeIds before) (notRoot : scope ≠ State.root) :
     WellFormed program after := by
-  have sameStarts : starts after = starts before := by simp [starts, left.journal, left.transitions, left.started]
+  have sameStarts : starts after = starts before := by simp [starts, left.transitions, left.started]
   have grows := left.scopeGrows
   have stays : ∀ id, id ∈ scopeIds before → ¬ Within before id scope → id ∈ scopeIds after := fun id member outside => by
     obtain ⟨entry, inside, named⟩ := List.mem_map.mp member

@@ -394,7 +394,7 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
     · exact .inr (kept occurrence member same)
   have begunIn : begun ∈ after.occurrences := by simp [begins.occurrences]
   have startsAfter : starts after = starts before ++ [{ occurrence := key after begun, owner := begun.scope, sourceType }] := by
-    simp [starts, begins.journal, begins.transitions, begins.started]
+    simp [starts, begins.transitions, begins.started]
   -- An occurrence `before` held that is not the begun one stands after it.
   have stays : ∀ occurrence ∈ before.occurrences, occurrence.id ≠ begun.id → request.reserved ≠ some occurrence.id →
       occurrence ∈ after.occurrences :=

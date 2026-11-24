@@ -205,7 +205,12 @@ theorem orderJournal_formed {precedes : Compensable → Compensable → Prop} (f
     case counted =>
       intro trigger member
       rw [queued, List.append_nil, runTriggers] at member
-      exact Counted.congr (compact_kept ran).activations (held.triggers.counted trigger (List.mem_append_left _ member))
+      obtain ⟨count, kept, rest⟩ := held.triggers.counted trigger (List.mem_append_left _ member)
+      refine Counted.congr (compact_kept ran).activations ⟨count, List.mem_filter.mpr ⟨kept, ?_⟩, rest⟩
+      -- The commit keeps the counters a run's trigger names (`Step.countLive`).
+      obtain ⟨run, runIn, rfl⟩ := List.mem_map.mp member
+      simp only [countLive, Bool.or_eq_true, List.any_eq_true, beq_iff_eq]
+      exact .inr ⟨run, runIn, rest.1.symm⟩
     case raised => intro origin member; rw [quiet, Laws.Step.triggersOf_nil] at member; cases member
     case unreserved =>
       intro occurrence member unbegun trigger inside

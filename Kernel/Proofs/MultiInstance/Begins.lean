@@ -233,12 +233,12 @@ theorem BeginsKept.issuer {program : Program} {s : State} (unit : UnitKey) (next
 
 /-! ## The phases a closure runs -/
 
-/-- A start fact of the closure's transitions or of the draft is one of the input's start facts. -/
+/-- A start fact of the closure's transitions or of the draft is one of the closure's start facts. -/
 theorem starts_mem {s : State} {fact : StartedFact} (inside : fact ∈ blockFacts s.transitions ∨ fact ∈ s.draft.started) :
     fact ∈ Laws.State.starts s := by
   rw [Laws.State.starts]
   rcases inside with blocked | drafted
-  · exact List.mem_append_left _ (List.mem_append_right _ blocked)
+  · exact List.mem_append_left _ blocked
   · exact List.mem_append_right _ drafted
 
 /-- The order of `element`'s start facts holds of a sublist. -/
