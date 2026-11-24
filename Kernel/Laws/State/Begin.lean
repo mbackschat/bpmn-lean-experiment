@@ -81,22 +81,20 @@ theorem Begins.entry {before after : State} {request : BeginRequest} {role : Act
     · exact rekeyed.occurrenceGrows issuer
     · exact issued.occurrenceGrows issuer
   refine ⟨⟨issued _ below, fun occurrence member same => ?_⟩, ?_, fun occurrence member same => ?_⟩
-  · rw [begins.occurrences] at member
-    rcases List.mem_append.mp member with old | new
-    · obtain ⟨unbegun, free, instance_⟩ := facts occurrence (List.mem_filter.mp old).1 same
+  · rcases begins.mem_occurrences member with old | rfl
+    · obtain ⟨unbegun, free, instance_⟩ := facts occurrence old same
       refine ⟨unbegun, by simpa [begins.items] using free, fun present => ?_⟩
       rw [begins.instances, begins.instances, begins.scope]
       exact instance_ (by simpa [scopeIds, begins.scopes, begins.scope] using present)
-    · exact absurd ((List.mem_singleton.mp new) ▸ same) other
+    · exact absurd same other
   · exact ⟨by simpa [Queued, begins.signals, begins.tokens] using unclaimed.1,
       by simpa [begins.signals] using unclaimed.2.1,
       fun completes => unclaimed.2.2
         (SlotCompletes.shrink (before := before) begins.slots (fun _ member => begins.signals ▸ member) completes)⟩
-  · rw [begins.occurrences] at member
-    rcases List.mem_append.mp member with old | new
+  · rcases begins.mem_occurrences member with old | rfl
     · rw [begins.scope]
-      exact placed id inner occurrence (List.mem_filter.mp old).1 same
-    · exact absurd ((List.mem_singleton.mp new) ▸ same) other
+      exact placed id inner occurrence old same
+    · exact absurd same other
 
 /-- Such a begin leaves the request's start Event reservation beginnable and unclaimed where its occurrence runs. -/
 theorem begin_entry {state : State} (formed : WellFormed program state) (request : BeginRequest) (role : ActivationRole)
@@ -149,7 +147,7 @@ theorem startReserved_closeOwnItems_wellFormed {state : State} (formed : WellFor
           state.instanceOf x := by apply instanceOf_congr <;> rfl
       rw [after, before, starts_.instances x]
     refine StartsReserved.wellFormed (sourceType := sourceType) closed {
-        occurrences := starts_.occurrences, started := ?_, scopeMap := starts_.scopeMap,
+        occurrenceMap := starts_.occurrenceMap, started := ?_, scopeMap := starts_.scopeMap,
         scopeOrdinals := starts_.scopeOrdinals, instances := instances,
         instanceId := starts_.instanceId, activations := starts_.activations,
         occurrenceOrdinals := starts_.occurrenceOrdinals,

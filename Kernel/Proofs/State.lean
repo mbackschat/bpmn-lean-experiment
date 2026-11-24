@@ -95,7 +95,7 @@ theorem stateFacts : Laws.Step.StateFacts where
   recordEnd state key terminal := ⟨Laws.State.recordEnd_scopes state key terminal, by rw [Laws.State.recordEnd_eq]⟩
   reserve state element scope := by
     have reserves := Laws.State.reserve_reserves state element scope
-    exact ⟨reserves.occurrences, reserves.kind, reserves.placed,
+    exact ⟨fun _ member => reserves.mem_occurrences member, reserves.kind, reserves.placed,
       fun fresh standing => reserves.fresh fresh (by rw [reserves.placed]; exact standing), reserves.scopes,
       by rw [Laws.State.reserve_slots]⟩
   removeOccurrence state le id := by

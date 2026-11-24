@@ -379,7 +379,8 @@ structure Narrows (before after : State) : Prop where
   /-- The scope map itself is kept, so its keying is; `Narrows.scopes` reads the list view. -/
   scopeMap : after.scopeMap = before.scopeMap
   scopeOrdinals : after.scopeOrdinals = before.scopeOrdinals
-  occurrences : after.occurrences = before.occurrences
+  /-- The occurrence map itself is kept, so its keying is; `Narrows.occurrences` reads the list view. -/
+  occurrenceMap : after.occurrenceMap = before.occurrenceMap
   activations : after.activations = before.activations
   occurrenceOrdinals : after.occurrenceOrdinals = before.occurrenceOrdinals
   instances : ∀ scope, after.instanceOf scope = before.instanceOf scope
@@ -398,6 +399,10 @@ structure Narrows (before after : State) : Prop where
 
 theorem Narrows.scopes {before after : State} (narrows : Narrows before after) : after.scopes = before.scopes := by
   rw [scopes_eq, scopes_eq, narrows.scopeMap]
+
+theorem Narrows.occurrences {before after : State} (narrows : Narrows before after) :
+    after.occurrences = before.occurrences :=
+  occurrences_congr narrows.occurrenceMap
 
 /-- A state that narrows a well-formed one is well-formed when it starts no occurrence key twice and its variable sets
 belong to scope occurrences that stand. -/
@@ -436,7 +441,7 @@ theorem WellFormed.reshape {before after : State} (formed : WellFormed program b
   have positions := formed.issued.positionsKept (fun _ member => narrows.scopes ▸ member) (.of_eq narrows.issued)
   have occurrencePositions :=
     formed.issued.occurrencePositionsKept (fun _ member => narrows.occurrences ▸ member) (.of_eq narrows.issued)
-  have distinct : Distinct after := ⟨by simpa [occurrenceIds, narrows.occurrences] using formed.distinct.occurrences,
+  have distinct : Distinct after := ⟨narrows.occurrenceMap ▸ formed.distinct.occurrencesKeyed,
     narrows.items.keyed formed.distinct.items, narrows.scopeMap ▸ formed.distinct.scopesKeyed,
     by rw [narrows.occurrences, funext keys]; exact formed.distinct.keys⟩
   exact {
@@ -508,7 +513,7 @@ theorem WellFormed.withStatus {s : State} (formed : WellFormed program s) {statu
     {failure : Option InstanceFailure} (instances : ∀ scope, { s with status, failure }.instanceOf scope = s.instanceOf scope)
     (recorded : failure.isSome = true ↔ status = .failed) : WellFormed program { s with status, failure } :=
   formed.narrow {
-      scopeMap := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
+      scopeMap := rfl, scopeOrdinals := rfl, occurrenceMap := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := instances,
       recorded := fun _ => recorded, items := .refl _, tokens := .refl _, signals := .refl _, starts := fun _ => id,
       slots := .same rfl, issued := rfl, issuing := rfl, issueNext := rfl } rfl
@@ -518,7 +523,7 @@ theorem WellFormed.withStatus {s : State} (formed : WellFormed program s) {statu
 structure SameButVariables (before after : State) : Prop where
   scopeMap : after.scopeMap = before.scopeMap
   scopeOrdinals : after.scopeOrdinals = before.scopeOrdinals
-  occurrences : after.occurrences = before.occurrences
+  occurrenceMap : after.occurrenceMap = before.occurrenceMap
   items : after.openItems = before.openItems
   ordinals : after.itemOrdinals = before.itemOrdinals
   tokens : allQueuedTokens after = allQueuedTokens before
@@ -541,12 +546,16 @@ structure SameButVariables (before after : State) : Prop where
 theorem SameButVariables.scopes {before after : State} (same : SameButVariables before after) : after.scopes = before.scopes := by
   rw [scopes_eq, scopes_eq, same.scopeMap]
 
+theorem SameButVariables.occurrences {before after : State} (same : SameButVariables before after) :
+    after.occurrences = before.occurrences :=
+  occurrences_congr same.occurrenceMap
+
 /-- A state that differs from a well-formed one only in its variable sets is well-formed when every set belongs to a
 present scope occurrence. -/
 theorem WellFormed.ofVariables {before after : State} (formed : WellFormed program before) (same : SameButVariables before after)
     (located : ∀ x ∈ after.variables, x ∈ scopeIds after) : WellFormed program after :=
   formed.reshape {
-      scopeMap := same.scopeMap, scopeOrdinals := same.scopeOrdinals, occurrences := same.occurrences, activations := same.activations,
+      scopeMap := same.scopeMap, scopeOrdinals := same.scopeOrdinals, occurrenceMap := same.occurrenceMap, activations := same.activations,
       occurrenceOrdinals := same.occurrenceOrdinals, instances := same.instances,
       recorded := by simp [FailureRecorded, same.failure, same.status],
       items := by rw [same.items, same.ordinals]; exact .refl _, tokens := by rw [same.tokens]; exact .refl _,

@@ -710,7 +710,7 @@ theorem PlacedLane.takeCompletion (lane : PlacedLane program s) : PlacedLane pro
 /-- Dropping an occurrence's record keeps the lane. -/
 theorem PlacedLane.withoutRecord (lane : PlacedLane program s) (id : OccurrenceId) :
     PlacedLane program (Laws.State.withoutRecord s id) :=
-  lane.queue rfl rfl rfl (.refl _) (fun _ member => (List.mem_filter.mp member).1) rfl rfl listKept
+  lane.queue rfl rfl rfl (.refl _) (fun _ member => (Laws.State.mem_occurrenceList_filter_val.mp member).1) rfl rfl listKept
 
 end Carry
 

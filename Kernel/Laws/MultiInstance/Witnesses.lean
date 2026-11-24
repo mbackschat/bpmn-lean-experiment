@@ -62,13 +62,31 @@ def outerScopes : ScopeMap := Laws.State.ofScopes [rootEntry, bodyEntry]
     Laws.State.ScopeOccurrenceId.ofSegments_inj])]
   simp
 
-/- The witnesses read their scopes through the scope map's list view. -/
-attribute [local simp] Laws.State.scopes_eq
+/-- The witnesses' occurrence maps, named as their scope maps are. -/
+def enteredOccurrences : OccurrenceMap := Laws.State.ofOccurrences [bodyOccurrence, firstInstance, secondInstance]
+def gappedOccurrences : OccurrenceMap :=
+  Laws.State.ofOccurrences [bodyOccurrence, firstInstance, { secondInstance with activation := 4 }]
+
+@[simp] theorem mem_enteredOccurrences {x : Occurrence} :
+    x ∈ occurrenceList enteredOccurrences ↔ x = bodyOccurrence ∨ x = firstInstance ∨ x = secondInstance := by
+  rw [enteredOccurrences, Laws.State.mem_ofOccurrences (by simp [bodyOccurrence, firstInstance, secondInstance, root,
+    firstScope, secondScope, Laws.State.ScopeOccurrenceId.ofSegments_inj])]
+  simp
+
+@[simp] theorem mem_gappedOccurrences {x : Occurrence} :
+    x ∈ occurrenceList gappedOccurrences ↔
+      x = bodyOccurrence ∨ x = firstInstance ∨ x = { secondInstance with activation := 4 } := by
+  rw [gappedOccurrences, Laws.State.mem_ofOccurrences (by simp [bodyOccurrence, firstInstance, secondInstance, root,
+    firstScope, secondScope, Laws.State.ScopeOccurrenceId.ofSegments_inj])]
+  simp
+
+/- The witnesses read their scopes and occurrences through the maps' list views. -/
+attribute [local simp] Laws.State.scopes_eq Laws.State.occurrences_eq
 
 def entered : State :=
   { instanceId := "p"
     scopeMap := enteredScopes
-    occurrences := [bodyOccurrence, firstInstance, secondInstance]
+    occurrenceMap := enteredOccurrences
     variables := ((∅ : TreeMap ScopeOccurrenceId Variables compare).insert firstScope (Variables.ofBindings firstLocals)).insert
       secondScope (Variables.ofBindings secondLocals)
     slots := { multiInstances := [running] } }
@@ -160,7 +178,7 @@ theorem entered_numbered : NumberedInOrder entered running := by
   | 0, 1 =>
     simp [running] at inFirst inSecond
     subst inFirst inSecond
-    simp only [entered, List.mem_cons, List.not_mem_nil, or_false] at earlierMember laterMember
+    simp only [entered, Laws.State.occurrences_eq, mem_enteredOccurrences] at earlierMember laterMember
     rcases earlierMember with rfl | rfl | rfl <;> rcases laterMember with rfl | rfl | rfl <;>
       simp_all [bodyOccurrence, firstInstance, secondInstance, firstScope, secondScope, root]
   | _ + 2, _ => simp [running] at inFirst
@@ -169,7 +187,7 @@ theorem entered_numbered : NumberedInOrder entered running := by
 
 /-- Instance activations need not be consecutive: another body of the element may number instances in between. -/
 theorem gapped_numbered :
-    NumberedInOrder { entered with occurrences := [bodyOccurrence, firstInstance, { secondInstance with activation := 4 }] }
+    NumberedInOrder { entered with occurrenceMap := gappedOccurrences }
       running := by
   intro first second one two lower inFirst inSecond earlier earlierMember later laterMember atFirst atSecond continued
     continued'
@@ -178,7 +196,7 @@ theorem gapped_numbered :
   | 0, 1 =>
     simp [running] at inFirst inSecond
     subst inFirst inSecond
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at earlierMember laterMember
+    simp only [Laws.State.occurrences_eq, mem_gappedOccurrences] at earlierMember laterMember
     rcases earlierMember with rfl | rfl | rfl <;> rcases laterMember with rfl | rfl | rfl <;>
       simp_all [bodyOccurrence, firstInstance, secondInstance, firstScope, secondScope, root]
   | _ + 2, _ => simp [running] at inFirst
@@ -194,7 +212,7 @@ theorem reversed_numbering_rejected :
 
 theorem instances_placed : InstancesPlaced entered running := by
   intro scope active o member at_ _ _
-  simp only [entered, List.mem_cons, List.not_mem_nil, or_false] at member
+  simp only [entered, Laws.State.occurrences_eq, mem_enteredOccurrences] at member
   simp only [running, List.mem_cons, List.not_mem_nil, or_false] at active
   rcases member with rfl | rfl | rfl
   · rcases active with same | same <;> obtain rfl := Iteration.active.inj same
@@ -207,11 +225,11 @@ theorem instances_placed : InstancesPlaced entered running := by
 instance's scope occurrence. -/
 theorem other_element_placed :
     InstancesPlaced
-      { entered with occurrences := [{
+      { entered with occurrenceMap := Laws.State.ofOccurrences [{
           id := { scope := firstScope, element := ⟨"Other"⟩, ordinal := 0 }, element := ⟨"Other"⟩, scope := firstScope,
           activation := 1, position := 5 }] } running := by
   intro scope _ o member _ element _
-  simp only [List.mem_singleton] at member
+  simp only [Laws.State.occurrences_eq, Laws.State.mem_ofOccurrences_singleton] at member
   subst member
   simp [running, review] at element
 
@@ -219,13 +237,12 @@ theorem other_element_placed :
 body breaks `InstancesPlaced`. -/
 theorem stray_occurrence_rejected :
     ¬ InstancesPlaced
-      { entered with occurrences :=
-        [{
+      { entered with occurrenceMap := Laws.State.ofOccurrences [{
           id := { scope := firstScope, element := review, ordinal := 1 }, element := review, scope := firstScope,
           activation := 3, position := 4, continuation := .multiInstance { scope := root, element := review, ordinal := 1 } }] }
       running := fun placed => by
   have := Continuation.multiInstance.inj
-    (placed firstScope (by simp [running]) _ (List.mem_singleton_self _) rfl rfl rfl)
+    (placed firstScope (by simp [running]) _ (Laws.State.mem_ofOccurrences_singleton.mpr rfl) rfl rfl rfl)
   simp [running] at this
 
 theorem slots_counted : SlotsCounted { entered with scopeMap := outerScopes } entered := by
@@ -371,7 +388,7 @@ def secondBegin : BeginRequest := { element := review, scope := secondScope, con
 
 /-- The first instance begun, the second's begin queued. -/
 def queuing : State :=
-  { entered with occurrences := [firstInstance], batchSignals := [.begin secondBegin] }
+  { entered with occurrenceMap := Laws.State.ofOccurrences [firstInstance], batchSignals := [.begin secondBegin] }
 
 theorem queuing_queued : QueuedFor running 1 secondBegin := ⟨rfl, rfl⟩
 
@@ -387,7 +404,8 @@ theorem begins_queued {program : Program} {loop : MultiInstance} (looping : Loop
     simp only [queuing, entered, Laws.State.scopes_eq, mem_enteredScopes] at inside
     rcases inside with rfl | rfl | rfl | rfl <;> rfl
   continued run member o inside _ _ := by
-    simp only [queuing, entered, List.mem_singleton] at member inside
+    simp only [queuing, entered, List.mem_singleton, Laws.State.occurrences_eq, Laws.State.mem_ofOccurrences_singleton]
+      at member inside
     subst member inside
     exact ⟨rfl, rfl⟩
   targets request queued body continued _ := by
@@ -406,7 +424,7 @@ theorem begins_queued {program : Program} {loop : MultiInstance} (looping : Loop
       simp [secondBegin] at reserved
     · simp [Laws.State.allQueuedTokens, queuing, entered] at token
   reservations o inside unbegun := by
-    simp only [queuing, List.mem_singleton] at inside
+    simp only [queuing, Laws.State.occurrences_eq, Laws.State.mem_ofOccurrences_singleton] at inside
     subst inside
     simp [firstInstance] at unbegun
   occurs _ pending := by
@@ -436,7 +454,7 @@ theorem begins_queued {program : Program} {loop : MultiInstance} (looping : Loop
     simp only [queuing, entered, List.mem_singleton] at member
     subst member
     obtain ⟨o, inside, at_, _⟩ := begun
-    simp only [queuing, List.mem_singleton] at inside
+    simp only [queuing, Laws.State.occurrences_eq, Laws.State.mem_ofOccurrences_singleton] at inside
     subst inside
     rcases inQueue with signal | token
     · simp only [Laws.State.allSignals, queuing, entered, Laws.State.toList_empty, List.map_nil, List.nil_append, List.mem_singleton] at signal
@@ -464,18 +482,18 @@ theorem looping_occur_rejected {program : Program} {loop : MultiInstance} (loopi
 
 /-- Begun occurrences alone name no looping element unbegun. -/
 theorem entered_unbegun (program : Program) : UnbegunUnlooped program entered := fun o member unbegun => by
-  simp only [entered, bodyOccurrence, firstInstance, secondInstance, List.mem_cons, List.not_mem_nil, or_false] at member
-  rcases member with rfl | rfl | rfl <;> simp at unbegun
+  simp only [entered, Laws.State.occurrences_eq, mem_enteredOccurrences] at member
+  rcases member with rfl | rfl | rfl <;> simp [bodyOccurrence, firstInstance, secondInstance] at unbegun
 
 /-- A reservation of a looping element breaks `UnbegunUnlooped`. -/
 theorem looping_reservation_rejected {program : Program} {loop : MultiInstance} (looping : LoopOf program review loop) :
-    ¬ UnbegunUnlooped program { entered with occurrences := [{ firstInstance with begun := false }] } :=
-  fun unlooped => unlooped _ (List.mem_singleton_self _) rfl loop looping
+    ¬ UnbegunUnlooped program { entered with occurrenceMap := Laws.State.ofOccurrences [{ firstInstance with begun := false }] } :=
+  fun unlooped => unlooped _ (Laws.State.mem_ofOccurrences_singleton.mpr rfl) rfl loop looping
 
 /-- Two begins queued out of slot order break `BeginsQueued`. -/
 theorem reversed_begins_rejected {program : Program} :
     ¬ BeginsQueued program
-      { entered with occurrences := [], batchSignals := [.begin secondBegin, .begin { secondBegin with scope := firstScope }] } :=
+      { entered with occurrenceMap := ∅, batchSignals := [.begin secondBegin, .begin { secondBegin with scope := firstScope }] } :=
     fun queued => by
   have := (queued.ordered running (by simp [entered])).signals secondBegin { secondBegin with scope := firstScope } 1 0
     (List.Sublist.refl _) ⟨rfl, rfl⟩ ⟨rfl, rfl⟩
@@ -484,7 +502,7 @@ theorem reversed_begins_rejected {program : Program} :
 /-- A begin queued below an instance that has begun breaks `BeginsQueued`. -/
 theorem begun_above_rejected {program : Program} :
     ¬ BeginsQueued program
-      { entered with occurrences := [secondInstance], batchSignals := [.begin { secondBegin with scope := firstScope }] } :=
+      { entered with occurrenceMap := Laws.State.ofOccurrences [secondInstance], batchSignals := [.begin { secondBegin with scope := firstScope }] } :=
     fun queued => by
   have := queued.above running (by simp [entered]) { secondBegin with scope := firstScope } 1 0 secondScope
     (.inl (by simp [Laws.State.allSignals, entered])) ⟨rfl, rfl⟩ rfl ⟨secondInstance, by simp, rfl, rfl⟩

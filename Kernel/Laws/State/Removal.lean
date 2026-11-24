@@ -25,7 +25,7 @@ open Kernel
 /-- `State.disarm` closes the items attached to `host` and drops the reservations they hold. -/
 theorem disarm_eq (s : State) (host : OccurrenceId) : s.disarm host = { s with
     openItems := s.openItems.filter fun _ item => item.attachedTo != some host
-    occurrences := s.occurrences.filter fun occurrence =>
+    occurrenceMap := s.occurrenceMap.filter fun _ occurrence =>
       occurrence.begun || !((itemList s.openItems).filter (·.attachedTo == some host)).any (·.id.occurrence == occurrence.id)
     itemOrdinals := s.itemOrdinals.filter fun id _ => !s.occurrences.any fun occurrence =>
       occurrence.id == id && !occurrence.begun && ((itemList s.openItems).filter (·.attachedTo == some host)).any (·.id.occurrence == occurrence.id) } := by
@@ -155,7 +155,7 @@ theorem clearInside_cleared {s : State} (formed : WellFormed program s) {scope :
   have ordinals : ∀ occurrence ∈ (s.clearInside le scope keep).occurrences,
       (s.clearInside le scope keep).itemOrdinals.getD occurrence.id 0 = s.itemOrdinals.getD occurrence.id 0 := by
     intro occurrence member
-    simp only [State.clearInside, State.recordCancelled] at member ⊢
+    simp only [State.clearInside, State.recordCancelled, occurrences_eq, occurrenceList_filter_val] at member ⊢
     obtain ⟨old, stays⟩ := List.mem_filter.mp member
     refine getD_filter_keep fun _ => ?_
     simp only [Bool.not_eq_eq_eq_not, Bool.not_true, List.any_eq_false, beq_iff_eq]
@@ -172,7 +172,10 @@ theorem clearInside_cleared {s : State} (formed : WellFormed program s) {scope :
       scopes := scopes, occurrences := fun occurrence => ?_, items := fun item => ?_, tokens := fun token => ?_,
       variables := fun x entries => by
         simp [State.clearInside, State.recordCancelled, -Std.ExtTreeMap.getElem?_filter, Std.ExtTreeMap.getElem?_filter',
-          Option.filter_eq_some_iff, mem, StrictlyWithin], scopesSub := fewer, occurrencesSublist := List.filter_sublist,
+          Option.filter_eq_some_iff, mem, StrictlyWithin], scopesSub := fewer,
+      occurrencesSub := by simp only [State.clearInside, State.recordCancelled]; exact OccurrencesSub.filter _ _,
+      occurrencesSublist := by
+        simp only [State.clearInside, State.recordCancelled, occurrences_eq]; exact occurrenceList_filter_val_sublist _ _,
       scopeGrows := clearInside_grows s scope keep,
       openItemsSub := ItemsSub.filter _ _, ordinals := ordinals, tokensSublist := ?_,
       instances := fun x member => ?_, activations := rfl, counters := clearInside_counters s scope keep,
@@ -197,7 +200,7 @@ theorem clearInside_cleared {s : State} (formed : WellFormed program s) {scope :
     · simp only [State.clearInside, State.recordCancelled, featureSlotsClear_eq] at member
       exact (List.mem_filter.mp member).1
   all_goals simp [State.clearInside, State.recordCancelled, mem, mem_itemList_filter formed.distinct.items,
-    allQueuedTokens, Std.ExtTreeMap.toList_filter, or_and_right]
+    allQueuedTokens, Std.ExtTreeMap.toList_filter, or_and_right, occurrences_eq, occurrenceList_filter_val]
 
 /-- Clearing a present scope occurrence of a well-formed state journals each begun occurrence it removes once, under
 its key: those within the scope occurrence that it does not keep. -/
@@ -246,7 +249,7 @@ theorem clearInside_eq (s : State) (scope : ScopeOccurrenceId) (keep : List Occu
       itemOrdinals := s.itemOrdinals.filter fun id _ => !((s.subtree le scope).reverse.flatMap fun current =>
         (s.occurrences.filter fun occurrence => occurrence.scope == current && !keep.contains occurrence.id).mergeSort
           fun a b => le a.position b.position).any (·.id == id)
-      occurrences := s.occurrences.filter fun occurrence =>
+      occurrenceMap := s.occurrenceMap.filter fun _ occurrence =>
         !(s.subtree le scope).contains occurrence.scope || keep.contains occurrence.id
       scopeMap := s.scopeMap.filter fun _ entry => !((s.subtree le scope).filter (· != scope)).contains entry.id
       scopeOrdinals := s.scopeOrdinals.filter fun slot _ => !((s.subtree le scope).filter (· != scope)).contains slot.parent
@@ -255,7 +258,7 @@ theorem clearInside_eq (s : State) (scope : ScopeOccurrenceId) (keep : List Occu
       variables := s.variables.filter fun x _ => !((s.subtree le scope).filter (· != scope)).contains x
       slots := {
         parked := s.slots.parked.filter (!(s.subtree le scope).contains ·.scope)
-        held := s.slots.held.filter (!(s.subtree le scope).contains ·.scope)
+        heldMap := s.slots.heldMap.filter fun _ held => !(s.subtree le scope).contains held
         multiInstances := s.slots.multiInstances.filter (!(s.subtree le scope).contains ·.scope)
         compensation := {
           retained := s.slots.compensation.retained.filter (!((s.subtree le scope).filter (· != scope)).contains ·.scope)
@@ -336,9 +339,10 @@ theorem leaveScope_withoutRecord (s : State) (id : OccurrenceId) (scope : ScopeO
     rw [keyOf_eq, keyOf_eq]
     exact key_congr (instanceOf_congr (s := s) (t := withoutRecord s id) rfl rfl _)
   simp only [State.leaveScope, State.clearInside, State.recordCancelled, tree, keyOf]
-  simp only [withoutRecord]
+  simp only [withoutRecord, occurrences_eq, occurrenceList_filter_val]
+  simp only [occurrences_eq] at removed
   rw [removed]
-  simp only [List.filter_filter, Bool.and_comm, filter_erase_comm]
+  simp only [Bool.and_comm, filter_erase_comm, Keyed.filter_filter_val]
 
 theorem withdrawInside_eq (s : State) (scope : ScopeOccurrenceId) :
     s.withdrawInside scope = { s with openItems := s.openItems.filter fun _ item => !(s.inside scope).contains item.scope } := by
@@ -502,8 +506,8 @@ theorem removeOccurrence_issuerKept (s : State) (id : OccurrenceId) : IssuerKept
 
 /-- Disarming keeps a sublist of the occurrences: it drops only reservations hanging on the host. -/
 theorem disarm_occurrences (s : State) (host : OccurrenceId) : (s.disarm host).occurrences.Sublist s.occurrences := by
-  rw [disarm_eq]
-  exact List.filter_sublist
+  rw [disarm_eq, occurrences_eq]
+  exact occurrenceList_filter_val_sublist _ _
 
 theorem disarm_issuerKept (s : State) (host : OccurrenceId) : IssuerKept s (s.disarm host) := by
   rw [disarm_eq]

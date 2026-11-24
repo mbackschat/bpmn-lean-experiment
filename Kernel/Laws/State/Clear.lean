@@ -34,6 +34,7 @@ structure Cleared (before after : State) (scope : ScopeOccurrenceId) (keep : Lis
   variables : ∀ x entries, after.variables[x]? = some entries ↔
     before.variables[x]? = some entries ∧ ¬ StrictlyWithin before x scope
   scopesSub : ScopesSub after.scopeMap before.scopeMap
+  occurrencesSub : OccurrencesSub after.occurrenceMap before.occurrenceMap
   occurrencesSublist : after.occurrences.Sublist before.occurrences
   openItemsSub : ItemsSub after.openItems before.openItems
   ordinals : ∀ occurrence ∈ after.occurrences,
@@ -123,7 +124,7 @@ theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {k
       formed.issued.positionsKept (fun _ member => cleared.scopesSubset member) (.of_eq cleared.issued),
       formed.issued.occurrencePositionsKept (fun _ member => cleared.occurrencesSublist.subset member)
         (.of_eq cleared.issued)⟩
-  · refine ⟨formed.distinct.occurrences.sublist (cleared.occurrencesSublist.map _),
+  · refine ⟨cleared.occurrencesSub.keyed formed.distinct.occurrencesKeyed,
       cleared.openItemsSub.keyed formed.distinct.items,
       cleared.scopesSub.keyed formed.distinct.scopesKeyed, ?_⟩
     rw [List.map_congr_left keys]
@@ -240,6 +241,7 @@ structure Prunes (before after : State) : Prop where
   scopeMap : after.scopeMap = before.scopeMap
   scopeOrdinals : after.scopeOrdinals = before.scopeOrdinals
   instances : ∀ x, after.instanceOf x = before.instanceOf x
+  occurrencesSub : OccurrencesSub after.occurrenceMap before.occurrenceMap
   occurrences : after.occurrences.Sublist before.occurrences
   items : ItemsSub after.openItems before.openItems
   ordinals : ∀ occurrence ∈ after.occurrences,
@@ -287,7 +289,7 @@ theorem Prunes.wellFormed {before after : State} (formed : WellFormed program be
       formed.issued.positionsKept (fun _ member => prunes.scopes ▸ member) (.of_eq prunes.issued),
       formed.issued.occurrencePositionsKept (fun _ member => kept member) (.of_eq prunes.issued)⟩
   case distinct =>
-    refine ⟨formed.distinct.occurrences.sublist (prunes.occurrences.map _),
+    refine ⟨prunes.occurrencesSub.keyed formed.distinct.occurrencesKeyed,
       prunes.items.keyed formed.distinct.items, prunes.scopeMap ▸ formed.distinct.scopesKeyed,
       ?_⟩
     rw [funext keys]
@@ -358,7 +360,7 @@ theorem Prunes.wellFormed {before after : State} (formed : WellFormed program be
 
 /-- `s` without the occurrence record `id`: what `State.removeOccurrence` removes first. -/
 def withoutRecord (s : State) (id : OccurrenceId) : State :=
-  { s with occurrences := s.occurrences.filter (·.id != id), itemOrdinals := s.itemOrdinals.erase id }
+  { s with occurrenceMap := s.occurrenceMap.filter fun _ occurrence => occurrence.id != id, itemOrdinals := s.itemOrdinals.erase id }
 
 /-! ## Leaving a scope occurrence -/
 
@@ -375,6 +377,7 @@ structure Left (before after : State) (scope : ScopeOccurrenceId) : Prop where
   variables : ∀ x entries, after.variables[x]? = some entries ↔
     before.variables[x]? = some entries ∧ ¬ Within before x scope
   scopesSub : ScopesSub after.scopeMap before.scopeMap
+  occurrencesSub : OccurrencesSub after.occurrenceMap before.occurrenceMap
   occurrencesSublist : after.occurrences.Sublist before.occurrences
   openItemsSub : ItemsSub after.openItems before.openItems
   ordinals : ∀ occurrence ∈ after.occurrences,
@@ -441,7 +444,7 @@ theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (form
       formed.issued.positionsKept (fun _ member => left.scopesSubset member) (.of_eq left.issued),
       formed.issued.occurrencePositionsKept (fun _ member => kept member) (.of_eq left.issued)⟩
   case distinct =>
-    refine ⟨formed.distinct.occurrences.sublist (left.occurrencesSublist.map _),
+    refine ⟨left.occurrencesSub.keyed formed.distinct.occurrencesKeyed,
       left.openItemsSub.keyed formed.distinct.items,
       left.scopesSub.keyed formed.distinct.scopesKeyed, ?_⟩
     rw [List.map_congr_left keys]

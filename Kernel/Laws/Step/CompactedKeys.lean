@@ -97,15 +97,20 @@ theorem compact_keysDistinct {program : Program} {u : State} (ran : compact sche
     (counted : CountersFrom start s) (formed : WellFormed program u) (scopes : s.scopes = u.scopes)
     (named : s.instanceId = u.instanceId) (issued : IssuedBelow s) (owned : Owned s) (rooted : Rooted s)
     (distinct : Distinct s) : (t.occurrences.map (key t)).Nodup := by
-  have same : t.occurrences.map (key t) = s.occurrences.map (key s) := by
-    rw [compact_occurrences ran, List.map_map]
-    refine List.map_congr_left fun old inside => ?_
-    obtain ⟨_, _, mapped⟩ := compact_occurrence_mem ran inside
-    have scope := mapped.scope
-    simp only [Function.comp, key,
-      compact_instanceOf ran counted formed scopes named issued rooted distinct.scopes (owned.occurrenceScopes old inside)]
-  rw [same]
-  exact distinct.keys
+  have renamed : ∀ old ∈ s.occurrences,
+      key t (renamedOccurrence (commitRenaming schedule start log s) (commitPositioning schedule start log s) (commitRekey schedule start log s) old) = key s old :=
+    fun old inside => by
+      simp only [key,
+        compact_instanceOf ran counted formed scopes named issued rooted distinct.scopes (owned.occurrenceScopes old inside)]
+  have nodup : t.occurrences.Nodup :=
+    Keyed.nodup_of_map (key := Occurrence.id) (occurrenceList_nodup (compact_occurrencesKeyed ran distinct.occurrencesKeyed))
+  unfold List.Nodup
+  rw [List.pairwise_map]
+  refine nodup.imp_of_mem fun {x y} xin yin apart same => apart ?_
+  obtain ⟨ox, oxIn, rfl⟩ := compact_occurrenceRecord_of ran xin
+  obtain ⟨oy, oyIn, rfl⟩ := compact_occurrenceRecord_of ran yin
+  rw [renamed ox oxIn, renamed oy oyIn] at same
+  rw [nodup_map_eq distinct.keys oxIn oyIn same]
 
 /-- **`OccurrencesCounted` across the commit** (`occurrencesCounted`). -/
 theorem compact_occurrencesCounted {program : Program} {u : State} (ran : compact schedule start log s = .ok t)
@@ -210,14 +215,14 @@ theorem compact_wellFormed {program : Program} {start state : State} {log : RunL
     issued := compacts_issued ran counted issued
       (fun item member => let ⟨occurrence, present, same, _⟩ := owned.itemOccurrences item member; ⟨occurrence, present, same⟩)
       parents
-    distinct := ⟨compact_occurrencesDistinct ran counted issued owned rooted keys distinct.occurrences,
+    distinct := ⟨compact_occurrencesKeyed ran distinct.occurrencesKeyed,
       compact_keyed ran distinct.items, compact_scopesKeyed ran distinct.scopesKeyed,
       compact_keysDistinct ran counted formed rfl rfl issued owned rooted distinct⟩
     startedOnce := compact_startedOnce ran once
     activations := compact_activations ran (ordered_activations formed.activations)
     reservations := compact_reservations ran counted formed rfl rfl issued owned rooted distinct.scopes
       fun _ _ _ fact started => by rw [none] at started; cases started
-    owned := compact_owned ran owned quiet.2
+    owned := compact_owned ran (occurrences_apart counted issued owned rooted keys distinct.occurrencesKeyed) owned quiet.2
     rooted := compact_rooted ran issued rooted
     failure := compact_failure ran formed.failure
     queue := quiet_queueSound quiet.1

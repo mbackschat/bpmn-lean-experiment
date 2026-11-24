@@ -367,7 +367,7 @@ theorem arriveScope_keeps {inv : State → Prop} {ctx : Ctx} (ops : ScopesOps ct
           refine enter_keeps ops cleared stays begun named clearedReady (fun found inside reserved => ?_) ran
           obtain ⟨_, shape⟩ := Laws.State.clearInside_eq (le := ctx.positionLe) state occurrence.scope (occurrence.id :: entry.inner.toList)
           rw [shape] at inside
-          exact lies found (List.mem_filter.mp inside).1 reserved
+          exact lies found (Laws.State.mem_occurrenceList_filter_val.mp inside).1 reserved
 
 /-! ## Cancellation
 
@@ -469,10 +469,10 @@ open Kernel.Laws.State (processRoot subScope subProcess innerTask outerTask inne
   sample cleared sample_clears survivor_rejected terminating terminated terminate_clears rootScopes sampleScopes
   mem_rootScopes mem_sampleScopes)
 
-/- The witnesses read their scopes through the scope map's list view. -/
-attribute [local simp] Laws.State.scopes_eq
+/- The witnesses read their scopes and occurrences through the maps' list views. -/
+attribute [local simp] Laws.State.scopes_eq Laws.State.occurrences_eq Laws.State.held_eq Laws.State.heldList_empty
 
-def entering : State := { instanceId := "p", scopeMap := rootScopes, occurrences := [subProcess] }
+def entering : State := { instanceId := "p", scopeMap := rootScopes, occurrenceMap := Laws.State.ofOccurrences [subProcess] }
 
 def entered : State :=
   { entering with

@@ -258,12 +258,12 @@ theorem unissued_raise_rejected :
 that occurrence. -/
 def reservedRaise : State :=
   { holdingState {} [.raise .cancel { element := thrower, scope := rootScope, activation := 1, thrower := throwerIn rootScope }] with
-    occurrences := [{ id := throwerIn rootScope, element := thrower, scope := rootScope, activation := 1, position := 1, begun := false }] }
+    occurrenceMap := Laws.State.ofOccurrences [{ id := throwerIn rootScope, element := thrower, scope := rootScope, activation := 1, position := 1, begun := false }] }
 
 /-- A queued trigger that names an unbegun reservation breaks `TriggersApart`: beginning the reservation would throw
 from a key the trigger already holds. -/
 theorem reserved_trigger_rejected : ¬ TriggersApart reservedRaise := fun apart =>
-  apart.unreserved _ (List.mem_singleton_self _) rfl
+  apart.unreserved _ (Laws.State.mem_ofOccurrences_singleton.mpr rfl) rfl
     { processInstanceId := reservedRaise.instanceOf rootScope, element := thrower, activation := 1 }
     (List.mem_append_right _ (by
       simp [queuedTriggers, Laws.State.allSignals, reservedRaise, holdingState, Laws.Step.triggersOf_raise, Laws.State.isCancel_cancel,

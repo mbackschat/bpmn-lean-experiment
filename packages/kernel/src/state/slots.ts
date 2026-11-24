@@ -148,6 +148,13 @@ export interface Parked { readonly occurrence: OccurrenceId; readonly flow: Flow
 export interface Held { readonly occurrence: OccurrenceId; readonly scope: ScopeOccurrenceId; }
 
 /**
+ * Lean's `HeldMap`, the held occurrences keyed by occurrence (DC21), written as its list view (`heldList`): a value's
+ * `occurrence` is its key, so the map is its values in key order, the form the state codec writes (T75). No reader
+ * takes an order from it.
+ */
+export type HeldMap = readonly Held[];
+
+/**
  * Lean's `Parked.leastBy`: the parked arrival of `entries` whose occurrence's issue comes first under `le`, the first of
  * those tied. The arrivals at one join in one scope occurrence are occurrences of one element there, so their issues are
  * their order positions (DC13).
@@ -177,11 +184,11 @@ export interface InstanceData {
 /**
  * Feature-owned data. `parked` holds the occurrences that reached a join and wait for its other incoming flows
  * (`feature/flow.ts`); `held` holds those at an Activity whose InputSet is unavailable (BPMN 2.0.2 §10.4.2,
- * `feature/work.ts`).
+ * `feature/work.ts`), by occurrence: Lean's `heldMap` through its list view `FeatureSlots.held`.
  */
 export interface FeatureSlots {
   readonly parked: readonly Parked[];
-  readonly held: readonly Held[];
+  readonly held: HeldMap;
   readonly multiInstances: readonly MultiInstanceRun[];
   readonly compensation: Compensations;
   readonly instances: readonly InstanceData[];

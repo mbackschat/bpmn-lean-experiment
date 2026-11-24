@@ -314,7 +314,7 @@ theorem enterScope_inner {s : State} (formed : WellFormed program s) (element : 
   have child := instanceOf_child formedAfter entryMember (by rw [← entryIs]) (by rw [← entryIs, ← keyIs]; exact Kernel.Laws.State.ScopeOccurrenceId.parent?_child _ _ _) presentAfter
   have occurrences : t.occurrences = s.occurrences := by rw [← afterIs]
   have items : itemList t.openItems = itemList s.openItems := by rw [← afterIs]
-  refine ⟨formedAfter, rfl, List.mem_map.mpr ⟨_, entryMember, entryId⟩, fun id innerId => ?_⟩
+  refine ⟨formedAfter, occurrences, List.mem_map.mpr ⟨_, entryMember, entryId⟩, fun id innerId => ?_⟩
   obtain ⟨⟨below, facts⟩, unnamed, uncompleted, unslotted⟩ := claimable id innerId
   refine ⟨⟨issued _ below, fun found inside same => ?_⟩, ?_⟩
   · obtain ⟨unbegun, free, instance_⟩ := facts found (occurrences ▸ inside) same

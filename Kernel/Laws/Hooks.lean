@@ -27,15 +27,16 @@ theorem evalContext_eq (state : State) (program : Program) (scope : ScopeOccurre
 /-- A held occurrence joins `FeatureSlots.held` and the micro-step's Ready list under its key; nothing else changes. -/
 theorem hold_eq (state : State) (occurrence : Occurrence) :
     state.hold occurrence = { ({ state with slots := { state.slots with
-        held := state.slots.held ++ [{ occurrence := occurrence.id, scope := occurrence.scope }] } } : State) with
+        heldMap := state.slots.heldMap.insert occurrence.id occurrence.scope } } : State) with
       draft := { state.draft with ready := state.draft.ready ++ [state.keyOf occurrence] } } := by
   simp only [State.hold]
 
-/-- PD2's Ready list grows in lockstep with `FeatureSlots.held`: holding an occurrence appends its held entry and, to the
-micro-step's Ready list, its key, and nothing else, so the Ready list a micro-step journals (`Laws.Step.conclude_ok`),
-empty when it began (`Laws.Step.microStep_ready`), names exactly the occurrences that micro-step holds. -/
+/-- PD2's Ready list grows in lockstep with `FeatureSlots.held`: holding an occurrence puts its held entry under its
+key and appends, to the micro-step's Ready list, its key, and nothing else, so the Ready list a micro-step journals
+(`Laws.Step.conclude_ok`), empty when it began (`Laws.Step.microStep_ready`), names exactly the occurrences that
+micro-step holds. -/
 theorem hold_ready (state : State) (occurrence : Occurrence) :
-    (state.hold occurrence).slots.held = state.slots.held ++ [{ occurrence := occurrence.id, scope := occurrence.scope }] ∧
+    (state.hold occurrence).slots.heldMap = state.slots.heldMap.insert occurrence.id occurrence.scope ∧
       (state.hold occurrence).draft.ready = state.draft.ready ++ [state.keyOf occurrence] := by
   rw [hold_eq]
   exact ⟨rfl, rfl⟩

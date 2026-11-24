@@ -30,7 +30,7 @@ def disarm (state : State) (host : OccurrenceId) : State :=
     !occurrence.begun && attached.any (·.id.occurrence == occurrence.id)).map (·.id)
   { state with
       openItems := state.openItems.filter fun _ item => item.attachedTo != some host
-      occurrences := state.occurrences.filter fun occurrence =>
+      occurrenceMap := state.occurrenceMap.filter fun _ occurrence =>
         occurrence.begun || !attached.any (·.id.occurrence == occurrence.id)
       itemOrdinals := state.itemOrdinals.filter fun id _ => !dropped.contains id }
 
@@ -38,8 +38,8 @@ def disarm (state : State) (host : OccurrenceId) : State :=
 ordinal counters of the removed scope occurrences and occurrences, keeping `scope` itself and the occurrences `keep`
 names. Each begun occurrence is journalled cancelled, deepest scope first, each level by the order positions of its
 scope occurrences under `le` (`subtree`), then by the order positions of its occurrences under `le`, which follow their
-issue ([publication](../../docs/kernel/semantics/PUBLICATION-AND-OBSERVATION-SEMANTICS-SPEC.md)); `Hooks.cancelled`
-tells the owning features afterwards. -/
+issue ([publication](../../docs/kernel/semantics/PUBLICATION-AND-OBSERVATION-SEMANTICS-SPEC.md)), never their key
+order; `Hooks.cancelled` tells the owning features afterwards. -/
 def clearInside (state : State) (le : Issue → Issue → Bool) (scope : ScopeOccurrenceId) (keep : List OccurrenceId := []) :
     State :=
   let inside := state.subtree le scope
@@ -53,7 +53,8 @@ def clearInside (state : State) (le : Issue → Issue → Bool) (scope : ScopeOc
       queuedTokens := journalled.queuedTokens.filter fun _ token => !inside.contains token.busyScope
       openItems := journalled.openItems.filter fun _ item => !inside.contains item.scope || keep.contains item.id.occurrence
       itemOrdinals := journalled.itemOrdinals.filter fun id _ => !removed.any (·.id == id)
-      occurrences := journalled.occurrences.filter fun occurrence => !inside.contains occurrence.scope || keep.contains occurrence.id
+      occurrenceMap := journalled.occurrenceMap.filter fun _ occurrence =>
+        !inside.contains occurrence.scope || keep.contains occurrence.id
       scopeMap := journalled.scopeMap.filter fun _ entry => !nested.contains entry.id
       scopeOrdinals := journalled.scopeOrdinals.filter fun slot _ => !nested.contains slot.parent
       occurrenceOrdinals := journalled.occurrenceOrdinals.filter fun slot _ => !nested.contains slot.parent
@@ -81,7 +82,8 @@ def leaveScope (state : State) (le : Issue → Issue → Bool) (scope : ScopeOcc
 `le`. The record goes first, so that leaving a scope does not cancel the occurrence that owns it. -/
 def removeOccurrence (state : State) (le : Issue → Issue → Bool) (id : OccurrenceId) : State :=
   let removed := { state with
-    occurrences := state.occurrences.filter (·.id != id), itemOrdinals := state.itemOrdinals.erase id }
+    occurrenceMap := state.occurrenceMap.filter fun _ occurrence => occurrence.id != id
+    itemOrdinals := state.itemOrdinals.erase id }
   ((removed.scopes.filter (·.occurrence == some id)).mergeSort fun a b => le a.position b.position).foldl
     (fun state scope => state.leaveScope le scope.id) removed
 

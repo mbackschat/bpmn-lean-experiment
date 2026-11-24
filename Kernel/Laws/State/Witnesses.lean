@@ -17,8 +17,8 @@ variable {program : Program}
 
 open Kernel
 
-/- The witnesses read their scopes through the scope map's list view. -/
-attribute [local simp] scopes_eq
+/- The witnesses read their scopes and occurrences through the maps' list views. -/
+attribute [local simp] scopes_eq occurrences_eq
 
 /- The witnesses' states queue nothing under a unit key, so the views are their batches. -/
 attribute [local simp] allSignals allQueuedTokens
@@ -34,13 +34,21 @@ theorem stale_counter_rejected (kind : OpenKind) : ¬ IssuedBelow { sample kind 
 def reservation : Occurrence :=
   { id := timerKey, element := ⟨"Timer"⟩, scope := processRoot, activation := 1, position := 4, begun := false }
 
+/-- The armed state's occurrences: the sample's and the reservation `timerKey`. -/
+def armedOccurrences : OccurrenceMap := ofOccurrences [subProcess, innerTask, outerTask, reservation]
+
+@[simp] theorem mem_armedOccurrences {x : Occurrence} :
+    x ∈ occurrenceList armedOccurrences ↔ x = subProcess ∨ x = innerTask ∨ x = outerTask ∨ x = reservation := by
+  rw [armedOccurrences, mem_ofOccurrences (by simp [subProcess, innerTask, outerTask, reservation, processRoot, subScope])]
+  simp
+
 def startFact (occurrence : Occurrence) : StartedFact :=
   { occurrence := { processInstanceId := "p", element := occurrence.element, activation := occurrence.activation }
     owner := occurrence.scope, sourceType := "task" }
 
 def armedState (kind : OpenKind) : State :=
   { sample kind with
-    occurrences := [subProcess, innerTask, outerTask, reservation], nextCompletion := 8,
+    occurrenceMap := armedOccurrences, nextCompletion := 8,
     occurrenceOrdinals := sampleCounters.insert { parent := processRoot, element := ⟨"Timer"⟩ } 1,
     draft := { started := [startFact innerTask, startFact outerTask] } }
 
@@ -64,7 +72,7 @@ theorem restart_rejected (kind : OpenKind) :
 theorem dangling_item_rejected (kind : OpenKind) :
     ¬ Owned { sample kind with openItems := ofItems [{ innerItem kind with id := ⟨ghostKey, .wait, 0⟩ }] } := fun owned => by
   obtain ⟨occurrence, member, same, _⟩ := owned.itemOccurrences { innerItem kind with id := ⟨ghostKey, .wait, 0⟩ } (by simp)
-  simp only [sample, List.mem_cons, List.not_mem_nil, or_false] at member
+  simp only [sample, occurrences_eq, mem_sampleOccurrences] at member
   rcases member with rfl | rfl | rfl <;> simp [subProcess, innerTask, outerTask] at same
 
 /-- An item filed in another scope occurrence than its occurrence's breaks `Owned`. -/
@@ -72,7 +80,7 @@ theorem misfiled_item_rejected (kind : OpenKind) :
     ¬ Owned { sample kind with openItems := ofItems [{ innerItem kind with scope := processRoot }] } := fun owned => by
   obtain ⟨occurrence, member, same, facts⟩ := owned.itemOccurrences { innerItem kind with scope := processRoot } (by simp)
   obtain ⟨_, scope⟩ := facts
-  simp only [sample, List.mem_cons, List.not_mem_nil, or_false] at member
+  simp only [sample, occurrences_eq, mem_sampleOccurrences] at member
   rcases member with rfl | rfl | rfl <;> simp [subProcess, innerTask, outerTask, innerItem, processRoot, subScope] at same scope
 
 /-- A start fact pending without its counter breaks `StartsCounted`. -/
@@ -84,9 +92,10 @@ theorem uncounted_start_rejected (kind : OpenKind) :
 
 /-- A Sub-Process scope owned by an occurrence of another scope occurrence breaks `OwnedBelow`. -/
 theorem misplaced_owner_rejected (kind : OpenKind) :
-    ¬ OwnedBelow { sample kind with occurrences := [{ subProcess with scope := subScope }, innerTask, outerTask] } :=
+    ¬ OwnedBelow { sample kind with occurrenceMap := ofOccurrences [{ subProcess with scope := subScope }, innerTask, outerTask] } :=
   fun owned => by
-    have := owned childScope (by simp [sample]) { subProcess with scope := subScope } (by simp) (by simp [childScope, subProcess])
+    have := owned childScope (by simp [sample]) { subProcess with scope := subScope }
+      (by simp [subProcess, innerTask, outerTask, processRoot, subScope]) (by simp [childScope, subProcess])
     simp [childScope, subScope] at this
 
 /-- An arming of a scope occurrence never issued breaks `QueueSound`, and so `WellFormed`: queued work may name a scope
@@ -125,14 +134,14 @@ theorem misattached_rejected (kind : OpenKind) :
     ¬ Owned { sample kind with openItems := ofItems [{ innerItem kind with attachedTo := some outerKey }] } := fun owned => by
   obtain ⟨occurrence, member, named, rest⟩ := owned.attachments { innerItem kind with attachedTo := some outerKey } (by simp) outerKey rfl
   have placed := rest.2
-  simp only [sample, List.mem_cons, List.not_mem_nil, or_false] at member
+  simp only [sample, occurrences_eq, mem_sampleOccurrences] at member
   rcases member with rfl | rfl | rfl <;> simp [subProcess, innerTask, outerTask, innerItem, processRoot, subScope] at named placed
 
 /-- A scope occurrence owned by the unbegun reservation `timerKey` breaks `Owned`: only a begun occurrence enters a scope. -/
 theorem reservation_owner_rejected (kind : OpenKind) :
     ¬ Owned { armedState kind with scopeMap := ofScopes [rootScope, { childScope with occurrence := some timerKey }] } := fun owned => by
   obtain ⟨occurrence, member, named, begun⟩ := owned.scopeOwners { childScope with occurrence := some timerKey } (by simp [rootScope, childScope, processRoot, subScope]) timerKey rfl
-  simp only [armedState, List.mem_cons, List.not_mem_nil, or_false] at member
+  simp only [armedState, occurrences_eq, mem_armedOccurrences] at member
   rcases member with rfl | rfl | rfl | rfl <;> simp [subProcess, innerTask, outerTask, reservation] at named begun
 
 /-- An occurrence the counters never numbered breaks `OccurrencesCounted`, so a fresh activation could repeat it. -/
@@ -143,9 +152,13 @@ theorem uncounted_occurrence_rejected (kind : OpenKind) :
 
 /-- Two occurrences of one key break `Distinct`. -/
 theorem rekeyed_rejected (kind : OpenKind) :
-    ¬ Distinct { sample kind with occurrences := [subProcess, { subProcess with id := ghostKey }] } := fun distinct => by
-  have := distinct.keys
-  simp [key] at this
+    ¬ Distinct { sample kind with occurrenceMap := ofOccurrences [subProcess, { subProcess with id := ghostKey }] } :=
+  fun distinct => by
+  have nodup : (([subProcess, { subProcess with id := ghostKey }] : List Occurrence).map (·.id)).Nodup := by
+    simp [subProcess, ghostKey, processRoot]
+  have := nodup_map_eq distinct.keys (a := subProcess) (b := { subProcess with id := ghostKey })
+    ((mem_ofOccurrences nodup).mpr (by simp)) ((mem_ofOccurrences nodup).mpr (by simp)) (by simp [key])
+  simp [subProcess, ghostKey, processRoot] at this
 
 /-- A queued begin naming the begun occurrence `outerKey` breaks `ReservationsClaimed`: it would start it twice. -/
 theorem rebegin_rejected (kind : OpenKind) :
@@ -233,7 +246,7 @@ theorem parked_begun_settled (kind : OpenKind) :
     simp only [List.mem_singleton]
     rintro _ rfl
     refine ⟨armed_outer_issued kind, fun occurrence member same => ?_, fun request queued => ?_⟩
-    · simp only [armedState, List.mem_cons, List.not_mem_nil, or_false] at member
+    · simp only [armedState, occurrences_eq, mem_armedOccurrences] at member
       rcases member with rfl | rfl | rfl | rfl <;> simp_all [subProcess, innerTask, outerTask, reservation]
     · simp [Queued, armedState, sample] at queued
   bodies := by simp
@@ -314,9 +327,10 @@ theorem reserved_raise_host_rejected (kind : OpenKind) :
 /-- The root's task `outerKey` numbered as a Multi-Instance body while its item waits for it breaks `ItemRoles`: the item's
 public identity would be the body's, which shares its element and activation with the body's first instance. -/
 theorem body_item_rejected (kind : OpenKind) :
-    ¬ ItemRoles { sample kind with occurrences := [subProcess, innerTask, { outerTask with role := .multiInstanceBody }] } :=
+    ¬ ItemRoles { sample kind with occurrenceMap := ofOccurrences [subProcess, innerTask, { outerTask with role := .multiInstanceBody }] } :=
   fun roles => by
-    have := roles (outerItem kind) (by simp [sample, innerItem, outerItem]) { outerTask with role := .multiInstanceBody } (by simp) (by simp [outerTask, outerItem])
+    have := roles (outerItem kind) (by simp [sample, innerItem, outerItem]) { outerTask with role := .multiInstanceBody }
+      (by simp [subProcess, innerTask, outerTask, processRoot, subScope]) (by simp [outerTask, outerItem])
     simp at this
 
 /-- A queued compensation in the Sub-Process's scope occurrence that releases the root as its group context breaks

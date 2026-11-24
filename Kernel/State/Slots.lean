@@ -143,6 +143,14 @@ structure Held where
   scope : ScopeOccurrenceId
   deriving Repr
 
+/-- The held occurrences, each its scope occurrence under its occurrence's key (DC21), so one entry per occurrence
+holds by type. The Ready list a micro-step journals stays per occurrence (PD2). -/
+abbrev HeldMap := TreeMap OccurrenceId ScopeOccurrenceId compare
+
+/-- The held occurrences of `held` in key order, the list view the state codec writes; no reader takes an order from
+it. -/
+def heldList (held : HeldMap) : List Held := held.toList.map fun (occurrence, scope) => { occurrence, scope }
+
 /-- A process instance's own facts: its root scope occurrence, its business key and, for a called instance, the
 definition its Call bound, kept per instance so recovery never re-resolves it (PC-SCOPE-03, PC-MESSAGE-08). -/
 structure InstanceData where
@@ -152,15 +160,19 @@ structure InstanceData where
   deriving Repr
 
 /-- Feature-owned data. `parked` holds the occurrences that reached a join and wait for its other incoming flows
-(`Kernel.Feature.Flow`); `held` holds those at an Activity whose InputSet is unavailable
-([BPMN 2.0.2 §10.4.2](../docs/reference/bpmn-2.0.2/README.md), `Kernel.Feature.Work`). -/
+(`Kernel.Feature.Flow`); `heldMap` holds those at an Activity whose InputSet is unavailable
+([BPMN 2.0.2 §10.4.2](../docs/reference/bpmn-2.0.2/README.md), `Kernel.Feature.Work`), by occurrence;
+`FeatureSlots.held` is its list view. -/
 structure FeatureSlots where
   parked : List Parked := []
-  held : List Held := []
+  heldMap : HeldMap := ∅
   multiInstances : List MultiInstanceRun := []
   compensation : Compensations := {}
   instances : List InstanceData := []
   deriving Repr
+
+/-- The held occurrences in key order (`heldList`). -/
+abbrev FeatureSlots.held (slots : FeatureSlots) : List Held := heldList slots.heldMap
 
 /-- The scope occurrences a slot keeps alive. Every slot's own entry is an open occurrence or a child occurrence
 already, so only the join and held waits count here. One of the three places that enumerate the slots. -/
@@ -171,7 +183,7 @@ def FeatureSlots.keptAlive (slots : FeatureSlots) : List ScopeOccurrenceId :=
 the three places that enumerate the slots. -/
 def FeatureSlots.clear (slots : FeatureSlots) (inside nested : List ScopeOccurrenceId) : FeatureSlots :=
   { parked := slots.parked.filter (!inside.contains ·.scope)
-    held := slots.held.filter (!inside.contains ·.scope)
+    heldMap := slots.heldMap.filter fun _ scope => !inside.contains scope
     multiInstances := slots.multiInstances.filter (!inside.contains ·.scope)
     compensation := {
       retained := slots.compensation.retained.filter (!nested.contains ·.scope)

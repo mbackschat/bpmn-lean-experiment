@@ -211,8 +211,10 @@ another (DC26, which drops the reservation's record and item counter), or a fres
 numbered under `role`. Nothing else changes. -/
 structure Begins (before after : State) (request : BeginRequest) (role : ActivationRole) (sourceType : String)
     (begun : Occurrence) : Prop where
-  occurrences : after.occurrences =
-    before.occurrences.filter (fun o => o.id != begun.id && request.reserved != some o.id) ++ [begun]
+  /-- The begun occurrence is inserted under its key, in place of the record there and of the reservation the request
+  names; the list view changes so up to order (`Begins.occurrences`). -/
+  occurrenceMap : after.occurrenceMap =
+    (before.occurrenceMap.filter fun _ o => o.id == begun.id || request.reserved != some o.id).insert begun.id begun
   started : after.draft.started =
     before.draft.started ++ [{ occurrence := key after begun, owner := begun.scope, sourceType }]
   scope : begun.scope = request.scope
@@ -254,6 +256,38 @@ structure Begins (before after : State) (request : BeginRequest) (role : Activat
 theorem Begins.scopes {before after : State} {request : BeginRequest} {role : ActivationRole} {sourceType : String}
     {begun : Occurrence} (begins : Begins before after request role sourceType begun) : after.scopes = before.scopes := by
   rw [scopes_eq, scopes_eq, begins.scopeMap]
+
+theorem Begins.occurrencesKeyed {before after : State} {request : BeginRequest} {role : ActivationRole}
+    {sourceType : String} {begun : Occurrence} (begins : Begins before after request role sourceType begun)
+    (keyed : OccurrencesKeyed before.occurrenceMap) : OccurrencesKeyed after.occurrenceMap := by
+  rw [begins.occurrenceMap]; exact occurrencesKeyed_insert (occurrencesKeyed_filter keyed _) begun
+
+/-- An occurrence after a begin is an old one or the begun one. -/
+theorem Begins.mem_occurrences {before after : State} {request : BeginRequest} {role : ActivationRole}
+    {sourceType : String} {begun : Occurrence} (begins : Begins before after request role sourceType begun) {o : Occurrence}
+    (member : o ∈ after.occurrences) : o ∈ before.occurrences ∨ o = begun := by
+  rw [occurrences_eq, begins.occurrenceMap] at member
+  exact (mem_occurrenceList_insert_sub member).imp_left fun old => (mem_occurrenceList_filter_val.mp old).1
+
+/-- The begun occurrence stands after a begin. -/
+theorem Begins.begun_mem {before after : State} {request : BeginRequest} {role : ActivationRole}
+    {sourceType : String} {begun : Occurrence} (begins : Begins before after request role sourceType begun) :
+    begun ∈ after.occurrences := by
+  rw [occurrences_eq, begins.occurrenceMap]; exact mem_occurrenceList_insert_self
+
+/-- The begun occurrence replaces the record of its identity and the reservation the request names, up to order. -/
+theorem Begins.occurrences {before after : State} {request : BeginRequest} {role : ActivationRole}
+    {sourceType : String} {begun : Occurrence} (begins : Begins before after request role sourceType begun)
+    (keyed : OccurrencesKeyed before.occurrenceMap) :
+    after.occurrences.Perm
+      (before.occurrences.filter (fun o => o.id != begun.id && request.reserved != some o.id) ++ [begun]) := by
+  rw [occurrences_eq, occurrences_eq, begins.occurrenceMap, occurrenceList_eq, occurrenceList_eq]
+  refine (Keyed.values_insert_perm (occurrencesKeyed_filter keyed _) rfl).trans ?_
+  rw [Keyed.values_filter_val, List.filter_filter]
+  refine .of_eq (congrArg (· ++ [begun]) (List.filter_congr fun o _ => ?_))
+  simp only [bne]
+  generalize (o.id == begun.id) = same
+  cases same <;> rfl
 
 /-- The item list stays: the item map does (`itemMap`). -/
 theorem Begins.items {before after : State} {request : BeginRequest} {role : ActivationRole} {sourceType : String}
@@ -383,10 +417,10 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
     fun occurrence member same => by
       obtain ⟨unbegun, free, _⟩ := (admitted occurrence.id (by simp [names, same])).1.2 occurrence member rfl
       exact ⟨unbegun, free⟩
+  have perm := begins.occurrences formed.distinct.occurrencesKeyed
   have kept : ∀ occurrence ∈ after.occurrences, occurrence ≠ begun → occurrence ∈ before.occurrences ∧
       occurrence.id ≠ begun.id ∧ request.reserved ≠ some occurrence.id := fun occurrence member other => by
-    rw [begins.occurrences] at member
-    rcases List.mem_append.mp member with old | new
+    rcases List.mem_append.mp (perm.mem_iff.mp member) with old | new
     · obtain ⟨inside, differs⟩ := List.mem_filter.mp old
       simp only [Bool.and_eq_true, bne_iff_ne, ne_eq] at differs
       exact ⟨inside, differs⟩
@@ -397,15 +431,14 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
     by_cases same : occurrence = begun
     · exact .inl same
     · exact .inr (kept occurrence member same)
-  have begunIn : begun ∈ after.occurrences := by simp [begins.occurrences]
+  have begunIn : begun ∈ after.occurrences := perm.mem_iff.mpr (by simp)
   have startsAfter : starts after = starts before ++ [{ occurrence := key after begun, owner := begun.scope, sourceType }] := by
     simp [starts, begins.transitions, begins.started]
   -- An occurrence `before` held that is not the begun one stands after it.
   have stays : ∀ occurrence ∈ before.occurrences, occurrence.id ≠ begun.id → request.reserved ≠ some occurrence.id →
       occurrence ∈ after.occurrences :=
     fun occurrence member differs unnamed => by
-      rw [begins.occurrences]
-      exact List.mem_append_left _ (List.mem_filter.mpr ⟨member, by simpa [differs] using unnamed⟩)
+      exact perm.mem_iff.mpr (List.mem_append_left _ (List.mem_filter.mpr ⟨member, by simpa [differs] using unnamed⟩))
   have housed : ∀ occurrence ∈ after.occurrences, occurrence.scope ∈ scopeIds after := fun occurrence member => by
     rw [scopeIds, begins.scopes]
     rcases members occurrence member with rfl | ⟨old, _⟩
@@ -441,17 +474,9 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
         · obtain ⟨slot, held⟩ := formed.issued.occurrencePositions occurrence old unit index fresh
           exact ⟨slot, (begins.table formed.issuer) _ _ held⟩⟩
   case distinct =>
-    refine ⟨?_, begins.itemMap.1 ▸ formed.distinct.items, begins.scopeMap ▸ formed.distinct.scopesKeyed,
-      ?_⟩
-    · rw [occurrenceIds, begins.occurrences, List.map_append, List.nodup_append]
-      refine ⟨formed.distinct.occurrences.sublist (List.filter_sublist.map _), by simp, ?_⟩
-      intro id old other new
-      obtain ⟨occurrence, inside, same⟩ := List.mem_map.mp old
-      simp at new
-      subst same new
-      simp at inside
-      exact inside.2.1
-    · rw [funext keys, begins.occurrences, List.map_append, List.nodup_append]
+    refine ⟨begins.occurrencesKeyed formed.distinct.occurrencesKeyed, begins.itemMap.1 ▸ formed.distinct.items,
+      begins.scopeMap ▸ formed.distinct.scopesKeyed, ?_⟩
+    · rw [funext keys, (perm.map _).nodup_iff, List.map_append, List.nodup_append]
       refine ⟨formed.distinct.keys.sublist (List.filter_sublist.map _), by simp, ?_⟩
       intro k old other new
       obtain ⟨occurrence, inside, named⟩ := List.mem_map.mp old

@@ -22,7 +22,9 @@ flows, under a key never issued before and issued after, numbered as an element 
 counters are keyed, joins the occurrences. Nothing else changes. -/
 structure Reserves (before after : State) (element : ElementId) (scope : ScopeOccurrenceId) (reserved : Occurrence) :
     Prop where
-  occurrences : after.occurrences = before.occurrences ++ [reserved]
+  /-- The reservation is inserted under its own key unless one stands there; under a fresh key the list view gains it up
+  to order (`Reserves.occurrences`). -/
+  occurrenceMap : after.occurrenceMap = before.occurrenceMap.insertIfNew reserved.id reserved
   fresh : IssuerFresh before → reserved.scope ∈ standingKeys before → ¬ OccurrenceIssued before reserved.id
   issued : IssuerFresh before → ScopeIssued before reserved.scope → OccurrenceIssued after reserved.id
   occurrenceGrows : IssuerFresh before → OccurrenceGrows before after
@@ -62,6 +64,62 @@ structure Reserves (before after : State) (element : ElementId) (scope : ScopeOc
 theorem Reserves.scopes {before after : State} {element : ElementId} {scope : ScopeOccurrenceId} {reserved : Occurrence} (reserves : Reserves before after element scope reserved) : after.scopes = before.scopes := by
   rw [scopes_eq, scopes_eq, reserves.scopeMap]
 
+theorem Reserves.occurrencesKeyed {before after : State} {element : ElementId} {scope : ScopeOccurrenceId}
+    {reserved : Occurrence} (reserves : Reserves before after element scope reserved)
+    (keyed : OccurrencesKeyed before.occurrenceMap) : OccurrencesKeyed after.occurrenceMap := by
+  rw [reserves.occurrenceMap]; exact Keyed.keyedOn_insertIfNew keyed rfl
+
+/-- An occurrence after a reservation is an old one or the reservation. -/
+theorem Reserves.mem_occurrences {before after : State} {element : ElementId} {scope : ScopeOccurrenceId}
+    {reserved : Occurrence} (reserves : Reserves before after element scope reserved) {o : Occurrence}
+    (member : o ∈ after.occurrences) : o ∈ before.occurrences ∨ o = reserved := by
+  rw [occurrences_eq, reserves.occurrenceMap, occurrenceList_eq] at member
+  rw [occurrences_eq, occurrenceList_eq]
+  exact Keyed.mem_values_insertIfNew_sub member
+
+/-- An old occurrence stays when a reservation is made. -/
+theorem Reserves.mem_of {before after : State} {element : ElementId} {scope : ScopeOccurrenceId}
+    {reserved : Occurrence} (reserves : Reserves before after element scope reserved) {o : Occurrence}
+    (member : o ∈ before.occurrences) : o ∈ after.occurrences := by
+  rw [occurrences_eq, occurrenceList_eq] at member
+  rw [occurrences_eq, reserves.occurrenceMap, occurrenceList_eq]
+  exact Keyed.mem_values_insertIfNew_of member
+
+/-- Under a key no occurrence carries, a reservation is inserted. -/
+theorem Reserves.inserted {before after : State} {element : ElementId} {scope : ScopeOccurrenceId}
+    {reserved : Occurrence} (reserves : Reserves before after element scope reserved)
+    (keyed : OccurrencesKeyed before.occurrenceMap) (fresh : ∀ o ∈ before.occurrences, o.id ≠ reserved.id) :
+    after.occurrenceMap = before.occurrenceMap.insert reserved.id reserved := by
+  rw [reserves.occurrenceMap]
+  refine Keyed.insertIfNew_eq_insert ?_ reserved
+  cases found : before.occurrenceMap[reserved.id]? with
+  | none => rfl
+  | some other =>
+    exact absurd (keyed _ other found) (fresh other (mem_occurrenceList.mpr ⟨_, found⟩))
+
+theorem Reserves.reserved_mem {before after : State} {element : ElementId} {scope : ScopeOccurrenceId}
+    {reserved : Occurrence} (reserves : Reserves before after element scope reserved)
+    (keyed : OccurrencesKeyed before.occurrenceMap) (fresh : ∀ o ∈ before.occurrences, o.id ≠ reserved.id) :
+    reserved ∈ after.occurrences := by
+  rw [occurrences_eq, reserves.inserted keyed fresh]; exact mem_occurrenceList_insert_self
+
+/-- A reservation in a state with no occurrence stands. -/
+theorem Reserves.reserved_mem_of_empty {before after : State} {element : ElementId} {scope : ScopeOccurrenceId}
+    {reserved : Occurrence} (reserves : Reserves before after element scope reserved) (empty : before.occurrenceMap = ∅) :
+    reserved ∈ after.occurrences :=
+  reserves.reserved_mem (by rw [empty]; exact occurrencesKeyed_empty) fun o inside => by
+    rw [occurrences_eq, empty, occurrenceList_empty] at inside; cases inside
+
+/-- A reservation under a key no occurrence carries adds it to the occurrences, up to order. -/
+theorem Reserves.occurrences {before after : State} {element : ElementId} {scope : ScopeOccurrenceId}
+    {reserved : Occurrence} (reserves : Reserves before after element scope reserved)
+    (keyed : OccurrencesKeyed before.occurrenceMap) (fresh : ∀ o ∈ before.occurrences, o.id ≠ reserved.id) :
+    after.occurrences.Perm (before.occurrences ++ [reserved]) := by
+  rw [occurrences_eq, occurrences_eq, reserves.inserted keyed fresh, occurrenceList_eq, occurrenceList_eq]
+  refine (Keyed.values_insert_perm keyed rfl).trans ?_
+  rw [List.filter_eq_self.mpr fun o member => by
+    simpa using fresh o (by rw [occurrences_eq, occurrenceList_eq]; exact member)]
+
 /-- The item list stays: the item map does (`itemMap`). -/
 theorem Reserves.items {before after : State} {element : ElementId} {scope : ScopeOccurrenceId} {reserved : Occurrence}
     (frame : Reserves before after element scope reserved) : itemList after.openItems = itemList before.openItems :=
@@ -89,13 +147,10 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
   have queuedBefore : ∀ request, Queued after request → Queued before request := fun request queued => by
     simpa [Queued, reserves.signals, reserves.tokens] using queued
   have members : ∀ occurrence ∈ after.occurrences, occurrence = reserved ∨ occurrence ∈ before.occurrences :=
-    fun occurrence member => by
-      rw [reserves.occurrences] at member
-      rcases List.mem_append.mp member with old | new
-      · exact .inr old
-      · exact .inl (List.mem_singleton.mp new)
+    fun occurrence member => (reserves.mem_occurrences member).symm
   have above : ∀ occurrence ∈ before.occurrences, occurrence.id ≠ reserved.id := fun occurrence member same =>
     fresh (same ▸ formed.issued.occurrences occurrence member)
+  have perm := reserves.occurrences formed.distinct.occurrencesKeyed above
   have startsAfter : starts after = starts before := by simp [starts, reserves.transitions, reserves.draft]
   have keyFresh : ∀ k, Counted before k → k ≠ key before reserved := fun k counted => by
     rw [keyed]
@@ -130,16 +185,9 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
         · obtain ⟨slot, held⟩ := formed.issued.occurrencePositions occurrence old unit index pending
           exact ⟨slot, (reserves.table formed.issuer) _ _ held⟩⟩
   case distinct =>
-    refine ⟨?_, reserves.itemMap.1 ▸ formed.distinct.items,
+    refine ⟨reserves.occurrencesKeyed formed.distinct.occurrencesKeyed, reserves.itemMap.1 ▸ formed.distinct.items,
       reserves.scopeMap ▸ formed.distinct.scopesKeyed, ?_⟩
-    · rw [occurrenceIds, reserves.occurrences, List.map_append, List.nodup_append]
-      refine ⟨formed.distinct.occurrences, by simp, ?_⟩
-      intro id old other new
-      obtain ⟨occurrence, inside, named⟩ := List.mem_map.mp old
-      simp at new
-      subst named new
-      exact above occurrence inside
-    · rw [funext keys, reserves.occurrences, List.map_append, List.nodup_append]
+    · rw [funext keys, (perm.map _).nodup_iff, List.map_append, List.nodup_append]
       refine ⟨formed.distinct.keys, by simp, ?_⟩
       intro k old other new
       obtain ⟨occurrence, inside, named⟩ := List.mem_map.mp old
@@ -166,13 +214,13 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
         simpa [scopeIds, reserves.scopes] using formed.owned.itemScopes item (reserves.items ▸ member)
       itemOccurrences := fun item member => by
         obtain ⟨occurrence, inside, rest⟩ := formed.owned.itemOccurrences item (reserves.items ▸ member)
-        exact ⟨occurrence, reserves.occurrences ▸ List.mem_append_left _ inside, rest⟩
+        exact ⟨occurrence, perm.mem_iff.mpr (List.mem_append_left _ inside), rest⟩
       attachments := fun item member host attached => by
         obtain ⟨occurrence, inside, rest⟩ := formed.owned.attachments item (reserves.items ▸ member) host attached
-        exact ⟨occurrence, reserves.occurrences ▸ List.mem_append_left _ inside, rest⟩
+        exact ⟨occurrence, perm.mem_iff.mpr (List.mem_append_left _ inside), rest⟩
       scopeOwners := fun entry member owner owned => by
         obtain ⟨occurrence, inside, rest⟩ := formed.owned.scopeOwners entry (reserves.scopes ▸ member) owner owned
-        exact ⟨occurrence, reserves.occurrences ▸ List.mem_append_left _ inside, rest⟩
+        exact ⟨occurrence, perm.mem_iff.mpr (List.mem_append_left _ inside), rest⟩
       variableScopes := by simpa [scopeIds, reserves.variables, reserves.scopes] using formed.owned.variableScopes
       tokenScopes := by simpa [scopeIds, reserves.tokens, reserves.scopes] using formed.owned.tokenScopes }
   case rooted =>
@@ -289,8 +337,9 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
 /-- What `State.startReserved` makes of `before` for an unbegun `occurrence`: it begins where it stands and its start
 is journalled under its key. Nothing else changes. -/
 structure StartsReserved (before after : State) (occurrence : Occurrence) (sourceType : String) : Prop where
-  occurrences : after.occurrences =
-    before.occurrences.map fun other => if other.id = occurrence.id then { occurrence with begun := true } else other
+  /-- The begun record is put under the reservation's key, replacing the reservation where it stands; the list view
+  changes only there, up to order (`StartsReserved.occurrences`). -/
+  occurrenceMap : after.occurrenceMap = before.occurrenceMap.insert occurrence.id { occurrence with begun := true }
   started : after.draft.started =
     before.draft.started ++ [{ occurrence := key after occurrence, owner := occurrence.scope, sourceType }]
   scopeMap : after.scopeMap = before.scopeMap
@@ -317,6 +366,33 @@ structure StartsReserved (before after : State) (occurrence : Occurrence) (sourc
 theorem StartsReserved.scopes {before after : State} {occurrence : Occurrence} {sourceType : String} (starts_ : StartsReserved before after occurrence sourceType) : after.scopes = before.scopes := by
   rw [scopes_eq, scopes_eq, starts_.scopeMap]
 
+theorem StartsReserved.occurrencesKeyed {before after : State} {occurrence : Occurrence} {sourceType : String}
+    (starts_ : StartsReserved before after occurrence sourceType) (keyed : OccurrencesKeyed before.occurrenceMap) :
+    OccurrencesKeyed after.occurrenceMap := by
+  rw [starts_.occurrenceMap]; exact Keyed.keyedOn_insert keyed rfl
+
+/-- An occurrence after a reservation starts is an old one or the begun one. -/
+theorem StartsReserved.mem_occurrences {before after : State} {occurrence : Occurrence} {sourceType : String}
+    (starts_ : StartsReserved before after occurrence sourceType) {o : Occurrence} (member : o ∈ after.occurrences) :
+    o ∈ before.occurrences ∨ o = { occurrence with begun := true } := by
+  rw [occurrences_eq, starts_.occurrenceMap] at member; exact mem_occurrenceList_insert_sub member
+
+/-- The begun occurrence stands after a reservation starts. -/
+theorem StartsReserved.started_mem {before after : State} {occurrence : Occurrence} {sourceType : String}
+    (starts_ : StartsReserved before after occurrence sourceType) : { occurrence with begun := true } ∈ after.occurrences := by
+  rw [occurrences_eq, starts_.occurrenceMap]; exact mem_occurrenceList_insert_self
+
+/-- Starting a reservation replaces the record of its identity by the begun one, up to order. -/
+theorem StartsReserved.occurrences {before after : State} {occurrence : Occurrence} {sourceType : String}
+    (starts_ : StartsReserved before after occurrence sourceType) (keyed : OccurrencesKeyed before.occurrenceMap)
+    (member : occurrence ∈ before.occurrences) :
+    after.occurrences.Perm
+      (before.occurrences.map fun other => if other.id = occurrence.id then { occurrence with begun := true } else other) := by
+  rw [occurrences_eq, mem_occurrenceList_keyed keyed] at member
+  rw [occurrences_eq, occurrences_eq, starts_.occurrenceMap, Keyed.insert_eq_modify member, occurrenceList_eq,
+    occurrenceList_eq]
+  exact Keyed.values_modify_perm keyed _ fun _ _ => rfl
+
 /-- The item list stays: the item map does (`itemMap`). -/
 theorem StartsReserved.items {before after : State} {occurrence : Occurrence} {sourceType : String}
     (frame : StartsReserved before after occurrence sourceType) : itemList after.openItems = itemList before.openItems :=
@@ -337,20 +413,19 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
   have queuedBefore : ∀ request, Queued after request → Queued before request := fun request queued => by
     simpa [Queued, starts_.signals, starts_.tokens] using queued
   -- An occurrence after is the started one or one before with another identity.
+  have perm := starts_.occurrences formed.distinct.occurrencesKeyed member
   have members : ∀ found ∈ after.occurrences, found = { occurrence with begun := true } ∨
       (found ∈ before.occurrences ∧ found.id ≠ occurrence.id) := fun found inside => by
-    rw [starts_.occurrences] at inside
+    replace inside := perm.mem_iff.mp inside
     obtain ⟨old, held, rfl⟩ := List.mem_map.mp inside
     by_cases same : old.id = occurrence.id
     · exact .inl (ite_eq_left same)
     · rw [ite_eq_right same]
       exact .inr ⟨held, same⟩
-  have startedIn : { occurrence with begun := true } ∈ after.occurrences := by
-    rw [starts_.occurrences]
-    exact List.mem_map.mpr ⟨occurrence, member, ite_eq_left rfl⟩
-  have stays : ∀ old ∈ before.occurrences, old.id ≠ occurrence.id → old ∈ after.occurrences := fun old held other => by
-    rw [starts_.occurrences]
-    exact List.mem_map.mpr ⟨old, held, ite_eq_right other⟩
+  have startedIn : { occurrence with begun := true } ∈ after.occurrences :=
+    perm.mem_iff.mpr (List.mem_map.mpr ⟨occurrence, member, ite_eq_left rfl⟩)
+  have stays : ∀ old ∈ before.occurrences, old.id ≠ occurrence.id → old ∈ after.occurrences := fun old held other =>
+    perm.mem_iff.mpr (List.mem_map.mpr ⟨old, held, ite_eq_right other⟩)
   -- The one before with the started identity is the started occurrence.
   have only : ∀ old ∈ before.occurrences, old.id = occurrence.id → old = occurrence := fun old held same =>
     nodup_map_eq formed.distinct.occurrences held member same
@@ -384,12 +459,9 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
         · exact formed.issued.occurrencePositions occurrence member unit index fresh
         · exact formed.issued.occurrencePositions found old unit index fresh⟩
   case distinct =>
-    refine ⟨?_, starts_.itemMap.1 ▸ formed.distinct.items,
+    refine ⟨starts_.occurrencesKeyed formed.distinct.occurrencesKeyed, starts_.itemMap.1 ▸ formed.distinct.items,
       starts_.scopeMap ▸ formed.distinct.scopesKeyed, ?_⟩
-    · rw [occurrenceIds, starts_.occurrences, List.map_map]
-      refine (List.map_congr_left fun old _ => ?_) ▸ formed.distinct.occurrences
-      by_cases same : old.id = occurrence.id <;> simp [same]
-    · rw [funext keys, starts_.occurrences, List.map_map]
+    · rw [funext keys, (perm.map _).nodup_iff, List.map_map]
       refine (List.map_congr_left fun old held => ?_) ▸ formed.distinct.keys
       by_cases same : old.id = occurrence.id
       · simp [only old held same, key]

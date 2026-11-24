@@ -120,10 +120,9 @@ theorem PlacedLane.reserved (formed : WellFormed program s) (lane : PlacedLane p
     (fun o member => ?_) (fun _ member => .inl (reserves.signals ▸ member)) (fun _ member => .inl (reserves.tokens ▸ member))
     (fun _ member => .inl (reserves.slots ▸ member)) (fun _ member => .inl (reserves.slots ▸ member))
     (fun _ member => .inl (reserves.slots ▸ member)) (fun _ member => .inl (reserves.slots ▸ member))
-  rw [reserves.occurrences] at member
-  rcases List.mem_append.mp member with old | new
+  rcases reserves.mem_occurrences member with old | new
   · exact .inl old
-  obtain rfl := List.mem_singleton.mp new
+  subst new
   refine .inr ⟨?_, by rw [reserves.placed]; exact stands, fun _ _ named => ?_, .inr (.inr (reserves.fresh formed.issuer (by rw [reserves.placed]; exact stands)))⟩
   · rw [reserves.kind, reserves.placed]
     exact placed.same reserves.scopes fun _ inside => instances ▸ inside
@@ -402,10 +401,9 @@ theorem PlacedLane.begun (refs : ReferencesPlaced program) (formed : WellFormed 
     (fun _ member => .inl (begins.slots ▸ member)) (fun _ member => .inl (begins.slots ▸ member))
     (fun _ member => .inl (begins.slots ▸ member)) (fun _ member => .inl (begins.slots ▸ member))
   · exact begins.scopeOrdinals
-  · rw [begins.occurrences] at member
-    rcases List.mem_append.mp member with old | new
-    · exact .inl (List.mem_filter.mp old).1
-    · exact .inr (List.mem_singleton.mp new ▸ fits)
+  · rcases begins.mem_occurrences member with old | new
+    · exact .inl old
+    · exact .inr (new ▸ fits)
 
 /-- Starting a reservation's occurrence keeps the lane: its record keeps its identity, element, scope occurrence and
 incoming flow. -/
@@ -422,15 +420,12 @@ theorem PlacedLane.started (formed : WellFormed program s) (lane : PlacedLane pr
       (fun _ member => .inl (starts.signals ▸ member)) (fun _ member => .inl (starts.tokens ▸ member))
       (fun _ member => .inl (starts.slots ▸ member)) (fun _ member => .inl (starts.slots ▸ member))
       (fun _ member => .inl (starts.slots ▸ member)) (fun _ member => .inl (starts.slots ▸ member))
-    rw [starts.occurrences] at inside
-    obtain ⟨other, present, made⟩ := List.mem_map.mp inside
-    split at made
+    rcases starts.mem_occurrences inside with present | made
+    · exact .inl present
     · subst made
       exact .inr ⟨(occurrence_placed lane member).same starts.scopes fun _ inside => instances ▸ inside,
         formed.owned.occurrenceScopes occurrence member, lane.incoming occurrence member,
         .inl ⟨occurrence, member, rfl, rfl, rfl⟩⟩
-    · subst made
-      exact .inl present
 
 end Operations
 
@@ -464,7 +459,8 @@ theorem placedAlongside (program : Program) : Alongside program (Placing program
   clearInside le _ _ _ formed present kept held refs := (held refs).cleared formed present kept
   disarm _ _ _ held refs := by
     rw [Laws.State.disarm_eq]
-    exact (held refs).queue rfl rfl rfl (.refl _) (fun _ member => (List.mem_filter.mp member).1) rfl rfl listKept
+    exact (held refs).queue rfl rfl rfl (.refl _) (fun _ member => (Laws.State.mem_occurrenceList_filter_val.mp member).1)
+      rfl rfl listKept
   setVariable s target name value _ held refs := (held refs).sameBut (Laws.State.setVariable_same s target name value)
   removeVariable s target name _ held refs := (held refs).sameBut (Laws.State.removeVariable_same s target name)
   instanceBegin _ _ formed anchored held refs :=
@@ -583,7 +579,8 @@ theorem placedLane_initial (program : Program) (instanceId : String) (variables 
       ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, fun entry member => by
         simp at member; subst member; simp [Laws.State.scopeIds, Laws.State.scopes_eq]⟩ <;>
       simp [OccurAt, CalledApart, Laws.State.Queued, Laws.State.allSignals, Laws.State.allQueuedTokens,
-        Laws.Step.mem_resumesOf, Laws.State.root_eq, Laws.State.scopes_eq]
+        Laws.Step.mem_resumesOf, Laws.State.root_eq, Laws.State.scopes_eq, Laws.State.occurrences_eq,
+        Laws.State.occurrenceList_empty]
     exact Laws.State.Historic.issued_key (Laws.State.historic_of_standing (by simp [Laws.State.scopes_eq])
       (by simp [Laws.State.scopes_eq]) (by simp [Laws.State.scopes_eq]) (by simp [Laws.State.Layered, Laws.State.scopes_eq]))
       (by simp [Laws.State.scopes_eq])

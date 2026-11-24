@@ -354,12 +354,12 @@ private theorem reopened_occurrences {program : Program} {s : State} (formed : W
     (inside : o ∈ ((s.closeItem item.id).openSubscription kind element scope host passive).1.occurrences)
     (same : o.id = item.id.occurrence) : o ∈ s.occurrences := by
   have reserves := Laws.State.reserve_reserves (s.closeItem item.id) element scope
-  rw [Laws.State.openSubscription_eq, reserves.occurrences] at inside
-  rcases List.mem_append.mp inside with old | fresh
+  rw [Laws.State.openSubscription_eq] at inside
+  rcases reserves.mem_occurrences inside with old | fresh
   · rwa [Laws.State.closeItem_eq] at old
   · obtain ⟨waiting, present, identity, -⟩ := formed.owned.itemOccurrences item member
     have below := formed.issued.occurrences waiting present
-    rw [List.mem_singleton.mp fresh, ← identity] at same
+    rw [fresh, ← identity] at same
     rw [← same] at below
     have issuer : Laws.State.IssuerFresh (s.closeItem item.id) :=
       formed.issuer.same (by rw [Laws.State.closeItem_eq]) (by rw [Laws.State.closeItem_eq])
@@ -375,7 +375,7 @@ private theorem withdrawOccurrence_kept (s : State) (id : OccurrenceId) :
   obtain ⟨items, frame⟩ := Laws.State.withdrawAll_frame
     (((s.closeOwnItems id).disarm id).scopes.filter (·.occurrence == some id)) ((s.closeOwnItems id).disarm id)
   rw [Laws.State.withdrawOccurrence_eq, frame, Laws.State.disarm_eq, Laws.State.closeOwnItems_eq]
-  exact ⟨fun _ inside => (List.mem_filter.mp inside).1, rfl, rfl⟩
+  exact ⟨fun _ inside => (Laws.State.mem_occurrenceList_filter_val.mp inside).1, rfl, rfl⟩
 
 /-- Closing an item keeps every occurrence. -/
 private theorem closed_occurrences {s : State} {id : ItemKey} :
@@ -432,7 +432,7 @@ theorem subscriptionsOps_alongside {program : Program} (side : FrameAlongside pr
       (item_completesFrom holds.1 holds.2 member
         (fun _ inside _ => by
           rw [Laws.State.signal_eq, Laws.State.disarm_eq, Laws.State.closeItem_eq] at inside
-          exact (List.mem_filter.mp inside).1)
+          exact (Laws.State.mem_occurrenceList_filter_val.mp inside).1)
         (by rw [Laws.State.signal_eq, Laws.State.disarm_eq, Laws.State.closeItem_eq])
         (by rw [Laws.State.signal_eq, Laws.State.disarm_eq, Laws.State.closeItem_eq]) named)
       (side.signal (side.disarm _ gateway (Laws.State.closeItem_fired holds.1 member).1

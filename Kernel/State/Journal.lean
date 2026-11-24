@@ -4,8 +4,9 @@ public import Kernel.State.Raise
 
 /-! # The occurrence journal
 
-An occurrence's public key, the facts each micro-step records about the occurrences it began and ended, and the
-transaction-boundary marks an occurrence carries. Part of `Kernel.State`, which re-exports it.
+An occurrence's public key, the facts each micro-step records about the occurrences it began and ended, the
+transaction-boundary marks an occurrence carries and the activation counter its key's number comes from. Part of
+`Kernel.State`, which re-exports it.
 -/
 
 public section
@@ -72,5 +73,13 @@ def marks (program : Program) (key : OccurrenceKey) : Bool × Bool :=
     -- handler (`compensation.handlerMultiInstance`).
     | .element, some loop => (loop.asyncBefore, loop.asyncAfter)
     | .element, none => (envelope.asyncBefore, envelope.asyncAfter)
+
+/-- One activation counter (R8: per process instance, element and role). -/
+structure ActivationCount where
+  processInstance : String
+  element : ElementId
+  role : ActivationRole
+  count : Nat
+  deriving Repr
 
 end Kernel

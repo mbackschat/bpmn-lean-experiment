@@ -303,10 +303,7 @@ theorem Numbered.reserve {program other : Program} {s : State} {element : Elemen
     congrArg (·.multiInstances) reserves.slots, reserves.queues,
     congrArg (·.compensation.runs) reserves.slots, fun body same => ?_, fun run member _ named _ => ?_,
     fun _ => reserves.continued, fun request inQueue named _ _ _ _ _ => ?_⟩
-  · rw [reserves.occurrences] at inside
-    rcases List.mem_append.mp inside with old | new
-    · exact .inl old
-    · exact .inr (List.mem_singleton.mp new)
+  · exact reserves.mem_occurrences inside
   · rw [reserves.continued] at same
     exact Laws.Step.flow_ne_multiInstance body same
   · obtain ⟨loop, looped⟩ := held.2.looped run member
@@ -322,15 +319,10 @@ theorem Numbered.startReserved {program : Program} {s : State} {occurrence : Occ
   · have starts := Laws.State.startReserved_starts s sourceType begun
     refine held.relabel ⟨fun x inside => ?_, starts.scopes, congrArg (·.multiInstances) starts.slots, starts.queues,
       congrArg (·.compensation.runs) starts.slots⟩
-    rw [starts.occurrences] at inside
-    obtain ⟨y, yIn, made⟩ := List.mem_map.mp inside
-    by_cases same : y.id = occurrence.id
-    · simp only [same, ↓reduceIte] at made
-      subst made
+    rcases starts.mem_occurrences inside with old | made
+    · exact ⟨x, old, rfl, rfl, rfl, rfl, rfl, rfl, id⟩
+    · subst made
       exact ⟨occurrence, member, rfl, rfl, rfl, rfl, rfl, rfl, fun none => by simp at none⟩
-    · simp only [same, ↓reduceIte] at made
-      subst made
-      exact ⟨y, yIn, rfl, rfl, rfl, rfl, rfl, rfl, id⟩
   · rw [Laws.State.startReserved_begun s sourceType begun]
     exact held
 
@@ -410,10 +402,7 @@ theorem Numbered.beginOther {program : Program} {s : State} {request : BeginRequ
     congrArg (·.compensation.runs) begins.slots, fun body => begins.continued ▸ other body,
     fun run member active named role' => ?_, fun unbegun => (by rw [begins.isBegun] at unbegun; cases unbegun),
     fun request' inQueue named _ _ _ _ _ => ?_⟩
-  · rw [begins.occurrences] at inside
-    rcases List.mem_append.mp inside with old | new
-    · exact .inl (List.mem_filter.mp old).1
-    · exact .inr (List.mem_singleton.mp new)
+  · exact begins.mem_occurrences inside
   · rcases begins.source with ⟨reserved, source⟩ | ⟨reserved, source⟩ | fresh
     · exact apart reserved source.member source.named run member (begins.scope ▸ active)
         (source.element ▸ named) (source.role ▸ role')
@@ -546,10 +535,7 @@ theorem Numbered.beginInstance {program : Program} {queue s : State} {request : 
     (owns.owned run runS).ownScopes index j request.scope slot slotj
   have occIn : ∀ x ∈ (s.beginOccurrence request role sourceType).1.occurrences, x ∈ s.occurrences ∨
       x = (s.beginOccurrence request role sourceType).2 := fun x inside => by
-    rw [begins.occurrences] at inside
-    rcases List.mem_append.mp inside with old | new
-    · exact .inl (List.mem_filter.mp old).1
-    · exact .inr (List.mem_singleton.mp new)
+    exact begins.mem_occurrences inside
   have runsAfter : (s.beginOccurrence request role sourceType).1.slots.multiInstances = s.slots.multiInstances :=
     congrArg (·.multiInstances) begins.slots
   have queuedAfter : ∀ request', Laws.State.Queued (s.beginOccurrence request role sourceType).1 request' →

@@ -280,4 +280,18 @@ theorem getD_erase_ne {m : Std.ExtTreeMap OccurrenceId Nat compare} {id k : Occu
   · rename_i e; exact absurd (Std.LawfulEqCmp.eq_of_compare e).symm other
   · rfl
 
+/-- What a fold of inserts holds came from its start or from one of its entries. -/
+theorem foldl_from {β : Type} {f : OpenItems → β → OpenItems} {g : β → OpenItem}
+    (step : ∀ (m : OpenItems) (x : β) (k : ItemKey) (v : OpenItem), (f m x)[k]? = some v → m[k]? = some v ∨ v = g x) :
+    ∀ (entries : List β) (acc : OpenItems) (k : ItemKey) (v : OpenItem), (entries.foldl f acc)[k]? = some v →
+      acc[k]? = some v ∨ ∃ x ∈ entries, v = g x
+  | [], _, _, _, held => .inl held
+  | x :: rest, acc, k, v, held => by
+    rcases foldl_from step rest (f acc x) k v held with first | later
+    · rcases step acc x k v first with old | new
+      · exact .inl old
+      · exact .inr ⟨x, List.mem_cons_self, new⟩
+    · obtain ⟨y, member, same⟩ := later
+      exact .inr ⟨y, List.mem_cons_of_mem _ member, same⟩
+
 end Kernel.Laws.State

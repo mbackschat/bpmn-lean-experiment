@@ -163,7 +163,8 @@ abbrev freshKey : ScopeOccurrenceId := State.root.child ⟨"Y"⟩ (.fresh (.ofRo
 def pendingFresh : State :=
   { instanceId := "I", scopeMap := (∅ : ScopeMap).insert State.root { id := State.root, element := none, position := 0 }
     occurrenceOrdinals := (∅ : TreeMap ScopeSlot Nat compare).insert { parent := State.root, element := ⟨"Y"⟩ } 1
-    occurrences := [{ id := ⟨State.root, ⟨"Y"⟩, 0⟩, element := ⟨"Y"⟩, scope := State.root, activation := 1, position := 1 }]
+    occurrenceMap := Laws.State.ofOccurrences
+      [{ id := ⟨State.root, ⟨"Y"⟩, 0⟩, element := ⟨"Y"⟩, scope := State.root, activation := 1, position := 1 }]
     batchSignals := [.occur ⟨"T"⟩ freshKey .outgoing [] .outward]
     slots := { instances := [{ root := State.root }] } }
 
@@ -171,7 +172,7 @@ def pendingFresh : State :=
 theorem pendingFresh_anchored (inv : State → Prop) :
     Laws.Flow.Anchored inv (topCalled program definition) pendingFresh ⟨"Y"⟩ State.root :=
   Laws.Flow.Anchored.occurrence (occurrence := { id := ⟨State.root, ⟨"Y"⟩, 0⟩, element := ⟨"Y"⟩, scope := State.root, activation := 1, position := 1 })
-    (by simp [pendingFresh])
+    (by simp [pendingFresh, Laws.State.occurrences_eq])
 
 /-- The scope occurrence `pendingFresh` enters for `Y`. -/
 def freshEntry : ScopeOccurrence :=
@@ -324,7 +325,7 @@ theorem unstood_reserve_rejected :
         leftTaken ∧
       ¬ PlacedLane (topCalled program definition) (leftTaken.reserve ⟨"T"⟩ leftKey).1 := by
   have lane : PlacedLane (topCalled program definition) leftReservation :=
-    rootOnly_lane program definition Laws.State.scopeList_single rfl rfl rfl rfl rfl
+    rootOnly_lane program definition Laws.State.scopeList_single rfl Laws.State.occurrenceList_empty rfl rfl rfl
       (fun signal member => ⟨_, _, by simpa [Laws.State.allSignals, leftReservation] using member, by simp [Laws.State.root_eq, Laws.State.child_eq],
         leftKey_issued Laws.State.scopeList_single rfl⟩)
       (by simp [leftReservation])
@@ -339,7 +340,7 @@ theorem unstood_reserve_rejected :
         Laws.State.calledRoot_eq, reserves.scopes]
       simp [leftTaken, leftReservation, Laws.State.scopeList_single, Laws.State.root_eq, Laws.State.child_eq]
     exact rootOnly_misplaced program definition
-      (reserves.placed ▸ reserves.kind ▸ after.placed.occurrences _ (by rw [reserves.occurrences]; simp))
+      (reserves.placed ▸ reserves.kind ▸ after.placed.occurrences _ (reserves.reserved_mem_of_empty rfl))
       (reserves.placed ▸ root) (by rw [reserves.slots]; simp [leftTaken, leftReservation]) (topCalled_placed program definition)
 
 /-- A Multi-Instance run of `T`'s boundary held in `leftKey`. -/
@@ -359,7 +360,7 @@ theorem unstood_subscription_rejected :
       Laws.Flow.Anchored (PlacedLane (topCalled program definition)) (topCalled program definition) leftRun sharedX.id leftKey ∧
       ¬ PlacedLane (topCalled program definition) (leftRun.reserve sharedX.id leftKey).1 := by
   have lane : PlacedLane (topCalled program definition) leftRun :=
-    rootOnly_lane program definition Laws.State.scopeList_single rfl rfl rfl rfl rfl (by simp [Laws.State.allSignals, leftRun])
+    rootOnly_lane program definition Laws.State.scopeList_single rfl Laws.State.occurrenceList_empty rfl rfl rfl (by simp [Laws.State.allSignals, leftRun])
       (fun run member => by
         simp only [leftRun, List.mem_singleton] at member
         exact member ▸ ⟨by simp [leftRunRecord, Laws.State.root_eq, Laws.State.child_eq], leftKey_issued Laws.State.scopeList_single rfl⟩)
@@ -374,7 +375,7 @@ theorem unstood_subscription_rejected :
         Laws.State.calledRoot_eq, reserves.scopes]
       simp [leftRun, Laws.State.scopeList_single, Laws.State.root_eq, Laws.State.child_eq]
     exact rootOnly_misplaced program definition
-      (reserves.placed ▸ reserves.kind ▸ after.placed.occurrences _ (by rw [reserves.occurrences]; simp))
+      (reserves.placed ▸ reserves.kind ▸ after.placed.occurrences _ (reserves.reserved_mem_of_empty rfl))
       (reserves.placed ▸ root) (by rw [reserves.slots]; simp [leftRun]) (topCalled_boundary program definition)
 
 /-- `E`, which `topCalled` does not declare, runs the root process. -/

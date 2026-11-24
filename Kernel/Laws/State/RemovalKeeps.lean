@@ -76,6 +76,7 @@ theorem leaveScope_left {s : State} (formed : WellFormed program s) {scope : Sco
   refine {
       scopes := scopes, occurrences := fun occurrence => ?_, items := fun item => ?_, tokens := fun token => ?_,
       variables := fun x entries => ?_, scopesSub := fewer,
+      occurrencesSub := by rw [shape]; exact cleared.occurrencesSub,
       occurrencesSublist := by rw [shape]; exact cleared.occurrencesSublist,
       openItemsSub := by rw [shape]; exact cleared.openItemsSub, ordinals := by rw [shape]; exact cleared.ordinals,
       tokensSublist := by rw [shape]; exact cleared.tokensSublist,
@@ -154,13 +155,13 @@ theorem withoutRecord_wellFormed {s : State} (formed : WellFormed program s) {id
     (free : ∀ item ∈ itemList s.openItems, item.id.occurrence ≠ id ∧ item.attachedTo ≠ some id)
     (unowned : ∀ entry ∈ s.scopes, entry.occurrence ≠ some id) : WellFormed program (withoutRecord s id) := by
   have kept : ∀ occurrence ∈ s.occurrences, occurrence.id ≠ id → occurrence ∈ (withoutRecord s id).occurrences :=
-    fun occurrence member other => List.mem_filter.mpr ⟨member, by simpa using other⟩
+    fun occurrence member other => mem_occurrenceList_filter_val.mpr ⟨member, by simpa using other⟩
   have ordinals : ∀ occurrence ∈ (withoutRecord s id).occurrences,
       (withoutRecord s id).itemOrdinals.getD occurrence.id 0 = s.itemOrdinals.getD occurrence.id 0 :=
-    fun occurrence member => getD_erase_ne (by simpa using (List.mem_filter.mp member).2)
+    fun occurrence member => getD_erase_ne (by simpa using (mem_occurrenceList_filter_val.mp member).2)
   refine Prunes.wellFormed formed {
-      scopeMap := rfl, scopeOrdinals := rfl, instances := instanceOf_congr rfl rfl, occurrences := List.filter_sublist,
-      items := ItemsSub.refl _, ordinals := ordinals, tokens := rfl, signals := rfl, variables := rfl,
+      scopeMap := rfl, scopeOrdinals := rfl, instances := instanceOf_congr rfl rfl,
+      occurrencesSub := OccurrencesSub.filter _ _, occurrences := occurrenceList_filter_val_sublist _ _, items := ItemsSub.refl _, ordinals := ordinals, tokens := rfl, signals := rfl, variables := rfl,
       activations := rfl, occurrenceGrows := .refl _, journal := rfl, transitions := rfl, started := rfl, status := rfl, failure := rfl,
       slots := rfl, issued := rfl, issuing := rfl, issueNext := rfl, waited := fun item member occurrence inside link => ?_,
       owners := fun entry member occurrence inside owned => ?_ }
@@ -253,12 +254,12 @@ reservation hosts no item and owns no scope occurrence, so what stays refers onl
 theorem disarm_wellFormed {s : State} (formed : WellFormed program s) (host : OccurrenceId) : WellFormed program (s.disarm host) := by
   rw [disarm_eq]
   refine Prunes.wellFormed formed {
-      scopeMap := rfl, scopeOrdinals := rfl, instances := instanceOf_congr rfl rfl, occurrences := List.filter_sublist,
-      items := ItemsSub.filter _ _, ordinals := fun occurrence member => getD_filter_keep fun _ => ?_, tokens := rfl,
+      scopeMap := rfl, scopeOrdinals := rfl, instances := instanceOf_congr rfl rfl,
+      occurrencesSub := OccurrencesSub.filter _ _, occurrences := occurrenceList_filter_val_sublist _ _, items := ItemsSub.filter _ _, ordinals := fun occurrence member => getD_filter_keep fun _ => ?_, tokens := rfl,
       signals := rfl, variables := rfl, activations := rfl, occurrenceGrows := .refl _, journal := rfl, transitions := rfl, started := rfl,
       status := rfl, failure := rfl, slots := rfl, issued := rfl, issuing := rfl, issueNext := rfl, waited := fun item member occurrence inside link => ?_,
       owners := fun entry _ occurrence inside owned => ?_ }
-  · obtain ⟨present, kept⟩ := List.mem_filter.mp member
+  · obtain ⟨present, kept⟩ := mem_occurrenceList_filter_val.mp member
     simp only [Bool.not_eq_eq_eq_not, Bool.not_true, List.any_eq_false, Bool.and_eq_true, beq_iff_eq]
     rintro other held ⟨⟨same, unbegun⟩, attached⟩
     rw [nodup_map_eq formed.distinct.occurrences held present same] at unbegun attached
@@ -268,7 +269,7 @@ theorem disarm_wellFormed {s : State} (formed : WellFormed program s) (host : Oc
     exact kept item inside hung named
   · obtain ⟨old, unattached⟩ := mem_itemList_filter_val.mp (member)
     replace old := old
-    refine List.mem_filter.mpr ⟨inside, ?_⟩
+    refine mem_occurrenceList_filter_val.mpr ⟨inside, ?_⟩
     cases begunFlag : occurrence.begun
     · rcases link with waits | hangs
       · rw [Bool.false_or, Bool.not_eq_true', List.any_eq_false]
@@ -286,7 +287,7 @@ theorem disarm_wellFormed {s : State} (formed : WellFormed program s) (host : Oc
     · simp
   · obtain ⟨found, held, named, begunFlag⟩ := formed.owned.scopeOwners entry (by simpa using ‹entry ∈ _›) _ owned
     rw [nodup_map_eq formed.distinct.occurrences held inside named] at begunFlag
-    exact List.mem_filter.mpr ⟨inside, by simp [begunFlag]⟩
+    exact mem_occurrenceList_filter_val.mpr ⟨inside, by simp [begunFlag]⟩
 
 /-- Withdrawing the items inside scope occurrences keeps a state well-formed and its occurrences. -/
 theorem withdrawAll : ∀ (scopes : List ScopeOccurrence) (t : State), WellFormed program t →
@@ -299,7 +300,7 @@ theorem withdrawAll : ∀ (scopes : List ScopeOccurrence) (t : State), WellForme
     have step : WellFormed program (t.withdrawInside first.id) := by
       rw [withdrawInside_eq]
       exact formed.narrow {
-          scopeMap := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
+          scopeMap := rfl, scopeOrdinals := rfl, occurrenceMap := rfl, activations := rfl, occurrenceOrdinals := rfl,
           instances := instanceOf_congr rfl rfl, recorded := id, items := .filter _, tokens := .refl _,
           signals := .refl _, starts := fun _ => id, slots := .same rfl, issued := rfl, issuing := rfl, issueNext := rfl } rfl formed.startedOnce
     obtain ⟨kept, fewer, same⟩ := withdrawAll rest _ step
@@ -312,7 +313,7 @@ theorem withdrawAll : ∀ (scopes : List ScopeOccurrence) (t : State), WellForme
 theorem draftEnds_wellFormed {s : State} (formed : WellFormed program s) (ended : List (OccurrenceKey × Terminal))
     (cancelled : List Occurrence) : WellFormed program { s with draft := { s.draft with ended, cancelled } } :=
   formed.narrow {
-      scopeMap := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl, instances := instanceOf_congr rfl rfl,
+      scopeMap := rfl, scopeOrdinals := rfl, occurrenceMap := rfl, activations := rfl, occurrenceOrdinals := rfl, instances := instanceOf_congr rfl rfl,
       recorded := id, items := .refl _, tokens := .refl _, signals := .refl _, starts := fun _ => id,
       slots := .same rfl, issued := rfl, issuing := rfl, issueNext := rfl }
     rfl formed.startedOnce
@@ -333,7 +334,7 @@ theorem cancel_wellFormed {s : State} (formed : WellFormed program s) (id : Occu
     rw [← withdrawOccurrence_eq] at withdrawn fewer same
     have stays : occurrence ∈ (s.withdrawOccurrence occurrence.id).occurrences := by
       rw [same, disarm_eq]
-      refine List.mem_filter.mpr ⟨by rw [closeOwnItems_eq]; exact member, ?_⟩
+      refine mem_occurrenceList_filter_val.mpr ⟨by rw [closeOwnItems_eq]; exact member, ?_⟩
       cases begunFlag : occurrence.begun
       · rw [Bool.false_or, Bool.not_eq_true', List.any_eq_false]
         intro reserving held _

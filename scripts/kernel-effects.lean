@@ -71,7 +71,7 @@ def pipelineHooks : List Name :=
 /-- The `State` fields whose writes are ruled, and the modules that may write them through a structure update. -/
 def fieldWriters : List (Name × List Name) :=
   let lifecycle := [`Kernel.State, `Kernel.Step]
-  [(`batchTokens, lifecycle), (`occurrences, lifecycle), (`activations, lifecycle), (`variables, [`Kernel.State]),
+  [(`batchTokens, lifecycle), (`occurrenceMap, lifecycle), (`activations, lifecycle), (`variables, [`Kernel.State]),
    (`writes, lifecycle), (`draft, [`Kernel.State, `Kernel.Step, `Kernel.Hooks])]
 
 /-- Maximum match sites per guarded type across the kernel, codecs excluded (guard 18). Values measured 2026-11-08 on
@@ -487,7 +487,7 @@ def KeyMap.toList {α β : Type} (map : KeyMap α β) : List (α × β) := map.e
 def KeyMap.size {α β : Type} (map : KeyMap α β) : Nat := map.entries.length
 structure State where
   batchTokens : List Nat := []
-  occurrences : List Nat := []
+  occurrenceMap : List Nat := []
   activations : List Nat := []
   variables : List Nat := []
   writes : List Nat := []
@@ -508,10 +508,10 @@ namespace State
 def emit (state : State) : State := { state with batchTokens := 1 :: state.batchTokens }
 def deferBegins (state : State) : State := { state with batchTokens := 2 :: state.batchTokens }
 def setVariable (state : State) : State := { state with variables := 1 :: state.variables, writes := [1] }
-def beginOccurrence (state : State) : State := { state with occurrences := 1 :: state.occurrences }
+def beginOccurrence (state : State) : State := { state with occurrenceMap := 1 :: state.occurrenceMap }
 def startReserved (state : State) : State := beginOccurrence state
 def reserve (state : State) : State := beginOccurrence state
-def removeOccurrence (state : State) : State := { state with occurrences := [] }
+def removeOccurrence (state : State) : State := { state with occurrenceMap := [] }
 def cancelOccurrence (state : State) : State := removeOccurrence state
 def activate (state : State) : State := { state with activations := 1 :: state.activations }
 end State
@@ -564,7 +564,7 @@ namespace IL.Codec
 def codecOnly (used : Used) : Nat := used.unread
 end IL.Codec
 namespace Laws.State
-def lawWrite (state : State) : State := { state with batchTokens := [], occurrences := [] }
+def lawWrite (state : State) : State := { state with batchTokens := [], occurrenceMap := [] }
 def lawRead (used : Used) : Nat := used.unread
 def lawLifecycle (state : State) : State := state.emit.beginOccurrence
 end Laws.State

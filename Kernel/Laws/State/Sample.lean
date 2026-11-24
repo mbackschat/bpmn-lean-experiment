@@ -18,7 +18,7 @@ namespace Kernel.Laws.State
 open Kernel
 
 /- The sample queues nothing under a unit key, so its queue views are its batches. -/
-attribute [local simp] allSignals allQueuedTokens scopes_eq
+attribute [local simp] allSignals allQueuedTokens scopes_eq occurrences_eq
 
 /-- The sample's scope occurrences read the instance `p`. -/
 private theorem sample_instance (kind : OpenKind) :
@@ -38,7 +38,7 @@ theorem sample_wellFormed (kind : OpenKind) {program : Program}
     (unstarted : ∀ item ∈ itemList (sample kind).openItems, ((program.element? item.element).bind (·.start?)).isSome = false) :
     WellFormed program (sample kind) where
   issued := ⟨fun occurrence member => by
-      simp only [sample, List.mem_cons, List.not_mem_nil, or_false] at member
+      simp only [sample, occurrences_eq, mem_sampleOccurrences] at member
       rcases member with rfl | rfl | rfl <;>
         refine ⟨(sample_historic kind).issued_key
           (by simp [sample, rootScope, childScope, subProcess, innerTask, outerTask]),
@@ -53,9 +53,9 @@ theorem sample_wellFormed (kind : OpenKind) {program : Program}
     fun _ member => (sample_historic kind).issued member,
     by simp [sample, rootScope, childScope],
     by simp [sample, subProcess, innerTask, outerTask]⟩
-  distinct := ⟨by simp [occurrenceIds, sample, subProcess, innerTask, outerTask], keyedBy_ofItems _,
+  distinct := ⟨occurrencesKeyed_ofOccurrences _, keyedBy_ofItems _,
     scopesKeyed_ofScopes _,
-    by simp [key, sample, subProcess, innerTask, outerTask]⟩
+    (sampleOccurrences_perm.map _).nodup_iff.mpr (by simp [key, sample, subProcess, innerTask, outerTask])⟩
   startedOnce := by simp [StartedOnce, starts, sample]
   activations := ⟨by simp [sample], by simp [sample]⟩
   reservations := by simp [ReservationsUnstarted, sample, subProcess, innerTask, outerTask]
@@ -81,11 +81,11 @@ theorem sample_wellFormed (kind : OpenKind) {program : Program}
   occurrencesCounted := by
     obtain ⟨root, sub⟩ := sample_instance kind
     intro occurrence member
-    simp only [sample, List.mem_cons, List.not_mem_nil, or_false] at member
+    simp only [sample, occurrences_eq, mem_sampleOccurrences] at member
     rcases member with rfl | rfl | rfl <;> simp only [Counted, key, subProcess, innerTask, outerTask, root, sub] <;>
       simp [sample]
   ownedBelow := by
-    simp only [OwnedBelow, sample, scopes_eq, mem_sampleScopes, List.mem_cons, List.not_mem_nil, or_false]
+    simp only [OwnedBelow, sample, scopes_eq, mem_sampleScopes, occurrences_eq, mem_sampleOccurrences]
     rintro scope (rfl | rfl) occurrence (rfl | rfl | rfl) owner <;>
       simp_all [rootScope, childScope, subProcess, innerTask, outerTask, processRoot, subScope]
   claimed := ⟨by simp [sample, innerItem, outerItem], by simp [Queued, sample], by simp [Precedes, sample],
@@ -96,10 +96,10 @@ theorem sample_wellFormed (kind : OpenKind) {program : Program}
   attachedReserved := by simp [AttachedReserved, sample, innerItem, outerItem]
   typed := fun item member started => by simp [unstarted item member] at started
   worked := by
-    simp only [Worked, sample, List.mem_cons, List.not_mem_nil, or_false]
+    simp only [Worked, sample, occurrences_eq, mem_sampleOccurrences]
     rintro item _ _ occurrence (rfl | rfl | rfl) _ <;> rfl
   roles := by
-    simp only [EventRoles, sample, List.mem_cons, List.not_mem_nil, or_false]
+    simp only [EventRoles, sample, occurrences_eq, mem_sampleOccurrences]
     rintro occurrence (rfl | rfl | rfl) _ <;> rfl
   raises := by simp [RaisesSound, sample]
   bodyRoles := by simp [BodyRoles, sample, subProcess, innerTask, outerTask]
@@ -147,7 +147,7 @@ theorem start_item_typed (kind : OpenKind) {program : Program}
   rcases member with rfl | rfl
   · simp [innerItem, inner] at started
   · refine ⟨fun occurrence present named => ?_, fun other inside same => ?_, by simp [armedState, sample], waits⟩
-    · simp only [armedState, List.mem_cons, List.not_mem_nil, or_false] at present
+    · simp only [armedState, occurrences_eq, mem_armedOccurrences] at present
       rcases present with rfl | rfl | rfl | rfl <;> simp_all [subProcess, innerTask, outerTask, reservation, startItem]
     · simp only [mem_ofItems (show ([innerItem kind, startItem kind].map (·.id)).Nodup by
         simp [innerItem, startItem]), List.mem_cons, List.not_mem_nil, or_false] at inside
@@ -201,7 +201,7 @@ theorem working_reservation_rejected (kind : OpenKind) (work : kind.view.effect.
 `EventRoles`: a raise names the thrower by its element's counter. -/
 theorem body_event_rejected (kind : OpenKind) {program : Program}
     (event : ((program.element? ⟨"Outer"⟩).bind (·.event?)).isSome = true) :
-    ¬ EventRoles program { sample kind with occurrences := [{ outerTask with role := .multiInstanceBody }] } :=
+    ¬ EventRoles program { sample kind with occurrenceMap := ofOccurrences [{ outerTask with role := .multiInstanceBody }] } :=
   fun roles => by
     have := roles { outerTask with role := .multiInstanceBody } (by simp) (by simpa [outerTask] using event)
     simp at this
@@ -210,7 +210,7 @@ theorem body_event_rejected (kind : OpenKind) {program : Program}
 `BodyRoles`: `Step.dispatch` would hand it to `Outer`'s own hook as an instance of its element. -/
 theorem envelopeless_body_rejected (kind : OpenKind) {program : Program}
     (single : (((program.element? ⟨"Outer"⟩).bind (·.envelope?)).bind (·.multiInstance)).isSome = false) :
-    ¬ BodyRoles program { sample kind with occurrences := [{ outerTask with role := .multiInstanceBody }] } :=
+    ¬ BodyRoles program { sample kind with occurrenceMap := ofOccurrences [{ outerTask with role := .multiInstanceBody }] } :=
   fun bodies => by
     have := bodies { outerTask with role := .multiInstanceBody } (by simp) rfl
     simp [outerTask, single] at this
@@ -222,7 +222,7 @@ theorem thrower_raisable (kind : OpenKind) {program : Program} :
   refine ⟨(sample_historic kind).issued_key (by simp [sample, rootScope]),
     ⟨(sample_historic kind).issued_key (by simp [sample, rootScope]), .committed rfl (by simp [processRoot]) fun _ => by
       simp [occurrenceCount, sample, sampleCounters, Std.ExtTreeMap.getD_insert]⟩, ?_⟩
-  simp only [sample, List.mem_cons, List.not_mem_nil, or_false]
+  simp only [sample, occurrences_eq, mem_sampleOccurrences]
   rintro occurrence (rfl | rfl | rfl) <;> simp [subProcess, innerTask, outerTask]
 
 /-- Under a program that declares `Timer` an Event, a raise whose origin names the reservation `timerKey` breaks `Raisable`:
@@ -242,7 +242,7 @@ theorem attached_reserved (kind : OpenKind) :
   intro item member _ occurrence present named
   simp only [mem_ofItems_singleton] at member
   subst member
-  simp only [armedState, List.mem_cons, List.not_mem_nil, or_false] at present
+  simp only [armedState, occurrences_eq, mem_armedOccurrences] at present
   rcases present with rfl | rfl | rfl | rfl <;> simp_all [subProcess, innerTask, outerTask, reservation, startItem]
 
 theorem attached_begun_rejected (kind : OpenKind) :
@@ -259,7 +259,7 @@ theorem inner_placed (kind : OpenKind) :
   intro id named occurrence member same
   simp only [Option.toList_some, List.mem_singleton] at named
   subst named
-  simp only [armedState, List.mem_cons, List.not_mem_nil, or_false] at member
+  simp only [armedState, occurrences_eq, mem_armedOccurrences] at member
   rcases member with rfl | rfl | rfl | rfl <;> simp_all [subProcess, innerTask, outerTask, reservation]
 
 theorem misplaced_inner_rejected (kind : OpenKind) :

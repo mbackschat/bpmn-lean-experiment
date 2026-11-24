@@ -137,28 +137,13 @@ structure Draft where
   ready : List OccurrenceKey := []
   deriving Repr
 
-/-- One activation counter (R8: per process instance, element and role). -/
-structure ActivationCount where
-  processInstance : String
-  element : ElementId
-  role : ActivationRole
-  count : Nat
-  deriving Repr
-
-/-- A Signal thrown to the population, which the host publishes after the input commits (PC-SIGNAL-01, PC-SIGNAL-04). -/
-structure BroadcastIntent where
-  address : SignalAddress
-  variables : List (String × Value) := []
-  businessKey : Option String := none
-  origin : OccurrenceRef
-  deriving Repr
-
 structure State where
   instanceId : String
   status : InstanceStatus := .running
   /-- The standing scope occurrences by key; `State.scopes` is their list view. -/
   scopeMap : ScopeMap := ∅
-  occurrences : List Occurrence := []
+  /-- The issued occurrences by key; `State.occurrences` is their list view. -/
+  occurrenceMap : OccurrenceMap := ∅
   /-- The running micro-step's batch: the tokens it queued, in the order it queued them; `Step.conclude` moves them into
   `queuedTokens` under the micro-step's unit key (`queueBatch`), so this is empty between micro-steps (DC4). Named for
   the batch, so no read can take it for the closure's queue, which `queuedTokens` holds (`allTokens` reads both). -/
@@ -250,6 +235,10 @@ namespace State
 /-- The standing scope occurrences in key order (`scopeList`): a reader looks one up or filters them, and orders them
 only by position (DC25). -/
 abbrev scopes (state : State) : List ScopeOccurrence := scopeList state.scopeMap
+
+/-- The issued occurrences in key order (`occurrenceList`): a reader looks one up or filters them; only a clearing's
+cancellation order reads their order (`State.clearInside`). -/
+abbrev occurrences (state : State) : List Occurrence := occurrenceList state.occurrenceMap
 
 def root : ScopeOccurrenceId := .ofSegments []
 
@@ -367,12 +356,13 @@ def activate (state : State) (processInstance : String) (element : ElementId) (r
   let count := ((state.activations.find? key).map (·.count)).getD 0 + 1
   ({ state with activations := { processInstance, element, role, count } :: state.activations.filter (!key ·) }, count)
 
-/-- A reservation for `element` in `scope`: issued and numbered now, begun only when its trigger arrives. -/
+/-- A reservation for `element` in `scope`: issued and numbered now, begun only when its trigger arrives. Its key is
+fresh, so it joins the occurrences without displacing one (`insertIfNew`, so that no state loses a record to it). -/
 def reserve (state : State) (element : ElementId) (scope : ScopeOccurrenceId) : State × Occurrence :=
   let (state, activation) := state.activate (state.instanceOf scope) element .element
   let (state, id) := state.issueOccurrence scope element
   let occurrence : Occurrence := { id, element, scope, activation, position := id.ordinal, begun := false }
-  ({ state with occurrences := state.occurrences ++ [occurrence] }, occurrence)
+  ({ state with occurrenceMap := state.occurrenceMap.insertIfNew occurrence.id occurrence }, occurrence)
 
 def occurrence? (state : State) (id : OccurrenceId) : Option Occurrence :=
   state.occurrences.find? (·.id == id)
@@ -406,7 +396,7 @@ def beginOccurrence (state : State) (request : BeginRequest) (role : ActivationR
         -- Sub-Process start, reserved in the parent) takes the running unit's next issue there, keeping its element,
         -- activation and role; its old record and item counter go, as `State.removeOccurrence` drops them.
         let (state, id) := { state with
-            occurrences := state.occurrences.filter (·.id != reserved.id)
+            occurrenceMap := state.occurrenceMap.filter fun _ other => other.id != reserved.id
             itemOrdinals := state.itemOrdinals.erase reserved.id }.issueOccurrence request.scope reserved.element
         (state, { reserved with id })
     | none =>
@@ -416,16 +406,14 @@ def beginOccurrence (state : State) (request : BeginRequest) (role : ActivationR
         Occurrence))
   let begun : Occurrence := { occurrence with
     scope := request.scope, continuation := request.continuation, incoming := request.incoming, begun := true }
-  let others := state.occurrences.filter (·.id != begun.id)
-  (recordStart { state with occurrences := others ++ [begun] } begun sourceType, begun)
+  (recordStart { state with occurrenceMap := state.occurrenceMap.insert begun.id begun } begun sourceType, begun)
 
 /-- Start a reservation's occurrence where it stands: the journal fact only. -/
 def startReserved (state : State) (occurrence : Occurrence) (sourceType : String) : State × Occurrence :=
   if occurrence.begun then (state, occurrence)
   else
     let begun : Occurrence := { occurrence with begun := true }
-    (recordStart { state with occurrences := state.occurrences.map fun other =>
-      if other.id == begun.id then begun else other } begun sourceType, begun)
+    (recordStart { state with occurrenceMap := state.occurrenceMap.insert begun.id begun } begun sourceType, begun)
 
 /-- A fresh key for an item of `occurrence` in `role`: the running unit's next issue, which the commit renames to the
 occurrence's next item ordinal (DC12). -/

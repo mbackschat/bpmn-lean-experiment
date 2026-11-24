@@ -100,8 +100,8 @@ theorem leaveScope_occurrences (s : State) (scope : ScopeOccurrenceId) :
     (s.leaveScope le scope).occurrences.Sublist s.occurrences := by
   rw [(leaveScope_eq s scope).1]
   obtain ⟨_, made⟩ := clearInside_eq s scope []
-  rw [made]
-  exact List.filter_sublist
+  rw [made, occurrences_eq]
+  exact occurrenceList_filter_val_sublist _ _
 
 theorem leaveScope_signals (s : State) (scope : ScopeOccurrenceId) : (s.leaveScope le scope).batchSignals = s.batchSignals := by
   rw [(leaveScope_eq s scope).1]

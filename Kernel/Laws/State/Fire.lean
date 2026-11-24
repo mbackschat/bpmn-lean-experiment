@@ -37,7 +37,7 @@ theorem closeItem_fired {s : State} (formed : WellFormed program s) {item : Open
     WellFormed program (s.closeItem item.id) ∧ Fired program (s.closeItem item.id) item := by
   rw [closeItem_eq]
   refine ⟨formed.narrow {
-      scopeMap := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
+      scopeMap := rfl, scopeOrdinals := rfl, occurrenceMap := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := fun _ => by apply instanceOf_congr <;> rfl, recorded := id, items := .erase _, tokens := .refl _,
       signals := .refl _, starts := fun _ => id, slots := .same rfl, issued := rfl, issuing := rfl, issueNext := rfl } rfl formed.startedOnce, ?_⟩
   obtain ⟨waited, present, named, ⟨_, placed⟩⟩ := formed.owned.itemOccurrences item member
@@ -156,14 +156,14 @@ theorem withdrawOccurrence_fired {s : State} (formed : WellFormed program s) {it
     rw [disarm_eq, closeOwnItems_eq] at this
     exact (mem_itemList_filter_val.mp (mem_itemList_filter_val.mp (this)).1).1
   · rw [same, disarm_eq, closeOwnItems_eq] at inside
-    exact (List.mem_filter.mp inside).1
+    exact (mem_occurrenceList_filter_val.mp inside).1
 
 /-- Withdrawing the items inside a scope occurrence keeps a state well-formed and what a fired item leaves. -/
 theorem withdrawInside_fired {s : State} (formed : WellFormed program s) {item : OpenItem} (fired : Fired program s item)
     (scope : ScopeOccurrenceId) : WellFormed program (s.withdrawInside scope) ∧ Fired program (s.withdrawInside scope) item := by
   rw [withdrawInside_eq]
   exact ⟨formed.narrow {
-      scopeMap := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
+      scopeMap := rfl, scopeOrdinals := rfl, occurrenceMap := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := instanceOf_congr rfl rfl,
       recorded := id, items := .filter _, tokens := .refl _, signals := .refl _, starts := fun _ => id,
       slots := .same rfl, issued := rfl, issuing := rfl, issueNext := rfl } rfl formed.startedOnce,
@@ -174,7 +174,7 @@ theorem disarm_fired {s : State} {item : OpenItem} (fired : Fired program s item
     Fired program (s.disarm host) item := by
   rw [disarm_eq]
   exact fired.shrink rfl rfl rfl rfl (.refl _) rfl (fun _ inside => (mem_itemList_filter_val.mp (inside)).1)
-    fun _ inside => (List.mem_filter.mp inside).1
+    fun _ inside => (mem_occurrenceList_filter_val.mp inside).1
 
 /-- Queuing a signal that begins nothing, completes no item's occurrence and compensates nothing keeps what a fired
 item leaves. Which signal it is, `Kernel.Proofs.Step` tells. -/
@@ -230,10 +230,9 @@ theorem openSubscription_fired {s : State} (formed : WellFormed program s) {item
     (fun other inside => ?_) (fun _ queued => queued.shrink (fun _ member => reserves.signals ▸ member) (fun _ member => reserves.tokens ▸ member))
     (fun _ _ _ queued => reserves.signals ▸ queued) (.same reserves.slots)
     (fun _ _ _ _ _ _ queued => reserves.signals ▸ queued) fun _ _ queued => reserves.signals ▸ queued
-  · rw [reserves.occurrences] at inside
-    rcases List.mem_append.mp inside with old | new
+  · rcases reserves.mem_occurrences inside with old | new
     · exact .inl old
-    · rw [List.mem_singleton.mp new]
+    · rw [new]
       exact .inr fresh
   · have keyedT : KeyedBy t.openItems := by rw [reserves.itemMap.1]; exact formed.distinct.items
     rcases (mem_itemList_insert keyedT (item := other) (new :=

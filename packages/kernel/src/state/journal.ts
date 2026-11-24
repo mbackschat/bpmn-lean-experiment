@@ -1,7 +1,7 @@
 /**
  * The occurrence journal, transcribed from `Kernel/State/Journal.lean`: an occurrence's public key, the facts each
- * micro-step records about the occurrences it began and ended, and the transaction-boundary marks an occurrence carries.
- * Part of `state.ts`, which re-exports it.
+ * micro-step records about the occurrences it began and ended, the transaction-boundary marks an occurrence carries and
+ * the activation counter its key's number comes from. Part of `state.ts`, which re-exports it.
  */
 import { elementEnvelope, programElement, type ElementId, type FlowId, type Program } from "../il/types.js";
 import { type ScopeOccurrenceId } from "./slots.js";
@@ -63,4 +63,12 @@ export function marks(program: Program, key: OccurrenceKey): readonly [boolean, 
   // CIB skips loop marks on a compensation handler (`BpmnParse.java:2416`); admission refuses a Multi-Instance handler.
   const loop = key.role === ActivationRole.Element ? envelope.multiInstance : null;
   return loop === null ? [envelope.asyncBefore, envelope.asyncAfter] : [loop.asyncBefore, loop.asyncAfter];
+}
+
+/** One activation counter (R8: per process instance, element and role). */
+export interface ActivationCount {
+  readonly processInstance: string;
+  readonly element: ElementId;
+  readonly role: ActivationRole;
+  readonly count: number;
 }

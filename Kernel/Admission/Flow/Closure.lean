@@ -391,7 +391,7 @@ def subscriptionNames (program : Program) (opening : Bool) (subscriptions : List
 /-- The Conditional subscriptions `element` opens as it begins (`opening`) or ends as it completes: its boundaries, its
 catch, the Event Sub-Process starts of the level its entry opens (a Scope's children, a Call's called processes'), an
 Event-Based Gateway's arms, and at the opening of a root start Event the root level's starts. -/
-def held (program : Program) (opening : Bool) (element : Element) : List Subscription :=
+def heldSubscriptions (program : Program) (opening : Bool) (element : Element) : List Subscription :=
   let boundaries := ((element.envelope?.map (·.boundaries)).getD []).map (·.subscription)
   let caught := (element.event?.bind (·.2.catch?)).toList
   let starts (level : List Element) : List Subscription :=
@@ -430,7 +430,7 @@ def visitKey : Visit → Nat × ElementId
 
 /-- Walk one closure from `begun`. Every element, boundary and passed host is taken at most once per kind of visit; a
 write arms every Conditional of the program once, since it may resume one in the same closure (CIB-EXT-0035). A visit
-that opens or ends a Conditional subscription, by beginning or completing the element that holds it (`held`) or by
+that opens or ends a Conditional subscription, by beginning or completing the element that holds it (`heldSubscriptions`) or by
 removing its carrier (`endedBy`), reads the names through which a write ordered against it changes what it fires
 (`conditionNames`), so `Footprint.races` refuses a concurrent unit's write either side of a subscription's lifetime
 (CIB-OP-0016). Subscriptions one arming may find true together, a contest the input's ranking settles where writes after
@@ -490,9 +490,9 @@ def closureWalk (reading : Reading) (program : Program) (walk : Walk) (begun : L
         -- its condition's names (`conditionNames`), so a concurrent unit's write in either order is a race.
         let lifetime : NameSet := match visit with
           | .enters element =>
-            (subscriptionNames program true (held program true element)).union
-              (if stopsAt element then {} else subscriptionNames program false (held program false element))
-          | .completes element => subscriptionNames program false (held program false element)
+            (subscriptionNames program true (heldSubscriptions program true element)).union
+              (if stopsAt element then {} else subscriptionNames program false (heldSubscriptions program false element))
+          | .completes element => subscriptionNames program false (heldSubscriptions program false element)
           | .fires _ => {}
           | .passes _ => {}
         let removed := endedBy program (found.withdraws.take (found.withdraws.length - withdrawn))

@@ -1,6 +1,7 @@
 /**
  * Kernel inputs, transcribed from `Kernel/State/Input.lean`: the inputs a host submits, the occurrence identities they
- * name and the start triggers and deliveries they carry. Part of `state.ts`, which re-exports it.
+ * name and the start triggers and deliveries they carry, and the Signal broadcasts an instance hands the host to deliver to
+ * the population. Part of `state.ts`, which re-exports it.
  */
 import { type Bounds, type ElementId, type Value } from "../il/types.js";
 import { type Binding, InputTag, type MessageChannel, type SignalAddress } from "./wait.js";
@@ -205,4 +206,12 @@ export interface EvalContext {
    * Multi-Instance count and collection sites read it first (EXPRESSION-SEMANTICS-SPEC "Multi-Instance level", Results).
    */
   readonly domainChecked?: boolean;
+}
+
+/** A Signal thrown to the population, which the host publishes after the input commits (PC-SIGNAL-01, PC-SIGNAL-04). */
+export interface BroadcastIntent {
+  readonly address: SignalAddress;
+  readonly variables: readonly Binding[];
+  readonly businessKey: string | null;
+  readonly origin: OccurrenceRef;
 }

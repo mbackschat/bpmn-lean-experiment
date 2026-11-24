@@ -89,7 +89,7 @@ import {
   type WriteEvent,
   SemanticCause,
   semanticFailure,
-  issueNotAfter, type Issue, itemsInOrder, type OccurrenceId, type UnitKey,
+  insertHeld, issueNotAfter, type Issue, itemsInOrder, type OccurrenceId, type UnitKey,
 } from "./state.js";
 // Lean's `Kernel.Hooks` re-exports `Kernel.State.Removal` to the features and `Kernel.Step`; so does this module, which
 // keeps the removal module's direct importers to this hub (guard 15).
@@ -359,7 +359,7 @@ export function hold(state: State, occurrence: Occurrence): State {
   const held: Held = { occurrence: occurrence.id, scope: occurrence.scope };
   return {
     ...state,
-    slots: { ...state.slots, held: [...state.slots.held, held] },
+    slots: { ...state.slots, held: insertHeld(state.slots.held, held) },
     draft: { ...state.draft, ready: [...state.draft.ready, keyOf(state, occurrence)] },
   };
 }

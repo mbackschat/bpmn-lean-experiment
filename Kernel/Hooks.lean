@@ -178,7 +178,8 @@ def chooseStart (named : Option ElementId) (fired : List ElementId) : Except Fai
 list: the one writer of `Transition.ready`, so the list names exactly the occurrences the micro-step holds. -/
 def State.hold (state : State) (occurrence : Occurrence) : State :=
   { state with
-    slots := { state.slots with held := state.slots.held ++ [{ occurrence := occurrence.id, scope := occurrence.scope }] }
+    slots := { state.slots with
+      heldMap := state.slots.heldMap.insert occurrence.id occurrence.scope }
     draft := { state.draft with ready := state.draft.ready ++ [state.keyOf occurrence] } }
 
 /-- What an expression evaluated from `scope` reads. -/

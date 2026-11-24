@@ -131,19 +131,27 @@ theorem both_leave_rejected :
   cases first
   simp at second
 
-/- The witnesses read their scopes through the scope map's list view. -/
-attribute [local simp] Laws.State.scopes_eq
+/- The witnesses read their scopes and occurrences through the maps' list views. -/
+attribute [local simp] Laws.State.scopes_eq Laws.State.occurrences_eq
 
 def atJoin : Occurrence := { id := joinedFirst, element := joinGateway, scope := root, activation := 1, position := 1 }
 def atC : Occurrence := { id := keyC, element := ⟨"C"⟩, scope := root, activation := 1, position := 2 }
 
+/-- The occurrences while `C` still works, named so that a simp set unfolding them leaves the map whole. -/
+def waitingOccurrences : OccurrenceMap := Laws.State.ofOccurrences [atJoin, atC]
+
+@[simp] theorem mem_waitingOccurrences {x : Occurrence} :
+    x ∈ occurrenceList waitingOccurrences ↔ x = atJoin ∨ x = atC := by
+  rw [waitingOccurrences, Laws.State.mem_ofOccurrences (by simp [atJoin, atC, joinedFirst, keyC, joinGateway])]
+  simp
+
 /-- `A` arrived; `C` still works upstream of `b`, so the Inclusive join waits. -/
 def waitingAtC : State :=
-  { instanceId := "p", scopeMap := Laws.State.ofScopes [{ id := root, element := none, position := 0 }], occurrences := [atJoin, atC],
+  { instanceId := "p", scopeMap := Laws.State.ofScopes [{ id := root, element := none, position := 0 }], occurrenceMap := waitingOccurrences,
     slots := { parked := [arrivedA] } }
 
 /-- `C` is gone: nothing can reach `b` any more, so the join is ready without an arrival on `b`. -/
-def doneAtC : State := { waitingAtC with occurrences := [atJoin] }
+def doneAtC : State := { waitingAtC with occurrenceMap := Laws.State.ofOccurrences [atJoin] }
 
 theorem c_reaches_b : CanReach diagram (fun _ _ => False) waitingAtC joinGateway root flowB :=
   .inr ⟨⟨"C"⟩, flowC, ⟨by simp [joinGateway], .inl ⟨atC, by simp [waitingAtC], rfl, rfl, rfl⟩⟩,
@@ -168,7 +176,7 @@ theorem nothing_upstream_ready : InclusiveReady diagram (fun _ _ => False) [flow
   obtain ⟨⟨other, holds⟩, _, _⟩ := position
   rcases holds with ⟨occurrence, member, facts⟩ | ⟨child, member, parent, _⟩ | ⟨_, token, _⟩
   · obtain ⟨_, _, same⟩ := facts
-    simp only [doneAtC, List.mem_singleton] at member
+    simp only [doneAtC, Laws.State.occurrences_eq, Laws.State.mem_ofOccurrences_singleton] at member
     subst member
     exact other same.symm
   · simp [doneAtC, waitingAtC] at member
@@ -180,7 +188,7 @@ theorem nothing_upstream_ready : InclusiveReady diagram (fun _ _ => False) [flow
 
 theorem no_link_held : LinkPassesThrough (· == ⟨"L"⟩) waitingAtC := by
   intro occurrence member
-  simp only [waitingAtC, List.mem_cons, List.not_mem_nil, or_false] at member
+  simp only [waitingAtC, Laws.State.occurrences_eq, mem_waitingOccurrences] at member
   rcases member with rfl | rfl <;> simp [atJoin, atC, joinGateway]
 
 /-- A state still holding the occurrence of an unpublished element breaks the rule. -/

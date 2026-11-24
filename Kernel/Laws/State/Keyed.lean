@@ -86,6 +86,18 @@ theorem keyedOn_modify {m : TreeMap κ ν compare} (keyed : KeyedOn key m) (k : 
     rw [same, keyed _ old found]; exact Std.LawfulEqCmp.eq_of_compare e
   · exact keyed k' value h
 
+/-- `keyedOn_modify` for a change that keeps only the modified value's key. -/
+theorem keyedOn_modify_at {m : TreeMap κ ν compare} (keyed : KeyedOn key m) (k : κ) {f : ν → ν}
+    (same : ∀ v, key v = k → key (f v) = k) : KeyedOn key (m.modify k f) := by
+  intro k' value h
+  rw [Std.ExtTreeMap.getElem?_modify] at h
+  split at h
+  · rename_i e
+    obtain ⟨old, found, rfl⟩ := Option.map_eq_some_iff.mp h
+    rw [same old (keyed _ old found)]
+    exact Std.LawfulEqCmp.eq_of_compare e
+  · exact keyed k' value h
+
 theorem mem_values_filter {m : TreeMap κ ν compare} (keyed : KeyedOn key m) {f : κ → ν → Bool} {value : ν} :
     value ∈ values (m.filter f) ↔ value ∈ values m ∧ f (key value) value = true := by
   rw [mem_values_keyed (keyedOn_filter keyed f), mem_values_keyed keyed, Std.ExtTreeMap.getElem?_filter']
@@ -364,6 +376,212 @@ theorem mem_refold {f : ν → ν} {m : TreeMap κ ν compare}
   obtain ⟨value, inside, same⟩ := key_mem_refold (key := key) (f := f) member
   obtain ⟨other, otherIn, rfl⟩ := mem_refold_of inside
   rwa [apart other otherIn old member same] at inside
+
+/-- A filter every entry passes keeps the map. -/
+theorem filter_eq_self {m : TreeMap κ ν compare} {f : κ → ν → Bool} (all : ∀ k value, m[k]? = some value → f k value = true) :
+    m.filter f = m := by
+  apply Std.ExtTreeMap.ext_getElem?
+  intro k
+  rw [Std.ExtTreeMap.getElem?_filter']
+  cases found : m[k]? with
+  | none => rfl
+  | some value => simp [all k value found]
+
+/-- Two filters that read only the value are one filter by both. -/
+theorem filter_filter_val (m : TreeMap κ ν compare) (p q : ν → Bool) :
+    (m.filter fun _ v => p v).filter (fun _ v => q v) = m.filter fun _ v => p v && q v := by
+  apply Std.ExtTreeMap.ext_getElem?
+  intro k
+  simp only [Std.ExtTreeMap.getElem?_filter']
+  cases m[k]? with
+  | none => rfl
+  | some value => cases hp : p value <;> cases hq : q value <;> simp [Option.filter, hp, hq]
+
+/-! ## The list view up to order
+
+A writer that inserts or replaces one value changes the list view only up to order: the order is key order, not the
+order of writes, so a law that read the list a writer appended to reads it up to a permutation. -/
+
+omit [Std.TransOrd κ] [Std.LawfulEqOrd κ] [Ord κ] in
+/-- A list whose images are distinct is itself duplicate-free. -/
+theorem nodup_of_map {l : List ν} (distinct : (l.map key).Nodup) : l.Nodup :=
+  List.Pairwise.of_map key (fun _ _ apart same => apart (congrArg key same)) distinct
+
+/-- Inserting a value puts it in place of the value under its key, up to order. -/
+theorem values_insert_perm [DecidableEq κ] {m : TreeMap κ ν compare} (keyed : KeyedOn key m) {k : κ} {new : ν}
+    (named : key new = k) : (values (m.insert k new)).Perm ((values m).filter (fun v => key v != k) ++ [new]) := by
+  have nodupAfter : (values (m.insert k new)).Nodup := nodup_of_map (values_nodup (keyedOn_insert keyed named))
+  have nodupBefore : ((values m).filter (fun v => key v != k) ++ [new]).Nodup := by
+    rw [List.nodup_append]
+    refine ⟨(nodup_of_map (values_nodup keyed)).filter _, by simp, ?_⟩
+    intro a inA b inB same
+    rw [List.mem_singleton] at inB
+    subst inB same
+    simp [named] at inA
+  rw [List.perm_ext_iff_of_nodup nodupAfter nodupBefore]
+  intro value
+  rw [mem_values_insert keyed named, List.mem_append, List.mem_filter, List.mem_singleton, bne_iff_ne]
+  constructor
+  · rintro (h | h); exact .inr h; exact .inl h
+  · rintro (h | h); exact .inr h; exact .inl h
+
+/-- Inserting under a key that holds no value adds it, whether or not the insert may replace. -/
+theorem insertIfNew_eq_insert {m : TreeMap κ ν compare} {k : κ} (absent : m[k]? = none) (new : ν) :
+    m.insertIfNew k new = m.insert k new := by
+  have notMem : ¬ k ∈ m := fun inside => by
+    rw [Std.ExtTreeMap.mem_iff_isSome_getElem?, absent] at inside; cases inside
+  apply Std.ExtTreeMap.ext_getElem?
+  intro a
+  rw [Std.ExtTreeMap.getElem?_insertIfNew, Std.ExtTreeMap.getElem?_insert]
+  by_cases e : compare k a = .eq <;> simp [e, notMem]
+
+theorem keyedOn_insertIfNew {m : TreeMap κ ν compare} (keyed : KeyedOn key m) {k : κ} {new : ν} (named : key new = k) :
+    KeyedOn key (m.insertIfNew k new) := by
+  intro a value found
+  rw [Std.ExtTreeMap.getElem?_insertIfNew] at found
+  split at found
+  · rename_i h
+    cases found
+    rw [named]; exact Std.LawfulEqCmp.eq_of_compare h.1
+  · exact keyed a value found
+
+/-- A value of `m` stays when a value is inserted only under a new key. -/
+theorem mem_values_insertIfNew_of {m : TreeMap κ ν compare} {k : κ} {new value : ν} (member : value ∈ values m) :
+    value ∈ values (m.insertIfNew k new) := by
+  obtain ⟨a, found⟩ := mem_values.mp member
+  refine mem_values.mpr ⟨a, ?_⟩
+  rw [Std.ExtTreeMap.getElem?_insertIfNew]
+  split
+  · rename_i h
+    exact absurd (by rw [Std.LawfulEqCmp.eq_of_compare h.1, Std.ExtTreeMap.mem_iff_isSome_getElem?, found]; rfl) h.2
+  · exact found
+
+theorem mem_values_insertIfNew_sub {m : TreeMap κ ν compare} {k : κ} {new value : ν}
+    (member : value ∈ values (m.insertIfNew k new)) : value ∈ values m ∨ value = new := by
+  obtain ⟨a, found⟩ := mem_values.mp member
+  rw [Std.ExtTreeMap.getElem?_insertIfNew] at found
+  split at found
+  · cases found; exact .inr rfl
+  · exact .inl (mem_values.mpr ⟨a, found⟩)
+
+/-- Inserting under a key that holds a value replaces that value, as `modify` does. -/
+theorem insert_eq_modify {m : TreeMap κ ν compare} {k : κ} {old : ν} (present : m[k]? = some old) (new : ν) :
+    m.insert k new = m.modify k fun _ => new := by
+  apply Std.ExtTreeMap.ext_getElem?
+  intro k'
+  rw [Std.ExtTreeMap.getElem?_insert, Std.ExtTreeMap.getElem?_modify]
+  split
+  · rw [present]; rfl
+  · rfl
+
+/-- Replacing the value under `k`, if one stands there, by `f` of it keeps every other value in place, up to order. -/
+theorem values_modify_perm [DecidableEq κ] {m : TreeMap κ ν compare} (keyed : KeyedOn key m) (k : κ) {f : ν → ν}
+    (same : ∀ v, key v = k → key (f v) = k) :
+    (values (m.modify k f)).Perm ((values m).map fun v => if key v = k then f v else v) := by
+  have keyedAfter : KeyedOn key (m.modify k f) := keyedOn_modify_at keyed k same
+  have nodupAfter : (values (m.modify k f)).Nodup := nodup_of_map (values_nodup keyedAfter)
+  have keyOf : ∀ v, key (if key v = k then f v else v) = key v := fun v => by
+    split
+    · rename_i named; rw [same v named, named]
+    · rfl
+  have nodupBefore : ((values m).map fun v => if key v = k then f v else v).Nodup := by
+    refine List.pairwise_map.mpr ((nodup_of_map (values_nodup keyed)).imp_of_mem fun {a b} inA inB apart eq => apart ?_)
+    exact KeyedOn.eq_of_key keyed inA inB ((keyOf a).symm.trans ((congrArg key eq).trans (keyOf b)))
+  rw [List.perm_ext_iff_of_nodup nodupAfter nodupBefore]
+  intro value
+  rw [mem_values_keyed keyedAfter, Std.ExtTreeMap.getElem?_modify, List.mem_map]
+  constructor
+  · intro h
+    split at h
+    · rename_i e
+      obtain ⟨old, found, rfl⟩ := Option.map_eq_some_iff.mp h
+      have named : key old = k := keyed _ old found
+      exact ⟨old, mem_values.mpr ⟨_, found⟩, ite_eq_left named⟩
+    · rename_i e
+      exact ⟨value, mem_values.mpr ⟨_, h⟩, ite_eq_right fun named => e (by rw [named]; exact Std.ReflCmp.compare_self)⟩
+  · rintro ⟨old, inside, rfl⟩
+    rw [mem_values_keyed keyed] at inside
+    by_cases named : key old = k
+    · rw [ite_eq_left named, same old named, ite_eq_left Std.ReflCmp.compare_self, ← named, inside]; rfl
+    · rw [ite_eq_right named, ite_eq_right fun e => named (Std.LawfulEqCmp.eq_of_compare e).symm]; exact inside
+
+/-! ## Re-keying a map whose values do not carry their keys
+
+A map from a key to a value that does not carry it (`HeldMap`) is renamed by inserting each value, mapped, under its
+renamed key. -/
+
+section Rebuild
+
+variable {β : Type}
+
+/-- A fold of inserts over entries with pairwise distinct keys reads each key's entry, else the start's. -/
+private theorem foldl_insert_getElem? (k : κ) :
+    ∀ (entries : List (κ × β)) (acc : TreeMap κ β compare),
+      entries.Pairwise (fun a b => compare a.1 b.1 ≠ .eq) →
+      (entries.foldl (fun acc entry => acc.insert entry.1 entry.2) acc)[k]? =
+        ((entries.find? fun entry => compare entry.1 k == .eq).map (·.2)).or acc[k]?
+  | [], _, _ => by simp
+  | entry :: rest, acc, distinct => by
+    rw [List.pairwise_cons] at distinct
+    rw [List.foldl_cons, foldl_insert_getElem? k rest _ distinct.2, List.find?_cons, Std.ExtTreeMap.getElem?_insert]
+    by_cases same : compare entry.1 k = .eq
+    · have absent : rest.find? (fun other => compare other.1 k == .eq) = none := by
+        refine List.find?_eq_none.mpr fun other inside hit => distinct.1 other inside ?_
+        exact Std.TransCmp.eq_trans same (Std.OrientedCmp.eq_symm (beq_iff_eq.mp hit))
+      simp [same, absent]
+    · have miss : (compare entry.1 k == .eq) = false := by simpa using same
+      simp [same, miss]
+
+/-- Re-inserting every entry of a map under its own key rebuilds the map. -/
+theorem rebuild_self (m : TreeMap κ β compare) : m.foldl (fun acc k v => acc.insert k v) ∅ = m := by
+  apply Std.ExtTreeMap.ext_getElem?
+  intro k
+  rw [Std.ExtTreeMap.foldl_eq_foldl_toList]
+  rw [foldl_insert_getElem? k _ _ Std.ExtTreeMap.distinct_keys_toList, Std.ExtTreeMap.getElem?_empty, Option.or_none]
+  cases found : m[k]? with
+  | none =>
+    rw [Option.map_eq_none_iff, List.find?_eq_none]
+    intro entry inside hit
+    have : m[entry.1]? = some entry.2 := Std.ExtTreeMap.mem_toList_iff_getElem?_eq_some.mp inside
+    rw [Std.LawfulEqCmp.eq_of_compare (beq_iff_eq.mp hit)] at this
+    rw [this] at found; cases found
+  | some v =>
+    have inside : (k, v) ∈ m.toList := Std.ExtTreeMap.mem_toList_iff_getElem?_eq_some.mpr found
+    obtain ⟨entry, hit⟩ : ∃ entry, m.toList.find? (fun entry => compare entry.1 k == .eq) = some entry :=
+      Option.isSome_iff_exists.mp (List.find?_isSome.mpr ⟨_, inside, by simp⟩)
+    have member := List.mem_of_find?_eq_some hit
+    have matched := List.find?_some hit
+    simp only [beq_iff_eq] at matched
+    have keyed : entry.1 = k := Std.LawfulEqCmp.eq_of_compare matched
+    have : m[entry.1]? = some entry.2 := Std.ExtTreeMap.mem_toList_iff_getElem?_eq_some.mp member
+    rw [keyed, found] at this
+    rw [hit]; simp [this]
+
+/-- Every entry of a re-keyed map is an old entry under a renamed key, its value mapped. -/
+theorem rekey_getElem? {f : κ → κ} {g : β → β} {m : TreeMap κ β compare} {k : κ} {v : β}
+    (found : (m.foldl (fun (acc : TreeMap κ β compare) k v => acc.insert (f k) (g v)) ∅)[k]? = some v) :
+    ∃ k' v', m[k']? = some v' ∧ f k' = k ∧ g v' = v := by
+  rw [Std.ExtTreeMap.foldl_eq_foldl_toList] at found
+  have step : ∀ (entries : List (κ × β)) (acc : TreeMap κ β compare),
+      (entries.foldl (fun acc entry => acc.insert (f entry.1) (g entry.2)) acc)[k]? = some v →
+        acc[k]? = some v ∨ ∃ entry ∈ entries, f entry.1 = k ∧ g entry.2 = v := by
+    intro entries
+    induction entries with
+    | nil => exact fun _ found => .inl found
+    | cons entry rest ih =>
+      intro acc found
+      rcases ih _ found with here | ⟨other, inside, named, value⟩
+      · rw [Std.ExtTreeMap.getElem?_insert] at here
+        split at here
+        · rename_i same
+          exact .inr ⟨entry, List.mem_cons_self, Std.LawfulEqCmp.eq_of_compare same, Option.some.inj here⟩
+        · exact .inl here
+      · exact .inr ⟨other, List.mem_cons_of_mem _ inside, named, value⟩
+  rcases step _ _ found with empty | ⟨entry, inside, named, value⟩
+  · simp at empty
+  · exact ⟨entry.1, entry.2, Std.ExtTreeMap.mem_toList_iff_getElem?_eq_some.mp inside, named, value⟩
+
+end Rebuild
 
 /-! ## Inserts under distinct keys -/
 

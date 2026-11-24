@@ -4,8 +4,9 @@ public import Kernel.State.Wait
 
 /-! # Kernel inputs
 
-The inputs a host submits, the occurrence identities they name and the start triggers and deliveries they carry.
-Part of `Kernel.State`, which re-exports it.
+The inputs a host submits, the occurrence identities they name and the start triggers and deliveries they carry, and
+the Signal broadcasts an instance hands the host to deliver to the population. Part of `Kernel.State`, which re-exports
+it.
 -/
 
 public section
@@ -177,5 +178,13 @@ structure EvalContext where
   /-- Whether a JUEL result passes the portable-domain check before the site sees it; the Multi-Instance count and
   collection sites read it first (EXPRESSION-SEMANTICS-SPEC "Multi-Instance level", Results). -/
   domainChecked : Bool := true
+
+/-- A Signal thrown to the population, which the host publishes after the input commits (PC-SIGNAL-01, PC-SIGNAL-04). -/
+structure BroadcastIntent where
+  address : SignalAddress
+  variables : List (String × Value) := []
+  businessKey : Option String := none
+  origin : OccurrenceRef
+  deriving Repr
 
 end Kernel

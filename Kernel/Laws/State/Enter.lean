@@ -36,7 +36,7 @@ structure ScopeAppended (before after : State) (entry : ScopeOccurrence) (locals
   occurrenceOrdinals : after.occurrenceOrdinals = before.occurrenceOrdinals
   scopeMap : after.scopeMap = before.scopeMap.insert entry.id entry
   variables : after.variables = before.variables.insert entry.id (Variables.ofBindings locals)
-  occurrences : after.occurrences = before.occurrences
+  occurrenceMap : after.occurrenceMap = before.occurrenceMap
   itemMap : after.openItems = before.openItems ∧ after.itemOrdinals = before.itemOrdinals
   tokens : allQueuedTokens after = allQueuedTokens before
   signals : allSignals after = allSignals before
@@ -48,6 +48,11 @@ structure ScopeAppended (before after : State) (entry : ScopeOccurrence) (locals
   failure : after.failure = before.failure
   instanceId : after.instanceId = before.instanceId
   slots : SlotsWithin before after
+
+/-- The occurrences stay: the occurrence map does (`occurrenceMap`). -/
+theorem ScopeAppended.occurrences {before after : State} {entry : ScopeOccurrence} {locals : List (String × Value)}
+    (appended : ScopeAppended before after entry locals) : after.occurrences = before.occurrences :=
+  occurrences_congr appended.occurrenceMap
 
 /-- The scope occurrences after an entry under a key none holds: the old ones and the entry. -/
 theorem ScopeAppended.mem_scopes {before after : State} {entry : ScopeOccurrence} {locals : List (String × Value)}
@@ -146,7 +151,7 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
     fun found member unit index pending =>
       let ⟨slot, held⟩ := formed.issued.occurrencePositions found (hOcc ▸ member) unit index pending
       ⟨slot, enters.table _ _ held⟩⟩
-  have distinct : Distinct after := ⟨by simpa [occurrenceIds, hOcc] using formed.distinct.occurrences,
+  have distinct : Distinct after := ⟨enters.occurrenceMap ▸ formed.distinct.occurrencesKeyed,
     enters.itemMap.1 ▸ formed.distinct.items, keyedAfter, by
       rw [hOcc, List.map_congr_left keys]
       exact formed.distinct.keys⟩
@@ -317,7 +322,7 @@ theorem enterScope_wellFormed {s : State} (formed : WellFormed program s) (eleme
       unissued := entered_unissued parent element formed.issuer.next, scopeGrows := grows, entered, table,
       issuer := fun fresh => fresh.issue_issue rfl rfl rfl rfl, occurrenceOrdinals := rfl, scopeMap := rfl,
       positionTabled := fun _ _ fresh => by obtain ⟨rfl, rfl⟩ := Issue.fresh.inj fresh; simp,
-      variables := rfl, occurrences := rfl, itemMap := ⟨rfl, rfl⟩, tokens := rfl, signals := rfl, activations := rfl, journal := rfl, transitions := rfl, draft := rfl, status := rfl, failure := rfl,
+      variables := rfl, occurrenceMap := rfl, itemMap := ⟨rfl, rfl⟩, tokens := rfl, signals := rfl, activations := rfl, journal := rfl, transitions := rfl, draft := rfl, status := rfl, failure := rfl,
       instanceId := rfl, slots := .same rfl }
     stands (ScopeOccurrenceId.parent?_child _ _ _) ownerBegun
 
@@ -392,7 +397,7 @@ theorem enterCalled_wellFormed {s : State} (formed : WellFormed program s) (call
       table := .insert_insert formed.issuer rfl, issuer := fun fresh => fresh.issue_issue rfl rfl rfl rfl,
       positionTabled := fun _ _ fresh => by obtain ⟨rfl, rfl⟩ := Issue.fresh.inj fresh; simp, occurrenceOrdinals := rfl,
       scopeMap := rfl,
-      variables := rfl, occurrences := rfl, itemMap := ⟨rfl, rfl⟩, tokens := rfl, signals := rfl, activations := rfl, journal := rfl, transitions := rfl, draft := rfl, status := rfl, failure := rfl,
+      variables := rfl, occurrenceMap := rfl, itemMap := ⟨rfl, rfl⟩, tokens := rfl, signals := rfl, activations := rfl, journal := rfl, transitions := rfl, draft := rfl, status := rfl, failure := rfl,
       instanceId := rfl, slots := ⟨fun _ inside => inside, fun _ inside => inside, fun _ inside => inside⟩ } stands
     (ScopeOccurrenceId.parent?_child _ _ _) fun id named => ⟨call, member, Option.some.inj named, begun, rfl⟩
 
@@ -633,7 +638,7 @@ theorem deferBegins_wellFormed {s : State} (formed : WellFormed program s) {requ
   exact {
   issued := ⟨formed.issued.occurrences, (fun item member => formed.issued.items item (items_same member rfl)), formed.issued.scopes,
     formed.issued.positions, formed.issued.occurrencePositions⟩
-  distinct := ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopesKeyed, keys ▸ formed.distinct.keys⟩
+  distinct := ⟨formed.distinct.occurrencesKeyed, formed.distinct.items, formed.distinct.scopesKeyed, keys ▸ formed.distinct.keys⟩
   startedOnce := formed.startedOnce
   activations := ⟨formed.activations.keys, formed.activations.positive⟩
   reservations := by unfold ReservationsUnstarted; rw [keys]; exact formed.reservations

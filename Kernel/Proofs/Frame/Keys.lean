@@ -36,10 +36,9 @@ theorem keyed_reserve {s : State} (held : Keyed s) (element : ElementId) (scope 
     Keyed (s.reserve element scope).1 := by
   have reserves := Laws.State.reserve_reserves s element scope
   intro occurrence member
-  rw [reserves.occurrences] at member
-  rcases List.mem_append.mp member with old | made
+  rcases reserves.mem_occurrences member with old | made
   · exact held occurrence old
-  · rw [List.mem_singleton.mp made, reserves.keyed, reserves.placed]
+  · rw [made, reserves.keyed, reserves.placed]
 
 /-- A begin keeps the occurrences keyed: the begun occurrence is keyed in the request's scope occurrence, which it
 begins in. -/
@@ -48,10 +47,9 @@ theorem keyed_begin {program : Program} {s : State} (formed : WellFormed program
     Keyed (s.beginOccurrence request role sourceType).1 := by
   have begins := Laws.State.beginOccurrence_begins formed.activations request role sourceType
   intro occurrence member
-  rw [begins.occurrences] at member
-  rcases List.mem_append.mp member with old | made
-  · exact held occurrence (List.mem_filter.mp old).1
-  · rw [List.mem_singleton.mp made, begins.keyed, begins.scope]
+  rcases begins.mem_occurrences member with old | made
+  · exact held occurrence old
+  · rw [made, begins.keyed, begins.scope]
 
 section Records
 
@@ -98,7 +96,8 @@ theorem keyed_occurs : OccursAlongside program Keyed where
 /-- Dropping an occurrence's record keeps the occurrences keyed. -/
 theorem keyed_withoutRecord (t : State) (id : OccurrenceId) (held : Keyed t) :
     Keyed (Laws.State.withoutRecord t id) :=
-  held.sublist (by simp only [Laws.State.withoutRecord]; exact List.filter_sublist)
+  held.sublist (by
+    simp only [Laws.State.withoutRecord, Laws.State.occurrences_eq]; exact Laws.State.occurrenceList_filter_val_sublist _ _)
 
 /-- Cancelling an occurrence withdraws its items, drops its record and journals its end. -/
 theorem keyed_cancel {s : State} (formed : WellFormed program s) (held : Keyed s) (id : OccurrenceId) :
@@ -128,13 +127,9 @@ theorem keyed_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellFormed) :
       cases begun : occurrence.begun
       · have starts := Laws.State.startReserved_starts s sourceType begun
         intro other inside
-        rw [starts.occurrences] at inside
-        obtain ⟨old, oldIn, rfl⟩ := List.mem_map.mp inside
-        by_cases same : old.id = occurrence.id
-        · simp only [same, ↓reduceIte]
-          exact holds.2 occurrence member
-        · simp only [same, ↓reduceIte]
-          exact holds.2 old oldIn
+        rcases starts.mem_occurrences inside with old | rfl
+        · exact holds.2 other old
+        · exact holds.2 occurrence member
       · rw [Laws.State.startReserved_begun s sourceType begun]
         exact holds.2
     rw [Laws.State.closeOwnItems_eq]

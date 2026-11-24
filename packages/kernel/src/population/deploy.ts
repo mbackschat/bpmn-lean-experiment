@@ -22,7 +22,7 @@ import {
 import { resolve, type Resolved } from "../il/timer.js";
 
 // `Kernel/Population/Deploy.lean` imports `Kernel.IL.Timer` publicly, so `Timers` reads it through Deploy.
-export { occurrences, occurs, type Resolved } from "../il/timer.js";
+export { dueInstants, occurs, type Resolved } from "../il/timer.js";
 import {
   DeploymentOutcomeTag,
   type Deployment,

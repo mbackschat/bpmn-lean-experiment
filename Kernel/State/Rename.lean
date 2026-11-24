@@ -51,7 +51,7 @@ def renameIteration : Iteration → Iteration
 def renameSlots (slots : FeatureSlots) : FeatureSlots :=
   { parked := slots.parked.map fun parked =>
       { parked with occurrence := renameId r parked.occurrence, scope := renameScope r parked.scope }
-    held := slots.held.map fun held => { held with occurrence := renameId r held.occurrence, scope := renameScope r held.scope }
+    heldMap := slots.heldMap.foldl (fun renamed occurrence scope => renamed.insert (renameId r occurrence) (renameScope r scope)) ∅
     multiInstances := slots.multiInstances.map fun run =>
       { run with scope := renameScope r run.scope, occurrence := renameId r run.occurrence
                  instances := run.instances.map (renameIteration r) }
@@ -83,9 +83,10 @@ def renameState (position : Issue → Issue) (continuation : Continuation → Co
     scopeMap := state.scopeMap.foldl (fun renamed _ scope =>
       let scope := { scope with id := renameScope r scope.id, position := r scope.position, occurrence := scope.occurrence.map (renameId r) }
       renamed.insert scope.id scope) ∅
-    occurrences := state.occurrences.map fun occurrence =>
-      { occurrence with id := renameId r occurrence.id, scope := renameScope r occurrence.scope
-                        position := position occurrence.position, continuation := continuation occurrence.continuation }
+    occurrenceMap := state.occurrenceMap.foldl (fun renamed _ occurrence =>
+      let occurrence := { occurrence with id := renameId r occurrence.id, scope := renameScope r occurrence.scope
+                                          position := position occurrence.position, continuation := continuation occurrence.continuation }
+      renamed.insert occurrence.id occurrence) ∅
     variables := state.variables.foldl (fun renamed scope entries => renamed.insert (renameScope r scope) entries) ∅
     openItems := state.openItems.foldl (fun renamed _ item =>
       let item := { item with id := renameItemKey r item.id, position := r item.position, scope := renameScope r item.scope

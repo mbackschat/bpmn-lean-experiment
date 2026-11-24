@@ -100,15 +100,15 @@ theorem Continued.reserve {program : Program} (formed : WellFormed program s) (k
   have reserves := Laws.State.reserve_reserves s element scope
   refine kept.move (reserves.occurrenceGrows formed.issuer) (fun o inside body on => ?_)
     fun _ inside _ _ => inside.shrink (fun _ held => reserves.signals ▸ held) fun _ held => reserves.tokens ▸ held
-  rw [reserves.occurrences] at inside
-  rcases List.mem_append.mp inside with old | new
+  rcases reserves.mem_occurrences inside with old | new
   · exact ⟨o, old, rfl⟩
-  · rw [List.mem_singleton.mp new, reserves.continued] at on
+  · rw [new, reserves.continued] at on
     exact (Laws.Step.flow_ne_multiInstance body on).elim
 
 /-- Dropping a record keeps `Continued`. -/
 theorem Continued.withoutRecord (kept : Continued t) (id : OccurrenceId) : Continued (Laws.State.withoutRecord t id) :=
-  kept.shrink (Laws.Step.withoutRecord_frame t id).issued (fun _ inside => (List.mem_filter.mp inside).1)
+  kept.shrink (Laws.Step.withoutRecord_frame t id).issued
+    (fun _ inside => (Laws.State.mem_occurrenceList_filter_val.mp inside).1)
     (fun _ held => held) fun _ held => held
 
 /-- A begin taken off a queue that kept `Continued` continues into an issued body, if into one. -/
@@ -153,7 +153,8 @@ theorem Continued.hooked (kept : Continued s) (issued : OccurrenceGrows s t) (fr
 /-- A fresh instance holds no occurrence and queues nothing. -/
 theorem continued_initial (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
     Continued (State.initial instanceId variables businessKey) := by
-  constructor <;> simp [Queued, allSignals, allQueuedTokens, Laws.State.initial_eq]
+  constructor <;> simp [Queued, allSignals, allQueuedTokens, Laws.State.initial_eq, Laws.State.occurrences_eq,
+    Laws.State.occurrenceList_empty]
 
 /-! ## The state operations -/
 
@@ -197,7 +198,8 @@ theorem continued_stores (program : Program) : StoresAlongside program Continued
   disarm s host _ kept := by
     have issued := (Laws.Step.disarm_frame s host).issued
     rw [Laws.State.disarm_eq] at issued ⊢
-    exact kept.shrink issued (fun _ inside => (List.mem_filter.mp inside).1) (fun _ held => held) fun _ held => held
+    exact kept.shrink issued (fun _ inside => (Laws.State.mem_occurrenceList_filter_val.mp inside).1) (fun _ held => held)
+      fun _ held => held
   setVariable s target name value _ kept :=
     have same := Laws.State.setVariable_same s target name value
     kept.same (Laws.Step.setVariable_frame s target name value).issued same.occurrences same.signals same.tokens
@@ -304,10 +306,9 @@ theorem continued_stepAlongside (program : Program) : StepAlongside program Cont
     have issued := (Laws.Step.beginOccurrence_frame formed stands admitted role sourceType).issued
     refine ⟨fun o inside body on => ?_, fun request' inside body on => issued _ (kept.queued request'
       (inside.shrink (fun _ held => begins.signals ▸ held) fun _ held => begins.tokens ▸ held) body on)⟩
-    rw [begins.occurrences] at inside
-    rcases List.mem_append.mp inside with old | new
-    · exact issued _ (kept.occurrences o (List.mem_filter.mp old).1 body on)
-    · rw [List.mem_singleton.mp new, begins.continued] at on
+    rcases begins.mem_occurrences inside with old | new
+    · exact issued _ (kept.occurrences o old body on)
+    · rw [new, begins.continued] at on
       refine issued _ ?_
       rcases origin with ⟨flows, _, _⟩ | ⟨queue, held, dequeued⟩
       · exact (Laws.Step.flow_ne_multiInstance body (flows.symm.trans on)).elim
@@ -329,11 +330,9 @@ theorem continued_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellFormed
     · have starts := Laws.State.startReserved_starts s sourceType begun
       refine holds.2.move (Laws.Step.startReserved_frame holds.1 member sourceType).issued (fun o inside _ _ => ?_)
         fun _ inside _ _ => inside.shrink (fun _ held => starts.signals ▸ held) fun _ held => starts.tokens ▸ held
-      rw [starts.occurrences] at inside
-      obtain ⟨other, otherIn, rfl⟩ := List.mem_map.mp inside
-      by_cases same : other.id = occurrence.id
-      · exact ⟨occurrence, member, by simp [same]⟩
-      · exact ⟨other, otherIn, by simp [same]⟩
+      rcases starts.mem_occurrences inside with old | rfl
+      · exact ⟨o, old, rfl⟩
+      · exact ⟨occurrence, member, rfl⟩
     · rw [Laws.State.startReserved_begun s sourceType begun]
       exact holds.2
   removeOccurrence program le _ occurrence holds member free :=

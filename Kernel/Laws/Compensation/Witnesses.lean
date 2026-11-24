@@ -221,7 +221,8 @@ theorem drop_begins_rejected :
 def failedState : State :=
   { instanceId := "p", status := .failed, failure := some { code := "E", message := none, occurrence := trigger } }
 
-theorem failure_fails : FailsInstance .failsInstance false none failedState := fun _ _ => ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩
+theorem failure_fails : FailsInstance .failsInstance false none failedState := fun _ _ =>
+  ⟨rfl, rfl, rfl, rfl, rfl, Laws.State.occurrenceList_empty⟩
 
 /-- Under `failsInstance`, a handler failure that leaves the run's tokens is rejected. -/
 theorem failure_continues_rejected :

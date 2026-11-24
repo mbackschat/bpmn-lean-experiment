@@ -76,6 +76,7 @@ theorem orderJournal_runsKeyed (formed : WellFormed program state) (counted : Co
 body occurrence, the body's and the instances' scope occurrences are renamed with the body. -/
 theorem orderJournal_runsOwned (formed : WellFormed program state) (counted : CountersFrom start state)
     (batches : state.batchSignals = [] ∧ state.batchTokens = [] ∧ state.batchIntents = [])
+    (keys : ∀ occurrence ∈ state.occurrences, occurrence.id.scope = occurrence.scope)
     (owned : ∀ run ∈ state.slots.multiInstances,
       (∃ occurrence ∈ state.occurrences, occurrence.id = run.occurrence ∧ occurrence.element = run.element ∧
         occurrence.role = .multiInstanceBody) ∧ run.scope ∈ state.scopes.map (·.id) ∧
@@ -104,7 +105,8 @@ theorem orderJournal_runsOwned (formed : WellFormed program state) (counted : Co
   obtain ⟨body, scope, instances, own⟩ := owned old inside
   refine ⟨?_, ?_, fun index scope' active => ?_, fun first second scope' one two => ?_⟩
   · obtain ⟨occurrence, present, links⟩ := body
-    obtain ⟨renamed, renamedIn, mapped⟩ := compact_occurrence_mem ran present
+    obtain ⟨renamed, renamedIn, mapped⟩ :=
+      compact_occurrence_mem ran (occurrences_apart counted issued facts.owned rooted keys formed.distinct.occurrencesKeyed) present
     exact ⟨renamed, renamedIn, by rw [mapped.id, links.1], by rw [mapped.element, links.2.1],
       by rw [mapped.role, links.2.2]⟩
   · change _ ∈ standingKeys after

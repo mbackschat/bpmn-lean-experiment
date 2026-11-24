@@ -39,7 +39,7 @@ of the slots when it clears a scope occurrence. -/
 theorem featureSlotsClear_eq (slots : FeatureSlots) (inside nested : List ScopeOccurrenceId) :
     slots.clear inside nested = {
       parked := slots.parked.filter (!inside.contains ·.scope)
-      held := slots.held.filter (!inside.contains ·.scope)
+      heldMap := slots.heldMap.filter fun _ scope => !inside.contains scope
       multiInstances := slots.multiInstances.filter (!inside.contains ·.scope)
       compensation := {
         retained := slots.compensation.retained.filter (!nested.contains ·.scope)
@@ -83,5 +83,44 @@ theorem leastBy_mem {le : Issue → Issue → Bool} {entries : List Parked} {lea
       split at picked
       · exact kept _ picked
       · simp only [Option.some.injEq] at picked; exact picked ▸ headIn
+
+/-! ## The held map -/
+
+theorem held_eq (slots : FeatureSlots) : slots.held = heldList slots.heldMap := rfl
+
+theorem mem_heldList {m : HeldMap} {h : Held} : h ∈ heldList m ↔ m[h.occurrence]? = some h.scope := by
+  simp only [heldList, List.mem_map]
+  constructor
+  · rintro ⟨⟨k, v⟩, inside, rfl⟩; exact Std.ExtTreeMap.mem_toList_iff_getElem?_eq_some.mp inside
+  · intro found; exact ⟨(h.occurrence, h.scope), Std.ExtTreeMap.mem_toList_iff_getElem?_eq_some.mpr found, rfl⟩
+
+theorem heldList_empty : heldList (∅ : HeldMap) = [] := by simp [heldList]
+
+/-- A filter by the scope occurrence filters the list view, in key order. -/
+theorem heldList_filter (m : HeldMap) (p : ScopeOccurrenceId → Bool) :
+    heldList (m.filter fun _ scope => p scope) = (heldList m).filter fun h => p h.scope := by
+  simp only [heldList, Std.ExtTreeMap.toList_filter, List.filter_map]; rfl
+
+theorem mem_heldList_filter {m : HeldMap} {p : ScopeOccurrenceId → Bool} {h : Held} :
+    h ∈ heldList (m.filter fun _ scope => p scope) ↔ h ∈ heldList m ∧ p h.scope = true := by
+  rw [heldList_filter, List.mem_filter]
+
+/-- Holding an occurrence puts its entry in place of the one under its key. -/
+theorem mem_heldList_insert {m : HeldMap} {k : OccurrenceId} {scope : ScopeOccurrenceId} {h : Held} :
+    h ∈ heldList (m.insert k scope) ↔ h = { occurrence := k, scope } ∨ (h ∈ heldList m ∧ h.occurrence ≠ k) := by
+  rw [mem_heldList, mem_heldList, Std.ExtTreeMap.getElem?_insert]
+  constructor
+  · intro found
+    split at found
+    · rename_i same
+      obtain ⟨occurrence, scope'⟩ := h
+      cases Std.LawfulEqCmp.eq_of_compare same
+      cases Option.some.inj found
+      exact .inl rfl
+    · rename_i apart
+      exact .inr ⟨found, fun eq => apart (by rw [eq]; exact Std.ReflCmp.compare_self)⟩
+  · rintro (rfl | ⟨found, apart⟩)
+    · simp
+    · rw [ite_eq_right fun same => apart (Std.LawfulEqCmp.eq_of_compare same).symm]; exact found
 
 end Kernel.Laws.State

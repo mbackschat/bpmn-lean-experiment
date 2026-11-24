@@ -325,17 +325,19 @@ theorem unowned_root_rejected (program : Program) :
 and activation, so the instance's invocation would name its root alike. -/
 theorem body_owner_rejected :
     ¬ Roled { instanceId := "I1", scopeMap := Laws.State.ofScopes [witnessRoot, witnessCalled 2 (some callItKey)]
-              occurrences := [{ id := callItKey, element := ⟨"CallIt"⟩, scope := (.ofSegments []), activation := 1
-                                position := 1, role := .multiInstanceBody }] } := fun roled => by
-  have := roled (witnessCalled 2 (some callItKey)) (by simp [Laws.State.scopes_eq, witnessRoot, witnessCalled, Laws.State.ScopeOccurrenceId.ofSegments_inj]) rfl _ (List.mem_singleton_self _) rfl
+              occurrenceMap := Laws.State.ofOccurrences
+                [{ id := callItKey, element := ⟨"CallIt"⟩, scope := (.ofSegments []), activation := 1
+                   position := 1, role := .multiInstanceBody }] } := fun roled => by
+  have := roled (witnessCalled 2 (some callItKey)) (by simp [Laws.State.scopes_eq, witnessRoot, witnessCalled, Laws.State.ScopeOccurrenceId.ofSegments_inj]) rfl _ (Laws.State.mem_ofOccurrences_singleton.mpr rfl) rfl
   cases this
 
 /-- A called root owned by an occurrence of no Activity breaks `ActivityOwners`: the program holds no element. -/
 theorem nonActivity_owner_rejected (program : Program) :
     ¬ ActivityOwners { program with elements := [] }
       { instanceId := "I1", scopeMap := Laws.State.ofScopes [witnessRoot, witnessCalled 2 (some callItKey)]
-        occurrences := [{ id := callItKey, element := ⟨"CallIt"⟩, scope := (.ofSegments []), activation := 1, position := 1 }] } := fun owners => by
-  have activity := owners (witnessCalled 2 (some callItKey)) (by simp [Laws.State.scopes_eq, witnessRoot, witnessCalled, Laws.State.ScopeOccurrenceId.ofSegments_inj]) rfl _ (List.mem_singleton_self _) rfl
+        occurrenceMap := Laws.State.ofOccurrences
+          [{ id := callItKey, element := ⟨"CallIt"⟩, scope := (.ofSegments []), activation := 1, position := 1 }] } := fun owners => by
+  have activity := owners (witnessCalled 2 (some callItKey)) (by simp [Laws.State.scopes_eq, witnessRoot, witnessCalled, Laws.State.ScopeOccurrenceId.ofSegments_inj]) rfl _ (Laws.State.mem_ofOccurrences_singleton.mpr rfl) rfl
   cases found : ({ program with elements := [] } : Program).element? ⟨"CallIt"⟩ with
   | none => simp [found] at activity
   | some element => simpa using Laws.IL.element?_mem found
@@ -542,7 +544,7 @@ theorem CallsFormed.signal (kept : CallsFormed program s) (signal : Signal) : Ca
 /-- Dropping an occurrence record keeps the lane invariant. -/
 theorem CallsFormed.withoutRecord (kept : CallsFormed program s) (id : OccurrenceId) :
     CallsFormed program (Laws.State.withoutRecord s id) :=
-  kept.same rfl (fun _ member => (List.mem_filter.mp member).1) rfl
+  kept.same rfl (fun _ member => (Laws.State.mem_occurrenceList_filter_val.mp member).1) rfl
 
 /-- A change that removes what lies within the scope occurrence it leaves keeps the lane invariant: an owner that stays
 lies outside it, and so does its scope occurrence, which keeps its process instance. -/
@@ -616,10 +618,9 @@ theorem CallsFormed.reserved (formed : WellFormed under s) (holds : CallsFormed 
     {scope : ScopeOccurrenceId} (stands : scope ∈ Laws.State.scopeIds s) : CallsFormed program (s.reserve element scope).1 := by
   have reserves := Laws.State.reserve_reserves s element scope
   refine holds.carry (fun _ member _ => reserves.scopes ▸ member) fun root member _ call inside owned => ?_
-  rw [reserves.occurrences] at inside
-  rcases List.mem_append.mp inside with old | new
+  rcases reserves.mem_occurrences inside with old | new
   · exact .same old (reserves.instances _)
-  · rw [List.mem_singleton.mp new] at owned
+  · rw [new] at owned
     rw [reserves.scopes] at member
     obtain ⟨owner, present, named, _⟩ := formed.owned.scopeOwners root member _ owned
     have below := formed.issued.occurrences owner present
@@ -635,10 +636,9 @@ theorem CallsFormed.begun (formed : WellFormed under s) (holds : CallsFormed pro
   have begins := Laws.State.beginOccurrence_begins formed.activations request role sourceType
   have unowned := Laws.State.begin_unowned formed request role sourceType stands admitted
   refine holds.carry (fun _ member _ => begins.scopes ▸ member) fun root member _ call inside owned => ?_
-  rw [begins.occurrences] at inside
-  rcases List.mem_append.mp inside with old | new
-  · exact .same (List.mem_filter.mp old).1 (begins.instances _)
-  · rw [List.mem_singleton.mp new] at owned
+  rcases begins.mem_occurrences inside with old | new
+  · exact .same old (begins.instances _)
+  · rw [new] at owned
     exact absurd owned (unowned root member)
 
 /-- Starting a reservation's occurrence keeps the lane invariant: its record keeps its identity, role, element, scope
@@ -651,13 +651,10 @@ theorem CallsFormed.startReserved (holds : CallsFormed program s) {occurrence : 
   | false =>
     have starts := Laws.State.startReserved_starts s sourceType begun
     refine holds.carry (fun _ inside _ => starts.scopes ▸ inside) fun _ _ _ call inside _ => ?_
-    rw [starts.occurrences] at inside
-    obtain ⟨other, present, made⟩ := List.mem_map.mp inside
-    split at made
+    rcases starts.mem_occurrences inside with present | made
+    · exact .same present (starts.instances _)
     · subst made
       exact ⟨occurrence, member, rfl, rfl, rfl, by rw [starts.instances]⟩
-    · subst made
-      exact .same present (starts.instances _)
 
 /-- A Call's entry of its called root keeps the lane invariant, for a present Call of the element role, of an Activity
 the program declares, that owns no called root yet: the new root is the one called root its Call owns, named as `State.enterCalled` names it, and every
@@ -737,7 +734,7 @@ theorem callsFormed_alongside (program : Program) : Alongside program (CallsForm
   clearInside le _ _ keep formed present kept held :=
     held.cleared formed (Laws.State.clearInside_cleared formed present keep) kept
   disarm _ host _ held := held.same (by rw [Laws.State.disarm_eq])
-    (by rw [Laws.State.disarm_eq]; exact fun _ member => (List.mem_filter.mp member).1) (by rw [Laws.State.disarm_eq])
+    (by rw [Laws.State.disarm_eq]; exact fun _ member => (Laws.State.mem_occurrenceList_filter_val.mp member).1) (by rw [Laws.State.disarm_eq])
   setVariable s target name value _ held :=
     have same := Laws.State.setVariable_same s target name value
     held.same same.scopes (fun _ member => same.occurrences ▸ member) same.instanceId

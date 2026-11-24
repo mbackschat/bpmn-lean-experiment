@@ -266,21 +266,12 @@ theorem compact_quiet (ran : compact schedule start log s = .ok t) (quiet : allS
 
 /-! ## Ownership across the commit -/
 
-/-- **`Distinct.occurrences` across the commit.** -/
-theorem compact_occurrencesDistinct (ran : compact schedule start log s = .ok t) (counted : CountersFrom start s)
-    (issued : IssuedBelow s) (owned : Owned s) (rooted : Rooted s)
-    (keys : ∀ occurrence ∈ s.occurrences, occurrence.id.scope = occurrence.scope) (distinct : (occurrenceIds s).Nodup) :
-    (occurrenceIds t).Nodup := by
-  have ids : t.occurrences.map (·.id) = (s.occurrences.map (·.id)).map (renameId (commitRenaming schedule start log s)) := by
-    rw [compact_occurrences ran]; simp [List.map_map, Function.comp_def]
-  unfold occurrenceIds at distinct ⊢
-  rw [ids]
-  unfold List.Nodup at distinct ⊢
-  rw [List.pairwise_map]
-  refine distinct.imp_of_mem fun {x y} xin yin apart same => apart ?_
-  obtain ⟨o, om, rfl⟩ := List.mem_map.mp xin
-  obtain ⟨o', om', rfl⟩ := List.mem_map.mp yin
-  exact renamed_apart counted issued owned rooted keys (issued.occurrences o om) om' same
+/-- The commit renames no two occurrences of the settled state alike: their keys rename apart (`renamed_apart`) and the
+keyed map holds one record per key. -/
+theorem occurrences_apart (counted : CountersFrom start s) (issued : IssuedBelow s) (owned : Owned s) (rooted : Rooted s)
+    (keys : ∀ occurrence ∈ s.occurrences, occurrence.id.scope = occurrence.scope) (keyed : OccurrencesKeyed s.occurrenceMap) :
+    OccurrencesApart schedule start log s := fun a am _ bm same =>
+  keyed.eq_of_id am bm (renamed_apart counted issued owned rooted keys (issued.occurrences a am) bm same)
 
 /-! ## Records across the commit -/
 
@@ -341,15 +332,16 @@ theorem compact_scope_mem (ran : compact schedule start log s = .ok t) {old : Sc
 /-- An occurrence a commit leaves is one of the settled state, renamed. -/
 theorem compact_occurrence_of (ran : compact schedule start log s = .ok t) {occurrence : Occurrence}
     (member : occurrence ∈ t.occurrences) : ∃ old ∈ s.occurrences, OccurrenceRenamed (commitRenaming schedule start log s) old occurrence := by
-  rw [compact_occurrences ran] at member
-  obtain ⟨old, inside, rfl⟩ := List.mem_map.mp member
+  obtain ⟨old, inside, rfl⟩ := compact_occurrenceRecord_of ran member
   exact ⟨old, inside, { id := rfl, scope := rfl, element := rfl, begun := rfl, role := rfl, activation := rfl }⟩
 
-/-- An occurrence of the settled state stands, renamed, after the commit. -/
-theorem compact_occurrence_mem (ran : compact schedule start log s = .ok t) {old : Occurrence} (member : old ∈ s.occurrences) :
-    ∃ occurrence ∈ t.occurrences, OccurrenceRenamed (commitRenaming schedule start log s) old occurrence := by
-  rw [compact_occurrences ran]
-  exact ⟨_, List.mem_map_of_mem member, { id := rfl, scope := rfl, element := rfl, begun := rfl, role := rfl, activation := rfl }⟩
+/-- An occurrence of the settled state stands, renamed, after a commit that renames no two of them alike
+(`occurrences_apart`). -/
+theorem compact_occurrence_mem (ran : compact schedule start log s = .ok t) (apart : OccurrencesApart schedule start log s)
+    {old : Occurrence} (member : old ∈ s.occurrences) :
+    ∃ occurrence ∈ t.occurrences, OccurrenceRenamed (commitRenaming schedule start log s) old occurrence :=
+  ⟨_, compact_occurrenceRecord_mem ran apart member,
+    { id := rfl, scope := rfl, element := rfl, begun := rfl, role := rfl, activation := rfl }⟩
 
 /-- An occurrence a commit leaves is one of the settled state, renamed with its continuation. -/
 theorem compact_occurrence_eq (ran : compact schedule start log s = .ok t) {occurrence : Occurrence}
@@ -360,8 +352,7 @@ theorem compact_occurrence_eq (ran : compact schedule start log s = .ok t) {occu
                  position := commitPositioning schedule start log s old.position
                  continuation := old.continuation.rekey (renameId (commitRenaming schedule start log s))
                    (renameScope (commitRenaming schedule start log s)) } := by
-  rw [compact_occurrences ran] at member
-  obtain ⟨old, inside, rfl⟩ := List.mem_map.mp member
+  obtain ⟨old, inside, rfl⟩ := compact_occurrenceRecord_of ran member
   exact ⟨old, inside, rfl⟩
 
 /-- The running bodies a commit leaves: the settled state's, renamed. -/
@@ -481,7 +472,8 @@ theorem items_apart (counted : CountersFrom start s) (issued : IssuedBelow s) (o
 /-! ## The membership clauses across the commit -/
 
 /-- **`Owned` across the commit** (`owned`, seven fields): every reference is renamed with what it refers to. -/
-theorem compact_owned (ran : compact schedule start log s = .ok t) (owned : Owned s) (quiet : allQueuedTokens t = []) : Owned t where
+theorem compact_owned (ran : compact schedule start log s = .ok t) (apart : OccurrencesApart schedule start log s) (owned : Owned s)
+    (quiet : allQueuedTokens t = []) : Owned t where
   occurrenceScopes occurrence member := by
     obtain ⟨old, inside, mapped⟩ := compact_occurrence_of ran member
     have scope := mapped.scope
@@ -496,14 +488,14 @@ theorem compact_owned (ran : compact schedule start log s = .ok t) (owned : Owne
   itemOccurrences item member := by
     obtain ⟨old, inside, rfl⟩ := compact_item ran member
     obtain ⟨occurrence, present, links⟩ := owned.itemOccurrences old inside
-    obtain ⟨renamed, kept, mapped⟩ := compact_occurrence_mem ran present
+    obtain ⟨renamed, kept, mapped⟩ := compact_occurrence_mem ran apart present
     exact ⟨renamed, kept, by rw [mapped.id, links.1, renamedItem_occurrence], by rw [mapped.element, links.2.1],
       by rw [mapped.scope, links.2.2]⟩
   attachments item member host attached := by
     obtain ⟨old, inside, rfl⟩ := compact_item ran member
     obtain ⟨original, was, rfl⟩ := Option.map_eq_some_iff.mp attached
     obtain ⟨occurrence, present, links⟩ := owned.attachments old inside original was
-    obtain ⟨renamed, kept, mapped⟩ := compact_occurrence_mem ran present
+    obtain ⟨renamed, kept, mapped⟩ := compact_occurrence_mem ran apart present
     exact ⟨renamed, kept, by rw [mapped.id, links.1], by rw [mapped.begun, links.2.1], by rw [mapped.scope, links.2.2]⟩
   scopeOwners scope member owner link := by
     obtain ⟨old, inside, mapped⟩ := compact_scope_of ran member
@@ -511,7 +503,7 @@ theorem compact_owned (ran : compact schedule start log s = .ok t) (owned : Owne
     rw [occurrence] at link
     obtain ⟨original, was, rfl⟩ := Option.map_eq_some_iff.mp link
     obtain ⟨present, inside', id, begun⟩ := owned.scopeOwners old inside original was
-    obtain ⟨renamed, kept, mapped⟩ := compact_occurrence_mem ran inside'
+    obtain ⟨renamed, kept, mapped⟩ := compact_occurrence_mem ran apart inside'
     have id' := mapped.id
     have begun' := mapped.begun
     exact ⟨renamed, kept, by rw [id', id], by rw [begun', begun]⟩

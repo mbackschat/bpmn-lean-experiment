@@ -113,15 +113,25 @@ def choosingScopes : ScopeMap := Laws.State.ofScopes [rootScope, subScope]
     Laws.State.ScopeOccurrenceId.ofSegments_inj])]
   simp
 
-/- The witnesses read their scopes through the scope map's list view. -/
-attribute [local simp] Laws.State.scopes_eq
+/-- The witnesses' occurrence map, named as `choosingScopes` is. -/
+def choosingOccurrences : OccurrenceMap := Laws.State.ofOccurrences [gatewayOccurrence, armMessage, armTimer, task]
+
+@[simp] theorem mem_choosingOccurrences {x : Occurrence} :
+    x ∈ occurrenceList choosingOccurrences ↔ x = gatewayOccurrence ∨ x = armMessage ∨ x = armTimer ∨ x = task := by
+  rw [choosingOccurrences, Laws.State.mem_ofOccurrences (by simp [gatewayOccurrence, armMessage, armTimer, task,
+    Laws.State.ScopeOccurrenceId.ofSegments_inj])]
+  simp
+
+/- The witnesses read their scopes and occurrences through the maps' list views. -/
+attribute [local simp] Laws.State.scopes_eq Laws.State.occurrences_eq
 
 def choosing (kind : OpenKind) : State :=
-  { instanceId := "p", scopeMap := choosingScopes, occurrences := [gatewayOccurrence, armMessage, armTimer, task]
+  { instanceId := "p", scopeMap := choosingScopes, occurrenceMap := choosingOccurrences
     openItems := ofItems [paidItem kind, lateItem kind, workItem kind] }
 
 /-- `Paid` fired: the gateway, both arms and their items are gone; the begun winner has left too. -/
-def chosen (kind : OpenKind) : State := { choosing kind with occurrences := [task], openItems := ofItems [workItem kind] }
+def chosen (kind : OpenKind) : State :=
+  { choosing kind with occurrenceMap := Laws.State.ofOccurrences [task], openItems := ofItems [workItem kind] }
 
 theorem mem_choosing {kind : OpenKind} {item : OpenItem} :
     item ∈ itemList (choosing kind).openItems ↔ item = paidItem kind ∨ item = lateItem kind ∨ item = workItem kind := by
@@ -141,11 +151,12 @@ theorem items_owned (kind : OpenKind) : ItemsOwned (choosing kind) := by
       by simp [choosing, gatewayOccurrence, armMessage, armTimer, task, workItem]⟩
 
 /-- An item whose occurrence was removed belongs to none. -/
-theorem orphan_rejected (kind : OpenKind) : ¬ ItemsOwned { choosing kind with occurrences := [gatewayOccurrence] } :=
+theorem orphan_rejected (kind : OpenKind) :
+    ¬ ItemsOwned { choosing kind with occurrenceMap := Laws.State.ofOccurrences [gatewayOccurrence] } :=
   fun owned => by
     obtain ⟨occurrence, member, same, _⟩ :=
       owned (workItem kind) (Laws.State.items_same ((mem_choosing (item := workItem kind)).mpr (by simp)) rfl)
-    simp only [List.mem_singleton] at member
+    simp only [Laws.State.occurrences_eq, Laws.State.mem_ofOccurrences_singleton] at member
     subst member
     simp [gatewayOccurrence, workItem] at same
 
@@ -219,7 +230,7 @@ theorem first_arm_wins (kind : OpenKind) : ArmWins (choosing kind) (chosen kind)
 /-- A losing arm still armed after the winner fired is no Deferred Choice. -/
 theorem loser_armed_rejected (kind : OpenKind) :
     ¬ ArmWins (choosing kind)
-      { chosen kind with occurrences := [task, armTimer], openItems := ofItems [lateItem kind, workItem kind] }
+      { chosen kind with occurrenceMap := Laws.State.ofOccurrences [task, armTimer], openItems := ofItems [lateItem kind, workItem kind] }
       choiceId (paidItem kind) := fun wins => by
   have := wins.disarmed (lateItem kind) (by rw [mem_ofItems (by simp [lateItem, workItem])]; simp)
   simp [lateItem] at this

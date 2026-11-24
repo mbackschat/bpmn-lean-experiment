@@ -534,8 +534,7 @@ theorem removedEndOnce {hooks : Hooks} (kept : MicroStepsKeepEnds hooks) : Remov
   -- The commit renames only fresh issues; the removed occurrence's key was committed before the input.
   have stays : occurrence.id ∉ occurrenceIds settled.1 := fun inside => by
     obtain ⟨old, oldIn, same⟩ := List.mem_map.mp inside
-    obtain ⟨renamed, renamedIn, mapped⟩ := Laws.Step.compact_occurrence_mem compacted oldIn
-    have named := mapped.id
+    obtain ⟨renamed, renamedIn, named⟩ := Laws.Step.compact_occurrenceKey_mem compacted oldIn
     rw [same, Laws.Step.id_fixed committed.issued (formed.issued.occurrences occurrence member)
       (Laws.Step.renameBy_fixes _)] at named
     exact gone (List.mem_map.mpr ⟨renamed, renamedIn, named⟩)

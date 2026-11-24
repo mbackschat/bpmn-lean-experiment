@@ -289,7 +289,7 @@ theorem reserve_runsFramed {program : Program} (s : State) (element : ElementId)
   have reserves := Laws.State.reserve_reserves s element scope
   kept.carry (.grow (fun _ inside => .inl (reserves.scopes ▸ inside)) (fun _ inside => reserves.scopes ▸ inside)
     (congrArg (·.multiInstances) reserves.slots) (congrArg (·.compensation.runs) reserves.slots)
-    fun _ present => reserves.occurrences ▸ List.mem_append_left _ present)
+    fun _ present => reserves.mem_of present)
 
 /-- The state operations the hooks apply keep the lane's slot invariant but its numbering under any program
 (`Proofs.Frame.StoresAlongside`). -/
@@ -332,7 +332,7 @@ theorem runsFramed_frameAlongside (program : Program) : StoresAlongside program 
   clearInside le _ _ keep formed present _ kept := kept.carry (clearInside_carries formed present keep kept)
   disarm s host formed kept := by
     rw [Laws.State.disarm_eq]
-    exact kept.carry (.same rfl rfl rfl (fun _ present begun => List.mem_filter.mpr ⟨present, by simp [begun]⟩)
+    exact kept.carry (.same rfl rfl rfl (fun _ present begun => Laws.State.mem_occurrenceList_filter_val.mpr ⟨present, by simp [begun]⟩)
       (bodies_begun formed))
   setVariable s target name value _ kept :=
     have same := Laws.State.setVariable_same s target name value
@@ -376,7 +376,7 @@ which owns the body's scope occurrence. -/
 theorem withoutRecord_carries {program : Program} {t : State} {id : OccurrenceId}
     (unowned : ∀ entry ∈ t.scopes, entry.occurrence ≠ some id) (framed : RunsFramed program t) :
     RunsFramed program (Laws.State.withoutRecord t id) :=
-  framed.carry ⟨.refl _, fun run member o present named => ⟨o, List.mem_filter.mpr ⟨present, by
+  framed.carry ⟨.refl _, fun run member o present named => ⟨o, Laws.State.mem_occurrenceList_filter_val.mpr ⟨present, by
     obtain ⟨entry, inside, bodyNamed⟩ := List.mem_map.mp (framed.framed run member).owned.bodyScope
     simp only [bne_iff_ne, ne_eq]
     exact fun same => unowned entry inside (by rw [(framed.framed run member).bodyOwns entry inside bodyNamed, ← named, same])⟩,
@@ -393,7 +393,7 @@ theorem runsFramed_stepAlongside (program : Program) : StepAlongside program (Ru
   queueBatch _ _ _ kept := by rw [Laws.State.queueBatch_eq]; exact kept.carry (.equal rfl rfl rfl rfl)
   runOrder _ _ _ formed held counted batches keys _ made := by
     have framed := held.framed
-    have owned := orderJournal_runsOwned formed counted batches (fun run member =>
+    have owned := orderJournal_runsOwned formed counted batches keys (fun run member =>
       ⟨(framed run member).owned.body, (framed run member).owned.bodyScope, (framed run member).owned.instanceScopes,
         (framed run member).owned.ownScopes⟩) made
     have owns := orderJournal_bodyOwns formed counted batches (fun run member => (framed run member).owned.bodyScope)
@@ -416,19 +416,20 @@ theorem runsFramed_stepAlongside (program : Program) : StepAlongside program (Ru
     refine kept.carry ⟨by rw [begins.slots]; exact .refl _, fun run running o present named => ?_,
       fun _ inside => .inl (begins.scopes ▸ inside), fun _ _ _ inside _ => begins.scopes ▸ inside,
       by rw [begins.slots]; exact StoresHeldOrFresh.self s⟩
-    rw [begins.occurrences]
+    have perm := begins.occurrences formed.distinct.occurrencesKeyed
     by_cases same : o.id = (s.beginOccurrence request role sourceType).2.id
     · have below := formed.issued.occurrences o present
       rw [same] at below
       rcases begins.source with ⟨reserved, source⟩ | ⟨_, source⟩ | fresh
       · obtain rfl := Laws.State.nodup_map_eq formed.distinct.occurrences present source.member (same.trans source.id)
-        exact ⟨_, List.mem_append_right _ (List.mem_singleton_self _), same.symm, source.element, source.role⟩
+        exact ⟨_, begins.begun_mem, same.symm, source.element, source.role⟩
       · exact (source.fresh formed.issuer stands.mem below).elim
       · exact (fresh.fresh formed.issuer stands.mem below).elim
     · have unnamed : request.reserved ≠ some o.id := fun reserved => by
         rw [begins.slots] at running
         exact (admitted.2.1 o.id (by simp [Laws.State.names, reserved])).2.2.2 (.inr (.inl ⟨run, running, named.symm⟩))
-      exact ⟨o, List.mem_append_left _ (List.mem_filter.mpr ⟨present, by simp [same, unnamed]⟩), rfl, rfl, rfl⟩
+      exact ⟨o, perm.mem_iff.mpr (List.mem_append_left _ (List.mem_filter.mpr ⟨present, by simp [same, unnamed]⟩)), rfl,
+        rfl, rfl⟩
   cancel le s id formed kept := (runsFramed_frameAlongside program).cancelOccurrence le
     (fun _ _ unowned framed => withoutRecord_carries unowned framed) (fun _ _ _ kept => kept.carry (.equal rfl rfl rfl rfl))
     (id := id) formed kept
@@ -448,11 +449,11 @@ theorem runsFramed_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellForme
       refine holds.2.carry ⟨by rw [starts.slots]; exact .refl _, fun run _ o present _ => ?_,
         fun _ inside => .inl (starts.scopes ▸ inside), fun _ _ _ inside _ => starts.scopes ▸ inside,
         by rw [starts.slots]; exact StoresHeldOrFresh.self s⟩
-      rw [starts.occurrences]
+      have perm := starts.occurrences holds.1.distinct.occurrencesKeyed member
       by_cases same : o.id = occurrence.id
       · obtain rfl := Laws.State.nodup_map_eq holds.1.distinct.occurrences present member same
-        exact ⟨{ o with begun := true }, List.mem_map.mpr ⟨o, present, by simp⟩, rfl, rfl, rfl⟩
-      · exact ⟨o, List.mem_map.mpr ⟨o, present, by simp [same]⟩, rfl, rfl, rfl⟩
+        exact ⟨{ o with begun := true }, starts.started_mem, rfl, rfl, rfl⟩
+      · exact ⟨o, perm.mem_iff.mpr (List.mem_map.mpr ⟨o, present, by simp [same]⟩), rfl, rfl, rfl⟩
     · rw [Laws.State.startReserved_begun s sourceType begun]
       exact holds.2
   removeOccurrence program le _ occurrence holds member free :=

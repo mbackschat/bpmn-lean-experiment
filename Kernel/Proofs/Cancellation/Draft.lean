@@ -62,7 +62,7 @@ theorem subscriptionsOps_journal (program : Program) (keeps : Draft × TreeMap U
   subscribed s kind element scope host passive _ := by
     have reserves := Laws.State.reserve_reserves s element scope
     rw [Laws.State.openSubscription_eq]
-    exact ⟨reserves.scopes, fun o inside => reserves.occurrences ▸ List.mem_append_left _ inside,
+    exact ⟨reserves.scopes, fun o inside => reserves.mem_of inside,
       by rw [Laws.State.reserve_slots]⟩
   closeComplete s _ _ _ same _ _ := by rw [signal_journal, closeItem_journal]; exact same
   gatewayComplete s _ _ _ _ same _ _ _ := by rw [signal_journal, signal_journal, disarm_journal, closeItem_journal]; exact same

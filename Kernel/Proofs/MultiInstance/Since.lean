@@ -390,8 +390,7 @@ theorem since_closureAlongside (b : State) (program : Program) :
   begin s request role sourceType formed stands admitted _ _ kept := by
     have begins := Laws.State.beginOccurrence_begins formed.activations request role sourceType
     have present : (s.beginOccurrence request role sourceType).2 ∈ (s.beginOccurrence request role sourceType).1.occurrences := by
-      rw [begins.occurrences]
-      exact List.mem_append_right _ (List.mem_singleton_self _)
+      exact begins.begun_mem
     refine since_start formed kept (Laws.Step.beginOccurrence_frame formed stands admitted role sourceType) begins.started
       rfl present (fun o member same => ?_) begins.slots
     have below := formed.issued.occurrences o member
@@ -419,8 +418,7 @@ theorem since_pipelinePhases (b : State) (pipeline : Laws.Step.PipelinePhases We
     cases begun : occurrence.begun
     · have starts := Laws.State.startReserved_starts s sourceType begun
       have present : { occurrence with begun := true } ∈ (s.startReserved occurrence sourceType).1.occurrences := by
-        rw [starts.occurrences]
-        exact List.mem_map.mpr ⟨occurrence, member, by simp⟩
+        exact starts.started_mem
       refine since_start (begun := { occurrence with begun := true }) holds.1 holds.2
         (Laws.Step.startReserved_frame holds.1 member sourceType) starts.started rfl present (fun o inside same => ?_)
         starts.slots

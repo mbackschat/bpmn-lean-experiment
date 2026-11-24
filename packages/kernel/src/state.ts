@@ -29,13 +29,13 @@ export {
   type TimerRecurrence, type UserTaskDetail, type WaitView, type IncidentSubject, IncidentSubjectTag, type JobDetail, type JobSubject, JobSubjectTag,
 };
 import {
-  type CommandAction, CommandActionTag, type CommandInput, type ConditionChoice, type CorrelationMatch, type CriterionTarget,
+  type BroadcastIntent, type CommandAction, CommandActionTag, type CommandInput, type ConditionChoice, type CorrelationMatch, type CriterionTarget,
   CriterionTargetTag, type DeliveryInput, type DeliveryTrigger, DeliveryTriggerTag, type EffectInput,
   type EffectOutcome, EffectOutcomeTag, type EvalContext, type Input, noStartTrigger, type OccurrenceRef,
   SignalReach, type StartInput, type StartTrigger, StartTriggerTag, type TimerInput, type CancelInstanceInput,
 } from "./state/input.js";
 export {
-  type CommandAction, CommandActionTag, type CommandInput, type ConditionChoice, type CorrelationMatch, type CriterionTarget,
+  type BroadcastIntent, type CommandAction, CommandActionTag, type CommandInput, type ConditionChoice, type CorrelationMatch, type CriterionTarget,
   CriterionTargetTag, type DeliveryInput, type DeliveryTrigger, DeliveryTriggerTag, type EffectInput,
   type EffectOutcome, EffectOutcomeTag, type EvalContext, type Input, noStartTrigger, type OccurrenceRef,
   SignalReach, type StartInput, type StartTrigger, StartTriggerTag, type TimerInput, type CancelInstanceInput,
@@ -43,7 +43,8 @@ export {
 import {
   type Compensable, type CompensableChild, type CompensationRun, type Compensations, type FeatureSlots, featureSlotsClear,
   featureSlotsKeptAlive, featureSlotsSuspended, type InstanceData, type Iteration, iterationHolds, IterationTag, type Leave,
-  leaveFlows, leaveOutgoing, leaveRaised, LeaveTag, type MultiInstanceRun, type Parked, parkedEquals, parkedLeastBy, type Held, type Resume,
+  leaveFlows, leaveOutgoing, leaveRaised, LeaveTag, type MultiInstanceRun, type Parked, parkedEquals, parkedLeastBy, type Held,
+  type HeldMap, type Resume,
   ResumeTag, type ScopeOccurrenceId, type Suspended, type Variables,
 } from "./state/slots.js";
 import {
@@ -53,29 +54,30 @@ export {
   type InstanceFailure, type Origin, type Raised, raisedIsCancel, RaisedTag,
 };
 import {
-  ActivationRole, type Cause, CauseTag, marks, type OccurrenceKey, type StartedFact, Terminal, type Transition,
+  type ActivationCount, ActivationRole, type Cause, CauseTag, marks, type OccurrenceKey, type StartedFact, Terminal, type Transition,
 } from "./state/journal.js";
 export {
-  ActivationRole, type Cause, CauseTag, type OccurrenceKey, type StartedFact, Terminal, type Transition,
+  type ActivationCount, ActivationRole, type Cause, CauseTag, type OccurrenceKey, type StartedFact, Terminal, type Transition,
 };
 export {
   type Compensable, type CompensableChild, type CompensationRun, type Compensations, type FeatureSlots, featureSlotsClear,
   featureSlotsKeptAlive, featureSlotsSuspended, type InstanceData, type Iteration, iterationHolds, IterationTag, type Leave,
-  leaveFlows, leaveOutgoing, leaveRaised, LeaveTag, type MultiInstanceRun, type Parked, parkedEquals, parkedLeastBy, type Held, type Resume,
+  leaveFlows, leaveOutgoing, leaveRaised, LeaveTag, type MultiInstanceRun, type Parked, parkedEquals, parkedLeastBy, type Held,
+  type HeldMap, type Resume,
   ResumeTag, type ScopeOccurrenceId, type Suspended, type Variables,
 };
 
 import {
-  childScope, compareIssue, compareScopeOccurrenceId, compareUnitKey, type Issue, occurrenceId, type OccurrenceId, occurrenceIdParts,
+  childScope, compareIssue, compareOccurrenceId, compareScopeOccurrenceId, compareUnitKey, type Issue, occurrenceId, type OccurrenceId, occurrenceIdParts,
   rootScope, scopeParent, issuerText, type ScopeSlot, signalUnit, tokenUnit, type UnitKey,
 } from "./state/key.js";
 export { type OccurrenceId };
 import {
-  type Continuation, ContinuationTag, flowContinuation, type Occurrence, type ScopeMap, type ScopeOccurrence,
+  type Continuation, ContinuationTag, flowContinuation, type Occurrence, type OccurrenceMap, type ScopeMap, type ScopeOccurrence,
   scopeOccurrenceParent,
 } from "./state/occurrence.js";
 export {
-  type Continuation, ContinuationTag, flowContinuation, type Occurrence, type ScopeMap, type ScopeOccurrence,
+  type Continuation, ContinuationTag, flowContinuation, type Occurrence, type OccurrenceMap, type ScopeMap, type ScopeOccurrence,
   scopeOccurrenceParent,
 };
 import { type ClaimSlot, ClaimSlotTag, type Issuer, type IssueTable, seedUnit } from "./state/issue.js";
@@ -86,7 +88,7 @@ export {
   compareItemKey, insertItem, type ItemKey, itemAt, itemKeyText, ItemRole, itemsInOrder, type OpenItem, type OpenItems, sameItemKey,
 };
 import {
-  keyedInsert, type OrderedMap, orderedAny, orderedEntries, orderedInsert, orderedSize, type TreeMap, treeMapGetD, treeMapInsert,
+  keyedInsert, keyedInsertIfNew, type OrderedMap, orderedAny, orderedEntries, orderedInsert, orderedSize, type TreeMap, treeMapGetD, treeMapInsert,
 } from "./state/map.js";
 export { type TreeMap, treeMapInsert };
 // The closure's unit keys and keyed maps reach the step through this hub, as `Kernel.State` re-exports them (guard 15).
@@ -285,28 +287,13 @@ export interface Draft {
 
 export const emptyDraft: Draft = { started: [], ended: [], cancelled: [], ready: [] };
 
-/** One activation counter (R8: per process instance, element and role). */
-export interface ActivationCount {
-  readonly processInstance: string;
-  readonly element: ElementId;
-  readonly role: ActivationRole;
-  readonly count: number;
-}
-
-/** A Signal thrown to the population, which the host publishes after the input commits (PC-SIGNAL-01, PC-SIGNAL-04). */
-export interface BroadcastIntent {
-  readonly address: SignalAddress;
-  readonly variables: readonly Binding[];
-  readonly businessKey: string | null;
-  readonly origin: OccurrenceRef;
-}
-
 export interface State {
   readonly instanceId: string;
   readonly status: InstanceStatus;
   /** Lean's `scopeMap` through its list view `State.scopes`: in key order, which readers look up or filter, never order by. */
   readonly scopes: ScopeMap;
-  readonly occurrences: readonly Occurrence[];
+  /** Lean's `occurrenceMap` through its list view `State.occurrences`: in key order, which readers look up or filter, never order by. */
+  readonly occurrences: OccurrenceMap;
   /**
    * The running micro-step's batch: the tokens it queued, in order; `queueBatch` moves them into `queuedTokens` (DC4).
    * Named for the batch, so no read can take it for the closure's queue (`allTokens` reads both).
@@ -642,7 +629,10 @@ export function activate(
   ];
 }
 
-/** A reservation for `element` in `scope`: issued and numbered now, begun only when its trigger arrives. */
+/**
+ * A reservation for `element` in `scope`: issued and numbered now, begun only when its trigger arrives. Its key is fresh,
+ * so it joins the occurrences without displacing one (`insertIfNew`, so that no state loses a record to it).
+ */
 export function reserve(state: State, element: ElementId, scope: ScopeOccurrenceId): readonly [State, Occurrence] {
   const [activated, activation] = activate(state, instanceOf(state, scope), element, ActivationRole.Element);
   const [issued, id] = issueOccurrence(activated, scope, element);
@@ -657,7 +647,8 @@ export function reserve(state: State, element: ElementId, scope: ScopeOccurrence
     incoming: null,
     begun: false,
   };
-  return [{ ...issued, occurrences: [...issued.occurrences, occurrence] }, occurrence];
+  const occurrences = keyedInsertIfNew(issued.occurrences, occurrence, occurrenceKey, compareOccurrenceId);
+  return [{ ...issued, occurrences }, occurrence];
 }
 
 export function occurrenceOf(state: State, id: OccurrenceId): Occurrence | null {
@@ -727,16 +718,14 @@ export function beginOccurrence(
     incoming: request.incoming,
     begun: true,
   };
-  const others = current.occurrences.filter((other) => other.id !== begun.id);
-  return [recordStart({ ...current, occurrences: [...others, begun] }, begun, sourceType), begun];
+  return [recordStart({ ...current, occurrences: insertOccurrence(current.occurrences, begun) }, begun, sourceType), begun];
 }
 
 /** Start a reservation's occurrence where it stands: the journal fact only. */
 export function startReserved(state: State, occurrence: Occurrence, sourceType: string): readonly [State, Occurrence] {
   if (occurrence.begun) return [state, occurrence];
   const begun: Occurrence = { ...occurrence, begun: true };
-  const occurrences = state.occurrences.map((other) => (other.id === begun.id ? begun : other));
-  return [recordStart({ ...state, occurrences }, begun, sourceType), begun];
+  return [recordStart({ ...state, occurrences: insertOccurrence(state.occurrences, begun) }, begun, sourceType), begun];
 }
 
 /**
@@ -796,6 +785,20 @@ export function insertScope(scopes: ScopeMap, scope: ScopeOccurrence): ScopeMap 
 }
 
 const scopeKey = (scope: ScopeOccurrence): ScopeOccurrenceId => scope.id;
+
+/** Lean's `OccurrenceMap.insert` under the occurrence's own key: it replaces the one there and keeps key order. */
+export function insertOccurrence(occurrences: OccurrenceMap, occurrence: Occurrence): OccurrenceMap {
+  return keyedInsert(occurrences, occurrence, occurrenceKey, compareOccurrenceId);
+}
+
+const occurrenceKey = (occurrence: Occurrence): OccurrenceId => occurrence.id;
+
+/** Lean's `HeldMap.insert` under the held occurrence's own key: it replaces the one there and keeps key order. */
+export function insertHeld(held: HeldMap, entry: Held): HeldMap {
+  return keyedInsert(held, entry, heldKey, compareOccurrenceId);
+}
+
+const heldKey = (entry: Held): OccurrenceId => entry.occurrence;
 
 /**
  * Enter a new scope occurrence of `element` inside `parent`, with the given local variables (`variablesOfBindings`). The scope belongs

@@ -147,10 +147,9 @@ theorem BeginsKept.reserve {program : Program} {s : State} {element : ElementId}
     BeginsKept program T (s.reserve element scope).1 :=
   have reserves := Laws.State.reserve_reserves s element scope
   held.carry fun apart => ⟨fun o inside _ => by
-      rw [reserves.occurrences] at inside
-      rcases List.mem_append.mp inside with old | new
+      rcases reserves.mem_occurrences inside with old | new
       · exact .inl old
-      · rw [List.mem_singleton.mp new, reserves.kind]
+      · rw [new, reserves.kind]
         exact .inr (unlooped apart),
     fun element named => .inl (pending_kept reserves.queues (congrArg (·.compensation.runs) reserves.slots) named),
     reserves.transitions, by rw [reserves.draft]⟩
@@ -176,7 +175,7 @@ theorem BeginsKept.clearInside (le : Issue → Issue → Bool) {program other : 
 theorem BeginsKept.disarm {program : Program} {s : State} (host : OccurrenceId) (held : BeginsKept program T s) :
     BeginsKept program T (s.disarm host) := by
   rw [Laws.State.disarm_eq]
-  exact held.frame (fun _ inside => (List.mem_filter.mp inside).1) (fun _ named => named) rfl rfl
+  exact held.frame (fun _ inside => (Laws.State.mem_occurrenceList_filter_val.mp inside).1) (fun _ named => named) rfl rfl
 
 theorem BeginsKept.setVariable {program : Program} {s : State} (target : ScopeOccurrenceId) (name : String)
     (value : Value) (held : BeginsKept program T s) : BeginsKept program T (s.setVariable target name value) :=
@@ -219,7 +218,7 @@ theorem BeginsKept.runs {program : Program} {s : State} (runs : List MultiInstan
 /-- Dropping an occurrence's record keeps `BeginsKept`. -/
 theorem BeginsKept.withoutRecord {program : Program} {s : State} (id : OccurrenceId) (held : BeginsKept program T s) :
     BeginsKept program T (Laws.State.withoutRecord s id) :=
-  held.frame (fun _ inside => (List.mem_filter.mp inside).1) (fun _ named => named) rfl rfl
+  held.frame (fun _ inside => (Laws.State.mem_occurrenceList_filter_val.mp inside).1) (fun _ named => named) rfl rfl
 
 /-- Replacing the draft by one with the same start facts keeps `BeginsKept`. -/
 theorem BeginsKept.draft {program : Program} {s : State} (draft : Draft) (started : draft.started = s.draft.started)
@@ -351,10 +350,9 @@ theorem BeginsKept.begin {program other : Program} {s : State} {request : BeginR
     (pending_kept begins.queues (congrArg (·.compensation.runs) begins.slots) named),
     begins.transitions.trans kept.transitions, fun element loop processInstance looped => ?_,
     fun element loop processInstance looped => ?_⟩
-  · rw [begins.occurrences] at inside
-    rcases List.mem_append.mp inside with old | new
-    · exact kept.unbegun o (List.mem_filter.mp old).1 unbegun
-    · rw [List.mem_singleton.mp new, begins.isBegun] at unbegun
+  · rcases begins.mem_occurrences inside with old | new
+    · exact kept.unbegun o old unbegun
+    · rw [new, begins.isBegun] at unbegun
       cases unbegun
   · rw [begins.started]
     exact BeginsInOrder.append (kept.ordered element loop processInstance looped)
@@ -385,14 +383,10 @@ theorem BeginsKept.startReserved {program : Program} {s : State} {occurrence : O
       (pending_kept starts.queues (congrArg (·.compensation.runs) starts.slots) named),
       starts.transitions.trans kept.transitions, fun element loop processInstance looped => ?_,
       fun element loop processInstance looped => ?_⟩
-    · rw [starts.occurrences] at inside
-      obtain ⟨old, oldIn, made⟩ := List.mem_map.mp inside
-      by_cases same : old.id = occurrence.id
-      · simp only [same, ↓reduceIte] at made
-        rw [← made] at unbegun
+    · rcases starts.mem_occurrences inside with oldIn | made
+      · exact kept.unbegun o oldIn unbegun
+      · rw [made] at unbegun
         cases unbegun
-      · simp only [same, ↓reduceIte] at made
-        exact made ▸ kept.unbegun old oldIn (made ▸ unbegun)
     · rw [starts.started]
       refine BeginsInOrder.append (kept.ordered element loop processInstance looped) fun _ elementNamed _ => ?_
       simp only [Laws.State.key] at elementNamed

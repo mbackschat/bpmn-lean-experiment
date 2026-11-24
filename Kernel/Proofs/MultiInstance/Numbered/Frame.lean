@@ -86,13 +86,13 @@ theorem Numbered.leaveScope (le : Issue → Issue → Bool) {program other : Pro
 theorem Numbered.disarm {program : Program} {s : State} (host : OccurrenceId) (held : Numbered program s) :
     Numbered program (s.disarm host) := by
   rw [Laws.State.disarm_eq]
-  exact held.shrink ⟨.refl _, fun _ inside => (List.mem_filter.mp inside).1, fun _ inside => .inl inside,
+  exact held.shrink ⟨.refl _, fun _ inside => (Laws.State.mem_occurrenceList_filter_val.mp inside).1, fun _ inside => .inl inside,
     fun _ _ outside => absurd ‹_› outside, .of_kept (.of_eq rfl rfl rfl rfl), fun _ pending => .inl pending⟩
 
 /-- Dropping an occurrence's record keeps `Numbered`. -/
 theorem Numbered.withoutRecord {program : Program} {s : State} (id : OccurrenceId) (held : Numbered program s) :
     Numbered program (Laws.State.withoutRecord s id) :=
-  held.shrink ⟨.refl _, fun _ inside => (List.mem_filter.mp inside).1, fun _ inside => .inl inside,
+  held.shrink ⟨.refl _, fun _ inside => (Laws.State.mem_occurrenceList_filter_val.mp inside).1, fun _ inside => .inl inside,
     fun _ _ outside => absurd ‹_› outside, .of_kept (.of_eq rfl rfl rfl rfl), fun _ pending => .inl pending⟩
 
 /-- A variable write keeps `Numbered`. -/
@@ -345,6 +345,6 @@ theorem numbered_initial (program : Program) (instanceId : String) (variables : 
   unfold Numbered
   refine ⟨fun _ member => by simp [bodies] at member, ?_⟩
   constructor <;> simp [Laws.State.Queued, Laws.State.allSignals, Laws.State.allQueuedTokens, Laws.State.initial_eq,
-    OccurPending]
+    OccurPending, Laws.State.occurrences_eq, Laws.State.occurrenceList_empty]
 
 end Kernel.Proofs.MultiInstance

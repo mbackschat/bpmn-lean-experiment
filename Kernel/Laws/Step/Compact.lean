@@ -383,8 +383,7 @@ theorem compacts_issued {start : State} {log : RunLog} {s t : State} (ran : comp
       ScopeOccurrenceId.ofSegments rest ∈ standingKeys s) :
     IssuedBelow t where
   occurrences occurrence member := by
-    rw [compact_occurrences ran] at member
-    obtain ⟨old, inside, rfl⟩ := List.mem_map.mp member
+    obtain ⟨old, inside, rfl⟩ := compact_occurrenceRecord_of ran member
     exact compact_occurrenceIssued ran counted parents (issued.occurrences old inside)
   items := compact_itemIssued ran issued.occurrences owned issued.items
   scopes scope member := by
@@ -401,8 +400,7 @@ theorem compacts_issued {start : State} {log : RunLog} {s t : State} (ran : comp
     simp only [renamed] at fresh
     cases fresh
   occurrencePositions occurrence member unit index fresh := by
-    rw [compact_occurrences ran] at member
-    obtain ⟨old, inside, rfl⟩ := List.mem_map.mp member
+    obtain ⟨old, inside, rfl⟩ := compact_occurrenceRecord_of ran member
     cases pending : old.position with
     | committed n => simp [pending] at fresh
     | fresh u i =>
@@ -573,8 +571,7 @@ theorem compact_itemRoles {program : Program} {start : State} {log : RunLog} {s 
     exact ⟨H, history⟩
   intro item member occurrence present same
   obtain ⟨old, inside, renamed⟩ := compact_items ran member
-  rw [compact_occurrences ran] at present
-  obtain ⟨o, oin, rfl⟩ := List.mem_map.mp present
+  obtain ⟨o, oin, rfl⟩ := compact_occurrenceRecord_of ran present
   obtain ⟨owner, ownerIn, parts⟩ := formed.owned.itemOccurrences old inside
   obtain ⟨ownerId, -, -⟩ := parts
   have key : o.id = old.id.occurrence := by

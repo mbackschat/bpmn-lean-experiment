@@ -259,12 +259,11 @@ theorem signal_keeps (contract : HookContract hooks inv) (phases : BodyPhases in
       facts.reserve { queue with queuedSignals := queue.queuedSignals.erase unit } _ _
     obtain ⟨fresh, scopes, instances⟩ := placed
     refine pipeline _ _ _ _ _ _ _ reserved free (fun occurrence member named => ?_) ran
-    rw [occurrences] at member
-    rcases List.mem_append.mp member with old | new
+    rcases occurrences _ member with old | new
     · have := phases.issued _ _ _ popped old
       rw [named] at this
       exact (fresh (phases.issuer _ _ popped) stands.mem this).elim
-    rw [List.mem_singleton.mp new]
+    rw [new]
     exact ⟨queue, holds, fun entry kept => instances ▸ kept, fun entry kept => scopes ▸ kept,
       .inr ⟨_, _, _, by rw [element, scope]; exact head, fun selected same flow inside =>
         .inr ⟨selected, same, inside⟩⟩⟩

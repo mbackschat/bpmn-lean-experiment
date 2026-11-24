@@ -59,7 +59,7 @@ export {
   currentDeployments,
   currentSummary,
   deploymentSummaryOf,
-  occurrences,
+  dueInstants,
   occurs,
   FanOutEntryTag,
   ReceiverTag,

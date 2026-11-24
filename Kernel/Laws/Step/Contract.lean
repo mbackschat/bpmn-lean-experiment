@@ -838,7 +838,7 @@ structure StateFacts : Prop where
   /-- A reservation adds one occurrence, of its element in its scope occurrence, under a key not issued while that scope
   occurrence stands, when the issue table holds none of the running unit's next issues (DC12). -/
   reserve : ∀ (state : State) element scope,
-    (state.reserve element scope).1.occurrences = state.occurrences ++ [(state.reserve element scope).2] ∧
+    (∀ o ∈ (state.reserve element scope).1.occurrences, o ∈ state.occurrences ∨ o = (state.reserve element scope).2) ∧
     (state.reserve element scope).2.element = element ∧ (state.reserve element scope).2.scope = scope ∧
     (Laws.State.IssuerFresh state → scope ∈ Laws.State.standingKeys state →
       ¬ Laws.State.OccurrenceIssued state (state.reserve element scope).2.id) ∧

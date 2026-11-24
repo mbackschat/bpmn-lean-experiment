@@ -65,6 +65,15 @@ structure ScopeOccurrence where
   calledInstance : Option String := none
   deriving Repr
 
+/-- The occurrences issued and not yet removed, keyed by their structural key (DC21); a value's `id` is its key
+(`State.reserve`, `State.beginOccurrence`). -/
+abbrev OccurrenceMap := TreeMap OccurrenceId Occurrence compare
+
+/-- The occurrences of `occurrences` in key order, the list view the state codec writes. One reader takes this order:
+a clearing journals the occurrences of one scope occurrence cancelled in it (`State.clearInside`), an order no
+schedule changes. -/
+def occurrenceList (occurrences : OccurrenceMap) : List Occurrence := occurrences.toList.map (·.2)
+
 /-- The scope occurrence `scope` was entered in, read from its key; `none` for the root. -/
 abbrev ScopeOccurrence.parent (scope : ScopeOccurrence) : Option ScopeOccurrenceId := scope.id.parent?
 

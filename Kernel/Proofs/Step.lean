@@ -380,7 +380,7 @@ theorem propagationOps : Laws.Propagation.PropagationOps program (Laws.State.Wel
   raise _ event _ formed member begun _ := raiseFrom_wellFormed formed member begun event (fun _ same => by cases same) []
   fire _ _ _ formed := queue_wellFormed formed trivial
   batchIntents _ _ formed := formed.narrow {
-      scopeMap := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
+      scopeMap := rfl, scopeOrdinals := rfl, occurrenceMap := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := fun _ => by apply Laws.State.instanceOf_congr <;> rfl, recorded := id, items := .refl _,
       tokens := .refl _, signals := .refl _, starts := fun _ => id, slots := .same rfl, issued := rfl, issuing := rfl, issueNext := rfl } rfl formed.startedOnce
   compensate _ _ _ _ _ _ formed member begun _ _ _ := queue_wellFormed formed fun _ same => by
@@ -430,9 +430,7 @@ theorem subscriptionsOps : Laws.Subscriptions.SubscriptionsOps program (Laws.Sta
   subscribed state kind element scope host passive _ := by
     have reserves := Laws.State.reserve_reserves state element scope
     rw [Laws.State.openSubscription_eq]
-    exact ⟨reserves.scopes, fun occurrence member => by
-      rw [reserves.occurrences]
-      exact List.mem_append_left _ member, by rw [Laws.State.reserve_slots]⟩
+    exact ⟨reserves.scopes, fun occurrence member => reserves.mem_of member, by rw [Laws.State.reserve_slots]⟩
   closeComplete _ _ leave writes formed member _ :=
     have ⟨closed, fired⟩ := Laws.State.closeItem_fired formed member
     fired_complete closed fired leave writes .outward
@@ -442,7 +440,7 @@ theorem subscriptionsOps : Laws.Subscriptions.SubscriptionsOps program (Laws.Sta
     have disarmed := Laws.State.disarm_wellFormed closed gateway
     have kept : host ∈ ((state.closeItem item.id).disarm gateway).occurrences := by
       rw [Laws.State.disarm_eq, Laws.State.closeItem_eq]
-      exact List.mem_filter.mpr ⟨present, by simp [begun]⟩
+      exact Laws.State.mem_occurrenceList_filter_val.mpr ⟨present, by simp [begun]⟩
     refine fired_complete (named ▸ complete_wellFormed disarmed kept begun _ _ _)
       ((Laws.State.disarm_fired fired gateway).signal (fun _ same => by simp at same) (fun _ _ _ same => ?_)
         (fun _ _ _ _ _ same => by simp at same) fun _ _ same => by simp at same) leave writes .outward

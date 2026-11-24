@@ -167,7 +167,8 @@ theorem CountersFrom.refl (s : State) : CountersFrom s s :=
 /-- No two occurrences, open items or scope occurrences share an identifier, and no two occurrences a key: each
 activation numbers one occurrence. -/
 structure Distinct (s : State) : Prop where
-  occurrences : (occurrenceIds s).Nodup
+  /-- Every occurrence sits under its own key, so no two share one (`Distinct.occurrences`). -/
+  occurrencesKeyed : OccurrencesKeyed s.occurrenceMap
   items : KeyedBy s.openItems
   /-- Every scope occurrence sits under its own key, so no two share one (`Distinct.scopes`). -/
   scopesKeyed : ScopesKeyed s.scopeMap
@@ -175,6 +176,9 @@ structure Distinct (s : State) : Prop where
 
 theorem Distinct.scopes {s : State} (distinct : Distinct s) : (scopeIds s).Nodup := by
   rw [scopeIds, scopes_eq]; exact scopeList_nodup distinct.scopesKeyed
+
+theorem Distinct.occurrences {s : State} (distinct : Distinct s) : (occurrenceIds s).Nodup := by
+  rw [occurrenceIds, occurrences_eq]; exact occurrenceList_nodup distinct.occurrencesKeyed
 
 /-- Within one closure no occurrence key starts twice: re-entry and repetition give a new activation, never a reused one,
 and the input's journal keeps the closure's facts (`Laws.Step.orderJournal_journalOnce`) ([scopes, SRE-FRESH-01](../../../docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md#concurrent-activations-and-re-entry)). -/
@@ -692,8 +696,19 @@ def rootScopes : ScopeMap := ofScopes [rootScope]
 @[simp] theorem mem_rootScopes {x : ScopeOccurrence} : x ∈ scopeList rootScopes ↔ x = rootScope := by
   rw [rootScopes, mem_ofScopes (by simp)]; simp
 
+/-- The sample's occurrences, keyed. -/
+def sampleOccurrences : OccurrenceMap := ofOccurrences [subProcess, innerTask, outerTask]
+
+@[simp] theorem mem_sampleOccurrences {x : Occurrence} :
+    x ∈ occurrenceList sampleOccurrences ↔ x = subProcess ∨ x = innerTask ∨ x = outerTask := by
+  rw [sampleOccurrences, mem_ofOccurrences (by simp [subProcess, innerTask, outerTask, processRoot, subScope])]; simp
+
+/-- The sample's occurrences, up to order. -/
+theorem sampleOccurrences_perm : (occurrenceList sampleOccurrences).Perm [subProcess, innerTask, outerTask] :=
+  occurrenceList_ofOccurrences_perm (by simp [subProcess, innerTask, outerTask, processRoot, subScope])
+
 def sample (kind : OpenKind) : State :=
-  { instanceId := "p", scopeMap := sampleScopes, occurrences := [subProcess, innerTask, outerTask]
+  { instanceId := "p", scopeMap := sampleScopes, occurrenceMap := sampleOccurrences
     variables := ((∅ : TreeMap ScopeOccurrenceId Variables compare).insert processRoot ((∅ : Variables).insert "a" (.int 1))).insert
       subScope ∅
     openItems := ofItems [innerItem kind, outerItem kind], nextCompletion := 7

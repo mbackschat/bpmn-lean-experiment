@@ -80,6 +80,14 @@ export interface ScopeOccurrence {
  */
 export type ScopeMap = readonly ScopeOccurrence[];
 
+/**
+ * Lean's `OccurrenceMap`, the issued occurrences keyed by their structural key (DC21), written as its list view
+ * (`occurrenceList`): a value's `id` is its key, so the map is its values in key order, the form the state codec writes
+ * (T75). One reader takes this order: a clearing journals the occurrences of one scope occurrence cancelled in it
+ * (`clearInside`), an order no schedule changes.
+ */
+export type OccurrenceMap = readonly Occurrence[];
+
 /** Lean's `ScopeOccurrence.parent` over a search's result: the parent of a found record's key, `null` for none. */
 export function scopeOccurrenceParent(scope: ScopeOccurrence | null | undefined): ScopeOccurrenceId | null {
   return scope === null || scope === undefined ? null : scopeParent(scope.id);

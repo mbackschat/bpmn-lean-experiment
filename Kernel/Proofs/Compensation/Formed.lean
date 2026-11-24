@@ -259,10 +259,9 @@ theorem Formed.reserve {precedes : Compensable → Compensable → Prop} {progra
     (fun _ inside => made.signals ▸ inside) (fun o inside unbegun => ?_)
     (fun _ _ _ stands => by rw [scopeIds, made.scopes]; exact stands)
   rotate_left
-  · rw [made.occurrences] at inside
-    rcases List.mem_append.mp inside with old | fresh
+  · rcases made.mem_occurrences inside with old | fresh
     · exact .inl ⟨o, old, unbegun, by simp [Laws.State.key, made.instances]⟩
-    · obtain rfl := List.mem_singleton.mp fresh
+    · subst fresh
       refine .inr fun key counted => ?_
       have apart := (made.activated well.activations).fresh counted
       rwa [Laws.State.key, made.instances, made.placed, made.kind, made.role]
@@ -383,7 +382,7 @@ theorem formed_frameAlongside (precedes : Compensable → Compensable → Prop) 
   clearInside le _ _ keep well present housed kept := kept.clearInside le well present keep housed
   disarm s host _ kept := by
     rw [Laws.State.disarm_eq]
-    exact kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _) fun _ inside => (List.mem_filter.mp inside).1
+    exact kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _) fun _ inside => (Laws.State.mem_occurrenceList_filter_val.mp inside).1
   setVariable s target name value _ kept :=
     have same := Laws.State.setVariable_same s target name value
     kept.same same.scopes same.instanceId (Nat.le_of_eq ((Laws.State.positions_kept s).2.2.2.1 target name value).symm) same.activations (congrArg (·.compensation) same.slots)
@@ -399,7 +398,7 @@ theorem formed_frameAlongside (precedes : Compensable → Compensable → Prop) 
 theorem Formed.withoutRecord {precedes : Compensable → Compensable → Prop} {s : State} (formed : Formed precedes s)
     (id : OccurrenceId) : Formed precedes (Laws.State.withoutRecord s id) :=
   formed.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _) fun _ inside => by
-    simp only [Laws.State.withoutRecord, List.mem_filter] at inside
+    simp only [Laws.State.withoutRecord, Laws.State.occurrences_eq, Laws.State.mem_occurrenceList_filter_val] at inside
     exact inside.1
 
 /-- `Step`'s own phases keep `Formed`: journalling, taking signals and tokens off, beginning, cancelling and ordering
@@ -432,10 +431,9 @@ theorem formed_stepAlongside (precedes : Compensable → Compensable → Prop) (
       (fun record member => ?_) (by rw [begins.signals]; exact .refl _) (fun _ inside => begins.signals ▸ inside)
       (fun o inside unbegun => ?_) (fun _ _ _ stands => by rw [scopeIds, begins.scopes]; exact stands)
     rotate_left
-    · rw [begins.occurrences] at inside
-      rcases List.mem_append.mp inside with old | begun
-      · exact .inl ⟨o, (List.mem_filter.mp old).1, unbegun, by simp [Laws.State.key, begins.instances]⟩
-      · rw [List.mem_singleton.mp begun, begins.isBegun] at unbegun
+    · rcases begins.mem_occurrences inside with old | begun
+      · exact .inl ⟨o, old, unbegun, by simp [Laws.State.key, begins.instances]⟩
+      · rw [begun, begins.isBegun] at unbegun
         cases unbegun
     rw [begins.slots] at member
     have stands := kept.retained record member
@@ -477,15 +475,10 @@ theorem formed_pipelinePhases (precedes : Program → Compensable → Compensabl
         · rw [starts.slots] at inside
           have stands := holds.2.retained record inside
           rwa [scopeIds, ← starts.scopes] at stands
-        · rw [starts.occurrences] at inside
-          obtain ⟨other, was, made⟩ := List.mem_map.mp inside
-          by_cases same : other.id = occurrence.id
-          · simp only [same, ↓reduceIte] at made
-            rw [← made] at unbegun
+        · rcases starts.mem_occurrences inside with was | made
+          · exact .inl ⟨o, was, unbegun, by simp [Laws.State.key, starts.instances]⟩
+          · rw [made] at unbegun
             cases unbegun
-          · simp only [same, ↓reduceIte] at made
-            subst made
-            exact .inl ⟨other, was, unbegun, by simp [Laws.State.key, starts.instances]⟩
       · rw [Laws.State.startReserved_begun s sourceType begun]
         exact holds.2
     rw [Laws.State.closeOwnItems_eq]
@@ -678,7 +671,7 @@ theorem formed_compensate (program : Program) (precedes : Compensable → Compen
       rcases terminated with rfl | ⟨host, rfl⟩
       · exact was
       · rw [Laws.State.disarm_eq] at was
-        exact (List.mem_filter.mp was).1
+        exact (Laws.State.mem_occurrenceList_filter_val.mp was).1
     rw [steady.occurrences] at searchedHeld
     rwa [made] at searchedHeld
   have reservedApart : ∀ o ∈ (before.clearInside le scope).occurrences, o.begun = false →
@@ -751,8 +744,8 @@ theorem thrower_fresh {program : Program} {precedes : Compensable → Compensabl
     unfold triggerKey Laws.State.key
     rw [began.role]
   have member : occurrence ∈ t.occurrences := by
-    rw [occurrences, begins.occurrences]
-    exact List.mem_append_right _ (List.mem_singleton_self _)
+    rw [occurrences]
+    exact begins.begun_mem
   -- every trigger `t` holds is one the begin's state held, and names another key than the thrower's
   have held : ∀ trigger ∈ t.slots.compensation.runs.map (·.trigger) ++ queuedTriggers t,
       triggerKey trigger ≠ Laws.State.key t occurrence := fun trigger inside => by

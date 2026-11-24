@@ -601,7 +601,7 @@ const subscriptionNames = (program: Program, opening: boolean, subscriptions: re
  * catch, the Event Sub-Process starts of the level its entry opens (a Scope's children, a Call's called processes'), an
  * Event-Based Gateway's arms, and at the opening of a root start Event the root level's starts.
  */
-function held(program: Program, opening: boolean, element: Element): Subscription[] {
+function heldSubscriptions(program: Program, opening: boolean, element: Element): Subscription[] {
   const boundaries = (elementEnvelope(element)?.boundaries ?? []).map((attached) => attached.subscription);
   const event = elementEvent(element);
   const caught = event === null ? null : eventPayloadCatch(event[1]);
@@ -651,7 +651,7 @@ function endedBy(program: Program, withdrawals: readonly Withdrawal[]): NameSet 
 /**
  * Walk one closure from `begun`. Every element, boundary and passed host is taken at most once per kind of visit; a
  * write arms every Conditional of the program once, since it may resume one in the same closure (CIB-EXT-0035). A visit
- * that opens or ends a Conditional subscription, by beginning or completing the element that holds it (`held`) or by
+ * that opens or ends a Conditional subscription, by beginning or completing the element that holds it (`heldSubscriptions`) or by
  * removing its carrier (`endedBy`), reads the names through which a write ordered against it changes what it fires
  * (`conditionNames`), so `races` refuses a concurrent unit's write either side of a subscription's lifetime
  * (CIB-OP-0016). Subscriptions one arming may find true together, a contest the input's ranking settles where writes
@@ -690,10 +690,10 @@ export function closureWalk(reading: Reading, program: Program, walk: Walk, begu
   const lifetime = (visit: Visit): NameSet => {
     switch (visit.tag) {
       case VisitTag.Enters:
-        return union(subscriptionNames(program, true, held(program, true, visit.element)),
-          stopsAt(visit.element) ? noNames : subscriptionNames(program, false, held(program, false, visit.element)));
+        return union(subscriptionNames(program, true, heldSubscriptions(program, true, visit.element)),
+          stopsAt(visit.element) ? noNames : subscriptionNames(program, false, heldSubscriptions(program, false, visit.element)));
       case VisitTag.Completes:
-        return subscriptionNames(program, false, held(program, false, visit.element));
+        return subscriptionNames(program, false, heldSubscriptions(program, false, visit.element));
       case VisitTag.Fires:
       case VisitTag.Passes:
         return noNames;

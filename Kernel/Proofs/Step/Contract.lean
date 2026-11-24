@@ -77,7 +77,7 @@ theorem disarm_frame (state : State) (host : OccurrenceId) : Laws.Step.PipelineF
       fun item member => (Laws.State.mem_itemList_filter_val.mp (member)).1,
       fun _ kept => kept⟩,
     fun item member => by simpa using (Laws.State.mem_itemList_filter_val.mp (member)).2⟩
-  exact List.mem_filter.mpr ⟨member, by simp [begun]⟩
+  exact Laws.State.mem_occurrenceList_filter_val.mpr ⟨member, by simp [begun]⟩
 
 /-- The host facts an arming's premises give, as Subscriptions states them. -/
 theorem hosted_of {state : State} {host : OccurrenceId} {scope : ScopeOccurrenceId} (stands : Laws.Step.OccurrenceStands state host)

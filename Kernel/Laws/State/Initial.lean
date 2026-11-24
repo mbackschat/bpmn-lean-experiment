@@ -27,8 +27,9 @@ private theorem initial_historic (instanceId : String) (variables : List (String
 
 section Initial
 
-/- The fresh instance queues nothing under a unit key, so its queue views are its batches; its scopes are its map's. -/
-attribute [local simp] allSignals allQueuedTokens scopes_eq
+/- The fresh instance queues nothing under a unit key, so its queue views are its batches; its scopes and occurrences are
+its maps'. -/
+attribute [local simp] allSignals allQueuedTokens scopes_eq occurrences_eq occurrenceList_empty
 
 /-- A start's fresh instance is committed: it has no transition and an empty issue table, so a run's every before-state
 is committed (`Laws.Step.orderJournal_committed` for every other). -/
@@ -42,7 +43,7 @@ theorem initial_wellFormed (instanceId : String) (variables : List (String × Va
   issued := ⟨by simp [initial_eq], by simp [initial_eq, itemList_empty],
     fun _ member => (initial_historic instanceId variables businessKey).issued member, by simp [initial_eq],
     by simp [initial_eq]⟩
-  distinct := ⟨by simp [occurrenceIds, initial_eq], by simp [initial_eq, keyedBy_empty],
+  distinct := ⟨by simp only [initial_eq]; exact occurrencesKeyed_empty, by simp [initial_eq, keyedBy_empty],
     by simp only [initial_eq]; exact scopesKeyed_insert_at scopesKeyed_empty rfl, by simp [initial_eq]⟩
   startedOnce := by simp [StartedOnce, starts, initial_eq]
   activations := ⟨by simp [initial_eq], by simp [initial_eq]⟩

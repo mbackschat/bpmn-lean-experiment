@@ -6,7 +6,8 @@
  */
 import {
   CauseTag, childScope, compareItemKey, type Cause, type Compensable, type Continuation, type FeatureSlots, freshIssue,
-  insertScope, type Issue, type ItemKey, type Iteration, IterationTag, type OccurrenceId, occurrenceId, occurrenceIdParts,
+  type HeldMap, insertHeld, insertOccurrence, insertScope, type Issue, type ItemKey, type Iteration, IterationTag, type OccurrenceId,
+  occurrenceId, type OccurrenceMap, occurrenceIdParts,
   type Resume, ResumeTag, type ScopeMap, type ScopeOccurrenceId, scopeHead, type State, type Transition,
   compareScopeOccurrenceId, treeMapInsert,
 } from "../state.js";
@@ -68,7 +69,9 @@ function renameSlots(rename: Rename, slots: FeatureSlots): FeatureSlots {
   const id = (key: OccurrenceId): OccurrenceId => renameId(rename, key);
   return {
     parked: slots.parked.map((parked) => ({ ...parked, occurrence: id(parked.occurrence), scope: scope(parked.scope) })),
-    held: slots.held.map((held) => ({ ...held, occurrence: id(held.occurrence), scope: scope(held.scope) })),
+    // Renamed held occurrences are inserted afresh under their renamed keys, as Lean's fold into an empty map inserts them.
+    held: slots.held.reduce<HeldMap>((renamed, held) =>
+      insertHeld(renamed, { ...held, occurrence: id(held.occurrence), scope: scope(held.scope) }), []),
     multiInstances: slots.multiInstances.map((run) => ({
       ...run, scope: scope(run.scope), occurrence: id(run.occurrence), instances: run.instances.map((iteration) => renameIteration(rename, iteration)),
     })),
@@ -120,10 +123,11 @@ export function renameState(
     scopes: state.scopes.reduce<ScopeMap>((renamed, entry) => insertScope(renamed, {
       ...entry, id: scope(entry.id), position: rename(entry.position), occurrence: entry.occurrence === null ? null : id(entry.occurrence),
     }), []),
-    occurrences: state.occurrences.map((occurrence) => ({
+    // Renamed occurrences are inserted afresh under their renamed keys, as Lean's fold into an empty map inserts them.
+    occurrences: state.occurrences.reduce<OccurrenceMap>((renamed, occurrence) => insertOccurrence(renamed, {
       ...occurrence, id: id(occurrence.id), scope: scope(occurrence.scope), position: position(occurrence.position),
       continuation: continuation(occurrence.continuation),
-    })),
+    }), []),
     // Renamed keys are inserted afresh, in the renamed key order, as Lean's fold into an empty map inserts them.
     variables: state.variables.reduce<State["variables"]>((renamed, [key, entries]) =>
       treeMapInsert(renamed, scope(key), entries, compareScopeOccurrenceId), []),

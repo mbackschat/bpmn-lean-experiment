@@ -49,6 +49,19 @@ export function keyedInsert<K, V>(values: readonly V[], value: V, keyOf: (value:
 }
 
 /**
+ * Lean's `TreeMap.insertIfNew` on a map written as its values in key order (`keyedInsert`): `values` unchanged when one
+ * carries `keyOf(value)` already.
+ */
+export function keyedInsertIfNew<K, V>(
+  values: readonly V[], value: V, keyOf: (value: V) => K, cmp: (left: K, right: K) => number,
+): readonly V[] {
+  const key = keyOf(value);
+  const index = lowerBound(values, keyOf, key, cmp);
+  if (index < values.length && cmp(keyOf(values[index]!), key) === 0) return values;
+  return [...values.slice(0, index), value, ...values.slice(index)];
+}
+
+/**
  * Lean's `TreeMap` for a closure's unit-keyed content (DC4), a persistent balanced (AVL) tree: a closure inserts one
  * transition and one run-log entry per micro-step, and the sorted array above copies itself on every insert, which made
  * a 50,000-entry map take 6.3 s (spike T60, 2026-11-18). These maps never leave a closure, so they need no wire form.

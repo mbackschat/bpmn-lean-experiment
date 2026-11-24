@@ -60,7 +60,7 @@ def stateRows : List Field := [
   content ``Kernel.State.instanceId,
   content ``Kernel.State.status,
   content ``Kernel.State.scopeMap,
-  keyedLater ``Kernel.State.occurrences "K0.12 group 2a: occurrences keyed by occurrence",
+  content ``Kernel.State.occurrenceMap,
   ordered ``Kernel.State.batchTokens "the running unit's batch in the order it queued it, its index segment's order (DC4)",
   content ``Kernel.State.queuedTokens,
   content ``Kernel.State.variables,
@@ -166,7 +166,7 @@ def journalRows : List Field := [
 def slotRows : List Field := [
   -- `FeatureSlots`
   keyedLater ``Kernel.FeatureSlots.parked "K0.12 DC14: the parked map keyed (scope occurrence, flow, occurrence)",
-  keyedLater ``Kernel.FeatureSlots.held "K0.12 group 2b: held keyed by occurrence",
+  content ``Kernel.FeatureSlots.heldMap,
   keyedLater ``Kernel.FeatureSlots.multiInstances "K0.12 group 3a: Multi-Instance records keyed",
   content ``Kernel.FeatureSlots.compensation,
   keyedLater ``Kernel.FeatureSlots.instances "keyed by the instance's root scope occurrence; no K0.12 group names it yet",
@@ -174,9 +174,6 @@ def slotRows : List Field := [
   content ``Kernel.Parked.occurrence,
   content ``Kernel.Parked.flow,
   content ``Kernel.Parked.scope,
-  -- `Held`
-  content ``Kernel.Held.occurrence,
-  content ``Kernel.Held.scope,
   -- `MultiInstanceRun`
   content ``Kernel.MultiInstanceRun.scope,
   content ``Kernel.MultiInstanceRun.element,
