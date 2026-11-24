@@ -16,16 +16,12 @@ stated over a hooks parameter and closes when `Kernel.Proofs.Step` proves it of 
 to the program, since which kind of item an element opens only the program says (`Laws.State.Typed`), and no instance
 migrates between programs, as `Population` runs each under its deployment's.
 
-No premise on a binding list keeps the variable sets keyed (`Laws.State.VariablesKeyed`), which every input kind
-reaches by one of two paths. A start's variables, and the locals of a Scope, an Event Sub-Process start (a delivery's
-variables included), a Multi-Instance instance, a Call's called root and a compensation context, install through
-`State.initial` and `State.enterScope`, which keep the last binding of each name (`keyed`, `Laws.State.keyed_names`,
-[#147](https://github.com/mbackschat/bpmn-lean-experiment/issues/147)). Every other binding list an input carries, a
-Signal start's variables, a delivery's variables at a catch, a User Task completion's and a variable command's values
-and an effect result's outputs, is written one binding at a time through `State.setVariable`, which rebinds a name its
-set holds (`Laws.State.setVariable_variablesKeyed`). A population stimulus reaches an instance only as one of these
-inputs. The kernel's codecs do not refuse a repeated name: `codec.duplicateField` sees repeated object keys, never
-repeated names in a binding array, and the scenario contract's canonical order is checked outside the kernel.
+A variable set binds each name at most once by its type (`Variables`, keyed by name), whatever binding list an input
+carries: a start's variables and the locals a scope occurrence installs go through `Variables.ofBindings`, which keeps
+the last binding of each name ([#147](https://github.com/mbackschat/bpmn-lean-experiment/issues/147)), and every other
+binding list is written one binding at a time through `State.setVariable`. The kernel's codecs do not refuse a repeated
+name: `codec.duplicateField` sees repeated object keys, never repeated names in a binding array, and the scenario
+contract's canonical order is checked outside the kernel.
 
 The closure is proved through `WellFormed` itself, which holds between any two micro-steps of a closure: queued work
 naming a scope occurrence an interruption removed (`Kernel/Step/Stale.lean`) keeps it, since `Laws.State.QueueSound`

@@ -37,9 +37,10 @@ open Kernel
 /-! ## Script Tasks -/
 
 /-- A Script Task's arguments over the bindings visible from its scope occurrence, innermost first (item 3): one entry
-per visible name, in the order the names are first visible, each the first visible binding of its name. -/
+per visible name, in name order, each the first visible binding of its name. -/
 def Snapshot (visible snapshot : List (String × Value)) : Prop :=
-  snapshot.map (·.1) = (visible.map (·.1)).eraseDups ∧ ∀ entry ∈ snapshot, visible.find? (·.1 == entry.1) = some entry
+  (snapshot.map (·.1)).Pairwise (· < ·) ∧ (∀ name, name ∈ snapshot.map (·.1) ↔ name ∈ visible.map (·.1)) ∧
+    ∀ entry ∈ snapshot, visible.find? (·.1 == entry.1) = some entry
 
 /-- A Script Task's result patch (item 5 and the patch rule after it): the empty patch writes nothing, the one-entry
 patch on the result variable is accepted, a name given twice is `duplicate-output`, and among distinct names one that
@@ -77,23 +78,33 @@ def ErrorPathPatch (mapped : Bool) (patch : List (String × Value)) (outcome : E
 
 /-! ## Non-vacuity -/
 
-/-- The witness of `script-effect.test.ts`: the Sub-Process's `b` shadows the root's. -/
+/-- The witness of `script-effect.test.ts`: the Sub-Process's `b` shadows the root's, and `a` comes first by name. -/
 theorem snapshot_nearest_first :
     Snapshot [("b", .string "inner"), ("a", .int 1), ("b", .string "outer")]
-      [("b", .string "inner"), ("a", .int 1)] := by
-  refine ⟨by decide +kernel, fun entry member => ?_⟩
+      [("a", .int 1), ("b", .string "inner")] := by
+  refine ⟨by decide +kernel, fun name => ?_, fun entry member => ?_⟩
+  · simp only [List.map_cons, List.map_nil, List.mem_cons, List.not_mem_nil, or_false]
+    constructor
+    · rintro (h | h) <;> simp [h]
+    · rintro (h | h | h) <;> simp [h]
   simp only [List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl <;> simp [List.find?]
 
 /-- The shadowed value is rejected. -/
 theorem snapshot_shadowed_rejected :
     ¬ Snapshot [("b", .string "inner"), ("a", .int 1), ("b", .string "outer")]
-      [("b", .string "outer"), ("a", .int 1)] :=
-  fun ⟨_, values⟩ => by simpa [List.find?] using values ("b", .string "outer") (by simp)
+      [("a", .int 1), ("b", .string "outer")] :=
+  fun ⟨_, _, values⟩ => by simpa [List.find?] using values ("b", .string "outer") (by simp)
 
 /-- A name given twice is rejected. -/
 theorem snapshot_repeated_rejected : ¬ Snapshot [("a", .int 1)] [("a", .int 1), ("a", .int 1)] :=
-  fun ⟨names, _⟩ => absurd names (by decide +kernel)
+  fun ⟨sorted, _⟩ => absurd sorted (by decide +kernel)
+
+/-- Nearest-owner order, the arguments' order before K0.12, is rejected. -/
+theorem snapshot_visible_order_rejected :
+    ¬ Snapshot [("b", .string "inner"), ("a", .int 1), ("b", .string "outer")]
+      [("b", .string "inner"), ("a", .int 1)] :=
+  fun ⟨sorted, _⟩ => absurd sorted (by decide +kernel)
 
 theorem patch_result : ScriptPatch (some "total") [("total", .int 2)] (.ok [("total", .int 2)]) :=
   ⟨nofun, fun _ _ _ same => by simp at same; simp [same], fun distinct => by simp at distinct,

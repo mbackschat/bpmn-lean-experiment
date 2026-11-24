@@ -64,7 +64,7 @@ def CallInstallsSnapshot (hooks : Hooks) : Prop :=
     hooks.arriveActivity ctx header payload occurrence state = .ok after →
     root ∈ after.scopes → root.calledInstance.isSome → root.occurrence = some occurrence.id → root ∉ state.scopes →
     ∃ installed, ctx.evaluateMappings (state.evalContext ctx.program occurrence.scope) work.inputs = .ok (some installed) ∧
-      after.variables[root.id]? = some installed
+      after.variables[root.id]? = some (Variables.ofBindings installed)
 
 /-- PC-SCOPE-05 (`CALLN-RETURN-01`, `CALLN-OUTSIDE-01`): a called root that is idle continues exactly the Call
 occurrence that owns it, found by its own `occurrence`, never by the called definition, and keeps every other scope
@@ -388,11 +388,6 @@ at `Registry.hooks`. -/
 
 open Kernel.Laws.State (scopeIds)
 
-/-- Last writes are keyed already: one binding per name. -/
-private theorem keyed_lastWrites (made : List (String × Value)) : keyed (lastWrites made) = lastWrites made := by
-  rw [Laws.Hooks.lastWrites_eq]
-  exact Laws.State.keyed_of_nodup ((List.mergeSort_perm _ _).map _ |>.nodup_iff.mpr (Laws.State.keyed_names made))
-
 /-- An Activity's inputs, entered from a well-formed state, change nothing its scope occurrence's context reads, add only
 a scope occurrence that calls no instance, and leave every identifier below the next one to issue. -/
 private theorem enterLocal_facts {program : Program} {header : Header} {inputs : List (String × Value)}
@@ -460,13 +455,13 @@ theorem callInstallsSnapshot {hooks : Hooks} {workHooks : Feature.Work.WorkHooks
         (occurrence.scope.child occurrence.element
           (.fresh (Feature.Work.enterLocal header inputs occurrence state).issuing
             (Feature.Work.enterLocal header inputs occurrence state).issueNext))
-        (keyed (lastWrites made)) := by
+        (Variables.ofBindings (lastWrites made)) := by
     rcases armedIs with rfl | rfl <;> rw [Laws.State.enterCalled_eq _ _ _ _ _] <;> simp [Laws.State.signal_eq]
   simp only [Laws.State.signal_eq] at inside ⊢
   rw [Laws.State.scopes_eq, scopes.1] at inside
   rcases Laws.State.mem_scopeList_insert_cases inside with old | new
   · exact absurd (rootsKept root old isCalled) fresh
-  · rw [new, scopes.2, keyed_lastWrites]
+  · rw [new, scopes.2]
     exact Std.ExtTreeMap.getElem?_insert_self
 
 theorem returnContinuesCaller {hooks : Hooks} (call : hooks.completeCall = Feature.Work.completeCall) :
@@ -684,7 +679,7 @@ theorem CallsFormed.enterCalled (formed : WellFormed under s) (holds : CallsForm
           occurrence := some call.id
           calledInstance := some (State.calledInstanceId (s.instanceOf call.scope)
             (program.publicId call.element) call.activation) }
-      variables := s.variables.insert (call.scope.child call.element (.fresh s.issuing s.issueNext)) (keyed variables)
+      variables := s.variables.insert (call.scope.child call.element (.fresh s.issuing s.issueNext)) (Variables.ofBindings variables)
       slots := { s.slots with
         instances := s.slots.instances ++
           [{ root := call.scope.child call.element (.fresh s.issuing s.issueNext),

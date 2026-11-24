@@ -19,17 +19,6 @@ open Kernel
 
 /-! ## The fresh instance -/
 
-/-- A fresh instance's variables are keyed, whatever bindings the start supplied (#147). -/
-theorem initial_variablesKeyed (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
-    VariablesKeyed (State.initial instanceId variables businessKey) where
-  names x entries found := by
-    simp only [initial_eq] at found
-    rw [Std.ExtTreeMap.getElem?_insert] at found
-    split at found
-    · rw [← Option.some.inj found]
-      exact keyed_names variables
-    · simp at found
-
 /-- The fresh instance's one key, the root, is a history. -/
 private theorem initial_historic (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
     Historic (State.initial instanceId variables businessKey) :=
@@ -61,7 +50,6 @@ theorem initial_wellFormed (instanceId : String) (variables : List (String × Va
     by simp [initial_eq], by simp [scopeIds, initial_eq], by simp [initial_eq]⟩
   rooted := ⟨by simp [scopeIds, initial_eq], by simp [initial_eq, root_eq], by
     simp only [initial_eq, scopes_eq, mem_scopeList_single]; rintro scope rfl; exact .refl _⟩
-  variables := initial_variablesKeyed instanceId variables businessKey
   failure := by simp [FailureRecorded, initial_eq]
   issuer := ⟨fun _ _ held => by simp [initial_eq] at held, fun _ _ held => by simp [initial_eq] at held,
     fun _ _ _ held => by simp [initial_eq] at held⟩

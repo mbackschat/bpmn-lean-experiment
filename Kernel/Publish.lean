@@ -20,12 +20,9 @@ def statusName : InstanceStatus → String
   | .cancelled => "cancelled"
   | .failed => "failed"
 
-def byName (entries : List (String × Value)) : List (String × Value) :=
-  entries.mergeSort fun left right => decide (left.1 ≤ right.1)
-
-/-- The instance root's variables, ordered by name. -/
+/-- The instance root's variables, in name order (`State.ownVariables`). -/
 def variables (state : State) : List (String × Value) :=
-  byName (state.variables.getD State.root [])
+  state.ownVariables State.root
 
 /-- What a published variable scope is. A scope is named by the occurrence it belongs to: `activity` is an Activity
 occurrence's own scope (a Sub-Process's, or an Activity's local variables), `multiInstanceBody` a Multi-Instance body's;
@@ -95,9 +92,9 @@ def publishedScope (state : State) (scope : ScopeOccurrence) (variables : List (
 canonical order. -/
 def publishedScopes (program : Program) (state : State) : List PublishedScope :=
   (state.scopes.filterMap fun scope =>
-    match state.variables.getD scope.id [] with
+    match state.ownVariables scope.id with
     | [] => none
-    | entries => (publishedScope state scope (byName entries)).map fun published =>
+    | entries => (publishedScope state scope entries).map fun published =>
       { published with element := published.element.map program.publicId }).mergeSort PublishedScope.le
 
 end Kernel.Publish

@@ -73,7 +73,7 @@ theorem compact_kept (ran : compact schedule start log s = .ok t) : CommitKept s
   exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
 /-- A variable set a commit leaves is one of the settled state's, under its key renamed. -/
-theorem compact_variables (ran : compact schedule start log s = .ok t) {y : ScopeOccurrenceId} {entries : List (String × Value)}
+theorem compact_variables (ran : compact schedule start log s = .ok t) {y : ScopeOccurrenceId} {entries : Variables}
     (found : t.variables[y]? = some entries) :
     ∃ x, renameScope (commitRenaming schedule start log s) x = y ∧ s.variables[x]? = some entries := by
   rcases compact_cases ran with ⟨empty, rfl⟩ | ⟨_, rfl⟩
@@ -554,12 +554,6 @@ theorem compact_rooted (ran : compact schedule start log s = .ok t) (issued : Is
         rfl
       rw [← renamedId]
       exact .parent renamed _ _ renamedIn renamedLink (ih root)
-
-/-- **`VariablesKeyed` across the commit** (`variables`): every renamed set is a settled one. -/
-theorem compact_variablesKeyed (ran : compact schedule start log s = .ok t) (keyed : VariablesKeyed s) : VariablesKeyed t where
-  names _ _ found := by
-    obtain ⟨_, _, was⟩ := compact_variables ran found
-    exact keyed.names _ _ was
 
 /-- **`OwnedBelow` across the commit** (`ownedBelow`): a scope occurrence's owner is renamed with it. -/
 theorem compact_ownedBelow (ran : compact schedule start log s = .ok t) (counted : CountersFrom start s) (issued : IssuedBelow s)

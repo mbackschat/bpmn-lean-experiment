@@ -95,10 +95,10 @@ def completed (ctx : Ctx) (occurrence : Occurrence) (state : State) : Outcome :=
       let (state, completion) := state.takeCompletion
       let inside := handler.all fun handler =>
         ((ctx.program.element? handler).bind (·.header.parent)) == some occurrence.element
-      let locals (scope : ScopeOccurrenceId) := state.variables.getD scope []
-      let own := (owned.map (locals ·.id)).getD []
-      let iteration := if isInstance ctx occurrence state then locals occurrence.scope else []
-      let snapshot := if inside then own ++ iteration.filter (fun entry => !own.any (·.1 == entry.1)) else []
+      let locals (scope : ScopeOccurrenceId) := state.variables.getD scope ∅
+      let own := (owned.map (locals ·.id)).getD ∅
+      let iteration := if isInstance ctx occurrence state then locals occurrence.scope else ∅
+      let snapshot := if inside then iteration.foldl (fun kept name value => kept.insertIfNew name value) own else ∅
       let reference : OccurrenceRef :=
         { processInstanceId := state.instanceOf occurrence.scope, element := occurrence.element
           activation := occurrence.activation }
@@ -156,7 +156,7 @@ def beginHandler (ctx : Ctx) (trigger : OccurrenceRef) (scope : ScopeOccurrenceI
   | fuel + 1 =>
     match record.handler with
     | none => do
-      let (state, context) := state.enterScope record.subject scope record.snapshot none
+      let (state, context) := state.enterScope record.subject scope record.snapshot.toList none
       let pending := begunChildren record context
       let compensation := state.slots.compensation
       let nested : CompensationRun :=
@@ -170,7 +170,7 @@ def beginHandler (ctx : Ctx) (trigger : OccurrenceRef) (scope : ScopeOccurrenceI
         if element.activity?.isNone && element.scope?.isNone then
           .error (.semanticFailure .invariant "compensation-handler-not-activity")
         else
-          let (state, context) := state.enterScope handler scope record.snapshot none
+          let (state, context) := state.enterScope handler scope record.snapshot.toList none
           let compensation := state.slots.compensation
           let children := begunChildren record context
           let state := store state { compensation with retained := compensation.retained ++ children }

@@ -63,7 +63,7 @@ def stateRows : List Field := [
   keyedLater ``Kernel.State.occurrences "K0.12 group 2a: occurrences keyed by occurrence",
   ordered ``Kernel.State.batchTokens "the running unit's batch in the order it queued it, its index segment's order (DC4)",
   content ``Kernel.State.queuedTokens,
-  keyedLater ``Kernel.State.variables "K0.12 group 1b: variables keyed by (scope occurrence, name)",
+  content ``Kernel.State.variables,
   content ``Kernel.State.openItems,
   content ``Kernel.State.itemOrdinals,
   content ``Kernel.State.scopeOrdinals,
@@ -200,7 +200,7 @@ def compensationRows : List Field := [
   content ``Kernel.Compensable.occurrence,
   content ``Kernel.Compensable.completion,
   content ``Kernel.Compensable.closure,
-  keyedLater ``Kernel.Compensable.snapshot "K0.12 group 1b: a snapshot of variables keyed by name, in name order",
+  content ``Kernel.Compensable.snapshot,
   keyedLater ``Kernel.Compensable.children "K0.12 group 3b: compensation records keyed",
   -- `CompensationRun`
   content ``Kernel.CompensationRun.trigger,
@@ -215,7 +215,7 @@ def compensationRows : List Field := [
   content ``Kernel.CompensableChild.occurrence,
   content ``Kernel.CompensableChild.completion,
   content ``Kernel.CompensableChild.closure,
-  keyedLater ``Kernel.CompensableChild.snapshot "K0.12 group 1b: a snapshot of variables keyed by name, in name order",
+  content ``Kernel.CompensableChild.snapshot,
   ordered ``Kernel.CompensableChild.group "a group key: completion numbers outermost first, a path"]
 
 /-- The table, kept in blocks under guard 6's literal bound; rows follow each structure's field order. -/

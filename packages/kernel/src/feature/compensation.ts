@@ -72,7 +72,7 @@ import {
   type ScopeOccurrenceId,
   type State,
   SemanticCause,
-  semanticFailure, type OccurrenceId, scopeVariables,
+  semanticFailure, type OccurrenceId, ownVariables, insertVariableIfNew,
 } from "../state.js";
 import { ScopeRole, ctxPositionLe, ctxRunsAsInstance, inside, leaveScope, type Ctx } from "../hooks.js";
 import { begunChildren, keptRecords } from "./compensation/kept.js";
@@ -148,10 +148,10 @@ export function completed(ctx: Ctx, occurrence: Occurrence, state: State): Outco
   const handlerElement = handler === null ? null : programElement(ctx.program, handler);
   const inside = handler === null || (handlerElement !== null && elementHeader(handlerElement).parent === occurrence.element);
   const locals = (scope: ScopeOccurrenceId): Compensable["snapshot"] =>
-    scopeVariables(issued, scope);
+    ownVariables(issued, scope);
   const own = owned === null ? [] : locals(owned.id);
   const iteration = isInstance(ctx, occurrence, issued) ? locals(occurrence.scope) : [];
-  const snapshot = !inside ? [] : [...own, ...iteration.filter(([name]) => !own.some(([held]) => held === name))];
+  const snapshot = !inside ? [] : iteration.reduce((kept, [name, value]) => insertVariableIfNew(kept, name, value), own);
   const reference: OccurrenceRef = {
     processInstanceId: instanceOf(issued, occurrence.scope),
     element: occurrence.element,

@@ -54,8 +54,8 @@ identifier. A null matches a present null, and an absent name nothing. -/
 def criterionHolds (state : State) (scope : ScopeOccurrenceId) (criterion : CorrelationMatch) : Bool :=
   let root := state.instanceRoot scope
   let holds (owner : ScopeOccurrenceId) (name : String) : Bool :=
-    match (state.variables.getD owner []).find? (·.1 == name) with
-    | some (_, value) => sameKindAndValue value criterion.expected
+    match (state.variables.getD owner ∅)[name]? with
+    | some value => sameKindAndValue value criterion.expected
     | none => false
   let names (actual : Option String) : Bool :=
     match criterion.expected with

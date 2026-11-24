@@ -46,6 +46,10 @@ theorem KeyedOn.eq_of_key {m : TreeMap κ ν compare} (keyed : KeyedOn key m) {a
   exact Option.some.inj (first.symm.trans second)
 
 omit [Std.LawfulEqOrd κ] in
+/-- The empty map's list view is empty. -/
+@[simp] theorem toList_empty : (∅ : TreeMap κ ν compare).toList = [] := Std.ExtTreeMap.toList_eq_nil_iff.mpr rfl
+
+omit [Std.LawfulEqOrd κ] in
 theorem values_empty : values (∅ : TreeMap κ ν compare) = [] := by simp [values]
 
 omit [Std.LawfulEqOrd κ] in

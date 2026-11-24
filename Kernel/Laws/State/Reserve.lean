@@ -100,7 +100,7 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
   refine ⟨?_, fun request queued named => ?_⟩
   rotate_left
   · exact fresh ((formed.claimed.named request (queuedBefore request queued)).2 _ named).1
-  refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,
+  refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted,
     ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled, ?attachedReserved, ?typed,
     ?worked, ?roles, ?raises, ?bodyRoles, ?itemRoles, ?issuer⟩
   case issued =>
@@ -172,8 +172,6 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
     refine ⟨by simpa [scopeIds, reserves.scopes] using present, by simpa [reserves.scopes] using parentless, ?_⟩
     intro x member
     exact Within.congr reserves.scopes (reach x (reserves.scopes ▸ member))
-  case variables =>
-    exact ⟨by simpa [reserves.variables] using formed.variables.names⟩
   case failure => simpa [FailureRecorded, reserves.failure, reserves.status] using formed.failure
   case queue =>
     have queue := formed.queue
@@ -353,7 +351,7 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
     simp [starts, starts_.transitions, starts_.started, keys]
   have keysOther : ∀ old ∈ before.occurrences, old.id ≠ occurrence.id → key before old ≠ key before occurrence :=
     fun old held other same => other (by rw [nodup_map_eq formed.distinct.keys held member same])
-  refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,
+  refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted,
     ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled, ?attachedReserved, ?typed,
     ?worked, ?roles, ?raises, ?bodyRoles, ?itemRoles, ?issuer⟩
   case issued =>
@@ -439,8 +437,6 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
     refine ⟨by simpa [scopeIds, starts_.scopes] using present, by simpa [starts_.scopes] using parentless, ?_⟩
     intro x inside
     exact Within.congr starts_.scopes (reach x (starts_.scopes ▸ inside))
-  case variables =>
-    exact ⟨by simpa [starts_.variables] using formed.variables.names⟩
   case failure => simpa [FailureRecorded, starts_.failure, starts_.status] using formed.failure
   case queue =>
     have queue := formed.queue

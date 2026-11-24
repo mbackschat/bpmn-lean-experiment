@@ -216,7 +216,7 @@ theorem queueInstances_keeps (ops : MultiInstanceOps program inv settled)
 `loopCounter = index` (CIB-INT-0018). -/
 def CounterIn (ctx : Ctx) (loop : MultiInstance) (s : State) (index : Nat) (scope : ScopeOccurrenceId) : Prop :=
   ctx.program.options.multiInstanceCounters = .cibLocals → Feature.MultiInstance.itemName ctx loop ≠ some "loopCounter" →
-    ∃ entries, s.variables[scope]? = some entries ∧ ("loopCounter", Value.int index) ∈ entries
+    ∃ entries, s.variables[scope]? = some entries ∧ entries["loopCounter"]? = some (Value.int index)
 
 /-- What entering the instances `done`, the first of those `MultiInstance.opening` names, keeps and records from the
 state `start` the entering began in: `Entering`, the occurrence counters, the feature slots, the occurrences,
@@ -359,9 +359,9 @@ theorem enterInstance_opening (ops : MultiInstanceOps program inv settled) {ctx 
       refine ⟨_, by rw [List.getElem?_set_self below], ⟨unissuedStart, issuedAfter⟩,
         List.mem_map_of_mem Laws.State.mem_scopeList_insert_self, fun cib named => ?_⟩
       obtain ⟨earlier, later, split, last⟩ := counted cib named
-      refine ⟨keyed locals, by simp only [Std.ExtTreeMap.getElem?_insert_self], ?_⟩
+      refine ⟨Variables.ofBindings locals, by simp only [Std.ExtTreeMap.getElem?_insert_self], ?_⟩
       rw [split]
-      exact Laws.State.mem_keyed earlier last
+      exact Laws.State.ofBindings_getElem?_last earlier last
   · have fresh' : ∀ other, other ∈ done → ∀ scope', instances[other]? = some (.active scope') →
         Laws.State.ScopeIssued s scope' := fun other inside scope' slot => by
       obtain ⟨found, slot', bounds, _⟩ := entered other inside

@@ -95,14 +95,17 @@ theorem setVariable_same (state : State) (target : ScopeOccurrenceId) (name : St
       queues := .of_eq rfl rfl rfl rfl, instances := fun _ => by apply instanceOf_congr <;> rfl, instanceId := rfl,
       slots := rfl, issued := rfl, issuing := rfl, issueNext := rfl }
 
-/-- The variable sets after `setVariable`: the target's set, empty if it held none, rebinds or appends the name. -/
+/-- The variable sets after `setVariable`: the target's set, empty if it held none, binds the name to the value. -/
 theorem setVariable_variables (state : State) (target : ScopeOccurrenceId) (name : String) (value : Value) :
-    (state.setVariable target name value).variables = state.variables.insert target
-      (if (state.variables.getD target []).any (·.1 == name) then
-        (state.variables.getD target []).map fun entry => if entry.1 == name then (name, value) else entry
-      else state.variables.getD target [] ++ [(name, value)]) := by
+    (state.setVariable target name value).variables =
+      state.variables.insert target ((state.variables.getD target ∅).insert name value) := by
   unfold State.setVariable
   rfl
+
+/-- A scope occurrence's own variables are its set's list view, in name order. -/
+theorem ownVariables_eq (state : State) (scope : ScopeOccurrenceId) :
+    state.ownVariables scope = (state.variables.getD scope ∅).toList := by
+  simp only [State.ownVariables]
 
 /-- `removeVariable` changes only the variable sets and the write log. -/
 theorem removeVariable_same (state : State) (target : ScopeOccurrenceId) (name : String) :
@@ -220,7 +223,7 @@ theorem openSubscription_eq (state : State) (kind : OpenKind) (element : Element
   simp only [State.openSubscription, State.issuePosition, State.issueItem, State.issue, State.putItem]
 
 /-- A scope occurrence is entered below its parent as the running unit's next issue, which the issue table records
-under its slot, then takes the unit's following issue as its order position (DC25), with its locals keyed. -/
+under its slot, then takes the unit's following issue as its order position (DC25), with its locals as one variable set. -/
 theorem enterScope_eq (state : State) (element : ElementId) (parent : ScopeOccurrenceId)
     (locals : List (String × Value)) (occurrence : Option OccurrenceId) :
     state.enterScope element parent locals occurrence =
@@ -231,7 +234,8 @@ theorem enterScope_eq (state : State) (element : ElementId) (parent : ScopeOccur
           scopeMap := state.scopeMap.insert (parent.child element (.fresh state.issuing state.issueNext))
             { id := parent.child element (.fresh state.issuing state.issueNext), element := some element,
                position := .fresh state.issuing (state.issueNext + 1), occurrence }
-          variables := state.variables.insert (parent.child element (.fresh state.issuing state.issueNext)) (keyed locals) },
+          variables := state.variables.insert (parent.child element (.fresh state.issuing state.issueNext))
+            (Variables.ofBindings locals) },
         parent.child element (.fresh state.issuing state.issueNext)) := by
   simp only [State.enterScope, State.issuePosition, State.issue]
 
@@ -300,7 +304,7 @@ theorem closeOwnItems_eq (state : State) (id : OccurrenceId) :
   simp only [State.closeOwnItems]
 
 theorem removeVariable_variables (state : State) (target : ScopeOccurrenceId) (name : String) :
-    (state.removeVariable target name).variables = state.variables.modify target (·.filter (·.1 != name)) := by
+    (state.removeVariable target name).variables = state.variables.modify target (·.erase name) := by
   simp only [State.removeVariable]
 
 /-! ### What the hooks read of the operations they apply
@@ -432,7 +436,7 @@ theorem visible_go (state : State) (program : Program) :
     ∃ go : Nat → Option ScopeOccurrenceId → List (String × Value),
       (∀ scope, state.visible program scope = go (scope.segments.length + 1) (some scope)) ∧ (∀ current, go 0 current = []) ∧
       (∀ fuel, go (fuel + 1) none = []) ∧ ∀ fuel id, go (fuel + 1) (some id) =
-        (state.variables.getD id []).filter (state.shows program id ·.1) ++
+        (state.ownVariables id).filter (state.shows program id ·.1) ++
           if state.calledRoot id then [] else go fuel ((state.scopes.find? (·.id == id)).bind (·.parent)) :=
   ⟨visibleWalk state program, fun scope => visible_walk state program scope.segments scope rfl _ (by omega),
     fun _ => by simp [visibleWalk], fun _ => rfl, fun _ _ => by simp only [visibleWalk, State.frame]⟩
@@ -442,7 +446,7 @@ theorem owner?_go (state : State) (name : String) :
     ∃ go : Nat → ScopeOccurrenceId → Option ScopeOccurrenceId,
       (∀ scope, state.owner? scope name = go (scope.segments.length + 1) scope) ∧ (∀ current, go 0 current = none) ∧
       ∀ fuel current, go (fuel + 1) current =
-        if (state.variables.getD current []).any (·.1 == name) then some current
+        if (state.variables.getD current ∅).contains name then some current
         else if state.calledRoot current then none
         else ((state.scopes.find? (·.id == current)).bind (·.parent)).bind (go fuel) :=
   ⟨ownerWalk state name, fun scope => owner_walk state name scope.segments scope rfl _ (by omega), fun _ => rfl,
@@ -478,7 +482,7 @@ theorem initial_eq (instanceId : String) (variables : List (String × Value)) (b
     State.initial instanceId variables businessKey =
       { instanceId
         scopeMap := (∅ : ScopeMap).insert State.root { id := State.root, element := none, position := 0 }
-        variables := (∅ : TreeMap ScopeOccurrenceId (List (String × Value)) compare).insert State.root (keyed variables)
+        variables := (∅ : TreeMap ScopeOccurrenceId Variables compare).insert State.root (Variables.ofBindings variables)
         slots := { instances := [{ root := State.root, businessKey }] } } := by
   simp only [State.initial]
 

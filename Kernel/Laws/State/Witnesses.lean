@@ -75,14 +75,6 @@ theorem misfiled_item_rejected (kind : OpenKind) :
   simp only [sample, List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl | rfl <;> simp [subProcess, innerTask, outerTask, innerItem, processRoot, subScope] at same scope
 
-/-- A name bound twice in one variable set breaks `VariablesKeyed`. -/
-theorem repeated_name_rejected (kind : OpenKind) :
-    ¬ VariablesKeyed
-      { sample kind with variables := (∅ : TreeMap ScopeOccurrenceId _ compare).insert processRoot [("a", .int 1), ("a", .int 2)] } :=
-  fun keyed => by
-    have := keyed.names processRoot [("a", .int 1), ("a", .int 2)] Std.ExtTreeMap.getElem?_insert_self
-    simp at this
-
 /-- A start fact pending without its counter breaks `StartsCounted`. -/
 theorem uncounted_start_rejected (kind : OpenKind) :
     ¬ StartsCounted { sample kind with draft := { started := [startFact innerTask] }, activations := [] } :=

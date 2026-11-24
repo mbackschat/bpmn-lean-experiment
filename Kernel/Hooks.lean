@@ -185,10 +185,6 @@ def State.hold (state : State) (occurrence : Occurrence) : State :=
 def State.evalContext (state : State) (program : Program) (scope : ScopeOccurrenceId) : EvalContext :=
   { variables := state.visible program scope, nowMs := state.logicalTimeMs, bounds := program.options.bounds }
 
-/-- The variables `scope` itself holds, without the chain behind it. -/
-def State.ownVariables (state : State) (scope : ScopeOccurrenceId) : List (String × Value) :=
-  state.variables.getD scope []
-
 /-- How a catch trigger catches a raised event: its precedence, lower first, and the variables it writes. -/
 structure Catch where
   rank : Nat

@@ -56,9 +56,9 @@ import {
   type State,
   type Transition,
   type WaitView,
-  breadthUnitKey, issueNotAfter, itemsInOrder,
+  breadthUnitKey, issueNotAfter, itemsInOrder, ownVariables,
 } from "./state.js";
-import { messageTriggerChannel, ownVariables } from "./hooks.js";
+import { messageTriggerChannel } from "./hooks.js";
 
 /**
  * What a program needs from its host. `maxConcurrentWaits` is `null` when the shape bounds nothing, which is every

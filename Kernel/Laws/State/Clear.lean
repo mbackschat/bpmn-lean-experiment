@@ -184,7 +184,6 @@ theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {k
       (cleared.scopesSubset member), fun entry member => ?_⟩
     obtain ⟨old, outside⟩ := (cleared.scopes entry).mp member
     exact cleared.reaches formed (reach entry old) outside
-  · exact ⟨fun x entries held => formed.variables.names x entries ((cleared.variables x entries).mp held).1⟩
   · simpa [FailureRecorded, cleared.status, cleared.failure] using formed.failure
   · have queue := formed.queue
     refine ⟨fun host element scope queued => ?_,
@@ -275,7 +274,7 @@ theorem Prunes.wellFormed {before after : State} (formed : WellFormed program be
   have items : itemList after.openItems ⊆ itemList before.openItems := by exact prunes.items.subset
   have housed : ∀ occurrence ∈ after.occurrences, occurrence.scope ∈ scopeIds after := fun occurrence member => by
     simpa [scopeIds, prunes.scopes] using formed.owned.occurrenceScopes occurrence (kept member)
-  refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,
+  refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted,
     ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled, ?attachedReserved, ?typed,
     ?worked, ?roles, ?raises, ?bodyRoles, ?itemRoles, ?issuer⟩
   case issued =>
@@ -314,8 +313,6 @@ theorem Prunes.wellFormed {before after : State} (formed : WellFormed program be
     refine ⟨by simpa [scopeIds, prunes.scopes] using present, by simpa [prunes.scopes] using parentless, ?_⟩
     intro x member
     exact Within.congr prunes.scopes (reach x (prunes.scopes ▸ member))
-  case variables =>
-    exact ⟨by simpa [prunes.variables] using formed.variables.names⟩
   case failure => simpa [FailureRecorded, prunes.failure, prunes.status] using formed.failure
   case queue =>
     have queue := formed.queue
@@ -430,7 +427,7 @@ theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (form
   have keys : ∀ occurrence ∈ after.occurrences, key after occurrence = key before occurrence := fun occurrence member =>
     key_congr (left.instances _ (housed occurrence member))
   have kept := left.occurrencesSublist.subset
-  refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,
+  refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted,
     ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled, ?attachedReserved, ?typed,
     ?worked, ?roles, ?raises, ?bodyRoles, ?itemRoles, ?issuer⟩
   case issued =>
@@ -480,8 +477,6 @@ theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (form
       (left.scopesSubset member), fun entry member => ?_⟩
     obtain ⟨old, outside⟩ := (left.scopes entry).mp member
     exact left.reaches (reach entry old) outside
-  case variables =>
-    exact ⟨fun x entries held => formed.variables.names x entries ((left.variables x entries).mp held).1⟩
   case failure => simpa [FailureRecorded, left.status, left.failure] using formed.failure
   case queue =>
     have queue := formed.queue

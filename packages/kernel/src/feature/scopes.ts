@@ -44,10 +44,10 @@ import {
   type ScopeOccurrence,
   type State,
   SemanticCause,
-  semanticFailure,
+  semanticFailure, ownVariables,
 } from "../state.js";
 import {
-  clearInside, ctxOutputReads, ctxPositionLe, ctxRequireMappings, ctxRequireMappingsWith, evalContext, ownVariables, type Ctx,
+  clearInside, ctxOutputReads, ctxPositionLe, ctxRequireMappings, ctxRequireMappingsWith, evalContext, type Ctx,
   type ScopeEntry,
 } from "../hooks.js";
 

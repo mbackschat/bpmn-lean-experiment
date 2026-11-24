@@ -35,7 +35,7 @@ instances a called root records (`State.enterScope`, `State.enterCalled`). -/
 structure ScopeAppended (before after : State) (entry : ScopeOccurrence) (locals : List (String × Value)) : Prop where
   occurrenceOrdinals : after.occurrenceOrdinals = before.occurrenceOrdinals
   scopeMap : after.scopeMap = before.scopeMap.insert entry.id entry
-  variables : after.variables = before.variables.insert entry.id (keyed locals)
+  variables : after.variables = before.variables.insert entry.id (Variables.ofBindings locals)
   occurrences : after.occurrences = before.occurrences
   itemMap : after.openItems = before.openItems ∧ after.itemOrdinals = before.itemOrdinals
   tokens : allQueuedTokens after = allQueuedTokens before
@@ -184,12 +184,6 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
       · exact (formed.rooted.2.2 found old).grow grows
       · exact .parent _ parent _ ((memAfter _).mpr (.inr rfl)) entryParent
           (parentWithin.grow grows)⟩
-  have variables : VariablesKeyed after := ⟨fun x entries found => by
-      rw [hVars, Std.ExtTreeMap.getElem?_insert] at found
-      split at found
-      · rw [← Option.some.inj found]
-        exact keyed_names locals
-      · exact formed.variables.names x entries found⟩
   have queue : QueueSound after := ⟨fun host element scope member => by
       rw [hSignals] at member
       obtain ⟨hostBelow, scopeBelow, placed⟩ := formed.queue.arm host element scope member
@@ -259,7 +253,7 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
       rw [startsEq] at started
       rw [keys occurrence member]
       exact formed.reservations occurrence member unbegun fact started,
-    owned, rooted, variables, by
+    owned, rooted, by
       unfold FailureRecorded
       rw [enters.failure, enters.status]
       exact formed.failure,
@@ -645,7 +639,6 @@ theorem deferBegins_wellFormed {s : State} (formed : WellFormed program s) {requ
       (List.mem_append.mp (allQueuedTokens_append s _ ▸ member)).elim (formed.owned.tokenScopes token) (housed token)⟩
   rooted := ⟨formed.rooted.1, formed.rooted.2.1, fun scope member =>
     Within.congr (s := s) (t := { s with batchTokens := s.batchTokens ++ added }) rfl (formed.rooted.2.2 scope member)⟩
-  variables := ⟨formed.variables.names⟩
   failure := formed.failure
   queue := ⟨formed.queue.arm, formed.queue.armScope, formed.queue.armGateway, formed.queue.ends, formed.queue.completes⟩
   counted := formed.counted

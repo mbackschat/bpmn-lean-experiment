@@ -69,10 +69,10 @@ import {
   type ScopeOccurrenceId,
   type State,
   SemanticCause,
-  semanticFailure, type OccurrenceId,
+  semanticFailure, type OccurrenceId, ownVariables,
 } from "../state.js";
 import {
-  EvaluationTag, collectionItems, ctxPositionLe, evalContext, hold, leaveScope, multiInstanceRunItems, ownVariables, type Ctx,
+  EvaluationTag, collectionItems, ctxPositionLe, evalContext, hold, leaveScope, multiInstanceRunItems, type Ctx,
 } from "../hooks.js";
 import { opening, sequential } from "./multi-instance/opening.js";
 

@@ -13,7 +13,7 @@
  * (guard 17).
  */
 import {
-  VariableEvent, assertNever, definitionRefEquals, programChildren, programItemScope, programProcessChildren,
+  VariableEvent, assertNever, compareStrings, definitionRefEquals, programChildren, programItemScope, programProcessChildren,
   type Element, type ElementId, type FlowId, type Program, type Value,
 } from "./il/types.js";
 import {
@@ -44,7 +44,7 @@ import {
   type Compensable, type CompensableChild, type CompensationRun, type Compensations, type FeatureSlots, featureSlotsClear,
   featureSlotsKeptAlive, featureSlotsSuspended, type InstanceData, type Iteration, iterationHolds, IterationTag, type Leave,
   leaveFlows, leaveOutgoing, leaveRaised, LeaveTag, type MultiInstanceRun, type Parked, parkedEquals, parkedLeastBy, type Held, type Resume,
-  ResumeTag, type ScopeOccurrenceId, type Suspended,
+  ResumeTag, type ScopeOccurrenceId, type Suspended, type Variables,
 } from "./state/slots.js";
 import {
   type InstanceFailure, type Origin, type Raised, raisedIsCancel, RaisedTag,
@@ -62,7 +62,7 @@ export {
   type Compensable, type CompensableChild, type CompensationRun, type Compensations, type FeatureSlots, featureSlotsClear,
   featureSlotsKeptAlive, featureSlotsSuspended, type InstanceData, type Iteration, iterationHolds, IterationTag, type Leave,
   leaveFlows, leaveOutgoing, leaveRaised, LeaveTag, type MultiInstanceRun, type Parked, parkedEquals, parkedLeastBy, type Held, type Resume,
-  ResumeTag, type ScopeOccurrenceId, type Suspended,
+  ResumeTag, type ScopeOccurrenceId, type Suspended, type Variables,
 };
 
 import {
@@ -314,8 +314,11 @@ export interface State {
   readonly batchTokens: readonly Token[];
   /** The closure's queued tokens, each keyed by the unit that queued it and its index in its batch; empty at commit. */
   readonly queuedTokens: OrderedMap<UnitKey, Token>;
-  /** Each scope occurrence's own variables, keyed by the scope occurrence (DC25): content, with no order of entry. */
-  readonly variables: TreeMap<ScopeOccurrenceId, readonly Binding[]>;
+  /**
+   * Each scope occurrence's own variables, keyed by (scope occurrence, name) (DC25, DC21): content, with no order of
+   * entry, each set written as its list view in name order (`Variables`).
+   */
+  readonly variables: TreeMap<ScopeOccurrenceId, Variables>;
   readonly openItems: OpenItems;
   /** The next item ordinal of each occurrence that opened an item, advanced at commit (DC12), pruned with it. */
   readonly itemOrdinals: TreeMap<OccurrenceId, number>;
@@ -418,7 +421,24 @@ export function issuerFor(state: State, unit: UnitKey): Issuer {
   return { unit, text: issuerText(unit, orderedSize(state.transitions)) };
 }
 
-/** A fresh process instance: one root scope occurrence with the given variables, `keyed`. */
+/** Lean's `TreeMap.insert` on a variable set: `value` under `name`, replacing the value there, kept in name order. */
+export function insertVariable(variables: Variables, name: string, value: Value): Variables {
+  return keyedInsert(variables, [name, value] as const, bindingName, compareStrings);
+}
+
+/** Lean's `TreeMap.insertIfNew` on a variable set: `value` under `name` unless the set binds `name` already. */
+export function insertVariableIfNew(variables: Variables, name: string, value: Value): Variables {
+  return variables.some(([held]) => held === name) ? variables : insertVariable(variables, name, value);
+}
+
+/** Lean's `Variables.ofBindings`: `bindings` as a variable set, a name bound twice keeping the value bound last (#147). */
+export function variablesOfBindings(bindings: readonly Binding[]): Variables {
+  return bindings.reduce<Variables>((set, [name, value]) => insertVariable(set, name, value), []);
+}
+
+const bindingName = (binding: Binding): string => binding[0];
+
+/** A fresh process instance: one root scope occurrence with the given variables (`variablesOfBindings`). */
 export function initial(instanceId: string, variables: readonly Binding[], businessKey: string | null = null): State {
   return {
     instanceId,
@@ -427,7 +447,7 @@ export function initial(instanceId: string, variables: readonly Binding[], busin
     occurrences: [],
     batchTokens: [],
     queuedTokens: null,
-    variables: [[root, keyed(variables)]],
+    variables: [[root, variablesOfBindings(variables)]],
     openItems: [],
     itemOrdinals: [],
     scopeOrdinals: [],
@@ -776,7 +796,7 @@ export function insertScope(scopes: ScopeMap, scope: ScopeOccurrence): ScopeMap 
 const scopeKey = (scope: ScopeOccurrence): ScopeOccurrenceId => scope.id;
 
 /**
- * Enter a new scope occurrence of `element` inside `parent`, with the given local variables, `keyed`. The scope belongs
+ * Enter a new scope occurrence of `element` inside `parent`, with the given local variables (`variablesOfBindings`). The scope belongs
  * to `occurrence`, when it has one.
  */
 export function enterScope(
@@ -793,7 +813,7 @@ export function enterScope(
     {
       ...positioned,
       scopes: insertScope(state.scopes, { id, element, position, occurrence, calledInstance: null }),
-      variables: treeMapInsert(state.variables, id, keyed(locals), compareScopeOccurrenceId),
+      variables: treeMapInsert(state.variables, id, variablesOfBindings(locals), compareScopeOccurrenceId),
     },
     id,
   ];
@@ -814,8 +834,8 @@ export function childrenOf(state: State, program: Program, scope: ScopeOccurrenc
   return programChildren(program, occurrence?.element ?? null);
 }
 
-/** The own variables of `scope`, none when it holds none: Lean's `state.variables.getD scope []`. */
-export function scopeVariables(state: State, scope: ScopeOccurrenceId): readonly Binding[] {
+/** Lean's `State.ownVariables`: the variables `scope` itself holds, in name order, none when it holds none. */
+export function ownVariables(state: State, scope: ScopeOccurrenceId): Variables {
   return treeMapGetD(state.variables, scope, compareScopeOccurrenceId, []);
 }
 
@@ -834,7 +854,7 @@ export function visible(state: State, program: Program, scope: ScopeOccurrenceId
   const out: Binding[] = [];
   for (let current: ScopeOccurrenceId | null = scope; current !== null;) {
     const frame = current;
-    out.push(...scopeVariables(state, frame).filter(([name]) => shows(state, program, frame, name)));
+    out.push(...ownVariables(state, frame).filter(([name]) => shows(state, program, frame, name)));
     if (frame === root || calledRoot(state, frame) || !stands(state, frame)) break;
     current = scopeParent(frame);
   }

@@ -2,6 +2,7 @@ module
 
 public import Kernel.State.Input
 public import Kernel.State.Key
+public import Kernel.State.Map
 
 /-! # Feature slots
 
@@ -12,6 +13,15 @@ run resumes by. Part of `Kernel.State`, which re-exports it.
 public section
 
 namespace Kernel
+
+/-- One variable set, keyed by name (DC21): one value per name, as a Data Association's copy replaces its target's value
+(BPMN 2.0.2 §10.4.2) and CIB keys a scope's variables by name (`VariableStore.java:39`). Its list view (`toList`) is
+in name order, the form the state codec writes (T75); no reader takes another order from it. -/
+abbrev Variables := TreeMap String Value compare
+
+/-- `bindings` as a variable set: a name bound twice keeps the value bound last (#147). -/
+def Variables.ofBindings (bindings : List (String × Value)) : Variables :=
+  bindings.foldl (fun set binding => set.insert binding.1 binding.2) ∅
 
 /-- How an occurrence leaves: its element's own outgoing selection, the flows given (`flows []` consumes the
 token), or `raised` by an event, which runs no retention, outflow or continuation. -/
@@ -69,7 +79,7 @@ structure CompensableChild where
   occurrence : Option OccurrenceRef := none
   completion : Nat := 0
   closure : Nat := 0
-  snapshot : List (String × Value) := []
+  snapshot : Variables := ∅
   group : List Nat := []
   deriving Repr
 
@@ -88,7 +98,7 @@ structure Compensable where
   occurrence : Option OccurrenceRef := none
   completion : Nat := 0
   closure : Nat := 0
-  snapshot : List (String × Value) := []
+  snapshot : Variables := ∅
   children : List CompensableChild := []
   deriving Repr
 
@@ -186,7 +196,7 @@ def FeatureSlots.suspended (slots : FeatureSlots) : List Suspended :=
     slots.compensation.runs.filterMap fun run =>
       match run.resume with
       | some (.complete occurrence leave) => some { element := occurrence.element, scope := occurrence.scope, leave }
-      | some (.occur element scope leave) => some { element, scope, leave }
+      | some (.occur element scope leave) => some ({ element, scope, leave } : Suspended)
       | some (.group _) => none
       | none => none
 

@@ -15,6 +15,25 @@ namespace Kernel.Laws.State
 
 open Kernel
 
+/-- `Variables.ofBindings` inserts the bindings in order, so a name bound twice keeps the value bound last. -/
+theorem ofBindings_eq (bindings : List (String × Value)) :
+    Variables.ofBindings bindings = bindings.foldl (fun set binding => set.insert binding.1 binding.2) ∅ := by
+  simp only [Variables.ofBindings]
+
+/-- `Variables.ofBindings` binds a name no later binding repeats to that binding's value (#147). -/
+theorem ofBindings_getElem?_last (earlier : List (String × Value)) {binding : String × Value}
+    {later : List (String × Value)} (last : ∀ other ∈ later, other.1 ≠ binding.1) :
+    (Variables.ofBindings (earlier ++ binding :: later))[binding.1]? = some binding.2 := by
+  rw [ofBindings_eq, List.foldl_append, List.foldl_cons]
+  suffices kept : ∀ (m : Variables), (later.foldl (fun set b => set.insert b.1 b.2) m)[binding.1]? = m[binding.1]? by
+    rw [kept, Std.ExtTreeMap.getElem?_insert_self]
+  intro m
+  induction later generalizing m with
+  | nil => rfl
+  | cons other rest ih =>
+    rw [List.foldl_cons, ih (fun o h => last o (List.mem_cons_of_mem _ h)) _, Std.ExtTreeMap.getElem?_insert,
+      ite_eq_right (fun e => absurd (Std.LawfulEqCmp.eq_of_compare e) (last other List.mem_cons_self))]
+
 /-- `FeatureSlots.clear` filters each slot by the scope occurrences it removes: what `Kernel.Laws.State.Removal` reads
 of the slots when it clears a scope occurrence. -/
 theorem featureSlotsClear_eq (slots : FeatureSlots) (inside nested : List ScopeOccurrenceId) :

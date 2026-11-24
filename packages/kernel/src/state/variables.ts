@@ -6,7 +6,7 @@
  */
 import { type ElementId, type Value, VariableEvent } from "../il/types.js";
 import {
-  type Binding, calledRoot, compareScopeOccurrenceId, type ScopeOccurrenceId, scopeParent, scopeVariables, type State, stands,
+  calledRoot, compareScopeOccurrenceId, insertVariable, type ScopeOccurrenceId, scopeParent, ownVariables, type State, stands,
   treeMapInsert,
 } from "../state.js";
 
@@ -25,7 +25,7 @@ export function declaring(state: State, scope: ScopeOccurrenceId, element: Eleme
 
 /** Whether the own variables of `scope` bind `name`. */
 export function bindsOwn(state: State, scope: ScopeOccurrenceId, name: string): boolean {
-  return scopeVariables(state, scope).some(([key]) => key === name);
+  return ownVariables(state, scope).some(([key]) => key === name);
 }
 
 /** The innermost scope visible from `scope` that declares `name`, up to the root of its process instance. */
@@ -39,16 +39,12 @@ export function owner(state: State, scope: ScopeOccurrenceId, name: string): Sco
 
 /** Set `name` in `target`'s own variables and log the write. */
 export function setVariable(state: State, target: ScopeOccurrenceId, name: string, value: Value): State {
-  const replace = (entries: readonly Binding[]): readonly Binding[] =>
-    entries.some(([key]) => key === name)
-      ? entries.map((entry) => (entry[0] === name ? ([name, value] as const) : entry))
-      : [...entries, [name, value] as const];
-  const current = scopeVariables(state, target);
+  const current = ownVariables(state, target);
   const kind = current.some(([key]) => key === name) ? VariableEvent.Update : VariableEvent.Create;
   return {
     ...state,
     writes: [...state.writes, { scope: target, name, kind }],
-    variables: treeMapInsert(state.variables, target, replace(current), compareScopeOccurrenceId),
+    variables: treeMapInsert(state.variables, target, insertVariable(current, name, value), compareScopeOccurrenceId),
   };
 }
 
@@ -57,7 +53,8 @@ export function removeVariable(state: State, target: ScopeOccurrenceId, name: st
   return {
     ...state,
     writes: [...state.writes, { scope: target, name, kind: VariableEvent.Delete }],
-    // Lean's `TreeMap.modify`: a scope that holds no variables stays without an entry.
+    // Lean's `TreeMap.modify` of `TreeMap.erase`: a scope that holds no variables stays without an entry, and a filter
+    // keeps the name order.
     variables: state.variables.map(([scope, entries]) =>
       scope === target ? [scope, entries.filter(([key]) => key !== name)] as const : [scope, entries] as const),
   };

@@ -193,14 +193,14 @@ theorem beginHandler_spec {ctx : Ctx} {trigger : OccurrenceRef} {scope : ScopeOc
     {record : Compensable} {fuel : Nat} {after : State} {context : ScopeOccurrenceId}
     (ran : Feature.Compensation.beginHandler ctx trigger scope state record fuel = .ok (after, context)) :
     ∃ less entered, fuel = less + 1 ∧
-      ((record.handler = none ∧ state.enterScope record.subject scope record.snapshot none = (entered, context) ∧
+      ((record.handler = none ∧ state.enterScope record.subject scope record.snapshot.toList none = (entered, context) ∧
         Feature.Compensation.advance ctx context trigger (Feature.Compensation.store entered { entered.slots.compensation with
           runs := entered.slots.compensation.runs ++ [{
             trigger, scope := context, pending := Feature.Compensation.begunChildren record context,
             leave := none, resume := some (.group context) }] }) less = .ok after) ∨
        ∃ handler element, record.handler = some handler ∧ ctx.program.element? handler = some element ∧
         (element.activity?.isSome ∨ element.scope?.isSome) ∧
-        state.enterScope handler scope record.snapshot none = (entered, context) ∧
+        state.enterScope handler scope record.snapshot.toList none = (entered, context) ∧
         after = (Feature.Compensation.store entered { entered.slots.compensation with
           retained := entered.slots.compensation.retained ++ Feature.Compensation.begunChildren record context }).signal
           (.begin { element := handler, scope := context, continuation := .compensation scope })) := by
@@ -717,12 +717,12 @@ theorem runs_keep {inv : State → Prop} {settled : State → OccurrenceId → P
       obtain ⟨owner, owned, own, pending⟩ := provenance
       simp only [Feature.Compensation.beginHandler] at ran
       have follows : ∀ element, Laws.Flow.RecordAnchor state element scope →
-          Follows settled state (state.enterScope element scope record.snapshot none).1 :=
+          Follows settled state (state.enterScope element scope record.snapshot.toList none).1 :=
         fun element anchor => by
-          obtain ⟨_, issuedNext, scopesEq, slotsEq⟩ := ops.entered state element scope record.snapshot
-          obtain ⟨⟨unissued, -, grows⟩, -⟩ := ops.fresh state element scope record.snapshot holds stands
-          refine ⟨ops.enteredGrows holds stands record.snapshot, fun entry member => ?_,
-            (ops.enter state element scope record.snapshot holds stands anchor).2,
+          obtain ⟨_, issuedNext, scopesEq, slotsEq⟩ := ops.entered state element scope record.snapshot.toList
+          obtain ⟨⟨unissued, -, grows⟩, -⟩ := ops.fresh state element scope record.snapshot.toList holds stands
+          refine ⟨ops.enteredGrows holds stands record.snapshot.toList, fun entry member => ?_,
+            (ops.enter state element scope record.snapshot.toList holds stands anchor).2,
             fun body member => by rw [slotsEq] at member; exact member, grows⟩
           rw [Laws.State.scopes_eq, scopesEq] at member
           rcases Laws.State.mem_scopeList_insert_cases member with old | rfl
@@ -734,16 +734,16 @@ theorem runs_keep {inv : State → Prop} {settled : State → OccurrenceId → P
         · cases ran
         · rename_i nestedAfter nested
           cases ran
-          obtain ⟨link, issuedNext, scopesEq, slotsEq⟩ := ops.entered state record.subject scope record.snapshot
-          obtain ⟨⟨unissued, issuedAfter, -⟩, -⟩ := ops.fresh state record.subject scope record.snapshot holds stands
+          obtain ⟨link, issuedNext, scopesEq, slotsEq⟩ := ops.entered state record.subject scope record.snapshot.toList
+          obtain ⟨⟨unissued, issuedAfter, -⟩, -⟩ := ops.fresh state record.subject scope record.snapshot.toList holds stands
           have subject : Laws.Flow.RecordAnchor state record.subject scope := ⟨owner, owned, own, record, pending, .inl rfl⟩
           have entering := follows record.subject subject
-          have enter := ops.enter state record.subject scope record.snapshot holds stands subject
-          have children := entered_children ops owned own pending record.subject record.snapshot
-            (begunChildren_elements record (state.enterScope record.subject scope record.snapshot none).2)
-          generalize (state.enterScope record.subject scope record.snapshot none).2 = key
+          have enter := ops.enter state record.subject scope record.snapshot.toList holds stands subject
+          have children := entered_children ops owned own pending record.subject record.snapshot.toList
+            (begunChildren_elements record (state.enterScope record.subject scope record.snapshot.toList none).2)
+          generalize (state.enterScope record.subject scope record.snapshot.toList none).2 = key
             at nested children link scopesEq unissued issuedAfter ⊢
-          generalize (state.enterScope record.subject scope record.snapshot none).1 = entered
+          generalize (state.enterScope record.subject scope record.snapshot.toList none).1 = entered
             at nested issuedNext scopesEq slotsEq enter entering children issuedAfter
           have fresh : ∀ entry ∈ state.scopes, entry.id ≠ key := fun entry member same =>
             unissued (same ▸ ops.issued state holds entry member)
@@ -822,7 +822,7 @@ theorem runs_keep {inv : State → Prop} {settled : State → OccurrenceId → P
             rcases List.mem_append.mp member with old | new
             · exact .inl (.retained old)
             · rw [begunChildren_scope record _ child new]
-              exact entered_children ops owned own pending handler record.snapshot
+              exact entered_children ops owned own pending handler record.snapshot.toList
                 (begunChildren_elements record _) _ new
 
 end Kernel.Laws.Compensation

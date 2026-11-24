@@ -39,11 +39,11 @@ structure WorkHooks where
 ([script semantics](../../docs/kernel/semantics/SCRIPT-SEMANTICS-SPEC.md), item 3). -/
 def scriptProtocol : String := "urn:bpmn-lean:effect-protocol:script-v1"
 
-/-- A Script Task's arguments: every variable visible from `scope`, one entry per name, its nearest owner's, nearest
-owner first ([script semantics](../../docs/kernel/semantics/SCRIPT-SEMANTICS-SPEC.md), item 3). The kernel cannot know
+/-- A Script Task's arguments: every variable visible from `scope`, one entry per name, its nearest owner's, in name
+order ([script semantics](../../docs/kernel/semantics/SCRIPT-SEMANTICS-SPEC.md), item 3). The kernel cannot know
 which names a script reads, so it commits them all when the effect opens. -/
 def scriptSnapshot (program : Program) (state : State) (scope : ScopeOccurrenceId) : List (String × Value) :=
-  (state.visible program scope).foldl (fun kept entry => if kept.any (·.1 == entry.1) then kept else kept ++ [entry]) []
+  ((state.visible program scope).foldl (fun (kept : Variables) entry => kept.insertIfNew entry.1 entry.2) ∅).toList
 
 /-- Open `kind` for the Activity and arm its boundaries on the occurrence. -/
 def openWork (kind : OpenKind) (header : Header) (payload : ActivityPayload) (occurrence : Occurrence)

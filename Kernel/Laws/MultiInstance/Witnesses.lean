@@ -69,12 +69,14 @@ def entered : State :=
   { instanceId := "p"
     scopeMap := enteredScopes
     occurrences := [bodyOccurrence, firstInstance, secondInstance]
-    variables := ((∅ : TreeMap ScopeOccurrenceId _ compare).insert firstScope firstLocals).insert secondScope secondLocals
+    variables := ((∅ : TreeMap ScopeOccurrenceId Variables compare).insert firstScope (Variables.ofBindings firstLocals)).insert
+      secondScope (Variables.ofBindings secondLocals)
     slots := { multiInstances := [running] } }
 
-theorem entered_second : entered.variables[secondScope]? = some secondLocals := Std.ExtTreeMap.getElem?_insert_self
+theorem entered_second : entered.variables[secondScope]? = some (Variables.ofBindings secondLocals) :=
+  Std.ExtTreeMap.getElem?_insert_self
 
-theorem entered_first : entered.variables[firstScope]? = some firstLocals := by
+theorem entered_first : entered.variables[firstScope]? = some (Variables.ofBindings firstLocals) := by
   have apart : compare secondScope firstScope ≠ .eq := by
     rw [Ne, Std.LawfulEqCmp.compare_eq_iff_eq]; simp [firstScope, secondScope, Laws.State.ScopeOccurrenceId.ofSegments_inj]
   simp only [entered]
@@ -231,14 +233,18 @@ theorem slots_counted : SlotsCounted { entered with scopeMap := outerScopes } en
   simp only [entered, List.mem_singleton] at member
   subst member
   match index with
-  | 0 => simp [running] at slot; subst slot; exact ⟨firstLocals, entered_first, by simp [firstLocals]⟩
-  | 1 => simp [running] at slot; subst slot; exact ⟨secondLocals, entered_second, by simp [secondLocals]⟩
+  | 0 => simp [running] at slot; subst slot; exact ⟨_, entered_first, by
+    simp [firstLocals, Laws.State.ofBindings_eq]⟩
+  | 1 => simp [running] at slot; subst slot; exact ⟨_, entered_second, by
+    simp [secondLocals, Laws.State.ofBindings_eq]⟩
   | _ + 2 => simp [running] at slot
 
 /-- A one-based `loopCounter` breaks `SlotsCounted`. -/
 theorem one_based_rejected :
     ¬ SlotsCounted { entered with scopeMap := outerScopes }
-      { entered with variables := (∅ : TreeMap ScopeOccurrenceId _ compare).insert firstScope [("loopCounter", .int 1)] } :=
+      { entered with
+        variables := (∅ : TreeMap ScopeOccurrenceId Variables compare).insert firstScope
+          ((∅ : Variables).insert "loopCounter" (.int 1)) } :=
   fun counted => by
     obtain ⟨_, found, entry⟩ :=
       counted running (by simp [entered]) 0 firstScope (by simp [running])

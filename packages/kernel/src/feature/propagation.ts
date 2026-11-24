@@ -72,11 +72,11 @@ import {
   type State,
   SemanticCause,
   semanticFailure,
-  allTokens,
+  allTokens, ownVariables,
 } from "../state.js";
 import {
   ScopeRole, boundaryFire, clearInside, disarm, ctxOutputReads, ctxPositionLe, ctxRequireMappingsWith, ctxRunsAsInstance, idleWithout, lastWrites,
-  ownVariables, type Ctx,
+  type Ctx,
 } from "../hooks.js";
 import { best, boundariesOf, contextCatcher, levelCandidates } from "./propagation/candidates.js";
 import { throwLeave, throwerRef } from "./propagation/throws.js";

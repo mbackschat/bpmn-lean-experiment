@@ -31,7 +31,7 @@ def entered (unit : UnitKey) (cause : Cause) (element : ElementId) (parent : Sco
     issued := (s.issued.insert (.fresh unit 0) (.scope { parent, element })).insert (.fresh unit 1) .position
     scopeMap := s.scopeMap.insert (parent.child element (.fresh unit 0))
       { id := parent.child element (.fresh unit 0), element := some element, position := .fresh unit 1, occurrence := none }
-    variables := s.variables.insert (parent.child element (.fresh unit 0)) (keyed [])
+    variables := s.variables.insert (parent.child element (.fresh unit 0)) (Variables.ofBindings [])
     transitions := s.transitions.insert unit
       { cause, element := none, owner := parent, started := s.draft.started, ended := s.draft.ended,
         ready := s.draft.ready }

@@ -86,11 +86,11 @@ import {
   type UserTaskDetail,
   SemanticCause,
   semanticFailure,
-  sameItemKey, type ItemKey, type OccurrenceId,
+  sameItemKey, type ItemKey, type OccurrenceId, ownVariables, insertVariableIfNew, type Variables,
 } from "../state.js";
 import {
   ScopeRole, admitValues, ctxEvaluateMappings, ctxEvaluateMappingsWith, ctxOutputReads, deliveryTriggerChannel, evalContext, hold,
-  inValueDomain, messageTriggerChannel, ownVariables, type Ctx,
+  inValueDomain, messageTriggerChannel, type Ctx,
 } from "../hooks.js";
 import * as Call from "./work/call.js";
 import * as Submission from "./work/submission.js";
@@ -102,13 +102,12 @@ import * as Submission from "./work/submission.js";
 export const scriptProtocol = "urn:bpmn-lean:effect-protocol:script-v1";
 
 /**
- * A Script Task's arguments: every variable visible from `scope`, one entry per name, its nearest owner's, nearest
- * owner first ([script semantics](../../../../docs/kernel/semantics/SCRIPT-SEMANTICS-SPEC.md), item 3). The kernel
+ * A Script Task's arguments: every variable visible from `scope`, one entry per name, its nearest owner's, in name
+ * order ([script semantics](../../../../docs/kernel/semantics/SCRIPT-SEMANTICS-SPEC.md), item 3). The kernel
  * cannot know which names a script reads, so it commits them all when the effect opens.
  */
 export function scriptSnapshot(program: Program, state: State, scope: ScopeOccurrenceId): readonly Binding[] {
-  const seen = new Set<string>();
-  return visible(state, program, scope).filter(([name]) => !seen.has(name) && seen.add(name) !== undefined);
+  return visible(state, program, scope).reduce<Variables>((kept, [name, value]) => insertVariableIfNew(kept, name, value), []);
 }
 
 /** Open `kind` for the Activity and arm its boundaries on the occurrence. */

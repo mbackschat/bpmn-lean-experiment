@@ -72,7 +72,7 @@ structure ClearsInside (before after : State) (scope : ScopeOccurrenceId) (keep 
   noNewScopes : ∀ inner ∈ after.scopes, inner ∈ before.scopes
   noNewOccurrences : ∀ occurrence ∈ after.occurrences, occurrence ∈ before.occurrences
   noNewItems : ∀ item ∈ itemList after.openItems, item ∈ itemList before.openItems
-  noNewVariables : ∀ (x : ScopeOccurrenceId) (entries : List (String × Value)), after.variables[x]? = some entries →
+  noNewVariables : ∀ (x : ScopeOccurrenceId) (entries : Variables), after.variables[x]? = some entries →
     before.variables[x]? = some entries
   noIssue : ∀ x ∈ scopeIds after, ∀ element, occurrenceCount after x element = occurrenceCount before x element
   instanceKept : after.instanceId = before.instanceId

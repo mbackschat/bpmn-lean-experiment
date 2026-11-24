@@ -2,9 +2,9 @@ module
 
 public import Kernel.Laws.State.Removal
 
-/-! # Laws of the kernel state: what keying, clearing and leaving give
+/-! # Laws of the kernel state: what entering, clearing and leaving give
 
-The consequences of the keying, entering, clearing and leaving equations (`Laws.State.keyed_eq`, `enterScope_eq`,
+The consequences of the entering, clearing and leaving equations (`enterScope_eq`,
 `clearInside_eq`, `leaveScope_eq`, `leaveScope_slots_eq`) that the laws above read, stated over those equations without
 opening `Kernel.State`'s bodies, so `Kernel.Laws.State` keeps only what needs them. Every module that read
 `Kernel.Laws.State` reads it through this one. Nothing executable imports this module.
@@ -17,71 +17,6 @@ namespace Kernel.Laws.State
 variable {le : Issue → Issue → Bool}
 
 open Kernel
-
-/-! ## Keyed variable sets -/
-
-/-- `keyed` binds each name at most once, whatever bindings it was given. -/
-theorem keyed_names (bindings : List (String × Value)) : ((keyed bindings).map (·.1)).Nodup := by
-  induction bindings with
-  | nil => simp [keyed_eq.1]
-  | cons binding rest held =>
-    rw [keyed_eq.2]
-    split
-    · exact held
-    · rename_i absent
-      refine List.nodup_cons.mpr ⟨fun member => absent ?_, held⟩
-      obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
-      exact List.any_eq_true.mpr ⟨entry, inside, beq_iff_eq.mpr named⟩
-
-/-- `keyed` keeps a binding whose name no later binding repeats. -/
-theorem mem_keyed {binding : String × Value} (earlier : List (String × Value)) {later : List (String × Value)}
-    (last : ∀ other ∈ later, other.1 ≠ binding.1) : binding ∈ keyed (earlier ++ binding :: later) := by
-  induction earlier with
-  | nil =>
-    rw [List.nil_append, keyed_eq.2]
-    split
-    · rename_i repeated
-      obtain ⟨other, inside, named⟩ := List.any_eq_true.mp repeated
-      exact absurd (beq_iff_eq.mp named) (last other (keyed_sublist later |>.subset inside))
-    · exact List.mem_cons_self ..
-  | cons first rest held =>
-    rw [List.cons_append, keyed_eq.2]
-    split
-    · exact held
-    · exact List.mem_cons_of_mem _ held
-where
-  keyed_sublist : ∀ bindings : List (String × Value), (keyed bindings).Sublist bindings
-    | [] => by simp [keyed_eq.1]
-    | binding :: rest => by
-      rw [keyed_eq.2]
-      split
-      · exact (keyed_sublist rest).cons binding
-      · exact (keyed_sublist rest).cons_cons binding
-
-/-- `keyed` keeps bindings whose names are already distinct as they are. -/
-theorem keyed_of_nodup : ∀ {bindings : List (String × Value)}, (bindings.map (·.1)).Nodup → keyed bindings = bindings
-  | [], _ => keyed_eq.1
-  | binding :: rest, distinct => by
-    obtain ⟨absent, restDistinct⟩ := List.nodup_cons.mp distinct
-    rw [keyed_eq.2, keyed_of_nodup restDistinct]
-    split
-    · rename_i repeated
-      obtain ⟨other, inside, named⟩ := List.any_eq_true.mp repeated
-      exact absurd (List.mem_map.mpr ⟨other, inside, beq_iff_eq.mp named⟩) absent
-    · rfl
-
-/-- The variable set a new scope occurrence installs binds each name at most once, whatever locals it was given (#147). -/
-theorem enterScope_names (state : State) (element : ElementId) (parent : ScopeOccurrenceId)
-    (locals : List (String × Value)) (occurrence : Option OccurrenceId)
-    (names : ∀ (x : ScopeOccurrenceId) (entries : List (String × Value)), state.variables[x]? = some entries → (entries.map (·.1)).Nodup) :
-    ∀ (x : ScopeOccurrenceId) (entries : List (String × Value)), (state.enterScope element parent locals occurrence).1.variables[x]? = some entries →
-      (entries.map (·.1)).Nodup := by
-  intro x entries found
-  rw [enterScope_eq, Std.ExtTreeMap.getElem?_insert] at found
-  split at found
-  · rw [← Option.some.inj found]
-    exact keyed_names locals
-  · exact names x entries found
 
 /-- A scope occurrence with a child is busy (`State.busyScopes`). -/
 theorem busyScopes_parent (state : State) (child : ScopeOccurrence) (member : child ∈ state.scopes)

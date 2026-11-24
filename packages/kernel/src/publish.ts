@@ -15,7 +15,7 @@ import {
   type Binding,
   type ScopeOccurrence,
   type ScopeOccurrenceId,
-  type State, scopeVariables,
+  type State, ownVariables,
 } from "./state.js";
 
 export function statusName(status: InstanceStatus): string {
@@ -32,13 +32,9 @@ export function statusName(status: InstanceStatus): string {
   return assertNever(status);
 }
 
-function byName(entries: readonly Binding[]): readonly Binding[] {
-  return mergeSort(entries, (left, right) => compareStrings(left[0], right[0]) <= 0);
-}
-
-/** The instance root's variables, ordered by name. */
+/** The instance root's variables, in name order (`ownVariables`). */
 export function variables(state: State): readonly Binding[] {
-  return byName(scopeVariables(state, root));
+  return ownVariables(state, root);
 }
 
 /**
@@ -139,8 +135,8 @@ function publishedScope(state: State, scope: ScopeOccurrence, entries: readonly 
  * canonical order. */
 export function publishedScopes(program: Program, state: State): readonly PublishedScope[] {
   const published = state.scopes.flatMap((scope) => {
-    const entries = scopeVariables(state, scope.id);
-    const found = entries.length === 0 ? null : publishedScope(state, scope, byName(entries));
+    const entries = ownVariables(state, scope.id);
+    const found = entries.length === 0 ? null : publishedScope(state, scope, entries);
     return found === null ? [] : [{ ...found, element: found.element === null ? null : programPublicId(program, found.element) }];
   });
   return mergeSort(published, publishedScopeLe);

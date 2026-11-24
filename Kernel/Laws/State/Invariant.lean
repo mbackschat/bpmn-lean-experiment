@@ -213,15 +213,6 @@ def Rooted (s : State) : Prop :=
   State.root ∈ scopeIds s ∧ (∀ scope ∈ s.scopes, scope.parent = none ↔ scope.id = State.root) ∧
     ∀ scope ∈ s.scopes, Within s scope.id State.root
 
-/-- Each variable set binds a name at most once: a scope occurrence owns its data, and a name declared again in a nested
-scope shadows the outer one rather than repeating in it; that a scope occurrence has one set holds by construction, since
-the sets are keyed by it (DC25)
-([data, scope data](../../../docs/kernel/semantics/DATA-SEMANTICS-SPEC.md#scope-data),
-[CIB-EXT-0020](../../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-ext-0020--nested-embedded-scope-locals-and-nearest-owner-writes)). -/
-structure VariablesKeyed (s : State) : Prop where
-  names : ∀ (scope : ScopeOccurrenceId) (entries : List (String × Value)), s.variables[scope]? = some entries →
-    (entries.map (·.1)).Nodup
-
 /-- A failure is recorded exactly when the instance failed. -/
 def FailureRecorded (s : State) : Prop :=
   s.failure.isSome = true ↔ s.status = .failed
@@ -510,7 +501,6 @@ structure WellFormed (program : Program) (s : State) : Prop where
   reservations : ReservationsUnstarted s
   owned : Owned s
   rooted : Rooted s
-  variables : VariablesKeyed s
   failure : FailureRecorded s
   queue : QueueSound s
   counted : StartsCounted s
@@ -690,7 +680,8 @@ def rootScopes : ScopeMap := ofScopes [rootScope]
 
 def sample (kind : OpenKind) : State :=
   { instanceId := "p", scopeMap := sampleScopes, occurrences := [subProcess, innerTask, outerTask]
-    variables := ((∅ : TreeMap ScopeOccurrenceId (List (String × Value)) compare).insert processRoot [("a", .int 1)]).insert subScope []
+    variables := ((∅ : TreeMap ScopeOccurrenceId Variables compare).insert processRoot ((∅ : Variables).insert "a" (.int 1))).insert
+      subScope ∅
     openItems := ofItems [innerItem kind, outerItem kind], nextCompletion := 7
     itemOrdinals := ((∅ : Std.ExtTreeMap OccurrenceId Nat compare).insert innerKey 1).insert outerKey 1
     occurrenceOrdinals := sampleCounters

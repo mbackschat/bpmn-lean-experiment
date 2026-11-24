@@ -406,7 +406,7 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
     rcases members occurrence member with rfl | ⟨old, _⟩
     · exact begins.scope ▸ stands
     · exact formed.owned.occurrenceScopes occurrence old
-  refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted, ?variables,
+  refine ⟨?issued, ?distinct, ?startedOnce, ?activations, ?reservations, ?owned, ?rooted,
     ?failure, ?queue, ?counted, ?occurrencesCounted, ?ownedBelow, ?claimed, ?settled, ?attachedReserved, ?typed,
     ?worked, ?roles, ?raises, ?bodyRoles, ?itemRoles, ?issuer⟩
   case issued =>
@@ -504,8 +504,6 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
     refine ⟨by simpa [scopeIds, begins.scopes] using present, by simpa [begins.scopes] using parentless, ?_⟩
     intro scope member
     exact Within.congr begins.scopes (reach scope (begins.scopes ▸ member))
-  case variables =>
-    exact ⟨by simpa [begins.variables] using formed.variables.names⟩
   case failure => simpa [FailureRecorded, begins.failure, begins.status] using formed.failure
   case queue =>
     have queue := formed.queue

@@ -44,7 +44,7 @@ def Enters (isScope : Bool) (arriving : Occurrence) (inputs : List (String × Va
   isScope = true → ∃ fresh ∈ after.scopes, (∀ old ∈ before.scopes, old.id ≠ fresh.id) ∧
     fresh.occurrence = some arriving.id ∧ fresh.parent = some arriving.scope ∧
     (∀ other ∈ after.scopes, other.occurrence = some arriving.id → other.id = fresh.id) ∧
-    ∀ entries, after.variables[fresh.id]? = some entries → entries = inputs
+    ∀ entries, after.variables[fresh.id]? = some entries → entries = Variables.ofBindings inputs
 
 /-- An element's next activation in an instance (`SRE-FRESH-01`): one greater than the count of its earlier
 occurrences there, the first being 1, so no identity is reused. -/
@@ -477,27 +477,27 @@ def entering : State := { instanceId := "p", scopeMap := rootScopes, occurrences
 def entered : State :=
   { entering with
     scopeMap := sampleScopes
-    variables := (∅ : TreeMap ScopeOccurrenceId _ compare).insert subScope [("x", .int 1)] }
+    variables := (∅ : TreeMap ScopeOccurrenceId Variables compare).insert subScope (Variables.ofBindings [("x", .int 1)]) }
 
 theorem enters_fresh : Enters true subProcess [("x", .int 1)] entering entered := fun _ =>
   ⟨childScope, by simp [entered], by simp [entering, rootScope, childScope, processRoot, subScope],
     rfl, by simp [childScope, subScope, processRoot, subProcess], by simp [entered, rootScope, childScope, subProcess],
     fun _ found => (Option.some.inj ((Std.ExtTreeMap.getElem?_insert_self (t := ∅)).symm.trans found)).symm⟩
 
-def staleLocals : List (String × Value) := [("x", .int 1), ("old", .int 2)]
+def staleLocals : Variables := Variables.ofBindings [("x", .int 1), ("old", .int 2)]
 
 /-- A re-entered Scope that still holds a local of an earlier occurrence is rejected. -/
 theorem stale_local_rejected :
     ¬ Enters true subProcess [("x", .int 1)] entering
-      { entered with variables := (∅ : TreeMap ScopeOccurrenceId _ compare).insert subScope staleLocals } := fun law => by
+      { entered with variables := (∅ : TreeMap ScopeOccurrenceId Variables compare).insert subScope staleLocals } := fun law => by
   obtain ⟨fresh, mem, rest⟩ := law rfl
   obtain ⟨_, owned, more⟩ := rest
   obtain ⟨_, _, inputs⟩ := more
   simp [entered, entering] at mem
   rcases mem with rfl | rfl
   · simp [rootScope, subProcess] at owned
-  · have := inputs staleLocals Std.ExtTreeMap.getElem?_insert_self
-    simp [staleLocals] at this
+  · have := congrArg (·["old"]?) (inputs staleLocals Std.ExtTreeMap.getElem?_insert_self)
+    simp [staleLocals, Laws.State.ofBindings_eq] at this
 
 def firstCount : ActivationCount := { processInstance := "p", element := ⟨"Sub"⟩, role := .element, count := 1 }
 

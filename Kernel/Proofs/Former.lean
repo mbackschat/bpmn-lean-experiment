@@ -73,7 +73,7 @@ def CalledReadsIsolated : Prop :=
   ∀ (program : Program) (state : State) (scope root : ScopeOccurrenceId) (binding : String × Value),
     WellFormed program state → CalledRoot state root → Within state scope root → binding ∈ state.visible program scope →
     ∃ frame entries, state.variables[frame]? = some entries ∧ Within state scope frame ∧ Within state frame root ∧
-      binding ∈ entries
+      binding ∈ entries.toList
 
 /-- PC-SCOPE-04 (`CVM-ISOLATE-01`): a write from inside a called instance changes no frame outside it
 (`Laws.Data.OthersKept`). Stated of `Hooks.writeOutputs`. -/
@@ -136,33 +136,11 @@ every other frame. -/
 private theorem setVariable_writes (s : State) (target : ScopeOccurrenceId) (name : String) (value : Value) :
     Laws.Data.HoldsOnly (s.setVariable target name value) target name value ∧
       Laws.Data.OthersKept s (s.setVariable target name value) target := by
-  have replaced : ∀ entries : List (String × Value), ∀ old,
-      (name, old) ∈ (if entries.any (·.1 == name) then entries.map fun entry => if entry.1 == name then (name, value) else entry
-        else entries ++ [(name, value)]) ↔ old = value := by
-    intro entries old
-    split
-    · rename_i bound
-      constructor
-      · intro member
-        obtain ⟨entry, _, made⟩ := List.mem_map.mp member
-        by_cases named : entry.1 = name
-        · simp only [named, beq_self_eq_true, ↓reduceIte, Prod.mk.injEq, true_and] at made
-          exact made.symm
-        · simp only [beq_iff_eq, named, ↓reduceIte] at made
-          exact absurd (by rw [made]) named
-      · rintro rfl
-        obtain ⟨entry, inside, named⟩ := List.any_eq_true.mp bound
-        exact List.mem_map.mpr ⟨entry, inside, by simp [named]⟩
-    · rename_i unbound
-      simp only [List.any_eq_true, beq_iff_eq, not_exists, not_and] at unbound
-      simp only [List.mem_append, List.mem_singleton, Prod.mk.injEq, true_and]
-      exact ⟨fun found => found.elim (fun inside => absurd rfl (unbound _ inside)) id, .inr⟩
   unfold Laws.Data.HoldsOnly Laws.Data.OthersKept
   rw [Laws.State.setVariable_variables]
-  refine ⟨⟨Std.ExtTreeMap.mem_insert_self, fun entries found old => ?_⟩, fun x other => ?_⟩
+  refine ⟨⟨Std.ExtTreeMap.mem_insert_self, fun entries found => ?_⟩, fun x other => ?_⟩
   · rw [Std.ExtTreeMap.getElem?_insert_self] at found
-    rw [← Option.some.inj found]
-    exact replaced _ old
+    rw [← Option.some.inj found, Std.ExtTreeMap.getElem?_insert_self]
   · rw [Std.ExtTreeMap.getElem?_insert, ite_eq_right (by rw [Std.LawfulEqCmp.compare_eq_iff_eq]; exact fun same => other same.symm)]
 
 /-- An outward write of Data from a scope occurrence lands within its process instance. -/
@@ -197,7 +175,7 @@ theorem calledReadsIsolated : CalledReadsIsolated := by
 
 /-- Writes that each land within the called instance rooted at `root`, on the state the earlier ones left, keep every
 frame outside it. -/
-private theorem outside_kept {program : Program} {scope root x : ScopeOccurrenceId} {entries : List (String × Value)}
+private theorem outside_kept {program : Program} {scope root x : ScopeOccurrenceId} {entries : Variables}
     (target : State → String × Value → ScopeOccurrenceId)
     (lands : ∀ s binding, WellFormed program s → CalledRoot s root → Within s scope root → Within s (target s binding) root) :
     ∀ (writes : List (String × Value)) (s : State), WellFormed program s → CalledRoot s root → Within s scope root →

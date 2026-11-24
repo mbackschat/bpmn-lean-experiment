@@ -166,8 +166,9 @@ structure State where
   /-- The closure's queued tokens, each keyed by the unit that queued it and its index in that unit's batch: content, with
   no order of entry. Which runs next is `Step.nextToken`'s, through the run log; empty at commit (DC4). -/
   queuedTokens : TreeMap UnitKey Token compare := ∅
-  /-- Each scope occurrence's own variables, keyed by the scope occurrence (DC25): content, with no order of entry. -/
-  variables : TreeMap ScopeOccurrenceId (List (String × Value)) compare := ∅
+  /-- Each scope occurrence's own variables, keyed by (scope occurrence, name) (DC25, DC21): content, with no order of
+  entry; `State.ownVariables` is a scope occurrence's list view, in name order. -/
+  variables : TreeMap ScopeOccurrenceId Variables compare := ∅
   openItems : OpenItems := ∅
   /-- The next item ordinal of each occurrence that opened an item, advanced at commit (DC12) and pruned with the
   occurrence (KD1). -/
@@ -239,9 +240,8 @@ def crossed (program : Program) (state : State) : Bool :=
 
 abbrev Outcome := Except Failure State
 
-/-- `bindings` with only the last binding of each name, where that binding stands: a variable set holds one value per
-name, as a Data Association's copy replaces its target's value (BPMN 2.0.2 §10.4.2) and CIB keys a scope's variables by
-name (`VariableStore.java:39`), so a name bound twice keeps the value bound last (#147). -/
+/-- `bindings` with only the last binding of each name, where that binding stands: the bindings `Variables.ofBindings`
+keeps, in their order of binding (#147). -/
 def keyed (bindings : List (String × Value)) : List (String × Value) :=
   bindings.foldr (fun binding kept => if kept.any (·.1 == binding.1) then kept else binding :: kept) []
 
@@ -253,11 +253,11 @@ abbrev scopes (state : State) : List ScopeOccurrence := scopeList state.scopeMap
 
 def root : ScopeOccurrenceId := .ofSegments []
 
-/-- A fresh process instance: one root scope occurrence with the given variables, `keyed`. -/
+/-- A fresh process instance: one root scope occurrence with the given variables (`Variables.ofBindings`). -/
 def initial (instanceId : String) (variables : List (String × Value)) (businessKey : Option String := none) : State :=
   { instanceId
     scopeMap := (∅ : ScopeMap).insert root { id := root, element := none, position := 0 }
-    variables := (∅ : TreeMap ScopeOccurrenceId (List (String × Value)) compare).insert root (keyed variables)
+    variables := (∅ : TreeMap ScopeOccurrenceId Variables compare).insert root (Variables.ofBindings variables)
     slots := { instances := [{ root, businessKey }] } }
 
 def emit (state : State) (flows : List FlowId) (scope : ScopeOccurrenceId) : State :=
@@ -462,7 +462,7 @@ def closeItem (state : State) (id : ItemKey) : State :=
 def closeOwnItems (state : State) (id : OccurrenceId) : State :=
   { state with openItems := state.openItems.filter fun _ item => item.id.occurrence != id }
 
-/-- Enter a new scope occurrence of `element` inside `parent`, with the given local variables, `keyed`. The scope
+/-- Enter a new scope occurrence of `element` inside `parent`, with the given local variables (`Variables.ofBindings`). The scope
 belongs to `occurrence`, when it has one. -/
 def enterScope (state : State) (element : ElementId) (parent : ScopeOccurrenceId)
     (locals : List (String × Value)) (occurrence : Option OccurrenceId) : State × ScopeOccurrenceId :=
@@ -471,7 +471,7 @@ def enterScope (state : State) (element : ElementId) (parent : ScopeOccurrenceId
   let (state, position) := state.issuePosition
   ({ state with
       scopeMap := state.scopeMap.insert id { id, element := some element, position, occurrence }
-      variables := state.variables.insert id (keyed locals) }, id)
+      variables := state.variables.insert id (Variables.ofBindings locals) }, id)
 
 /-- The elements the scope occurrence `scope` declares: for a called root, the process-level elements of the process its
 Call bound (its `slots.instances` entry), not the Call Activity's, since a called Process behaves as a normal Process
@@ -492,9 +492,13 @@ def shows (state : State) (program : Program) (scope : ScopeOccurrenceId) (name 
   | none => true
   | some declaring => ((state.scopes.find? (·.id == scope)).bind (·.element)) == some declaring
 
-/-- The bindings the frame of `scope` shows (`shows`). -/
+/-- The variables `scope` itself holds, without the chain behind it, in name order. -/
+def ownVariables (state : State) (scope : ScopeOccurrenceId) : List (String × Value) :=
+  (state.variables.getD scope ∅).toList
+
+/-- The bindings the frame of `scope` shows (`shows`), in name order. -/
 def frame (state : State) (program : Program) (scope : ScopeOccurrenceId) : List (String × Value) :=
-  (state.variables.getD scope []).filter (state.shows program scope ·.1)
+  (state.ownVariables scope).filter (state.shows program scope ·.1)
 
 /-- Variables visible from `scope`, innermost first, up to the root of its process instance, each frame's as it
 `shows` them. -/

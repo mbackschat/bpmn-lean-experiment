@@ -74,13 +74,6 @@ theorem sample_wellFormed (kind : OpenKind) {program : Program}
       rintro scope (rfl | rfl) <;> rw [root_eq]
       · exact .refl _
       · exact sub_within⟩
-  variables := ⟨fun x entries found => by
-    simp only [sample, Std.ExtTreeMap.getElem?_insert, Std.ExtTreeMap.getElem?_empty] at found
-    split at found
-    · cases found; simp
-    · split at found
-      · cases found; simp
-      · cases found⟩
   failure := by simp [FailureRecorded, sample]
   queue := ⟨by simp [sample], by simp [sample], by simp [sample], by simp [sample], by simp [sample]⟩
   counted := by simp [StartsCounted, starts, sample]

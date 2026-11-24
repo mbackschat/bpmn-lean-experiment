@@ -137,14 +137,14 @@ def openKeys (state : State) : List (OccurrenceKey × OpenKind) :=
   (itemList state.openItems).filterMap fun item => (state.occurrence? item.id.occurrence).map fun occurrence => (state.keyOf occurrence, item.kind)
 
 /-- Equal at the canonical-result observation boundary up to `ids` and `keys`: status and failure, the variable sets
-by renamed scope occurrence, each set's bindings as a multiset, the journal's start and end facts and the open waits by
+by renamed scope occurrence, each set equal (keyed by name), the journal's start and end facts and the open waits by
 renamed key, and the intents, each as a multiset. -/
 structure Alike (ids : ScopeOccurrenceId → ScopeOccurrenceId) (keys : OccurrenceKey → OccurrenceKey) (left right : State) : Prop where
   status : left.status = right.status
   failure : left.failure = right.failure
-  variables : ∃ matched : List (ScopeOccurrenceId × List (String × Value)), matched.Perm right.variables.toList ∧
+  variables : ∃ matched : List (ScopeOccurrenceId × Variables), matched.Perm right.variables.toList ∧
     matched.length = left.variables.size ∧
-    ∀ pair ∈ left.variables.toList.zip matched, pair.2.1 = ids pair.1.1 ∧ pair.1.2.Perm pair.2.2
+    ∀ pair ∈ left.variables.toList.zip matched, pair.2.1 = ids pair.1.1 ∧ pair.1.2 = pair.2.2
   started : ((left.journal.flatMap (·.started)).map fun fact => keys fact.occurrence).Perm
     ((right.journal.flatMap (·.started)).map (·.occurrence))
   ended : ((left.journal.flatMap (·.ended)).map fun fact => (keys fact.1, fact.2)).Perm (right.journal.flatMap (·.ended))

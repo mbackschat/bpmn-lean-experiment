@@ -46,7 +46,6 @@ theorem issuer_wellFormed {s : State} (formed : WellFormed program s) (unit : Un
     formed.owned.variableScopes, formed.owned.tokenScopes⟩
   rooted := ⟨formed.rooted.1, formed.rooted.2.1, fun scope member =>
     Within.congr (s := s) (t := { s with issuing := unit, issueNext := next, issued := tabled }) rfl (formed.rooted.2.2 scope member)⟩
-  variables := ⟨formed.variables.names⟩
   failure := formed.failure
   queue := {
     arm := fun host element scope queued => by

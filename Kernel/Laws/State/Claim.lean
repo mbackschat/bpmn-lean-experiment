@@ -295,7 +295,7 @@ theorem enterScope_inner {s : State} (formed : WellFormed program s) (element : 
       issued := (s.issued.insert (.fresh s.issuing s.issueNext) (.scope { parent := occurrence.scope, element })).insert
         (.fresh s.issuing (s.issueNext + 1)) .position
       scopeMap := s.scopeMap.insert key entry
-      variables := s.variables.insert key (keyed locals) } : State) = t at formedAfter issued ⊢
+      variables := s.variables.insert key (Variables.ofBindings locals) } : State) = t at formedAfter issued ⊢
   have scopeMapEq : t.scopeMap = s.scopeMap.insert key entry := by rw [← afterIs]
   have entryId : entry.id = key := by rw [← entryIs]
   have grown : ∀ found ∈ s.scopes, found ∈ t.scopes := fun found inside => by

@@ -41,7 +41,7 @@ def RootOf (s : State) (scope root : ScopeOccurrenceId) : Prop :=
 /-- `owner`'s own variables bind `name` to `value`: a variable of an enclosing scope never counts, and an absent name
 matches nothing. -/
 def Binds (s : State) (owner : ScopeOccurrenceId) (name : String) (value : Value) : Prop :=
-  ∃ entries, s.variables[owner]? = some entries ∧ (name, value) ∈ entries
+  ∃ entries, s.variables[owner]? = some entries ∧ entries[name]? = some value
 
 /-- What one criterion means for an item waiting in `scope` of the instance rooted at `root`, whose public identifier is
 `publicId`: a Process variable the root holds, a local variable `scope` holds itself, the instance's own business key,
@@ -117,7 +117,7 @@ def StartVerdict : MessageCorrelation → List CorrelationMatch → Option Failu
 start writes, its delivered variables and its payload by the catch rule (`written`), since CIB uses a variable criterion
 only to seek a waiting execution and starts with the delivered variables alone. -/
 def StartInstallsOnly (written : List (String × Value)) (started : State) (root : ScopeOccurrenceId) : Prop :=
-  ∀ entries, started.variables[root]? = some entries → ∀ entry ∈ entries, entry ∈ written
+  ∀ entries, started.variables[root]? = some entries → ∀ name value, entries[name]? = some value → (name, value) ∈ written
 
 /-! ## A modeled key's value -/
 
@@ -162,17 +162,19 @@ def waitingScopes : ScopeMap := Laws.State.ofScopes [rootScope, innerScope]
 attribute [local simp] Laws.State.scopes_eq
 
 def waiting : State :=
-  { instanceId := "p", scopeMap := waitingScopes, variables := (∅ : TreeMap ScopeOccurrenceId _ compare).insert root [("order", .int 7)]
-      |>.insert inner [("step", .string "a")]
+  { instanceId := "p", scopeMap := waitingScopes
+    variables := (∅ : TreeMap ScopeOccurrenceId Variables compare).insert root ((∅ : Variables).insert "order" (.int 7))
+      |>.insert inner ((∅ : Variables).insert "step" (.string "a"))
     slots := { instances := [rootData] } }
 
 def orderIs (value : Value) : CorrelationMatch := { target := .processVariable "order", expected := value }
 def stepIs (value : Value) : CorrelationMatch := { target := .localVariable "step", expected := value }
 def keyIs (key : String) : CorrelationMatch := { target := .businessKey, expected := .string key }
 
-theorem waiting_inner : waiting.variables[inner]? = some [("step", .string "a")] := Std.ExtTreeMap.getElem?_insert_self
+theorem waiting_inner : waiting.variables[inner]? = some ((∅ : Variables).insert "step" (.string "a")) :=
+  Std.ExtTreeMap.getElem?_insert_self
 
-theorem waiting_root : waiting.variables[root]? = some [("order", .int 7)] := by
+theorem waiting_root : waiting.variables[root]? = some ((∅ : Variables).insert "order" (.int 7)) := by
   have apart : compare inner root ≠ .eq := by
     rw [Ne, Std.LawfulEqCmp.compare_eq_iff_eq]; simp [inner, root, Laws.State.ScopeOccurrenceId.ofSegments_inj]
   simp only [waiting]
@@ -255,17 +257,24 @@ theorem start_key_passing_rejected : ¬ StartVerdict .apiCriteria [keyIs "k"] no
   simp [StartVerdict, NamesVariable, keyIs]
 
 /-- The criterion `order = 1` reached the start; the instance holds only its delivered variable `amount`. -/
-def started : State := { waiting with variables := (∅ : TreeMap ScopeOccurrenceId _ compare).insert root [("amount", .int 3)] }
+def started : State :=
+  { waiting with
+    variables := (∅ : TreeMap ScopeOccurrenceId Variables compare).insert root ((∅ : Variables).insert "amount" (.int 3)) }
 
 theorem start_installs_delivered : StartInstallsOnly [("amount", .int 3)] started root := by
-  intro entries found
+  intro entries found name value held
   obtain rfl := Option.some.inj ((Std.ExtTreeMap.getElem?_insert_self (t := ∅)).symm.trans found)
-  simp
+  simp only [Std.ExtTreeMap.getElem?_insert, Std.LawfulEqCmp.compare_eq_iff_eq, Std.ExtTreeMap.getElem?_empty] at held
+  split at held
+  · next same => cases held; subst same; simp
+  · cases held
 
 theorem criterion_installed_rejected :
     ¬ StartInstallsOnly [("amount", .int 3)]
-      { started with variables := (∅ : TreeMap ScopeOccurrenceId _ compare).insert root [("order", .int 1)] } root :=
-  fun only => by simpa using only [("order", .int 1)] Std.ExtTreeMap.getElem?_insert_self ("order", .int 1) (by simp)
+      { started with
+        variables := (∅ : TreeMap ScopeOccurrenceId Variables compare).insert root ((∅ : Variables).insert "order" (.int 1)) } root :=
+  fun only => by
+    simpa using only _ Std.ExtTreeMap.getElem?_insert_self "order" (.int 1) Std.ExtTreeMap.getElem?_insert_self
 
 theorem unbound_key_unsupported :
     KeyVerdict (.failure "unknown-variable") (.error (.unsupported "correlation-key-unbound")) :=

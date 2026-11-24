@@ -400,10 +400,9 @@ theorem Narrows.scopes {before after : State} (narrows : Narrows before after) :
   rw [scopes_eq, scopes_eq, narrows.scopeMap]
 
 /-- A state that narrows a well-formed one is well-formed when it starts no occurrence key twice and its variable sets
-belong to scope occurrences that stand, one per scope occurrence. -/
+belong to scope occurrences that stand. -/
 theorem WellFormed.reshape {before after : State} (formed : WellFormed program before) (narrows : Narrows before after)
-    (once : StartedOnce after) (located : ∀ x ∈ after.variables, x ∈ scopeIds after)
-    (keyed : VariablesKeyed after) : WellFormed program after := by
+    (once : StartedOnce after) (located : ∀ x ∈ after.variables, x ∈ scopeIds after) : WellFormed program after := by
   have keys : ∀ occurrence, key after occurrence = key before occurrence := fun _ => key_congr (narrows.instances _)
   have items : itemList after.openItems ⊆ itemList before.openItems := by exact narrows.items.subset
   have grows : ScopeGrows before after :=
@@ -466,7 +465,6 @@ theorem WellFormed.reshape {before after : State} (formed : WellFormed program b
     tokenScopes := fun token member => by
       simpa [scopeIds, narrows.scopes] using formed.owned.tokenScopes token (narrows.tokens.subset member) }
   rooted := rooted
-  variables := keyed
   failure := narrows.recorded formed.failure
   queue := queue
   counted := fun fact started => (formed.counted fact (narrows.starts fact started)).congr narrows.activations
@@ -494,7 +492,6 @@ twice. -/
 theorem WellFormed.narrow {before after : State} (formed : WellFormed program before) (narrows : Narrows before after)
     (variables : after.variables = before.variables) (once : StartedOnce after) : WellFormed program after :=
   formed.reshape narrows once (by simpa [scopeIds, variables, narrows.scopes] using formed.owned.variableScopes)
-    ⟨by simpa [variables] using formed.variables.names⟩
 
 /-- Start facts that are a permutation of a well-formed state's, with nothing else but the journal and the draft
 changed, keep it well-formed. -/
@@ -542,10 +539,9 @@ theorem SameButVariables.scopes {before after : State} (same : SameButVariables 
   rw [scopes_eq, scopes_eq, same.scopeMap]
 
 /-- A state that differs from a well-formed one only in its variable sets is well-formed when every set belongs to a
-present scope occurrence and the sets stay keyed. -/
+present scope occurrence. -/
 theorem WellFormed.ofVariables {before after : State} (formed : WellFormed program before) (same : SameButVariables before after)
-    (located : ∀ x ∈ after.variables, x ∈ scopeIds after) (keyed : VariablesKeyed after) :
-    WellFormed program after :=
+    (located : ∀ x ∈ after.variables, x ∈ scopeIds after) : WellFormed program after :=
   formed.reshape {
       scopeMap := same.scopeMap, scopeOrdinals := same.scopeOrdinals, occurrences := same.occurrences, activations := same.activations,
       occurrenceOrdinals := same.occurrenceOrdinals, instances := same.instances,
@@ -555,7 +551,7 @@ theorem WellFormed.ofVariables {before after : State} (formed : WellFormed progr
       starts := by simp [starts, same.transitions, same.draft],
       slots := .same same.slots, issued := same.issued, issuing := same.issuing, issueNext := same.issueNext,
       ran := fun _ held => same.transitions ▸ held }
-    (by simpa [StartedOnce, starts, same.journal, same.transitions, same.draft] using formed.startedOnce) located keyed
+    (by simpa [StartedOnce, starts, same.journal, same.transitions, same.draft] using formed.startedOnce) located
 
 /-! ## Where a queued trigger comes from
 

@@ -207,24 +207,24 @@ theorem begin_formed {precedes : Compensable → Compensable → Prop} {ctx : Ct
   rcases begun with ⟨_, entering, nested⟩ | ⟨handler, element, _, rest⟩
   · obtain ⟨rfl, rfl⟩ : entered = _ ∧ context = _ :=
       ⟨(congrArg Prod.fst entering).symm, (congrArg Prod.snd entering).symm⟩
-    obtain ⟨contextEq, slots, -⟩ := entered_eq s record.subject scope record.snapshot
-    have scopes := entered_scopes tame record.subject stands record.snapshot
-    obtain ⟨unissued, issuedNew, grows⟩ := entered_fresh tame record.subject stands record.snapshot
+    obtain ⟨contextEq, slots, -⟩ := entered_eq s record.subject scope record.snapshot.toList
+    have scopes := entered_scopes tame record.subject stands record.snapshot.toList
+    obtain ⟨unissued, issuedNew, grows⟩ := entered_fresh tame record.subject stands record.snapshot.toList
     rw [store_stored] at nested
-    have post := advances _ _ _ _ (tame_withRun tame record.subject stands record.snapshot rfl rfl
+    have post := advances _ _ _ _ (tame_withRun tame record.subject stands record.snapshot.toList rfl rfl
       fun context resumed => by cases resumed; rfl)
-      ((entered_scopeIds tame record.subject stands record.snapshot _).mpr (.inr rfl)) nested
-    have unheld : Laws.Compensation.Unheld (withRun (s.enterScope record.subject scope record.snapshot none).1
-        { trigger, scope := (s.enterScope record.subject scope record.snapshot none).2,
-          pending := Feature.Compensation.begunChildren record (s.enterScope record.subject scope record.snapshot none).2,
-          leave := none, resume := some (.group (s.enterScope record.subject scope record.snapshot none).2) })
-        (s.enterScope record.subject scope record.snapshot none).2 := fun run inside running => by
+      ((entered_scopeIds tame record.subject stands record.snapshot.toList _).mpr (.inr rfl)) nested
+    have unheld : Laws.Compensation.Unheld (withRun (s.enterScope record.subject scope record.snapshot.toList none).1
+        { trigger, scope := (s.enterScope record.subject scope record.snapshot.toList none).2,
+          pending := Feature.Compensation.begunChildren record (s.enterScope record.subject scope record.snapshot.toList none).2,
+          leave := none, resume := some (.group (s.enterScope record.subject scope record.snapshot.toList none).2) })
+        (s.enterScope record.subject scope record.snapshot.toList none).2 := fun run inside running => by
       simp only [withRun, stored, slots, List.mem_append, List.mem_singleton] at inside
       rcases inside with old | rfl
       · exact unissued (tame.running run old _ running)
       · cases running
     have direct := post.direct (.inr unheld)
-    refine ⟨post.tame, (moves_withRun tame record.subject stands record.snapshot (by simp [resumesGroup])
+    refine ⟨post.tame, (moves_withRun tame record.subject stands record.snapshot.toList (by simp [resumesGroup])
       (source.imp fun _ found => ⟨found.1, found.2⟩)).trans post.moves, fun n => ?_, fun run inside => ?_,
       fun run inside => ?_, fun context' inside => ?_, fun record' below => ?_, fun later inside => ?_,
       fun entry inside => post.scopesKept unheld entry ((scopes entry).mpr (.inl inside)),
@@ -232,7 +232,7 @@ theorem begin_formed {precedes : Compensable → Compensable → Prop} {ctx : Ct
         rw [List.mem_singleton.mp inside, contextEq]; exact Laws.State.ScopeOccurrenceId.parent?_child _ _ _⟩
     · have bound := post.counted n
       have fewer : (completionsIn (Feature.Compensation.begunChildren record
-          (s.enterScope record.subject scope record.snapshot none).2)).count n ≤
+          (s.enterScope record.subject scope record.snapshot.toList none).2)).count n ≤
             (record.children.map (·.completion)).count n :=
         Laws.Compensation.begunChildren_count record _ n
       simp only [withRun, stored, slots, count_completions, List.flatMap_append, List.count_append, List.flatMap_cons,
@@ -262,20 +262,20 @@ theorem begin_formed {precedes : Compensable → Compensable → Prop} {ctx : Ct
   · obtain ⟨_, _, entering, rfl⟩ := rest
     obtain ⟨rfl, rfl⟩ : entered = _ ∧ context = _ :=
       ⟨(congrArg Prod.fst entering).symm, (congrArg Prod.snd entering).symm⟩
-    obtain ⟨contextEq, slots, -⟩ := entered_eq s handler scope record.snapshot
-    have scopes := entered_scopes tame handler stands record.snapshot
-    obtain ⟨unissued, issuedNew, _⟩ := entered_fresh tame handler stands record.snapshot
+    obtain ⟨contextEq, slots, -⟩ := entered_eq s handler scope record.snapshot.toList
+    have scopes := entered_scopes tame handler stands record.snapshot.toList
+    obtain ⟨unissued, issuedNew, _⟩ := entered_fresh tame handler stands record.snapshot.toList
     rw [store_stored]
-    have tameHandled := tame_withRetained tame handler stands record.snapshot
-      (records := Feature.Compensation.begunChildren record (s.enterScope handler scope record.snapshot none).2)
+    have tameHandled := tame_withRetained tame handler stands record.snapshot.toList
+      (records := Feature.Compensation.begunChildren record (s.enterScope handler scope record.snapshot.toList none).2)
       (Laws.Compensation.begunChildren_scope record _)
-    refine ⟨tame_signal tameHandled _, (moves_withRetained tame handler stands record.snapshot _).trans
+    refine ⟨tame_signal tameHandled _, (moves_withRetained tame handler stands record.snapshot.toList _).trans
       (moves_signal _ (Laws.Step.untriggered_begin _)), fun n => ?_, fun run inside => .inl ?_, fun run inside => ?_,
       fun context' inside => ?_, fun record' below => ?_, fun next inside => .inl ?_, fun entry inside => ?_,
       fun context' inside => by
         rw [List.mem_singleton.mp inside, contextEq]; exact Laws.State.ScopeOccurrenceId.parent?_child _ _ _⟩
     · have fewer : (completionsIn (Feature.Compensation.begunChildren record
-          (s.enterScope handler scope record.snapshot none).2)).count n ≤
+          (s.enterScope handler scope record.snapshot.toList none).2)).count n ≤
             (record.children.map (·.completion)).count n :=
         Laws.Compensation.begunChildren_count record _ n
       rw [Laws.State.signal_eq]

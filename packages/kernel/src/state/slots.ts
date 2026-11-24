@@ -13,6 +13,12 @@ import { compareIssue, compareOccurrenceId, type Issue, issueText, type Occurren
 export { compareIssue, compareOccurrenceId, type Issue, issueText, type OccurrenceId, type ScopeOccurrenceId };
 
 /**
+ * Lean's `Variables`, one variable set keyed by name (DC21), written as its list view: its bindings in name order
+ * (`compareStrings`, Lean's `String` order), the form the state codec writes (T75); no reader takes another order from it.
+ */
+export type Variables = readonly Binding[];
+
+/**
  * How an occurrence leaves: its element's own outgoing selection, the flows given (`flows []` consumes the token), or
  * `raised` by an event, which runs no retention, outflow or continuation.
  */
@@ -91,7 +97,7 @@ export interface CompensableChild {
   readonly occurrence: OccurrenceRef | null;
   readonly completion: number;
   readonly closure: number;
-  readonly snapshot: readonly Binding[];
+  readonly snapshot: Variables;
   readonly group: readonly number[];
 }
 
@@ -111,7 +117,7 @@ export interface Compensable {
   readonly occurrence: OccurrenceRef | null;
   readonly completion: number;
   readonly closure: number;
-  readonly snapshot: readonly Binding[];
+  readonly snapshot: Variables;
   readonly children: readonly CompensableChild[];
 }
 
