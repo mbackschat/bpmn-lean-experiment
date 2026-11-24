@@ -545,7 +545,7 @@ inductive Concurrent (program : Program) : QueuingMechanism → Account → Acco
   `flow.concurrentInterference` (`Kernel.Admission.Flow.Concurrency.armingFanOut`). -/
   | armed {element : Element} {left right : Account} : element ∈ program.elements → ArmPair program element left right →
       Concurrent program .armed left right
-  /-- The continuations of two Inclusive joins one quiescent closure offers again, in parking order: Table 13.3 activates
+  /-- The continuations of two Inclusive joins one quiescent closure offers again, one after the other: Table 13.3 activates
   a join by the state, giving two activated at once no order (P1 census, G4); `flow.concurrentWrite` and
   `flow.concurrentInterference` (`Kernel.Admission.Flow.Concurrency.rejoinFanOut`). -/
   | rejoined {first second : Element} : first ∈ program.elements → second ∈ program.elements → InclusiveJoin first →

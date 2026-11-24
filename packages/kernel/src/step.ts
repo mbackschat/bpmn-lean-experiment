@@ -19,12 +19,12 @@
  * How a micro-step's draft becomes a journalled transition is `step/commit.ts`; how a closure's failure becomes its
  * input's outcome where CIB runs the work in a job is `step/jobs.ts`; what becomes of a queued signal whose target an
  * interruption removed is `step/stale.ts`; the clock an input advances, its ranking of competing Conditional items and the
- * transitions of a command and an effect result are `step/inputs.ts`.
+ * transitions of a command and an effect result are `step/inputs.ts`; which parked join a quiescent closure fires is
+ * `step/offer.ts`.
  */
 import {
-  BranchSchedule, ElementTag, EventRoleTag, assertNever, elementActivity, elementEnvelope, elementGateway,
-  elementHeader, programElement, programSourceType, programTarget, type Element, type ElementId,
-  type Envelope, type FlowId, type MultiInstance, type Program,
+  BranchSchedule, ElementTag, EventRoleTag, assertNever, elementActivity, elementEnvelope, elementHeader, programElement,
+  programSourceType, programTarget, type Element, type ElementId, type Envelope, type FlowId, type MultiInstance, type Program,
 } from "./il/types.js";
 import {
   ActivationRole, CauseTag, ContinuationTag, FailureTag, FiredTag, InputTag,
@@ -33,10 +33,10 @@ import {
   type Binding, type Cause, type Fired, type Input,
   type InstanceFailure, type Issue, type Leave, type Occurrence, type OpenItem, type Outcome,
   type Result, type ScopeOccurrence, type ScopeOccurrenceId, type Signal, type StartInput, type StartTrigger, type State,
-  type Token, type Parked,
+  type Token,
   SemanticCause, semanticFailure,
   itemAt, iterationHolds, type OccurrenceId,
-  breadthUnitKey, compareUnitKey, idleUnit, occurrenceIdParts, offersOccurrence, offerUnit, orderedAny, orderedCount, orderedErase, orderedHas,
+  breadthUnitKey, compareUnitKey, idleUnit, occurrenceIdParts, orderedAny, orderedErase, orderedHas,
   orderedSize, scopeEncloses, issuerFor, type UnitKey, unitRoot, UnitRootTag,
 } from "./state.js";
 import {
@@ -47,6 +47,7 @@ import { earliest, emptyRunLog, firstBreadth, latest, runRecord, type RunLog, un
 import { deferred, effectContinuation, timerJob } from "./step/jobs.js";
 import { advanceClock, admitChoicesThen, command, deliverEffectResult } from "./step/inputs.js";
 import { perform, requireScope, queuedNames, type SignalRun } from "./step/stale.js";
+import { reoffer } from "./step/offer.js";
 
 /** The name a transition records for a signal: its tag, which spells the Lean constructor. */
 export function signalName(next: Signal): string {
@@ -418,53 +419,6 @@ function nextToken(hooks: Hooks, ctx: Ctx, log: RunLog, state: State): readonly 
       return idleScope(hooks, ctx, state) !== undefined ? undefined : latest(log, state.queuedTokens);
   }
   return assertNever(ctx.program.options.branchSchedule);
-}
-
-type Reoffered = Readonly<{ gateway: ElementId; scope: ScopeOccurrenceId; occurrence: OccurrenceId; unit: UnitKey; state: State }>;
-
-/**
- * Lean's `offerRound`: how many times the closure already offered the parked occurrence `occurrence` (`offerUnit`): the
- * offer units among its transitions, a count, which reads no order.
- */
-function offerRound(state: State, occurrence: OccurrenceId): number {
-  return orderedCount(state.transitions, (unit) => offersOccurrence(state.issued, occurrence, unit));
-}
-
-/**
- * Lean's `offerParked`: the offer of the parked arrival `waiting` when no arrival parked before it fired (`reoffer`): its
- * join is offered the latest arrival parked on that join in that scope occurrence, under the offer's unit, and fires
- * when the offer queues a signal, `null` when it does not; a parked flow leading to no gateway is an invariant failure.
- */
-function offerParked(hooks: Hooks, ctx: Ctx, state: State, waiting: Parked): Result<Reoffered | null> {
-  const target = programTarget(ctx.program, waiting.flow);
-  const element = target === null ? null : programElement(ctx.program, target);
-  const gateway = element === null ? null : elementGateway(element);
-  const latest = state.slots.parked
-    .filter((other) => other.scope === waiting.scope && programTarget(ctx.program, other.flow) === target).at(-1);
-  const occurrence = latest === undefined ? null : occurrenceOf(state, latest.occurrence);
-  if (gateway === null || occurrence === null) return semanticFailure(SemanticCause.Invariant, "parked-without-gateway");
-  // the offer's issues are its unit's, so its key is the one `settle` runs it under (DC12)
-  const unit = offerUnit(state.issued, occurrence.id, offerRound(state, occurrence.id));
-  if (unit === null) return semanticFailure(SemanticCause.Invariant, "offer-unit-unkeyed");
-  const offered = hooks.arriveGateway(ctx, gateway[0], gateway[1], occurrence, { ...state, issuing: issuerFor(state, unit), issueNext: 0 });
-  if (!offered.ok) return offered;
-  return committed(offered.value.batchSignals.length === 0 ? null
-    : { gateway: gateway[0].id, scope: waiting.scope, occurrence: occurrence.id, unit, state: offered.value });
-}
-
-/**
- * The first parked join that fires when it is offered again, with its scope occurrence, its offer's unit and the state it
- * leaves. Table 13.3 activates an Inclusive join by the state, not by an arrival, and `settle` offers the parked joins
- * only once no signal, token or idle scope occurrence is left, so `positions` in `Feature.Flow` sees every position: a
- * completion still queued is no position it can see. Each join is offered its latest parked occurrence, in parking
- * order; a Parallel join is ready only on an arrival, so offering it never fires it.
- */
-function reoffer(hooks: Hooks, ctx: Ctx, state: State): Result<Reoffered | null> {
-  for (const waiting of state.slots.parked) {
-    const offered = offerParked(hooks, ctx, state, waiting);
-    if (!offered.ok || offered.value !== null) return offered;
-  }
-  return committed(null);
 }
 
 /**

@@ -358,14 +358,35 @@ theorem completeAll_keeps {program : Program} {inv : State → Prop} {settled : 
       ops.completed state other id _ [] .outward (all other (List.mem_cons_of_mem _ member))
     exact ⟨kept, fun other held => carried other (ops.completed state other id _ [] .outward held)⟩
 
-/-- The join waits a firing consumes are parked in its scope occurrence. -/
-theorem consumed_scope {state : State} {incoming : List FlowId} {scope : ScopeOccurrenceId} {waiting : Parked}
-    (member : waiting ∈ Feature.Flow.consumed state incoming scope) :
+/-- The join waits a firing consumes are parked in its scope occurrence, under either schedule. -/
+theorem consumed_scope {ctx : Ctx} {state : State} {incoming : List FlowId} {scope : ScopeOccurrenceId} {waiting : Parked}
+    (member : waiting ∈ Feature.Flow.consumed ctx state incoming scope) :
     waiting ∈ state.slots.parked ∧ waiting.scope = scope := by
-  obtain ⟨flow, _, found⟩ := List.mem_filterMap.mp member
-  have matched := List.find?_some found
-  simp only [Bool.and_eq_true, beq_iff_eq] at matched
-  exact ⟨List.mem_of_find?_eq_some found, matched.2⟩
+  unfold Feature.Flow.consumed at member
+  split at member
+  · obtain ⟨flow, _, found⟩ := List.mem_filterMap.mp member
+    have matched := List.find?_some found
+    simp only [Bool.and_eq_true, beq_iff_eq] at matched
+    exact ⟨List.mem_of_find?_eq_some found, matched.2⟩
+  · obtain ⟨flow, _, found⟩ := List.mem_filterMap.mp member
+    have filtered := List.mem_filter.mp (Laws.State.leastBy_mem found)
+    simp only [Bool.and_eq_true, beq_iff_eq] at filtered
+    exact ⟨filtered.1, filtered.2.2⟩
+
+/-- A firing join continues with the offered occurrence or with one it consumes, under either schedule. -/
+theorem continuing_cases (ctx : Ctx) (occurrence : OccurrenceId) (consumed : List Parked) :
+    Feature.Flow.continuing ctx occurrence consumed = occurrence ∨
+      ∃ waiting ∈ consumed, Feature.Flow.continuing ctx occurrence consumed = waiting.occurrence := by
+  unfold Feature.Flow.continuing
+  split
+  · split
+    · exact .inl rfl
+    · cases last : consumed.getLast? with
+      | none => exact .inl rfl
+      | some waiting => exact .inr ⟨waiting, List.mem_of_getLast? last, rfl⟩
+  · cases greatest : Parked.leastBy (fun a b => ctx.positionLe b a) consumed with
+    | none => exact .inl rfl
+    | some waiting => exact .inr ⟨waiting, Laws.State.leastBy_mem greatest, rfl⟩
 
 /-- Where the gateway an arrival runs lists a flow, the flow is offered in the arriving occurrence's scope occurrence of
 any state holding the occurrence and its join waits. -/
@@ -383,13 +404,13 @@ theorem gateway_offered {program : Program} {state held : State} {occurrence : O
 /-- A join keeps `inv` for a begun occurrence that stands: it parks it, and a firing completes occurrences parked,
 the one that leaves by flows the gateway `element` lists. -/
 theorem join_keeps {program : Program} {inv : State → Prop} {settled : State → OccurrenceId → Prop}
-    (ops : JoinOps program inv settled) {occurrence : Occurrence} {incoming : List FlowId} {state after : State}
+    (ops : JoinOps program inv settled) {ctx : Ctx} {occurrence : Occurrence} {incoming : List FlowId} {state after : State}
     {ready : State → Bool} {flows : State → Except Failure (List FlowId)} {element : Element} (holds : inv state)
     (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true)
     (gateway : program.element? occurrence.element = some element ∨ ∃ waiting ∈ state.slots.parked,
       waiting.occurrence = occurrence.id ∧ (program.target? waiting.flow).bind program.element? = some element)
     (listed : ∀ current selected, flows current = .ok selected → ∀ flow ∈ selected, Listed element flow)
-    (ran : Feature.Flow.join occurrence incoming state ready flows = .ok after) :
+    (ran : Feature.Flow.join ctx occurrence incoming state ready flows = .ok after) :
     inv after := by
   unfold Feature.Flow.join at ran
   have own := ops.begun _ _ holds member begun
@@ -423,7 +444,7 @@ theorem join_keeps {program : Program} {inv : State → Prop} {settled : State �
   split at ran
   · cases ran
     exact parkedInv
-  generalize consumedList : Feature.Flow.consumed parked incoming occurrence.scope = consumed at ran
+  generalize consumedList : Feature.Flow.consumed ctx parked incoming occurrence.scope = consumed at ran
   have taken : ∀ waiting ∈ consumed, settled parked waiting.occurrence ∧ waiting ∈ parked.slots.parked ∧
       waiting.scope = occurrence.scope := fun waiting inside => by
     rw [← consumedList] at inside
@@ -436,8 +457,7 @@ theorem join_keeps {program : Program} {inv : State → Prop} {settled : State �
   · cases ran
   rename_i selected chosen
   cases ran
-  generalize firingIs : (if consumed.any (·.occurrence == occurrence.id) = true then occurrence.id
-    else (consumed.getLast?.map (·.occurrence)).getD occurrence.id) = firing
+  generalize firingIs : Feature.Flow.continuing ctx occurrence.id consumed = firing
   obtain ⟨kept, carried⟩ := completeAll_keeps ops ((consumed.map (·.occurrence)).filter (· != firing))
     (Feature.Flow.unpark parked consumed) unparkedHolds fun id inside => by
       obtain ⟨waiting, held, rfl⟩ := List.mem_map.mp (List.mem_filter.mp inside).1
@@ -445,25 +465,18 @@ theorem join_keeps {program : Program} {inv : State → Prop} {settled : State �
   have offered : ∀ flow ∈ selected, Offered program parked occurrence.scope flow :=
     fun flow inside => gateway_offered gateway present parkedWaits (listed _ _ chosen flow inside)
   rw [completeAll_eq] at kept carried ⊢
-  split at firingIs
-  · subst firingIs
+  rcases continuing_cases ctx occurrence.id consumed with own | ⟨waiting, consumedHere, named⟩
+  · rw [own] at firingIs
+    subst firingIs
     exact ops.complete _ _ _ _ _ kept (carried _ (carry _ parkedOwn)) fun _ equal flow inside => by
       cases equal
       exact ⟨parked, parkedInv, fun _ h _ => h, fun _ h => h, fun _ h => h, .inl ⟨occurrence, present, rfl, offered flow inside⟩⟩
-  · cases last : consumed.getLast? with
-    | none =>
-      rw [last] at firingIs
-      subst firingIs
-      exact ops.complete _ _ _ _ _ kept (carried _ (carry _ parkedOwn)) fun _ equal flow inside => by
-        cases equal
-        exact ⟨parked, parkedInv, fun _ h _ => h, fun _ h => h, fun _ h => h, .inl ⟨occurrence, present, rfl, offered flow inside⟩⟩
-    | some waiting =>
-      rw [last] at firingIs
-      subst firingIs
-      obtain ⟨settledHere, parkedHere, inScope⟩ := taken waiting (List.mem_of_getLast? last)
-      refine ops.complete _ _ _ _ _ kept (carried _ (carry _ settledHere)) fun _ equal flow inside => ?_
-      cases equal
-      exact ⟨parked, parkedInv, fun _ h _ => h, fun _ h => h, fun _ h => h, .inr ⟨waiting, parkedHere, rfl, inScope ▸ offered flow inside⟩⟩
+  · rw [named] at firingIs
+    subst firingIs
+    obtain ⟨settledHere, parkedHere, inScope⟩ := taken waiting consumedHere
+    refine ops.complete _ _ _ _ _ kept (carried _ (carry _ settledHere)) fun _ equal flow inside => ?_
+    cases equal
+    exact ⟨parked, parkedInv, fun _ h _ => h, fun _ h => h, fun _ h => h, .inr ⟨waiting, parkedHere, rfl, inScope ▸ offered flow inside⟩⟩
 
 /-- The flows an inclusive split takes its outgoing flows, its candidates and its default list. -/
 theorem inclusiveFlows_mem {ctx : Ctx} {candidates : List FlowId} {default : Option FlowId} {outgoing : List FlowId}

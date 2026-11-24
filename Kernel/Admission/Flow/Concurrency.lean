@@ -534,8 +534,8 @@ def joinHolders (reading : Reading) (program : Program) (element : Element) : Li
 
 /-- Under `BranchSchedule.orderInvariant`, the continuations of two Inclusive joins one quiescent closure may offer again
 may not conflict, nor two occurrences of one join that two occurrences of its Scope or called process may park at once
-(`joinHolders`, `againstHolders`): `Kernel.Step.reoffer?` fires the first ready one in parking order, which is the order
-earlier tokens arrived in, and runs its continuation to quiescence before it offers the next, so two joins Table 13.3
+(`joinHolders`, `againstHolders`): `Kernel.Step.reoffer?` fires the first ready one in join-slot order (DC16), which no input
+states, and runs its continuation to quiescence before it offers the next, so two joins Table 13.3
 activates by one state run in an order no input states (issue #81; P1 census, G4). Any two Inclusive joins count, a conservative bound: whether both can be
 parked and ready at once is the run's. -/
 def rejoinFanOut (reading : Reading) (program : Program) (element : Element) : Option String :=

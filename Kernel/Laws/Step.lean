@@ -7,6 +7,7 @@ public import Kernel.Laws.Step.Commit
 public import Kernel.Laws.Step.Order
 public import Kernel.Laws.Step.Jobs
 public import Kernel.Laws.Step.Stale
+public import Kernel.Laws.Step.Offer
 import all Kernel.Step
 import all Kernel.Step.Inputs
 
@@ -20,8 +21,8 @@ made of, phase by phase; and which hook or state operation each committed body r
 `Kernel.Laws.Step.Ran`). This is the one module that sees `Kernel.Step`'s bodies
 ([module table](../../docs/kernel/ARCHITECTURE-SPEC.md#modules-and-build-shape)), and it holds only these body
 equations; it names no feature, no registry and no law of a feature, so a feature edit never rebuilds it. The bodies of
-`Kernel.Step.Commit`, `Kernel.Step.Jobs` and `Kernel.Step.Stale` are their own `Laws` modules' (`Kernel.Laws.Step.Commit`,
-`Kernel.Laws.Step.Jobs`, `Kernel.Laws.Step.Stale`), whose facts this module composes and re-exports. Nothing executable imports this module.
+`Kernel.Step.Commit`, `Kernel.Step.Jobs`, `Kernel.Step.Stale` and `Kernel.Step.Offer` are their own `Laws` modules'
+(`Kernel.Laws.Step.Commit`, `Kernel.Laws.Step.Jobs`, `Kernel.Laws.Step.Stale`, `Kernel.Laws.Step.Offer`), whose facts this module composes and re-exports. Nothing executable imports this module.
 
 What the registered hooks do is `Kernel.Laws.Registry`'s and each feature's `Laws` module's; an input body is restated
 whole here (`step_eq` and its siblings) and `Kernel.Laws.Step.Inputs` derives from it what a committed or rejected input
@@ -691,50 +692,6 @@ theorem completeIdleScope_called (facts : StateFacts) {hooks : Hooks} {ctx : Ctx
   obtain ⟨_, occurrence, owned, ⟨found, completed⟩⟩ := completeIdleScope_owner ran
   obtain ⟨member, named⟩ := facts.found _ _ _ found
   exact ⟨occurrence, member, named ▸ owned, completed⟩
-
-/-- A parked join offered again ran its gateway's hook on the state the closure reached, for an occurrence it found,
-under the offer's unit as the issuer (DC12). -/
-theorem reoffer_ok {hooks : Hooks} {ctx : Ctx} {state : State} {gateway : ElementId} {scope : ScopeOccurrenceId}
-    {named : OccurrenceId} {offered : State} (ran : reoffer? hooks ctx state = .ok (some (gateway, scope, named, offered))) :
-    ∃ id occurrence header payload, (∃ waiting ∈ state.slots.parked, waiting.occurrence = id ∧ ∃ element,
-      (ctx.program.target? waiting.flow).bind ctx.program.element? = some element ∧
-        element.gateway? = some (header, payload)) ∧
-      state.occurrence? id = some occurrence ∧ occurrence.id = named ∧ ∃ unit,
-        UnitKey.offerUnit? occurrence.id (offerRound state occurrence.id) = some unit ∧
-          hooks.arriveGateway ctx header payload occurrence { state with issuing := unit, issueNext := 0 } = .ok offered := by
-  unfold reoffer? at ran
-  refine foldlM_finds (fun found => ∃ id occurrence header payload, (∃ waiting ∈ state.slots.parked,
-    waiting.occurrence = id ∧ ∃ element, (ctx.program.target? waiting.flow).bind ctx.program.element? = some element ∧
-      element.gateway? = some (header, payload)) ∧ state.occurrence? id = some occurrence ∧ occurrence.id = found.2.2.1 ∧
-      ∃ unit, UnitKey.offerUnit? occurrence.id (offerRound state occurrence.id) = some unit ∧
-        hooks.arriveGateway ctx header payload occurrence { state with issuing := unit, issueNext := 0 } = .ok found.2.2.2)
-    (fun found waiting result kept stepped => ?_) _ none _ (by simp) ran _ rfl
-  split at stepped
-  · exact (Except.ok.inj stepped) ▸ kept
-  unfold offerParked at stepped
-  split at stepped
-  · simp at stepped
-  · rename_i element targeted
-    split at stepped
-    · rename_i occurrence isGateway lookup
-      split at stepped
-      rotate_left
-      · simp at stepped
-      rename_i unit keyed
-      obtain ⟨offeredState, offering, made⟩ := bind_ok stepped
-      obtain ⟨last, isLast, found⟩ := Option.bind_eq_some_iff.mp lookup
-      have kept := List.mem_filter.mp (List.mem_of_getLast? isLast)
-      have sameTarget : ctx.program.target? last.flow = ctx.program.target? waiting.flow := by
-        have matched := kept.2
-        simp only [Bool.and_eq_true, beq_iff_eq] at matched
-        exact matched.2
-      intro result same
-      rw [← Except.ok.inj made] at same
-      split at same
-      · simp at same
-      · rw [← Option.some.inj same]
-        exact ⟨_, _, _, _, ⟨last, kept.1, rfl, element, sameTarget ▸ targeted, isGateway⟩, found, rfl, unit, keyed, offering⟩
-    · simp at stepped
 
 /-- A committed queued signal ran its work, once what it names stood (`Performed`). -/
 theorem dispatchSignal_ok {hooks : Hooks} {ctx : Ctx} {signal : Signal} {state after : State}

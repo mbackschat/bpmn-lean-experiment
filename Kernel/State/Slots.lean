@@ -117,6 +117,15 @@ structure Parked where
   scope : ScopeOccurrenceId
   deriving DecidableEq, Repr
 
+/-- The parked arrival of `entries` whose occurrence's issue comes first under `le`, the first of those tied. The
+arrivals at one join in one scope occurrence are occurrences of one element there, so their issues are their order
+positions (DC13): committed ordinals in the order the commit numbered them, then the closure's issues in its unit order. -/
+def Parked.leastBy (le : Issue → Issue → Bool) (entries : List Parked) : Option Parked :=
+  entries.foldl (init := none) fun found waiting =>
+    match found with
+    | some best => if le best.occurrence.ordinal waiting.occurrence.ordinal then found else some waiting
+    | none => some waiting
+
 /-- An occurrence waiting for an unavailable InputSet in its scope occurrence. It records no flow: it waits whether or
 not a token began it, and only its scope occurrence's clearing ends the wait. -/
 structure Held where

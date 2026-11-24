@@ -135,6 +135,7 @@ public import Kernel.Laws.Step.EndsFrames
 public import Kernel.Laws.Step.Inputs
 public import Kernel.Laws.Step.Jobs
 public import Kernel.Laws.Step.Keeps
+public import Kernel.Laws.Step.Offer
 public import Kernel.Laws.Step.Order
 public import Kernel.Laws.Step.Ran
 public import Kernel.Laws.Step.Signals
@@ -227,6 +228,7 @@ public import Kernel.Step
 public import Kernel.Step.Commit
 public import Kernel.Step.Inputs
 public import Kernel.Step.Jobs
+public import Kernel.Step.Offer
 public import Kernel.Step.Order
 public import Kernel.Step.Stale
 

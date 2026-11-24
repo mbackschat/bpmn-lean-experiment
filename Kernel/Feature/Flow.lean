@@ -24,7 +24,9 @@ An element's own selection (`ownFlows`) is an inclusive choice over its outgoing
 Scope's may condition. A diverging gateway or an Activity that finds no outgoing flow rolls the command back.
 
 A parked Inclusive join also fires when no token arrives at it: Table 13.3 activates it by the state, and `Step.settle`
-offers the parked joins again once the closure is otherwise quiescent (`Step.reoffer?`).
+offers the parked joins again once the closure is otherwise quiescent (`Step.reoffer?`). Under
+`BranchSchedule.orderInvariant` every join, Parallel and Inclusive, fires only there, as the join slot's own unit (DC16):
+an arrival only parks, so which arrivals a firing consumes never depends on the order the closure ran them in.
 -/
 
 public section
@@ -226,31 +228,51 @@ def park (state : State) (waiting : Parked) : State :=
 def filled (state : State) (incoming : List FlowId) (scope : ScopeOccurrenceId) : List FlowId :=
   incoming.filter fun flow => state.slots.parked.any fun waiting => waiting.flow == flow && waiting.scope == scope
 
-/-- The occurrences a firing join consumes: the first parked on each filled flow. -/
-def consumed (state : State) (incoming : List FlowId) (scope : ScopeOccurrenceId) : List Parked :=
-  incoming.filterMap fun flow => state.slots.parked.find? fun waiting => waiting.flow == flow && waiting.scope == scope
+/-- The occurrences a firing join consumes, one on each filled flow: under `declarationDepthFirst` the first parked,
+as CIB takes them; under `orderInvariant` the one of least order position (`Parked.leastBy`, DC15 (b)), since parking order is
+the order the closure ran the arrivals in. -/
+def consumed (ctx : Ctx) (state : State) (incoming : List FlowId) (scope : ScopeOccurrenceId) : List Parked :=
+  let parkedOn (flow : FlowId) (waiting : Parked) : Bool := waiting.flow == flow && waiting.scope == scope
+  match ctx.program.options.branchSchedule with
+  | .declarationDepthFirst => incoming.filterMap fun flow => state.slots.parked.find? (parkedOn flow)
+  | .orderInvariant => incoming.filterMap fun flow => Parked.leastBy ctx.positionLe (state.slots.parked.filter (parkedOn flow))
+
+/-- The consumed occurrence a firing join continues with, the others ending with none: under `declarationDepthFirst`
+the offered `occurrence` when consumed, else the last consumed; under `orderInvariant` the consumed one of greatest
+order position (DC16), which no arrival order decides. -/
+def continuing (ctx : Ctx) (occurrence : OccurrenceId) (consumed : List Parked) : OccurrenceId :=
+  match ctx.program.options.branchSchedule with
+  | .declarationDepthFirst =>
+    if consumed.any (·.occurrence == occurrence) then occurrence else (consumed.getLast?.map (·.occurrence)).getD occurrence
+  | .orderInvariant => ((Parked.leastBy (fun a b => ctx.positionLe b a) consumed).map (·.occurrence)).getD occurrence
 
 def unpark (state : State) (consumed : List Parked) : State :=
   { state with slots := { state.slots with parked := state.slots.parked.filter (!consumed.contains ·) } }
 
-/-- Park the occurrence at a join, unless `Step.reoffer?` offers one already parked, and fire when `ready` holds; a gateway
-with one incoming flow passes it on. When the join fires, the offered occurrence, if consumed, is the one that leaves
-with the flows and the others end with none. -/
-def join (occurrence : Occurrence) (incoming : List FlowId) (state : State) (ready : State → Bool)
+/-- Whether an arrival at a join only parks (DC16): under `orderInvariant` every join fires as its slot's own unit, which
+`Step.reoffer?` runs once the closure is otherwise quiescent; under `declarationDepthFirst` the arrival that makes the
+join ready fires it in place, as CIB continues the arriving execution in its own operation. -/
+def parksOnly (ctx : Ctx) : Bool :=
+  match ctx.program.options.branchSchedule with
+  | .orderInvariant => true
+  | .declarationDepthFirst => false
+
+/-- Park the occurrence at a join, unless `Step.reoffer?` offers one already parked, and fire when `ready` holds and the
+arrival may fire it (`parksOnly`); a gateway with one incoming flow passes it on. When the join fires, the continuing
+occurrence (`continuing`) leaves with the flows and the other consumed ones end with none. -/
+def join (ctx : Ctx) (occurrence : Occurrence) (incoming : List FlowId) (state : State) (ready : State → Bool)
     (flows : State → Except Failure (List FlowId)) : Outcome := do
   let some flow := occurrence.incoming | .error (.semanticFailure .invariant "gateway-without-flow")
   if incoming.length ≤ 1 then .ok (signalComplete state occurrence.id (.flows (← flows state)))
   else
-    let parked := if state.slots.parked.any (·.occurrence == occurrence.id) then state
-      else park state { occurrence := occurrence.id, flow, scope := occurrence.scope }
-    if !ready parked then .ok parked
+    let offered := state.slots.parked.any (·.occurrence == occurrence.id)
+    let parked := if offered then state else park state { occurrence := occurrence.id, flow, scope := occurrence.scope }
+    if !offered && parksOnly ctx || !ready parked then .ok parked
     else
-      let consumed := consumed parked incoming occurrence.scope
+      let consumed := consumed ctx parked incoming occurrence.scope
       let unparked := unpark parked consumed
       let selected ← flows unparked
-      let firing :=
-        if consumed.any (·.occurrence == occurrence.id) then occurrence.id
-        else (consumed.getLast?.map (·.occurrence)).getD occurrence.id
+      let firing := continuing ctx occurrence.id consumed
       let others := (consumed.map (·.occurrence)).filter (· != firing)
       .ok (signalComplete (others.foldl (signalComplete · · (.flows [])) unparked) firing (.flows selected))
 
@@ -260,11 +282,11 @@ def arriveGateway (ctx : Ctx) (header : Header) (payload : GatewayPayload) (occu
   match payload.kind with
   | .exclusive candidates default => exclusive ctx candidates default occurrence state
   | .parallel =>
-    join occurrence payload.incoming state
+    join ctx occurrence payload.incoming state
       (fun parked => (filled parked payload.incoming scope).length == payload.incoming.length)
       (fun _ => .ok payload.outgoing)
   | .inclusive candidates default =>
-    join occurrence payload.incoming state
+    join ctx occurrence payload.incoming state
       (fun parked =>
         let empty := payload.incoming.filter (!(filled parked payload.incoming scope).contains ·)
         !reaches ctx header.id empty (positions ctx parked header.id scope))

@@ -728,8 +728,8 @@ function joinHolders(reading: Reading, program: Program, element: Element): Elem
 /**
  * Under `BranchSchedule.OrderInvariant`, the continuations of two Inclusive joins one quiescent closure may offer again
  * may not conflict, nor two occurrences of one join that two occurrences of its Scope or called process may park at once
- * (`joinHolders`, `againstHolders`): `step.ts` `reoffer` fires the first ready one in parking order, which is the order
- * earlier tokens arrived in, and runs its continuation to quiescence before it offers the next, so two joins Table 13.3
+ * (`joinHolders`, `againstHolders`): `reoffer` in `step/offer.ts` fires the first ready one in join-slot order (DC16), which no
+ * input states, and runs its continuation to quiescence before it offers the next, so two joins Table 13.3
  * activates by one state run in an order no input states (issue #81; P1 census, G4). Any two Inclusive joins count, a
  * conservative bound: whether both can be parked and ready at once is the run's.
  */

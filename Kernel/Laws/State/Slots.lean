@@ -40,4 +40,29 @@ theorem resume_suspended {slots : FeatureSlots} {run : CompensationRun} {occurre
     { element := occurrence.element, scope := occurrence.scope, leave : Suspended } ∈ slots.suspended :=
   List.mem_append_right _ (List.mem_filterMap.mpr ⟨run, mem, by simp [resume]⟩)
 
+/-- `Parked.leastBy` picks one of the arrivals, under any order. -/
+theorem leastBy_mem {le : Issue → Issue → Bool} {entries : List Parked} {least : Parked}
+    (found : Parked.leastBy le entries = some least) : least ∈ entries := by
+  unfold Parked.leastBy at found
+  suffices ∀ (acc : Option Parked), (∀ best, acc = some best → best ∈ entries) → ∀ rest : List Parked, rest ⊆ entries →
+      rest.foldl (fun found waiting => match found with
+        | some best => if le best.occurrence.ordinal waiting.occurrence.ordinal then found else some waiting
+        | none => some waiting) acc = some least → least ∈ entries from
+    this none (by simp) entries (List.Subset.refl _) found
+  intro acc kept rest
+  induction rest generalizing acc with
+  | nil => intro _ ended; exact kept _ ended
+  | cons head tail ih =>
+    intro sub ran
+    have headIn : head ∈ entries := sub List.mem_cons_self
+    refine ih _ ?_ (fun x member => sub (List.mem_cons_of_mem _ member)) ran
+    intro best picked
+    cases acc with
+    | none => simp only [Option.some.injEq] at picked; exact picked ▸ headIn
+    | some prior =>
+      simp only at picked
+      split at picked
+      · exact kept _ picked
+      · simp only [Option.some.injEq] at picked; exact picked ▸ headIn
+
 end Kernel.Laws.State

@@ -141,6 +141,19 @@ export interface Parked { readonly occurrence: OccurrenceId; readonly flow: Flow
  */
 export interface Held { readonly occurrence: OccurrenceId; readonly scope: ScopeOccurrenceId; }
 
+/**
+ * Lean's `Parked.leastBy`: the parked arrival of `entries` whose occurrence's issue comes first under `le`, the first of
+ * those tied. The arrivals at one join in one scope occurrence are occurrences of one element there, so their issues are
+ * their order positions (DC13).
+ */
+export function parkedLeastBy(le: (left: Issue, right: Issue) => boolean, entries: readonly Parked[]): Parked | null {
+  let found: Parked | null = null;
+  for (const waiting of entries) {
+    if (found === null || !le(occurrenceIdParts(found.occurrence).ordinal, occurrenceIdParts(waiting.occurrence).ordinal)) found = waiting;
+  }
+  return found;
+}
+
 export function parkedEquals(left: Parked, right: Parked): boolean {
   return left.occurrence === right.occurrence && left.flow === right.flow && left.scope === right.scope;
 }
