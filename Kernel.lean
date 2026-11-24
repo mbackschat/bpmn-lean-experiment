@@ -140,6 +140,7 @@ public import Kernel.Laws.Step.Keeps
 public import Kernel.Laws.Step.Offer
 public import Kernel.Laws.Step.Order
 public import Kernel.Laws.Step.Ran
+public import Kernel.Laws.Step.ScopeEntry
 public import Kernel.Laws.Step.Signals
 public import Kernel.Laws.Step.Stale
 public import Kernel.Laws.Subscriptions

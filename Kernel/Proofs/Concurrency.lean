@@ -1,6 +1,5 @@
 module
 
-public import Kernel.Laws.Step
 public import Kernel.Laws.Step.Inputs
 public import Kernel.Laws.Data
 public import Kernel.Laws.Flow.Concurrent

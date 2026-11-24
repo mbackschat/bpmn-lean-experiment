@@ -415,6 +415,37 @@ theorem conclude_ok {hooks : Hooks} {ctx : Ctx} {unit : UnitKey} {cause : Cause}
   obtain ⟨written, wrote, ran⟩ := bind_ok ran
   exact ⟨notified, written, folded, wrote, (Except.ok.inj ran).symm⟩
 
+/-- A micro-step runs forward through its body, absorb and conclusion: `microStep_ok` read backwards. -/
+theorem microStep_of {hooks : Hooks} {ctx : Ctx} {unit : UnitKey} {cause : Cause} {element : Option ElementId}
+    {owner : ScopeOccurrenceId} {body : State → Outcome} {state next absorbed after : State}
+    (fresh : state.transitions.contains unit = false) (unseeded : unit ≠ .ofRoot .seed)
+    (ran : body { state with issuing := unit, issueNext := 0 } = .ok next)
+    (absorbs : absorb hooks ctx state.batchSignals.length next = .ok absorbed)
+    (concludes : conclude hooks ctx unit cause element owner absorbed = .ok after) :
+    microStep hooks ctx unit cause element owner body state = .ok after := by
+  have notSeed : (unit == UnitKey.ofRoot .seed) = false := by simpa using unseeded
+  simp only [microStep, fresh, notSeed, Bool.false_or, Bool.false_eq_true, ite_false, bind, Except.bind, ran,
+    deferred_pass, absorbs, concludes]
+
+/-- A body that enqueued no signal leaves nothing to absorb. -/
+theorem absorb_quiet {hooks : Hooks} {ctx : Ctx} {before : Nat} {state : State}
+    (none_ : state.batchSignals.drop before = []) : absorb hooks ctx before state = .ok state := by
+  unfold absorb
+  rw [none_]
+
+/-- A transition that cancelled nothing, under hooks whose write notification changes nothing, is its journalled draft
+with the batches queued under its unit and the issuer reset (`conclude_ok`, forward). -/
+theorem conclude_quiet {hooks : Hooks} {ctx : Ctx} {unit : UnitKey} {cause : Cause} {element : Option ElementId}
+    {owner : ScopeOccurrenceId} {state : State} (quiet : ∀ writes t, hooks.written ctx writes t = .ok t)
+    (clean : state.draft.cancelled = []) :
+    conclude hooks ctx unit cause element owner state = .ok
+      { ({ state with
+          transitions := state.transitions.insert unit
+            { cause, element, owner, started := state.draft.started, ended := state.draft.ended, ready := state.draft.ready },
+          draft := {}, writes := [] } : State).queueBatch unit with issuing := .ofRoot .seed, issueNext := 0 } := by
+  unfold conclude
+  simp only [journalDraft_eq, clean, List.foldlM_nil, pure, Except.pure, bind, Except.bind, quiet]
+
 /-- No running batch: what every micro-step leaves, since `Step.conclude` moves the batches under its unit. -/
 abbrev Unbatched (state : State) : Prop :=
   state.batchSignals = [] ∧ state.batchTokens = [] ∧ state.batchIntents = []

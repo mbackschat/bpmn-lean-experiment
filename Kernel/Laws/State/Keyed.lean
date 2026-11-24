@@ -361,5 +361,33 @@ theorem mem_refold {f : ν → ν} {m : TreeMap κ ν compare}
   obtain ⟨other, otherIn, rfl⟩ := mem_refold_of inside
   rwa [apart other otherIn old member same] at inside
 
+/-! ## Inserts under distinct keys -/
+
+omit [Std.LawfulEqOrd κ] in
+/-- Inserts under two keys that compare apart commute: two units' fresh entries land alike in either order. -/
+theorem insert_comm (m : TreeMap κ ν compare) {a b : κ} (x y : ν) (apart : compare a b ≠ .eq) :
+    (m.insert a x).insert b y = (m.insert b y).insert a x := by
+  have both : ∀ k, compare b k = .eq → compare a k = .eq → False :=
+    fun k hb ha => apart (Std.TransCmp.eq_trans ha (Std.OrientedCmp.eq_symm hb))
+  apply Std.ExtTreeMap.ext_getKey_getElem?
+  · intro k _ _
+    simp only [Std.ExtTreeMap.getKey_insert]
+    by_cases hb : compare b k = .eq <;> by_cases ha : compare a k = .eq <;> simp [hb, ha]
+    exact (both k hb ha).elim
+  · intro k
+    simp only [Std.ExtTreeMap.getElem?_insert]
+    by_cases hb : compare b k = .eq <;> by_cases ha : compare a k = .eq <;> simp [hb, ha]
+    exact (both k hb ha).elim
+
+/-- `insert_comm` for keys that differ. -/
+theorem insert_comm_ne (m : TreeMap κ ν compare) {a b : κ} (x y : ν) (apart : a ≠ b) :
+    (m.insert a x).insert b y = (m.insert b y).insert a x :=
+  insert_comm m x y fun same => apart (Std.LawfulEqCmp.eq_of_compare same)
+
+/-- Two pairs of inserts under keys apart across the pairs commute as pairs. -/
+theorem insert_pairs_comm (m : TreeMap κ ν compare) {a b c d : κ} (x y z w : ν) (ac : a ≠ c) (ad : a ≠ d)
+    (bc : b ≠ c) (bd : b ≠ d) :
+    (((m.insert a x).insert b y).insert c z).insert d w = (((m.insert c z).insert d w).insert a x).insert b y := by
+  rw [insert_comm_ne _ _ _ bc, insert_comm_ne _ _ _ bd, insert_comm_ne m _ _ ac, insert_comm_ne _ _ _ ad]
 
 end Kernel.Laws.State.Keyed

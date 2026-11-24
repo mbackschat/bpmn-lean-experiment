@@ -18,6 +18,10 @@ namespace Kernel.Laws.Step
 
 open Kernel Kernel.Step
 
+/-- A committed outcome passes a transaction boundary unchanged. -/
+theorem deferred_pass {program : Program} {state after : State} : deferred program state (.ok after) = .ok after := by
+  simp [deferred]
+
 /-- A transaction boundary changes only a failure: a committed outcome passes through it. -/
 theorem deferred_ok {program : Program} {state after : State} {outcome : Outcome}
     (ran : deferred program state outcome = .ok after) : outcome = .ok after := by
