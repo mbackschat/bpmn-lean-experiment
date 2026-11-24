@@ -4,7 +4,9 @@
  * which re-exports it.
  */
 import { type ElementId } from "../il/types.js";
-import { compareIssue, compareOccurrenceId, type Issue, issueText, type OccurrenceId, type ScopeOccurrenceId } from "./slots.js";
+import {
+  compareIssue, compareOccurrenceId, type Issue, issueText, type OccurrenceId, orientKeyOrder, type ScopeOccurrenceId,
+} from "./slots.js";
 import { type OpenKind } from "./wait.js";
 
 /** The role an open item plays for its occurrence (KD1's item role). */
@@ -23,10 +25,10 @@ const itemRoleIndex: Readonly<Record<ItemRole, number>> = { [ItemRole.Wait]: 0, 
  */
 export interface ItemKey { readonly occurrence: OccurrenceId; readonly role: ItemRole; readonly ordinal: Issue; }
 
-/** The lexicographic key order of `Kernel.ItemKey`'s `Ord`. */
+/** The lexicographic key order of `Kernel.ItemKey`'s `Ord`, oriented (`orientKeyOrder`). */
 export function compareItemKey(left: ItemKey, right: ItemKey): number {
-  return compareOccurrenceId(left.occurrence, right.occurrence) || itemRoleIndex[left.role] - itemRoleIndex[right.role] ||
-    compareIssue(left.ordinal, right.ordinal);
+  return compareOccurrenceId(left.occurrence, right.occurrence) ||
+    orientKeyOrder(itemRoleIndex[left.role] - itemRoleIndex[right.role] || compareIssue(left.ordinal, right.ordinal));
 }
 
 /** A key as text, for sets and maps keyed by value. */

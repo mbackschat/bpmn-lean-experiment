@@ -8,6 +8,7 @@
  * are. Modules that read keys import it; `state.ts` re-exports only the key type.
  */
 import { assertNever, compareStrings, type ElementId } from "../il/types.js";
+import { keyOrderOpposite } from "./key-order.js";
 
 declare const issuerBrand: unique symbol;
 
@@ -124,8 +125,17 @@ function compareSegment(left: ScopeSegment, right: ScopeSegment): number {
 }
 
 /**
+ * Lean's `orientKeyOrder`: `order` as the scope-led key orders give it, or its opposite in the opposite-key-order test
+ * build (`key-order.ts`). Every scope-led key's order reads its scope-led head through an oriented order and orients the
+ * rest of its comparison, so that build reverses the whole order of every map keyed by such a key.
+ */
+export function orientKeyOrder(order: number): number {
+  return keyOrderOpposite && order !== 0 ? -order : order;
+}
+
+/**
  * The order of Lean's `Ord ScopeOccurrenceId`: the segments outermost first, lexicographically, so an ancestor comes
- * before its descendants and a subtree is one range of keys.
+ * before its descendants and a subtree is one range of keys; oriented (`orientKeyOrder`).
  */
 export function compareScopeOccurrenceId(left: ScopeOccurrenceId, right: ScopeOccurrenceId): number {
   if (left === right) return 0;
@@ -133,9 +143,9 @@ export function compareScopeOccurrenceId(left: ScopeOccurrenceId, right: ScopeOc
   const b = scopeSegments(right);
   for (let index = 1; index <= Math.min(a.length, b.length); index += 1) {
     const order = compareSegment(a[a.length - index] as ScopeSegment, b[b.length - index] as ScopeSegment);
-    if (order !== 0) return order;
+    if (order !== 0) return orientKeyOrder(order);
   }
-  return a.length - b.length;
+  return orientKeyOrder(a.length - b.length);
 }
 
 /**
@@ -156,9 +166,9 @@ function compareCommittedPath(left: ScopeOccurrenceId, right: ScopeOccurrenceId)
 /** What an ordinal counter of `State.scopeOrdinals` counts: the scope occurrences of `element` entered in `parent`. */
 export interface ScopeSlot { readonly parent: ScopeOccurrenceId; readonly element: ElementId; }
 
-/** The order of Lean's `Ord ScopeSlot`: the parent's key, then the element. */
+/** The order of Lean's `Ord ScopeSlot`: the parent's key, then the element, oriented (`orientKeyOrder`). */
 export function compareScopeSlot(left: ScopeSlot, right: ScopeSlot): number {
-  return compareScopeOccurrenceId(left.parent, right.parent) || compareStrings(left.element, right.element);
+  return compareScopeOccurrenceId(left.parent, right.parent) || orientKeyOrder(compareStrings(left.element, right.element));
 }
 
 declare const occurrenceKeyBrand: unique symbol;
@@ -195,12 +205,16 @@ export function scopeEncloses(outer: ScopeOccurrenceId, inner: ScopeOccurrenceId
   return false;
 }
 
-/** The order of Lean's `Ord OccurrenceId`: the scope occurrence's key, then the element, then the issue. */
+/**
+ * The order of Lean's `Ord OccurrenceId`: the scope occurrence's key, then the element, then the issue, oriented
+ * (`orientKeyOrder`).
+ */
 export function compareOccurrenceId(left: OccurrenceId, right: OccurrenceId): number {
   if (left === right) return 0;
   const a = occurrenceIdParts(left);
   const b = occurrenceIdParts(right);
-  return compareScopeOccurrenceId(a.scope, b.scope) || compareStrings(a.element, b.element) || compareIssue(a.ordinal, b.ordinal);
+  return compareScopeOccurrenceId(a.scope, b.scope) ||
+    orientKeyOrder(compareStrings(a.element, b.element) || compareIssue(a.ordinal, b.ordinal));
 }
 
 /**

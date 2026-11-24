@@ -2,6 +2,7 @@ module
 
 public import Kernel.State.Key
 import all Kernel.State.Key
+public import Kernel.Laws.State.KeyOrder
 
 /-! # Laws of the kernel state: the spine and the scope occurrence key
 
@@ -179,9 +180,12 @@ theorem eq_child_iff {parent key : ScopeOccurrenceId} {element : ElementId} {ord
   rw [parent?_up (child_segments parent element ordinal)]
   exact congrArg some (ext rfl)
 
-/-- The key order is the order of the segments read outermost first, so a subtree is one range of keys. -/
-theorem compare_eq (a b : ScopeOccurrenceId) : compare a b = compare a.segments.reverse b.segments.reverse :=
-  congrFun (congrFun ScopeOccurrenceId.outerOrder.property a) b
+/-- The key order is the order of the segments read outermost first, so a subtree is one range of keys: the order this
+build selects (`keyOrderOpposite`), which only the opposite-key-order test build reverses. -/
+theorem compare_eq (a b : ScopeOccurrenceId) : compare a b = compare a.segments.reverse b.segments.reverse := by
+  show (orientCmp ScopeOccurrenceId.outerOrder.val).val a b = _
+  rw [ScopeOccurrenceId.outerOrder.property]
+  simp only [orientCmp_eq, compareOn]
 
 /-- An ancestor comes before its descendants. -/
 theorem compare_child (parent : ScopeOccurrenceId) (element : ElementId) (ordinal : Issue) :

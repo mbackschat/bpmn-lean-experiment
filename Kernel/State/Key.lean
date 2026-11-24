@@ -1,6 +1,7 @@
 module
 
 public import Kernel.IL.Types
+public import Kernel.State.KeyOrder
 
 /-! # Scope occurrence and occurrence keys
 
@@ -829,20 +830,20 @@ def ScopeOccurrenceId.outerOrder :
     show Spine.outer.val a.spine b.spine = compare a.segments.reverse b.segments.reverse
     rw [Spine.outer.property.2 _ _ ga gb, pathA, pathB]⟩
 
+/-- Oriented (`orientCmp`). -/
 instance : Ord ScopeOccurrenceId where
-  compare := ScopeOccurrenceId.outerOrder.val
+  compare := (orientCmp ScopeOccurrenceId.outerOrder.val).val
 
 instance : Std.TransOrd ScopeOccurrenceId := by
-  show Std.TransCmp ScopeOccurrenceId.outerOrder.val
+  show Std.TransCmp (orientCmp ScopeOccurrenceId.outerOrder.val).val
   rw [ScopeOccurrenceId.outerOrder.property]
-  exact inferInstanceAs <| Std.TransCmp (compareOn _)
+  exact inferInstanceAs <| Std.TransCmp (orientCmp (compareOn _)).val
 
 instance : Std.LawfulEqOrd ScopeOccurrenceId where
   eq_of_compare {a b} h := by
     have h : compare a.segments.reverse b.segments.reverse = .eq := by
-      have order := ScopeOccurrenceId.outerOrder.property
-      rw [show compare a b = ScopeOccurrenceId.outerOrder.val a b from rfl, order] at h
-      exact h
+      have h := ((orientCmp ScopeOccurrenceId.outerOrder.val).property a b).mp h
+      rwa [ScopeOccurrenceId.outerOrder.property] at h
     have same : a.segments = b.segments := List.reverse_inj.mp (Std.LawfulEqOrd.eq_of_compare h)
     -- A key's spine is its path's.
     obtain ⟨segments, spine, ok⟩ := a
@@ -858,20 +859,22 @@ structure ScopeSlot where
   element : ElementId
   deriving DecidableEq, Repr
 
+/-- The parent's key, then the element, oriented (`orientCmp`). -/
 instance : Ord ScopeSlot where
-  compare := compareLex (compareOn (·.parent)) (compareOn (·.element.value))
+  compare := compareLex (compareOn (·.parent)) (orientCmp (compareOn (·.element.value))).val
 
 instance : Std.TransOrd ScopeSlot := inferInstanceAs <| Std.TransCmp (compareLex _ _)
 
 instance : Std.LawfulEqOrd ScopeSlot where
   eq_of_compare {a b} h := by
     have h : compareLex (compareOn fun slot : ScopeSlot => slot.parent)
-        (compareOn fun slot : ScopeSlot => slot.element.value) a b = .eq := h
+        (orientCmp (compareOn fun slot : ScopeSlot => slot.element.value)).val a b = .eq := h
     rw [compareLex_eq_eq] at h
+    have elements := ((orientCmp (compareOn fun slot : ScopeSlot => slot.element.value)).property a b).mp h.2
     obtain ⟨parent, ⟨element⟩⟩ := a
     obtain ⟨parent', ⟨element'⟩⟩ := b
     have parents : parent = parent' := Std.LawfulEqOrd.eq_of_compare h.1
-    have same : element = element' := Std.LawfulEqOrd.eq_of_compare h.2
+    have same : element = element' := Std.LawfulEqOrd.eq_of_compare elements
     subst parents same
     rfl
 
@@ -885,22 +888,25 @@ structure OccurrenceId where
   ordinal : Issue
   deriving DecidableEq, Repr, Inhabited
 
+/-- The scope occurrence's key, then the element, then the issue, oriented (`orientCmp`). -/
 instance : Ord OccurrenceId where
-  compare := compareLex (compareOn (·.scope)) <| compareLex (compareOn (·.element.value)) (compareOn (·.ordinal))
+  compare := compareLex (compareOn (·.scope)) (orientCmp <| compareLex (compareOn (·.element.value)) (compareOn (·.ordinal))).val
 
-instance : Std.TransOrd OccurrenceId := inferInstanceAs <| Std.TransCmp (compareLex _ _)
+instance : Std.TransOrd OccurrenceId := inferInstanceAs <| Std.TransCmp (compareLex _ (orientCmp (compareLex _ _)).val)
 
 instance : Std.LawfulEqOrd OccurrenceId where
   eq_of_compare {a b} h := by
-    have h : compareLex (compareOn fun key : OccurrenceId => key.scope)
-        (compareLex (compareOn fun key : OccurrenceId => key.element.value) (compareOn fun key : OccurrenceId => key.ordinal))
+    have h : compareLex (compareOn fun key : OccurrenceId => key.scope) (orientCmp <|
+        compareLex (compareOn fun key : OccurrenceId => key.element.value) (compareOn fun key : OccurrenceId => key.ordinal)).val
         a b = .eq := h
-    rw [compareLex_eq_eq, compareLex_eq_eq] at h
+    rw [compareLex_eq_eq] at h
+    have rest := compareLex_eq_eq.mp <| ((orientCmp <| compareLex (compareOn fun key : OccurrenceId => key.element.value)
+        (compareOn fun key : OccurrenceId => key.ordinal)).property a b).mp h.2
     obtain ⟨scope, ⟨element⟩, ordinal⟩ := a
     obtain ⟨scope', ⟨element'⟩, ordinal'⟩ := b
     have scopes : scope = scope' := Std.LawfulEqOrd.eq_of_compare h.1
-    have same : element = element' := Std.LawfulEqOrd.eq_of_compare h.2.1
-    have ordinals : ordinal = ordinal' := Std.LawfulEqOrd.eq_of_compare h.2.2
+    have same : element = element' := Std.LawfulEqOrd.eq_of_compare rest.1
+    have ordinals : ordinal = ordinal' := Std.LawfulEqOrd.eq_of_compare rest.2
     subst scopes same ordinals
     rfl
 

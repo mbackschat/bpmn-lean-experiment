@@ -110,6 +110,7 @@ public import Kernel.Laws.State.Issuer
 public import Kernel.Laws.State.Items
 public import Kernel.Laws.State.Keeps
 public import Kernel.Laws.State.Key
+public import Kernel.Laws.State.KeyOrder
 public import Kernel.Laws.State.Keyed
 public import Kernel.Laws.State.Map
 public import Kernel.Laws.State.Occurrence
@@ -221,6 +222,7 @@ public import Kernel.State.Issue
 public import Kernel.State.Items
 public import Kernel.State.Journal
 public import Kernel.State.Key
+public import Kernel.State.KeyOrder
 public import Kernel.State.Map
 public import Kernel.State.Occurrence
 public import Kernel.State.Raise

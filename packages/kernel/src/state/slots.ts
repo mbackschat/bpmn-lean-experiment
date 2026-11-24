@@ -7,10 +7,12 @@ import { type OccurrenceRef } from "./input.js";
 import { type Binding } from "./wait.js";
 /** Re-exported for `raise.ts`, as Lean's `Kernel.State.Raise` sees `Kernel.State.Wait` only through this module. */
 export { type Binding };
-import { compareIssue, compareOccurrenceId, type Issue, issueText, type OccurrenceId, occurrenceIdParts, type ScopeOccurrenceId } from "./key.js";
+import {
+  compareIssue, compareOccurrenceId, type Issue, issueText, type OccurrenceId, occurrenceIdParts, orientKeyOrder, type ScopeOccurrenceId,
+} from "./key.js";
 /** Re-exported for `items.ts` and `raise.ts`, as Lean's `Kernel.State.Items` and `Kernel.State.Raise` see `Kernel.State.Key`
  * only through this module. */
-export { compareIssue, compareOccurrenceId, type Issue, issueText, type OccurrenceId, type ScopeOccurrenceId };
+export { compareIssue, compareOccurrenceId, type Issue, issueText, type OccurrenceId, orientKeyOrder, type ScopeOccurrenceId };
 
 /**
  * Lean's `Variables`, one variable set keyed by name (DC21), written as its list view: its bindings in name order
