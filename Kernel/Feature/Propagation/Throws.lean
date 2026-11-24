@@ -67,13 +67,16 @@ def signalBusinessKey (ctx : Ctx) (context : EvalContext) : Option Expression �
     | .unsupported code => .error (.unsupported code)
 
 /-- The payload (CIB-EXT-0040): the `camunda:in` copies in document order, `variables="all"` copying every variable
-`visible` from the throw at its position, a later target replacing an earlier (`VariableMap.put`). -/
+`visible` from the throw at its position, a later target replacing an earlier (`VariableMap.put`). `visible` lists the
+innermost frame first, and CIB collects a name from the nearest frame that holds it
+(`AbstractVariableScope.java:110-125`), so the copy is reversed: a shadowed name's innermost binding comes last and
+`lastWrites` keeps it. -/
 def signalPayload (ctx : Ctx) (context : EvalContext) (visible : List (String × Value)) (record : SignalThrow) :
     Except Failure (List (String × Value)) := do
   let position := record.propagateAll.getD record.payload.length
   let before ← ctx.requireMappings context (record.payload.take position)
   let after ← ctx.requireMappings context (record.payload.drop position)
-  pure (lastWrites (before ++ (if record.propagateAll.isSome then visible else []) ++ after))
+  pure (lastWrites (before ++ (if record.propagateAll.isSome then visible.reverse else []) ++ after))
 
 /-- The address a throw broadcasts to: its `signalRef` under `SignalNames.identifier`, else its name (CIB-INT-0028),
 an expression's evaluated at the throw (CIB-EXT-0041). A `null` name matches nothing in CIB or fails on an earlier

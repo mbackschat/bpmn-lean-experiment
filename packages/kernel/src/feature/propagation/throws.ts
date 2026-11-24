@@ -151,7 +151,10 @@ function signalBusinessKey(ctx: Ctx, context: EvalContext, expression: Expressio
 
 /**
  * The payload (CIB-EXT-0040): the `camunda:in` copies in document order, `variables="all"` copying every variable
- * `seen` from the throw at its position, a later target replacing an earlier (`VariableMap.put`).
+ * `seen` from the throw at its position, a later target replacing an earlier (`VariableMap.put`). `seen` lists the
+ * innermost frame first, and CIB collects a name from the nearest frame that holds it
+ * (`AbstractVariableScope.java:110-125`), so the copy is reversed: a shadowed name's innermost binding comes last and
+ * `lastWrites` keeps it.
  */
 function signalPayload(ctx: Ctx, context: EvalContext, seen: readonly Binding[], record: SignalThrow): Result<readonly Binding[]> {
   const position = record.propagateAll ?? record.payload.length;
@@ -159,7 +162,7 @@ function signalPayload(ctx: Ctx, context: EvalContext, seen: readonly Binding[],
   if (!before.ok) return failedWith(before.failure);
   const after = ctxRequireMappings(ctx, context, record.payload.slice(position));
   if (!after.ok) return failedWith(after.failure);
-  return committed(lastWrites([...before.value, ...(record.propagateAll === null ? [] : seen), ...after.value]));
+  return committed(lastWrites([...before.value, ...(record.propagateAll === null ? [] : [...seen].reverse()), ...after.value]));
 }
 
 /**
