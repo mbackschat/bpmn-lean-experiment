@@ -99,6 +99,7 @@ public import Kernel.Laws.State.Committed
 public import Kernel.Laws.State.Counters
 public import Kernel.Laws.State.Derived
 public import Kernel.Laws.State.Enter
+public import Kernel.Laws.State.Fields
 public import Kernel.Laws.State.Fire
 public import Kernel.Laws.State.Frames
 public import Kernel.Laws.State.History

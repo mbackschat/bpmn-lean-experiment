@@ -29,6 +29,9 @@ verify_lean_library() {
   # Guards 17, 18 and 19 read it too; the self-test first shows the scan rejects its seeded violations (guard 23).
   ./scripts/lake.sh run scripts/kernel-effects.lean --self-test
   ./scripts/lake.sh run scripts/kernel-effects.lean
+  # DC29's field table against the state's structures, after its self-test.
+  ./scripts/lake.sh run scripts/kernel-fields.lean --self-test
+  ./scripts/lake.sh run scripts/kernel-fields.lean
 }
 
 # The integration lane restores this stage's output, so it builds every native driver a package test runs.
