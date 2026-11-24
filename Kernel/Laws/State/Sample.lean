@@ -51,7 +51,8 @@ theorem sample_wellFormed (kind : OpenKind) {program : Program}
         exact .committed rfl (by simp [innerItem, outerItem, OccurrenceId.fresh_eq, processRoot, subScope])
           fun _ => by simp [sample, innerItem, outerItem, Std.ExtTreeMap.getD_insert],
     fun _ member => (sample_historic kind).issued member,
-    by simp [sample, rootScope, childScope]⟩
+    by simp [sample, rootScope, childScope],
+    by simp [sample, subProcess, innerTask, outerTask]⟩
   distinct := ⟨by simp [occurrenceIds, sample, subProcess, innerTask, outerTask], keyedBy_ofItems _,
     scopesKeyed_ofScopes _,
     by simp [key, sample, subProcess, innerTask, outerTask]⟩

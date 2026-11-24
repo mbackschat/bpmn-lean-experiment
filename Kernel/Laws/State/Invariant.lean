@@ -102,6 +102,10 @@ structure IssuedBelow (s : State) : Prop where
   state holds committed positions only. -/
   positions : ∀ scope ∈ s.scopes, ∀ unit index, scope.position = .fresh unit index →
     s.issued[Issue.fresh unit index]? = some .position
+  /-- A fresh order position of an occurrence is an occurrence identity's issue in the issue table (DC25), so the commit
+  numbers it (`Step.positionsOf`), as `positions` says of a scope occurrence's. -/
+  occurrencePositions : ∀ occurrence ∈ s.occurrences, ∀ unit index, occurrence.position = .fresh unit index →
+    ∃ slot, s.issued[Issue.fresh unit index]? = some (.occurrence slot)
 
 /-- `IssuedBelow`'s position clause carries to a state whose scope occurrences are some of `s`'s and whose issue table
 holds `s`'s. -/
@@ -109,6 +113,16 @@ theorem IssuedBelow.positionsKept {s t : State} (issued : IssuedBelow s) (scopes
     (table : TableGrows s t) : ∀ scope ∈ t.scopes, ∀ unit index, scope.position = .fresh unit index →
       t.issued[Issue.fresh unit index]? = some .position :=
   fun scope member unit index fresh => table _ _ (issued.positions scope (scopes scope member) unit index fresh)
+
+/-- `IssuedBelow`'s occurrence position clause carries to a state whose occurrences are some of `s`'s and whose issue
+table holds `s`'s. -/
+theorem IssuedBelow.occurrencePositionsKept {s t : State} (issued : IssuedBelow s)
+    (occurrences : ∀ occurrence ∈ t.occurrences, occurrence ∈ s.occurrences) (table : TableGrows s t) :
+    ∀ occurrence ∈ t.occurrences, ∀ unit index, occurrence.position = .fresh unit index →
+      ∃ slot, t.issued[Issue.fresh unit index]? = some (.occurrence slot) :=
+  fun occurrence member unit index fresh =>
+    let ⟨slot, tabled⟩ := issued.occurrencePositions occurrence (occurrences occurrence member) unit index fresh
+    ⟨slot, table _ _ tabled⟩
 
 /-- The issue table and the issuer (DC12, `IssuerFresh`): the table holds fresh issues only, none of the running
 unit's at or above its next index, so the next issue (`State.issue`) is not in the table, and only the issues of a
@@ -646,9 +660,9 @@ occurrence. They unfold under `simp`, so distinct keys read as distinct. -/
 @[simp] def timerKey : OccurrenceId := { scope := processRoot, element := ⟨"Timer"⟩, ordinal := 0 }
 @[simp] def ghostKey : OccurrenceId := { scope := processRoot, element := ⟨"Ghost"⟩, ordinal := 0 }
 
-def subProcess : Occurrence := { id := subKey, element := ⟨"Sub"⟩, scope := processRoot, activation := 1 }
-def innerTask : Occurrence := { id := innerKey, element := ⟨"Inner"⟩, scope := subScope, activation := 1 }
-def outerTask : Occurrence := { id := outerKey, element := ⟨"Outer"⟩, scope := processRoot, activation := 1 }
+def subProcess : Occurrence := { id := subKey, element := ⟨"Sub"⟩, scope := processRoot, activation := 1, position := 1 }
+def innerTask : Occurrence := { id := innerKey, element := ⟨"Inner"⟩, scope := subScope, activation := 1, position := 2 }
+def outerTask : Occurrence := { id := outerKey, element := ⟨"Outer"⟩, scope := processRoot, activation := 1, position := 3 }
 
 def rootScope : ScopeOccurrence := { id := processRoot, element := none, position := 0 }
 def childScope : ScopeOccurrence := { id := subScope, element := some ⟨"Sub"⟩, position := 0, occurrence := some subKey }

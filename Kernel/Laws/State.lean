@@ -604,6 +604,11 @@ theorem reserve_reserves (state : State) (element : ElementId) (scope : ScopeOcc
       scopeOrdinals := by simp [State.reserve, State.activate, State.issueOccurrence, State.issue], kind := by simp [State.reserve],
       occurrenceOrdinals := by simp [State.reserve, State.activate, State.issueOccurrence, State.issue],
       placed := by simp [State.reserve], role := by simp [State.reserve], unbegun := by simp [State.reserve],
+      positioned := fun unit index same => by
+        have taken : (state.reserve element scope).2.position = .fresh state.issuing state.issueNext := by
+          simp [State.reserve, State.activate, State.issueOccurrence, State.issue]
+        rw [taken] at same; cases same; rw [issued]
+        exact ⟨_, Std.ExtTreeMap.getElem?_insert_self⟩,
       activated := fun keyed => ?_, scopeMap := by simp [State.reserve, State.activate, State.issueOccurrence, State.issue],
       instances := instances, instanceId := by simp [State.reserve, State.activate, State.issueOccurrence, State.issue],
       itemMap := by simp [State.reserve, State.activate, State.issueOccurrence, State.issue],
@@ -711,7 +716,7 @@ theorem beginOccurrence_begins {state : State} (keyed : ActivationsKeyed state) 
           table := fun _ => .of_eq (by simp [State.recordStart]),
           issuer := fun fresh => fresh.same (by simp [State.recordStart]) (by simp [State.recordStart])
             (by simp [State.recordStart]) (by simp [State.recordStart]),
-          keyed := placed }
+          keyed := placed, positioned := fun _ _ _ => .inl ⟨reserved, member, rfl⟩ }
     · rename_i moved
       have moved : reserved.id.scope ≠ request.scope := fun same => moved (beq_iff_eq.mpr same)
       intro instances keeps
@@ -726,7 +731,7 @@ theorem beginOccurrence_begins {state : State} (keyed : ActivationsKeyed state) 
             · simp [h, Ne.symm h],
           started := by rw [recordStart_started]; simp [State.recordStart, State.issueOccurrence, State.issue],
           scope := rfl, isBegun := rfl, scopeMap := keeps.1, instances := instances, variables := keeps.2.1,
-          continued := rfl, keyed := rfl,
+          continued := rfl, keyed := rfl, positioned := fun _ _ _ => .inl ⟨reserved, member, rfl⟩,
           source := .inr (.inl ⟨reserved, member, named, moved, fun fresh _ => ?unissued, fun fresh within => ?reissued,
             ?grown, rfl, rfl, rfl, ?_, ?_⟩),
           itemMap := ⟨?_, .inr ⟨reserved.id, named, fun same => moved (congrArg OccurrenceId.scope same), ?_⟩⟩,
@@ -794,7 +799,11 @@ theorem beginOccurrence_begins {state : State} (keyed : ActivationsKeyed state) 
         slots := by simp [State.recordStart, State.issueOccurrence, State.issue], continued := rfl,
         table := fun fresh => .insert (slot := .occurrence { parent := request.scope, element := request.element }) fresh.next (by simp [State.recordStart, State.issueOccurrence, State.issue]),
         issuer := fun fresh => fresh.issue (slot := .occurrence { parent := request.scope, element := request.element }) (by simp [State.recordStart, State.issueOccurrence, State.issue]) (by simp [State.recordStart, State.issueOccurrence, State.issue]) (by simp [State.recordStart, State.issueOccurrence, State.issue])
-          (by simp [State.recordStart, State.issueOccurrence, State.issue]), keyed := rfl }
+          (by simp [State.recordStart, State.issueOccurrence, State.issue]), keyed := rfl,
+        positioned := fun unit index same => .inr ⟨{ parent := request.scope, element := request.element }, by
+          simp only [State.issueOccurrence, State.issue] at same
+          cases same
+          simp [State.recordStart, State.issueOccurrence, State.issue]⟩ }
     case fresh =>
       simpa [State.issueOccurrence, State.issue] using
         occurrence_unissued (scope := request.scope) (element := request.element) fresh.next

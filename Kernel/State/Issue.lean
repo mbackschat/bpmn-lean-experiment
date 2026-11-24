@@ -57,7 +57,8 @@ def UnitKey.offers (occurrence : OccurrenceId) (key : UnitKey) : Bool :=
 /-- The slot a fresh issue takes its committed ordinal in at commit (DC12), one constructor per counter map, so the
 commit's assignment keys exactly what each counter compares (P07 F3): a scope occurrence's (parent, element)
 (`State.scopeOrdinals`), an occurrence's (scope occurrence, element) (`State.occurrenceOrdinals`), an item's occurrence
-(`State.itemOrdinals`), and an order position's one slot (`State.nextOrder`, DC13), which has no owner. -/
+(`State.itemOrdinals`), and an order position's one slot (`State.nextOrder`, DC13), which has no owner; an occurrence's
+issue counts on it too, for the order position it is (DC25, `Step.assignStep`). -/
 inductive ClaimSlot where
   | scope (slot : ScopeSlot)
   | occurrence (slot : ScopeSlot)

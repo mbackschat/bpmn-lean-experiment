@@ -326,7 +326,7 @@ and activation, so the instance's invocation would name its root alike. -/
 theorem body_owner_rejected :
     ¬ Roled { instanceId := "I1", scopeMap := Laws.State.ofScopes [witnessRoot, witnessCalled 2 (some callItKey)]
               occurrences := [{ id := callItKey, element := ⟨"CallIt"⟩, scope := (.ofSegments []), activation := 1
-                                role := .multiInstanceBody }] } := fun roled => by
+                                position := 1, role := .multiInstanceBody }] } := fun roled => by
   have := roled (witnessCalled 2 (some callItKey)) (by simp [Laws.State.scopes_eq, witnessRoot, witnessCalled, Laws.State.ScopeOccurrenceId.ofSegments_inj]) rfl _ (List.mem_singleton_self _) rfl
   cases this
 
@@ -334,7 +334,7 @@ theorem body_owner_rejected :
 theorem nonActivity_owner_rejected (program : Program) :
     ¬ ActivityOwners { program with elements := [] }
       { instanceId := "I1", scopeMap := Laws.State.ofScopes [witnessRoot, witnessCalled 2 (some callItKey)]
-        occurrences := [{ id := callItKey, element := ⟨"CallIt"⟩, scope := (.ofSegments []), activation := 1 }] } := fun owners => by
+        occurrences := [{ id := callItKey, element := ⟨"CallIt"⟩, scope := (.ofSegments []), activation := 1, position := 1 }] } := fun owners => by
   have activity := owners (witnessCalled 2 (some callItKey)) (by simp [Laws.State.scopes_eq, witnessRoot, witnessCalled, Laws.State.ScopeOccurrenceId.ofSegments_inj]) rfl _ (List.mem_singleton_self _) rfl
   cases found : ({ program with elements := [] } : Program).element? ⟨"CallIt"⟩ with
   | none => simp [found] at activity

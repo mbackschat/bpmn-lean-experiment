@@ -140,20 +140,82 @@ theorem getD_above {base : ClaimSlot → Nat} {acc : TreeMap Issue Nat compare �
   | none => exact Nat.le_refl _
   | some m => exact above slot m h
 
+/-- A step's next ordinals (`assignStep`): the claim's slot counts one past the ordinal it took, an occurrence's claim
+counts the position slot one past the position it took (`Step.positionsOf`), and every other slot keeps its next
+ordinal. -/
+theorem assignStep_next_of {base : ClaimSlot → Nat} {acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare}
+    {claim : Issue × ClaimSlot} {slot : ClaimSlot} {m : Nat} (found : (assignStep base acc claim).2[slot]? = some m) :
+    (slot = claim.2 ∧ m = acc.2.getD claim.2 (base claim.2) + 1) ∨
+      (slot = .position ∧ m = acc.2.getD .position (base .position) + 1) ∨ acc.2[slot]? = some m := by
+  obtain ⟨issue, claimed⟩ := claim
+  have plain : (acc.2.insert claimed (acc.2.getD claimed (base claimed) + 1))[slot]? = some m →
+      (slot = claimed ∧ m = acc.2.getD claimed (base claimed) + 1) ∨ acc.2[slot]? = some m := fun found => by
+    rw [Std.ExtTreeMap.getElem?_insert] at found
+    split at found
+    · rename_i same; exact .inl ⟨(Std.LawfulEqOrd.eq_of_compare same).symm, (Option.some.inj found).symm⟩
+    · exact .inr found
+  cases claimed with
+  | occurrence o =>
+    simp only [assignStep] at found
+    rw [Std.ExtTreeMap.getElem?_insert] at found
+    split at found
+    · rename_i same
+      obtain rfl := Std.LawfulEqOrd.eq_of_compare same
+      refine .inr (.inl ⟨rfl, ?_⟩)
+      rw [← Option.some.inj found, Std.ExtTreeMap.getD_insert]
+      simp [Std.LawfulEqCmp.compare_eq_iff_eq]
+    · exact (plain found).elim .inl (.inr ∘ .inr)
+  | scope _ | item _ | position => exact (plain found).elim .inl (.inr ∘ .inr)
+
+/-- A step's claim takes its slot's next ordinal and counts the slot past it. -/
+theorem assignStep_claim (base : ClaimSlot → Nat) (acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare)
+    (claim : Issue × ClaimSlot) :
+    (assignStep base acc claim).2[claim.2]? = some (acc.2.getD claim.2 (base claim.2) + 1) := by
+  obtain ⟨issue, claimed⟩ := claim
+  cases claimed with
+  | occurrence o =>
+    simp only [assignStep]
+    rw [Std.ExtTreeMap.getElem?_insert]
+    simp [Std.LawfulEqCmp.compare_eq_iff_eq]
+  | scope _ | item _ | position => simp [assignStep]
+
+/-- No step lowers a next ordinal the fold holds. -/
+theorem assignStep_raises {base : ClaimSlot → Nat} {acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare}
+    (claim : Issue × ClaimSlot) {slot : ClaimSlot} {m : Nat} (found : acc.2[slot]? = some m) :
+    ∃ m', (assignStep base acc claim).2[slot]? = some m' ∧ m ≤ m' := by
+  have own : ∀ other, acc.2[other]? = some m → m ≤ acc.2.getD other (base other) := fun other held => by
+    rw [Std.ExtTreeMap.getD_eq_getD_getElem?, held]; exact Nat.le_refl _
+  obtain ⟨issue, claimed⟩ := claim
+  have plain : ∃ m', (acc.2.insert claimed (acc.2.getD claimed (base claimed) + 1))[slot]? = some m' ∧ m ≤ m' := by
+    rw [Std.ExtTreeMap.getElem?_insert]
+    split
+    · rename_i same
+      exact ⟨_, rfl, Nat.le_succ_of_le (own _ (Std.LawfulEqOrd.eq_of_compare same ▸ found))⟩
+    · exact ⟨m, found, Nat.le_refl _⟩
+  cases claimed with
+  | occurrence o =>
+    simp only [assignStep]
+    rw [Std.ExtTreeMap.getElem?_insert]
+    split
+    · rename_i same
+      obtain rfl := Std.LawfulEqOrd.eq_of_compare same
+      refine ⟨_, rfl, Nat.le_succ_of_le ?_⟩
+      rw [Std.ExtTreeMap.getD_insert]
+      simpa [Std.LawfulEqCmp.compare_eq_iff_eq] using own _ found
+    · exact plain
+  | scope _ | item _ | position => exact plain
+
 theorem assignStep_above {base : ClaimSlot → Nat} {acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare}
     (above : AboveBase base acc) (claim : Issue × ClaimSlot) : AboveBase base (assignStep base acc claim) := by
   intro slot m found
-  simp only [assignStep, Std.ExtTreeMap.getElem?_insert] at found
-  split at found
-  · rename_i same
-    cases found
-    rw [← Std.LawfulEqOrd.eq_of_compare same]
-    exact Nat.le_succ_of_le (getD_above above claim.2)
-  · exact above slot m found
+  rcases assignStep_next_of found with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | kept
+  · exact Nat.le_succ_of_le (getD_above above _)
+  · exact Nat.le_succ_of_le (getD_above above _)
+  · exact above slot m kept
 
 theorem assignStep_took {base : ClaimSlot → Nat} {acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare}
     (above : AboveBase base acc) (claim : Issue × ClaimSlot) : Took base (assignStep base acc claim) claim :=
-  ⟨_, _, by simp [assignStep], by simp [assignStep], getD_above above claim.2, Nat.lt_succ_self _⟩
+  ⟨_, _, by simp [assignStep], assignStep_claim base acc claim, getD_above above claim.2, Nat.lt_succ_self _⟩
 
 theorem assignStep_keeps {base : ClaimSlot → Nat} {acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare}
     {claim other : Issue × ClaimSlot} (apart : other.1 ≠ claim.1) (took : Took base acc other) :
@@ -165,15 +227,8 @@ theorem assignStep_keeps {base : ClaimSlot → Nat} {acc : TreeMap Issue Nat com
     split
     · rename_i same; exact absurd (Std.LawfulEqOrd.eq_of_compare same).symm apart
     · exact issue
-  by_cases same : compare claim.2 other.2 = .eq
-  · have slots := Std.LawfulEqOrd.eq_of_compare same
-    refine ⟨n, acc.2.getD claim.2 (base claim.2) + 1, kept, ?_, low, ?_⟩
-    · simp [assignStep, slots]
-    · rw [slots, Std.ExtTreeMap.getD_eq_getD_getElem?, slot]
-      exact Nat.lt_succ_of_lt high
-  · refine ⟨n, m, kept, ?_, low, high⟩
-    simp only [assignStep, Std.ExtTreeMap.getElem?_insert, same, ite_false]
-    exact slot
+  obtain ⟨m', next, raised⟩ := assignStep_raises claim slot
+  exact ⟨n, m', kept, next, low, Nat.lt_of_lt_of_le high raised⟩
 
 /-- The fold keeps what it took of a claim whose issue no later claim repeats, and its next ordinals above their bases. -/
 theorem fold_keeps {base : ClaimSlot → Nat} {other : Issue × ClaimSlot} :
@@ -202,9 +257,10 @@ theorem fold_took {base : ClaimSlot → Nat} :
     · exact fold_keeps rest _ distinct.1 (assignStep_above above _) (assignStep_took above _)
     · exact fold_took rest _ distinct.2 (assignStep_above above first) claim later
 
-theorem assignStep_eq (base : ClaimSlot → Nat) (acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare)
-    (claim : Issue × ClaimSlot) : assignStep base acc claim = (acc.1.insert claim.1 (acc.2.getD claim.2 (base claim.2)),
-      acc.2.insert claim.2 (acc.2.getD claim.2 (base claim.2) + 1)) := by simp only [assignStep]
+/-- A step's ordinals: the claim's issue takes its slot's next ordinal. -/
+theorem assignStep_fst (base : ClaimSlot → Nat) (acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare)
+    (claim : Issue × ClaimSlot) : (assignStep base acc claim).1 = acc.1.insert claim.1 (acc.2.getD claim.2 (base claim.2)) := by
+  simp only [assignStep]
 
 theorem assign_eq (start : State) (log : RunLog) (state : State) :
     assign schedule start log state = (issueOrder schedule log state).foldl (assignStep (slotBase start)) (∅, ∅) := by
@@ -232,6 +288,28 @@ theorem assign_took {start : State} {log : RunLog} {state : State} {issue : Issu
     (tabled : state.issued[issue]? = some slot) : Took (slotBase start) (assign schedule start log state) (issue, slot) := by
   unfold assign
   exact fold_took _ _ (issueOrder_nodup schedule log state) (fun _ _ found => by simp at found) _ (issueOrder_mem.mpr tabled)
+
+/-- The position step's equation (`Step.positionStep`). -/
+theorem positionStep_eq (acc : TreeMap Issue Nat compare × Nat) (claim : Issue × ClaimSlot) :
+    positionStep acc claim = match claim.2 with
+      | .occurrence _ => (acc.1.insert claim.1 acc.2, acc.2 + 1)
+      | .position => (acc.1, acc.2 + 1)
+      | .scope _ | .item _ => acc := by
+  obtain ⟨_, claimed⟩ := claim
+  cases claimed <;> rfl
+
+/-- The position slot after a step: a position's or an occurrence's claim counts it past its next number, any other
+claim keeps it. -/
+theorem assignStep_position (base : ClaimSlot → Nat) (acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare)
+    (claim : Issue × ClaimSlot) : (assignStep base acc claim).2.getD .position (base .position) = match claim.2 with
+      | .occurrence _ | .position => acc.2.getD .position (base .position) + 1
+      | .scope _ | .item _ => acc.2.getD .position (base .position) := by
+  obtain ⟨_, claimed⟩ := claim
+  cases claimed <;> simp [assignStep, Std.ExtTreeMap.getD_insert, Std.LawfulEqCmp.compare_eq_iff_eq]
+
+theorem positionsOf_eq (start : State) (log : RunLog) (state : State) :
+    positionsOf schedule start log state = ((issueOrder schedule log state).foldl positionStep (∅, start.nextOrder)).1 := by
+  simp only [positionsOf]
 
 /-! ## The counters after the commit -/
 
@@ -386,90 +464,15 @@ theorem slotBase_eq (state : State) (slot : ClaimSlot) : slotBase state slot = m
     | .position => state.nextOrder := by
   cases slot <;> rfl
 
-/-- What the fold keeps of the claims it processed: each took an ordinal below its slot's next ordinal, and two of one
-slot took different ordinals. -/
-structure Apart (processed : List (Issue × ClaimSlot))
-    (acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare) : Prop where
-  took : ∀ c ∈ processed, ∃ n m, acc.1[c.1]? = some n ∧ acc.2[c.2]? = some m ∧ n < m
-  apart : ∀ c ∈ processed, ∀ d ∈ processed, c.2 = d.2 → acc.1[c.1]? = acc.1[d.1]? → c.1 = d.1
-
-theorem Apart.step {base : ClaimSlot → Nat} {processed : List (Issue × ClaimSlot)}
-    {acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare} (kept : Apart processed acc)
-    {claim : Issue × ClaimSlot} (fresh : claim.1 ∉ processed.map (·.1)) :
-    Apart (processed ++ [claim]) (assignStep base acc claim) := by
-  have issueApart : ∀ c ∈ processed, c.1 ≠ claim.1 := fun c member same =>
-    fresh (same ▸ List.mem_map_of_mem (f := (·.1)) member)
-  have oldIssue : ∀ c ∈ processed, (assignStep base acc claim).1[c.1]? = acc.1[c.1]? := fun c member => by
-    simp only [assignStep, Std.ExtTreeMap.getElem?_insert]
-    split
-    · rename_i same; exact absurd (Std.LawfulEqOrd.eq_of_compare same).symm (issueApart c member)
-    · rfl
-  have newIssue : (assignStep base acc claim).1[claim.1]? = some (acc.2.getD claim.2 (base claim.2)) := by
-    simp [assignStep]
-  -- An old claim of the new claim's slot took an ordinal below the slot's next ordinal, which the new claim takes.
-  have below : ∀ c ∈ processed, c.2 = claim.2 → ∀ n, acc.1[c.1]? = some n → n < acc.2.getD claim.2 (base claim.2) := by
-    intro c member slot n held
-    obtain ⟨n', m, parts⟩ := kept.took c member
-    obtain ⟨held', next, lt⟩ := parts
-    rw [held] at held'
-    cases held'
-    rw [Std.ExtTreeMap.getD_eq_getD_getElem?, ← slot, next]
-    exact lt
-  refine ⟨fun c member => ?_, fun c cm d dm slot same => ?_⟩
-  · rcases List.mem_append.mp member with old | new
-    · obtain ⟨n, m, parts⟩ := kept.took c old
-      obtain ⟨held, next, lt⟩ := parts
-      refine ⟨n, ?_, by rw [oldIssue c old]; exact held, ?_, ?_⟩
-      · exact if slot : c.2 = claim.2 then acc.2.getD claim.2 (base claim.2) + 1 else m
-      · by_cases slot : c.2 = claim.2
-        · simp [assignStep, slot]
-        · simp only [assignStep, Std.ExtTreeMap.getElem?_insert, slot, ↓reduceDIte]
-          split
-          · rename_i same; exact absurd (Std.LawfulEqOrd.eq_of_compare same).symm slot
-          · exact next
-      · by_cases slot : c.2 = claim.2
-        · simp only [slot, ↓reduceDIte]; exact Nat.lt_succ_of_lt (below c old slot n held)
-        · simp only [slot, ↓reduceDIte]; exact lt
-    · rw [List.mem_singleton.mp new]
-      exact ⟨_, _, newIssue, by simp [assignStep], Nat.lt_succ_self _⟩
-  · rcases List.mem_append.mp cm with cold | cnew <;> rcases List.mem_append.mp dm with dold | dnew
-    · rw [oldIssue c cold, oldIssue d dold] at same
-      exact kept.apart c cold d dold slot same
-    · rw [List.mem_singleton.mp dnew] at slot same ⊢
-      rw [oldIssue c cold, newIssue] at same
-      exact absurd (below c cold slot _ same) (Nat.lt_irrefl _)
-    · rw [List.mem_singleton.mp cnew] at slot same ⊢
-      rw [oldIssue d dold, newIssue] at same
-      exact absurd (below d dold slot.symm _ same.symm) (Nat.lt_irrefl _)
-    · rw [List.mem_singleton.mp cnew, List.mem_singleton.mp dnew]
-
-theorem fold_apart {base : ClaimSlot → Nat} :
-    ∀ (claims processed : List (Issue × ClaimSlot)) (acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare),
-      ((processed ++ claims).map (·.1)).Nodup → Apart processed acc →
-      Apart (processed ++ claims) (claims.foldl (assignStep base) acc)
-  | [], processed, acc, _, kept => by simpa using kept
-  | claim :: rest, processed, acc, distinct, kept => by
-    have fresh : claim.1 ∉ processed.map (·.1) := by
-      rw [List.map_append, List.map_cons] at distinct
-      exact fun member => (List.nodup_append.mp distinct).2.2 _ member _ List.mem_cons_self rfl
-    have next := fold_apart (base := base) rest (processed ++ [claim]) _
-      (by simpa using distinct) (kept.step (base := base) fresh)
-    simpa using next
-
-/-- **Two entries of one slot take different ordinals.** -/
-theorem assign_apart {start : State} {log : RunLog} {state : State} {first second : Issue} {slot : ClaimSlot}
-    (one : state.issued[first]? = some slot) (two : state.issued[second]? = some slot)
-    (same : (assign schedule start log state).1[first]? = (assign schedule start log state).1[second]?) : first = second := by
-  have kept := fold_apart (base := slotBase start) (issueOrder schedule log state) [] (∅, ∅)
-    (by simpa using issueOrder_nodup schedule log state) ⟨fun _ member => (nomatch member), fun _ member => (nomatch member)⟩
-  unfold assign at same
-  exact kept.apart (first, slot) (by simpa using issueOrder_mem.mpr one) (second, slot)
-    (by simpa using issueOrder_mem.mpr two) rfl same
-
 /-! ## What a commit leaves -/
 
 /-- The renaming a commit applies. -/
 abbrev commitRenaming (schedule : BranchSchedule) (start : State) (log : RunLog) (s : State) : Issue → Issue := renameBy (assign schedule start log s).1
+
+/-- The renaming a commit applies to the order positions of occurrences, which are their identities' issues while
+pending (`Step.positionsOf`). -/
+abbrev commitPositioning (schedule : BranchSchedule) (start : State) (log : RunLog) (s : State) : Issue → Issue :=
+  renameBy (positionsOf schedule start log s)
 
 /-- The continuation renaming a commit passes to `renameState`. -/
 abbrev commitRekey (schedule : BranchSchedule) (start : State) (log : RunLog) (s : State) : Continuation → Continuation :=
@@ -482,7 +485,7 @@ abbrev commitRekey (schedule : BranchSchedule) (start : State) (log : RunLog) (s
 /-- The state a commit leaves when the closure issued anything: the settled one renamed and advanced, the issue table
 emptied. -/
 abbrev compacted (schedule : BranchSchedule) (start : State) (log : RunLog) (s : State) : State :=
-  { advanceCounters (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitRekey schedule start log s) s) with
+  { advanceCounters (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitPositioning schedule start log s) (commitRekey schedule start log s) s) with
     issued := ∅, issuing := .ofRoot .seed, issueNext := 0 }
 
 /-- **A closure that issued nothing commits its state as it is.** -/
@@ -503,17 +506,23 @@ theorem compact_cases {start : State} {log : RunLog} {s t : State} (ran : compac
       · cases ran
       · exact .inr ⟨by simpa using empty, (Except.ok.inj ran).symm⟩
 
+theorem issueOrder_empty {log : RunLog} {s : State} (empty : s.issued.isEmpty = true) : issueOrder schedule log s = [] := by
+  have list : s.issued.toList = [] := by simpa [Std.ExtTreeMap.isEmpty_iff] using empty
+  unfold issueOrder
+  simp [list]
+
 theorem assign_empty {start : State} {log : RunLog} {s : State} (empty : s.issued.isEmpty = true) : assign schedule start log s = (∅, ∅) := by
-  have none : issueOrder schedule log s = [] := by
-    have list : s.issued.toList = [] := by simpa [Std.ExtTreeMap.isEmpty_iff] using empty
-    unfold issueOrder
-    simp [list]
-  simp [assign, none]
+  simp [assign, issueOrder_empty empty]
 
 /-- A closure that issued nothing renames nothing. -/
 theorem commitRenaming_empty {start : State} {log : RunLog} {s : State} (empty : s.issued.isEmpty = true) (issue : Issue) :
     commitRenaming schedule start log s issue = issue := by
   cases issue <;> simp [commitRenaming, renameBy, assign_empty empty]
+
+/-- A closure that issued nothing positions nothing. -/
+theorem commitPositioning_empty {start : State} {log : RunLog} {s : State} (empty : s.issued.isEmpty = true)
+    (issue : Issue) : commitPositioning schedule start log s issue = issue := by
+  cases issue <;> simp [commitPositioning, renameBy, positionsOf, issueOrder_empty empty]
 
 theorem rekey_id {r : Issue → Issue} (same : ∀ issue, r issue = issue) (continuation : Continuation) :
     continuation.rekey (renameId r) (renameScope r) = continuation := by
@@ -533,7 +542,7 @@ theorem compact_counter {start : State} {log : RunLog} {s t : State} (ran : comp
     s.scopeOrdinals.getD slot 0 ≤ t.scopeOrdinals.getD slot 0 := by
   rcases compact_cases ran with ⟨_, rfl⟩ | ⟨_, rfl⟩
   · exact Nat.le_refl _
-  have raised := (advance_raised (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitRekey schedule start log s) s)).scopeOrdinals slot
+  have raised := (advance_raised (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitPositioning schedule start log s) (commitRekey schedule start log s) s)).scopeOrdinals slot
   rwa [renameState_scopeOrdinals] at raised
 
 theorem compact_reach {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) {slot : ScopeSlot} {ordinal : Nat}
@@ -583,7 +592,7 @@ theorem compact_frame {start : State} {log : RunLog} {s t : State} (ran : compac
       t.outboxes = s.outboxes ∧ t.journal.flatMap (·.ended) = s.journal.flatMap (·.ended) := by
   rcases compact_cases ran with ⟨_, rfl⟩ | ⟨_, rfl⟩
   · exact ⟨rfl, rfl, rfl, rfl, rfl⟩
-  have same := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitRekey schedule start log s) s)
+  have same := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitPositioning schedule start log s) (commitRekey schedule start log s) s)
   unfold compacted
   rw [same, renameState_eq]
   refine ⟨rfl, rfl, rfl, rfl, ?_⟩
@@ -612,11 +621,13 @@ theorem compact_occurrences {start : State} {log : RunLog} {s t : State} (ran : 
     t.occurrences = s.occurrences.map fun occurrence =>
       { occurrence with id := renameId (commitRenaming schedule start log s) occurrence.id
                         scope := renameScope (commitRenaming schedule start log s) occurrence.scope
+                        position := commitPositioning schedule start log s occurrence.position
                         continuation := occurrence.continuation.rekey (renameId (commitRenaming schedule start log s))
                           (renameScope (commitRenaming schedule start log s)) } := by
   rcases compact_cases ran with ⟨empty, rfl⟩ | ⟨_, rfl⟩
   · have same := commitRenaming_empty (schedule := schedule) (start := start) (log := log) empty
-    exact (List.map_congr_left fun _ _ => by simp [renameId_id same, renameScope_id same, rekey_id same]).trans
+    have kept := commitPositioning_empty (schedule := schedule) (start := start) (log := log) empty
+    exact (List.map_congr_left fun _ _ => by simp [renameId_id same, renameScope_id same, rekey_id same, kept]).trans
       (List.map_id _) |>.symm
   change (advanceCounters _ _ _).occurrences = _
   rw [(advance_raised _ _ _).occurrences, renameState_occurrences]
@@ -625,14 +636,14 @@ theorem compact_occurrence_counter {start : State} {log : RunLog} {s t : State} 
     s.occurrenceOrdinals.getD slot 0 ≤ t.occurrenceOrdinals.getD slot 0 := by
   rcases compact_cases ran with ⟨_, rfl⟩ | ⟨_, rfl⟩
   · exact Nat.le_refl _
-  have raised := (advance_raised (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitRekey schedule start log s) s)).occurrenceOrdinals slot
+  have raised := (advance_raised (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitPositioning schedule start log s) (commitRekey schedule start log s) s)).occurrenceOrdinals slot
   rwa [renameState_occurrenceOrdinals] at raised
 
 theorem compact_item_counter {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) (occurrence : OccurrenceId) :
     s.itemOrdinals.getD occurrence 0 ≤ t.itemOrdinals.getD occurrence 0 := by
   rcases compact_cases ran with ⟨_, rfl⟩ | ⟨_, rfl⟩
   · exact Nat.le_refl _
-  have raised := (advance_raised (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitRekey schedule start log s) s)).itemOrdinals occurrence
+  have raised := (advance_raised (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitPositioning schedule start log s) (commitRekey schedule start log s) s)).itemOrdinals occurrence
   rwa [renameState_itemOrdinals] at raised
 
 theorem compact_reach_occurrence {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) {slot : ScopeSlot}
@@ -710,7 +721,7 @@ theorem compact_slots {start : State} {log : RunLog} {s t : State} (ran : compac
     t.slots = renameSlots (commitRenaming schedule start log s) s.slots := by
   rcases compact_cases ran with ⟨empty, rfl⟩ | ⟨_, rfl⟩
   · exact (renameSlots_id (commitRenaming_empty empty) _).symm
-  have frame := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitRekey schedule start log s) s)
+  have frame := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitPositioning schedule start log s) (commitRekey schedule start log s) s)
   unfold compacted
   rw [frame, renameState_eq]
 

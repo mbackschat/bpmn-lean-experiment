@@ -74,17 +74,18 @@ def renameTransition (transition : Transition) : Transition :=
                     started := transition.started.map fun fact => { fact with owner := renameScope r fact.owner } }
 
 /-- `r` applied to every identity a committed state holds: its scope occurrences, occurrences (their continuations
-through `continuation`, which `Kernel.Step` supplies, since only it matches on `Continuation`), variable sets, open
-items, slots and journal. The counters are keyed by committed keys already (`Step.assign` inserts renamed ones), and
-the families keyed by unit keys are empty (`Step.orderJournal`). -/
-def renameState (continuation : Continuation → Continuation) (state : State) : State :=
+through `continuation`, which `Kernel.Step` supplies, since only it matches on `Continuation`, and their order
+positions through `position`, since an occurrence's pending position is its identity's issue, which `r` numbers as an
+ordinal), variable sets, open items, slots and journal. The counters are keyed by committed keys already (`Step.assign`
+inserts renamed ones), and the families keyed by unit keys are empty (`Step.orderJournal`). -/
+def renameState (position : Issue → Issue) (continuation : Continuation → Continuation) (state : State) : State :=
   { state with
     scopeMap := state.scopeMap.foldl (fun renamed _ scope =>
       let scope := { scope with id := renameScope r scope.id, position := r scope.position, occurrence := scope.occurrence.map (renameId r) }
       renamed.insert scope.id scope) ∅
     occurrences := state.occurrences.map fun occurrence =>
       { occurrence with id := renameId r occurrence.id, scope := renameScope r occurrence.scope
-                        continuation := continuation occurrence.continuation }
+                        position := position occurrence.position, continuation := continuation occurrence.continuation }
     variables := state.variables.foldl (fun renamed scope entries => renamed.insert (renameScope r scope) entries) ∅
     openItems := state.openItems.foldl (fun renamed _ item =>
       let item := { item with id := renameItemKey r item.id, position := r item.position, scope := renameScope r item.scope

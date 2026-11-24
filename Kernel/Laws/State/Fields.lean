@@ -101,6 +101,7 @@ def entryRows : List Field := [
   content ``Kernel.Occurrence.element,
   content ``Kernel.Occurrence.scope,
   content ``Kernel.Occurrence.activation,
+  content ``Kernel.Occurrence.position,
   content ``Kernel.Occurrence.role,
   content ``Kernel.Occurrence.continuation,
   content ``Kernel.Occurrence.incoming,

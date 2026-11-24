@@ -125,6 +125,7 @@ public import Kernel.Laws.State.Tree
 public import Kernel.Laws.State.Variables
 public import Kernel.Laws.State.Witnesses
 public import Kernel.Laws.Step
+public import Kernel.Laws.Step.Assign
 public import Kernel.Laws.Step.Commit
 public import Kernel.Laws.Step.Commits
 public import Kernel.Laws.Step.Compact

@@ -64,11 +64,15 @@ def slotBase (state : State) : ClaimSlot → Nat
   | .item occurrence => if occurrence.fresh then 0 else state.itemOrdinals.getD occurrence 0
   | .position => state.nextOrder
 
-/-- One issue takes its slot's next ordinal; the slot counts past it. -/
+/-- One issue takes its slot's next ordinal; the slot counts past it. An occurrence's issue is its order position too
+(DC25), so it also counts the position slot past the number `positionsOf` gives that position. -/
 def assignStep (base : ClaimSlot → Nat) (acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare)
     (claim : Issue × ClaimSlot) : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare :=
   let ordinal := acc.2.getD claim.2 (base claim.2)
-  (acc.1.insert claim.1 ordinal, acc.2.insert claim.2 (ordinal + 1))
+  let next := acc.2.insert claim.2 (ordinal + 1)
+  (acc.1.insert claim.1 ordinal, match claim.2 with
+    | .occurrence _ => next.insert .position (next.getD .position (base .position) + 1)
+    | .scope _ | .item _ | .position => next)
 
 /-- The closure's issues in the closure's position order under `schedule` (`issuerOrder`, DC13): by their units, then by
 their index in the unit. So the commit numbers positions in the order the closure's bodies compared them, and under
@@ -81,6 +85,19 @@ ordinal, keyed by the slot as issued. -/
 def assign (schedule : BranchSchedule) (start : State) (log : RunLog) (state : State) :
     TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare :=
   (issueOrder schedule log state).foldl (assignStep (slotBase start)) (∅, ∅)
+
+/-- One issue on the position counter: an occurrence's issue takes the counter's next number as its order position, a
+position's issue counts past the one `assignStep` gives it, and every other issue leaves the counter. -/
+def positionStep (acc : TreeMap Issue Nat compare × Nat) (claim : Issue × ClaimSlot) : TreeMap Issue Nat compare × Nat :=
+  match claim.2 with
+  | .occurrence _ => (acc.1.insert claim.1 acc.2, acc.2 + 1)
+  | .position => (acc.1, acc.2 + 1)
+  | .scope _ | .item _ => acc
+
+/-- The order position each occurrence issue of the closure commits to (DC25): in issue order from `start`'s position
+counter, counted with the position slot's own issues, as `assignStep` counts them. -/
+def positionsOf (schedule : BranchSchedule) (start : State) (log : RunLog) (state : State) : TreeMap Issue Nat compare :=
+  ((issueOrder schedule log state).foldl positionStep (∅, start.nextOrder)).1
 
 /-- The counters after the commit: each advanced slot's next ordinal under its renamed slot, where its renamed owner
 stands; a counter whose owner the closure removed goes, as it went with its owner (`State.clearInside`,
@@ -141,7 +158,8 @@ def compact (schedule : BranchSchedule) (start : State) (log : RunLog) (state : 
   else
     let (assigned, next) := assign schedule start log state
     let r := renameBy assigned
-    .ok { advanceCounters r next (renameState r (Continuation.rekey (renameId r) (renameScope r)) state) with issued := ∅, issuing := .ofRoot .seed, issueNext := 0 }
+    .ok { advanceCounters r next (renameState r (renameBy (positionsOf schedule start log state))
+            (Continuation.rekey (renameId r) (renameScope r)) state) with issued := ∅, issuing := .ofRoot .seed, issueNext := 0 }
 
 /-- Whether a record of `state` still names the process instance of the activation counter `count`: the process
 instance itself, one a standing scope occurrence calls, which `State.instanceOf` gives every standing scope occurrence,

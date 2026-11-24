@@ -120,7 +120,9 @@ theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {k
       issuedItems_transport cleared.openItemsSub (fun _ member => cleared.occurrencesSublist.subset member) cleared.ordinals
         (.of_eq cleared.issued) formed.issued.items,
       fun entry member => cleared.scopeGrows.issued (formed.issued.scopes entry (cleared.scopesSubset member)),
-      formed.issued.positionsKept (fun _ member => cleared.scopesSubset member) (.of_eq cleared.issued)⟩
+      formed.issued.positionsKept (fun _ member => cleared.scopesSubset member) (.of_eq cleared.issued),
+      formed.issued.occurrencePositionsKept (fun _ member => cleared.occurrencesSublist.subset member)
+        (.of_eq cleared.issued)⟩
   · refine ⟨formed.distinct.occurrences.sublist (cleared.occurrencesSublist.map _),
       cleared.openItemsSub.keyed formed.distinct.items,
       cleared.scopesSub.keyed formed.distinct.scopesKeyed, ?_⟩
@@ -282,7 +284,8 @@ theorem Prunes.wellFormed {before after : State} (formed : WellFormed program be
       issuedItems_transport prunes.items (fun _ member => prunes.occurrences.subset member) prunes.ordinals
         (.of_eq prunes.issued) formed.issued.items,
       fun scope member => grows.issued (formed.issued.scopes scope (prunes.scopes ▸ member)),
-      formed.issued.positionsKept (fun _ member => prunes.scopes ▸ member) (.of_eq prunes.issued)⟩
+      formed.issued.positionsKept (fun _ member => prunes.scopes ▸ member) (.of_eq prunes.issued),
+      formed.issued.occurrencePositionsKept (fun _ member => kept member) (.of_eq prunes.issued)⟩
   case distinct =>
     refine ⟨formed.distinct.occurrences.sublist (prunes.occurrences.map _),
       prunes.items.keyed formed.distinct.items, prunes.scopeMap ▸ formed.distinct.scopesKeyed,
@@ -435,7 +438,8 @@ theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (form
       issuedItems_transport left.openItemsSub (fun _ member => left.occurrencesSublist.subset member) left.ordinals
         (.of_eq left.issued) formed.issued.items,
       fun entry member => grows.issued (formed.issued.scopes entry (left.scopesSubset member)),
-      formed.issued.positionsKept (fun _ member => left.scopesSubset member) (.of_eq left.issued)⟩
+      formed.issued.positionsKept (fun _ member => left.scopesSubset member) (.of_eq left.issued),
+      formed.issued.occurrencePositionsKept (fun _ member => kept member) (.of_eq left.issued)⟩
   case distinct =>
     refine ⟨formed.distinct.occurrences.sublist (left.occurrencesSublist.map _),
       left.openItemsSub.keyed formed.distinct.items,

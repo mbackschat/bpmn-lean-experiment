@@ -67,7 +67,7 @@ theorem compact_kept (ran : compact schedule start log s = .ok t) : CommitKept s
   rcases compact_cases ran with ⟨_, rfl⟩ | ⟨_, rfl⟩
   · exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
   have same := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2
-    (renameState (commitRenaming schedule start log s) (commitRekey schedule start log s) s)
+    (renameState (commitRenaming schedule start log s) (commitPositioning schedule start log s) (commitRekey schedule start log s) s)
   unfold compacted
   rw [same, renameState_eq]
   exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
@@ -79,7 +79,7 @@ theorem compact_variables (ran : compact schedule start log s = .ok t) {y : Scop
   rcases compact_cases ran with ⟨empty, rfl⟩ | ⟨_, rfl⟩
   · exact ⟨y, renameScope_id (commitRenaming_empty (schedule := schedule) (start := start) (log := log) empty) y, found⟩
   have frame := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2
-    (renameState (commitRenaming schedule start log s) (commitRekey schedule start log s) s)
+    (renameState (commitRenaming schedule start log s) (commitPositioning schedule start log s) (commitRekey schedule start log s) s)
   unfold compacted at found
   rw [frame, renameState_eq] at found
   exact renameKeys_getElem? found
@@ -357,6 +357,7 @@ theorem compact_occurrence_eq (ran : compact schedule start log s = .ok t) {occu
     ∃ old ∈ s.occurrences, occurrence =
       { old with id := renameId (commitRenaming schedule start log s) old.id
                  scope := renameScope (commitRenaming schedule start log s) old.scope
+                 position := commitPositioning schedule start log s old.position
                  continuation := old.continuation.rekey (renameId (commitRenaming schedule start log s))
                    (renameScope (commitRenaming schedule start log s)) } := by
   rw [compact_occurrences ran] at member
@@ -770,7 +771,7 @@ theorem compact_journalStarts (ran : compact schedule start log s = .ok t) :
   · rw [same]
   have journal : t.journal = s.journal.map (renameTransition (commitRenaming schedule start log s)) := by
     have frame := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2
-      (renameState (commitRenaming schedule start log s) (commitRekey schedule start log s) s)
+      (renameState (commitRenaming schedule start log s) (commitPositioning schedule start log s) (commitRekey schedule start log s) s)
     rw [same]
     unfold compacted
     rw [frame, renameState_eq]
@@ -819,7 +820,7 @@ theorem ordered_facts {program : Program} {start state : State} (log : RunLog) (
     OrderedFacts start (ordered log state) := by
   have quiet : allSignals (ordered log state) = [] ∧ allQueuedTokens (ordered log state) = [] := by
     simp [allSignals, allQueuedTokens, batches.1, batches.2.1]
-  refine ⟨⟨counted.1, counted.2, counted.3, counted.4⟩, ⟨formed.issued.1, formed.issued.2, formed.issued.3, formed.issued.4⟩,
+  refine ⟨⟨counted.1, counted.2, counted.3, counted.4⟩, ⟨formed.issued.1, formed.issued.2, formed.issued.3, formed.issued.4, formed.issued.5⟩,
     { occurrenceScopes := formed.owned.occurrenceScopes, itemScopes := formed.owned.itemScopes
       itemOccurrences := formed.owned.itemOccurrences, attachments := formed.owned.attachments
       scopeOwners := formed.owned.scopeOwners, variableScopes := formed.owned.variableScopes

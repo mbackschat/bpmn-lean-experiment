@@ -138,7 +138,7 @@ def staleComplete (f : FlowId) : State :=
     slots := { instances := [{ root := State.root }] } }
 
 /-- The removed occurrence's number, the reservation's element and scope occurrence. -/
-def staleOccurrence : Occurrence := { id := staleKey, element := ⟨"E"⟩, scope := State.root, activation := 1 }
+def staleOccurrence : Occurrence := { id := staleKey, element := ⟨"E"⟩, scope := State.root, activation := 1, position := 1 }
 
 /-- Read independently, as `Laws.Flow.LeavesFrom` read them before it paired them, the queued reservation justifies the
 occurrence and the stale completion the flow `f` to `T`, and the token queued breaks `PlacedLane.tokens`. -/
@@ -163,14 +163,14 @@ abbrev freshKey : ScopeOccurrenceId := State.root.child ⟨"Y"⟩ (.fresh (.ofRo
 def pendingFresh : State :=
   { instanceId := "I", scopeMap := (∅ : ScopeMap).insert State.root { id := State.root, element := none, position := 0 }
     occurrenceOrdinals := (∅ : TreeMap ScopeSlot Nat compare).insert { parent := State.root, element := ⟨"Y"⟩ } 1
-    occurrences := [{ id := ⟨State.root, ⟨"Y"⟩, 0⟩, element := ⟨"Y"⟩, scope := State.root, activation := 1 }]
+    occurrences := [{ id := ⟨State.root, ⟨"Y"⟩, 0⟩, element := ⟨"Y"⟩, scope := State.root, activation := 1, position := 1 }]
     batchSignals := [.occur ⟨"T"⟩ freshKey .outgoing [] .outward]
     slots := { instances := [{ root := State.root }] } }
 
 /-- `Y` is anchored at the process root by its occurrence there. -/
 theorem pendingFresh_anchored (inv : State → Prop) :
     Laws.Flow.Anchored inv (topCalled program definition) pendingFresh ⟨"Y"⟩ State.root :=
-  Laws.Flow.Anchored.occurrence (occurrence := { id := ⟨State.root, ⟨"Y"⟩, 0⟩, element := ⟨"Y"⟩, scope := State.root, activation := 1 })
+  Laws.Flow.Anchored.occurrence (occurrence := { id := ⟨State.root, ⟨"Y"⟩, 0⟩, element := ⟨"Y"⟩, scope := State.root, activation := 1, position := 1 })
     (by simp [pendingFresh])
 
 /-- The scope occurrence `pendingFresh` enters for `Y`. -/

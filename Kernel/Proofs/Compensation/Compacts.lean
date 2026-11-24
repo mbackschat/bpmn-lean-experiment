@@ -37,7 +37,7 @@ theorem compact_nextCompletion (ran : compact schedule start log s = .ok t) : t.
   rcases compact_cases ran with ⟨_, rfl⟩ | ⟨_, rfl⟩
   · rfl
   have same := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2
-    (renameState (commitRenaming schedule start log s) (commitRekey schedule start log s) s)
+    (renameState (commitRenaming schedule start log s) (commitPositioning schedule start log s) (commitRekey schedule start log s) s)
   unfold compacted
   rw [same, renameState_eq]
 

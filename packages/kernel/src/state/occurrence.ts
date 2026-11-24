@@ -39,6 +39,13 @@ export interface Occurrence {
   readonly element: ElementId;
   readonly scope: ScopeOccurrenceId;
   readonly activation: number;
+  /**
+   * Its order position (DC25): its identity's issue while that is pending (`reserve`, or `beginOccurrence` without a
+   * reservation), which the commit numbers on the position counter beside its ordinal (`positionsOf` in
+   * `step/commit.ts`), so an occurrence takes one issue only; a begun reservation keeps its reservation's, as it keeps
+   * its activation. The cancellation order within a scope occurrence (`clearInside`) reads it.
+   */
+  readonly position: Issue;
   readonly role: ActivationRole;
   readonly continuation: Continuation;
   readonly incoming: FlowId | null;

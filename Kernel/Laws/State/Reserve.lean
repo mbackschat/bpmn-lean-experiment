@@ -55,6 +55,9 @@ structure Reserves (before after : State) (element : ElementId) (scope : ScopeOc
   /-- The issue table only grows under a well-formed issuer, and a well-formed issuer stays one (DC12). -/
   table : IssuerFresh before → TableGrows before after
   issuer : IssuerFresh before → IssuerFresh after
+  /-- A fresh order position of the reservation is its identity's issue, which the issue table records (DC25). -/
+  positioned : ∀ unit index, reserved.position = .fresh unit index →
+    ∃ slot, after.issued[Issue.fresh unit index]? = some (.occurrence slot)
 
 theorem Reserves.scopes {before after : State} {element : ElementId} {scope : ScopeOccurrenceId} {reserved : Occurrence} (reserves : Reserves before after element scope reserved) : after.scopes = before.scopes := by
   rw [scopes_eq, scopes_eq, reserves.scopeMap]
@@ -120,7 +123,12 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
           exact absurd (named.trans same.symm) (above occurrence inside)
         · exact below ⟨found, old, same⟩ n committed,
       fun entry member => grows.issued (formed.issued.scopes entry (reserves.scopes ▸ member)),
-      formed.issued.positionsKept (fun _ member => reserves.scopes ▸ member) (reserves.table formed.issuer)⟩
+      formed.issued.positionsKept (fun _ member => reserves.scopes ▸ member) (reserves.table formed.issuer),
+      fun occurrence member unit index pending => by
+        rcases members occurrence member with rfl | old
+        · exact reserves.positioned unit index pending
+        · obtain ⟨slot, held⟩ := formed.issued.occurrencePositions occurrence old unit index pending
+          exact ⟨slot, (reserves.table formed.issuer) _ _ held⟩⟩
   case distinct =>
     refine ⟨?_, reserves.itemMap.1 ▸ formed.distinct.items,
       reserves.scopeMap ▸ formed.distinct.scopesKeyed, ?_⟩
@@ -369,7 +377,12 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
         · exact below ⟨occurrence, member, same⟩ n committed
         · exact below ⟨found, held, same⟩ n committed,
       fun entry inside => grows.issued (formed.issued.scopes entry (starts_.scopes ▸ inside)),
-      formed.issued.positionsKept (fun _ inside => starts_.scopes ▸ inside) (.of_eq starts_.issued)⟩
+      formed.issued.positionsKept (fun _ inside => starts_.scopes ▸ inside) (.of_eq starts_.issued),
+      fun found inside unit index fresh => by
+        rw [starts_.issued]
+        rcases members found inside with rfl | ⟨old, _⟩
+        · exact formed.issued.occurrencePositions occurrence member unit index fresh
+        · exact formed.issued.occurrencePositions found old unit index fresh⟩
   case distinct =>
     refine ⟨?_, starts_.itemMap.1 ▸ formed.distinct.items,
       starts_.scopeMap ▸ formed.distinct.scopesKeyed, ?_⟩

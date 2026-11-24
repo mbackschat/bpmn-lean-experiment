@@ -53,7 +53,8 @@ private theorem clearInside_cancels (state : State) (scope : ScopeOccurrenceId) 
     CancelsWithEnds state (state.clearInside le scope keep) := by
   obtain ⟨begun, keys, facts⟩ := recordCancelled_cancels state
     ((state.subtree le scope).reverse.flatMap fun current =>
-      state.occurrences.filter fun occurrence => occurrence.scope == current && !keep.contains occurrence.id)
+      (state.occurrences.filter fun occurrence => occurrence.scope == current && !keep.contains occurrence.id).mergeSort
+        fun a b => le a.position b.position)
   obtain ⟨cancelled, ended, length, flagged⟩ := facts
   exact ⟨begun, keys, by simpa [State.clearInside] using cancelled, by simpa [State.clearInside] using ended, length,
     flagged⟩
@@ -159,7 +160,7 @@ theorem clearInside_cleared {s : State} (formed : WellFormed program s) {scope :
     refine getD_filter_keep fun _ => ?_
     simp only [Bool.not_eq_eq_eq_not, Bool.not_true, List.any_eq_false, beq_iff_eq]
     intro removed inRemoved same
-    simp only [List.mem_flatMap, List.mem_reverse, List.mem_filter, Bool.and_eq_true, beq_iff_eq,
+    simp only [List.mem_flatMap, List.mem_reverse, List.mem_mergeSort, List.mem_filter, Bool.and_eq_true, beq_iff_eq,
       Bool.not_eq_eq_eq_not, Bool.not_true] at inRemoved
     obtain ⟨current, inside, held, rest⟩ := inRemoved
     obtain ⟨sameScope, kept⟩ := rest
@@ -209,24 +210,25 @@ theorem clearInside_ends {s : State} (formed : WellFormed program s) {scope : Sc
   have tree : (s.subtree le scope).Nodup := subtree_nodup s le formed.distinct.scopes scope
   have mem := subtree_iff (le := le) formed present
   let removed := (s.subtree le scope).reverse.flatMap fun current =>
-    s.occurrences.filter fun occurrence => occurrence.scope == current && !keep.contains occurrence.id
+    (s.occurrences.filter fun occurrence => occurrence.scope == current && !keep.contains occurrence.id).mergeSort
+      fun a b => le a.position b.position
   refine ⟨removed.filter (·.begun), ?_, ?_, fun o => ?_⟩
   · simp [State.clearInside, State.recordCancelled, removed, keyOf_eq]
   · refine (List.Sublist.map _ List.filter_sublist).nodup ?_
     rw [List.map_flatMap]
-    refine List.pairwise_flatMap.mpr ⟨fun current _ =>
-      formed.distinct.occurrences.sublist (List.filter_sublist.map _), ?_⟩
+    refine List.pairwise_flatMap.mpr ⟨fun current _ => ((List.mergeSort_perm _ _).map _).nodup_iff.mpr
+      (formed.distinct.occurrences.sublist (List.filter_sublist.map _)), ?_⟩
     refine (List.pairwise_reverse.mpr (tree.imp Ne.symm)).imp_of_mem fun inFirst inSecond apart => ?_
     intro id one _ two equal
     subst equal
     obtain ⟨first, firstIn, rfl⟩ := List.mem_map.mp one
     obtain ⟨second, secondIn, same⟩ := List.mem_map.mp two
-    obtain ⟨firstMember, firstAt⟩ := List.mem_filter.mp firstIn
-    obtain ⟨secondMember, secondAt⟩ := List.mem_filter.mp secondIn
+    obtain ⟨firstMember, firstAt⟩ := List.mem_filter.mp (List.mem_mergeSort.mp firstIn)
+    obtain ⟨secondMember, secondAt⟩ := List.mem_filter.mp (List.mem_mergeSort.mp secondIn)
     obtain rfl := nodup_map_eq formed.distinct.occurrences secondMember firstMember same
     simp only [Bool.and_eq_true, beq_iff_eq] at firstAt secondAt
     exact apart (firstAt.1.symm.trans secondAt.1)
-  · simp only [List.mem_filter, removed, List.mem_flatMap, List.mem_reverse, Bool.and_eq_true, beq_iff_eq,
+  · simp only [List.mem_filter, removed, List.mem_flatMap, List.mem_reverse, List.mem_mergeSort, Bool.and_eq_true, beq_iff_eq,
       Bool.not_eq_true', List.contains_eq_mem, decide_eq_false_iff_not, mem]
     constructor
     · rintro ⟨⟨_, inside, member, rfl, outside⟩, begun⟩
@@ -242,7 +244,8 @@ theorem clearInside_eq (s : State) (scope : ScopeOccurrenceId) (keep : List Occu
       queuedTokens := s.queuedTokens.filter fun _ token => !(s.subtree le scope).contains token.busyScope
       openItems := s.openItems.filter fun _ item => !(s.subtree le scope).contains item.scope || keep.contains item.id.occurrence
       itemOrdinals := s.itemOrdinals.filter fun id _ => !((s.subtree le scope).reverse.flatMap fun current =>
-        s.occurrences.filter fun occurrence => occurrence.scope == current && !keep.contains occurrence.id).any (·.id == id)
+        (s.occurrences.filter fun occurrence => occurrence.scope == current && !keep.contains occurrence.id).mergeSort
+          fun a b => le a.position b.position).any (·.id == id)
       occurrences := s.occurrences.filter fun occurrence =>
         !(s.subtree le scope).contains occurrence.scope || keep.contains occurrence.id
       scopeMap := s.scopeMap.filter fun _ entry => !((s.subtree le scope).filter (· != scope)).contains entry.id
@@ -321,7 +324,13 @@ theorem leaveScope_withoutRecord (s : State) (id : OccurrenceId) (scope : ScopeO
       have : occurrence.scope ≠ current := fun equal => outside (equal ▸ List.mem_reverse.mp inside)
       simp [this]
     · simp [named]
-  have removed := congrArg List.flatten (List.map_congr_left same)
+  have sorted : ∀ current ∈ (s.subtree le scope).reverse,
+      (((s.occurrences.filter (·.id != id)).filter fun occurrence =>
+        occurrence.scope == current && !([] : List OccurrenceId).contains occurrence.id).mergeSort fun a b => le a.position b.position) =
+      (s.occurrences.filter fun occurrence => occurrence.scope == current && !([] : List OccurrenceId).contains occurrence.id).mergeSort
+        fun a b => le a.position b.position :=
+    fun current inside => by rw [same current inside]
+  have removed := congrArg List.flatten (List.map_congr_left sorted)
   simp only [← List.flatMap_def] at removed
   have keyOf : (withoutRecord s id).keyOf = s.keyOf := funext fun occurrence => by
     rw [keyOf_eq, keyOf_eq]

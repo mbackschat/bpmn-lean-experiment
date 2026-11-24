@@ -258,7 +258,7 @@ theorem unissued_raise_rejected :
 that occurrence. -/
 def reservedRaise : State :=
   { holdingState {} [.raise .cancel { element := thrower, scope := rootScope, activation := 1, thrower := throwerIn rootScope }] with
-    occurrences := [{ id := throwerIn rootScope, element := thrower, scope := rootScope, activation := 1, begun := false }] }
+    occurrences := [{ id := throwerIn rootScope, element := thrower, scope := rootScope, activation := 1, position := 1, begun := false }] }
 
 /-- A queued trigger that names an unbegun reservation breaks `TriggersApart`: beginning the reservation would throw
 from a key the trigger already holds. -/

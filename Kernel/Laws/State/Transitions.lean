@@ -168,7 +168,7 @@ theorem survivor_rejected (kind : OpenKind) : ¬ ClearsInside (sample kind) (sam
 /-- A Terminate End occurrence `endKey` in `Sub#0` clears it keeping itself, as `Propagation.arriveThrow` does. -/
 @[simp] def endKey : OccurrenceId := { scope := subScope, element := ⟨"End"⟩, ordinal := 0 }
 
-def terminateEnd : Occurrence := { id := endKey, element := ⟨"End"⟩, scope := subScope, activation := 1 }
+def terminateEnd : Occurrence := { id := endKey, element := ⟨"End"⟩, scope := subScope, activation := 1, position := 5 }
 
 def terminating (kind : OpenKind) : State :=
   { sample kind with

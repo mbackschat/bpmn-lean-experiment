@@ -109,7 +109,9 @@ function renameTransition(rename: Rename, transition: Transition): Transition {
  * `Continuation`), variable sets, open items, slots and journal. The counters are keyed by committed keys already
  * (`assign` inserts renamed ones), and the families keyed by unit keys are empty (`orderJournal`).
  */
-export function renameState(rename: Rename, continuation: (continuation: Continuation) => Continuation, state: State): State {
+export function renameState(
+  rename: Rename, position: Rename, continuation: (continuation: Continuation) => Continuation, state: State,
+): State {
   const scope = (key: ScopeOccurrenceId): ScopeOccurrenceId => renameScope(rename, key);
   const id = (key: OccurrenceId): OccurrenceId => renameId(rename, key);
   return {
@@ -119,7 +121,8 @@ export function renameState(rename: Rename, continuation: (continuation: Continu
       ...entry, id: scope(entry.id), position: rename(entry.position), occurrence: entry.occurrence === null ? null : id(entry.occurrence),
     }), []),
     occurrences: state.occurrences.map((occurrence) => ({
-      ...occurrence, id: id(occurrence.id), scope: scope(occurrence.scope), continuation: continuation(occurrence.continuation),
+      ...occurrence, id: id(occurrence.id), scope: scope(occurrence.scope), position: position(occurrence.position),
+      continuation: continuation(occurrence.continuation),
     })),
     // Renamed keys are inserted afresh, in the renamed key order, as Lean's fold into an empty map inserts them.
     variables: state.variables.reduce<State["variables"]>((renamed, [key, entries]) =>

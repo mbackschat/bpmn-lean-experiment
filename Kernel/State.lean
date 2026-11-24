@@ -371,7 +371,7 @@ def activate (state : State) (processInstance : String) (element : ElementId) (r
 def reserve (state : State) (element : ElementId) (scope : ScopeOccurrenceId) : State × Occurrence :=
   let (state, activation) := state.activate (state.instanceOf scope) element .element
   let (state, id) := state.issueOccurrence scope element
-  let occurrence : Occurrence := { id, element, scope, activation, begun := false }
+  let occurrence : Occurrence := { id, element, scope, activation, position := id.ordinal, begun := false }
   ({ state with occurrences := state.occurrences ++ [occurrence] }, occurrence)
 
 def occurrence? (state : State) (id : OccurrenceId) : Option Occurrence :=
@@ -412,7 +412,8 @@ def beginOccurrence (state : State) (request : BeginRequest) (role : ActivationR
     | none =>
       let (state, activation) := state.activate (state.instanceOf request.scope) request.element role
       let (state, id) := state.issueOccurrence request.scope request.element
-      (state, ({ id, element := request.element, scope := request.scope, activation, role } : Occurrence))
+      (state, ({ id, element := request.element, scope := request.scope, activation, position := id.ordinal, role } :
+        Occurrence))
   let begun : Occurrence := { occurrence with
     scope := request.scope, continuation := request.continuation, incoming := request.incoming, begun := true }
   let others := state.occurrences.filter (·.id != begun.id)

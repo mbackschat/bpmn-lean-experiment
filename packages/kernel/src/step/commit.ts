@@ -63,11 +63,18 @@ function continuationRekey(
   return assertNever(continuation);
 }
 
-/** Lean's `renameBy`: an assigned fresh issue's committed ordinal, every other issue itself. */
-function renameBy(assigned: OrderedMap<Issue, number>): Rename {
+/** An issue's committed ordinal (`assign`) and, for an occurrence's issue, its committed order position (`positionsOf`). */
+type Assigned = readonly [ordinal: number, position: number | null];
+
+/**
+ * Lean's `renameBy` over `assign`'s ordinals or `positionsOf`'s positions, as `pick` reads them: an assigned fresh
+ * issue's committed number, every other issue itself. One map holds both, so the commit inserts each issue once.
+ */
+function renameBy(assigned: OrderedMap<Issue, Assigned>, pick: (entry: Assigned) => number | null): Rename {
   return (issue) => {
     if (freshIssue(issue) === null) return issue;
-    return orderedGet(assigned, issue, compareIssue) ?? issue;
+    const entry = orderedGet(assigned, issue, compareIssue);
+    return entry === undefined ? issue : pick(entry) ?? issue;
   };
 }
 
@@ -106,19 +113,28 @@ function issueOrder(schedule: BranchSchedule, log: RunLog, state: State): (reado
     .sort(([a], [b]) => compareIssuePlace(units, unit, a, b));
 }
 
+const positionSlot: ClaimSlot = { tag: ClaimSlotTag.Position };
+
 /**
  * Lean's `assign`: every issue's committed ordinal, per slot in issue order above the slot's base, and each advanced
- * slot's next ordinal, keyed by the slot as issued.
+ * slot's next ordinal, keyed by the slot as issued; an occurrence's issue also counts the position slot (`assignStep`).
+ * Lean's `positionsOf` beside it: the order position each occurrence issue commits to, the position counter where the
+ * same pass counts it, so one walk of the issue order gives both.
  */
 function assign(
   schedule: BranchSchedule, start: State, log: RunLog, state: State,
-): readonly [OrderedMap<Issue, number>, TreeMap<ClaimSlot, number>] {
-  let assigned: OrderedMap<Issue, number> = null;
+): readonly [OrderedMap<Issue, Assigned>, TreeMap<ClaimSlot, number>] {
+  let assigned: OrderedMap<Issue, Assigned> = null;
   let next: TreeMap<ClaimSlot, number> = [];
   for (const [issue, slot] of issueOrder(schedule, log, state)) {
     const taken = treeMapGetD(next, slot, compareClaimSlot, slotBase(start, slot));
-    assigned = orderedInsert(assigned, issue, taken, compareIssue);
     next = treeMapInsert(next, slot, taken + 1, compareClaimSlot);
+    let position: number | null = null;
+    if (slot.tag === ClaimSlotTag.Occurrence) {
+      position = treeMapGetD(next, positionSlot, compareClaimSlot, slotBase(start, positionSlot));
+      next = treeMapInsert(next, positionSlot, position + 1, compareClaimSlot);
+    }
+    assigned = orderedInsert(assigned, issue, [taken, position] as const, compareIssue);
   }
   return [assigned, next];
 }
@@ -198,10 +214,10 @@ export function compact(schedule: BranchSchedule, start: State, log: RunLog, sta
   // dynamic-only: a 64-bit fingerprint collision between two units of one closure, which no model property predicts
   if (issuerCollision(state.issued)) return failed(FailureTag.Unsupported, "unit-fingerprint-collision");
   const [assigned, next] = assign(schedule, start, log, state);
-  const rename = renameBy(assigned);
+  const rename = renameBy(assigned, ([ordinal]) => ordinal);
   const continuation = (kept: Continuation): Continuation =>
     continuationRekey((id) => renameId(rename, id), (key) => renameScope(rename, key), kept);
-  const renamed = advanceCounters(rename, next, renameState(rename, continuation, state));
+  const renamed = advanceCounters(rename, next, renameState(rename, renameBy(assigned, ([, position]) => position), continuation, state));
   return committed({ ...renamed, issued: null, issuing: null, issueNext: 0 });
 }
 

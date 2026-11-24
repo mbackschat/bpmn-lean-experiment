@@ -134,8 +134,8 @@ theorem both_leave_rejected :
 /- The witnesses read their scopes through the scope map's list view. -/
 attribute [local simp] Laws.State.scopes_eq
 
-def atJoin : Occurrence := { id := joinedFirst, element := joinGateway, scope := root, activation := 1 }
-def atC : Occurrence := { id := keyC, element := ⟨"C"⟩, scope := root, activation := 1 }
+def atJoin : Occurrence := { id := joinedFirst, element := joinGateway, scope := root, activation := 1, position := 1 }
+def atC : Occurrence := { id := keyC, element := ⟨"C"⟩, scope := root, activation := 1, position := 2 }
 
 /-- `A` arrived; `C` still works upstream of `b`, so the Inclusive join waits. -/
 def waitingAtC : State :=

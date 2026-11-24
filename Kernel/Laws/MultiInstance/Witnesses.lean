@@ -33,11 +33,11 @@ def running : MultiInstanceRun :=
   { scope := bodyScope, element := review, occurrence := bodyKey, collection := .stringList ["x", "x"]
     instances := [.active firstScope, .active secondScope] }
 
-def bodyOccurrence : Occurrence := { id := bodyKey, element := review, scope := root, activation := 1, role := .multiInstanceBody }
+def bodyOccurrence : Occurrence := { id := bodyKey, element := review, scope := root, activation := 1, position := 1, role := .multiInstanceBody }
 def firstInstance : Occurrence :=
-  { id := firstKey, element := review, scope := firstScope, activation := 1, continuation := .multiInstance bodyKey }
+  { id := firstKey, element := review, scope := firstScope, activation := 1, position := 2, continuation := .multiInstance bodyKey }
 def secondInstance : Occurrence :=
-  { id := secondKey, element := review, scope := secondScope, activation := 2, continuation := .multiInstance bodyKey }
+  { id := secondKey, element := review, scope := secondScope, activation := 2, position := 3, continuation := .multiInstance bodyKey }
 
 def firstOwned : ScopeOccurrence := { id := firstScope, element := some review, position := 0 }
 def secondOwned : ScopeOccurrence := { id := secondScope, element := some review, position := 0 }
@@ -209,7 +209,7 @@ theorem other_element_placed :
     InstancesPlaced
       { entered with occurrences := [{
           id := { scope := firstScope, element := ⟨"Other"⟩, ordinal := 0 }, element := ⟨"Other"⟩, scope := firstScope,
-          activation := 1 }] } running := by
+          activation := 1, position := 5 }] } running := by
   intro scope _ o member _ element _
   simp only [List.mem_singleton] at member
   subst member
@@ -222,7 +222,7 @@ theorem stray_occurrence_rejected :
       { entered with occurrences :=
         [{
           id := { scope := firstScope, element := review, ordinal := 1 }, element := review, scope := firstScope,
-          activation := 3, continuation := .multiInstance { scope := root, element := review, ordinal := 1 } }] }
+          activation := 3, position := 4, continuation := .multiInstance { scope := root, element := review, ordinal := 1 } }] }
       running := fun placed => by
   have := Continuation.multiInstance.inj
     (placed firstScope (by simp [running]) _ (List.mem_singleton_self _) rfl rfl rfl)

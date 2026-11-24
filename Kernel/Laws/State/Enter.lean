@@ -142,7 +142,10 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
     fun found member unit index pending => by
       rcases members found member with old | rfl
       · exact enters.table _ _ (formed.issued.positions found old unit index pending)
-      · exact enters.positionTabled unit index pending⟩
+      · exact enters.positionTabled unit index pending,
+    fun found member unit index pending =>
+      let ⟨slot, held⟩ := formed.issued.occurrencePositions found (hOcc ▸ member) unit index pending
+      ⟨slot, enters.table _ _ held⟩⟩
   have distinct : Distinct after := ⟨by simpa [occurrenceIds, hOcc] using formed.distinct.occurrences,
     enters.itemMap.1 ▸ formed.distinct.items, keyedAfter, by
       rw [hOcc, List.map_congr_left keys]
@@ -629,7 +632,7 @@ theorem deferBegins_wellFormed {s : State} (formed : WellFormed program s) {requ
       · exact absurd (List.mem_append_right _ inside) (nameless request new id)⟩
   exact {
   issued := ⟨formed.issued.occurrences, (fun item member => formed.issued.items item (items_same member rfl)), formed.issued.scopes,
-    formed.issued.positions⟩
+    formed.issued.positions, formed.issued.occurrencePositions⟩
   distinct := ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopesKeyed, keys ▸ formed.distinct.keys⟩
   startedOnce := formed.startedOnce
   activations := ⟨formed.activations.keys, formed.activations.positive⟩

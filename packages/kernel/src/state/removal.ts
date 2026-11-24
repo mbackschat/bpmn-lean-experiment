@@ -42,14 +42,16 @@ function recordCancelled(state: State, occurrences: readonly Occurrence[]): Stat
  * Remove every token, item, occurrence, slot entry, variable set and child scope occurrence inside `scope`, with the
  * ordinal counters of the removed scope occurrences and occurrences, keeping `scope` itself and the occurrences `keep`
  * names. Each begun occurrence is journalled cancelled, deepest scope first, each level by the order positions of its
- * scope occurrences under `le` (`subtree`), then in the order the state holds them; `Hooks.cancelled` tells the owning
- * features afterwards.
+ * scope occurrences under `le` (`subtree`), then by the order positions of its occurrences under `le`, which follow their
+ * issue ([publication](../../../../docs/kernel/semantics/PUBLICATION-AND-OBSERVATION-SEMANTICS-SPEC.md)); `Hooks.cancelled`
+ * tells the owning features afterwards.
  */
 export function clearInside(state: State, le: PositionLe, scope: ScopeOccurrenceId, keep: readonly OccurrenceId[] = []): State {
   const inside = subtree(state, le, scope);
   const nested = inside.filter((id) => id !== scope);
   const removed = [...inside].reverse().flatMap((current) =>
-    state.occurrences.filter((occurrence) => occurrence.scope === current && !keep.includes(occurrence.id)));
+    state.occurrences.filter((occurrence) => occurrence.scope === current && !keep.includes(occurrence.id))
+      .sort((left, right) => le(left.position, right.position) ? (le(right.position, left.position) ? 0 : -1) : 1));
   const journalled = recordCancelled(state, removed);
   return {
     ...journalled,

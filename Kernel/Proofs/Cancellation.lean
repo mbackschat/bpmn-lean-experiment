@@ -492,7 +492,7 @@ theorem compact_ended {start : State} {log : Step.RunLog} {s t : State} (ran : S
   · rw [same]
   have journal : t.journal = s.journal.map (renameTransition (Laws.Step.commitRenaming schedule start log s)) := by
     have frame := Laws.Step.advance_frame (Laws.Step.commitRenaming schedule start log s) (Step.assign schedule start log s).2
-      (renameState (Laws.Step.commitRenaming schedule start log s) (Laws.Step.commitRekey schedule start log s) s)
+      (renameState (Laws.Step.commitRenaming schedule start log s) (Laws.Step.commitPositioning schedule start log s) (Laws.Step.commitRekey schedule start log s) s)
     rw [same]
     unfold Laws.Step.compacted
     rw [frame, Laws.State.renameState_eq]

@@ -36,6 +36,11 @@ structure Occurrence where
   element : ElementId
   scope : ScopeOccurrenceId
   activation : Nat
+  /-- Its order position (DC25): its identity's issue while that is pending (`State.reserve`, or `State.beginOccurrence`
+  without a reservation), which the commit numbers on the position counter beside its ordinal (`Step.positionsOf`), so
+  an occurrence takes one issue only; a begun reservation keeps its reservation's, as it keeps its activation. The
+  cancellation order within a scope occurrence (`State.clearInside`) reads it. -/
+  position : Issue
   role : ActivationRole := .element
   continuation : Continuation := .flow
   incoming : Option FlowId := none

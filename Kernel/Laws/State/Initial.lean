@@ -40,7 +40,8 @@ theorem initial_committed (instanceId : String) (variables : List (String × Val
 theorem initial_wellFormed (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
     WellFormed program (State.initial instanceId variables businessKey) where
   issued := ⟨by simp [initial_eq], by simp [initial_eq, itemList_empty],
-    fun _ member => (initial_historic instanceId variables businessKey).issued member, by simp [initial_eq]⟩
+    fun _ member => (initial_historic instanceId variables businessKey).issued member, by simp [initial_eq],
+    by simp [initial_eq]⟩
   distinct := ⟨by simp [occurrenceIds, initial_eq], by simp [initial_eq, keyedBy_empty],
     by simp only [initial_eq]; exact scopesKeyed_insert_at scopesKeyed_empty rfl, by simp [initial_eq]⟩
   startedOnce := by simp [StartedOnce, starts, initial_eq]

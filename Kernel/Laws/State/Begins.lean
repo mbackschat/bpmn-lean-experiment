@@ -245,6 +245,11 @@ structure Begins (before after : State) (request : BeginRequest) (role : Activat
   issuer : IssuerFresh before → IssuerFresh after
   /-- Every begun occurrence is keyed in the scope occurrence it begins in (DC26). -/
   keyed : begun.id.scope = request.scope
+  /-- A fresh order position of the begun occurrence is a standing reservation's, or its identity's issue, which the
+  issue table records (DC25). -/
+  positioned : ∀ unit index, begun.position = .fresh unit index →
+    (∃ reserved ∈ before.occurrences, reserved.position = begun.position) ∨
+      ∃ slot, after.issued[Issue.fresh unit index]? = some (.occurrence slot)
 
 theorem Begins.scopes {before after : State} {request : BeginRequest} {role : ActivationRole} {sourceType : String}
     {begun : Occurrence} (begins : Begins before after request role sourceType begun) : after.scopes = before.scopes := by
@@ -426,7 +431,15 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
           · rw [erased, getD_erase_ne fun equal => unnamed (by rw [reserved, same, equal])]
             exact below ⟨found, old, same⟩ n committed,
       fun entry member => grows.issued (formed.issued.scopes entry (begins.scopes ▸ member)),
-      formed.issued.positionsKept (fun _ member => begins.scopes ▸ member) (begins.table formed.issuer)⟩
+      formed.issued.positionsKept (fun _ member => begins.scopes ▸ member) (begins.table formed.issuer),
+      fun occurrence member unit index fresh => by
+        rcases members occurrence member with rfl | ⟨old, _⟩
+        · rcases begins.positioned unit index fresh with ⟨reserved, inside, same⟩ | tabled
+          · obtain ⟨slot, held⟩ := formed.issued.occurrencePositions reserved inside unit index (same.trans fresh)
+            exact ⟨slot, (begins.table formed.issuer) _ _ held⟩
+          · exact tabled
+        · obtain ⟨slot, held⟩ := formed.issued.occurrencePositions occurrence old unit index fresh
+          exact ⟨slot, (begins.table formed.issuer) _ _ held⟩⟩
   case distinct =>
     refine ⟨?_, begins.itemMap.1 ▸ formed.distinct.items, begins.scopeMap ▸ formed.distinct.scopesKeyed,
       ?_⟩

@@ -88,10 +88,10 @@ def workId : OccurrenceId := { scope := sub, element := ⟨"Work"⟩, ordinal :=
 
 attribute [local simp] root sub choiceId paidId lateId workId
 
-def gatewayOccurrence : Occurrence := { id := choiceId, element := ⟨"Choice"⟩, scope := root, activation := 1 }
-def armMessage : Occurrence := { id := paidId, element := ⟨"Paid"⟩, scope := root, activation := 1, begun := false }
-def armTimer : Occurrence := { id := lateId, element := ⟨"Late"⟩, scope := root, activation := 1, begun := false }
-def task : Occurrence := { id := workId, element := ⟨"Work"⟩, scope := sub, activation := 1 }
+def gatewayOccurrence : Occurrence := { id := choiceId, element := ⟨"Choice"⟩, scope := root, activation := 1, position := 1 }
+def armMessage : Occurrence := { id := paidId, element := ⟨"Paid"⟩, scope := root, activation := 1, position := 2, begun := false }
+def armTimer : Occurrence := { id := lateId, element := ⟨"Late"⟩, scope := root, activation := 1, position := 3, begun := false }
+def task : Occurrence := { id := workId, element := ⟨"Work"⟩, scope := sub, activation := 1, position := 4 }
 
 def paidItem (kind : OpenKind) : OpenItem :=
   { id := ⟨paidId, .subscription, 0⟩, position := 5, kind, element := ⟨"Paid"⟩, scope := root,

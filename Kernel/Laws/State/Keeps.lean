@@ -199,7 +199,8 @@ theorem rekind_wellFormed {s : State} (formed : WellFormed program s) {change : 
     rw [(same oldOther).1, (same old).1] at named
     rw [alone oldOther otherInside named]
   case issued =>
-    refine ⟨formed.issued.occurrences, fun item member => ?_, formed.issued.scopes, formed.issued.positions⟩
+    refine ⟨formed.issued.occurrences, fun item member => ?_, formed.issued.scopes, formed.issued.positions,
+    formed.issued.occurrencePositions⟩
     obtain ⟨old, inside, rfl⟩ := back item member
     rw [kept old]
     exact formed.issued.items old inside
@@ -253,7 +254,8 @@ theorem takeCompletion_wellFormed {s : State} (formed : WellFormed program s) : 
     items_congr rfl
   exact {
   issued := ⟨formed.issued.occurrences, fun item member => formed.issued.items item (items_same member rfl),
-    formed.issued.scopes, formed.issued.positions⟩
+    formed.issued.scopes, formed.issued.positions,
+    formed.issued.occurrencePositions⟩
   distinct := ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopesKeyed, keys ▸ formed.distinct.keys⟩
   startedOnce := formed.startedOnce
   activations := ⟨formed.activations.keys, formed.activations.positive⟩
@@ -309,7 +311,8 @@ theorem signal_wellFormed {s : State} {signal : Signal} (formed : WellFormed pro
   have sameItems : (itemList ({ s with batchSignals := s.batchSignals ++ [signal] } : State).openItems) = itemList s.openItems := items_congr rfl
   exact {
   issued := ⟨formed.issued.occurrences, fun item member => formed.issued.items item (items_same member rfl),
-    formed.issued.scopes, formed.issued.positions⟩
+    formed.issued.scopes, formed.issued.positions,
+    formed.issued.occurrencePositions⟩
   distinct := ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopesKeyed, keys ▸ formed.distinct.keys⟩
   startedOnce := formed.startedOnce
   activations := ⟨formed.activations.keys, formed.activations.positive⟩
@@ -561,7 +564,8 @@ theorem addItem_wellFormed {s : State} (formed : WellFormed program s) {item : O
       · exact (begunShared other otherOld same unbegun).elim
       · rfl
   case issued =>
-    refine ⟨formed.issued.occurrences, fun found inside => ?_, formed.issued.scopes, formed.issued.positions⟩
+    refine ⟨formed.issued.occurrences, fun found inside => ?_, formed.issued.scopes, formed.issued.positions,
+    formed.issued.occurrencePositions⟩
     rcases members found inside with old | rfl
     · exact formed.issued.items found old
     · exact issued
@@ -707,7 +711,8 @@ theorem slots_wellFormed {s : State} (formed : WellFormed program s) {slots : Fe
   have sameItems : (itemList ({ s with slots } : State).openItems) = itemList s.openItems := items_congr rfl
   exact {
   issued := ⟨formed.issued.occurrences, fun item member => formed.issued.items item (items_same member rfl),
-    formed.issued.scopes, formed.issued.positions⟩
+    formed.issued.scopes, formed.issued.positions,
+    formed.issued.occurrencePositions⟩
   distinct := ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopesKeyed, keys ▸ formed.distinct.keys⟩
   startedOnce := formed.startedOnce
   activations := ⟨formed.activations.keys, formed.activations.positive⟩
@@ -761,7 +766,7 @@ theorem emit_wellFormed {s : State} (formed : WellFormed program s) (flows : Lis
   have keys : key { s with batchTokens := s.batchTokens ++ flows.map (Token.flow · scope) } = key s :=
     funext fun _ => key_congr (by apply instanceOf_congr <;> rfl)
   refine ⟨⟨formed.issued.occurrences, (fun item member => formed.issued.items item (items_same member rfl)), formed.issued.scopes,
-    formed.issued.positions⟩,
+    formed.issued.positions, formed.issued.occurrencePositions⟩,
     ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopesKeyed, keys ▸ formed.distinct.keys⟩,
     formed.startedOnce, ⟨formed.activations.keys, formed.activations.positive⟩,
     by unfold ReservationsUnstarted; rw [keys]; exact formed.reservations,

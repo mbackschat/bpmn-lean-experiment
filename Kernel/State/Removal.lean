@@ -37,14 +37,16 @@ def disarm (state : State) (host : OccurrenceId) : State :=
 /-- Remove every token, item, occurrence, slot entry, variable set and child scope occurrence inside `scope`, with the
 ordinal counters of the removed scope occurrences and occurrences, keeping `scope` itself and the occurrences `keep`
 names. Each begun occurrence is journalled cancelled, deepest scope first, each level by the order positions of its
-scope occurrences under `le` (`subtree`), then in the order the state holds them; `Hooks.cancelled` tells the owning
-features afterwards. -/
+scope occurrences under `le` (`subtree`), then by the order positions of its occurrences under `le`, which follow their
+issue ([publication](../../docs/kernel/semantics/PUBLICATION-AND-OBSERVATION-SEMANTICS-SPEC.md)); `Hooks.cancelled`
+tells the owning features afterwards. -/
 def clearInside (state : State) (le : Issue → Issue → Bool) (scope : ScopeOccurrenceId) (keep : List OccurrenceId := []) :
     State :=
   let inside := state.subtree le scope
   let nested := inside.filter (· != scope)
   let removed := inside.reverse.flatMap fun current =>
-    state.occurrences.filter fun occurrence => occurrence.scope == current && !keep.contains occurrence.id
+    (state.occurrences.filter fun occurrence => occurrence.scope == current && !keep.contains occurrence.id).mergeSort
+      fun a b => le a.position b.position
   let journalled := recordCancelled state removed
   { journalled with
       batchTokens := journalled.batchTokens.filter (!inside.contains ·.busyScope)

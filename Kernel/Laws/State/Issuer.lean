@@ -35,7 +35,8 @@ theorem issuer_wellFormed {s : State} (formed : WellFormed program s) (unit : Un
     fun item member =>
       let ⟨owner, below, tabled⟩ := formed.issued.items item (items_same member rfl)
       ⟨owner, below, fun unit index fresh => table _ _ (tabled unit index fresh)⟩,
-    fun scope member => grows.issued (formed.issued.scopes scope member), formed.issued.positionsKept (fun _ => id) table⟩
+    fun scope member => grows.issued (formed.issued.scopes scope member), formed.issued.positionsKept (fun _ => id) table,
+    formed.issued.occurrencePositionsKept (fun _ => id) table⟩
   distinct := ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopesKeyed, keys ▸ formed.distinct.keys⟩
   startedOnce := formed.startedOnce
   activations := ⟨formed.activations.keys, formed.activations.positive⟩

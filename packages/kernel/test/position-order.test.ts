@@ -1,7 +1,9 @@
 /**
  * Order positions numbered at commit (DC13): an open item's position is pending under the unit that opened it until the
  * commit numbers it in the closure's position order, which under `orderInvariant` is the breadth-first order of the
- * units, read from no run log, so the published order of open waits is a function of the closure's end state.
+ * units, read from no run log, so the published order of open waits is a function of the closure's end state. Every
+ * occurrence takes a position from the same counter when its identity is issued, so the waits' positions are not
+ * consecutive.
  *
  * The model forks to an Event-Based Gateway `G`, whose arms `C1` and `C2` wait on Conditions, and to the User Task `W`.
  * The token to `G` runs first, so `C1` and `C2` open before `W` in run order, while `W`'s unit is the shallower one.
@@ -49,6 +51,7 @@ test("under orderInvariant the open waits of one closure publish in the breadth 
   const started = step(program, null, input.value[1]);
   assert.ok(started.ok, JSON.stringify(started));
   assert.deepEqual(hostView(program, started.value).openWaits.map((wait) => wait.id.element), ["W", "C1", "C2"]);
-  assert.deepEqual(started.value.openItems.map((item) => item.position).sort(), [1, 2, 3]);
-  assert.equal(started.value.nextOrder, 4);
+  assert.deepEqual(started.value.openItems.map((item) => item.position).sort((left, right) => Number(left) - Number(right)),
+    [6, 8, 10]);
+  assert.equal(started.value.nextOrder, 11);
 });

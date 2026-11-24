@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Laws.Step.Commit
+public import Kernel.Laws.Step.Assign
 public import Kernel.Laws.State.Transitions
 import Kernel.Laws.Step.Order
 
@@ -60,20 +61,20 @@ theorem compact_scopesNodup {start : State} {log : RunLog} {s t : State} (ran : 
     (distinct : (standingKeys s).Nodup) : (standingKeys t).Nodup := by
   rcases compact_cases ran with ⟨_, rfl⟩ | ⟨_, rfl⟩
   · exact distinct
-  have frame := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitRekey schedule start log s) s)
+  have frame := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitPositioning schedule start log s) (commitRekey schedule start log s) s)
   unfold compacted
   rw [frame]
-  exact scopeList_nodup (renameState_scopesKeyed _ _ _)
+  exact scopeList_nodup (renameState_scopesKeyed _ _ _ _)
 
 /-- The scope map a commit leaves is keyed. -/
 theorem compact_scopesKeyed {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t)
     (keyed : ScopesKeyed s.scopeMap) : ScopesKeyed t.scopeMap := by
   rcases compact_cases ran with ⟨_, rfl⟩ | ⟨_, rfl⟩
   · exact keyed
-  have frame := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitRekey schedule start log s) s)
+  have frame := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitPositioning schedule start log s) (commitRekey schedule start log s) s)
   unfold compacted
   rw [frame]
-  exact renameState_scopesKeyed _ _ _
+  exact renameState_scopesKeyed _ _ _ _
 
 /-! ## The scope history across the commit -/
 
@@ -399,6 +400,15 @@ theorem compacts_issued {start : State} {log : RunLog} {s t : State} (ran : comp
       fun unit index same => ⟨_, issued.positions old inside unit index same⟩
     simp only [renamed] at fresh
     cases fresh
+  occurrencePositions occurrence member unit index fresh := by
+    rw [compact_occurrences ran] at member
+    obtain ⟨old, inside, rfl⟩ := List.mem_map.mp member
+    cases pending : old.position with
+    | committed n => simp [pending] at fresh
+    | fresh u i =>
+      obtain ⟨slot, tabled⟩ := issued.occurrencePositions old inside u i pending
+      obtain ⟨n, -, renamed, -⟩ := occurrencePosition_renamed (schedule := schedule) (start := start) (log := log) tabled
+      simp [pending, renamed] at fresh
 
 /-! ## The renaming is injective on standing keys -/
 
@@ -592,6 +602,22 @@ def CompactionKeepsPositionOrder (schedule : BranchSchedule) (start : State) (lo
     (Issue.notAfter (issuerOrder schedule log) p q = true ↔
       Issue.notAfter (issuerOrder schedule log) (commitRenaming schedule start log s p) (commitRenaming schedule start log s q) = true)
 
+/-- An order position of an occurrence of a closure's state whose commit starts from `start`: a fresh occurrence
+identity's issue in the issue table (`IssuedBelow.occurrencePositions`), or a committed position below `start`'s
+position counter. -/
+def OccurrencePositionIn (start s : State) : Issue → Prop
+  | .committed ordinal => ordinal < start.nextOrder
+  | .fresh unit index => ∃ slot, s.issued[Issue.fresh unit index]? = some (.occurrence slot)
+
+/-- DC25's order law, stated as DC13's for occurrences: the commit numbers a closure's occurrence positions, which are
+their identities' issues, in the closure's position order (`Step.positionsOf`), so the cancellation order within a scope
+occurrence (`State.clearInside`) is the same before and after the commit. -/
+def CompactionKeepsOccurrenceOrder (schedule : BranchSchedule) (start : State) (log : RunLog) (s : State) : Prop :=
+  ∀ p q, OccurrencePositionIn start s p → OccurrencePositionIn start s q →
+    (Issue.notAfter (issuerOrder schedule log) p q = true ↔
+      Issue.notAfter (issuerOrder schedule log) (commitPositioning schedule start log s p)
+        (commitPositioning schedule start log s q) = true)
+
 /-! ## The commit keeps the position order (DC13) -/
 
 section Positions
@@ -600,18 +626,18 @@ variable {base : ClaimSlot → Nat}
 
 theorem assignStep_self (acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare) (claim : Issue × ClaimSlot) :
     (assignStep base acc claim).1[claim.1]? = some (acc.2.getD claim.2 (base claim.2)) := by
-  rw [assignStep_eq]; exact Std.ExtTreeMap.getElem?_insert_self
+  rw [assignStep_fst]; exact Std.ExtTreeMap.getElem?_insert_self
 
 theorem assignStep_other (acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare) (claim : Issue × ClaimSlot)
     {issue : Issue} (apart : claim.1 ≠ issue) : (assignStep base acc claim).1[issue]? = acc.1[issue]? := by
-  rw [assignStep_eq, Std.ExtTreeMap.getElem?_insert]
+  rw [assignStep_fst, Std.ExtTreeMap.getElem?_insert]
   split
   · rename_i same; exact absurd (Std.LawfulEqOrd.eq_of_compare same) apart
   · rfl
 
 theorem assignStep_next (acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare) (claim : Issue × ClaimSlot) :
     (assignStep base acc claim).2.getD claim.2 (base claim.2) = acc.2.getD claim.2 (base claim.2) + 1 := by
-  rw [assignStep_eq]; exact Std.ExtTreeMap.getD_insert_self
+  rw [Std.ExtTreeMap.getD_eq_getD_getElem?, assignStep_claim]; rfl
 
 /-- No step lowers a slot's next ordinal. -/
 theorem fold_getD : ∀ (claims : List (Issue × ClaimSlot)) (acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare)
@@ -619,12 +645,19 @@ theorem fold_getD : ∀ (claims : List (Issue × ClaimSlot)) (acc : TreeMap Issu
   | [], _, _ => Nat.le_refl _
   | claim :: rest, acc, slot => by
     refine Nat.le_trans ?_ (fold_getD rest _ slot)
-    rw [assignStep_eq, Std.ExtTreeMap.getD_insert]
-    split
-    · rename_i same
-      rw [← Std.LawfulEqOrd.eq_of_compare same]
-      exact Nat.le_succ _
-    · exact Nat.le_refl _
+    rw [Std.ExtTreeMap.getD_eq_getD_getElem?, Std.ExtTreeMap.getD_eq_getD_getElem?]
+    cases old : acc.2[slot]? with
+    | some m =>
+      obtain ⟨m', found, raised⟩ := assignStep_raises (base := base) claim old
+      rw [found]; exact raised
+    | none =>
+      cases new : (assignStep base acc claim).2[slot]? with
+      | none => exact Nat.le_refl _
+      | some m' =>
+        rcases assignStep_next_of new with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | kept
+        · simp [Std.ExtTreeMap.getD_eq_getD_getElem?, old]
+        · simp [Std.ExtTreeMap.getD_eq_getD_getElem?, old]
+        · rw [old] at kept; cases kept
 
 /-- The fold leaves the ordinal of an issue no claim names as it was. -/
 theorem fold_value : ∀ (claims : List (Issue × ClaimSlot)) (acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare)
@@ -729,6 +762,59 @@ theorem compaction_keepsPositionOrder (schedule : BranchSchedule) (start : State
       have outP := nodup_absent nodup
       have lt := fold_before S M P (Issue.fresh u i, ClaimSlot.position)
         (Issue.fresh v j, ClaimSlot.position) (∅, ∅) rfl outP.1 (nodup_absent outP.2).1 foundP foundQ
+      exact iff_of_true pq (Nat.le_of_lt lt)
+
+
+/-- **DC25's order law.** The commit numbers the closure's occurrence positions in the closure's position order. -/
+theorem compaction_keepsOccurrenceOrder (schedule : BranchSchedule) (start : State) (log : RunLog) (s : State) :
+    CompactionKeepsOccurrenceOrder schedule start log s := by
+  intro p q inP inQ
+  have kept : ∀ a, commitPositioning schedule start log s (.committed a) = .committed a := renameBy_committed _
+  match p, q, inP, inQ with
+  | .committed _, .committed _, _, _ => simp [kept]
+  | .committed a, .fresh _ _, below, ⟨_, tabled⟩ =>
+    obtain ⟨n, -, renamed, low⟩ := occurrencePosition_renamed (schedule := schedule) (log := log) tabled
+    simp only [OccurrencePositionIn] at below
+    rw [renamed, kept, notAfter_committed_fresh, notAfter_committed, decide_eq_true_eq]
+    exact iff_of_true rfl (by omega)
+  | .fresh _ _, .committed b, ⟨_, tabled⟩, below =>
+    obtain ⟨n, -, renamed, low⟩ := occurrencePosition_renamed (schedule := schedule) (log := log) tabled
+    simp only [OccurrencePositionIn] at below
+    rw [renamed, kept, notAfter_fresh_committed, notAfter_committed, decide_eq_true_eq]
+    simp only [Bool.false_eq_true, false_iff, Nat.not_le]
+    omega
+  | .fresh u i, .fresh v j, ⟨one, tabledP⟩, ⟨two, tabledQ⟩ =>
+    obtain ⟨n, foundP, renamedP, -⟩ := occurrencePosition_renamed (schedule := schedule) (log := log) tabledP
+    obtain ⟨m, foundQ, renamedQ, -⟩ := occurrencePosition_renamed (schedule := schedule) (log := log) tabledQ
+    rw [renamedP, renamedQ, notAfter_committed, decide_eq_true_eq]
+    by_cases same : (Issue.fresh u i) = .fresh v j
+    · rw [same] at foundP ⊢
+      cases foundP.symm.trans foundQ
+      exact iff_of_true ((notAfter_total _ _).elim id id) (Nat.le_refl _)
+    have sorted := issueOrder_sorted schedule log s
+    have nodup := issueOrder_nodup schedule log s
+    have memQ := (issueOrder_mem (schedule := schedule) (log := log)).mpr (show s.issued[(Issue.fresh v j, ClaimSlot.occurrence two).1]? = some (Issue.fresh v j, ClaimSlot.occurrence two).2 from tabledQ)
+    obtain ⟨S, T, split⟩ := List.mem_iff_append.mp
+      ((issueOrder_mem (schedule := schedule) (log := log)).mpr (show s.issued[(Issue.fresh u i, ClaimSlot.occurrence one).1]? = some (Issue.fresh u i, ClaimSlot.occurrence one).2 from tabledP))
+    rw [positionsOf_eq, split] at foundP foundQ
+    rw [split] at sorted nodup memQ
+    rcases List.mem_append.mp memQ with inS | inT
+    · obtain ⟨P, M, splitS⟩ := List.mem_iff_append.mp inS
+      have qp : Issue.notAfter (issuerOrder schedule log) (.fresh v j) (.fresh u i) = true :=
+        (List.pairwise_append.mp sorted).2.2 _ inS (Issue.fresh u i, ClaimSlot.occurrence one) (List.mem_cons_self ..)
+      rw [splitS] at foundP foundQ nodup
+      simp only [List.append_assoc, List.cons_append] at foundP foundQ nodup
+      have outQ := nodup_absent nodup
+      have lt := positions_before P M T (.fresh v j) (.fresh u i) two one _ outQ.1 (nodup_absent outQ.2).1 foundQ foundP
+      exact iff_of_false (fun pq => same (notAfter_antisymm (issuerOrder_tied schedule log) pq qp)) (by omega)
+    · rcases List.mem_cons.mp inT with back | inT
+      · exact absurd (congrArg Prod.fst back).symm same
+      obtain ⟨M, P, splitT⟩ := List.mem_iff_append.mp inT
+      have pq : Issue.notAfter (issuerOrder schedule log) (.fresh u i) (.fresh v j) = true :=
+        (List.pairwise_cons.mp (List.pairwise_append.mp sorted).2.1).1 _ inT
+      rw [splitT] at foundP foundQ nodup
+      have outP := nodup_absent nodup
+      have lt := positions_before S M P (.fresh u i) (.fresh v j) one two _ outP.1 (nodup_absent outP.2).1 foundP foundQ
       exact iff_of_true pq (Nat.le_of_lt lt)
 
 end Kernel.Laws.Step

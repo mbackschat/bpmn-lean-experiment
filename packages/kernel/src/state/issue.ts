@@ -90,7 +90,8 @@ export function offersOccurrence(issued: IssueTable, occurrence: OccurrenceId, k
  * Lean's `ClaimSlot` tags: the slot a fresh issue takes its committed ordinal in at commit (DC12), one per counter map,
  * so the commit's assignment keys exactly what each counter compares: a scope occurrence's (parent, element)
  * (`State.scopeOrdinals`), an occurrence's (scope occurrence, element) (`State.occurrenceOrdinals`), an item's
- * occurrence (`State.itemOrdinals`), and an order position's one slot (`State.nextOrder`, DC13), which has no owner.
+ * occurrence (`State.itemOrdinals`), and an order position's one slot (`State.nextOrder`, DC13), which has no owner;
+ * an occurrence's issue counts on it too, for the order position it is (DC25, `assignStep`).
  */
 export enum ClaimSlotTag { Scope = "scope", Occurrence = "occurrence", Item = "item", Position = "position" }
 export type ClaimSlot =

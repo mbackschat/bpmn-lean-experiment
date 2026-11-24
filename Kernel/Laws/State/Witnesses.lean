@@ -32,7 +32,7 @@ theorem stale_counter_rejected (kind : OpenKind) : ¬ IssuedBelow { sample kind 
 
 /-- A root wait with an armed reservation `timerKey` beside it, and the start facts of the begun waits in the draft. -/
 def reservation : Occurrence :=
-  { id := timerKey, element := ⟨"Timer"⟩, scope := processRoot, activation := 1, begun := false }
+  { id := timerKey, element := ⟨"Timer"⟩, scope := processRoot, activation := 1, position := 4, begun := false }
 
 def startFact (occurrence : Occurrence) : StartedFact :=
   { occurrence := { processInstanceId := "p", element := occurrence.element, activation := occurrence.activation }
