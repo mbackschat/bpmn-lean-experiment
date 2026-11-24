@@ -515,15 +515,24 @@ theorem visible_enterScope (formed : WellFormed program s) {scope : ScopeOccurre
     (reading : Program) : (s.enterScope element parent locals occurrence).1.visible reading scope = s.visible reading scope := by
   obtain ⟨t, entered⟩ : ∃ t : State, (s.enterScope element parent locals occurrence).1 = t := ⟨_, rfl⟩
   rw [entered]
-  have scopes : t.scopes = s.scopes ++
-      [{ id := parent.child element (.fresh s.issuing s.issueNext), element := some element,
-         position := .fresh s.issuing (s.issueNext + 1), occurrence }] := by
+  have scopes : t.scopeMap = s.scopeMap.insert (parent.child element (.fresh s.issuing s.issueNext))
+      { id := parent.child element (.fresh s.issuing s.issueNext), element := some element,
+        position := .fresh s.issuing (s.issueNext + 1), occurrence } := by
     rw [← entered, enterScope_eq]
   have variables : t.variables = s.variables.insert (parent.child element (.fresh s.issuing s.issueNext)) (keyed locals) := by
     rw [← entered, enterScope_eq]
+  have keyedT : ScopesKeyed t.scopeMap := by
+    rw [scopes]; exact scopesKeyed_insert_at formed.distinct.scopesKeyed rfl
   have record : ∀ entry ∈ s.scopes, t.scopes.find? (·.id == entry.id) = s.scopes.find? (·.id == entry.id) := by
     intro entry member
-    rw [scopes, List.find?_append, find?_record formed.distinct.scopes member]; rfl
+    have apart : entry.id ≠ parent.child element (.fresh s.issuing s.issueNext) := fun same =>
+      entered_unissued parent element formed.issuer.next (same ▸ formed.issued.scopes entry member)
+    have kept : entry ∈ t.scopes := by
+      rw [scopes_eq, scopes]
+      exact (mem_scopeList_insert_at formed.distinct.scopesKeyed (k := parent.child element (.fresh s.issuing s.issueNext))
+        rfl).mpr (.inr ⟨(scopes_eq s) ▸ member, apart⟩)
+    rw [find?_record (by rw [scopeIds, scopes_eq]; exact scopeList_nodup keyedT) kept,
+      find?_record formed.distinct.scopes member]
   have frame : ∀ entry ∈ s.scopes, t.variables.getD entry.id [] = s.variables.getD entry.id [] := by
     intro entry member
     have apart : parent.child element (.fresh s.issuing s.issueNext) ≠ entry.id := fun same =>

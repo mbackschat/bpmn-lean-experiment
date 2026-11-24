@@ -365,7 +365,7 @@ leaves `State.root` out, the instance entries rooted outside it, and only occurr
 work `s` holds: what leaving or clearing a scope occurrence keeps. -/
 theorem PlacedLane.shrink (formed : WellFormed program s) (lane : PlacedLane program s)
     (out : ScopeOccurrenceId → Prop) (upward : ∀ x y, y ∈ scopeIds s → Laws.State.Within s x y → out y → out x)
-    (rootStays : ¬ out State.root) (fewer : t.scopes.Sublist s.scopes)
+    (rootStays : ¬ out State.root) (fewer : Laws.State.ScopesSub t.scopeMap s.scopeMap)
     (scopes : ∀ entry, entry ∈ t.scopes ↔ entry ∈ s.scopes ∧ ¬ out entry.id)
     (instances : t.slots.instances.Sublist s.slots.instances)
     (entries : ∀ entry ∈ s.slots.instances, ¬ out entry.root → entry ∈ t.slots.instances)
@@ -384,7 +384,7 @@ theorem PlacedLane.shrink (formed : WellFormed program s) (lane : PlacedLane pro
   have stays : ∀ {x}, x ∈ scopeIds s → ¬ out x → x ∈ scopeIds t := fun member free => by
     obtain ⟨entry, inside, rfl⟩ := List.mem_map.mp member
     exact List.mem_map.mpr ⟨entry, (scopes entry).mpr ⟨inside, free⟩, rfl⟩
-  have nodup : (scopeIds t).Nodup := (fewer.map ScopeOccurrence.id).nodup formed.distinct.scopes
+  have nodup : (scopeIds t).Nodup := Laws.State.scopeList_nodup (fewer.keyed formed.distinct.scopesKeyed)
   have roots : ∀ x ∈ scopeIds t, x ∈ scopeIds s → t.instanceRoot x = s.instanceRoot x := fun x member old =>
     instanceRoot_transport formed old nodup fun entry inside within => (scopes entry).mpr
       ⟨inside, fun outside => (present member).2 (upward x entry.id (List.mem_map.mpr ⟨entry, inside, rfl⟩) within
@@ -419,7 +419,8 @@ theorem PlacedLane.shrink (formed : WellFormed program s) (lane : PlacedLane pro
 issued parent, with the instance entry it may root, placing its element where its parent stands, and keeps the rest:
 what entering a scope occurrence or a called root does. -/
 theorem PlacedLane.grown (formed : WellFormed program s) (lane : PlacedLane program s) {entry : ScopeOccurrence}
-    {added : Option InstanceData} (scopes : t.scopes = s.scopes ++ [entry]) (fresh : Laws.State.ScopeFresh s t entry.id)
+    {added : Option InstanceData} (scopeMap : t.scopeMap = s.scopeMap.insert entry.id entry)
+    (fresh : Laws.State.ScopeFresh s t entry.id)
     (instances : t.slots.instances = s.slots.instances ++ added.toList)
     (rootedNew : ∀ data, added = some data → data.root = entry.id ∧ data.definition.isSome)
     (enteredNew : entry.calledInstance.isSome → added.isSome)
@@ -435,15 +436,28 @@ theorem PlacedLane.grown (formed : WellFormed program s) (lane : PlacedLane prog
     (compensation : t.slots.compensation = s.slots.compensation)
     (bodies : t.slots.multiInstances = s.slots.multiInstances) (parked : t.slots.parked = s.slots.parked) :
     PlacedLane program t := by
-  have ids : scopeIds t = scopeIds s ++ [entry.id] := by simp [scopeIds, scopes]
+  have apart : ∀ old ∈ s.scopes, old.id ≠ entry.id := fun old inside same =>
+    fresh.1 (same ▸ present_issued formed (List.mem_map.mpr ⟨old, inside, rfl⟩))
+  have scopes : ∀ other, other ∈ t.scopes ↔ other ∈ s.scopes ∨ other = entry := fun other => by
+    rw [Laws.State.scopes_eq t, scopeMap]
+    exact Laws.State.mem_scopeList_insert_fresh formed.distinct.scopesKeyed apart
+  have ids : ∀ x, x ∈ scopeIds t ↔ x ∈ scopeIds s ∨ x = entry.id := fun x => by
+    simp only [scopeIds, List.mem_map, scopes]
+    constructor
+    · rintro ⟨other, old | rfl, rfl⟩
+      · exact .inl ⟨other, old, rfl⟩
+      · exact .inr rfl
+    · rintro (⟨other, old, rfl⟩ | rfl)
+      · exact ⟨other, .inl old, rfl⟩
+      · exact ⟨entry, .inr rfl, rfl⟩
+  have held : ∀ {x}, x ∈ scopeIds s → x ∈ scopeIds t := fun old => (ids _).mpr (.inl old)
   have rootIssued : Laws.State.ScopeIssued s State.root := present_issued formed formed.rooted.1
   have nodup : (scopeIds t).Nodup := by
-    rw [ids]
-    exact List.nodup_append.mpr ⟨formed.distinct.scopes, by simp, fun a inside b new => by
-      rw [List.mem_singleton.mp new]
-      exact fun same => fresh.1 (same ▸ present_issued formed inside)⟩
+    unfold scopeIds
+    rw [Laws.State.scopes_eq t, scopeMap]
+    exact Laws.State.scopeList_nodup (Laws.State.scopesKeyed_insert formed.distinct.scopesKeyed entry)
   have roots : ∀ x ∈ scopeIds t, x ∈ scopeIds s → t.instanceRoot x = s.instanceRoot x := fun x _ old =>
-    instanceRoot_wider formed old nodup fun _ inside => scopes ▸ List.mem_append_left _ inside
+    instanceRoot_wider formed old nodup fun other inside => (scopes other).mpr (.inl inside)
   have newRoot : ∀ data ∈ t.slots.instances, data ∈ s.slots.instances ∨ data.root = entry.id ∧ data.definition.isSome :=
     fun data member => by
       rw [instances] at member
@@ -453,21 +467,19 @@ theorem PlacedLane.grown (formed : WellFormed program s) (lane : PlacedLane prog
   have move : ∀ {element x}, x ∈ scopeIds s → PlacedIn program s element x → PlacedIn program t element x :=
     fun old placed data member root => by
       rcases newRoot data member with kept | ⟨rooted, -⟩
-      · exact placed data kept (root.trans (roots _ (ids ▸ List.mem_append_left _ old) old))
-      · rw [roots _ (ids ▸ List.mem_append_left _ old) old, rooted] at root
+      · exact placed data kept (root.trans (roots _ (held old) old))
+      · rw [roots _ (held old) old, rooted] at root
         exact absurd (root ▸ instanceRoot_issued formed old) fresh.1
-  have scopesT : ∀ other ∈ t.scopes, other ∈ s.scopes ∨ other = entry := fun other member => by
-    rw [scopes] at member
-    exact (List.mem_append.mp member).imp id List.mem_singleton.mp
+  have scopesT : ∀ other ∈ t.scopes, other ∈ s.scopes ∨ other = entry := fun other member => (scopes other).mp member
   refine lane.carry formed ⟨?_, fun root member called => ?_, ?_, fun data member => ?_, fun data member => ?_,
     fun other member element parent named link stands => ?_, fun other member called => ?_, fun other member => ?_,
-    fun data member => (newRoot data member).elim (fun old => ids ▸ List.mem_append_left _ (lane.rootsStanding data old))
-      fun new => by rw [ids, new.1]; exact List.mem_append_right _ (List.mem_singleton_self _)⟩
+    fun data member => (newRoot data member).elim (fun old => held (lane.rootsStanding data old))
+      fun new => (ids _).mpr (.inr new.1)⟩
     fresh.2.2 (fun x member => ?_) roots (fun data member => (newRoot data member).imp id fun new => by
       rw [new.1]; exact fresh.1)
     (fun o member => .inl (occurrences ▸ member))
-    (fun o member => ids ▸ List.mem_append_left _ (formed.owned.occurrenceScopes o (occurrences ▸ member)))
-    (fun _ _ _ old => ids ▸ List.mem_append_left _ (flow_present formed old))
+    (fun o member => held (formed.owned.occurrenceScopes o (occurrences ▸ member)))
+    (fun _ _ _ old => held (flow_present formed old))
     (fun _ member => .inl (signals ▸ member)) (fun _ member => .inl (tokens ▸ member))
     (fun _ member => .inl (compensation ▸ member)) (fun _ member => .inl (compensation ▸ member))
     (fun _ member => .inl (bodies ▸ member)) (fun _ member => .inl (parked ▸ member))
@@ -497,10 +509,10 @@ theorem PlacedLane.grown (formed : WellFormed program s) (lane : PlacedLane prog
   · rcases scopesT other member with old | rfl
     · exact move (parent_present formed old link)
         (lane.scopes other old element parent named link (parent_present formed old link))
-    · rcases List.mem_append.mp (ids ▸ stands) with old | new
+    · rcases (ids _).mp stands with old | new
       · exact move old (placedNew element parent named link old)
       · have below := parentIssued parent link
-        rw [List.mem_singleton.mp new] at below
+        rw [new] at below
         exact absurd below fresh.1
   · rcases scopesT other member with old | rfl
     · have apart := lane.calledApart other old called
@@ -510,10 +522,9 @@ theorem PlacedLane.grown (formed : WellFormed program s) (lane : PlacedLane prog
   · rcases scopesT other member with old | rfl
     · exact lane.rootBare other old
     · exact bareNew
-  · rw [ids] at member
-    rcases List.mem_append.mp member with old | new
+  · rcases (ids _).mp member with old | new
     · exact .inl old
-    · rw [List.mem_singleton.mp new]; exact .inr fresh.1
+    · rw [new]; exact .inr fresh.1
 
 /-! ## Builders and operations that read no `WellFormed` -/
 

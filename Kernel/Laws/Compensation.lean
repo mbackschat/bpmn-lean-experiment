@@ -724,11 +724,10 @@ theorem runs_keep {inv : State → Prop} {settled : State → OccurrenceId → P
           refine ⟨ops.enteredGrows holds stands record.snapshot, fun entry member => ?_,
             (ops.enter state element scope record.snapshot holds stands anchor).2,
             fun body member => by rw [slotsEq] at member; exact member, grows⟩
-          rw [scopesEq] at member
-          rcases List.mem_append.mp member with old | new
+          rw [Laws.State.scopes_eq, scopesEq] at member
+          rcases Laws.State.mem_scopeList_insert_cases member with old | rfl
           · exact .inl old
-          · rw [List.mem_singleton.mp new]
-            exact .inr unissued
+          · exact .inr unissued
       rcases handlerOf : record.handler with _ | handler <;> simp only [handlerOf] at ran
       · simp only [bind, Except.bind] at ran
         split at ran
@@ -748,6 +747,13 @@ theorem runs_keep {inv : State → Prop} {settled : State → OccurrenceId → P
             at nested issuedNext scopesEq slotsEq enter entering children issuedAfter
           have fresh : ∀ entry ∈ state.scopes, entry.id ≠ key := fun entry member same =>
             unissued (same ▸ ops.issued state holds entry member)
+          have scopes : ∀ found, found ∈ entered.scopes ↔ found ∈ state.scopes ∨
+              found = { id := key, element := some record.subject, position := .fresh state.issuing (state.issueNext + 1),
+                        occurrence := none } := fun found => by
+            rw [Laws.State.scopes_eq, scopesEq]
+            exact Laws.State.mem_scopeList_insert_fresh (ops.keyed state holds)
+              (new := { id := key, element := some record.subject,
+                        position := .fresh state.issuing (state.issueNext + 1), occurrence := none }) fresh
           have stored : ∀ pending, (∀ record ∈ pending, RecordFrom program entered record key) →
               inv (Feature.Compensation.store entered (.mk entered.slots.compensation.retained
               (entered.slots.compensation.runs ++
@@ -772,9 +778,7 @@ theorem runs_keep {inv : State → Prop} {settled : State → OccurrenceId → P
                 · exact .inl ⟨run, old, running⟩
                 · rw [List.mem_singleton.mp new] at running
                   simp at running
-          have standsNested : key ∈ entered.scopes.map (·.id) := by
-            rw [scopesEq]
-            simp
+          have standsNested : key ∈ entered.scopes.map (·.id) := List.mem_map.mpr ⟨_, (scopes _).mpr (.inr rfl), rfl⟩
           obtain ⟨nestedHolds, nestedFollows, keeps⟩ := advances _ _ _ _ (stored _ children).1 standsNested nested
           have unheld : ∀ pending, Unheld (Feature.Compensation.store entered (.mk entered.slots.compensation.retained
               (entered.slots.compensation.runs ++
@@ -787,23 +791,21 @@ theorem runs_keep {inv : State → Prop} {settled : State → OccurrenceId → P
           obtain ⟨keepsScopes, keepsRuns⟩ := keeps (unheld _)
           refine ⟨nestedHolds, entering.trans ((Follows.same (stored _ children).2 rfl (.refl _) rfl (.refl _)).trans nestedFollows),
             fun entry member => keepsScopes entry
-              (by rw [Feature.Compensation.store, scopesEq]; exact List.mem_append_left _ member),
+              (by rw [Feature.Compensation.store]; exact (scopes entry).mpr (.inl member)),
             ⟨unissued, nestedFollows.grows.issued issuedAfter⟩,
             fun entry member named => ?_, fun run member stood => keepsRuns run ?_ ?_ ?_⟩
           · rcases nestedFollows.2.1 entry member with inside | later
             · change entry ∈ entered.scopes at inside
-              rw [scopesEq] at inside
-              rcases List.mem_append.mp inside with old | new
+              rcases (scopes entry).mp inside with old | rfl
               · exact absurd named (fresh entry old)
-              · rw [List.mem_singleton.mp new]
-                exact link
+              · exact link
             · change ¬ Laws.State.ScopeIssued entered entry.id at later
               rw [named] at later
               exact absurd issuedAfter later
           · exact List.mem_append_left _ (slotsEq ▸ member)
-          · rw [Feature.Compensation.store, scopesEq]
+          · rw [Feature.Compensation.store]
             obtain ⟨found, inside, same⟩ := List.mem_map.mp stood
-            exact List.mem_map.mpr ⟨found, List.mem_append_left _ inside, same⟩
+            exact List.mem_map.mpr ⟨found, (scopes found).mpr (.inl inside), same⟩
           · intro same
             obtain ⟨found, inside, named⟩ := List.mem_map.mp stood
             have below := ops.issued state holds found inside

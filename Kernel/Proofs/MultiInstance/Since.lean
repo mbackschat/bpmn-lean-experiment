@@ -355,7 +355,7 @@ theorem since_occursAlongside (b : State) (program : Program) :
   enterCalled s call variables definition formed member _ _ _ _ kept := by
     refine ⟨kept.1.move (.ofEnds (Laws.Step.enterCalled_frame formed program (formed.owned.occurrenceScopes call member)
       variables definition) ?_), ?_⟩ <;>
-      rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]
+      rw [Laws.State.enterCalled_eq _ _ _ _ _]
     exact kept.2.same rfl
 
 /-- Dropping a record keeps both: it moves no key and no body's record. -/

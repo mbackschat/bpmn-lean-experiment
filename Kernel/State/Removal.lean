@@ -52,7 +52,7 @@ def clearInside (state : State) (le : Issue → Issue → Bool) (scope : ScopeOc
       openItems := journalled.openItems.filter fun _ item => !inside.contains item.scope || keep.contains item.id.occurrence
       itemOrdinals := journalled.itemOrdinals.filter fun id _ => !removed.any (·.id == id)
       occurrences := journalled.occurrences.filter fun occurrence => !inside.contains occurrence.scope || keep.contains occurrence.id
-      scopes := journalled.scopes.filter (!nested.contains ·.id)
+      scopeMap := journalled.scopeMap.filter fun _ entry => !nested.contains entry.id
       scopeOrdinals := journalled.scopeOrdinals.filter fun slot _ => !nested.contains slot.parent
       occurrenceOrdinals := journalled.occurrenceOrdinals.filter fun slot _ => !nested.contains slot.parent
       variables := journalled.variables.filter fun scope _ => !nested.contains scope
@@ -66,7 +66,7 @@ instance's root takes its instance entry with it, which every reader finds only 
 def leaveScope (state : State) (le : Issue → Issue → Bool) (scope : ScopeOccurrenceId) : State :=
   let cleared := state.clearInside le scope
   { cleared with
-      scopes := cleared.scopes.filter (·.id != scope)
+      scopeMap := cleared.scopeMap.filter fun _ entry => entry.id != scope
       scopeOrdinals := cleared.scopeOrdinals.filter fun slot _ => slot.parent != scope
       occurrenceOrdinals := cleared.occurrenceOrdinals.filter fun slot _ => slot.parent != scope
       variables := cleared.variables.erase scope

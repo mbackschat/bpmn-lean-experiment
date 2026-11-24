@@ -17,6 +17,9 @@ variable {program : Program}
 
 open Kernel
 
+/- The witnesses read their scopes through the scope map's list view. -/
+attribute [local simp] scopes_eq
+
 /- The witnesses' states queue nothing under a unit key, so the views are their batches. -/
 attribute [local simp] allSignals allQueuedTokens
 
@@ -24,7 +27,7 @@ attribute [local simp] allSignals allQueuedTokens
 states. -/
 theorem stale_counter_rejected (kind : OpenKind) : ¬ IssuedBelow { sample kind with occurrenceOrdinals := ∅ } :=
   fun issued => by
-  have := (issued.occurrences outerTask (by simp [sample])).2.2.1 _ rfl (by simp [sample, rootScope, outerTask])
+  have := (issued.occurrences outerTask (by simp [sample])).2.2.1 _ rfl (by simp [sample] <;> simp [rootScope, outerTask])
   simp [occurrenceCount] at this
 
 /-- A root wait with an armed reservation `timerKey` beside it, and the start facts of the begun waits in the draft. -/
@@ -102,7 +105,7 @@ theorem unissued_arming (kind : OpenKind) : ¬ WellFormed program { sample kind 
 /-- So does a completion of an identity never issued: a reservation made later would be completed. -/
 theorem unissued_completion (kind : OpenKind) :
     ¬ WellFormed program { sample kind with batchSignals := [.complete ghostKey .outgoing [] .outward] } := fun formed => by
-  have := (formed.queue.completes ghostKey .outgoing [] .outward (by simp)).2.2.1 _ rfl (by simp [sample, rootScope])
+  have := (formed.queue.completes ghostKey .outgoing [] .outward (by simp)).2.2.1 _ rfl (by simp [sample] <;> simp [rootScope])
   simp [occurrenceCount, sample, sampleCounters, Std.ExtTreeMap.getD_insert] at this
 
 /-- An arming of the Sub-Process occurrence `subKey`'s boundaries in its own scope occurrence `Sub#0` breaks `QueueSound`: its host
@@ -135,8 +138,8 @@ theorem misattached_rejected (kind : OpenKind) :
 
 /-- A scope occurrence owned by the unbegun reservation `timerKey` breaks `Owned`: only a begun occurrence enters a scope. -/
 theorem reservation_owner_rejected (kind : OpenKind) :
-    ¬ Owned { armedState kind with scopes := [rootScope, { childScope with occurrence := some timerKey }] } := fun owned => by
-  obtain ⟨occurrence, member, named, begun⟩ := owned.scopeOwners { childScope with occurrence := some timerKey } (by simp) timerKey rfl
+    ¬ Owned { armedState kind with scopeMap := ofScopes [rootScope, { childScope with occurrence := some timerKey }] } := fun owned => by
+  obtain ⟨occurrence, member, named, begun⟩ := owned.scopeOwners { childScope with occurrence := some timerKey } (by simp [rootScope, childScope, processRoot, subScope]) timerKey rfl
   simp only [armedState, List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl | rfl | rfl <;> simp [subProcess, innerTask, outerTask, reservation] at named begun
 
@@ -225,7 +228,7 @@ theorem parked_reservation_rejected (kind : OpenKind) :
 
 /-- The root's task `outerKey` was issued in the armed state. -/
 theorem armed_outer_issued (kind : OpenKind) : OccurrenceIssued (armedState kind) outerKey :=
-  ⟨(sample_historic kind : Historic (armedState kind)).issued_key (by simp [sample, rootScope]), fun _ _ => by simp [processRoot],
+  ⟨(sample_historic kind : Historic (armedState kind)).issued_key (by simp [sample] <;> simp [rootScope]), fun _ _ => by simp [processRoot],
     fun n same _ => by
       cases (Issue.committed.inj same : 0 = n)
       simp [occurrenceCount, armedState, sampleCounters, Std.ExtTreeMap.getD_insert],
@@ -258,8 +261,8 @@ theorem nested_instance_placed (kind : OpenKind) : Placed (sample kind) (instanc
   intro scope active
   simp only [instanceRun, List.mem_singleton, Iteration.active.injEq] at active
   subst active
-  refine ⟨(sample_historic kind).issued_key (by simp [sample, rootScope, childScope]), fun entry member named => ?_⟩
-  simp only [sample, List.mem_cons, List.not_mem_nil, or_false] at member
+  refine ⟨(sample_historic kind).issued_key (by simp [sample] <;> simp [childScope]), fun entry member named => ?_⟩
+  simp only [sample, scopes_eq, mem_sampleScopes] at member
   rcases member with rfl | rfl <;> simp_all [rootScope, childScope, processRoot, subScope, instanceRun]
 
 /-- An instance standing below another scope occurrence than the body's breaks `Placed`. -/

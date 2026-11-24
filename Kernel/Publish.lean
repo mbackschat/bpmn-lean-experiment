@@ -93,7 +93,7 @@ def publishedScope (state : State) (scope : ScopeOccurrence) (variables : List (
 
 /-- Every variable scope other than the instance root that holds a variable, by public element identifiers, in
 canonical order. -/
-def scopes (program : Program) (state : State) : List PublishedScope :=
+def publishedScopes (program : Program) (state : State) : List PublishedScope :=
   (state.scopes.filterMap fun scope =>
     match state.variables.getD scope.id [] with
     | [] => none

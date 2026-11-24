@@ -2,6 +2,7 @@ module
 
 public import Kernel.State.Tree
 public import Kernel.Laws.State.Items
+public import Kernel.Laws.State.Occurrence
 public import Kernel.Laws.State.History
 public import Kernel.Laws.State.Map
 
@@ -152,8 +153,12 @@ activation numbers one occurrence. -/
 structure Distinct (s : State) : Prop where
   occurrences : (occurrenceIds s).Nodup
   items : KeyedBy s.openItems
-  scopes : (scopeIds s).Nodup
+  /-- Every scope occurrence sits under its own key, so no two share one (`Distinct.scopes`). -/
+  scopesKeyed : ScopesKeyed s.scopeMap
   keys : (s.occurrences.map (key s)).Nodup
+
+theorem Distinct.scopes {s : State} (distinct : Distinct s) : (scopeIds s).Nodup := by
+  rw [scopeIds, scopes_eq]; exact scopeList_nodup distinct.scopesKeyed
 
 /-- Within one input's journal no occurrence key starts twice: re-entry and repetition give a new activation, never a
 reused one ([scopes, SRE-FRESH-01](../../../docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md#concurrent-activations-and-re-entry)). -/
@@ -549,19 +554,6 @@ theorem Within.depth {s : State} {scope : ScopeOccurrenceId} (within : Within s 
     obtain ⟨n, depth⟩ := ih rooted
     exact ⟨n + 1, .child child parent n member link depth⟩
 
-/-- Members of a list whose images are distinct are equal when their images are. -/
-theorem nodup_map_eq {α β : Type} {f : α → β} : ∀ {l : List α}, (l.map f).Nodup → ∀ {a b : α}, a ∈ l → b ∈ l →
-    f a = f b → a = b
-  | [], _, _, _, member, _, _ => by simp at member
-  | x :: l, nodup, a, b, first, second, same => by
-    simp only [List.map_cons, List.nodup_cons, List.mem_map, not_exists, not_and] at nodup
-    obtain ⟨fresh, nodup⟩ := nodup
-    rcases List.mem_cons.mp first with rfl | inFirst <;> rcases List.mem_cons.mp second with rfl | inSecond
-    · rfl
-    · exact absurd same.symm (fresh b inSecond)
-    · exact absurd same (fresh a inFirst)
-    · exact nodup_map_eq nodup inFirst inSecond same
-
 /-- A property every step of a left fold keeps over the list's members holds of the fold. -/
 theorem foldl_keeps {α β : Type} (P : α → Prop) (f : α → β → α) :
     ∀ (l : List β) (a : α), (∀ a b, b ∈ l → P a → P (f a b)) → P a → P (l.foldl f a)
@@ -677,8 +669,25 @@ def sampleCounters : TreeMap ScopeSlot Nat compare :=
   (((∅ : Std.ExtTreeMap ScopeSlot Nat compare).insert { parent := processRoot, element := ⟨"Sub"⟩ } 1).insert
     { parent := processRoot, element := ⟨"Outer"⟩ } 1).insert { parent := subScope, element := ⟨"Inner"⟩ } 1
 
+/-- The sample's scope occurrences, read through the map's list view. -/
+@[simp] theorem mem_rootChild {x : ScopeOccurrence} :
+    x ∈ scopeList (ofScopes [rootScope, childScope]) ↔ x = rootScope ∨ x = childScope := by
+  rw [mem_ofScopes (by simp [rootScope, childScope, processRoot, subScope])]; simp
+
+/-- The sample's scope map, named so that a simp set unfolding `rootScope` or `childScope` leaves it whole. -/
+def sampleScopes : ScopeMap := ofScopes [rootScope, childScope]
+
+@[simp] theorem mem_sampleScopes {x : ScopeOccurrence} : x ∈ scopeList sampleScopes ↔ x = rootScope ∨ x = childScope :=
+  mem_rootChild
+
+/-- The scope map of the root alone. -/
+def rootScopes : ScopeMap := ofScopes [rootScope]
+
+@[simp] theorem mem_rootScopes {x : ScopeOccurrence} : x ∈ scopeList rootScopes ↔ x = rootScope := by
+  rw [rootScopes, mem_ofScopes (by simp)]; simp
+
 def sample (kind : OpenKind) : State :=
-  { instanceId := "p", scopes := [rootScope, childScope], occurrences := [subProcess, innerTask, outerTask]
+  { instanceId := "p", scopeMap := sampleScopes, occurrences := [subProcess, innerTask, outerTask]
     variables := ((∅ : TreeMap ScopeOccurrenceId (List (String × Value)) compare).insert processRoot [("a", .int 1)]).insert subScope []
     openItems := ofItems [innerItem kind, outerItem kind], nextCompletion := 7
     itemOrdinals := ((∅ : Std.ExtTreeMap OccurrenceId Nat compare).insert innerKey 1).insert outerKey 1
@@ -692,19 +701,19 @@ def sample (kind : OpenKind) : State :=
 theorem sample_historic (kind : OpenKind) : Historic (sample kind) :=
   historic_of_standing
     (fun segment rest member => by
-      simp [sample, rootScope, childScope, processRoot, subScope] at member ⊢
+      simp [scopes_eq, sample, rootScope, childScope, processRoot, subScope] at member ⊢
       exact .inl member.2)
     (fun segment rest n member committed => by
-      simp [sample, rootScope, childScope, processRoot, subScope] at member
+      simp [scopes_eq, sample, rootScope, childScope, processRoot, subScope] at member
       obtain ⟨rfl, rfl⟩ := member
       cases committed
       simp [slotCount, sample, processRoot, Std.ExtTreeMap.getD_insert_self])
     (fun segment rest unit index member fresh => by
-      simp [sample, rootScope, childScope, processRoot, subScope] at member
+      simp [scopes_eq, sample, rootScope, childScope, processRoot, subScope] at member
       obtain ⟨rfl, rfl⟩ := member
       cases fresh)
     (fun x member => by
-      simp [sample, rootScope, childScope, processRoot, subScope] at member
+      simp [scopes_eq, sample, rootScope, childScope, processRoot, subScope] at member
       rcases member with rfl | rfl <;> simp [Layered])
 
 /-- The sample's key `Sub#9` lies beyond its root's counter of `Sub`, so it was never issued. -/
@@ -712,7 +721,7 @@ theorem sample_unissued {kind : OpenKind} {s : State} (issued : ScopeIssued s (.
     (scopes : s.scopes = (sample kind).scopes) (ordinals : s.scopeOrdinals = (sample kind).scopeOrdinals) : False := by
   rw [show (.ofSegments [{ element := ⟨"Sub"⟩, ordinal := 9 }] : ScopeOccurrenceId) = processRoot.child ⟨"Sub"⟩ 9 by
     rw [child_eq, processRoot, ScopeOccurrenceId.ofSegments_segments]] at issued
-  exact unissued_of_count (parent := processRoot) (by simp [scopes, sample, rootScope])
+  exact unissued_of_count (parent := processRoot) (by simp [scopes, scopes_eq, sample, rootScope, childScope, processRoot, subScope])
     (by simp [slotCount, ordinals, sample, processRoot, Std.ExtTreeMap.getD_insert_self]) issued
 
 @[simp] theorem mem_sample_itemList {kind : OpenKind} {item : OpenItem} :
@@ -723,15 +732,15 @@ theorem mem_sample_items {kind : OpenKind} {item : OpenItem} :
     item ∈ itemList (sample kind).openItems ↔ item = innerItem kind ∨ item = outerItem kind := by
   rw [sample, mem_ofItems (by simp [innerItem, outerItem])]; simp
 
-theorem root_parentless {s : State} (scopes : s.scopes = [rootScope, childScope]) :
+theorem root_parentless {s : State} (scopes : s.scopeMap = ofScopes [rootScope, childScope]) :
     ∀ scope ∈ s.scopes, scope.id = processRoot → scope.parent = none := by
-  simp [scopes, rootScope, childScope, processRoot, subScope]
+  simp [scopes_eq, scopes, rootScope, childScope, processRoot, subScope]
 
 theorem sub_within {kind : OpenKind} : Within (sample kind) subScope processRoot :=
-  .parent childScope processRoot processRoot (by simp [sample])
+  .parent childScope processRoot processRoot (by simp [scopes_eq, sample, rootScope, childScope, processRoot, subScope])
     (by simp [childScope, subScope, processRoot, ScopeOccurrenceId.parent?_cons]) (.refl _)
 
-theorem root_outside {s : State} (scopes : s.scopes = [rootScope, childScope]) : ¬ Within s processRoot subScope :=
+theorem root_outside {s : State} (scopes : s.scopeMap = ofScopes [rootScope, childScope]) : ¬ Within s processRoot subScope :=
   fun within => by
   have := Within.parentless (root_parentless scopes) within
   simp [processRoot, subScope] at this

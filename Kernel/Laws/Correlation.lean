@@ -150,8 +150,19 @@ def rootScope : ScopeOccurrence := { id := root, element := none, position := 0 
 def innerScope : ScopeOccurrence := { id := inner, element := some ⟨"Sub"⟩, position := 0 }
 def rootData : InstanceData := { root, businessKey := some "k" }
 
+/-- The witness's scope map, named so that a simp set unfolding its entries leaves it whole. -/
+def waitingScopes : ScopeMap := Laws.State.ofScopes [rootScope, innerScope]
+
+@[simp] theorem mem_waitingScopes {x : ScopeOccurrence} : x ∈ scopeList waitingScopes ↔ x = rootScope ∨ x = innerScope := by
+  rw [waitingScopes, Laws.State.mem_ofScopes (by simp [rootScope, innerScope, root, inner,
+    Laws.State.ScopeOccurrenceId.ofSegments_inj])]
+  simp
+
+/- The witnesses read their scopes through the scope map's list view. -/
+attribute [local simp] Laws.State.scopes_eq
+
 def waiting : State :=
-  { instanceId := "p", scopes := [rootScope, innerScope], variables := (∅ : TreeMap ScopeOccurrenceId _ compare).insert root [("order", .int 7)]
+  { instanceId := "p", scopeMap := waitingScopes, variables := (∅ : TreeMap ScopeOccurrenceId _ compare).insert root [("order", .int 7)]
       |>.insert inner [("step", .string "a")]
     slots := { instances := [rootData] } }
 
@@ -171,7 +182,7 @@ theorem root_of_inner : RootOf waiting inner root := by
   refine ⟨.parent innerScope root root (by simp [waiting]) (by simp [innerScope, inner, root]) (.refl _),
     ⟨rootScope, by simp [waiting], rfl, .inl (by simp [rootScope, root])⟩, ?_⟩
   intro nearer _ _ ⟨scope, member, same, kind⟩
-  simp only [waiting, List.mem_cons, List.not_mem_nil, or_false] at member
+  simp only [waiting, Laws.State.scopes_eq, mem_waitingScopes] at member
   rcases member with rfl | rfl
   · exact same.symm
   · simp [innerScope, inner] at kind

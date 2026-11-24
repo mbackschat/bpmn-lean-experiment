@@ -137,7 +137,7 @@ function publishedScope(state: State, scope: ScopeOccurrence, entries: readonly 
 
 /** Every variable scope other than the instance root that holds a variable, by public element identifiers, in
  * canonical order. */
-export function scopes(program: Program, state: State): readonly PublishedScope[] {
+export function publishedScopes(program: Program, state: State): readonly PublishedScope[] {
   const published = state.scopes.flatMap((scope) => {
     const entries = scopeVariables(state, scope.id);
     const found = entries.length === 0 ? null : publishedScope(state, scope, byName(entries));

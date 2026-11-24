@@ -222,7 +222,8 @@ theorem enterScope_owned (state : State) (element : ElementId) (parent : ScopeOc
       entry.id = (state.enterScope element parent locals (some id)).2 ∧ entry.occurrence.isSome ∧
         entry.element = some element ∧ entry.parent = some parent ∧ entry.calledInstance = none := by
   rw [Laws.State.enterScope_eq]
-  exact ⟨_, List.mem_append_right _ (List.mem_singleton_self _), rfl, rfl, rfl, Laws.State.ScopeOccurrenceId.parent?_child _ _ _, rfl⟩
+  exact ⟨_, Laws.State.mem_scopeList.mpr ⟨_, Std.ExtTreeMap.getElem?_insert_self⟩, rfl, rfl, rfl,
+    Laws.State.ScopeOccurrenceId.parent?_child _ _ _, rfl⟩
 
 /-- The start Event `Feature.Scopes.innerStart?` chooses is a child of the Scope. -/
 theorem innerStart?_child {ctx : Ctx} {scope start : ElementId} {payload : ScopePayload}
@@ -395,7 +396,7 @@ theorem cleared_clears {before after : State} {scope : ScopeOccurrenceId} {keep 
     obtain ⟨entries, held⟩ := Option.isSome_iff_exists.mp (Std.ExtTreeMap.mem_iff_isSome_getElem?.mp member)
     exact absurd strictly ((cleared.variables x entries).mp held).2
   tokensInside token member := ((cleared.tokens token).mp member).2
-  noNewScopes _ member := cleared.scopesSublist.subset member
+  noNewScopes _ member := cleared.scopesSubset member
   noNewOccurrences _ member := cleared.occurrencesSublist.subset member
   noNewItems _ member := cleared.openItemsSub.items member
   noNewVariables x entries held := ((cleared.variables x entries).mp held).1
@@ -465,13 +466,17 @@ The states of `Kernel.Laws.State`: the root scope 0 holds the Sub-Process occurr
 the waiting occurrence 3. -/
 
 open Kernel.Laws.State (processRoot subScope subProcess innerTask outerTask innerItem outerItem rootScope childScope
-  sample cleared sample_clears survivor_rejected terminating terminated terminate_clears)
+  sample cleared sample_clears survivor_rejected terminating terminated terminate_clears rootScopes sampleScopes
+  mem_rootScopes mem_sampleScopes)
 
-def entering : State := { instanceId := "p", scopes := [rootScope], occurrences := [subProcess] }
+/- The witnesses read their scopes through the scope map's list view. -/
+attribute [local simp] Laws.State.scopes_eq
+
+def entering : State := { instanceId := "p", scopeMap := rootScopes, occurrences := [subProcess] }
 
 def entered : State :=
   { entering with
-    scopes := [rootScope, childScope]
+    scopeMap := sampleScopes
     variables := (∅ : TreeMap ScopeOccurrenceId _ compare).insert subScope [("x", .int 1)] }
 
 theorem enters_fresh : Enters true subProcess [("x", .int 1)] entering entered := fun _ =>
@@ -521,14 +526,14 @@ theorem idle_completes (kind : OpenKind) : CompletesWhenIdle (cleared kind) subS
 def outFlow : FlowId := ⟨"AfterSub"⟩
 
 def continued (kind : OpenKind) : State :=
-  { cleared kind with scopes := [rootScope], batchTokens := [Token.flow outFlow processRoot] }
+  { cleared kind with scopeMap := rootScopes, batchTokens := [Token.flow outFlow processRoot] }
 
 theorem continues_once (kind : OpenKind) : ContinuesOnce subScope processRoot [outFlow] (cleared kind) (continued kind) :=
   fun _ => ⟨by simp [continued, rootScope, processRoot, subScope], [], rfl, by simp⟩
 
 /-- Keeping the completed scope occurrence is rejected. -/
 theorem keeps_completed_rejected (kind : OpenKind) :
-    ¬ ContinuesOnce subScope processRoot [outFlow] (cleared kind) { continued kind with scopes := [rootScope, childScope] } :=
+    ¬ ContinuesOnce subScope processRoot [outFlow] (cleared kind) { continued kind with scopeMap := sampleScopes } :=
   fun law => (law (cleared_idle kind)).1 childScope (by simp) rfl
 
 /-- Continuing the parent twice is rejected. -/

@@ -337,15 +337,17 @@ theorem renamed_root (rooted : Rooted s) {r : Issue → Issue} (fixes : Fixes r)
 /-- A scope occurrence a commit leaves is one of the settled state, renamed. -/
 theorem compact_scope_of (ran : compact schedule start log s = .ok t) {entry : ScopeOccurrence} (member : entry ∈ t.scopes) :
     ∃ old ∈ s.scopes, ScopeRenamed (commitRenaming schedule start log s) old entry := by
-  rw [compact_scopeRecords ran] at member
-  obtain ⟨old, inside, rfl⟩ := List.mem_map.mp member
+  obtain ⟨old, inside, rfl⟩ := compact_scopeRecord_of ran member
   exact ⟨old, inside, { id := rfl, occurrence := rfl, calledInstance := rfl }⟩
 
-/-- A scope occurrence of the settled state stands, renamed, after the commit. -/
+/-- The key of a scope occurrence of the settled state stands, renamed, after the commit; its record does too when the
+renaming keeps standing keys apart (`compact_scopeRecord_mem`). -/
 theorem compact_scope_mem (ran : compact schedule start log s = .ok t) {old : ScopeOccurrence} (member : old ∈ s.scopes) :
-    ∃ entry ∈ t.scopes, ScopeRenamed (commitRenaming schedule start log s) old entry := by
-  rw [compact_scopeRecords ran]
-  exact ⟨_, List.mem_map_of_mem member, { id := rfl, occurrence := rfl, calledInstance := rfl }⟩
+    ∃ entry ∈ t.scopes, entry.id = renameScope (commitRenaming schedule start log s) old.id := by
+  have standing : renameScope (commitRenaming schedule start log s) old.id ∈ standingKeys t :=
+    (compact_scopes ran).mpr (List.mem_map_of_mem (List.mem_map_of_mem member))
+  obtain ⟨entry, inside, same⟩ := List.mem_map.mp standing
+  exact ⟨entry, inside, same⟩
 
 /-- An occurrence a commit leaves is one of the settled state, renamed. -/
 theorem compact_occurrence_of (ran : compact schedule start log s = .ok t) {occurrence : Occurrence}
@@ -426,6 +428,14 @@ theorem renameScope_apart (counted : CountersFrom start s) (rooted : Rooted s) {
   have := rename_inj (schedule := schedule) (start := start) (log := log) history counted (rooted_parents rooted) x.segments y
     (by rw [ScopeOccurrenceId.ofSegments_eta]; exact held) standing (by rw [ScopeOccurrenceId.ofSegments_eta]; exact same)
   rwa [ScopeOccurrenceId.ofSegments_eta] at this
+
+/-- The commit renames no two standing keys alike. -/
+theorem standing_apart (counted : CountersFrom start s) (rooted : Rooted s) (issued : IssuedBelow s) :
+    ∀ x ∈ standingKeys s, ∀ y ∈ standingKeys s,
+      renameScope (commitRenaming schedule start log s) x = renameScope (commitRenaming schedule start log s) y → x = y :=
+  fun x standing _ other same => by
+    obtain ⟨scope, inside, rfl⟩ := List.mem_map.mp standing
+    exact renameScope_apart counted rooted (issued.scopes scope inside) other same
 
 /-- An issued scope occurrence key is layered. -/
 theorem ScopeIssued.layered {x : ScopeOccurrenceId} (issued : ScopeIssued s x) : Layered x.segments :=
@@ -547,8 +557,7 @@ theorem compact_rooted (ran : compact schedule start log s = .ok t) (issued : Is
     induction within with
     | refl scope => subst root; rw [renameScope_root rooted fixes]; exact .refl _
     | parent child parent _ childIn link _ ih =>
-      obtain ⟨renamed, renamedIn, mapped⟩ := compact_scope_mem ran childIn
-      have renamedId := mapped.id
+      obtain ⟨renamed, renamedIn, renamedId⟩ := compact_scope_mem ran childIn
       have renamedLink : renamed.parent = some (renameScope (commitRenaming schedule start log s) parent) := by
         change renamed.id.parent? = _
         rw [renamedId, renamed_parent fixes (layered child.id (List.mem_map_of_mem childIn)),
@@ -769,9 +778,7 @@ theorem compact_scope_eq (ran : compact schedule start log s = .ok t) {entry : S
       { old with id := renameScope (commitRenaming schedule start log s) old.id
                  position := commitRenaming schedule start log s old.position
                  occurrence := old.occurrence.map (renameId (commitRenaming schedule start log s)) } := by
-  rw [compact_scopeRecords ran] at member
-  obtain ⟨old, inside, rfl⟩ := List.mem_map.mp member
-  exact ⟨old, inside, rfl⟩
+  exact compact_scopeRecord_of ran member
 
 /-- The start facts a commit journals: the ordered transitions', each fact's occurrence key kept. -/
 theorem compact_journalStarts (ran : compact schedule start log s = .ok t) :

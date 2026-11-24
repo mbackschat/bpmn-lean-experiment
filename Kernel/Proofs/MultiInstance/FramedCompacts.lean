@@ -112,8 +112,7 @@ theorem orderJournal_runsOwned (formed : WellFormed program state) (counted : Co
     exact List.mem_map_of_mem scope
   · obtain ⟨original, held, rfl⟩ := renamed_slot active
     obtain ⟨entry, entryIn, entryId, link⟩ := instances index original held
-    obtain ⟨renamed, renamedIn, mapped⟩ := compact_scope_mem ran entryIn
-    have renamedId := mapped.id
+    obtain ⟨renamed, renamedIn, renamedId⟩ := compact_scope_mem ran entryIn
     refine ⟨renamed, renamedIn, by rw [renamedId, entryId], ?_⟩
     change renamed.id.parent? = _
     rw [renamedId, renamed_parent fixes (history.layered _ (history.standing entry entryIn)),

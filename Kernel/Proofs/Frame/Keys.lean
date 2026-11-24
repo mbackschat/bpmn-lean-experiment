@@ -93,7 +93,7 @@ theorem keyed_occurs : OccursAlongside program Keyed where
   throwCompensate _ _ _ _ _ _ _ _ _ _ held := by rw [Laws.State.signal_eq]; exact held
   raise _ _ _ _ _ held := by rw [Laws.State.signal_eq]; exact held
   enterCalled _ _ _ _ formed _ _ _ _ _ held := by
-    rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]; exact held
+    rw [Laws.State.enterCalled_eq _ _ _ _ _]; exact held
 
 /-- Dropping an occurrence's record keeps the occurrences keyed. -/
 theorem keyed_withoutRecord (t : State) (id : OccurrenceId) (held : Keyed t) :

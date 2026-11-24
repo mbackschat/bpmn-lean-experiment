@@ -216,7 +216,7 @@ theorem continued_occursAlongside (program : Program) : OccursAlongside program 
   enterCalled s call variables definition formed member _ _ _ _ kept := by
     have issued := (Laws.Step.enterCalled_frame formed program (formed.owned.occurrenceScopes call member) variables
       definition).issued
-    rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)] at issued ⊢
+    rw [Laws.State.enterCalled_eq _ _ _ _ _] at issued ⊢
     exact kept.same issued rfl rfl rfl
 
 /-- Issuing no fewer keys from `s0` (`OccurrenceGrows`) through the state operations, the Multi-Instance ones included:

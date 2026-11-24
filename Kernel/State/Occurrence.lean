@@ -1,6 +1,7 @@
 module
 
 public import Kernel.State.Journal
+public import Kernel.State.Map
 
 /-! # Occurrences
 
@@ -61,5 +62,13 @@ structure ScopeOccurrence where
 
 /-- The scope occurrence `scope` was entered in, read from its key; `none` for the root. -/
 abbrev ScopeOccurrence.parent (scope : ScopeOccurrence) : Option ScopeOccurrenceId := scope.id.parent?
+
+/-- The standing scope occurrences, keyed by their structural key (DC21); a value's `id` is its key (`State.enterScope`).
+Keys order outermost first, so a subtree is one key range (KD1). -/
+abbrev ScopeMap := TreeMap ScopeOccurrenceId ScopeOccurrence compare
+
+/-- The scope occurrences of `scopes` in key order, the list view the state codec writes. A reader that orders scope
+occurrences reads their positions (DC25), never this order. -/
+def scopeList (scopes : ScopeMap) : List ScopeOccurrence := scopes.toList.map (·.2)
 
 end Kernel

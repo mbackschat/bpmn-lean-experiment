@@ -71,9 +71,13 @@ import {
 } from "./state/key.js";
 export { type OccurrenceId };
 import {
-  type Continuation, ContinuationTag, flowContinuation, type Occurrence, type ScopeOccurrence, scopeOccurrenceParent,
+  type Continuation, ContinuationTag, flowContinuation, type Occurrence, type ScopeMap, type ScopeOccurrence,
+  scopeOccurrenceParent,
 } from "./state/occurrence.js";
-export { type Continuation, ContinuationTag, flowContinuation, type Occurrence, type ScopeOccurrence, scopeOccurrenceParent };
+export {
+  type Continuation, ContinuationTag, flowContinuation, type Occurrence, type ScopeMap, type ScopeOccurrence,
+  scopeOccurrenceParent,
+};
 import { type ClaimSlot, ClaimSlotTag, type Issuer, type IssueTable, seedUnit } from "./state/issue.js";
 import {
   compareItemKey, insertItem, type ItemKey, itemAt, itemKeyText, ItemRole, itemsInOrder, type OpenItem, type OpenItems, sameItemKey,
@@ -82,7 +86,7 @@ export {
   compareItemKey, insertItem, type ItemKey, itemAt, itemKeyText, ItemRole, itemsInOrder, type OpenItem, type OpenItems, sameItemKey,
 };
 import {
-  type OrderedMap, orderedAny, orderedEntries, orderedInsert, orderedSize, type TreeMap, treeMapGetD, treeMapInsert,
+  keyedInsert, type OrderedMap, orderedAny, orderedEntries, orderedInsert, orderedSize, type TreeMap, treeMapGetD, treeMapInsert,
 } from "./state/map.js";
 export { type TreeMap, treeMapInsert };
 // The closure's unit keys and keyed maps reach the step through this hub, as `Kernel.State` re-exports them (guard 15).
@@ -300,7 +304,8 @@ export interface BroadcastIntent {
 export interface State {
   readonly instanceId: string;
   readonly status: InstanceStatus;
-  readonly scopes: readonly ScopeOccurrence[];
+  /** Lean's `scopeMap` through its list view `State.scopes`: in key order, which readers look up or filter, never order by. */
+  readonly scopes: ScopeMap;
   readonly occurrences: readonly Occurrence[];
   /**
    * The running micro-step's batch: the tokens it queued, in order; `queueBatch` moves them into `queuedTokens` (DC4).
@@ -763,6 +768,13 @@ export function closeOwnItems(state: State, id: OccurrenceId): State {
   return { ...state, openItems: state.openItems.filter((item) => item.id.occurrence !== id) };
 }
 
+/** Lean's `ScopeMap.insert` under the scope occurrence's own key: it replaces the one there and keeps key order. */
+export function insertScope(scopes: ScopeMap, scope: ScopeOccurrence): ScopeMap {
+  return keyedInsert(scopes, scope, scopeKey, compareScopeOccurrenceId);
+}
+
+const scopeKey = (scope: ScopeOccurrence): ScopeOccurrenceId => scope.id;
+
 /**
  * Enter a new scope occurrence of `element` inside `parent`, with the given local variables, `keyed`. The scope belongs
  * to `occurrence`, when it has one.
@@ -780,7 +792,7 @@ export function enterScope(
   return [
     {
       ...positioned,
-      scopes: [...state.scopes, { id, element, position, occurrence, calledInstance: null }],
+      scopes: insertScope(state.scopes, { id, element, position, occurrence, calledInstance: null }),
       variables: treeMapInsert(state.variables, id, keyed(locals), compareScopeOccurrenceId),
     },
     id,

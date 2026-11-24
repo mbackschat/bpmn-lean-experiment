@@ -213,7 +213,7 @@ theorem getElem?_insert_insert_first (m : TreeMap Issue ClaimSlot compare) (unit
 joins the standing keys and the table, the counters unchanged. It keeps every history, which then holds the new key. -/
 theorem ScopeGrows.enter {s t : State} {parent : ScopeOccurrenceId} {element : ElementId} {unit : UnitKey} {index : Nat}
     (standing : parent ∈ standingKeys s) (untabled : s.issued[Issue.fresh unit index]? = none)
-    (keys : standingKeys t = standingKeys s ++ [parent.child element (.fresh unit index)])
+    (keys : ∀ x ∈ standingKeys t, x ∈ standingKeys s ∨ x = parent.child element (.fresh unit index))
     (ordinals : t.scopeOrdinals = s.scopeOrdinals) (table : TableGrows s t)
     (issued : t.issued[Issue.fresh unit index]? = some (.scope { parent, element })) :
     ScopeGrows s t ∧ (Historic s → ScopeIssued t (parent.child element (.fresh unit index))) := by
@@ -221,10 +221,9 @@ theorem ScopeGrows.enter {s t : State} {parent : ScopeOccurrenceId} {element : E
   have grows : ∀ H, ScopeHistory s H → ScopeHistory t (fun x => H x ∨ x = fresh) := fun H history =>
     { standing := fun scope member => by
         have : scope.id ∈ standingKeys t := List.mem_map_of_mem (f := ScopeOccurrence.id) member
-        rw [keys] at this
-        rcases List.mem_append.mp this with old | new
+        rcases keys _ this with old | new
         · exact .inl (history.standing_key old)
-        · exact .inr (List.mem_singleton.mp new)
+        · exact .inr new
       closed := fun segment rest held => by
         rcases held with old | new
         · exact .inl (history.closed segment rest old)
@@ -240,10 +239,9 @@ theorem ScopeGrows.enter {s t : State} {parent : ScopeOccurrenceId} {element : E
           · rw [show slotCount t (.ofSegments rest) segment.element = slotCount s (.ofSegments rest) segment.element by
               simp only [slotCount, ordinals]]
             exact history.below segment rest n old committed before
-          · rw [keys] at standing'
-            rcases List.mem_append.mp standing' with old' | new'
+          · rcases keys _ standing' with old' | new'
             · exact absurd old' before
-            · have : (.ofSegments rest : ScopeOccurrenceId) = fresh := List.mem_singleton.mp new'
+            · have : (.ofSegments rest : ScopeOccurrenceId) = fresh := new'
               rw [this] at parentHeld
               exact absurd ⟨H, history, parentHeld⟩ (entered_unissued parent element untabled)
         · simp only [fresh, child_eq, ScopeOccurrenceId.ofSegments_inj, List.cons.injEq] at new

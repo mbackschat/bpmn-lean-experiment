@@ -145,6 +145,7 @@ theorem multiInstanceOps_alongside {program : Program} (side : Alongside program
     (ops : Laws.MultiInstance.MultiInstanceOps program (WellFormed program) Laws.State.Settled) :
     Laws.MultiInstance.MultiInstanceOps program (fun s => WellFormed program s ∧ rel s) Laws.State.Settled where
   issued s holds := ops.issued s holds.1
+  keyed s holds := ops.keyed s holds.1
   contexts s holds := ops.contexts s holds.1
   record le s run index scope output results holds member slot stands fits := by
     have recorded := ops.record le s run index scope output results holds.1 member slot stands fits
@@ -156,7 +157,7 @@ theorem multiInstanceOps_alongside {program : Program} (side : Alongside program
         run.element run.scope :=
       Laws.Flow.Anchored.weaken holds ⟨run.element, .inl rfl, .inl (.inr (.inr (.inr (.inr (.inl ⟨run, member, rfl,
         rfl⟩)))))⟩ (Laws.State.leaveScope_grows s entry.id)
-        (fun _ present => frame.scopesSublist.subset present) (leaveScope_entries s entry.id)
+        (fun _ present => frame.scopesSubset present) (leaveScope_entries s entry.id)
     refine ⟨⟨recorded.1, ?_⟩, recorded.2⟩
     rw [Laws.MultiInstance.leftWith, Laws.MultiInstance.setRun_eq]
     exact side.runs _ _ left (setRun_anchored held) (side.leaveInstance le s run entry.id holds.1 member
@@ -234,7 +235,7 @@ private theorem cleared_within (s : State) (scope : ScopeOccurrenceId) (keep : L
       ∀ entry ∈ (s.clearInside le scope keep).slots.instances, entry ∈ s.slots.instances := by
   obtain ⟨_, shape⟩ := Laws.State.clearInside_eq (le := le) s scope keep
   rw [shape]
-  exact ⟨fun _ inside => (List.mem_filter.mp inside).1, fun _ inside => (List.mem_filter.mp inside).1⟩
+  exact ⟨fun _ inside => (Laws.State.mem_scopeList_filter_val.mp inside).1, fun _ inside => (List.mem_filter.mp inside).1⟩
 
 theorem propagationOps_alongside {program : Program} (side : FrameAlongside program rel)
     (occurs : OccursAlongside program rel)
@@ -292,6 +293,7 @@ theorem runsOps_alongside {program : Program} (side : StoresAlongside program re
     Laws.Compensation.RunsOps program (fun s => WellFormed program s ∧ rel s) Laws.State.Settled where
   fits s run holds member := ops.fits s run holds.1 member
   issued s holds := ops.issued s holds.1
+  keyed s holds := ops.keyed s holds.1
   slotsIssued s holds := ops.slotsIssued s holds.1
   store s compensation holds kept contexts resumes provenance :=
     have stored := ops.store s compensation holds.1 kept contexts (fun run member element at_ leave resumed =>
@@ -562,9 +564,9 @@ theorem scopesKept_occursAlongside (before : State) (program : Program) :
   enterCalled s call variables definition formed member _ _ _ _ kept := by
     have fresh := Laws.State.enterCalled_fresh formed program (formed.owned.occurrenceScopes call member) variables
       definition
-    rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)] at fresh ⊢
-    exact kept.enter fresh fun entry member => (List.mem_append.mp member).imp_right fun new => by
-      rw [List.mem_singleton.mp new]
+    rw [Laws.State.enterCalled_eq _ _ _ _ _] at fresh ⊢
+    exact kept.enter fresh fun entry member => (Laws.State.mem_scopeList_insert_cases member).imp_right fun new => by
+      rw [new]
 
 /-- The registered hooks keep the scope occurrences of any before-state beside `WellFormed`. -/
 theorem keepsScopes_contract (ops : Proofs.Step.RegisteredOps WellFormed) (before : State) :

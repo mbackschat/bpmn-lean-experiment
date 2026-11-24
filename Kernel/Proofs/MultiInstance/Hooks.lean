@@ -125,13 +125,13 @@ theorem enterBody_entering (ops : MultiInstanceOps program inv settled) {occurre
     obtain ⟨armed, carryArm⟩ := armed _ entered present
     refine ⟨⟨armed, carryArm _ carried, ?_, none _ _ rfl, fun _ none => (by cases none), ?_⟩, ?_, ?_⟩ <;>
       rw [Laws.State.signal_eq]
-    · simp [Laws.State.scopeIds]
-    · exact .inr ⟨_, List.mem_append_right _ (List.mem_singleton_self _), rfl, rfl, rfl⟩
+    · exact List.mem_map_of_mem Laws.State.mem_scopeList_insert_self
+    · exact .inr ⟨_, Laws.State.mem_scopeList_insert_self, rfl, rfl, rfl⟩
     · simp only [Bool.false_eq_true, ↓reduceIte]
     · simp only [Bool.false_eq_true, ↓reduceIte]
       exact Nat.le_refl _
-  · exact ⟨⟨entered, carried, by simp [Laws.State.scopeIds], none _ _ rfl, fun _ none => (by cases none),
-      .inr ⟨_, List.mem_append_right _ (List.mem_singleton_self _), rfl, rfl, rfl⟩⟩, rfl, Nat.le_refl _⟩
+  · exact ⟨⟨entered, carried, List.mem_map_of_mem Laws.State.mem_scopeList_insert_self, none _ _ rfl,
+      fun _ none => (by cases none), .inr ⟨_, Laws.State.mem_scopeList_insert_self, rfl, rfl, rfl⟩⟩, rfl, Nat.le_refl _⟩
 
 /-- Entering the body's scope occurrence below a begun occurrence's own, which it owns, arming its boundaries or not, and
 beginning the instances below it, every slot waiting, keeps `inv`. -/

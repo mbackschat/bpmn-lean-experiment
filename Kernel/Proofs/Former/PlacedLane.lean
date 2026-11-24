@@ -259,9 +259,32 @@ attribute [local simp] Laws.State.root_eq calledKey strayKey callOccurrence aIn
 def placedCalled : ScopeOccurrence :=
   { id := calledKey, element := some ⟨"Call"⟩, position := 0, occurrence := some callOccurrence, calledInstance := some "I-call" }
 
+/-- The witnesses' scope map, the process root and the called root, named so that a simp set unfolding its entries
+leaves it whole. -/
+def placedScopes : ScopeMap := Laws.State.ofScopes [{ id := State.root, element := none, position := 0 }, placedCalled]
+
+@[simp] theorem mem_placedScopes {x : ScopeOccurrence} :
+    x ∈ scopeList placedScopes ↔ x = { id := State.root, element := none, position := 0 } ∨ x = placedCalled := by
+  rw [placedScopes, Laws.State.mem_ofScopes (by simp [placedCalled, calledKey, Laws.State.ScopeOccurrenceId.ofSegments_inj])]
+  simp
+
+/-- `placedScopes` with a Sub-Process occurrence `S` entered in the called root. -/
+def strayScopes : ScopeMap := Laws.State.ofScopes [{ id := State.root, element := none, position := 0 }, placedCalled,
+  { id := calledKey.child ⟨"S"⟩ 0, element := some ⟨"S"⟩, position := 0 }]
+
+@[simp] theorem mem_strayScopes {x : ScopeOccurrence} :
+    x ∈ scopeList strayScopes ↔ x = { id := State.root, element := none, position := 0 } ∨ x = placedCalled ∨
+      x = { id := calledKey.child ⟨"S"⟩ 0, element := some ⟨"S"⟩, position := 0 } := by
+  rw [strayScopes, Laws.State.mem_ofScopes (by simp [placedCalled, calledKey, Laws.State.child_eq,
+    Laws.State.ScopeOccurrenceId.ofSegments_inj])]
+  simp
+
+/- The witnesses read their scopes through the scope map's list view. -/
+attribute [local simp] Laws.State.scopes_eq
+
 /-- A process instance holding one called instance, which runs `definition`. -/
 def placedState : State :=
-  { instanceId := "I", scopes := [{ id := State.root, element := none, position := 0 }, placedCalled]
+  { instanceId := "I", scopeMap := placedScopes
     scopeOrdinals := (∅ : TreeMap ScopeSlot Nat compare).insert { parent := State.root, element := ⟨"Call"⟩ } 1
     occurrenceOrdinals := (∅ : TreeMap ScopeSlot Nat compare).insert { parent := State.root, element := ⟨"Call"⟩ } 1
     slots := { instances := [{ root := State.root }, { root := calledKey, definition := some definition }] } }
@@ -319,7 +342,7 @@ theorem placed_misplaced {s : State} {element : ElementId} {x : ScopeOccurrenceI
 /-- The witnesses' called root is its own instance root. -/
 theorem placed_calledRoot {s : State} (scopes : s.scopes = (placedState definition).scopes) : s.instanceRoot calledKey = calledKey :=
   placed_root (.called placedCalled "I-call" (by simp [scopes, placedState]) rfl)
-    (by simp [scopeIds, scopes, placedState, placedCalled, Laws.State.root_eq]) rfl
+    (by rw [scopeIds, scopes]; exact Laws.State.scopeList_nodup (Laws.State.scopesKeyed_ofScopes _)) rfl
 
 variable (program definition)
 
@@ -370,12 +393,13 @@ theorem called_root_rejected :
 /-- A Sub-Process occurrence of the root process inside a called instance breaks `PlacedLane.scopes`. -/
 theorem misplaced_scope_rejected :
     ¬ PlacedLane { program with elements := [] } { placedState definition with
-        scopes := (placedState definition).scopes ++ [{ id := calledKey.child ⟨"S"⟩ 0, element := some ⟨"S"⟩, position := 0 }] } :=
+        scopeMap := strayScopes } :=
   fun lane => placed_misplaced (definition := definition)
-    (lane.scopes _ (List.mem_append_right _ (List.mem_singleton_self _)) _ calledKey rfl (Laws.State.ScopeOccurrenceId.parent?_child _ _ _)
+    (lane.scopes { id := calledKey.child ⟨"S"⟩ 0, element := some ⟨"S"⟩, position := 0 } (by simp) _ calledKey rfl
+      (Laws.State.ScopeOccurrenceId.parent?_child _ _ _)
       (by simp [scopeIds, placedState, placedCalled]))
     (placed_root (.called placedCalled "I-call" (by simp [placedState]) rfl)
-      (by simp [scopeIds, placedState, placedCalled, Laws.State.root_eq, Laws.State.ScopeOccurrenceId.eq_child_iff]) rfl)
+      (Laws.State.scopeList_nodup (Laws.State.scopesKeyed_ofScopes _)) rfl)
     (by simp [placedState])
 
 /-- A flow token of the root process inside a called instance breaks `PlacedLane.tokens`. -/
@@ -647,8 +671,10 @@ theorem undefined_called_rejected :
 /-- A process root with an element breaks `PlacedLane.rootBare`. -/
 theorem elemented_root_rejected :
     ¬ PlacedLane program { placedState definition with
-        scopes := [{ id := State.root, element := some ⟨"R"⟩, position := 0 }, placedCalled] } := fun lane => by
-  simpa using (lane.rootBare _ (List.mem_cons_self ..)).mpr (by simp)
+        scopeMap := Laws.State.ofScopes [{ id := State.root, element := some ⟨"R"⟩, position := 0 }, placedCalled] } :=
+  fun lane => by
+  simpa using (lane.rootBare _ ((Laws.State.mem_ofScopes (by simp [placedCalled, calledKey,
+    Laws.State.ScopeOccurrenceId.ofSegments_inj])).mpr (List.mem_cons_self ..))).mpr (by simp)
 
 /-- A Multi-Instance run of the root process inside a called instance breaks `PlacedLane.runs`. -/
 theorem misplaced_run_rejected :
@@ -683,8 +709,7 @@ theorem placed_rootRoot : (placedState definition).instanceRoot State.root = Sta
   have reading : Laws.State.InstanceIn (placedState definition) State.root (placedState definition).instanceId
       [{ id := State.root, element := none, position := 0 }] :=
     .root { id := State.root, element := none, position := 0 } (by simp [placedState]) rfl (by simp)
-  rw [instanceRoot_chain reading (by simp [scopeIds, placedState, placedCalled, Laws.State.root_eq])
-    reading.mem]
+  rw [instanceRoot_chain reading (Laws.State.scopeList_nodup (Laws.State.scopesKeyed_ofScopes _)) reading.mem]
   simp [chainRoot]
 
 /-- An `InstanceLinked` edge through a called root breaks instance-root equality: under `calledScope`, `placedCalled`

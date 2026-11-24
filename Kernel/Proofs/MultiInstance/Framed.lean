@@ -229,7 +229,7 @@ theorem leaveScope_framed {program other : Program} {s : State} {scope : ScopeOc
   have each := framed.framed run (fewer.subset member)
   have away := outside run member
   have entryOf : ∀ entry ∈ (s.leaveScope le scope).scopes, entry ∈ s.scopes := fun _ inside =>
-    left.scopesSublist.subset inside
+    left.scopesSubset inside
   have kept : ∀ entry ∈ s.scopes, (entry.id = run.scope ∨ Iteration.active entry.id ∈ run.instances) →
       entry ∈ (s.leaveScope le scope).scopes := fun entry inside which => by
     refine (left.scopes entry).mpr ⟨inside, fun within => ?_⟩
@@ -272,7 +272,7 @@ theorem clearInside_carries {program other : Program} {s : State} {scope : Scope
   obtain ⟨fewer, outside⟩ := cleared_bodies formed present cleared
   refine ⟨fewer, fun run member o inside named => ⟨o, (cleared.occurrences o).mpr ⟨inside,
     .inl ((outside_body formed (framed.framed run (fewer.subset member)) (outside run member)).1 o inside named)⟩, rfl,
-    rfl, rfl⟩, fun _ inside => .inl (cleared.scopesSublist.subset inside), fun run member entry inside which => ?_,
+    rfl, rfl⟩, fun _ inside => .inl (cleared.scopesSubset inside), fun run member entry inside which => ?_,
     fun other member _ running => .inl ⟨other, cleared.slots.runs other member, running⟩⟩
   refine (cleared.scopes entry).mpr ⟨inside, fun ⟨within, differs⟩ => ?_⟩
   rcases which with named | active
@@ -320,11 +320,12 @@ theorem runsFramed_frameAlongside (program : Program) : StoresAlongside program 
     exact kept.carry (.equal rfl rfl rfl rfl)
   enterScope s element parent locals owner formed stands _ kept := by
     rw [Laws.State.enterScope_eq]
-    refine kept.carry (.grow (fun entry inside => ?_) (fun _ inside => List.mem_append_left _ inside) rfl rfl
-      fun _ present => present)
-    rcases List.mem_append.mp inside with old | new
+    refine kept.carry (.grow (fun entry inside => ?_)
+      (fun _ inside => Laws.State.mem_scopeList_insert_of formed.distinct.scopesKeyed inside
+        (Laws.State.scopes_fresh formed _ inside)) rfl rfl fun _ present => present)
+    rcases Laws.State.mem_scopeList_insert_cases inside with old | new
     · exact .inl old
-    · rw [List.mem_singleton.mp new]
+    · rw [new]
       exact .inr (counter_fresh formed)
   reserve s element scope _ _ _ _ kept := reserve_runsFramed s element scope kept
   leaveScope le _ _ formed present leaves kept := leaveScope_runsFramed formed present leaves kept
@@ -361,12 +362,13 @@ theorem runsFramed_occursAlongside (program : Program) : OccursAlongside program
     rw [Laws.State.signal_eq]
     exact kept.carry (.equal rfl rfl rfl rfl)
   enterCalled s call variables definition formed _ _ _ _ _ kept := by
-    rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]
-    refine kept.carry (.grow (fun entry inside => ?_) (fun _ inside => List.mem_append_left _ inside) rfl rfl
-      fun _ present => present)
-    rcases List.mem_append.mp inside with old | new
+    rw [Laws.State.enterCalled_eq _ _ _ _ _]
+    refine kept.carry (.grow (fun entry inside => ?_)
+      (fun _ inside => Laws.State.mem_scopeList_insert_of formed.distinct.scopesKeyed inside
+        (Laws.State.scopes_fresh formed _ inside)) rfl rfl fun _ present => present)
+    rcases Laws.State.mem_scopeList_insert_cases inside with old | new
     · exact .inl old
-    · rw [List.mem_singleton.mp new]
+    · rw [new]
       exact .inr (counter_fresh formed)
 
 /-- Dropping a record that owns no scope occurrence carries the invariant: it is no running body's body occurrence,

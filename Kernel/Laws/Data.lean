@@ -273,6 +273,9 @@ the Sub-Process `b`. -/
 
 open Kernel.Laws.State (processRoot subScope rootScope childScope)
 
+/- The witnesses read their scopes through the scope map's list view. -/
+attribute [local simp] Laws.State.scopes_eq
+
 /-- A present null shadows an outer binding of its name. -/
 theorem null_shadows : Reads [("a", .null), ("a", .int 1)] "a" (some .null) :=
   ⟨fun _ same => ⟨[], [("a", .int 1)], by simp_all, by simp⟩, fun absent => by simp at absent⟩
@@ -293,7 +296,7 @@ def framesOf (rootEntries subEntries : List (String × Value)) : TreeMap ScopeOc
   ((∅ : TreeMap ScopeOccurrenceId _ compare).insert processRoot rootEntries).insert subScope subEntries
 
 def framesWith (entries : List (String × Value)) : State :=
-  { instanceId := "p", scopes := [rootScope, childScope], variables := framesOf entries [("b", .int 2)] }
+  { instanceId := "p", scopeMap := Laws.State.sampleScopes, variables := framesOf entries [("b", .int 2)] }
 
 def frames (rootValue : Value) : State := framesWith [("a", rootValue)]
 
@@ -411,7 +414,7 @@ def itemAfter : State :=
 /-- The root occurrence has no parent, so it lies inside no other occurrence. -/
 theorem root_within {target : ScopeOccurrenceId} (within : Within itemBefore processRoot target) : target = processRoot :=
   (Within.parentless (fun scope mem same => by
-    simp only [itemBefore, framesWith, List.mem_cons, List.not_mem_nil, or_false] at mem
+    simp only [itemBefore, framesWith, Laws.State.scopes_eq, Laws.State.mem_sampleScopes] at mem
     rcases mem with rfl | rfl
     · simp [rootScope, processRoot]
     · simp [childScope, subScope, processRoot] at same) within).symm
@@ -421,7 +424,7 @@ theorem sub_declares_p : DeclaringOccurrence itemBefore subScope ⟨"Sub"⟩ sub
     cases inside with
     | refl => rfl
     | parent child parent _ member link within =>
-      simp only [itemBefore, framesWith, List.mem_cons, List.not_mem_nil, or_false] at member
+      simp only [itemBefore, framesWith, Laws.State.scopes_eq, Laws.State.mem_sampleScopes] at member
       rcases member with rfl | rfl
       · simp [rootScope, processRoot] at link
       · simp [childScope, subScope] at link

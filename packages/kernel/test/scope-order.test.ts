@@ -79,7 +79,7 @@ test("under declarationDepthFirst the same scope occurrences turn idle in the or
 test("under orderInvariant a clearing cancels the scope occurrences of one level in their position order", () => {
   const program = forked("orderInvariant", true);
   const started = run(program, null, begin);
-  assert.deepEqual(started.scopes.map((entry) => entry.id), ["", "1:H#0/", "1:A#0/"], "H is entered first");
+  assert.deepEqual(entriesAndIdles(started)[0], ["H", "A"], "H is entered first");
   const completed = run(program, started, {
     kind: "command", commandId: "complete-W", occurrence: { processInstanceId: "I", elementId: "W", activation: 1 },
     action: { kind: "completeUserTask", values: [] },
@@ -88,4 +88,11 @@ test("under orderInvariant a clearing cancels the scope occurrences of one level
     .flatMap(([key, terminal]) => terminal === "cancelled" && (key.element === "AT" || key.element === "HT") ? [key.element] : []);
   // A clearing journals the scope occurrences inside out, the reverse of `subtree`'s order, which puts `A` before `H`.
   assert.deepEqual(cancelled, ["HT", "AT"]);
+});
+
+test("the scope occurrences a state holds are listed in key order, not in the order they were entered", () => {
+  const started = run(forked("orderInvariant", true), null, begin);
+  assert.deepEqual(entriesAndIdles(started)[0], ["H", "A"], "H is entered first");
+  // The list view of the scope map (DC21, T75): outermost first, siblings by element name, whatever the entry order.
+  assert.deepEqual(started.scopes.map((entry) => entry.id), ["", "1:A#0/", "1:H#0/"]);
 });

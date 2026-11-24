@@ -60,7 +60,7 @@ import {
   type WaitView,
 } from "./state.js";
 import { step } from "./step.js";
-import { scopeRoleName, scopes, statusName, variables, type PublishedScope } from "./publish.js";
+import { publishedScopes, scopeRoleName, statusName, variables, type PublishedScope } from "./publish.js";
 import {
   definitionCapabilities,
   hostRequirements,
@@ -275,7 +275,7 @@ export function observationJson(program: Program, state: State): JsonValue {
     status: statusName(view.status),
     logicalTimeMs: state.logicalTimeMs,
     variables: bindingsToJson(variables(state)),
-    scopes: scopes(program, state).map(scopeJson),
+    scopes: publishedScopes(program, state).map(scopeJson),
     openWaits: waits.map((wait) => wait.json),
     ...(view.failure === null ? {} : { failure: failureJson(view.failure) }),
     ...broadcastsJson(view.broadcasts),

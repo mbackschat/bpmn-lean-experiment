@@ -33,6 +33,9 @@ section FrameWitnesses
 
 variable (program : Program) (definition : DefinitionRef)
 
+/- The witnesses read their scopes through the scope map's list view. -/
+attribute [local simp] Laws.State.scopes_eq
+
 /-- `T`, declaring `sharedX`, at the top level of the called process `definition`. -/
 def topCalled : Program :=
   { program with elements := [sharedHost "T"], processes := [{ definition, children := [⟨"T"⟩] }] }
@@ -129,7 +132,7 @@ def staleKey : OccurrenceId := { scope := State.root, element := ⟨"E"⟩, ordi
 
 /-- The process root only, a reservation of `E` queued there, and a stale completion of `staleKey` by the flow `f`. -/
 def staleComplete (f : FlowId) : State :=
-  { instanceId := "I", scopes := [{ id := State.root, element := none, position := 0 }]
+  { instanceId := "I", scopeMap := (∅ : ScopeMap).insert State.root { id := State.root, element := none, position := 0 }
     occurrenceOrdinals := (∅ : TreeMap ScopeSlot Nat compare).insert { parent := State.root, element := ⟨"E"⟩ } 1
     batchSignals := [.occur ⟨"E"⟩ State.root .outgoing [] .outward, .complete staleKey (.flows [f]) [] .outward]
     slots := { instances := [{ root := State.root }] } }
@@ -150,7 +153,7 @@ theorem unpaired_emit_rejected (f : FlowId) (ends : (topCalled program definitio
   rw [Laws.State.emit_eq] at lane
   exact rootOnly_misplaced program definition
     (lane.tokens f State.root ⟨"T"⟩ (by simp [Laws.State.allQueuedTokens, staleComplete, staleOccurrence]) ends)
-    (rootOnly_root (by simp [staleComplete])) (by simp [staleComplete]) (topCalled_placed program definition)
+    (rootOnly_root (by simp [staleComplete, Laws.State.scopeList_single])) (by simp [staleComplete]) (topCalled_placed program definition)
 
 /-- The key a first scope occurrence of `Y` takes below the process root. -/
 abbrev freshKey : ScopeOccurrenceId := State.root.child ⟨"Y"⟩ (.fresh (.ofRoot .seed) 0)
@@ -158,7 +161,7 @@ abbrev freshKey : ScopeOccurrenceId := State.root.child ⟨"Y"⟩ (.fresh (.ofRo
 /-- The process root holding an occurrence of `Y`, and a reservation of `T` queued for the key a scope occurrence of
 `Y` entered there takes next. -/
 def pendingFresh : State :=
-  { instanceId := "I", scopes := [{ id := State.root, element := none, position := 0 }]
+  { instanceId := "I", scopeMap := (∅ : ScopeMap).insert State.root { id := State.root, element := none, position := 0 }
     occurrenceOrdinals := (∅ : TreeMap ScopeSlot Nat compare).insert { parent := State.root, element := ⟨"Y"⟩ } 1
     occurrences := [{ id := ⟨State.root, ⟨"Y"⟩, 0⟩, element := ⟨"Y"⟩, scope := State.root, activation := 1 }]
     batchSignals := [.occur ⟨"T"⟩ freshKey .outgoing [] .outward]
@@ -179,19 +182,25 @@ under the process root. -/
 theorem unissued_enter_rejected :
     ¬ PlacedLane (topCalled program definition) (pendingFresh.enterScope ⟨"Y"⟩ State.root [] none).1 := fun lane => by
   have entered := Laws.State.enterScope_eq pendingFresh ⟨"Y"⟩ State.root [] none
-  have scopes : (pendingFresh.enterScope ⟨"Y"⟩ State.root [] none).1.scopes =
-      [{ id := State.root, element := none, position := 0 }, freshEntry] := by
-    rw [entered]; simp [freshEntry, pendingFresh]
+  have before : Laws.State.ScopesKeyed pendingFresh.scopeMap :=
+    Laws.State.scopesKeyed_insert_at Laws.State.scopesKeyed_empty rfl
+  have keyed : Laws.State.ScopesKeyed (pendingFresh.enterScope ⟨"Y"⟩ State.root [] none).1.scopeMap := by
+    rw [entered]; exact Laws.State.scopesKeyed_insert_at before rfl
+  have rootHeld : { id := State.root, element := none, position := 0 } ∈
+      (pendingFresh.enterScope ⟨"Y"⟩ State.root [] none).1.scopes := by
+    rw [entered]
+    exact Laws.State.mem_scopeList_insert_of before Laws.State.mem_scopeList_insert_self
+      (by simp [Laws.State.root_eq, Laws.State.child_eq])
+  have freshHeld : freshEntry ∈ (pendingFresh.enterScope ⟨"Y"⟩ State.root [] none).1.scopes := by
+    rw [entered]; exact Laws.State.mem_scopeList_insert_self
   have placed := (lane.occurs ⟨"T"⟩ freshKey .outgoing (.inl ⟨[], .outward, by rw [entered]; simp [Laws.State.allSignals, pendingFresh]⟩)).1
-    (by simp [Laws.State.scopeIds, scopes, freshEntry])
+    (List.mem_map.mpr ⟨freshEntry, freshHeld, rfl⟩)
   have reading : Laws.State.InstanceIn (pendingFresh.enterScope ⟨"Y"⟩ State.root [] none).1 freshKey
       (pendingFresh.enterScope ⟨"Y"⟩ State.root [] none).1.instanceId
       [freshEntry, { id := State.root, element := none, position := 0 }] :=
-    .up freshEntry State.root _ _ (by rw [scopes]; simp) rfl (by simp [freshEntry])
-      (.root { id := State.root, element := none, position := 0 } (by rw [scopes]; exact List.mem_cons_self ..) rfl
-        (by simp [Laws.State.root_eq]))
-  have root := instanceRoot_chain reading
-    (by unfold Laws.State.scopeIds; rw [scopes]; simp [freshEntry, Laws.State.root_eq, Laws.State.child_eq]) reading.mem
+    .up freshEntry State.root _ _ freshHeld rfl (by simp [freshEntry])
+      (.root { id := State.root, element := none, position := 0 } rootHeld rfl (by simp [Laws.State.root_eq]))
+  have root := instanceRoot_chain reading (Laws.State.scopeList_nodup keyed) reading.mem
   exact rootOnly_misplaced program definition placed (by rw [root]; simp [chainRoot])
     (by rw [entered]; simp [pendingFresh]) (topCalled_placed program definition)
 
@@ -299,7 +308,7 @@ theorem leftKey_issued {s : State} (scopes : s.scopes = [{ id := State.root, ele
 
 /-- The process root and a reservation of `T` queued for `leftKey`, issued and left. -/
 def leftReservation : State :=
-  { instanceId := "I", scopes := [{ id := State.root, element := none, position := 0 }]
+  { instanceId := "I", scopeMap := (∅ : ScopeMap).insert State.root { id := State.root, element := none, position := 0 }
     scopeOrdinals := leftOrdinals
     queuedSignals := (∅ : TreeMap UnitKey Signal compare).insert (.ofRoot .input) (.occur ⟨"T"⟩ leftKey .outgoing [] .outward)
     slots := { instances := [{ root := State.root }] } }
@@ -315,9 +324,9 @@ theorem unstood_reserve_rejected :
         leftTaken ∧
       ¬ PlacedLane (topCalled program definition) (leftTaken.reserve ⟨"T"⟩ leftKey).1 := by
   have lane : PlacedLane (topCalled program definition) leftReservation :=
-    rootOnly_lane program definition rfl rfl rfl rfl rfl rfl
+    rootOnly_lane program definition Laws.State.scopeList_single rfl rfl rfl rfl rfl
       (fun signal member => ⟨_, _, by simpa [Laws.State.allSignals, leftReservation] using member, by simp [Laws.State.root_eq, Laws.State.child_eq],
-        leftKey_issued rfl rfl⟩)
+        leftKey_issued Laws.State.scopeList_single rfl⟩)
       (by simp [leftReservation])
   refine ⟨lane, fun ⟨entry, member, named⟩ => ?_,
     ⟨leftReservation, .ofRoot .input, lane, by simp [leftReservation], rfl⟩, fun after => ?_⟩
@@ -328,7 +337,7 @@ theorem unstood_reserve_rejected :
         Laws.State.instanceRoot_go (leftTaken.reserve ⟨"T"⟩ leftKey).1
       rw [start, show leftKey.segments.length + 1 = 0 + 1 + 1 by simp [Laws.State.root_eq], step,
         Laws.State.calledRoot_eq, reserves.scopes]
-      simp [leftTaken, leftReservation, Laws.State.root_eq, Laws.State.child_eq]
+      simp [leftTaken, leftReservation, Laws.State.scopeList_single, Laws.State.root_eq, Laws.State.child_eq]
     exact rootOnly_misplaced program definition
       (reserves.placed ▸ reserves.kind ▸ after.placed.occurrences _ (by rw [reserves.occurrences]; simp))
       (reserves.placed ▸ root) (by rw [reserves.slots]; simp [leftTaken, leftReservation]) (topCalled_placed program definition)
@@ -339,7 +348,7 @@ def leftRunRecord : MultiInstanceRun :=
 
 /-- The process root and `leftRunRecord`, whose `leftKey` was issued and left. -/
 def leftRun : State :=
-  { instanceId := "I", scopes := [{ id := State.root, element := none, position := 0 }], scopeOrdinals := leftOrdinals
+  { instanceId := "I", scopeMap := (∅ : ScopeMap).insert State.root { id := State.root, element := none, position := 0 }, scopeOrdinals := leftOrdinals
     slots := { instances := [{ root := State.root }], multiInstances := [leftRunRecord] } }
 
 /-- A subscription of `T`'s boundary anchored by the run in the left `leftKey` reserves under the process root, although
@@ -350,10 +359,10 @@ theorem unstood_subscription_rejected :
       Laws.Flow.Anchored (PlacedLane (topCalled program definition)) (topCalled program definition) leftRun sharedX.id leftKey ∧
       ¬ PlacedLane (topCalled program definition) (leftRun.reserve sharedX.id leftKey).1 := by
   have lane : PlacedLane (topCalled program definition) leftRun :=
-    rootOnly_lane program definition rfl rfl rfl rfl rfl rfl (by simp [Laws.State.allSignals, leftRun])
+    rootOnly_lane program definition Laws.State.scopeList_single rfl rfl rfl rfl rfl (by simp [Laws.State.allSignals, leftRun])
       (fun run member => by
         simp only [leftRun, List.mem_singleton] at member
-        exact member ▸ ⟨by simp [leftRunRecord, Laws.State.root_eq, Laws.State.child_eq], leftKey_issued rfl rfl⟩)
+        exact member ▸ ⟨by simp [leftRunRecord, Laws.State.root_eq, Laws.State.child_eq], leftKey_issued Laws.State.scopeList_single rfl⟩)
   refine ⟨lane, fun ⟨entry, member, named⟩ => ?_,
     .inl ⟨sharedHost "T", by simp [topCalled], _, Laws.IL.envelope?_scope _ _, sharedX, by simp, rfl⟩,
     ⟨sharedX.id, .inl rfl, .inl (.inr (.inr (.inr (.inr (.inl ⟨leftRunRecord, by simp [leftRun], rfl, rfl⟩)))))⟩, fun after => ?_⟩
@@ -363,7 +372,7 @@ theorem unstood_subscription_rejected :
       obtain ⟨go, start, _, step⟩ := Laws.State.instanceRoot_go (leftRun.reserve sharedX.id leftKey).1
       rw [start, show leftKey.segments.length + 1 = 0 + 1 + 1 by simp [Laws.State.root_eq], step,
         Laws.State.calledRoot_eq, reserves.scopes]
-      simp [leftRun, Laws.State.root_eq, Laws.State.child_eq]
+      simp [leftRun, Laws.State.scopeList_single, Laws.State.root_eq, Laws.State.child_eq]
     exact rootOnly_misplaced program definition
       (reserves.placed ▸ reserves.kind ▸ after.placed.occurrences _ (by rw [reserves.occurrences]; simp))
       (reserves.placed ▸ root) (by rw [reserves.slots]; simp [leftRun]) (topCalled_boundary program definition)

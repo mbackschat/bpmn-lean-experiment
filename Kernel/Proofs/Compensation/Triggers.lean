@@ -218,7 +218,8 @@ theorem tame_opened {s : State} (tame : Tame s) {others : List Compensable} {run
     Tame (opened s others run) := by
   refine ⟨fun record inside => tame.retained record (kept record inside), ?_, fun other inside => ?_,
     fun other inside context running => ?_, tame.scopes, fun other inside context resumed => ?_, tame.parents,
-    fun other inside context running => ?_, tame.issuer.same rfl rfl rfl rfl, fun other inside grouped => ?_⟩
+    fun other inside context running => ?_, tame.issuer.same rfl rfl rfl rfl, fun other inside grouped => ?_,
+    tame.scopesKeyed⟩
   · simp only [RunsKeyed, opened, stored, List.map_append, List.map_cons, List.map_nil]
     refine List.nodup_append.mpr ⟨tame.keyed, by simp, fun key old key' new same => ?_⟩
     obtain ⟨other, member, rfl⟩ := List.mem_map.mp old

@@ -109,7 +109,9 @@ public import Kernel.Laws.State.Issuer
 public import Kernel.Laws.State.Items
 public import Kernel.Laws.State.Keeps
 public import Kernel.Laws.State.Key
+public import Kernel.Laws.State.Keyed
 public import Kernel.Laws.State.Map
+public import Kernel.Laws.State.Occurrence
 public import Kernel.Laws.State.Removal
 public import Kernel.Laws.State.RemovalKeeps
 public import Kernel.Laws.State.Rename

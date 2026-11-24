@@ -105,8 +105,19 @@ def workItem (kind : OpenKind) : OpenItem :=
 def rootScope : ScopeOccurrence := { id := root, element := none, position := 0 }
 def subScope : ScopeOccurrence := { id := sub, element := some ⟨"Sub"⟩, position := 0 }
 
+/-- The witnesses' scope map, named so that a simp set unfolding its entries leaves it whole. -/
+def choosingScopes : ScopeMap := Laws.State.ofScopes [rootScope, subScope]
+
+@[simp] theorem mem_choosingScopes {x : ScopeOccurrence} : x ∈ scopeList choosingScopes ↔ x = rootScope ∨ x = subScope := by
+  rw [choosingScopes, Laws.State.mem_ofScopes (by simp [rootScope, subScope, root, sub,
+    Laws.State.ScopeOccurrenceId.ofSegments_inj])]
+  simp
+
+/- The witnesses read their scopes through the scope map's list view. -/
+attribute [local simp] Laws.State.scopes_eq
+
 def choosing (kind : OpenKind) : State :=
-  { instanceId := "p", scopes := [rootScope, subScope], occurrences := [gatewayOccurrence, armMessage, armTimer, task]
+  { instanceId := "p", scopeMap := choosingScopes, occurrences := [gatewayOccurrence, armMessage, armTimer, task]
     openItems := ofItems [paidItem kind, lateItem kind, workItem kind] }
 
 /-- `Paid` fired: the gateway, both arms and their items are gone; the begun winner has left too. -/
@@ -142,9 +153,8 @@ theorem choice_withdraws (kind : OpenKind) : Withdraws (choosing kind) (chosen k
   withScope := by
     intro scope present gone item member
     rw [mem_chosen.mp member]
-    simp only [scopeIds, chosen, choosing, List.map_cons, List.map_nil, List.mem_cons, List.not_mem_nil,
-      or_false] at present gone
-    rcases present with rfl | rfl <;> simp_all [rootScope, subScope]
+    simp only [scopeIds, chosen, choosing, Laws.State.scopes_eq, mem_choosingScopes, List.mem_map] at present gone
+    obtain ⟨_, rfl | rfl, rfl⟩ := present <;> simp_all [rootScope, subScope]
   withHost := by
     intro host _ gone item member
     rw [mem_chosen.mp member]
@@ -152,7 +162,7 @@ theorem choice_withdraws (kind : OpenKind) : Withdraws (choosing kind) (chosen k
 
 /-- Clearing the Sub-Process scope occurrence but keeping its task's item leaves an item without its scope. -/
 theorem kept_item_rejected (kind : OpenKind) :
-    ¬ Withdraws (choosing kind) { choosing kind with scopes := [rootScope] } := fun withdraws => by
+    ¬ Withdraws (choosing kind) { choosing kind with scopeMap := Laws.State.ofScopes [rootScope] } := fun withdraws => by
   have := withdraws.withScope sub (by simp [scopeIds, choosing, rootScope, subScope]) (by simp [scopeIds, rootScope, root, sub])
     (workItem kind) (Laws.State.items_same ((mem_choosing (item := workItem kind)).mpr (by simp)) rfl)
   simp [workItem] at this

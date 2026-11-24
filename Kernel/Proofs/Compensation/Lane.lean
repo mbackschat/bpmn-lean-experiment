@@ -84,7 +84,8 @@ def ParentsStand (s : State) : Prop :=
 present scope occurrences, runs keyed apart in issued scope occurrences, running contexts and scope occurrences issued,
 a group's nested run resuming from its own context, standing parents, and each running context, while it stands, lying
 directly in its run's scope occurrence. The last two keep a context entered below a run's scope occurrence fresh: it
-stands whenever a handler begins there (`entered_fresh`). -/
+stands whenever a handler begins there (`entered_fresh`). Scope occurrences sitting under their own keys keep the old ones
+standing beside the entered one (`entered_scopes`). -/
 structure Tame (s : State) : Prop where
   retained : RetainedPresent s
   keyed : RunsKeyed s
@@ -98,6 +99,7 @@ structure Tame (s : State) : Prop where
     entry.id = context → entry.parent = some run.scope
   issuer : Laws.State.IssuerFresh s
   groupsStanding : GroupsStanding s
+  scopesKeyed : Laws.State.ScopesKeyed s.scopeMap
 
 /-- The triggers of the runs that are no group's nested run. -/
 def ungroupedTriggers (s : State) : List OccurrenceRef :=
@@ -151,7 +153,8 @@ theorem moves_signal (s : State) {signal : Signal} (quiet : Untriggered signal) 
 
 theorem tame_signal {s : State} (tame : Tame s) (signal : Signal) : Tame (s.signal signal) := by
   rw [Laws.State.signal_eq]
-  exact ⟨tame.1, tame.2, tame.3, tame.4, tame.5, tame.6, tame.7, tame.8, tame.9.same rfl rfl rfl rfl, tame.groupsStanding⟩
+  exact ⟨tame.1, tame.2, tame.3, tame.4, tame.5, tame.6, tame.7, tame.8, tame.9.same rfl rfl rfl rfl, tame.groupsStanding,
+    tame.scopesKeyed⟩
 
 theorem flatMap_sublist_of {α β : Type} {f g : α → List β} {l : List α} (each : ∀ x ∈ l, (f x).Sublist (g x)) :
     (l.flatMap f).Sublist (l.flatMap g) := by
@@ -185,9 +188,10 @@ theorem entered_eq (s : State) (element : ElementId) (parent : ScopeOccurrenceId
     (s.enterScope element parent locals none).2 = parent.child element (.fresh s.issuing s.issueNext) ∧
       (s.enterScope element parent locals none).1.slots = s.slots ∧
       (s.enterScope element parent locals none).1.nextCompletion = s.nextCompletion ∧
-      (s.enterScope element parent locals none).1.scopes =
-        s.scopes ++ [{ id := parent.child element (.fresh s.issuing s.issueNext), element := some element,
-                       position := .fresh s.issuing (s.issueNext + 1), occurrence := none }] ∧
+      (s.enterScope element parent locals none).1.scopeMap =
+        s.scopeMap.insert (parent.child element (.fresh s.issuing s.issueNext))
+          { id := parent.child element (.fresh s.issuing s.issueNext), element := some element,
+            position := .fresh s.issuing (s.issueNext + 1), occurrence := none } ∧
       (s.enterScope element parent locals none).1.activations = s.activations ∧
       (s.enterScope element parent locals none).1.instanceId = s.instanceId ∧
       Laws.State.allSignals (s.enterScope element parent locals none).1 = Laws.State.allSignals s := by
@@ -202,6 +206,45 @@ theorem entered_fresh {s : State} (tame : Tame s) (element : ElementId) {parent 
   obtain ⟨entry, member, _⟩ := List.mem_map.mp stands
   exact Laws.State.enterScope_fresh (tame.scopes entry member).historic tame.issuer element stands locals none
 
+/-- A context entered in a tame state stands beside the scope occurrences that stood: its key is fresh, so it displaces
+none of them. -/
+theorem entered_scopes {s : State} (tame : Tame s) (element : ElementId) {parent : ScopeOccurrenceId}
+    (stands : parent ∈ scopeIds s) (locals : List (String × Value)) (found : ScopeOccurrence) :
+    found ∈ (s.enterScope element parent locals none).1.scopes ↔
+      found ∈ s.scopes ∨
+        found = ({ id := parent.child element (.fresh s.issuing s.issueNext), element := some element,
+                   position := .fresh s.issuing (s.issueNext + 1), occurrence := none } : ScopeOccurrence) := by
+  obtain ⟨contextEq, -, -, rest⟩ := entered_eq s element parent locals
+  have unissued := (entered_fresh tame element stands locals).1
+  rw [contextEq] at unissued
+  rw [Laws.State.scopes_eq, rest.1]
+  exact Laws.State.mem_scopeList_insert_fresh tame.scopesKeyed
+    (new := { id := parent.child element (.fresh s.issuing s.issueNext), element := some element,
+              position := .fresh s.issuing (s.issueNext + 1), occurrence := none })
+    fun old inside (same : old.id = parent.child element (.fresh s.issuing s.issueNext)) =>
+      unissued (same ▸ tame.scopes old inside)
+
+/-- `entered_scopes` read on keys. -/
+theorem entered_scopeIds {s : State} (tame : Tame s) (element : ElementId) {parent : ScopeOccurrenceId}
+    (stands : parent ∈ scopeIds s) (locals : List (String × Value)) (x : ScopeOccurrenceId) :
+    x ∈ scopeIds (s.enterScope element parent locals none).1 ↔
+      x ∈ scopeIds s ∨ x = (s.enterScope element parent locals none).2 := by
+  rw [(entered_eq s element parent locals).1]
+  simp only [scopeIds, List.mem_map, entered_scopes tame element stands locals]
+  constructor
+  · rintro ⟨entry, old | rfl, rfl⟩
+    · exact .inl ⟨entry, old, rfl⟩
+    · exact .inr rfl
+  · rintro (⟨entry, old, rfl⟩ | rfl)
+    · exact ⟨entry, .inl old, rfl⟩
+    · exact ⟨_, .inr rfl, rfl⟩
+
+/-- A context entered in a tame state sits under its own key. -/
+theorem entered_keyed {s : State} (tame : Tame s) (element : ElementId) (parent : ScopeOccurrenceId)
+    (locals : List (String × Value)) : Laws.State.ScopesKeyed (s.enterScope element parent locals none).1.scopeMap := by
+  rw [(entered_eq s element parent locals).2.2.2.1]
+  exact Laws.State.scopesKeyed_insert_at tame.scopesKeyed rfl
+
 /-- Entering a context keeps a fresh issuer fresh: it takes the issuer's next issue. -/
 theorem entered_issuer {s : State} (fresh : Laws.State.IssuerFresh s) (element : ElementId) (parent : ScopeOccurrenceId)
     (locals : List (String × Value)) : Laws.State.IssuerFresh (s.enterScope element parent locals none).1 := by
@@ -210,19 +253,20 @@ theorem entered_issuer {s : State} (fresh : Laws.State.IssuerFresh s) (element :
 
 /-- Appending a scope occurrence below a standing parent keeps the parents standing. -/
 theorem parents_append {s : State} (parents : ParentsStand s) {scopes : List ScopeOccurrence} {added : ScopeOccurrence}
-    (shape : scopes = s.scopes ++ [added]) (parent : ScopeOccurrenceId) (stands : parent ∈ scopeIds s)
-    (link : added.id.parent? = some parent) :
+    (shape : ∀ entry, entry ∈ scopes ↔ entry ∈ s.scopes ∨ entry = added) (parent : ScopeOccurrenceId)
+    (stands : parent ∈ scopeIds s) (link : added.id.parent? = some parent) :
     ∀ entry ∈ scopes, ∀ segment rest, entry.id.segments = segment :: rest →
       (.ofSegments rest : ScopeOccurrenceId) ∈ scopes.map (·.id) := by
   intro entry inside segment rest keyed
-  rw [shape, List.map_append, List.mem_append]
-  rcases List.mem_append.mp (shape ▸ inside) with old | new
-  · exact .inl (parents entry old segment rest keyed)
-  · rw [List.mem_singleton.mp new] at keyed
-    have : (.ofSegments rest : ScopeOccurrenceId) = parent := by
+  have kept : ∀ {x}, x ∈ scopeIds s → x ∈ scopes.map (·.id) := fun member => by
+    obtain ⟨old, present, rfl⟩ := List.mem_map.mp member
+    exact List.mem_map.mpr ⟨old, (shape old).mpr (.inl present), rfl⟩
+  rcases (shape entry).mp inside with old | rfl
+  · exact kept (parents entry old segment rest keyed)
+  · have : (.ofSegments rest : ScopeOccurrenceId) = parent := by
       rw [Laws.State.ScopeOccurrenceId.parent?_cons_eq keyed] at link
       exact Option.some.inj link
-    exact .inl (this ▸ stands)
+    exact kept (this ▸ stands)
 
 /-- A scope occurrence stays when a scope occurrence is left exactly when it is neither that one nor below it. -/
 theorem left_mem {s : State} {context : ScopeOccurrenceId} {entry : ScopeOccurrence} (member : entry ∈ s.scopes) :
@@ -309,17 +353,18 @@ theorem tame_withRun {s : State} (tame : Tame s) (element : ElementId) {parent :
     (placed : run.scope = (s.enterScope element parent locals none).2) (idle : run.running = [])
     (grouped : ∀ context, run.resume = some (.group context) → context = run.scope) :
     Tame (withRun (s.enterScope element parent locals none).1 run) := by
-  obtain ⟨contextEq, slots, -, rest⟩ := entered_eq s element parent locals
-  obtain ⟨scopes, _⟩ := rest
+  obtain ⟨contextEq, slots, -⟩ := entered_eq s element parent locals
+  have scopes := entered_scopes tame element stands locals
+  have ids := entered_scopeIds tame element stands locals
   obtain ⟨unissued, issuedNew, grows⟩ := entered_fresh tame element stands locals
   rw [contextEq] at unissued
   have below : ∀ other ∈ s.slots.compensation.runs, Laws.State.ScopeIssued s other.scope := tame.runsIssued
   refine ⟨fun record inside => ?_, ?_, fun other inside => ?_, fun other inside context running => ?_,
     fun entry inside => ?_, fun other inside context resumed => ?_, ?_, ?_,
-    (entered_issuer tame.issuer element parent locals).same rfl rfl rfl rfl, fun other inside grouped => ?_⟩
+    (entered_issuer tame.issuer element parent locals).same rfl rfl rfl rfl, fun other inside grouped => ?_,
+    entered_keyed tame element parent locals⟩
   · simp only [withRun, stored, slots] at inside
-    simp only [withRun, stored, scopeIds, scopes, List.map_append, List.mem_append]
-    exact .inl (tame.retained record inside)
+    exact (ids _).mpr (.inl (tame.retained record inside))
   · simp only [RunsKeyed, withRun, stored, slots, List.map_append, List.map_cons, List.map_nil]
     refine List.nodup_append.mpr ⟨tame.keyed, by simp, fun key old key' new same => ?_⟩
     obtain ⟨other, member, rfl⟩ := List.mem_map.mp old
@@ -335,8 +380,7 @@ theorem tame_withRun {s : State} (tame : Tame s) (element : ElementId) {parent :
     rcases inside with old | rfl
     · exact grows.issued (tame.running other old context running)
     · rw [idle] at running; cases running
-  · simp only [withRun, stored, scopes, List.mem_append, List.mem_singleton] at inside
-    rcases inside with old | rfl
+  · rcases (scopes entry).mp inside with old | rfl
     · exact grows.issued (tame.scopes entry old)
     · exact contextEq ▸ issuedNew
   · simp only [withRun, stored, slots, List.mem_append, List.mem_singleton] at inside
@@ -347,16 +391,14 @@ theorem tame_withRun {s : State} (tame : Tame s) (element : ElementId) {parent :
   · intro other inside context running entry member named
     simp only [withRun, stored, slots, List.mem_append, List.mem_singleton] at inside
     rcases inside with old | rfl
-    · simp only [withRun, stored, scopes, List.mem_append, List.mem_singleton] at member
-      rcases member with older | rfl
+    · rcases (scopes entry).mp member with older | rfl
       · exact tame.runningIn other old context running entry older named
       · exact absurd (tame.running other old context running) (by rw [← named]; exact unissued)
     · rw [idle] at running; cases running
   · simp only [withRun, stored, slots, List.mem_append, List.mem_singleton] at inside
-    simp only [withRun, stored, scopeIds, scopes, List.map_append, List.mem_append]
     rcases inside with old | rfl
-    · exact .inl (tame.groupsStanding other old grouped)
-    · exact .inr (by rw [placed, contextEq]; simp)
+    · exact (ids _).mpr (.inl (tame.groupsStanding other old grouped))
+    · exact (ids _).mpr (.inr placed)
 
 /-- A group's nested run, of a trigger a run of `s` holds, moves nothing a hook reads but its run. -/
 theorem moves_withRun {s : State} (tame : Tame s) (element : ElementId) {parent : ScopeOccurrenceId}
@@ -365,13 +407,12 @@ theorem moves_withRun {s : State} (tame : Tame s) (element : ElementId) {parent 
     (source : ∃ other ∈ s.slots.compensation.runs, other.trigger = run.trigger) :
     Moves s (withRun (s.enterScope element parent locals none).1 run) := by
   obtain ⟨contextEq, slots, next, rest⟩ := entered_eq s element parent locals
-  obtain ⟨scopes, activations, named, signals⟩ := rest
+  obtain ⟨-, activations, named, signals⟩ := rest
   obtain ⟨unissued, -, grows⟩ := entered_fresh tame element stands locals
   refine ⟨by simp only [withRun, stored, next]; exact Nat.le_refl _, grows, fun entry inside => ?_, activations, named,
     ⟨[], by rw [List.append_nil]; exact signals, by simp⟩, fun trigger => ?_, fun other inside => ?_,
     fun _ inside => by simpa [withRun, stored, Laws.State.enterScope_eq] using inside⟩
-  · simp only [withRun, stored, scopes, List.mem_append, List.mem_singleton] at inside
-    rcases inside with old | rfl
+  · rcases (entered_scopes tame element stands locals entry).mp inside with old | rfl
     · exact .inl old
     · exact .inr (contextEq ▸ unissued)
   · simp [withRun, stored, slots, ungroupedTriggers, List.filter_append, grouped]
@@ -385,53 +426,49 @@ theorem tame_withRetained {s : State} (tame : Tame s) (element : ElementId) {par
     (stands : parent ∈ scopeIds s) (locals : List (String × Value)) {records : List Compensable}
     (placed : ∀ record ∈ records, record.scope = (s.enterScope element parent locals none).2) :
     Tame (withRetained (s.enterScope element parent locals none).1 records) := by
-  obtain ⟨contextEq, slots, -, rest⟩ := entered_eq s element parent locals
-  obtain ⟨scopes, _⟩ := rest
+  obtain ⟨contextEq, slots, -⟩ := entered_eq s element parent locals
+  have scopes := entered_scopes tame element stands locals
+  have ids := entered_scopeIds tame element stands locals
   obtain ⟨unissued, issuedNew, grows⟩ := entered_fresh tame element stands locals
   rw [contextEq] at unissued
   refine ⟨fun record inside => ?_, ?_, fun other inside => ?_, fun other inside context running => ?_,
     fun entry inside => ?_, fun other inside context resumed => ?_,
     parents_append tame.parents scopes parent stands (by simp [Laws.State.child_eq]),
     fun other inside context running entry member named => ?_,
-    (entered_issuer tame.issuer element parent locals).same rfl rfl rfl rfl, fun other inside grouped => ?_⟩
+    (entered_issuer tame.issuer element parent locals).same rfl rfl rfl rfl, fun other inside grouped => ?_,
+    entered_keyed tame element parent locals⟩
   · simp only [withRetained, stored, slots, List.mem_append] at inside
-    simp only [withRetained, stored, scopeIds, scopes, List.map_append, List.mem_append, List.map_cons, List.map_nil,
-      List.mem_singleton]
     rcases inside with old | new
-    · exact .inl (tame.retained record old)
-    · exact .inr ((placed record new).trans contextEq)
+    · exact (ids _).mpr (.inl (tame.retained record old))
+    · exact (ids _).mpr (.inr (placed record new))
   · simp only [RunsKeyed, withRetained, stored, slots]
     exact tame.keyed
   · simp only [withRetained, stored, slots] at inside
     exact grows.issued (tame.runsIssued other inside)
   · simp only [withRetained, stored, slots] at inside
     exact grows.issued (tame.running other inside context running)
-  · simp only [withRetained, stored, scopes, List.mem_append, List.mem_singleton] at inside
-    rcases inside with old | rfl
+  · rcases (scopes entry).mp inside with old | rfl
     · exact grows.issued (tame.scopes entry old)
     · exact contextEq ▸ issuedNew
   · simp only [withRetained, stored, slots] at inside
     exact tame.grouped other inside context resumed
   · simp only [withRetained, stored, slots] at inside
-    simp only [withRetained, stored, scopes, List.mem_append, List.mem_singleton] at member
-    rcases member with older | rfl
+    rcases (scopes entry).mp member with older | rfl
     · exact tame.runningIn other inside context running entry older named
     · exact absurd (tame.running other inside context running) (by rw [← named]; exact unissued)
   · simp only [withRetained, stored, slots] at inside
-    simp only [withRetained, stored, scopeIds, scopes, List.map_append, List.mem_append]
-    exact .inl (tame.groupsStanding other inside grouped)
+    exact (ids _).mpr (.inl (tame.groupsStanding other inside grouped))
 
 theorem moves_withRetained {s : State} (tame : Tame s) (element : ElementId) {parent : ScopeOccurrenceId}
     (stands : parent ∈ scopeIds s) (locals : List (String × Value)) (records : List Compensable) :
     Moves s (withRetained (s.enterScope element parent locals none).1 records) := by
   obtain ⟨contextEq, slots, next, rest⟩ := entered_eq s element parent locals
-  obtain ⟨scopes, activations, named, signals⟩ := rest
+  obtain ⟨-, activations, named, signals⟩ := rest
   obtain ⟨unissued, -, grows⟩ := entered_fresh tame element stands locals
   refine ⟨by simp only [withRetained, stored, next]; exact Nat.le_refl _, grows, fun entry inside => ?_, activations, named,
     ⟨[], by rw [List.append_nil]; exact signals, by simp⟩, fun trigger => ?_, fun other inside => ?_,
     fun _ inside => by simpa [withRetained, stored, Laws.State.enterScope_eq] using inside⟩
-  · simp only [withRetained, stored, scopes, List.mem_append, List.mem_singleton] at inside
-    rcases inside with old | rfl
+  · rcases (entered_scopes tame element stands locals entry).mp inside with old | rfl
     · exact .inl old
     · exact .inr (contextEq ▸ unissued)
   · simp [withRetained, stored, slots, ungroupedTriggers]
@@ -446,7 +483,7 @@ theorem tame_fewer {s : State} (tame : Tame s) {runs : List CompensationRun}
     fun run inside => tame.running run (fewer.subset inside), tame.scopes,
     fun run inside => tame.grouped run (fewer.subset inside), tame.parents,
     fun run inside => tame.runningIn run (fewer.subset inside), tame.issuer.same rfl rfl rfl rfl,
-    fun run inside => tame.groupsStanding run (fewer.subset inside)⟩
+    fun run inside => tame.groupsStanding run (fewer.subset inside), tame.scopesKeyed⟩
 
 theorem moves_fewer (s : State) {runs : List CompensationRun} (fewer : runs.Sublist s.slots.compensation.runs) :
     Moves s (stored s { s.slots.compensation with runs }) :=
@@ -501,6 +538,12 @@ theorem left_runs (s : State) (context : ScopeOccurrenceId) :
 theorem left_scopes (s : State) (context : ScopeOccurrenceId) : (s.leaveScope le context).scopes.Sublist s.scopes := by
   rw [(Laws.State.leaveScope_compensation s context).2.2.1]; exact List.filter_sublist.trans List.filter_sublist
 
+theorem left_keyed {s : State} (keyed : Laws.State.ScopesKeyed s.scopeMap) (context : ScopeOccurrenceId) :
+    Laws.State.ScopesKeyed (s.leaveScope le context).scopeMap := by
+  obtain ⟨_, made⟩ := Laws.State.clearInside_eq (le := le) s context []
+  rw [(Laws.State.leaveScope_eq (le := le) s context).1, made]
+  exact Laws.State.scopesKeyed_filter (Laws.State.scopesKeyed_filter keyed _) _
+
 theorem left_retained (s : State) (context : ScopeOccurrenceId) :
     (s.leaveScope le context).slots.compensation.retained.Sublist s.slots.compensation.retained := by
   rw [(Laws.State.leaveScope_compensation s context).1]; exact List.filter_sublist.trans List.filter_sublist
@@ -527,7 +570,8 @@ theorem tame_trimmed {s : State} (tame : Tame s) (context : ScopeOccurrenceId) {
   refine ⟨fun record inside => ?_, ?_, fun run inside => ?_, fun run inside held running => ?_,
     fun entry inside => ?_, fun run inside held resumed => ?_, parents_left tame.parents context,
     fun run inside held running entry member named => ?_,
-    (Laws.State.leaveScope_issuerFresh tame.issuer context).same rfl rfl rfl rfl, fun run inside grouped => ?_⟩
+    (Laws.State.leaveScope_issuerFresh tame.issuer context).same rfl rfl rfl rfl, fun run inside grouped => ?_,
+    left_keyed tame.scopesKeyed context⟩
   · simp only [trimmed, stored] at inside
     rw [retainedEq, List.mem_filter, List.mem_filter] at inside
     obtain ⟨⟨kept, outside⟩, other⟩ := inside
@@ -628,7 +672,8 @@ theorem tame_of {program : Program} {s : State} (wf : WellFormed program s) (ret
   ⟨retained, keyed, issued, fun run inside context running => ((wf.settled.runsPlaced run inside).2 context running).1,
     wf.issued.scopes, fun run inside => (wf.settled.runsPlaced run inside).1,
     fun _ inside _ _ keyed => Laws.State.parent_stands wf inside keyed,
-    fun run inside context running => ((wf.settled.runsPlaced run inside).2 context running).2, wf.issuer, groups⟩
+    fun run inside context running => ((wf.settled.runsPlaced run inside).2 context running).2, wf.issuer, groups,
+    wf.distinct.scopesKeyed⟩
 
 theorem completion_mem {record : Compensable} {records : List Compensable} (member : record ∈ records) :
     record.completion ∈ completionsIn records :=

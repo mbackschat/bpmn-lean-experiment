@@ -157,8 +157,8 @@ theorem Numbered.enterScope {program other : Program} {s : State} (formed : Well
     Numbered program (s.enterScope element parent locals owner).1 := by
   have fresh := (Laws.State.enterScope_fresh formed.historic formed.issuer element stands locals owner).1
   rw [Laws.State.enterScope_eq] at fresh ⊢
-  exact held.enter formed owns (fun entry inside => (List.mem_append.mp inside).imp_right fun new => by
-    rw [List.mem_singleton.mp new]; exact fresh) rfl rfl (.of_eq rfl rfl rfl rfl) rfl
+  exact held.enter formed owns (fun entry inside => (Laws.State.mem_scopeList_insert_cases inside).imp_right fun new => by
+    rw [new]; exact fresh) rfl rfl (.of_eq rfl rfl rfl rfl) rfl
 
 /-- Entering a Call's called root keeps `Numbered`. -/
 theorem Numbered.enterCalled {program other : Program} {s : State} (formed : WellFormed other s) (owns : SlotsOwned s)
@@ -166,9 +166,9 @@ theorem Numbered.enterCalled {program other : Program} {s : State} (formed : Wel
     (stands : call.scope ∈ Laws.State.scopeIds s) (held : Numbered program s) :
     Numbered program (s.enterCalled called call variables definition).1 := by
   have fresh := (Laws.State.enterCalled_fresh formed called stands variables definition).1
-  rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)] at fresh ⊢
-  exact held.enter formed owns (fun entry inside => (List.mem_append.mp inside).imp_right fun new => by
-    rw [List.mem_singleton.mp new]; exact fresh) rfl rfl (.of_eq rfl rfl rfl rfl) rfl
+  rw [Laws.State.enterCalled_eq _ _ _ _ _] at fresh ⊢
+  exact held.enter formed owns (fun entry inside => (Laws.State.mem_scopeList_insert_cases inside).imp_right fun new => by
+    rw [new]; exact fresh) rfl rfl (.of_eq rfl rfl rfl rfl) rfl
 
 /-- A pair in order in a list with `last` appended was in order before, or ends at `last`. -/
 theorem precedes_append {α : Type} {l : List α} {last first second : α}

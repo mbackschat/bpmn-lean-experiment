@@ -2,6 +2,7 @@ module
 
 public import Kernel.Laws.Compensation.Rules
 public import Kernel.Laws.State.Key
+public import Kernel.Laws.State.Occurrence
 
 /-! # Laws of compensation and Transaction cancellation: the witnesses
 
@@ -208,10 +209,14 @@ theorem drop_begins_nothing : DropBeginsNothing true (· = outer) begun { begun 
 
 /-- Beginning a handler's context while dropping the run is rejected. -/
 theorem drop_begins_rejected :
-    ¬ DropBeginsNothing true (· = outer) begun { begun with slots := {}, scopes := [{ id := inner, element := none, position := 0 }] } :=
+    ¬ DropBeginsNothing true (· = outer) begun { begun with slots := {}, scopeMap := Laws.State.ofScopes [{ id := inner, element := none, position := 0 }] } :=
   fun law => by
-    have := (law rfl).2.1
-    simp [begun] at this
+    have same := (law rfl).2.1
+    simp [begun, Laws.State.scopes_eq] at same
+    have member := (Laws.State.mem_ofScopes (scopes := [{ id := inner, element := none, position := 0 }]) (by simp)).mpr
+      (List.mem_singleton_self _)
+    rw [same, Laws.State.scopeList_empty] at member
+    cases member
 
 def failedState : State :=
   { instanceId := "p", status := .failed, failure := some { code := "E", message := none, occurrence := trigger } }

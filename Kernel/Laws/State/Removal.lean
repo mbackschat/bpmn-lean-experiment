@@ -103,24 +103,35 @@ theorem cancelOccurrence_absent {state : State} {id : OccurrenceId} (absent : st
     state.cancelOccurrence le id = state := by
   simp [State.cancelOccurrence, absent]
 
+/-- Clearing keeps the scope occurrences outside the subtree below `scope`: the first clause of `Cleared`. -/
+theorem clearInside_mem_scopes (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) (entry : ScopeOccurrence) :
+    entry ∈ (s.clearInside le scope keep).scopes ↔
+      entry ∈ s.scopes ∧ (!((s.subtree le scope).filter (· != scope)).contains entry.id) = true := by
+  rw [scopes_eq, scopes_eq]
+  simp only [State.clearInside, State.recordCancelled]
+  exact mem_scopeList_filter_val
+
 /-- Clearing inside a scope occurrence keeps the counters of the scope occurrences that remain, so every history grows. -/
 theorem clearInside_grows (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
     ScopeGrows s (s.clearInside le scope keep) := by
-  have fewer : (s.clearInside le scope keep).scopes.Sublist s.scopes := List.filter_sublist
-  refine .shrink (fun _ member => (fewer.map _).subset member) (fun parent standing _ => ?_)
+  refine .shrink (fun _ member => ?_) (fun parent standing _ => ?_)
     (.of_eq (by simp [State.clearInside, State.recordCancelled]))
-  simp only [State.clearInside, State.recordCancelled] at standing ⊢
+  · obtain ⟨entry, inside, rfl⟩ := List.mem_map.mp member
+    exact List.mem_map.mpr ⟨entry, ((clearInside_mem_scopes s scope keep entry).mp inside).1, rfl⟩
   obtain ⟨entry, inside, rfl⟩ := List.mem_map.mp standing
-  exact getD_filter_keep fun _ => (List.mem_filter.mp inside).2
+  have kept := ((clearInside_mem_scopes s scope keep entry).mp inside).2
+  simp only [State.clearInside, State.recordCancelled]
+  exact getD_filter_keep fun _ => kept
 
 /-- Clearing keeps the occurrence counters of the scope occurrences that stay. -/
 theorem clearInside_counters (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
     ∀ x ∈ scopeIds (s.clearInside le scope keep), ∀ element,
       occurrenceCount (s.clearInside le scope keep) x element = occurrenceCount s x element := by
   intro x standing element
-  simp only [scopeIds, occurrenceCount, State.clearInside, State.recordCancelled] at standing ⊢
   obtain ⟨entry, inside, rfl⟩ := List.mem_map.mp standing
-  exact getD_filter_keep fun _ => (List.mem_filter.mp inside).2
+  have kept := ((clearInside_mem_scopes s scope keep entry).mp inside).2
+  simp only [occurrenceCount, State.clearInside, State.recordCancelled]
+  exact getD_filter_keep fun _ => kept
 
 /-- `State.clearInside` drops the tokens inside the scope occurrence from both token queues and keeps the signals. -/
 theorem clearInside_queues (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
@@ -137,8 +148,9 @@ theorem clearInside_cleared {s : State} (formed : WellFormed program s) {scope :
   have mem := subtree_iff (le := le) formed present
   have scopes : ∀ entry, entry ∈ (s.clearInside le scope keep).scopes ↔ entry ∈ s.scopes ∧ ¬ StrictlyWithin s entry.id scope := by
     intro entry
-    simp [State.clearInside, State.recordCancelled, mem, StrictlyWithin]
-  have fewer : (s.clearInside le scope keep).scopes.Sublist s.scopes := List.filter_sublist
+    rw [clearInside_mem_scopes]; simp [mem, StrictlyWithin]
+  have fewer : ScopesSub (s.clearInside le scope keep).scopeMap s.scopeMap := by
+    simp only [State.clearInside, State.recordCancelled]; exact ScopesSub.filter _ _
   have ordinals : ∀ occurrence ∈ (s.clearInside le scope keep).occurrences,
       (s.clearInside le scope keep).itemOrdinals.getD occurrence.id 0 = s.itemOrdinals.getD occurrence.id 0 := by
     intro occurrence member
@@ -159,7 +171,7 @@ theorem clearInside_cleared {s : State} (formed : WellFormed program s) {scope :
       scopes := scopes, occurrences := fun occurrence => ?_, items := fun item => ?_, tokens := fun token => ?_,
       variables := fun x entries => by
         simp [State.clearInside, State.recordCancelled, -Std.ExtTreeMap.getElem?_filter, Std.ExtTreeMap.getElem?_filter',
-          Option.filter_eq_some_iff, mem, StrictlyWithin], scopesSublist := fewer, occurrencesSublist := List.filter_sublist,
+          Option.filter_eq_some_iff, mem, StrictlyWithin], scopesSub := fewer, occurrencesSublist := List.filter_sublist,
       scopeGrows := clearInside_grows s scope keep,
       openItemsSub := ItemsSub.filter _ _, ordinals := ordinals, tokensSublist := ?_,
       instances := fun x member => ?_, activations := rfl, counters := clearInside_counters s scope keep,
@@ -173,8 +185,8 @@ theorem clearInside_cleared {s : State} (formed : WellFormed program s) {scope :
     exact (List.filter_sublist.map _).append List.filter_sublist
   · obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
     obtain ⟨old, outside⟩ := (scopes entry).mp inside
-    refine named ▸ instanceOf_kept formed (formed.distinct.scopes.sublist (fewer.map _))
-      (fun entry member orphan => (formed.rooted.2.1 entry (fewer.subset member)).mp orphan) rfl
+    refine named ▸ instanceOf_kept formed (by rw [scopeIds, scopes_eq]; exact scopeList_nodup (fewer.keyed formed.distinct.scopesKeyed))
+      (fun entry member orphan => (formed.rooted.2.1 entry ((scopes entry).mp member).1).mp orphan) rfl
       (List.mem_map.mpr ⟨entry, old, rfl⟩) fun above upper within => (scopes above).mpr ⟨upper, fun ⟨inner, other⟩ => ?_⟩
     have entryInside : Within s entry.id scope := within.trans inner
     refine outside ⟨entryInside, fun same => other ?_⟩
@@ -233,7 +245,7 @@ theorem clearInside_eq (s : State) (scope : ScopeOccurrenceId) (keep : List Occu
         s.occurrences.filter fun occurrence => occurrence.scope == current && !keep.contains occurrence.id).any (·.id == id)
       occurrences := s.occurrences.filter fun occurrence =>
         !(s.subtree le scope).contains occurrence.scope || keep.contains occurrence.id
-      scopes := s.scopes.filter (!((s.subtree le scope).filter (· != scope)).contains ·.id)
+      scopeMap := s.scopeMap.filter fun _ entry => !((s.subtree le scope).filter (· != scope)).contains entry.id
       scopeOrdinals := s.scopeOrdinals.filter fun slot _ => !((s.subtree le scope).filter (· != scope)).contains slot.parent
       occurrenceOrdinals :=
         s.occurrenceOrdinals.filter fun slot _ => !((s.subtree le scope).filter (· != scope)).contains slot.parent
@@ -261,13 +273,19 @@ theorem leaveScope_slots_eq (s : State) (scope : ScopeOccurrenceId) :
 /-- `State.leaveScope` clears the scope occurrence, then removes it and its variable set, and keeps the instance. -/
 theorem leaveScope_eq (s : State) (scope : ScopeOccurrenceId) :
     s.leaveScope le scope = { s.clearInside le scope with
-      scopes := (s.clearInside le scope).scopes.filter (·.id != scope)
+      scopeMap := (s.clearInside le scope).scopeMap.filter fun _ entry => entry.id != scope
       scopeOrdinals := (s.clearInside le scope).scopeOrdinals.filter fun slot _ => slot.parent != scope
       occurrenceOrdinals := (s.clearInside le scope).occurrenceOrdinals.filter fun slot _ => slot.parent != scope
       variables := (s.clearInside le scope).variables.erase scope
       slots := (s.leaveScope le scope).slots } ∧
     (s.leaveScope le scope).instanceId = s.instanceId := by
   simp [State.leaveScope, State.clearInside, State.recordCancelled]
+
+/-- Leaving filters the cleared list view: a filter that reads only the value keeps the key order. -/
+theorem leaveScope_scopes (s : State) (scope : ScopeOccurrenceId) :
+    (s.leaveScope le scope).scopes = (s.clearInside le scope).scopes.filter (·.id != scope) := by
+  rw [(leaveScope_eq s scope).1]
+  simp only [scopes_eq, scopeList_filter_val]
 
 /-- Clearing a scope occurrence keeps the issue table: a removal retracts no issue (DC12). -/
 theorem clearInside_issued (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
@@ -284,7 +302,7 @@ theorem removeOccurrence_eq (s : State) (id : OccurrenceId) :
     s.removeOccurrence le id =
       ((s.scopes.filter (·.occurrence == some id)).mergeSort fun a b => le a.position b.position).foldl
         (fun t entry => t.leaveScope le entry.id) (withoutRecord s id) := by
-  simp [State.removeOccurrence, withoutRecord]
+  simp [State.removeOccurrence, withoutRecord, State.scopes]
 
 /-- Leaving a scope occurrence that holds no record `id` commutes with removing the record. -/
 theorem leaveScope_withoutRecord (s : State) (id : OccurrenceId) (scope : ScopeOccurrenceId)

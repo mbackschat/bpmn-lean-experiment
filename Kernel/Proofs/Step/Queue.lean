@@ -182,7 +182,7 @@ theorem hold_wellFormed {state : State} (formed : Laws.State.WellFormed program 
       ⟨formed.settled.parked, formed.settled.bodies, formed.settled.resumed, formed.settled.queued, formed.settled.placed,
         formed.settled.runsPlaced, formed.settled.grouped, formed.settled.raised⟩
   exact slotted.narrow {
-      scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
+      scopeMap := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := fun _ => by apply Laws.State.instanceOf_congr <;> rfl, recorded := id, items := .refl _,
       tokens := .refl _, signals := .refl _, starts := fun _ => id, slots := .same rfl, issued := rfl, issuing := rfl, issueNext := rfl } rfl slotted.startedOnce
 

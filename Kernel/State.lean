@@ -156,7 +156,8 @@ structure BroadcastIntent where
 structure State where
   instanceId : String
   status : InstanceStatus := .running
-  scopes : List ScopeOccurrence := []
+  /-- The standing scope occurrences by key; `State.scopes` is their list view. -/
+  scopeMap : ScopeMap := ∅
   occurrences : List Occurrence := []
   /-- The running micro-step's batch: the tokens it queued, in the order it queued them; `Step.conclude` moves them into
   `queuedTokens` under the micro-step's unit key (`queueBatch`), so this is empty between micro-steps (DC4). Named for
@@ -246,12 +247,16 @@ def keyed (bindings : List (String × Value)) : List (String × Value) :=
 
 namespace State
 
+/-- The standing scope occurrences in key order (`scopeList`): a reader looks one up or filters them, and orders them
+only by position (DC25). -/
+abbrev scopes (state : State) : List ScopeOccurrence := scopeList state.scopeMap
+
 def root : ScopeOccurrenceId := .ofSegments []
 
 /-- A fresh process instance: one root scope occurrence with the given variables, `keyed`. -/
 def initial (instanceId : String) (variables : List (String × Value)) (businessKey : Option String := none) : State :=
   { instanceId
-    scopes := [{ id := root, element := none, position := 0 }]
+    scopeMap := (∅ : ScopeMap).insert root { id := root, element := none, position := 0 }
     variables := (∅ : TreeMap ScopeOccurrenceId (List (String × Value)) compare).insert root (keyed variables)
     slots := { instances := [{ root, businessKey }] } }
 
@@ -465,7 +470,7 @@ def enterScope (state : State) (element : ElementId) (parent : ScopeOccurrenceId
   let id := parent.child element ordinal
   let (state, position) := state.issuePosition
   ({ state with
-      scopes := state.scopes ++ [{ id, element := some element, position, occurrence }]
+      scopeMap := state.scopeMap.insert id { id, element := some element, position, occurrence }
       variables := state.variables.insert id (keyed locals) }, id)
 
 /-- The elements the scope occurrence `scope` declares: for a called root, the process-level elements of the process its

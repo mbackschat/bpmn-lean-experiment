@@ -32,7 +32,7 @@ structure Reserves (before after : State) (element : ElementId) (scope : ScopeOc
   unbegun : reserved.begun = false
   activated : ActivationsKeyed before →
     Activated before after (before.instanceOf scope) element .element reserved.activation
-  scopes : after.scopes = before.scopes
+  scopeMap : after.scopeMap = before.scopeMap
   scopeOrdinals : after.scopeOrdinals = before.scopeOrdinals
   occurrenceOrdinals : after.occurrenceOrdinals = before.occurrenceOrdinals
   instances : ∀ x, after.instanceOf x = before.instanceOf x
@@ -55,6 +55,9 @@ structure Reserves (before after : State) (element : ElementId) (scope : ScopeOc
   /-- The issue table only grows under a well-formed issuer, and a well-formed issuer stays one (DC12). -/
   table : IssuerFresh before → TableGrows before after
   issuer : IssuerFresh before → IssuerFresh after
+
+theorem Reserves.scopes {before after : State} {element : ElementId} {scope : ScopeOccurrenceId} {reserved : Occurrence} (reserves : Reserves before after element scope reserved) : after.scopes = before.scopes := by
+  rw [scopes_eq, scopes_eq, reserves.scopeMap]
 
 /-- The item list stays: the item map does (`itemMap`). -/
 theorem Reserves.items {before after : State} {element : ElementId} {scope : ScopeOccurrenceId} {reserved : Occurrence}
@@ -120,7 +123,7 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
       formed.issued.positionsKept (fun _ member => reserves.scopes ▸ member) (reserves.table formed.issuer)⟩
   case distinct =>
     refine ⟨?_, reserves.itemMap.1 ▸ formed.distinct.items,
-      by simpa [scopeIds, reserves.scopes] using formed.distinct.scopes, ?_⟩
+      reserves.scopeMap ▸ formed.distinct.scopesKeyed, ?_⟩
     · rw [occurrenceIds, reserves.occurrences, List.map_append, List.nodup_append]
       refine ⟨formed.distinct.occurrences, by simp, ?_⟩
       intro id old other new
@@ -284,7 +287,7 @@ structure StartsReserved (before after : State) (occurrence : Occurrence) (sourc
     before.occurrences.map fun other => if other.id = occurrence.id then { occurrence with begun := true } else other
   started : after.draft.started =
     before.draft.started ++ [{ occurrence := key after occurrence, owner := occurrence.scope, sourceType }]
-  scopes : after.scopes = before.scopes
+  scopeMap : after.scopeMap = before.scopeMap
   scopeOrdinals : after.scopeOrdinals = before.scopeOrdinals
   instances : ∀ x, after.instanceOf x = before.instanceOf x
   instanceId : after.instanceId = before.instanceId
@@ -304,6 +307,9 @@ structure StartsReserved (before after : State) (occurrence : Occurrence) (sourc
   issued : after.issued = before.issued
   issuing : after.issuing = before.issuing
   issueNext : after.issueNext = before.issueNext
+
+theorem StartsReserved.scopes {before after : State} {occurrence : Occurrence} {sourceType : String} (starts_ : StartsReserved before after occurrence sourceType) : after.scopes = before.scopes := by
+  rw [scopes_eq, scopes_eq, starts_.scopeMap]
 
 /-- The item list stays: the item map does (`itemMap`). -/
 theorem StartsReserved.items {before after : State} {occurrence : Occurrence} {sourceType : String}
@@ -368,7 +374,7 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
       formed.issued.positionsKept (fun _ inside => starts_.scopes ▸ inside) (.of_eq starts_.issued)⟩
   case distinct =>
     refine ⟨?_, starts_.itemMap.1 ▸ formed.distinct.items,
-      by simpa [scopeIds, starts_.scopes] using formed.distinct.scopes, ?_⟩
+      starts_.scopeMap ▸ formed.distinct.scopesKeyed, ?_⟩
     · rw [occurrenceIds, starts_.occurrences, List.map_map]
       refine (List.map_congr_left fun old _ => ?_) ▸ formed.distinct.occurrences
       by_cases same : old.id = occurrence.id <;> simp [same]

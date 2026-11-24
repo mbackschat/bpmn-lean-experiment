@@ -129,7 +129,9 @@ theorem clearInside_shrinks (s : State) (scope : ScopeOccurrenceId) (keep : List
     (s.clearInside le scope keep).scopes.Sublist s.scopes ∧ (s.clearInside le scope keep).nextCompletion = s.nextCompletion := by
   obtain ⟨_, made⟩ := clearInside_eq s scope keep
   rw [made]
-  exact ⟨List.filter_sublist, rfl⟩
+  refine ⟨?_, rfl⟩
+  simp only [scopes_eq, scopeList_filter_val]
+  exact List.filter_sublist
 
 /-- Clearing a scope occurrence drops the compensation records retained strictly inside it and the runs inside it, its
 own included, and keeps the others in order. -/
@@ -187,7 +189,7 @@ theorem leaveScope_compensation (s : State) (scope : ScopeOccurrenceId) :
     (s.leaveScope le scope).activations = s.activations ∧ (s.leaveScope le scope).nextCompletion = s.nextCompletion := by
   obtain ⟨_, made⟩ := clearInside_eq s scope []
   rw [leaveScope_slots_eq, (leaveScope_eq s scope).1, made]
-  exact ⟨rfl, rfl, rfl, rfl, rfl⟩
+  exact ⟨rfl, rfl, by simp only [scopes_eq, scopeList_filter_val], rfl, rfl⟩
 
 /-! ## The elements a scope occurrence declares -/
 

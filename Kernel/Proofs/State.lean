@@ -79,7 +79,7 @@ private theorem leaveAll_kept : ∀ (scopes : List ScopeOccurrence) (t : State),
     refine ⟨fun found member => ?_, fun found member => ?_⟩
     · have inLeft := scopes found member
       rw [left, cleared] at inLeft
-      exact (List.mem_filter.mp (List.mem_filter.mp inLeft).1).1
+      exact (Laws.State.mem_scopeList_filter_val.mp (Laws.State.mem_scopeList_filter_val.mp inLeft).1).1
     · have inLeft := instances found member
       rw [Laws.State.leaveScope_slots_eq, cleared] at inLeft
       exact (List.mem_filter.mp (List.mem_filter.mp inLeft).1).1
@@ -91,7 +91,7 @@ theorem stateFacts : Laws.Step.StateFacts where
   startReserved _ _ sourceType member := by
     obtain ⟨inside, begun, id, facts⟩ := Laws.State.startReserved_facts sourceType member
     obtain ⟨scope, scopes, element, slots⟩ := facts
-    exact ⟨inside, begun, id, scope, scopes, element, by rw [slots]⟩
+    exact ⟨inside, begun, id, scope, Laws.State.scopes_congr scopes, element, by rw [slots]⟩
   closeOwnItems state id := by
     obtain ⟨scopes, occurrences, fewer, free⟩ := Laws.State.closeOwnItems_facts state id
     exact ⟨⟨scopes, fun occurrence member _ => occurrences ▸ member, fewer, fun _ kept => by

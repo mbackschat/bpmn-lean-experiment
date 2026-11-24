@@ -10,7 +10,8 @@ What `Kernel.Step.compact` keeps of `Laws.State.WellFormed`, clause by clause, f
 (`Kernel.Laws.Step.Commit`): a history of the settled state, renamed, is one of the committed state
 (`compact_history`), since the renaming is injective onto committed history keys (`rename_onto`); the counter clauses of
 `IssuedBelow` hold after the commit (`compacts_issued`); and the renaming is injective on standing keys (`rename_inj`), so
-`Distinct.scopes` holds after it (`compact_scopesDistinct`). Nothing executable imports this module.
+the re-keyed scope map keeps every scope occurrence record (`compact_scopeRecord_mem`). Nothing executable
+imports this module.
 -/
 
 @[expose] public section
@@ -20,6 +21,59 @@ namespace Kernel.Laws.Step
 variable {schedule : BranchSchedule}
 
 open Kernel Kernel.Step Kernel.Laws.State
+
+/-! ## The scope occurrence records a commit leaves -/
+
+/-- Every scope occurrence record a commit leaves is one of the settled state, renamed. -/
+theorem compact_scopeRecord_of {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t)
+    {entry : ScopeOccurrence} (member : entry ∈ t.scopes) :
+    ∃ old ∈ s.scopes, entry = renamedScope (commitRenaming schedule start log s) old := by
+  rcases compact_cases ran with ⟨empty, kept⟩ | ⟨_, rfl⟩
+  · rw [kept] at member
+    have same := commitRenaming_empty (schedule := schedule) (start := start) (log := log) empty
+    have ids : renameId (commitRenaming schedule start log s) = id := funext (renameId_id same)
+    exact ⟨entry, member, by cases entry; simp [renamedScope, ids, renameScope_id same, same]⟩
+  change entry ∈ (advanceCounters _ _ _).scopes at member
+  rw [(advance_raised _ _ _).scopes] at member
+  exact renameState_scope_of member
+
+/-- A commit that renames no two standing keys alike keeps every scope occurrence record of the settled state, renamed:
+the scope map re-keys every record, so a record stands only if no other one is renamed onto its key. -/
+theorem compact_scopeRecord_mem {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t)
+    (distinct : (standingKeys s).Nodup)
+    (apart : ∀ x ∈ standingKeys s, ∀ y ∈ standingKeys s,
+      renameScope (commitRenaming schedule start log s) x = renameScope (commitRenaming schedule start log s) y → x = y)
+    {old : ScopeOccurrence} (member : old ∈ s.scopes) : renamedScope (commitRenaming schedule start log s) old ∈ t.scopes := by
+  rcases compact_cases ran with ⟨empty, kept⟩ | ⟨_, rfl⟩
+  · rw [kept]
+    have same := commitRenaming_empty (schedule := schedule) (start := start) (log := log) empty
+    have ids : renameId (commitRenaming schedule start log s) = id := funext (renameId_id same)
+    have fixed : renamedScope (commitRenaming schedule start log s) old = old := by
+      cases old; simp [renamedScope, ids, renameScope_id same, same]
+    rwa [fixed]
+  change _ ∈ (advanceCounters _ _ _).scopes
+  rw [(advance_raised _ _ _).scopes]
+  exact renameState_scope_mem distinct apart member
+
+/-- The scope occurrences a commit leaves carry distinct keys: the re-keyed map holds one record per key. -/
+theorem compact_scopesNodup {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t)
+    (distinct : (standingKeys s).Nodup) : (standingKeys t).Nodup := by
+  rcases compact_cases ran with ⟨_, rfl⟩ | ⟨_, rfl⟩
+  · exact distinct
+  have frame := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitRekey schedule start log s) s)
+  unfold compacted
+  rw [frame]
+  exact scopeList_nodup (renameState_scopesKeyed _ _ _)
+
+/-- The scope map a commit leaves is keyed. -/
+theorem compact_scopesKeyed {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t)
+    (keyed : ScopesKeyed s.scopeMap) : ScopesKeyed t.scopeMap := by
+  rcases compact_cases ran with ⟨_, rfl⟩ | ⟨_, rfl⟩
+  · exact keyed
+  have frame := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitRekey schedule start log s) s)
+  unfold compacted
+  rw [frame]
+  exact renameState_scopesKeyed _ _ _
 
 /-! ## The scope history across the commit -/
 
@@ -340,8 +394,7 @@ theorem compacts_issued {start : State} {log : RunLog} {s t : State} (ran : comp
     obtain ⟨H, history, held⟩ := issued.scopes old inside
     exact ⟨_, compact_history ran counted history parents, old.id, held, same⟩
   positions scope member unit index fresh := by
-    rw [compact_scopeRecords ran] at member
-    obtain ⟨old, inside, rfl⟩ := List.mem_map.mp member
+    obtain ⟨old, inside, rfl⟩ := compact_scopeRecord_of ran member
     obtain ⟨n, renamed⟩ := renamed_issue (schedule := schedule) (start := start) (log := log) (s := s)
       fun unit index same => ⟨_, issued.positions old inside unit index same⟩
     simp only [renamed] at fresh
@@ -434,23 +487,6 @@ theorem rename_inj {start : State} {log : RunLog} {s : State} {H : ScopeOccurren
             simpa [commitRenaming, renameBy_committed, renameBy_fresh, got, got'] using ordinals
           exact assign_apart (schedule := schedule) (start := start) (log := log) one two (by rw [got, got', equal])
     rw [zeq, segments]
-
-/-- **`Distinct.scopes` across the commit.** -/
-theorem compact_scopesDistinct {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t)
-    (counted : CountersFrom start s) (historic : Historic s)
-    (parents : ∀ segment rest, ScopeOccurrenceId.ofSegments (segment :: rest) ∈ standingKeys s →
-      ScopeOccurrenceId.ofSegments rest ∈ standingKeys s)
-    (distinct : (scopeIds s).Nodup) : (scopeIds t).Nodup := by
-  obtain ⟨H, history⟩ := historic
-  change (standingKeys t).Nodup
-  rw [compact_scopes ran]
-  unfold List.Nodup
-  rw [List.pairwise_map]
-  refine distinct.imp_of_mem fun {x y} xs ys apart same => apart ?_
-  have := rename_inj (schedule := schedule) (start := start) (log := log) history counted parents x.segments y
-    (by rw [ScopeOccurrenceId.ofSegments_eta]; exact history.standing_key xs) ys
-    (by rw [ScopeOccurrenceId.ofSegments_eta]; exact same)
-  rwa [ScopeOccurrenceId.ofSegments_eta] at this
 
 /-! ## Occurrence keys across the commit -/
 

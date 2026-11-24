@@ -207,13 +207,13 @@ theorem begin_formed {precedes : Compensable → Compensable → Prop} {ctx : Ct
   rcases begun with ⟨_, entering, nested⟩ | ⟨handler, element, _, rest⟩
   · obtain ⟨rfl, rfl⟩ : entered = _ ∧ context = _ :=
       ⟨(congrArg Prod.fst entering).symm, (congrArg Prod.snd entering).symm⟩
-    obtain ⟨contextEq, slots, _, rest⟩ := entered_eq s record.subject scope record.snapshot
-    obtain ⟨scopesEq, _⟩ := rest
+    obtain ⟨contextEq, slots, -⟩ := entered_eq s record.subject scope record.snapshot
+    have scopes := entered_scopes tame record.subject stands record.snapshot
     obtain ⟨unissued, issuedNew, grows⟩ := entered_fresh tame record.subject stands record.snapshot
     rw [store_stored] at nested
     have post := advances _ _ _ _ (tame_withRun tame record.subject stands record.snapshot rfl rfl
       fun context resumed => by cases resumed; rfl)
-      (by simp [withRun, stored, scopeIds, scopesEq, contextEq]) nested
+      ((entered_scopeIds tame record.subject stands record.snapshot _).mpr (.inr rfl)) nested
     have unheld : Laws.Compensation.Unheld (withRun (s.enterScope record.subject scope record.snapshot none).1
         { trigger, scope := (s.enterScope record.subject scope record.snapshot none).2,
           pending := Feature.Compensation.begunChildren record (s.enterScope record.subject scope record.snapshot none).2,
@@ -227,8 +227,7 @@ theorem begin_formed {precedes : Compensable → Compensable → Prop} {ctx : Ct
     refine ⟨post.tame, (moves_withRun tame record.subject stands record.snapshot (by simp [resumesGroup])
       (source.imp fun _ found => ⟨found.1, found.2⟩)).trans post.moves, fun n => ?_, fun run inside => ?_,
       fun run inside => ?_, fun context' inside => ?_, fun record' below => ?_, fun later inside => ?_,
-      fun entry inside => post.scopesKept unheld entry (by
-        simp only [withRun, stored, scopesEq]; exact List.mem_append_left _ inside),
+      fun entry inside => post.scopesKept unheld entry ((scopes entry).mpr (.inl inside)),
       fun context' inside => by
         rw [List.mem_singleton.mp inside, contextEq]; exact Laws.State.ScopeOccurrenceId.parent?_child _ _ _⟩
     · have bound := post.counted n
@@ -263,8 +262,8 @@ theorem begin_formed {precedes : Compensable → Compensable → Prop} {ctx : Ct
   · obtain ⟨_, _, entering, rfl⟩ := rest
     obtain ⟨rfl, rfl⟩ : entered = _ ∧ context = _ :=
       ⟨(congrArg Prod.fst entering).symm, (congrArg Prod.snd entering).symm⟩
-    obtain ⟨contextEq, slots, _, rest⟩ := entered_eq s handler scope record.snapshot
-    obtain ⟨scopesEq, _⟩ := rest
+    obtain ⟨contextEq, slots, -⟩ := entered_eq s handler scope record.snapshot
+    have scopes := entered_scopes tame handler stands record.snapshot
     obtain ⟨unissued, issuedNew, _⟩ := entered_fresh tame handler stands record.snapshot
     rw [store_stored]
     have tameHandled := tame_withRetained tame handler stands record.snapshot
@@ -299,8 +298,7 @@ theorem begin_formed {precedes : Compensable → Compensable → Prop} {ctx : Ct
     · rw [Laws.State.signal_eq] at inside
       simpa only [withRetained, stored, slots] using inside
     · rw [Laws.State.signal_eq]
-      simp only [stored, scopesEq]
-      exact List.mem_append_left _ inside
+      exact (scopes entry).mpr (.inl inside)
 
 /-- Beginning the handlers of `started` one after another keeps what each begin keeps. -/
 theorem chain_formed {precedes : Compensable → Compensable → Prop} {ctx : Ctx} {less : Nat}
@@ -474,7 +472,8 @@ theorem advance_formed {precedes : Compensable → Compensable → Prop} {ctx : 
       fun other inside grouped => by
         rcases List.mem_append.mp inside with old | new
         · exact post.tame.groupsStanding other (List.mem_filter.mp old).1 grouped
-        · rw [List.mem_singleton.mp new] at grouped ⊢; exact post.tame.groupsStanding run member grouped⟩,
+        · rw [List.mem_singleton.mp new] at grouped ⊢; exact post.tame.groupsStanding run member grouped,
+      post.tame.scopesKeyed⟩,
       ?_, fun n => ?_, fun other inside => ?_,
       fun _ other inside differs => ?_, fun other inside keyed' => ?_, fun other inside differs' => ?_,
       fun _ => ⟨fun record below => post.retained record below, fun other inside => ?_⟩,

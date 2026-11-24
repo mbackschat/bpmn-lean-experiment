@@ -166,7 +166,7 @@ def observationJson (program : Program) (state : State) : Json :=
   let fields : List (String × Json) := [("kind", "state"), ("instanceId", Json.str state.instanceId),
     ("status", Json.str (Publish.statusName view.status)), ("logicalTimeMs", toJson state.logicalTimeMs),
     ("variables", Codec.bindingsToJson (Publish.variables state)),
-    ("scopes", Json.arr ((Publish.scopes program state).map scopeJson).toArray),
+    ("scopes", Json.arr ((Publish.publishedScopes program state).map scopeJson).toArray),
     ("openWaits", Json.arr (waits.map (·.json)).toArray)]
   Json.mkObj (fields ++
     (view.failure.map fun failure => ("failure", failureJson failure)).toList ++ broadcastsJson view.broadcasts)

@@ -341,8 +341,8 @@ theorem scopesKept_alongside (before : State) (program : Program) : Alongside pr
   enterScope s element parent locals owner formed stands _ kept := by
     have fresh := Laws.State.enterScope_fresh formed.historic formed.issuer element stands locals owner
     rw [Laws.State.enterScope_eq] at fresh ⊢
-    exact kept.enter fresh fun entry member => (List.mem_append.mp member).imp_right fun new => by
-      rw [List.mem_singleton.mp new]
+    exact kept.enter fresh fun entry member => (Laws.State.mem_scopeList_insert_cases member).imp_right fun new => by
+      rw [new]
   reserve s element scope formed _ _ _ kept :=
     have reserves := Laws.State.reserve_reserves s element scope
     kept.same reserves.scopes reserves.scopeOrdinals (reserves.table formed.issuer)

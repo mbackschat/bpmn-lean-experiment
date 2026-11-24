@@ -33,13 +33,13 @@ theorem initial_variablesKeyed (instanceId : String) (variables : List (String �
 /-- The fresh instance's one key, the root, is a history. -/
 private theorem initial_historic (instanceId : String) (variables : List (String × Value)) (businessKey : Option String) :
     Historic (State.initial instanceId variables businessKey) :=
-  historic_of_standing (by simp [initial_eq, root_eq]) (by simp [initial_eq, root_eq]) (by simp [initial_eq, root_eq])
-    (by simp [initial_eq, root_eq, Layered])
+  historic_of_standing (by simp [initial_eq, root_eq, scopes_eq]) (by simp [initial_eq, root_eq, scopes_eq])
+    (by simp [initial_eq, root_eq, scopes_eq]) (by simp [initial_eq, root_eq, Layered, scopes_eq])
 
 section Initial
 
-/- The fresh instance queues nothing under a unit key, so its queue views are its batches. -/
-attribute [local simp] allSignals allQueuedTokens
+/- The fresh instance queues nothing under a unit key, so its queue views are its batches; its scopes are its map's. -/
+attribute [local simp] allSignals allQueuedTokens scopes_eq
 
 /-- A start's fresh instance is committed: it has no transition and an empty issue table, so a run's every before-state
 is committed (`Laws.Step.orderJournal_committed` for every other). -/
@@ -53,14 +53,14 @@ theorem initial_wellFormed (instanceId : String) (variables : List (String × Va
   issued := ⟨by simp [initial_eq], by simp [initial_eq, itemList_empty],
     fun _ member => (initial_historic instanceId variables businessKey).issued member, by simp [initial_eq]⟩
   distinct := ⟨by simp [occurrenceIds, initial_eq], by simp [initial_eq, keyedBy_empty],
-    by simp [scopeIds, initial_eq], by simp [initial_eq]⟩
+    by simp only [initial_eq]; exact scopesKeyed_insert_at scopesKeyed_empty rfl, by simp [initial_eq]⟩
   startedOnce := by simp [StartedOnce, starts, initial_eq]
   activations := ⟨by simp [initial_eq], by simp [initial_eq]⟩
   reservations := by simp [ReservationsUnstarted, initial_eq]
   owned := ⟨by simp [initial_eq], by simp [initial_eq, itemList_empty], by simp [initial_eq, itemList_empty], by simp [initial_eq, itemList_empty],
     by simp [initial_eq], by simp [scopeIds, initial_eq], by simp [initial_eq]⟩
   rooted := ⟨by simp [scopeIds, initial_eq], by simp [initial_eq, root_eq], by
-    simp only [initial_eq, List.mem_singleton]; rintro scope rfl; exact .refl _⟩
+    simp only [initial_eq, scopes_eq, mem_scopeList_single]; rintro scope rfl; exact .refl _⟩
   variables := initial_variablesKeyed instanceId variables businessKey
   failure := by simp [FailureRecorded, initial_eq]
   issuer := ⟨fun _ _ held => by simp [initial_eq] at held, fun _ _ held => by simp [initial_eq] at held,

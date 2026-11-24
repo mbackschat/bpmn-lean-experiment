@@ -34,7 +34,7 @@ occurrences with its variable set, holding `locals`; the slots hold nothing new 
 instances a called root records (`State.enterScope`, `State.enterCalled`). -/
 structure ScopeAppended (before after : State) (entry : ScopeOccurrence) (locals : List (String × Value)) : Prop where
   occurrenceOrdinals : after.occurrenceOrdinals = before.occurrenceOrdinals
-  scopes : after.scopes = before.scopes ++ [entry]
+  scopeMap : after.scopeMap = before.scopeMap.insert entry.id entry
   variables : after.variables = before.variables.insert entry.id (keyed locals)
   occurrences : after.occurrences = before.occurrences
   itemMap : after.openItems = before.openItems ∧ after.itemOrdinals = before.itemOrdinals
@@ -48,6 +48,14 @@ structure ScopeAppended (before after : State) (entry : ScopeOccurrence) (locals
   failure : after.failure = before.failure
   instanceId : after.instanceId = before.instanceId
   slots : SlotsWithin before after
+
+/-- The scope occurrences after an entry under a key none holds: the old ones and the entry. -/
+theorem ScopeAppended.mem_scopes {before after : State} {entry : ScopeOccurrence} {locals : List (String × Value)}
+    (appended : ScopeAppended before after entry locals) (keyed : ScopesKeyed before.scopeMap)
+    (fresh : ∀ old ∈ before.scopes, old.id ≠ entry.id) {found : ScopeOccurrence} :
+    found ∈ after.scopes ↔ found ∈ before.scopes ∨ found = entry := by
+  rw [scopes_eq after, appended.scopeMap]
+  exact mem_scopeList_insert_fresh keyed fresh
 
 /-- What entering the scope occurrence `entry` makes of `before`: `ScopeAppended`, under a key never issued, every
 history growing into one that holds it, the issue table growing and the issuer staying fresh (DC12). -/
@@ -73,21 +81,20 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
     (ownerBegun : ∀ id, entry.occurrence = some id → ∃ occurrence ∈ s.occurrences, occurrence.id = id ∧
       occurrence.begun = true ∧ occurrence.scope = parent) :
     WellFormed program after := by
-  have scopes := enters.scopes
-  have members : ∀ found ∈ after.scopes, found ∈ s.scopes ∨ found = entry := fun found inside => by
-    simpa [scopes] using inside
-  have grows : ∀ found ∈ s.scopes, found ∈ after.scopes := fun found inside => by
-    rw [scopes]
-    exact List.mem_append_left _ inside
   have fresh : ∀ found ∈ s.scopes, found.id ≠ entry.id := fun found inside same =>
     enters.unissued (same ▸ formed.issued.scopes found inside)
-  have ids : scopeIds after = scopeIds s ++ [entry.id] := by simp [scopeIds, scopes]
-  have nodup : (scopeIds after).Nodup := by
-    rw [ids, List.nodup_append]
-    exact ⟨formed.distinct.scopes, by simp, fun a old b new same => by
-      obtain ⟨found, inside, rfl⟩ := List.mem_map.mp old
-      simp at new
-      exact fresh found inside (same.trans new)⟩
+  have keyedAfter : ScopesKeyed after.scopeMap := by
+    rw [enters.scopeMap]; exact scopesKeyed_insert formed.distinct.scopesKeyed entry
+  have memAfter : ∀ found, found ∈ after.scopes ↔ found ∈ s.scopes ∨ found = entry := fun _ =>
+    enters.mem_scopes formed.distinct.scopesKeyed fresh
+  have members : ∀ found ∈ after.scopes, found ∈ s.scopes ∨ found = entry := fun found inside => (memAfter found).mp inside
+  have grows : ∀ found ∈ s.scopes, found ∈ after.scopes := fun found inside => (memAfter found).mpr (.inl inside)
+  have idsMem : ∀ x, x ∈ scopeIds after ↔ x ∈ scopeIds s ∨ x = entry.id := fun x => by
+    simp only [scopeIds, List.mem_map, memAfter]
+    constructor
+    · rintro ⟨found, old | rfl, rfl⟩; exact .inl ⟨found, old, rfl⟩; exact .inr rfl
+    · rintro (⟨found, old, rfl⟩ | rfl); exact ⟨found, .inl old, rfl⟩; exact ⟨entry, .inr rfl, rfl⟩
+  have nodup : (scopeIds after).Nodup := by rw [scopeIds, scopes_eq]; exact scopeList_nodup keyedAfter
   have rootBelow : ScopeIssued s State.root := by
     obtain ⟨found, inside, named⟩ := List.mem_map.mp formed.rooted.1
     exact named ▸ formed.issued.scopes found inside
@@ -95,15 +102,12 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
   have below : ∀ x ∈ scopeIds s, ScopeIssued s x := fun x member => by
     obtain ⟨found, inside, named⟩ := List.mem_map.mp member
     exact named ▸ formed.issued.scopes found inside
-  have idsGrow : ∀ x ∈ scopeIds s, x ∈ scopeIds after := fun x member => by
-    rw [ids]
-    exact List.mem_append_left _ member
+  have idsGrow : ∀ x ∈ scopeIds s, x ∈ scopeIds after := fun x member => (idsMem x).mpr (.inl member)
   have occurrenceGrows : OccurrenceGrows s after := .enter enters.scopeGrows (fun x standing => by
       change x ∈ scopeIds after at standing
-      rw [ids] at standing
-      rcases List.mem_append.mp standing with old | new
+      rcases (idsMem x).mp standing with old | new
       · exact .inl old
-      · rw [List.mem_singleton.mp new]; exact .inr enters.unissued) enters.occurrenceOrdinals enters.table
+      · rw [new]; exact .inr enters.unissued) enters.occurrenceOrdinals enters.table
   have hOcc := enters.occurrences
   have hItems := enters.items
   have hTokens := enters.tokens
@@ -140,7 +144,7 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
       · exact enters.table _ _ (formed.issued.positions found old unit index pending)
       · exact enters.positionTabled unit index pending⟩
   have distinct : Distinct after := ⟨by simpa [occurrenceIds, hOcc] using formed.distinct.occurrences,
-    enters.itemMap.1 ▸ formed.distinct.items, nodup, by
+    enters.itemMap.1 ▸ formed.distinct.items, keyedAfter, by
       rw [hOcc, List.map_congr_left keys]
       exact formed.distinct.keys⟩
   have owned : Owned after := ⟨fun occurrence member => by
@@ -166,8 +170,7 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
     fun x member => by
       rw [hVars, Std.ExtTreeMap.mem_insert, Std.LawfulEqCmp.compare_eq_iff_eq] at member
       rcases member with rfl | old
-      · rw [ids]
-        simp
+      · exact (idsMem _).mpr (.inr rfl)
       · exact idsGrow _ (formed.owned.variableScopes x old),
     fun token member => by
       rw [hTokens] at member
@@ -179,7 +182,7 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
     fun found member => by
       rcases members found member with old | rfl
       · exact (formed.rooted.2.2 found old).grow grows
-      · exact .parent _ parent _ (by rw [scopes]; exact List.mem_append_right _ (List.mem_singleton_self _)) entryParent
+      · exact .parent _ parent _ ((memAfter _).mpr (.inr rfl)) entryParent
           (parentWithin.grow grows)⟩
   have variables : VariablesKeyed after := ⟨fun x entries found => by
       rw [hVars, Std.ExtTreeMap.getElem?_insert] at found
@@ -225,12 +228,11 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
       rw [hOcc] at member
       obtain ⟨unbegun, free, instance_⟩ := facts occurrence member same
       refine ⟨unbegun, by rw [hItems]; exact free, fun present => ?_⟩
-      rw [ids] at present
-      rcases List.mem_append.mp present with old | new
+      rcases (idsMem _).mp present with old | new
       · rw [instances _ old, instances _ (formed.owned.occurrenceScopes occurrence member)]
         exact instance_ old
       · have issuedScope := formed.claimed.scopesIssued request ((queuedEq request).mp queued)
-        rw [List.mem_singleton.mp new] at issuedScope
+        rw [new] at issuedScope
         exact absurd issuedScope enters.unissued,
     fun first second pair => by
       rw [hSignals] at pair
@@ -282,6 +284,20 @@ theorem Enters.wellFormed {s after : State} {entry : ScopeOccurrence} {locals : 
     formed.itemRoles.shrink (fun _ member => enters.items ▸ member) fun _ member => hOcc ▸ member,
     enters.issuer formed.issuer⟩
 
+/-- A state whose scope map is another's with one entry inserted under its own key stands on the old keys and that key. -/
+theorem keys_insert {s t : State} {k : ScopeOccurrenceId} {new : ScopeOccurrence} (map : t.scopeMap = s.scopeMap.insert k new)
+    (named : new.id = k) : ∀ x ∈ standingKeys t, x ∈ standingKeys s ∨ x = k := by
+  intro x member
+  obtain ⟨scope, inside, rfl⟩ := List.mem_map.mp member
+  rw [scopes_eq, map] at inside
+  rcases mem_scopeList_insert_sub inside with rfl | old
+  · exact .inr named
+  · exact .inl (List.mem_map.mpr ⟨scope, (scopes_eq s) ▸ old, rfl⟩)
+
+theorem keys_insert_self {s t : State} {k : ScopeOccurrenceId} {new : ScopeOccurrence} (map : t.scopeMap = s.scopeMap.insert k new)
+    (named : new.id = k) : k ∈ standingKeys t :=
+  List.mem_map.mpr ⟨new, by rw [scopes_eq, map]; exact mem_scopeList.mpr ⟨k, Std.ExtTreeMap.getElem?_insert_self⟩, named⟩
+
 /-- Entering a scope occurrence under a fresh issuer grows the issue table by the issuer's next issue (DC12). -/
 theorem enterScope_table {s : State} (fresh : IssuerFresh s) (element : ElementId) (parent : ScopeOccurrenceId)
     (locals : List (String × Value)) (owner : Option OccurrenceId) : TableGrows s (s.enterScope element parent locals owner).1 :=
@@ -295,14 +311,14 @@ theorem enterScope_wellFormed {s : State} (formed : WellFormed program s) (eleme
       occurrence.scope = parent) :
     WellFormed program (s.enterScope element parent locals owner).1 := by
   have ⟨grows, entered⟩ := ScopeGrows.enter (element := element) (t := (s.enterScope element parent locals owner).1)
-    stands formed.issuer.next (by simp [enterScope_eq, standingKeys]) (by simp [enterScope_eq])
+    stands formed.issuer.next (keys_insert (by rw [enterScope_eq]) rfl) (by simp [enterScope_eq])
     (enterScope_table formed.issuer element parent locals owner)
     (by rw [enterScope_eq]; exact getElem?_insert_insert_first _ _ _ _ _)
   have table := enterScope_table formed.issuer element parent locals owner
   rw [enterScope_eq] at grows entered table ⊢
-  exact Enters.wellFormed formed {
+  exact Enters.wellFormed (entry := { id := parent.child element (.fresh s.issuing s.issueNext), element := some element, position := .fresh s.issuing (s.issueNext + 1), occurrence := owner }) formed {
       unissued := entered_unissued parent element formed.issuer.next, scopeGrows := grows, entered, table,
-      issuer := fun fresh => fresh.issue_issue rfl rfl rfl rfl, occurrenceOrdinals := rfl, scopes := rfl,
+      issuer := fun fresh => fresh.issue_issue rfl rfl rfl rfl, occurrenceOrdinals := rfl, scopeMap := rfl,
       positionTabled := fun _ _ fresh => by obtain ⟨rfl, rfl⟩ := Issue.fresh.inj fresh; simp,
       variables := rfl, occurrences := rfl, itemMap := ⟨rfl, rfl⟩, tokens := rfl, signals := rfl, activations := rfl, journal := rfl, transitions := rfl, draft := rfl, status := rfl, failure := rfl,
       instanceId := rfl, slots := .same rfl }
@@ -320,7 +336,7 @@ theorem enterScope_fresh {s : State} (historic : Historic s) (fresh : IssuerFres
     (owner : Option OccurrenceId) :
     ScopeFresh s (s.enterScope element parent locals owner).1 (s.enterScope element parent locals owner).2 := by
   have ⟨grows, entered⟩ := ScopeGrows.enter (element := element) (t := (s.enterScope element parent locals owner).1)
-    stands fresh.next (by simp [enterScope_eq, standingKeys]) (by simp [enterScope_eq])
+    stands fresh.next (keys_insert (by rw [enterScope_eq]) rfl) (by simp [enterScope_eq])
     (enterScope_table fresh element parent locals owner) (by rw [enterScope_eq]; exact getElem?_insert_insert_first _ _ _ _ _)
   rw [enterScope_eq] at grows entered ⊢
   exact ⟨entered_unissued parent element fresh.next, entered historic, grows⟩
@@ -339,12 +355,12 @@ theorem enterCalled_fresh {s : State} (formed : WellFormed program s) (called : 
     ScopeFresh s (s.enterCalled called call variables definition).1 (s.enterCalled called call variables definition).2 := by
   have ⟨grows, entered⟩ := ScopeGrows.enter (element := call.element)
     (t := (s.enterCalled called call variables definition).1) stands formed.issuer.next
-    (by simp [enterCalled_eq _ _ _ _ _ (scopes_fresh formed), standingKeys])
-    (by simp [enterCalled_eq _ _ _ _ _ (scopes_fresh formed)])
+    (keys_insert (by rw [enterCalled_eq _ _ _ _ _]) rfl)
+    (by simp [enterCalled_eq _ _ _ _ _])
     (.insert_insert (first := .scope { parent := call.scope, element := call.element }) (second := .position) formed.issuer
-      (by simp [enterCalled_eq _ _ _ _ _ (scopes_fresh formed)]))
-    (by rw [enterCalled_eq _ _ _ _ _ (scopes_fresh formed)]; exact getElem?_insert_insert_first _ _ _ _ _)
-  rw [enterCalled_eq _ _ _ _ _ (scopes_fresh formed)] at grows entered ⊢
+      (by simp [enterCalled_eq _ _ _ _ _]))
+    (by rw [enterCalled_eq _ _ _ _ _]; exact getElem?_insert_insert_first _ _ _ _ _)
+  rw [enterCalled_eq _ _ _ _ _] at grows entered ⊢
   exact ⟨entered_unissued call.scope call.element formed.issuer.next, entered formed.historic, grows⟩
 
 /-- A Call entering its called root below its own scope occurrence, which stands, issues no fewer occurrence keys. -/
@@ -352,12 +368,11 @@ theorem enterCalled_occurrenceGrows {s : State} (formed : WellFormed program s) 
     (stands : call.scope ∈ scopeIds s) (variables : List (String × Value)) (definition : DefinitionRef) :
     OccurrenceGrows s (s.enterCalled called call variables definition).1 := by
   obtain ⟨unissued, _, grows⟩ := enterCalled_fresh formed called stands variables definition
-  refine .enter grows (fun x standing => ?_) (by rw [enterCalled_eq _ _ _ _ _ (scopes_fresh formed)])
+  refine .enter grows (fun x standing => ?_) (by rw [enterCalled_eq _ _ _ _ _])
     (.insert_insert (first := .scope { parent := call.scope, element := call.element }) (second := .position) formed.issuer
-      (by rw [enterCalled_eq _ _ _ _ _ (scopes_fresh formed)]))
-  rw [enterCalled_eq _ _ _ _ _ (scopes_fresh formed)] at standing unissued
-  simp only [standingKeys, List.map_append, List.map_cons, List.map_nil, List.mem_append, List.mem_singleton] at standing
-  rcases standing with old | new
+      (by rw [enterCalled_eq _ _ _ _ _]))
+  rw [enterCalled_eq _ _ _ _ _] at standing unissued
+  rcases keys_insert (s := s) (k := call.scope.child call.element (.fresh s.issuing s.issueNext)) rfl rfl x standing with old | new
   · exact .inl old
   · exact .inr (new ▸ unissued)
 
@@ -369,17 +384,17 @@ theorem enterCalled_wellFormed {s : State} (formed : WellFormed program s) (call
   have stands := formed.owned.occurrenceScopes call member
   have ⟨grows, entered⟩ := ScopeGrows.enter (element := call.element)
     (t := (s.enterCalled called call variables definition).1) stands formed.issuer.next
-    (by simp [enterCalled_eq _ _ _ _ _ (scopes_fresh formed), standingKeys])
-    (by simp [enterCalled_eq _ _ _ _ _ (scopes_fresh formed)])
+    (keys_insert (by rw [enterCalled_eq _ _ _ _ _]) rfl)
+    (by simp [enterCalled_eq _ _ _ _ _])
     (.insert_insert (first := .scope { parent := call.scope, element := call.element }) (second := .position) formed.issuer
-      (by simp [enterCalled_eq _ _ _ _ _ (scopes_fresh formed)]))
-    (by rw [enterCalled_eq _ _ _ _ _ (scopes_fresh formed)]; exact getElem?_insert_insert_first _ _ _ _ _)
-  rw [enterCalled_eq _ _ _ _ _ (scopes_fresh formed)] at grows entered ⊢
-  exact Enters.wellFormed formed {
+      (by simp [enterCalled_eq _ _ _ _ _]))
+    (by rw [enterCalled_eq _ _ _ _ _]; exact getElem?_insert_insert_first _ _ _ _ _)
+  rw [enterCalled_eq _ _ _ _ _] at grows entered ⊢
+  exact Enters.wellFormed (entry := { id := call.scope.child call.element (.fresh s.issuing s.issueNext), element := some call.element, position := .fresh s.issuing (s.issueNext + 1), occurrence := some call.id, calledInstance := some (State.calledInstanceId (s.instanceOf call.scope) (called.publicId call.element) call.activation) }) formed {
       unissued := entered_unissued call.scope call.element formed.issuer.next, scopeGrows := grows, entered,
       table := .insert_insert formed.issuer rfl, issuer := fun fresh => fresh.issue_issue rfl rfl rfl rfl,
       positionTabled := fun _ _ fresh => by obtain ⟨rfl, rfl⟩ := Issue.fresh.inj fresh; simp, occurrenceOrdinals := rfl,
-      scopes := rfl,
+      scopeMap := rfl,
       variables := rfl, occurrences := rfl, itemMap := ⟨rfl, rfl⟩, tokens := rfl, signals := rfl, activations := rfl, journal := rfl, transitions := rfl, draft := rfl, status := rfl, failure := rfl,
       instanceId := rfl, slots := ⟨fun _ inside => inside, fun _ inside => inside, fun _ inside => inside⟩ } stands
     (ScopeOccurrenceId.parent?_child _ _ _) fun id named => ⟨call, member, Option.some.inj named, begun, rfl⟩
@@ -401,7 +416,7 @@ theorem localsCalled_apart {s : State} (formed : WellFormed program s) (called :
   refine ⟨fun same => ?_, enterCalled_wellFormed first called kept begun variables definition⟩
   apply (enterCalled_fresh first called (first.owned.occurrenceScopes call kept) variables definition).1
   rw [same]
-  exact first.historic.issued_key (by rw [enterScope_eq]; simp [standingKeys])
+  exact first.historic.issued_key (by rw [enterScope_eq]; exact keys_insert_self rfl rfl)
 
 /-- Entering a scope occurrence below one that stands issues no fewer occurrence keys: the scope occurrence key it takes
 was never issued, and the occurrence counters stay. -/
@@ -412,8 +427,7 @@ theorem enterScope_occurrenceGrows {s : State} (historic : Historic s) (fresh : 
   refine .enter grows (fun x standing => ?_) (by rw [enterScope_eq])
     (.insert_insert (first := .scope { parent, element }) (second := .position) fresh (by rw [enterScope_eq]))
   rw [enterScope_eq] at standing unissued
-  simp only [standingKeys, List.map_append, List.map_cons, List.map_nil, List.mem_append, List.mem_singleton] at standing
-  rcases standing with old | new
+  rcases keys_insert (s := s) (k := parent.child element (.fresh s.issuing s.issueNext)) rfl rfl x standing with old | new
   · exact .inl old
   · exact .inr (new ▸ unissued)
 
@@ -622,7 +636,7 @@ theorem deferBegins_wellFormed {s : State} (formed : WellFormed program s) {requ
   exact {
   issued := ⟨formed.issued.occurrences, (fun item member => formed.issued.items item (items_same member rfl)), formed.issued.scopes,
     formed.issued.positions⟩
-  distinct := ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopes, keys ▸ formed.distinct.keys⟩
+  distinct := ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopesKeyed, keys ▸ formed.distinct.keys⟩
   startedOnce := formed.startedOnce
   activations := ⟨formed.activations.keys, formed.activations.positive⟩
   reservations := by unfold ReservationsUnstarted; rw [keys]; exact formed.reservations

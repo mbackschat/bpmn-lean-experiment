@@ -136,10 +136,9 @@ theorem BeginsKept.enterScope {program : Program} {s : State} (held : BeginsKept
   rw [Laws.State.enterScope_eq]
   exact held.frame (fun _ inside => inside) (fun _ named => named) rfl rfl
 
-theorem BeginsKept.enterCalled {program other : Program} {s : State} (formed : WellFormed other s)
-    (held : BeginsKept program T s) (called : Program) (call : Occurrence) (variables : List (String × Value))
-    (definition : DefinitionRef) : BeginsKept program T (s.enterCalled called call variables definition).1 := by
-  rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]
+theorem BeginsKept.enterCalled {program : Program} {s : State} (held : BeginsKept program T s) (called : Program)
+    (call : Occurrence) (variables : List (String × Value)) (definition : DefinitionRef) : BeginsKept program T (s.enterCalled called call variables definition).1 := by
+  rw [Laws.State.enterCalled_eq _ _ _ _ _]
   exact held.frame (fun _ inside => inside) (fun element named => pending_kept (.of_eq rfl rfl rfl rfl) rfl named) rfl rfl
 
 /-- A reservation of an element that does not loop under a program whose identifiers are unique keeps `BeginsKept`. -/
@@ -431,7 +430,7 @@ theorem beginsKept_occursAlongside (program : Program) (T : TreeMap UnitKey Tran
   throwCompensate s _ _ _ _ _ _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
   raise s _ _ _ _ held := held.signal _ fun _ _ inside => absurd inside List.not_mem_nil
   enterCalled _ call variables definition formed _ _ _ _ _ held :=
-    held.enterCalled formed program call variables definition
+    held.enterCalled program call variables definition
 
 /-! ## Through a closure -/
 

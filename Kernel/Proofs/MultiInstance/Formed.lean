@@ -291,7 +291,7 @@ theorem leftWith_framed {program : Program} {s : State} {run : MultiInstanceRun}
   obtain ⟨fewer, _⟩ := cleared_bodies formed present (Laws.State.clearInside_cleared formed present [])
   rw [← bodiesEq] at fewer
   have entryOf : ∀ entry ∈ (s.leaveScope le scope).scopes, entry ∈ s.scopes := fun _ inside =>
-    left.scopesSublist.subset inside
+    left.scopesSubset inside
   have others : ∀ other ∈ (s.leaveScope le scope).slots.multiInstances,
       other.occurrence ≠ (Laws.MultiInstance.recorded run index output results).occurrence →
       RunFramed program (s.leaveScope le scope) other := by

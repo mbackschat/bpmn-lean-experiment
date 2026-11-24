@@ -37,7 +37,7 @@ transitions the commit emptied (`Laws.Step.orderJournal_closed`), so the issue t
 theorem reset_wellFormed {s : State} (formed : WellFormed program s) (committed : Committed s) :
     WellFormed program { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := s.nextCompletion } :=
   formed.narrow {
-      scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
+      scopeMap := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := fun _ => by apply instanceOf_congr <;> rfl, recorded := id, items := .refl _, tokens := .refl _,
       signals := .refl _, starts := fun fact member => (starts_reset s).subset member, slots := .same rfl, issued := rfl,
       issuing := rfl, issueNext := rfl, ran := fun _ held => by simp [committed.closed] at held } rfl
@@ -46,7 +46,7 @@ theorem reset_wellFormed {s : State} (formed : WellFormed program s) (committed 
 /-- `Step.advanceClock` moves the logical time. -/
 theorem clock_wellFormed {s : State} (formed : WellFormed program s) (atMs : Nat) : WellFormed program { s with logicalTimeMs := atMs } :=
   formed.narrow {
-      scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
+      scopeMap := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := fun _ => by apply instanceOf_congr <;> rfl, recorded := id, items := .refl _, tokens := .refl _,
       signals := .refl _, starts := fun _ => id, slots := .same rfl, issued := rfl, issuing := rfl, issueNext := rfl } rfl formed.startedOnce
 
@@ -62,7 +62,7 @@ theorem journal_wellFormed {s : State} (formed : WellFormed program s) {unit : U
     simp only [starts, List.append_nil, List.append_assoc]
     exact (inserted.trans List.perm_append_comm).append_left _
   formed.permuted {
-      scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
+      scopeMap := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := fun _ => by apply instanceOf_congr <;> rfl, recorded := id, items := .refl _, tokens := .refl _,
       signals := .refl _, starts := fun _ => perm.mem_iff.mp, slots := .same rfl, issued := rfl, issuing := rfl,
       issueNext := rfl, ran := fun _ held => by simp [Std.ExtTreeMap.contains_insert, held] } rfl perm
@@ -71,7 +71,7 @@ theorem journal_wellFormed {s : State} (formed : WellFormed program s) {unit : U
 theorem recordEnd_wellFormed {s : State} (formed : WellFormed program s) (key : OccurrenceKey) (terminal : Terminal) :
     WellFormed program (s.recordEnd key terminal) :=
   recordEnd_eq s key terminal ▸ formed.narrow {
-      scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
+      scopeMap := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := fun _ => by apply instanceOf_congr <;> rfl, recorded := id, items := .refl _, tokens := .refl _,
       signals := .refl _, starts := fun _ => id, slots := .same rfl, issued := rfl, issuing := rfl, issueNext := rfl } rfl formed.startedOnce
 
@@ -79,7 +79,7 @@ theorem recordEnd_wellFormed {s : State} (formed : WellFormed program s) (key : 
 theorem dequeue_wellFormed {s : State} (formed : WellFormed program s) {signals : List Signal} (fewer : signals.Sublist s.batchSignals) :
     WellFormed program { s with batchSignals := signals } :=
   formed.narrow {
-      scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
+      scopeMap := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := fun _ => by apply instanceOf_congr <;> rfl, recorded := id, items := .refl _, tokens := .refl _,
       signals := (Fewer.of_sublist fewer).append_left _, starts := fun _ => id, slots := .same rfl, issued := rfl, issuing := rfl, issueNext := rfl } rfl formed.startedOnce
 
@@ -87,7 +87,7 @@ theorem dequeue_wellFormed {s : State} (formed : WellFormed program s) {signals 
 theorem unqueue_wellFormed {s : State} (formed : WellFormed program s) (unit : UnitKey) :
     WellFormed program { s with queuedSignals := s.queuedSignals.erase unit } :=
   formed.narrow {
-      scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
+      scopeMap := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := fun _ => by apply instanceOf_congr <;> rfl, recorded := id, items := .refl _, tokens := .refl _,
       signals := values_erase_fewer.append_right _, starts := fun _ => id, slots := .same rfl, issued := rfl, issuing := rfl, issueNext := rfl } rfl formed.startedOnce
 
@@ -95,7 +95,7 @@ theorem unqueue_wellFormed {s : State} (formed : WellFormed program s) (unit : U
 theorem untoken_wellFormed {s : State} (formed : WellFormed program s) (unit : UnitKey) :
     WellFormed program { s with queuedTokens := s.queuedTokens.erase unit } :=
   formed.narrow {
-      scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
+      scopeMap := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := fun _ => by apply instanceOf_congr <;> rfl, recorded := id, items := .refl _,
       tokens := values_erase_fewer.append_right _, signals := .refl _, starts := fun _ => id, slots := .same rfl, issued := rfl, issuing := rfl, issueNext := rfl } rfl
     formed.startedOnce
@@ -121,7 +121,7 @@ theorem queueBatch_wellFormed {s : State} (formed : WellFormed program s) (unit 
   have signals := allSignals_queueBatch s unit
   rw [queueBatch_eq] at tokens signals ⊢
   exact formed.narrow {
-      scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
+      scopeMap := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := fun _ => by apply instanceOf_congr <;> rfl, recorded := id, items := .refl _, tokens, signals,
       starts := fun _ => id, slots := .same rfl, issued := rfl, issuing := rfl, issueNext := rfl } rfl formed.startedOnce
 
@@ -129,7 +129,7 @@ theorem queueBatch_wellFormed {s : State} (formed : WellFormed program s) (unit 
 theorem closeOwnItems_wellFormed {s : State} (formed : WellFormed program s) (occurrence : OccurrenceId) :
     WellFormed program (s.closeOwnItems occurrence) :=
   closeOwnItems_eq s occurrence ▸ formed.narrow {
-      scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
+      scopeMap := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := fun _ => by apply instanceOf_congr <;> rfl, recorded := id, items := .filter _, tokens := .refl _,
       signals := .refl _, starts := fun _ => id, slots := .same rfl, issued := rfl, issuing := rfl, issueNext := rfl } rfl
     formed.startedOnce
@@ -204,7 +204,7 @@ theorem rekind_wellFormed {s : State} (formed : WellFormed program s) {change : 
     rw [kept old]
     exact formed.issued.items old inside
   case distinct =>
-    refine ⟨formed.distinct.occurrences, ?_, formed.distinct.scopes, keys ▸ formed.distinct.keys⟩
+    refine ⟨formed.distinct.occurrences, ?_, formed.distinct.scopesKeyed, keys ▸ formed.distinct.keys⟩
     exact keyedBy_map formed.distinct.items fun item => by rw [kept item]
   case reservations =>
     unfold ReservationsUnstarted
@@ -254,7 +254,7 @@ theorem takeCompletion_wellFormed {s : State} (formed : WellFormed program s) : 
   exact {
   issued := ⟨formed.issued.occurrences, fun item member => formed.issued.items item (items_same member rfl),
     formed.issued.scopes, formed.issued.positions⟩
-  distinct := ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopes, keys ▸ formed.distinct.keys⟩
+  distinct := ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopesKeyed, keys ▸ formed.distinct.keys⟩
   startedOnce := formed.startedOnce
   activations := ⟨formed.activations.keys, formed.activations.positive⟩
   reservations := by unfold ReservationsUnstarted; rw [keys]; exact formed.reservations
@@ -291,7 +291,7 @@ theorem compensation_wellFormed {s : State} (formed : WellFormed program s) {com
     (runs : ∀ run ∈ compensation.runs, run ∈ s.slots.compensation.runs) :
     WellFormed program { s with slots := { s.slots with compensation } } :=
   formed.narrow {
-      scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
+      scopeMap := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := fun _ => by apply instanceOf_congr <;> rfl, recorded := id, items := .refl _, tokens := .refl _,
       signals := .refl _, starts := fun _ => id, slots := ⟨fun _ member => member, fun _ member => member, runs⟩,
       issued := rfl, issuing := rfl, issueNext := rfl } rfl formed.startedOnce
@@ -311,7 +311,7 @@ theorem signal_wellFormed {s : State} {signal : Signal} (formed : WellFormed pro
   exact {
   issued := ⟨formed.issued.occurrences, fun item member => formed.issued.items item (items_same member rfl),
     formed.issued.scopes, formed.issued.positions⟩
-  distinct := ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopes, keys ▸ formed.distinct.keys⟩
+  distinct := ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopesKeyed, keys ▸ formed.distinct.keys⟩
   startedOnce := formed.startedOnce
   activations := ⟨formed.activations.keys, formed.activations.positive⟩
   reservations := by unfold ReservationsUnstarted; rw [keys]; exact formed.reservations
@@ -475,7 +475,7 @@ theorem bumpItem_wellFormed {s : State} (formed : WellFormed program s) (occurre
     WellFormed program
       { s with itemOrdinals := s.itemOrdinals.insert occurrence (s.itemOrdinals.getD occurrence 0 + 1) } :=
   formed.narrow {
-      scopes := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
+      scopeMap := rfl, scopeOrdinals := rfl, occurrences := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := fun _ => by apply instanceOf_congr <;> rfl, recorded := id,
       items := ⟨fun _ _ h => h, fun o => getD_bump s.itemOrdinals occurrence o⟩, tokens := .refl _, signals := .refl _,
       starts := fun _ => id, slots := .same rfl, issued := rfl, issuing := rfl, issueNext := rfl } rfl
@@ -568,7 +568,7 @@ theorem addItem_wellFormed {s : State} (formed : WellFormed program s) {item : O
     · exact formed.issued.items found old
     · exact issued
   case distinct =>
-    refine ⟨formed.distinct.occurrences, ?_, formed.distinct.scopes, keys ▸ formed.distinct.keys⟩
+    refine ⟨formed.distinct.occurrences, ?_, formed.distinct.scopesKeyed, keys ▸ formed.distinct.keys⟩
     exact keyedBy_insert formed.distinct.items item
   case owned =>
     obtain ⟨occurrence, present, named, same⟩ := waits
@@ -710,7 +710,7 @@ theorem slots_wellFormed {s : State} (formed : WellFormed program s) {slots : Fe
   exact {
   issued := ⟨formed.issued.occurrences, fun item member => formed.issued.items item (items_same member rfl),
     formed.issued.scopes, formed.issued.positions⟩
-  distinct := ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopes, keys ▸ formed.distinct.keys⟩
+  distinct := ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopesKeyed, keys ▸ formed.distinct.keys⟩
   startedOnce := formed.startedOnce
   activations := ⟨formed.activations.keys, formed.activations.positive⟩
   reservations := by unfold ReservationsUnstarted; rw [keys]; exact formed.reservations
@@ -765,7 +765,7 @@ theorem emit_wellFormed {s : State} (formed : WellFormed program s) (flows : Lis
     funext fun _ => key_congr (by apply instanceOf_congr <;> rfl)
   refine ⟨⟨formed.issued.occurrences, (fun item member => formed.issued.items item (items_same member rfl)), formed.issued.scopes,
     formed.issued.positions⟩,
-    ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopes, keys ▸ formed.distinct.keys⟩,
+    ⟨formed.distinct.occurrences, formed.distinct.items, formed.distinct.scopesKeyed, keys ▸ formed.distinct.keys⟩,
     formed.startedOnce, ⟨formed.activations.keys, formed.activations.positive⟩,
     by unfold ReservationsUnstarted; rw [keys]; exact formed.reservations,
     ⟨formed.owned.occurrenceScopes, (fun item member => formed.owned.itemScopes item (items_same member rfl)), (fun item member => formed.owned.itemOccurrences item (items_same member rfl)), (fun item member => formed.owned.attachments item (items_same member rfl)),

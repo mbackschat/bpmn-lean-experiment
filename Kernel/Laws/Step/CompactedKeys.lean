@@ -25,18 +25,14 @@ section Keys
 
 variable {start : State} {log : RunLog} {s t : State}
 
-/-- A scope occurrence record renamed by a commit. -/
-abbrev renamedScope (r : Issue → Issue) (scope : ScopeOccurrence) : ScopeOccurrence :=
-  { scope with id := renameScope r scope.id, position := r scope.position, occurrence := scope.occurrence.map (renameId r) }
-
 /-- A process instance reading of the settled state, renamed, is one of the committed state. -/
-theorem compact_instanceIn (ran : compact schedule start log s = .ok t) (issued : IssuedBelow s) (rooted : Rooted s)
-    {x : ScopeOccurrenceId} {name : String} {chain : List ScopeOccurrence} (reading : InstanceIn s x name chain) :
+theorem compact_instanceIn (ran : compact schedule start log s = .ok t) (counted : CountersFrom start s)
+    (issued : IssuedBelow s) (rooted : Rooted s) (distinct : (scopeIds s).Nodup) {x : ScopeOccurrenceId} {name : String} {chain : List ScopeOccurrence} (reading : InstanceIn s x name chain) :
     InstanceIn t (renameScope (commitRenaming schedule start log s) x) name (chain.map (renamedScope (commitRenaming schedule start log s))) := by
   obtain ⟨H, history⟩ := historic_of issued rooted
   have fixes : Fixes (commitRenaming schedule start log s) := renameBy_fixes _
-  have held : ∀ entry ∈ s.scopes, renamedScope (commitRenaming schedule start log s) entry ∈ t.scopes := fun entry member => by
-    rw [compact_scopeRecords ran]; exact List.mem_map_of_mem member
+  have held : ∀ entry ∈ s.scopes, renamedScope (commitRenaming schedule start log s) entry ∈ t.scopes := fun entry member =>
+    compact_scopeRecord_mem ran distinct (standing_apart counted rooted issued) member
   have layered : ∀ entry ∈ s.scopes, Layered entry.id.segments := fun entry member =>
     history.layered _ (history.standing entry member)
   induction reading with
@@ -74,8 +70,8 @@ theorem compact_instanceOf {program : Program} {u : State} (ran : compact schedu
   have rootedAfter := compact_rooted ran issued rooted
   rw [instanceOf_eq distinct (fun entry member orphan => (rooted.2.1 entry member).mp orphan) reading nodup]
   exact instanceOf_eq
-    (compact_scopesDistinct ran counted (historic_of issued rooted) (rooted_parents rooted) distinct)
-    (fun entry member orphan => (rootedAfter.2.1 entry member).mp orphan) (compact_instanceIn ran issued rooted reading)
+    (compact_scopesNodup ran distinct)
+    (fun entry member orphan => (rootedAfter.2.1 entry member).mp orphan) (compact_instanceIn ran counted issued rooted distinct reading)
     renamedNodup
 
 /-- An occurrence keeps its public key across the commit. -/
@@ -191,7 +187,7 @@ theorem compact_wellFormed {program : Program} {start state : State} {log : RunL
       (fun item member => let ⟨occurrence, present, same, _⟩ := owned.itemOccurrences item member; ⟨occurrence, present, same⟩)
       parents
     distinct := ⟨compact_occurrencesDistinct ran counted issued owned rooted keys distinct.occurrences,
-      compact_keyed ran distinct.items, compact_scopesDistinct ran counted historic parents distinct.scopes,
+      compact_keyed ran distinct.items, compact_scopesKeyed ran distinct.scopesKeyed,
       compact_keysDistinct ran counted formed rfl rfl issued owned rooted distinct⟩
     startedOnce := compact_startedOnce ran once
     activations := compact_activations ran ⟨formed.activations.1, formed.activations.2⟩

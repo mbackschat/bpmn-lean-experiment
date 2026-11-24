@@ -6,8 +6,9 @@
  */
 import {
   CauseTag, childScope, compareItemKey, type Cause, type Compensable, type Continuation, type FeatureSlots, freshIssue,
-  type Issue, type ItemKey, type Iteration, IterationTag, type OccurrenceId, occurrenceId, occurrenceIdParts,
-  type Resume, ResumeTag, type ScopeOccurrenceId, scopeHead, type State, type Transition, compareScopeOccurrenceId, treeMapInsert,
+  insertScope, type Issue, type ItemKey, type Iteration, IterationTag, type OccurrenceId, occurrenceId, occurrenceIdParts,
+  type Resume, ResumeTag, type ScopeMap, type ScopeOccurrenceId, scopeHead, type State, type Transition,
+  compareScopeOccurrenceId, treeMapInsert,
 } from "../state.js";
 import { assertNever } from "../il/types.js";
 
@@ -113,9 +114,10 @@ export function renameState(rename: Rename, continuation: (continuation: Continu
   const id = (key: OccurrenceId): OccurrenceId => renameId(rename, key);
   return {
     ...state,
-    scopes: state.scopes.map((entry) => ({
+    // Renamed scope occurrences are inserted afresh under their renamed keys, as Lean's fold into an empty map inserts them.
+    scopes: state.scopes.reduce<ScopeMap>((renamed, entry) => insertScope(renamed, {
       ...entry, id: scope(entry.id), position: rename(entry.position), occurrence: entry.occurrence === null ? null : id(entry.occurrence),
-    })),
+    }), []),
     occurrences: state.occurrences.map((occurrence) => ({
       ...occurrence, id: id(occurrence.id), scope: scope(occurrence.scope), continuation: continuation(occurrence.continuation),
     })),

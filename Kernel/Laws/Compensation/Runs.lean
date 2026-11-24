@@ -48,6 +48,8 @@ and what it calls settled; each operation also keeps what has settled. -/
 structure RunsOps (program : Program) (inv : State → Prop) (settled : State → OccurrenceId → Prop) : Prop where
   fits : ∀ state run, inv state → run ∈ state.slots.compensation.runs → Fits settled state run
   issued : ∀ state, inv state → ∀ entry ∈ state.scopes, Laws.State.ScopeIssued state entry.id
+  /-- Every scope occurrence sits under its own key, so a context entered at a fresh key displaces none. -/
+  keyed : ∀ state, inv state → Laws.State.ScopesKeyed state.scopeMap
   /-- Every active Multi-Instance instance's scope occurrence was issued, so no context entered later is one. -/
   slotsIssued : ∀ state, inv state → ∀ body ∈ state.slots.multiInstances, ∀ scope,
     Iteration.active scope ∈ body.instances → Laws.State.ScopeIssued state scope
@@ -71,9 +73,9 @@ structure RunsOps (program : Program) (inv : State → Prop) (settled : State �
       ∀ id, settled state id → settled (state.enterScope element parent locals none).1 id
   entered : ∀ (state : State) element parent locals, (state.enterScope element parent locals none).2.parent? = some parent ∧
     (state.enterScope element parent locals none).1.occurrenceOrdinals = state.occurrenceOrdinals ∧
-    (state.enterScope element parent locals none).1.scopes = state.scopes ++
-      [{ id := (state.enterScope element parent locals none).2, element := some element,
-         position := .fresh state.issuing (state.issueNext + 1), occurrence := none }] ∧
+    (state.enterScope element parent locals none).1.scopeMap = state.scopeMap.insert (state.enterScope element parent locals none).2
+      { id := (state.enterScope element parent locals none).2, element := some element,
+        position := .fresh state.issuing (state.issueNext + 1), occurrence := none } ∧
     (state.enterScope element parent locals none).1.slots = state.slots
   /-- A context entered below a scope occurrence that stands takes a key never issued, which every history then holds,
   and the issue table keeps every entry (DC12). -/
@@ -152,11 +154,11 @@ theorem RunsOps.enteredGrows {inv : State → Prop} {settled : State → Occurre
   obtain ⟨⟨unissued, _, grows⟩, table⟩ := ops.fresh state element parent locals holds stands
   refine .enter grows (fun x standing => ?_) counters table
   change x ∈ (state.enterScope element parent locals none).1.scopes.map (·.id) at standing
-  rw [scopesEq, List.map_append, List.mem_append] at standing
-  rcases standing with old | new
-  · exact .inl old
-  · simp only [List.map_cons, List.map_nil, List.mem_singleton] at new
-    exact .inr (new ▸ unissued)
+  obtain ⟨entry, inside, rfl⟩ := List.mem_map.mp standing
+  rw [Laws.State.scopes_eq, scopesEq] at inside
+  rcases Laws.State.mem_scopeList_insert_cases inside with old | rfl
+  · exact .inl (List.mem_map_of_mem old)
+  · exact .inr unissued
 
 /-- No run holds `context` as a running handler's. -/
 def Unheld (state : State) (context : ScopeOccurrenceId) : Prop :=
@@ -362,7 +364,7 @@ theorem entered_children {inv : State → Prop} {settled : State → OccurrenceI
       (state.enterScope element run.scope locals none).2 run.scope :=
     .parent { id := (state.enterScope element run.scope locals none).2, element := some element,
               position := .fresh state.issuing (state.issueNext + 1), occurrence := none }
-      run.scope (by rw [scopesEq]; exact List.mem_append_right _ (List.mem_singleton_self _)) link (Or.inl rfl)
+      run.scope (by rw [Laws.State.scopes_eq, scopesEq]; exact Laws.State.mem_scopeList_insert_self) link (Or.inl rfl)
   exact .inl (RecordHeld.narrow (.pending (by rw [slotsEq]; exact member) pending) (kept child inside) linked.symm)
 
 theorem ended_store {inv : State → Prop} {settled : State → OccurrenceId → Prop} {program : Program} (ops : RunsOps program inv settled) {state : State}
@@ -417,40 +419,43 @@ theorem handler_keeps {inv : State → Prop} {settled : State → OccurrenceId �
     (held_running fun run member => runs ▸ member) (held_resumes enter.1 fun run member => runs ▸ member) provenance
   have standsEntered : entered.2 ∈ ({ entered.1 with slots := { entered.1.slots with compensation } } : State).scopes.map (·.id) := by
     change _ ∈ entered.1.scopes.map _
-    rw [scopesEq]
-    simp
+    rw [Laws.State.scopes_eq, scopesEq]
+    exact List.mem_map_of_mem Laws.State.mem_scopeList_insert_self
   have entry : ∃ entry ∈ ({ entered.1 with slots := { entered.1.slots with compensation } } : State).scopes, entry.id = entered.2 ∧
       entry.element = some handler ∧ entry.calledInstance = none := by
     change ∃ entry ∈ entered.1.scopes, _
-    rw [scopesEq]
-    exact ⟨_, List.mem_append_right _ (List.mem_singleton_self _), rfl, rfl, rfl⟩
+    rw [Laws.State.scopes_eq, scopesEq]
+    exact ⟨_, Laws.State.mem_scopeList_insert_self, rfl, rfl, rfl⟩
   have begun := ops.begin _ handler _ scope stored.1 standsEntered entry
   have shape := ops.signalled { entered.1 with slots := { entered.1.slots with compensation } }
     (.begin { element := handler, scope := entered.2, continuation := .compensation scope })
-  have scopesAfter : (({ entered.1 with slots := { entered.1.slots with compensation } } : State).signal
-      (.begin { element := handler, scope := entered.2, continuation := .compensation scope })).scopes = state.scopes ++
-      [{ id := entered.2, element := some handler, position := .fresh state.issuing (state.issueNext + 1),
-         occurrence := none }] :=
-    shape.1.trans scopesEq
+  have scopesAfter : ∀ found, found ∈ (({ entered.1 with slots := { entered.1.slots with compensation } } : State).signal
+      (.begin { element := handler, scope := entered.2, continuation := .compensation scope })).scopes ↔
+        found ∈ state.scopes ∨
+          found = { id := entered.2, element := some handler, position := .fresh state.issuing (state.issueNext + 1),
+                    occurrence := none } :=
+    fun found => by
+      rw [shape.1]
+      change found ∈ entered.1.scopes ↔ _
+      rw [Laws.State.scopes_eq, scopesEq]
+      exact Laws.State.mem_scopeList_insert_fresh (ops.keyed state holds)
+        (new := { id := entered.2, element := some handler, position := .fresh state.issuing (state.issueNext + 1),
+                  occurrence := none }) fresh
   have signalGrows := ops.signalGrows { entered.1 with slots := { entered.1.slots with compensation } }
     (.begin { element := handler, scope := entered.2, continuation := .compensation scope })
   refine ⟨begun.1, ⟨?_, fun entry member => ?_, fun id settled => begun.2 id (stored.2 id (enter.2 id settled)),
-    fun body member => ?_, grows.trans signalGrows⟩, fun entry member => by rw [scopesAfter]; exact List.mem_append_left _ member,
+    fun body member => ?_, grows.trans signalGrows⟩, fun entry member => (scopesAfter entry).mpr (.inl member),
     ⟨unissued, signalGrows.issued issuedAfter⟩, fun entry member same => ?_, fun run member _ => ?_⟩
   · exact Laws.State.OccurrenceGrows.trans (t := entered.1) (entering ▸ ops.enteredGrows holds stands locals) shape.2.1
-  · rw [scopesAfter] at member
-    rcases List.mem_append.mp member with old | new
+  · rcases (scopesAfter _).mp member with old | rfl
     · exact .inl old
-    · rw [List.mem_singleton.mp new]
-      exact .inr unissued
+    · exact .inr unissued
   · rw [shape.2.2] at member
     change body ∈ entered.1.slots.multiInstances at member
     rwa [slotsEq] at member
-  · rw [scopesAfter] at member
-    rcases List.mem_append.mp member with old | new
+  · rcases (scopesAfter _).mp member with old | rfl
     · exact absurd same (fresh entry old)
-    · rw [List.mem_singleton.mp new]
-      exact link
+    · exact link
   · rw [shape.2.2]
     change run ∈ compensation.runs
     rw [runs, slotsEq]

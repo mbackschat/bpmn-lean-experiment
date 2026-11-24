@@ -2,6 +2,7 @@ module
 
 public import Kernel.Laws.Flow.Rules
 public import Kernel.Laws.State.Key
+public import Kernel.Laws.State.Occurrence
 
 /-! # Laws of flow: the witnesses
 
@@ -130,12 +131,15 @@ theorem both_leave_rejected :
   cases first
   simp at second
 
+/- The witnesses read their scopes through the scope map's list view. -/
+attribute [local simp] Laws.State.scopes_eq
+
 def atJoin : Occurrence := { id := joinedFirst, element := joinGateway, scope := root, activation := 1 }
 def atC : Occurrence := { id := keyC, element := ⟨"C"⟩, scope := root, activation := 1 }
 
 /-- `A` arrived; `C` still works upstream of `b`, so the Inclusive join waits. -/
 def waitingAtC : State :=
-  { instanceId := "p", scopes := [{ id := root, element := none, position := 0 }], occurrences := [atJoin, atC],
+  { instanceId := "p", scopeMap := Laws.State.ofScopes [{ id := root, element := none, position := 0 }], occurrences := [atJoin, atC],
     slots := { parked := [arrivedA] } }
 
 /-- `C` is gone: nothing can reach `b` any more, so the join is ready without an arrival on `b`. -/
@@ -167,7 +171,7 @@ theorem nothing_upstream_ready : InclusiveReady diagram (fun _ _ => False) [flow
     simp only [doneAtC, List.mem_singleton] at member
     subst member
     exact other same.symm
-  · simp only [doneAtC, waitingAtC, List.mem_singleton] at member
+  · simp [doneAtC, waitingAtC] at member
     subst member
     simp [root, ScopeOccurrence.parent] at parent
   · simp [Laws.State.allQueuedTokens, doneAtC, waitingAtC] at token

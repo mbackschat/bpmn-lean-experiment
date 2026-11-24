@@ -2,6 +2,7 @@ module
 
 public import Kernel.State.Rename
 public import Kernel.Laws.State.History
+public import Kernel.Laws.State.Occurrence
 import all Kernel.State.Rename
 
 /-! # Laws of the state: renaming at commit (DC12)
@@ -71,9 +72,46 @@ theorem renameItemKey_eq (r : Issue → Issue) (key : ItemKey) :
     renameItemKey r key = { key with occurrence := renameId r key.occurrence, ordinal := r key.ordinal } := by
   unfold renameItemKey; rfl
 
-theorem renameState_scopes (r : Issue → Issue) (c : Continuation → Continuation) (s : State) : (renameState r c s).scopes = s.scopes.map fun scope =>
-    { scope with id := renameScope r scope.id, position := r scope.position, occurrence := scope.occurrence.map (renameId r) } := by
+/-- A scope occurrence record renamed by a commit. -/
+abbrev renamedScope (r : Issue → Issue) (scope : ScopeOccurrence) : ScopeOccurrence :=
+  { scope with id := renameScope r scope.id, position := r scope.position, occurrence := scope.occurrence.map (renameId r) }
+
+/-- The renamed scope map re-keys every record under its renamed key (`Keyed.refold`). -/
+theorem renameState_scopes (r : Issue → Issue) (c : Continuation → Continuation) (s : State) :
+    (renameState r c s).scopeMap = Keyed.refold ScopeOccurrence.id (renamedScope r) s.scopeMap := by
   unfold renameState; rfl
+
+/-- Every scope occurrence of the renamed state is one of `s`, renamed. -/
+theorem renameState_scope_of {r : Issue → Issue} {c : Continuation → Continuation} {s : State} {entry : ScopeOccurrence}
+    (member : entry ∈ (renameState r c s).scopes) : ∃ old ∈ s.scopes, entry = renamedScope r old := by
+  rw [scopes_eq, renameState_scopes, scopeList_eq] at member
+  rw [scopes_eq, scopeList_eq]
+  exact Keyed.mem_refold_of member
+
+/-- The standing keys of the renamed state are `s`'s, renamed, whatever the renaming: a renamed key is inserted and
+never removed, only its record replaced. -/
+theorem renameState_keys {r : Issue → Issue} {c : Continuation → Continuation} {s : State} {x : ScopeOccurrenceId} :
+    x ∈ standingKeys (renameState r c s) ↔ x ∈ (standingKeys s).map (renameScope r) := by
+  unfold standingKeys
+  rw [scopes_eq, scopes_eq, renameState_scopes, scopeList_eq, scopeList_eq, Keyed.keys_refold, List.map_map]
+  rfl
+
+/-- A renaming that maps no two standing keys onto one keeps every scope occurrence of `s`, renamed. -/
+theorem renameState_scope_mem {r : Issue → Issue} {c : Continuation → Continuation} {s : State}
+    (distinct : (standingKeys s).Nodup)
+    (apart : ∀ x ∈ standingKeys s, ∀ y ∈ standingKeys s, renameScope r x = renameScope r y → x = y) {old : ScopeOccurrence}
+    (member : old ∈ s.scopes) : renamedScope r old ∈ (renameState r c s).scopes := by
+  have values : ∀ {scope : ScopeOccurrence}, scope ∈ Keyed.values s.scopeMap → scope ∈ s.scopes := fun inside => by
+    rw [scopes_eq, scopeList_eq]; exact inside
+  rw [scopes_eq, renameState_scopes, scopeList_eq]
+  rw [scopes_eq, scopeList_eq] at member
+  refine Keyed.mem_refold (fun a aIn b bIn same => ?_) member
+  exact nodup_map_eq distinct (values aIn) (values bIn)
+    (apart _ (List.mem_map_of_mem (values aIn)) _ (List.mem_map_of_mem (values bIn)) same)
+
+theorem renameState_scopesKeyed (r : Issue → Issue) (c : Continuation → Continuation) (s : State) :
+    ScopesKeyed (renameState r c s).scopeMap := by
+  rw [renameState_scopes]; exact Keyed.keyedOn_refold _ _
 
 theorem renameState_occurrences (r : Issue → Issue) (c : Continuation → Continuation) (s : State) : (renameState r c s).occurrences = s.occurrences.map
     fun occurrence => { occurrence with id := renameId r occurrence.id, scope := renameScope r occurrence.scope
@@ -135,8 +173,7 @@ theorem renameState_journal (r : Issue → Issue) (c : Continuation → Continua
 
 /-- The renaming as an equation: every field but the identities it renames is kept. -/
 theorem renameState_eq (r : Issue → Issue) (c : Continuation → Continuation) (s : State) : renameState r c s = { s with
-    scopes := s.scopes.map fun scope =>
-      { scope with id := renameScope r scope.id, position := r scope.position, occurrence := scope.occurrence.map (renameId r) }
+    scopeMap := Keyed.refold ScopeOccurrence.id (renamedScope r) s.scopeMap
     occurrences := s.occurrences.map fun occurrence =>
       { occurrence with id := renameId r occurrence.id, scope := renameScope r occurrence.scope
                         continuation := c occurrence.continuation }
@@ -163,7 +200,7 @@ theorem renameState_eq (r : Issue → Issue) (c : Continuation → Continuation)
 
 /-- The renaming keeps every field but the identities it renames. -/
 theorem renameState_frame (r : Issue → Issue) (c : Continuation → Continuation) (s : State) : renameState r c s = { s with
-    scopes := (renameState r c s).scopes, occurrences := (renameState r c s).occurrences
+    scopeMap := (renameState r c s).scopeMap, occurrences := (renameState r c s).occurrences
     variables := (renameState r c s).variables, openItems := (renameState r c s).openItems
     slots := (renameState r c s).slots, journal := (renameState r c s).journal } := by
   unfold renameState; rfl

@@ -78,13 +78,14 @@ theorem enterBody_placed {program : Program} {occurrence : Occurrence} {state : 
       { scope := (state.enterScope element occurrence.scope locals (some occurrence.id)).2, element,
         occurrence := occurrence.id, collection, instances := List.replicate count .waiting } := by
     rw [Laws.State.enterScope_eq]
-    refine ⟨⟨⟨occurrence, member, rfl, named, body⟩, by simp, fun _ scope slot =>
+    refine ⟨⟨⟨occurrence, member, rfl, named, body⟩, List.mem_map.mpr ⟨_, Laws.State.mem_scopeList_insert_self, rfl⟩,
+      fun _ scope slot =>
       absurd (List.mem_of_getElem? slot) (none scope), fun _ _ scope one _ =>
       absurd (List.mem_of_getElem? one) (none scope)⟩, fun entry inside same => ?_,
       fun scope active => absurd active (none scope), fun scope active => absurd active (none scope)⟩
-    rcases List.mem_append.mp inside with old | new
+    rcases Laws.State.mem_scopeList_insert_cases inside with old | rfl
     · exact absurd same (Laws.State.scopes_fresh formed entry old)
-    · rw [List.mem_singleton.mp new]
+    · rfl
   cases unarmed
   · simp only [Bool.false_eq_true, ↓reduceIte]
     have same := Laws.State.signal_eq (state.enterScope element occurrence.scope locals (some occurrence.id)).1

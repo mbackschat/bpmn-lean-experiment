@@ -219,7 +219,7 @@ structure Begins (before after : State) (request : BeginRequest) (role : Activat
   isBegun : begun.begun = true
   source : (∃ reserved, Reserved before after request begun reserved) ∨
     (∃ reserved, Rekeyed before after request begun reserved) ∨ Issued before after request role begun
-  scopes : after.scopes = before.scopes
+  scopeMap : after.scopeMap = before.scopeMap
   scopeOrdinals : after.scopeOrdinals = before.scopeOrdinals
   occurrenceOrdinals : after.occurrenceOrdinals = before.occurrenceOrdinals
   instances : ∀ x, after.instanceOf x = before.instanceOf x
@@ -245,6 +245,10 @@ structure Begins (before after : State) (request : BeginRequest) (role : Activat
   issuer : IssuerFresh before → IssuerFresh after
   /-- Every begun occurrence is keyed in the scope occurrence it begins in (DC26). -/
   keyed : begun.id.scope = request.scope
+
+theorem Begins.scopes {before after : State} {request : BeginRequest} {role : ActivationRole} {sourceType : String}
+    {begun : Occurrence} (begins : Begins before after request role sourceType begun) : after.scopes = before.scopes := by
+  rw [scopes_eq, scopes_eq, begins.scopeMap]
 
 /-- The item list stays: the item map does (`itemMap`). -/
 theorem Begins.items {before after : State} {request : BeginRequest} {role : ActivationRole} {sourceType : String}
@@ -424,7 +428,7 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
       fun entry member => grows.issued (formed.issued.scopes entry (begins.scopes ▸ member)),
       formed.issued.positionsKept (fun _ member => begins.scopes ▸ member) (begins.table formed.issuer)⟩
   case distinct =>
-    refine ⟨?_, begins.itemMap.1 ▸ formed.distinct.items, by simpa [scopeIds, begins.scopes] using formed.distinct.scopes,
+    refine ⟨?_, begins.itemMap.1 ▸ formed.distinct.items, begins.scopeMap ▸ formed.distinct.scopesKeyed,
       ?_⟩
     · rw [occurrenceIds, begins.occurrences, List.map_append, List.nodup_append]
       refine ⟨formed.distinct.occurrences.sublist (List.filter_sublist.map _), by simp, ?_⟩

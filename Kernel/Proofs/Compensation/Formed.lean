@@ -203,44 +203,49 @@ the instance identity and the queue: no queued Cancel raise names the new key, n
 keep their process instances. -/
 theorem Formed.enter {precedes : Compensable → Compensable → Prop} {program : Program} {s t : State}
     {entry : ScopeOccurrence} (formed : Formed precedes s) (well : WellFormed program s)
-    (scopes : t.scopes = s.scopes ++ [entry]) (fresh : Laws.State.ScopeFresh s t entry.id) (placed : entry.parent.isSome)
+    (scopeMap : t.scopeMap = s.scopeMap.insert entry.id entry) (fresh : Laws.State.ScopeFresh s t entry.id)
+    (placed : entry.parent.isSome)
     (nextCompletion : t.nextCompletion = s.nextCompletion) (activations : t.activations = s.activations)
     (instanceId : t.instanceId = s.instanceId) (compensation : t.slots.compensation = s.slots.compensation)
     (signals : Laws.State.allSignals t = Laws.State.allSignals s) (occurrences : t.occurrences = s.occurrences) : Formed precedes t := by
-  have ids : scopeIds t = scopeIds s ++ [entry.id] := by simp [scopeIds, scopes]
+  have apart : ∀ old ∈ s.scopes, old.id ≠ entry.id := fun old member same => fresh.1 (same ▸ well.issued.scopes old member)
+  have members : ∀ found, found ∈ t.scopes ↔ found ∈ s.scopes ∨ found = entry := fun _ => by
+    rw [Laws.State.scopes_eq t, scopeMap]
+    exact Laws.State.mem_scopeList_insert_fresh well.distinct.scopesKeyed apart
+  have ids : ∀ x, x ∈ scopeIds t ↔ x ∈ scopeIds s ∨ x = entry.id := fun x => by
+    simp only [scopeIds, List.mem_map, members]
+    constructor
+    · rintro ⟨found, old | rfl, rfl⟩
+      · exact .inl ⟨found, old, rfl⟩
+      · exact .inr rfl
+    · rintro (⟨found, old, rfl⟩ | rfl)
+      · exact ⟨found, .inl old, rfl⟩
+      · exact ⟨entry, .inr rfl, rfl⟩
   have nodup : (scopeIds t).Nodup := by
-    rw [ids]
-    refine List.nodup_append.mpr ⟨well.distinct.scopes, List.nodup_cons.mpr ⟨by simp, .nil⟩, fun x inside y new same => ?_⟩
-    obtain ⟨old, member, rfl⟩ := List.mem_map.mp inside
-    rw [List.mem_singleton.mp new] at same
-    exact fresh.1 (same ▸ well.issued.scopes old member)
+    rw [scopeIds, Laws.State.scopes_eq, scopeMap]
+    exact Laws.State.scopeList_nodup (Laws.State.scopesKeyed_insert well.distinct.scopesKeyed entry)
   have parentless : ∀ other ∈ t.scopes, other.parent = none → other.id = State.root := fun other member orphan => by
-    rw [scopes] at member
-    rcases List.mem_append.mp member with old | new
+    rcases (members other).mp member with old | rfl
     · exact (well.rooted.2.1 other old).mp orphan
-    · obtain rfl := List.mem_singleton.mp new
-      rw [orphan] at placed
+    · rw [orphan] at placed
       cases placed
   have keptIn : ∀ x ∈ scopeIds s, t.instanceOf x = s.instanceOf x := fun x old =>
-    Laws.State.instanceOf_kept well nodup parentless instanceId old fun other member _ => by
-      rw [scopes]; exact List.mem_append_left _ member
+    Laws.State.instanceOf_kept well nodup parentless instanceId old fun other member _ => (members other).mpr (.inl member)
   refine formed.shrink (fun x present below => ?_) (Nat.le_of_eq nextCompletion.symm) fresh.2.2
     (fun _ held => Laws.State.Counted.congr activations held)
     (by rw [compensation]; exact .refl _) (by rw [compensation]; exact .refl _) (fun record member => ?_)
     (by rw [signals]; exact .refl _) (fun _ inside => signals ▸ inside)
     (.sub (fun _ inside => occurrences ▸ inside) fun o inside =>
       keptIn _ (well.owned.occurrenceScopes o (occurrences ▸ inside)))
-    (fun _ _ _ stands => ids ▸ List.mem_append_left _ stands)
+    (fun _ _ _ stands => (ids _).mpr (.inl stands))
   · have old : x ∈ scopeIds s := by
-      rw [ids] at present
-      rcases List.mem_append.mp present with old | new
+      rcases (ids x).mp present with old | new
       · exact old
-      · rw [List.mem_singleton.mp new] at below
+      · rw [new] at below
         exact absurd below fresh.1
     exact ⟨old, keptIn x old⟩
   · rw [compensation] at member
-    rw [ids]
-    exact List.mem_append_left _ (formed.retained record member)
+    exact (ids _).mpr (.inl (formed.retained record member))
 
 /-- A reservation keeps `Formed`: it changes only the occurrences, the counter of its key and the issue counter. -/
 theorem Formed.reserve {precedes : Compensable → Compensable → Prop} {program : Program} {s : State}
@@ -371,7 +376,8 @@ theorem formed_frameAlongside (precedes : Compensable → Compensable → Prop) 
   enterScope s element parent locals owner well stands _ kept := by
     have fresh := Laws.State.enterScope_fresh well.historic well.issuer element stands locals owner
     rw [Laws.State.enterScope_eq] at fresh ⊢
-    exact kept.enter well rfl fresh rfl rfl rfl rfl rfl rfl rfl
+    exact kept.enter (entry := { id := _, element := _, position := _, occurrence := _, calledInstance := _ }) well rfl fresh
+      rfl rfl rfl rfl rfl rfl rfl
   reserve s element scope well _ _ _ kept := kept.reserve well element scope
   leaveScope le _ _ well present _ kept := kept.leaveScope le well present
   clearInside le _ _ keep well present housed kept := kept.clearInside le well present keep housed
@@ -828,7 +834,8 @@ theorem formed_occursAlongside (program : Program) (precedes : Compensable → C
   enterCalled s call variables definition well member _ _ _ _ kept := by
     have fresh := Laws.State.enterCalled_fresh well program (well.owned.occurrenceScopes call member) variables
       definition
-    rw [Laws.State.enterCalled_eq s program call variables definition (Laws.State.scopes_fresh well)] at fresh ⊢
-    exact kept.enter well rfl fresh rfl rfl rfl rfl rfl rfl rfl
+    rw [Laws.State.enterCalled_eq s program call variables definition] at fresh ⊢
+    exact kept.enter (entry := { id := _, element := _, position := _, occurrence := _, calledInstance := _ }) well rfl fresh
+      rfl rfl rfl rfl rfl rfl rfl
 
 end Kernel.Proofs.Compensation

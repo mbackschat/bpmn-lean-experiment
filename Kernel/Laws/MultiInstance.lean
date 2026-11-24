@@ -94,6 +94,8 @@ structure MultiInstanceOps (program : Program) (inv : State → Prop) (settled :
     occurrence.scope ∈ Laws.State.scopeIds state
   /-- Every scope occurrence was issued, so one entered later is new. -/
   issued : ∀ state, inv state → ∀ entry ∈ state.scopes, Laws.State.ScopeIssued state entry.id
+  /-- Every scope occurrence sits under its own key, so one entered under a new key leaves the others standing. -/
+  keyed : ∀ state, inv state → Laws.State.ScopesKeyed state.scopeMap
   /-- Every running compensation handler's context was issued, so no scope occurrence entered later is one. -/
   contexts : ∀ state, inv state → ∀ run ∈ state.slots.compensation.runs, ∀ context ∈ run.running.map (·.1),
     Laws.State.ScopeIssued state context
@@ -266,34 +268,35 @@ theorem enterInstance_entering (ops : MultiInstanceOps program inv settled)
   obtain ⟨unissued, issuedAfter, grows⟩ := fresh
   have apart : ∀ entry ∈ state.scopes, entry.id ≠ (state.enterScope run.element run.scope locals none).2 :=
     fun entry member same => unissued (same ▸ ops.issued state holds entry member)
+  have scopesKeyed := ops.keyed state holds
   rw [Laws.State.enterScope_eq] at entered carry apart unissued issuedAfter grows ⊢
-  refine ⟨⟨entered, carry _ carried, by simp [Laws.State.scopeIds] at stands ⊢; exact .inl stands,
+  refine ⟨⟨entered, carry _ carried, Laws.State.mem_keys_insert_of scopesKeyed stands apart,
     fun scope active => ?_, fun request inside => ?_,
-    held.imp id fun ⟨entry, member, facts⟩ => ⟨entry, List.mem_append_left _ member, facts⟩⟩,
+    held.imp id fun ⟨entry, member, facts⟩ =>
+      ⟨entry, Laws.State.mem_scopeList_insert_of scopesKeyed member (apart entry member), facts⟩⟩,
     unissued, issuedAfter, grows⟩
   · rcases List.mem_or_eq_of_mem_set active with old | new
     · obtain ⟨below, parent⟩ := placed scope old
       refine ⟨grows.issued below, fun entry member named => ?_⟩
-      rcases List.mem_append.mp member with present | added
+      rcases Laws.State.mem_scopeList_insert_cases member with present | added
       · exact parent entry present named
-      · rw [List.mem_singleton.mp added] at named
+      · rw [added] at named
         rw [← named] at below
         exact absurd below unissued
     · obtain rfl := Iteration.active.inj new
       refine ⟨issuedAfter, fun entry member named => ?_⟩
-      rcases List.mem_append.mp member with present | added
+      rcases Laws.State.mem_scopeList_insert_cases member with present | added
       · exact absurd named (apart entry present)
-      · rw [List.mem_singleton.mp added]
+      · rw [added]
         simp [Kernel.Laws.State.ScopeOccurrenceId.parent?_child]
   · rcases List.mem_append.mp inside with old | new
     · obtain ⟨bare, standing, rest⟩ := queued request old
       obtain ⟨incoming, entry, member, facts⟩ := rest
-      refine ⟨bare, ?_, incoming, entry, List.mem_append_left _ member, facts⟩
-      simp [Laws.State.scopeIds] at standing ⊢
-      exact .inl standing
+      exact ⟨bare, Laws.State.mem_keys_insert_of scopesKeyed standing apart, incoming, entry,
+        Laws.State.mem_scopeList_insert_of scopesKeyed member (apart entry member), facts⟩
     · rw [List.mem_singleton.mp new]
-      exact ⟨by simp [Laws.State.names], by simp [Laws.State.scopeIds], rfl, _,
-        List.mem_append_right _ (List.mem_singleton_self _), rfl, rfl, rfl⟩
+      exact ⟨by simp [Laws.State.names], List.mem_map_of_mem Laws.State.mem_scopeList_insert_self, rfl, _,
+        Laws.State.mem_scopeList_insert_self, rfl, rfl, rfl⟩
 
 /-- Entering the waiting slot `index` extends what entering the instances keeps and records. -/
 theorem enterInstance_opening (ops : MultiInstanceOps program inv settled) {ctx : Ctx} {loop : MultiInstance}
@@ -314,7 +317,10 @@ theorem enterInstance_opening (ops : MultiInstanceOps program inv settled) {ctx 
     rw [opening.length]
     exact (List.getElem?_eq_some_iff.mp waiting).1
   have unissuedStart := fun issued => unissued (opening.grows.issued issued)
-  rw [Laws.State.enterScope_eq] at entering unissued issuedAfter grows unissuedStart ⊢
+  have scopesKeyed := ops.keyed s opening.entering.1
+  have keyApart : ∀ entry ∈ s.scopes, entry.id ≠ (s.enterScope run.element run.scope locals none).2 :=
+    fun entry member same => unissued (same ▸ ops.issued s opening.entering.1 entry member)
+  rw [Laws.State.enterScope_eq] at entering unissued issuedAfter grows unissuedStart keyApart ⊢
   have counters := opening.counters
   have untouched := opening.untouched
   have entered := opening.entered
@@ -323,12 +329,14 @@ theorem enterInstance_opening (ops : MultiInstanceOps program inv settled) {ctx 
   have requested := opening.requested
   dsimp only at requested
   refine ⟨entering, counters, opening.grows.trans grows, opening.slots, opening.occurrences, opening.signals, opening.tokens,
-    opening.queuedSignals, opening.queuedTokens, fun entry member => List.mem_append_left _ (opening.kept entry member), fun entry member => ?_,
+    opening.queuedSignals, opening.queuedTokens, fun entry member =>
+      Laws.State.mem_scopeList_insert_of scopesKeyed (opening.kept entry member) (keyApart _ (opening.kept entry member)),
+    fun entry member => ?_,
     by simp [opening.length], fun other outside => ?_, fun other inside => ?_, fun first inside second scope one two => ?_,
     ?_⟩
-  · rcases List.mem_append.mp member with old | new
+  · rcases Laws.State.mem_scopeList_insert_cases member with old | new
     · exact opening.scopes entry old
-    · rw [List.mem_singleton.mp new]
+    · rw [new]
       exact .inr ⟨unissuedStart, Kernel.Laws.State.ScopeOccurrenceId.parent?_child _ _ _, rfl, rfl⟩
   · have differs : index ≠ other := fun same => outside (by simp [same])
     rw [List.getElem?_set_ne differs]
@@ -338,7 +346,7 @@ theorem enterInstance_opening (ops : MultiInstanceOps program inv settled) {ctx 
       obtain ⟨scope, slot, bounds, rest⟩ := entered other old
       obtain ⟨stands, counter⟩ := rest
       refine ⟨scope, by rw [List.getElem?_set_ne differs]; exact slot, ⟨bounds.1, grows.issued bounds.2⟩,
-        by simp [Laws.State.scopeIds] at stands ⊢; exact .inl stands, fun cib named => ?_⟩
+        Laws.State.mem_keys_insert_of scopesKeyed stands keyApart, fun cib named => ?_⟩
       obtain ⟨entries, present, entry⟩ := counter cib named
       refine ⟨entries, ?_, entry⟩
       simp only [Std.ExtTreeMap.getElem?_insert]
@@ -349,7 +357,7 @@ theorem enterInstance_opening (ops : MultiInstanceOps program inv settled) {ctx 
         exact unissued bounds.2
     · rw [List.mem_singleton.mp new]
       refine ⟨_, by rw [List.getElem?_set_self below], ⟨unissuedStart, issuedAfter⟩,
-        by simp [Laws.State.scopeIds], fun cib named => ?_⟩
+        List.mem_map_of_mem Laws.State.mem_scopeList_insert_self, fun cib named => ?_⟩
       obtain ⟨earlier, later, split, last⟩ := counted cib named
       refine ⟨keyed locals, by simp only [Std.ExtTreeMap.getElem?_insert_self], ?_⟩
       rw [split]

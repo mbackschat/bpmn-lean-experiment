@@ -95,8 +95,8 @@ theorem orderJournal_instanceRoot (formed : WellFormed program state) (counted :
   have rooted := facts.rooted
   obtain ⟨name, chain, reading, -⟩ := instanceIn_exists formed present
   have reading' : InstanceIn (ordered log state) x name chain := reading.transport (fun entry inside => reading.mem entry inside) rfl
-  have renamed := compact_instanceIn ran issued rooted reading'
-  have distinct := compact_scopesDistinct ran counted' (historic_of issued rooted) (rooted_parents rooted) formed.distinct.scopes
+  have renamed := compact_instanceIn ran counted' issued rooted formed.distinct.scopes reading'
+  have distinct := compact_scopesNodup ran formed.distinct.scopes
   have before := instanceRoot_chain reading formed.distinct.scopes reading.mem
   refine ⟨?_, ?_⟩
   · rw [instanceRoot_chain renamed distinct renamed.mem, before, chainRoot_renamed rooted]

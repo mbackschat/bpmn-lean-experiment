@@ -18,12 +18,12 @@ namespace Kernel.Laws.State
 open Kernel
 
 /- The sample queues nothing under a unit key, so its queue views are its batches. -/
-attribute [local simp] allSignals allQueuedTokens
+attribute [local simp] allSignals allQueuedTokens scopes_eq
 
 /-- The sample's scope occurrences read the instance `p`. -/
 private theorem sample_instance (kind : OpenKind) :
     (sample kind).instanceOf processRoot = "p" ∧ (sample kind).instanceOf subScope = "p" := by
-  have nodup : (scopeIds (sample kind)).Nodup := by simp [scopeIds, sample, rootScope, childScope, processRoot, subScope]
+  have nodup : (scopeIds (sample kind)).Nodup := by rw [scopeIds, scopes_eq]; exact scopeList_nodup (scopesKeyed_ofScopes _)
   have parentless : ∀ entry ∈ (sample kind).scopes, entry.parent = none → entry.id = State.root := by
     simp [sample, rootScope, childScope, processRoot, subScope, root_eq]
   have root : InstanceIn (sample kind) processRoot (sample kind).instanceId [rootScope] :=
@@ -53,7 +53,7 @@ theorem sample_wellFormed (kind : OpenKind) {program : Program}
     fun _ member => (sample_historic kind).issued member,
     by simp [sample, rootScope, childScope]⟩
   distinct := ⟨by simp [occurrenceIds, sample, subProcess, innerTask, outerTask], keyedBy_ofItems _,
-    by simp [scopeIds, sample, rootScope, childScope, processRoot, subScope],
+    scopesKeyed_ofScopes _,
     by simp [key, sample, subProcess, innerTask, outerTask]⟩
   startedOnce := by simp [StartedOnce, starts, sample]
   activations := ⟨by simp [sample], by simp [sample]⟩
@@ -70,7 +70,7 @@ theorem sample_wellFormed (kind : OpenKind) {program : Program}
     tokenScopes := by simp [sample] }
   rooted := ⟨by simp [scopeIds, sample, rootScope, processRoot, root_eq],
     by simp [sample, rootScope, childScope, processRoot, subScope, root_eq], by
-      simp only [sample, List.mem_cons, List.not_mem_nil, or_false]
+      simp only [sample, scopes_eq, mem_sampleScopes]
       rintro scope (rfl | rfl) <;> rw [root_eq]
       · exact .refl _
       · exact sub_within⟩
@@ -91,7 +91,7 @@ theorem sample_wellFormed (kind : OpenKind) {program : Program}
     rcases member with rfl | rfl | rfl <;> simp only [Counted, key, subProcess, innerTask, outerTask, root, sub] <;>
       simp [sample]
   ownedBelow := by
-    simp only [OwnedBelow, sample, List.mem_cons, List.not_mem_nil, or_false]
+    simp only [OwnedBelow, sample, scopes_eq, mem_sampleScopes, List.mem_cons, List.not_mem_nil, or_false]
     rintro scope (rfl | rfl) occurrence (rfl | rfl | rfl) owner <;>
       simp_all [rootScope, childScope, subProcess, innerTask, outerTask, processRoot, subScope]
   claimed := ⟨by simp [sample, innerItem, outerItem], by simp [Queued, sample], by simp [Precedes, sample],
@@ -135,7 +135,7 @@ theorem parentless_iff_root (scope : ScopeOccurrence) : scope.parent = none ↔ 
 
 /-- A lone parentless scope occurrence other than `State.root` breaks `Rooted`. -/
 theorem foreign_root_rejected (kind : OpenKind) :
-    ¬ Rooted { sample kind with scopes := [{ rootScope with id := (.ofSegments [{ element := ⟨"Foreign"⟩, ordinal := 7 }]) }] } := by
+    ¬ Rooted { sample kind with scopeMap := ofScopes [{ rootScope with id := (.ofSegments [{ element := ⟨"Foreign"⟩, ordinal := 7 }]) }] } := by
   rintro ⟨present, _, _⟩
   simp [scopeIds, root_eq] at present
 

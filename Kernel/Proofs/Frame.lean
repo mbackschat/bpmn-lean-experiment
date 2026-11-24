@@ -154,7 +154,7 @@ theorem countersFrom_occurs : OccursAlongside program (Laws.State.CountersFrom s
   throwCompensate _ _ _ _ _ _ _ _ _ _ held := by rw [Laws.State.signal_eq]; exact held.same rfl rfl rfl
   raise _ _ _ _ _ held := by rw [Laws.State.signal_eq]; exact held.same rfl rfl rfl
   enterCalled _ _ _ _ formed _ _ _ _ _ held := by
-    rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]; exact held.same rfl rfl rfl
+    rw [Laws.State.enterCalled_eq _ _ _ _ _]; exact held.same rfl rfl rfl
 
 theorem countersFrom_closure : ClosureAlongside program (Laws.State.CountersFrom start) :=
   { countersFrom_frame start program with
@@ -258,7 +258,7 @@ theorem issuerOf_occurs : OccursAlongside program (IssuerOf b) where
   throwCompensate _ _ _ _ _ _ _ _ _ _ held := by rw [Laws.State.signal_eq]; exact held
   raise _ _ _ _ _ held := by rw [Laws.State.signal_eq]; exact held
   enterCalled _ _ _ _ formed _ _ _ _ _ held := by
-    rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]; exact held
+    rw [Laws.State.enterCalled_eq _ _ _ _ _]; exact held
 
 theorem issuerOf_body : BodyAlongside program (IssuerOf b) :=
   { issuerOf_frame b program with

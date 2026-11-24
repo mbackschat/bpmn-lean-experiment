@@ -177,7 +177,7 @@ theorem PlacedLane.left (formed : WellFormed program s) (lane : PlacedLane progr
   have entries := clearInside_entries (le := le) formed present []
   obtain ⟨draft, cleared⟩ := Laws.State.clearInside_eq (le := le) s scope []
   refine lane.shrink formed (Within s · scope) (fun _ _ _ within out => within.trans out)
-    (fun within => notRoot (Laws.State.root_within formed within).symm) left.scopesSublist left.scopes
+    (fun within => notRoot (Laws.State.root_within formed within).symm) left.scopesSub left.scopes
     (by rw [slots]; exact List.filter_sublist.trans entries.1)
     (fun entry member free => by
       rw [slots]
@@ -205,7 +205,7 @@ theorem PlacedLane.cleared (formed : WellFormed program s) (lane : PlacedLane pr
   obtain ⟨draft, shape⟩ := Laws.State.clearInside_eq (le := le) s scope keep
   refine lane.shrink formed (StrictlyWithin s · scope) (fun _ _ stands within ⟨up, other⟩ =>
       ⟨within.trans up, fun same => other (Laws.State.Within.antisymm formed stands up (same ▸ within))⟩)
-    (fun within => within.2 (Laws.State.root_within formed within.1)) cleared.scopesSublist cleared.scopes entries.1
+    (fun within => within.2 (Laws.State.root_within formed within.1)) cleared.scopesSub cleared.scopes entries.1
     entries.2.1 entries.2.2
     (Laws.State.clearInside_grows s scope keep)
     (fun o member => ?_) (fun token member => ?_) (fun _ member => cleared.signals ▸ member) cleared.slots.runs
@@ -225,7 +225,8 @@ theorem PlacedLane.entered (refs : ReferencesPlaced program) (formed : WellForme
     PlacedLane program (s.enterScope element parent locals owner).1 := by
   have fresh := Laws.State.enterScope_fresh formed.historic formed.issuer element stands locals owner
   rw [Laws.State.enterScope_eq] at fresh ⊢
-  exact lane.grown formed (added := none) rfl fresh (List.append_nil _).symm (fun _ same => by cases same)
+  exact lane.grown formed (added := none)
+    (entry := { id := _, element := _, position := _, occurrence := _, calledInstance := _ }) rfl fresh (List.append_nil _).symm (fun _ same => by cases same)
     (fun called => by cases called)
     (fun _ link => by simp only [Laws.State.ScopeOccurrence.parent_eq, Laws.State.ScopeOccurrenceId.parent?_child, Option.some.injEq] at link; exact link ▸ anchored_issued refs formed lane anchored)
     (fun _ _ named link stands => by
@@ -250,8 +251,8 @@ theorem PlacedLane.calledEntered (formed : WellFormed program s) (lane : PlacedL
       rw [Laws.Step.activity?_scope? activity]
       rfl
   have fresh := Laws.State.enterCalled_fresh formed program (formed.owned.occurrenceScopes call member) variables definition
-  rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)] at fresh ⊢
-  exact lane.grown formed
+  rw [Laws.State.enterCalled_eq _ _ _ _ _] at fresh ⊢
+  exact lane.grown formed (entry := { id := _, element := _, position := _, occurrence := _, calledInstance := _ })
     (added := some { root := call.scope.child call.element (.fresh s.issuing s.issueNext)
                      definition := some definition }) rfl fresh rfl
     (fun _ same => by cases same; exact ⟨rfl, rfl⟩) (fun _ => rfl)
@@ -578,14 +579,14 @@ theorem placedLane_initial (program : Program) (instanceId : String) (variables 
     PlacedLane program ((State.initial instanceId variables businessKey).signal (.armScope State.root)) := by
   have lane : PlacedLane program (State.initial instanceId variables businessKey) := by
     rw [Laws.State.initial_eq]
-    refine ⟨⟨⟨⟨_, List.mem_singleton_self _, rfl⟩, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
-      ?_, ?_, ?_, ?_, ?_, ?_, ?_, fun entry member => by
-        simp at member; subst member; simp [Laws.State.scopeIds]⟩ <;>
+    refine ⟨⟨⟨⟨_, List.mem_singleton_self _, rfl⟩, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_, ?_,
+      ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, fun entry member => by
+        simp at member; subst member; simp [Laws.State.scopeIds, Laws.State.scopes_eq]⟩ <;>
       simp [OccurAt, CalledApart, Laws.State.Queued, Laws.State.allSignals, Laws.State.allQueuedTokens,
-        Laws.Step.mem_resumesOf, Laws.State.root_eq]
-    exact Laws.State.Historic.issued_key (Laws.State.historic_of_standing (by simp)
-      (by simp) (by simp) (by simp [Laws.State.Layered]))
-      (by simp)
+        Laws.Step.mem_resumesOf, Laws.State.root_eq, Laws.State.scopes_eq]
+    exact Laws.State.Historic.issued_key (Laws.State.historic_of_standing (by simp [Laws.State.scopes_eq])
+      (by simp [Laws.State.scopes_eq]) (by simp [Laws.State.scopes_eq]) (by simp [Laws.State.Layered, Laws.State.scopes_eq]))
+      (by simp [Laws.State.scopes_eq])
   exact lane.signalled ⟨fun _ same => Signal.noConfusion same, fun _ _ _ _ _ same => Signal.noConfusion same,
     fun _ _ _ _ _ same => Signal.noConfusion same, fun _ _ _ same => Signal.noConfusion same,
     fun _ _ _ same => Signal.noConfusion same, fun _ _ _ _ same => Signal.noConfusion same,

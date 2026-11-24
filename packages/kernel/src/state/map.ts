@@ -7,32 +7,45 @@
 export type TreeMap<K, V> = readonly (readonly [K, V])[];
 
 /**
- * The index of the first entry of `map` whose key is not below `key` in `cmp`'s order, by binary search: a scan or a sort
+ * The index of the first of `entries` whose key is not below `key` in `cmp`'s order, by binary search: a scan or a sort
  * at every lookup made a closure that opens an item at every pass, whose keys compare by their parsed text, take
  * seconds (`closure-work-bound.test.ts`, measured 2026-11-18).
  */
-function lowerBound<K, V>(map: TreeMap<K, V>, key: K, cmp: (left: K, right: K) => number): number {
+function lowerBound<E, K>(entries: readonly E[], keyOf: (entry: E) => K, key: K, cmp: (left: K, right: K) => number): number {
   let low = 0;
-  let high = map.length;
+  let high = entries.length;
   while (low < high) {
     const middle = (low + high) >> 1;
-    if (cmp(map[middle]![0], key) < 0) low = middle + 1;
+    if (cmp(keyOf(entries[middle]!), key) < 0) low = middle + 1;
     else high = middle;
   }
   return low;
 }
 
+const entryKey = <K, V>(entry: readonly [K, V]): K => entry[0];
+
 /** Lean's `TreeMap.getD`: the value under `key` in `cmp`'s order, `fallback` when there is none. */
 export function treeMapGetD<K, V>(map: TreeMap<K, V>, key: K, cmp: (left: K, right: K) => number, fallback: V): V {
-  const index = lowerBound(map, key, cmp);
+  const index = lowerBound(map, entryKey, key, cmp);
   return index < map.length && cmp(map[index]![0], key) === 0 ? map[index]![1] : fallback;
 }
 
 /** Lean's `TreeMap.insert`: `map` with `value` under `key`, replacing the value there, kept in `cmp`'s key order. */
 export function treeMapInsert<K, V>(map: TreeMap<K, V>, key: K, value: V, cmp: (left: K, right: K) => number): TreeMap<K, V> {
-  const index = lowerBound(map, key, cmp);
+  const index = lowerBound(map, entryKey, key, cmp);
   const replaces = index < map.length && cmp(map[index]![0], key) === 0;
   return [...map.slice(0, index), [key, value] as const, ...map.slice(replaces ? index + 1 : index)];
+}
+
+/**
+ * Lean's `TreeMap.insert` on a map whose every value carries its own key (KD1), written as its values in key order (its
+ * list view): `value` under `keyOf(value)`, replacing the value there.
+ */
+export function keyedInsert<K, V>(values: readonly V[], value: V, keyOf: (value: V) => K, cmp: (left: K, right: K) => number): readonly V[] {
+  const key = keyOf(value);
+  const index = lowerBound(values, keyOf, key, cmp);
+  const replaces = index < values.length && cmp(keyOf(values[index]!), key) === 0;
+  return [...values.slice(0, index), value, ...values.slice(replaces ? index + 1 : index)];
 }
 
 /**

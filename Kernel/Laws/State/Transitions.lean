@@ -117,8 +117,8 @@ def cleared (kind : OpenKind) : State :=
   { sample kind with occurrences := [subProcess, outerTask], openItems := ofItems [outerItem kind] }
 
 theorem sample_clears (kind : OpenKind) : ClearsInside (sample kind) (cleared kind) subScope [] where
-  scopeStays := by simp [sample, cleared]
-  scopesOutside := by simp [sample, cleared]
+  scopeStays := by simp [scopes_eq, sample, cleared]
+  scopesOutside := by simp [scopes_eq, sample, cleared]
   occurrencesOutside := by
     simp only [sample, List.mem_cons, List.not_mem_nil, or_false]
     rintro occurrence (rfl | rfl | rfl) outside
@@ -134,7 +134,7 @@ theorem sample_clears (kind : OpenKind) : ClearsInside (sample kind) (cleared ki
   variablesOwn := fun _ held => held
   tokensOutside := by simp [sample]
   scopesInside := by
-    simp only [cleared, sample, List.mem_cons, List.not_mem_nil, or_false]
+    simp only [scopes_eq, cleared, sample, mem_sampleScopes, List.not_mem_nil]
     rintro inner (rfl | rfl) ⟨_, distinct⟩
     · exact absurd (Within.parentless (root_parentless rfl) ‹_›) (by simp [processRoot, subScope])
     · exact absurd rfl distinct
@@ -153,7 +153,7 @@ theorem sample_clears (kind : OpenKind) : ClearsInside (sample kind) (cleared ki
     · exact absurd rfl distinct
     · exact absurd within (root_outside rfl)
   tokensInside := by simp [cleared, sample]
-  noNewScopes := by simp [cleared, sample]
+  noNewScopes := by simp [scopes_eq, cleared, sample]
   noNewOccurrences := by simp [cleared, sample]
   noNewItems := by simp [cleared, sample]
   noNewVariables := fun _ _ held => by simpa [cleared] using held
@@ -179,8 +179,8 @@ def terminated (kind : OpenKind) : State :=
   { terminating kind with occurrences := [subProcess, outerTask, terminateEnd], openItems := ofItems [outerItem kind] }
 
 theorem terminate_clears (kind : OpenKind) : ClearsInside (terminating kind) (terminated kind) subScope [endKey] where
-  scopeStays := by simp [terminating, terminated, sample]
-  scopesOutside := by simp [terminating, terminated, sample]
+  scopeStays := by simp [scopes_eq, mem_sampleScopes, terminating, terminated, sample]
+  scopesOutside := by simp [scopes_eq, mem_sampleScopes, terminating, terminated, sample]
   occurrencesOutside := by
     simp only [terminating, List.mem_cons, List.not_mem_nil, or_false]
     rintro occurrence (rfl | rfl | rfl | rfl) outside
@@ -197,7 +197,7 @@ theorem terminate_clears (kind : OpenKind) : ClearsInside (terminating kind) (te
   variablesOwn := fun _ held => by simpa [terminated, terminating] using held
   tokensOutside := by simp [terminating, sample]
   scopesInside := by
-    simp only [terminated, terminating, sample, List.mem_cons, List.not_mem_nil, or_false]
+    simp only [scopes_eq, mem_sampleScopes, terminated, terminating, sample, List.mem_cons, List.not_mem_nil, or_false]
     rintro inner (rfl | rfl) ⟨_, distinct⟩
     · exact absurd (Within.parentless (root_parentless rfl) ‹_›) (by simp [processRoot, subScope])
     · exact absurd rfl distinct
@@ -219,7 +219,7 @@ theorem terminate_clears (kind : OpenKind) : ClearsInside (terminating kind) (te
     · exact absurd rfl distinct
     · exact absurd within (root_outside rfl)
   tokensInside := by simp [terminated, terminating, sample]
-  noNewScopes := by simp [terminated, terminating]
+  noNewScopes := by simp [scopes_eq, terminated, terminating]
   noNewOccurrences := by simp [terminated, terminating]
   noNewItems := by simp [terminated, terminating, sample]
   noNewVariables := fun _ _ held => by simpa [terminated, terminating] using held
@@ -230,14 +230,16 @@ theorem sample_issues_fresh (kind : OpenKind) : IssuesFresh (sample kind) (clear
   monotone := .refl _
   occurrences := by simp [occurrenceIds, cleared, sample, subProcess, innerTask, outerTask]
   items := by simp [cleared, sample, innerItem, outerItem]
-  scopes := by simp [scopeIds, cleared, sample]
+  scopes := by
+    simp [scopes_eq, mem_sampleScopes, scopeIds, cleared, sample]
+    rintro _ (same | same) <;> intro one two <;> contradiction
 
 /-- An identifier issued before reappearing breaks `IssuesFresh`: `innerKey` returns after `Sub#0` was cleared. -/
 theorem reuse_rejected (kind : OpenKind) : ¬ IssuesFresh (cleared kind) (sample kind) := fun fresh => by
   refine fresh.occurrences innerKey (by simp [occurrenceIds, sample, subProcess, innerTask, outerTask])
     (by simp [occurrenceIds, cleared, subProcess, outerTask])
     ⟨?_, And.intro (fun _ committed => ?_) <| And.intro (fun _ committed _ => ?_) fun _ _ fresh => ?_⟩
-  · exact (sample_historic kind : Historic (cleared kind)).issued_key (by simp [sample, childScope])
+  · exact (sample_historic kind : Historic (cleared kind)).issued_key (by simp [scopes_eq, sample, mem_sampleScopes]; simp [childScope])
   · simp [innerKey, subScope]
   · simp only [innerKey] at committed
     obtain rfl := Issue.committed.inj committed

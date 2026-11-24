@@ -44,10 +44,30 @@ def secondOwned : ScopeOccurrence := { id := secondScope, element := some review
 def firstLocals : List (String × Value) := [("item", .string "x"), ("loopCounter", .int 0)]
 def secondLocals : List (String × Value) := [("item", .string "x"), ("loopCounter", .int 1)]
 
+def rootEntry : ScopeOccurrence := { id := root, element := none, position := 0 }
+def bodyEntry : ScopeOccurrence := { id := bodyScope, element := some review, position := 0, occurrence := some bodyKey }
+
+/-- The witnesses' scope maps, named so that a simp set unfolding their entries leaves them whole. -/
+def enteredScopes : ScopeMap := Laws.State.ofScopes [rootEntry, bodyEntry, firstOwned, secondOwned]
+def outerScopes : ScopeMap := Laws.State.ofScopes [rootEntry, bodyEntry]
+
+@[simp] theorem mem_enteredScopes {x : ScopeOccurrence} :
+    x ∈ scopeList enteredScopes ↔ x = rootEntry ∨ x = bodyEntry ∨ x = firstOwned ∨ x = secondOwned := by
+  rw [enteredScopes, Laws.State.mem_ofScopes (by simp [rootEntry, bodyEntry, firstOwned, secondOwned, root, bodyScope,
+    firstScope, secondScope, Laws.State.ScopeOccurrenceId.ofSegments_inj])]
+  simp
+
+@[simp] theorem mem_outerScopes {x : ScopeOccurrence} : x ∈ scopeList outerScopes ↔ x = rootEntry ∨ x = bodyEntry := by
+  rw [outerScopes, Laws.State.mem_ofScopes (by simp [rootEntry, bodyEntry, root, bodyScope,
+    Laws.State.ScopeOccurrenceId.ofSegments_inj])]
+  simp
+
+/- The witnesses read their scopes through the scope map's list view. -/
+attribute [local simp] Laws.State.scopes_eq
+
 def entered : State :=
   { instanceId := "p"
-    scopes := [{ id := root, element := none, position := 0 },
-      { id := bodyScope, element := some review, position := 0, occurrence := some bodyKey }, firstOwned, secondOwned]
+    scopeMap := enteredScopes
     occurrences := [bodyOccurrence, firstInstance, secondInstance]
     variables := ((∅ : TreeMap ScopeOccurrenceId _ compare).insert firstScope firstLocals).insert secondScope secondLocals
     slots := { multiInstances := [running] } }
@@ -67,7 +87,7 @@ theorem empty_run_rejected : ¬ Generated { running with instances := [] } 0 := 
 
 theorem entered_owned : Owned entered running where
   body := ⟨bodyOccurrence, by simp [entered], rfl, rfl, rfl⟩
-  bodyScope := by simp [entered, running]
+  bodyScope := by simp [entered, running, bodyEntry]
   instanceScopes := by
     intro index scope slot
     match index with
@@ -89,25 +109,27 @@ theorem shared_scope_rejected :
 
 theorem body_owned : BodyOwns entered running := by
   intro entry member named
-  simp only [entered, List.mem_cons, List.not_mem_nil, or_false] at member
-  rcases member with rfl | rfl | rfl | rfl <;> simp_all [running, root, bodyScope, firstOwned, secondOwned, firstScope,
-    secondScope]
+  simp only [entered, Laws.State.scopes_eq, mem_enteredScopes] at member
+  rcases member with rfl | rfl | rfl | rfl <;> simp_all [running, root, bodyScope, rootEntry, bodyEntry, firstOwned,
+    secondOwned, firstScope, secondScope]
 
 /-- A body scope occurrence no occurrence owns breaks `BodyOwns`. -/
 theorem unowned_body_rejected :
-    ¬ BodyOwns { entered with scopes := [{ id := bodyScope, element := some review, position := 0 }] } running :=
+    ¬ BodyOwns { entered with scopeMap := Laws.State.ofScopes [{ id := bodyScope, element := some review, position := 0 }] }
+      running :=
   fun owns => by simpa using owns { id := bodyScope, element := some review, position := 0 } (by simp) rfl
 
 theorem instances_unowned : InstancesUnowned entered running := by
   intro scope active entry member named
-  simp only [entered, List.mem_cons, List.not_mem_nil, or_false] at member
+  simp only [entered, Laws.State.scopes_eq, mem_enteredScopes] at member
   simp only [running, List.mem_cons, List.not_mem_nil, or_false] at active
   rcases member with rfl | rfl | rfl | rfl <;> rcases active with ⟨⟩ | ⟨⟩ <;>
-    simp_all [root, bodyScope, firstOwned, secondOwned, firstScope, secondScope]
+    simp_all [root, bodyScope, rootEntry, bodyEntry, firstOwned, secondOwned, firstScope, secondScope]
 
 /-- An instance scope occurrence an occurrence owns breaks `InstancesUnowned`. -/
 theorem owned_instance_rejected :
-    ¬ InstancesUnowned { entered with scopes := [{ firstOwned with occurrence := some firstKey }] } running :=
+    ¬ InstancesUnowned { entered with scopeMap := Laws.State.ofScopes [{ firstOwned with occurrence := some firstKey }] }
+      running :=
   fun unowned => by
     simpa [firstOwned] using unowned firstScope (by simp [running]) { firstOwned with occurrence := some firstKey } (by simp) rfl
 
@@ -204,7 +226,7 @@ theorem stray_occurrence_rejected :
     (placed firstScope (by simp [running]) _ (List.mem_singleton_self _) rfl rfl rfl)
   simp [running] at this
 
-theorem slots_counted : SlotsCounted { entered with scopes := entered.scopes.take 2 } entered := by
+theorem slots_counted : SlotsCounted { entered with scopeMap := outerScopes } entered := by
   intro run member index scope slot _
   simp only [entered, List.mem_singleton] at member
   subst member
@@ -215,7 +237,7 @@ theorem slots_counted : SlotsCounted { entered with scopes := entered.scopes.tak
 
 /-- A one-based `loopCounter` breaks `SlotsCounted`. -/
 theorem one_based_rejected :
-    ¬ SlotsCounted { entered with scopes := entered.scopes.take 2 }
+    ¬ SlotsCounted { entered with scopeMap := outerScopes }
       { entered with variables := (∅ : TreeMap ScopeOccurrenceId _ compare).insert firstScope [("loopCounter", .int 1)] } :=
   fun counted => by
     obtain ⟨_, found, entry⟩ :=
@@ -223,7 +245,7 @@ theorem one_based_rejected :
         (by
           rw [show firstScope = bodyScope.child review 0 by
             rw [Laws.State.child_eq]; simp [firstScope, bodyScope]]
-          exact Laws.State.unissued_of_count (parent := bodyScope) (element := review) (ordinal := 0) (by simp [entered])
+          exact Laws.State.unissued_of_count (parent := bodyScope) (element := review) (ordinal := 0) (by simp [bodyEntry])
             (by simp [Laws.State.slotCount, entered]))
     obtain rfl := Option.some.inj ((Std.ExtTreeMap.getElem?_insert_self (t := ∅)).symm.trans found)
     simp at entry
@@ -356,7 +378,7 @@ theorem begins_queued {program : Program} {loop : MultiInstance} (looping : Loop
     exact ⟨loop, looping⟩
   uncalled run member scope _ entry inside _ := by
     simp only [queuing, entered, List.mem_singleton] at member
-    simp only [queuing, entered, List.mem_cons, List.not_mem_nil, or_false] at inside
+    simp only [queuing, entered, Laws.State.scopes_eq, mem_enteredScopes] at inside
     rcases inside with rfl | rfl | rfl | rfl <;> rfl
   continued run member o inside _ _ := by
     simp only [queuing, entered, List.mem_singleton] at member inside

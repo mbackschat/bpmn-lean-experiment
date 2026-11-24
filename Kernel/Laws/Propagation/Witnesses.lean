@@ -102,16 +102,20 @@ theorem on_from_context_rejected :
   have := law.2 rfl
   simp [above, recordScope] at this
 
+/- The witnesses read their scopes through the scope map's list view. -/
+attribute [local simp] Laws.State.scopes_eq
+
 def boundaryFlow : FlowId := ⟨"ToRecovery"⟩
 def counter : ActivationCount := { processInstance := "p", element := exact, role := .element, count := 2 }
 
 def running : State :=
-  { instanceId := "p", scopes := [{ id := triggerScope, element := none, position := 0 }, { id := raising, element := some ⟨"Sub"⟩, position := 0 }],
+  { instanceId := "p", scopeMap := Laws.State.ofScopes [{ id := triggerScope, element := none, position := 0 },
+      { id := raising, element := some ⟨"Sub"⟩, position := 0 }],
     batchTokens := [.flow ⟨"Inner"⟩ raising], activations := [counter] }
 
 def recovered : State :=
   { running with
-    scopes := [{ id := triggerScope, element := none, position := 0 }]
+    scopeMap := Laws.State.ofScopes [{ id := triggerScope, element := none, position := 0 }]
     batchTokens := [.flow boundaryFlow triggerScope] }
 
 theorem catch_interrupts : InterruptingCatch true (· = raising) triggerScope [boundaryFlow] running recovered := fun _ =>
@@ -119,8 +123,9 @@ theorem catch_interrupts : InterruptingCatch true (· = raising) triggerScope [b
 
 /-- Keeping the interrupted scope occurrence is rejected. -/
 theorem keeps_inner_scope_rejected :
-    ¬ InterruptingCatch true (· = raising) triggerScope [boundaryFlow] running { recovered with scopes := running.scopes } :=
-  fun law => (law rfl).1 { id := raising, element := some ⟨"Sub"⟩, position := 0 } (by simp [running]) rfl
+    ¬ InterruptingCatch true (· = raising) triggerScope [boundaryFlow] running { recovered with scopeMap := running.scopeMap } :=
+  fun law => (law rfl).1 { id := raising, element := some ⟨"Sub"⟩, position := 0 }
+    (by simp [running, triggerScope, raising, Laws.State.ScopeOccurrenceId.ofSegments_inj]) rfl
 
 /-- Adding no token on the catcher's flow is rejected. -/
 theorem no_boundary_token_rejected :

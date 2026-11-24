@@ -27,6 +27,7 @@ test("two units issuing in the opposite order compact to the same committed keys
   const key = await kernelModule("state/key.js");
   const order = await kernelModule("step/order.js");
   const { BranchSchedule } = await kernelModule("il/types/options.js");
+  const { ValueTag } = await kernelModule("il/types/expression.js");
   const { compact } = await kernelModule("step/commit.js");
   assert.equal(typeof compact, "function", "Step.compact is missing");
 
@@ -36,10 +37,14 @@ test("two units issuing in the opposite order compact to the same committed keys
   // Two Sub-Processes entered before this closure: the slot's committed counter is 2.
   const base: State = { ...state.initial("I", []), scopeOrdinals: [[{ parent: root, element: "Sub" }, 2]] };
 
-  /** `unit` enters a `Sub` scope occurrence at the root and reserves a `Task` occurrence inside it. */
+  /**
+   * `unit` enters a `Sub` scope occurrence at the root, marked by the local `ran`, and reserves a `Task` occurrence
+   * inside it.
+   */
   const run = (current: State, unit: unknown, ran: number): State => {
     const issuing = { unit, text: key.issuerText(unit, ran) };
-    const [entered, scope] = state.enterScope({ ...current, issuing, issueNext: 0 }, "Sub", root, [], null);
+    const marked = [["ran", { tag: ValueTag.Int, value: ran }]];
+    const [entered, scope] = state.enterScope({ ...current, issuing, issueNext: 0 }, "Sub", root, marked, null);
     return state.reserve(entered, "Task", scope)[0];
   };
   const runOrder = run(run(base, first, 1), second, 2);
@@ -68,13 +73,17 @@ test("two units issuing in the opposite order compact to the same committed keys
     assert.deepEqual(committed(reversed, schedule), expected);
   }
   // `first` entered its scope occurrence first in `runOrder`, `second` in `reversed`; `first` ran first in both, and
-  // `second`, the token unit of index 0, comes first in breadth order.
-  const depthFirst = BranchSchedule.DeclarationDepthFirst;
-  assert.equal(compact(depthFirst, base, log, runOrder).value.scopes[1].id, "3:Sub#2/", "the unit that ran first takes the slot's next ordinal");
-  assert.equal(compact(depthFirst, base, log, reversed).value.scopes[1].id, "3:Sub#3/");
-  assert.equal(compact(BranchSchedule.OrderInvariant, base, log, runOrder).value.scopes[1].id, "3:Sub#3/",
-    "the unit first in breadth order takes the slot's next ordinal");
-  assert.equal(compact(BranchSchedule.OrderInvariant, base, log, reversed).value.scopes[1].id, "3:Sub#2/");
+  // `second`, the token unit of index 0, comes first in breadth order. The scope map lists its keys in key order, so
+  // each unit's scope occurrence is found by the local it entered with.
+  const enteredBy = (schedule: unknown, written: State, ran: number): unknown =>
+    (compact(schedule, base, log, written).value as State).variables
+      .find(([, bindings]) => bindings.some(([name, value]) => name === "ran" && JSON.stringify(value) === JSON.stringify({ tag: ValueTag.Int, value: ran })))?.[0];
+  for (const written of [runOrder, reversed]) {
+    assert.equal(enteredBy(BranchSchedule.DeclarationDepthFirst, written, 1), "3:Sub#2/",
+      "the unit that ran first takes the slot's next ordinal");
+    assert.equal(enteredBy(BranchSchedule.OrderInvariant, written, 1), "3:Sub#3/",
+      "the unit first in breadth order takes the slot's next ordinal");
+  }
 });
 
 /**

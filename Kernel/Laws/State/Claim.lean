@@ -294,19 +294,24 @@ theorem enterScope_inner {s : State} (formed : WellFormed program s) (element : 
       issueNext := s.issueNext + 1 + 1
       issued := (s.issued.insert (.fresh s.issuing s.issueNext) (.scope { parent := occurrence.scope, element })).insert
         (.fresh s.issuing (s.issueNext + 1)) .position
-      scopes := s.scopes ++ [entry]
+      scopeMap := s.scopeMap.insert key entry
       variables := s.variables.insert key (keyed locals) } : State) = t at formedAfter issued ⊢
-  have scopes : t.scopes = s.scopes ++ [entry] := by rw [← afterIs]
-  have entryMember : entry ∈ t.scopes := scopes ▸ List.mem_append_right _ (List.mem_singleton_self _)
+  have scopeMapEq : t.scopeMap = s.scopeMap.insert key entry := by rw [← afterIs]
+  have entryId : entry.id = key := by rw [← entryIs]
+  have grown : ∀ found ∈ s.scopes, found ∈ t.scopes := fun found inside => by
+    rw [scopes_eq t, scopeMapEq]
+    exact (mem_scopeList_insert_at formed.distinct.scopesKeyed entryId).mpr
+      (.inr ⟨(scopes_eq s) ▸ inside, by rw [← keyIs]; exact scopes_fresh formed found inside⟩)
+  have entryMember : entry ∈ t.scopes := by
+    rw [scopes_eq t, scopeMapEq]; exact mem_scopeList.mpr ⟨key, Std.ExtTreeMap.getElem?_insert_self⟩
   have kept : ∀ x ∈ scopeIds s, t.instanceOf x = s.instanceOf x := fun x stands =>
     instanceOf_kept formed formedAfter.distinct.scopes
       (fun found inside orphan => (formedAfter.rooted.2.1 found inside).mp orphan) (by rw [← afterIs]) stands
-      fun found inside _ => scopes ▸ List.mem_append_left _ inside
+      fun found inside _ => grown found inside
   have presentAfter : occurrence.scope ∈ scopeIds t := by
-    rw [scopeIds, scopes, List.map_append]
-    exact List.mem_append_left _ present
+    obtain ⟨found, inside, named⟩ := List.mem_map.mp present
+    exact List.mem_map.mpr ⟨found, grown found inside, named⟩
   have child := instanceOf_child formedAfter entryMember (by rw [← entryIs]) (by rw [← entryIs, ← keyIs]; exact Kernel.Laws.State.ScopeOccurrenceId.parent?_child _ _ _) presentAfter
-  have entryId : entry.id = key := by rw [← entryIs]
   have occurrences : t.occurrences = s.occurrences := by rw [← afterIs]
   have items : itemList t.openItems = itemList s.openItems := by rw [← afterIs]
   refine ⟨formedAfter, rfl, List.mem_map.mpr ⟨_, entryMember, entryId⟩, fun id innerId => ?_⟩
