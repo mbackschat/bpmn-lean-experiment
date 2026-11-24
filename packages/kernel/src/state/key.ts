@@ -381,6 +381,16 @@ export function compareUnitKey(left: UnitKey, right: UnitKey): number {
  */
 function compareIssuer(left: IssuerText, right: IssuerText): number {
   if (left === right) return 0;
+  // The depth's digits (no leading zero) and the fingerprint's 16 lowercase hexadecimal digits compare as text exactly as
+  // their numbers do, the shorter depth first, so the leading fields compare without slicing; every map operation on the
+  // issue table compares issues, and slicing here made the commit's issue order most of a long closure's time
+  // (`automatic-loop-tail-at-closure-bound`, 2026-11-24).
+  const [leftDot, rightDot] = [left.indexOf("."), right.indexOf(".")];
+  if (leftDot !== rightDot) return leftDot - rightDot;
+  for (let at = 0; at < leftDot + 17; at += 1) {
+    const order = left.charCodeAt(at) - right.charCodeAt(at);
+    if (order !== 0) return order;
+  }
   const fields = (text: IssuerText): readonly [number, string, number, string] => {
     const depthEnd = text.indexOf(".");
     const runEnd = text.indexOf(".", depthEnd + 18);

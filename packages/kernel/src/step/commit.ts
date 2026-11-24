@@ -14,8 +14,8 @@ import {
   orderedEntries, orderedGet, orderedInsert, type OrderedMap, type Outcome, sameUnitKey, seedUnit, semanticFailure,
   failed, FailureTag, issuerText, type Issued, type IssueTable, SemanticCause, type BroadcastIntent, type Cause,
   type ScopeOccurrenceId, type State, type Transition, type TreeMap, type UnitKey, compareIssue, compareOccurrenceId,
-  compareScopeSlot, freshIssue, type Issue, issueNotAfter, type ClaimSlot, ClaimSlotTag, compareClaimSlot,
-  occurrenceFresh, scopeFresh,
+  compareScopeSlot, type FreshIssue, freshIssue, type Issue, compareIssuePlace, type ClaimSlot, ClaimSlotTag, compareClaimSlot,
+  occurrenceFresh, positionOutsideIssueTable, scopeFresh,
 } from "../state.js";
 import { treeMapGetD, treeMapInsert } from "../state/map.js";
 import { renameId, type Rename, renameScope, renameState } from "../state/rename.js";
@@ -97,9 +97,13 @@ function slotBase(state: State, claim: ClaimSlot): number {
  */
 function issueOrder(schedule: BranchSchedule, log: RunLog, state: State): (readonly [Issue, ClaimSlot])[] {
   const units = issuerOrder(schedule, log);
-  const notAfter = (a: Issue, b: Issue): boolean => issueNotAfter(units, state.issued, a, b);
-  return orderedEntries(state.issued).map(([issue, { slot }]) => [issue, slot] as const)
-    .sort((a, b) => notAfter(a[0], b[0]) ? (notAfter(b[0], a[0]) ? 0 : -1) : 1);
+  const entries = orderedEntries(state.issued);
+  // Each entry holds its issue's unit, read here by the key itself: searching the table at every comparison
+  // (`issueNotAfter`) made this sort most of a long closure's commit (`automatic-loop-tail-at-closure-bound`, 2026-11-24).
+  const unitOf = new Map<Issue, UnitKey>(entries.map(([issue, { unit }]) => [issue, unit]));
+  const unit = (issue: FreshIssue): UnitKey => unitOf.get(issue) ?? positionOutsideIssueTable();
+  return entries.map(([issue, { slot }]) => [issue, slot] as const)
+    .sort(([a], [b]) => compareIssuePlace(units, unit, a, b));
 }
 
 /**

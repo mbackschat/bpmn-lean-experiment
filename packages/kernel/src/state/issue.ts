@@ -8,7 +8,7 @@
  */
 import { assertNever } from "../il/types.js";
 import {
-  compareIssue, compareOccurrenceId, compareScopeSlot, freshIssue, type Issue, occurrenceIdParts, type OccurrenceId, pushUnit,
+  compareIssue, compareOccurrenceId, compareScopeSlot, type FreshIssue, freshIssue, type Issue, occurrenceIdParts, type OccurrenceId, pushUnit,
   type IssuerText, rootScope, sameUnitKey, scopeHead, type ScopeOccurrenceId, type ScopeSlot, type UnitKey, unitRoot, UnitRootTag,
   UnitStepTag,
 } from "./key.js";
@@ -170,12 +170,24 @@ export type Issuer = Readonly<{ unit: UnitKey; text: IssuerText }>;
  * from the issue table `issued`, which holds every issue of the closure in progress.
  */
 export function issueNotAfter(units: (a: UnitKey, b: UnitKey) => number, issued: IssueTable, left: Issue, right: Issue): boolean {
+  return compareIssuePlace(units, (issue) => issuerOf(issued, issue) ?? positionOutsideIssueTable(), left, right) <= 0;
+}
+
+/**
+ * `issueNotAfter` as a three-way order, negative when `left` comes first, each pending position's unit read by `unitOf`:
+ * a caller that holds the issue table's entries reads the unit there instead of searching the table at every comparison.
+ */
+export function compareIssuePlace(
+  units: (a: UnitKey, b: UnitKey) => number, unitOf: (issue: FreshIssue) => UnitKey, left: Issue, right: Issue,
+): number {
   const [a, b] = [freshIssue(left), freshIssue(right)];
-  if (a === null || b === null) return a === null && (b !== null || (left as number) <= (right as number));
-  const [unitA, unitB] = [issuerOf(issued, a), issuerOf(issued, b)];
-  if (unitA === null || unitB === null) throw new Error("position-outside-issue-table");
-  const order = units(unitA, unitB);
-  return order < 0 || (order === 0 && a.index <= b.index);
+  if (a === null || b === null) return (a === null ? 0 : 1) - (b === null ? 0 : 1) || (left as number) - (right as number);
+  return units(unitOf(a), unitOf(b)) || a.index - b.index;
+}
+
+/** A pending position the issue table does not hold: an invariant failure, since the table holds every issue of the closure. */
+export function positionOutsideIssueTable(): never {
+  throw new Error("position-outside-issue-table");
 }
 
 /** The seed's unit key, which no micro-step runs under: the issuer between micro-steps (`State.issuing`). */

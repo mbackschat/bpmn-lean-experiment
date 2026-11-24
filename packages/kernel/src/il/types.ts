@@ -58,15 +58,32 @@ export {
 export type ElementId = string;
 export type FlowId = string;
 
-/** Lean's `String` order: lexicographic by Unicode scalar value, not by UTF-16 code unit. */
+/**
+ * Lean's `String` order: lexicographic by Unicode scalar value, not by UTF-16 code unit; the difference of the first
+ * differing scalars, else of the scalar counts. It walks both strings in place: every key comparison reaches it, and
+ * copying both into scalar arrays made it most of a long closure's time (`automatic-loop-tail-at-closure-bound`, 2026-11-24).
+ */
 export function compareStrings(left: string, right: string): number {
-  const a = Array.from(left, (char) => char.codePointAt(0) ?? 0);
-  const b = Array.from(right, (char) => char.codePointAt(0) ?? 0);
-  for (let index = 0; index < Math.min(a.length, b.length); index += 1) {
-    const difference = (a[index] ?? 0) - (b[index] ?? 0);
-    if (difference !== 0) return difference;
+  if (left === right) return 0;
+  let [at, rightAt] = [0, 0];
+  while (at < left.length && rightAt < right.length) {
+    const scalar = left.codePointAt(at) ?? 0;
+    const rightScalar = right.codePointAt(rightAt) ?? 0;
+    if (scalar !== rightScalar) return scalar - rightScalar;
+    at += scalarWidth(scalar);
+    rightAt += scalarWidth(rightScalar);
   }
-  return a.length - b.length;
+  return scalarCount(left, at) - scalarCount(right, rightAt);
+}
+
+/** The UTF-16 code units of `scalar`: a lone surrogate, as `codePointAt` reads one, takes one. */
+const scalarWidth = (scalar: number): number => (scalar > 0xffff ? 2 : 1);
+
+/** The scalars of `text` from code unit `from` on. */
+function scalarCount(text: string, from: number): number {
+  let count = 0;
+  for (let at = from; at < text.length; at += scalarWidth(text.codePointAt(at) ?? 0)) count += 1;
+  return count;
 }
 
 /**

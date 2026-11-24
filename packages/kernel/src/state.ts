@@ -88,13 +88,13 @@ export { type TreeMap, treeMapInsert };
 // The closure's unit keys and keyed maps reach the step through this hub, as `Kernel.State` re-exports them (guard 15).
 export {
   breadthUnitKey, childScope, compareIssue, compareOccurrenceId, compareScopeOccurrenceId, compareScopeSlot, compareUnitKey,
-  committedOrdinal, freshIssue,
+  committedOrdinal, type FreshIssue, freshIssue,
   type Issue, issueNumber, issuerText, occurrenceId, occurrenceIdParts, sameUnitKey, scopeEncloses, scopeHead, scopeParent, type UnitKey,
   unitRoot, UnitRootTag,
 } from "./state/key.js";
 export {
-  type ClaimSlot, ClaimSlotTag, compareClaimSlot, committedScope, idleUnit, type Issued, type Issuer, type IssueTable,
-  issueNotAfter, occurrenceFresh, offersOccurrence, offerUnit, scopeFresh, seedUnit,
+  type ClaimSlot, ClaimSlotTag, compareClaimSlot, compareIssuePlace, committedScope, idleUnit, type Issued, type Issuer,
+  type IssueTable, issueNotAfter, occurrenceFresh, positionOutsideIssueTable, offersOccurrence, offerUnit, scopeFresh, seedUnit,
 } from "./state/issue.js";
 export {
   type OrderedMap, orderedAny, orderedCount, orderedEntries, orderedErase, orderedGet, orderedHas, orderedInsert, orderedSize,
