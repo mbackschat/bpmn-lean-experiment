@@ -51,7 +51,10 @@ export interface PublicationLog {
   readonly cursor: PublicationCursor;
   readonly execution: readonly Batch<ExecutionTransition>[];
   readonly occurrences: readonly Batch<OccurrenceTransition>[];
-  /** The canonical bytes of each input's two batches together, in step with `execution`. */
+  /**
+   * The canonical bytes of each input's two batches together, in step with `execution`: exact up to the batch bound,
+   * past it only some figure above the bound (`appendJournal`), which no committed input has.
+   */
   readonly batchBytes: readonly number[];
   /** Their sum: what the Run retains, which its rollover trigger bounds. */
   readonly retainedBytes: number;
@@ -66,6 +69,22 @@ export function lastBatchBytes(before: PublicationLog, after: PublicationLog): n
   return after.batchBytes.length > before.batchBytes.length ? after.batchBytes.at(-1) ?? 0 : 0;
 }
 
+/**
+ * `canonicalBytes(batch)`, counted transition by transition and stopped once the count passes `limit`: a batch's bytes are
+ * its bytes with no transition, each transition's own and the commas between them. An input whose journal far exceeds
+ * the batch bound is refused, so serializing all of it only to compare it with the bound made the measure most of the
+ * host's time on such an input (`automatic-loop-tail-at-closure-bound`, 2.6 MB, 2026-11-24).
+ */
+function batchBytesWithin<T>(batch: Batch<T>, limit: number): number {
+  let bytes = canonicalBytes({ ...batch, transitions: [] }) + Math.max(0, batch.transitions.length - 1);
+  for (const transition of batch.transitions) {
+    if (bytes > limit) return bytes;
+    bytes += canonicalBytes(transition);
+  }
+  return bytes;
+}
+
+/** The log with the input `commandId`'s two batches appended; a batch past the batch bound is measured only past it. */
 export function appendJournal(log: PublicationLog, commandId: string, journal: readonly TransitionView[]): PublicationLog {
   if (journal.length === 0) return log;
   const sourceTypes = new Map(log.cursor.sourceTypes);
@@ -89,7 +108,9 @@ export function appendJournal(log: PublicationLog, commandId: string, journal: r
   const throughRevision = fromRevision + journal.length;
   const batch = <T>(transitions: readonly T[]): Batch<T> => ({ commandId, fromRevision, throughRevision, transitions });
   const appended = [batch(execution), batch(occurrences)] as const;
-  const bytes = canonicalBytes(appended[0]) + canonicalBytes(appended[1]);
+  const limit = chainCapacity.publicationBatchBytes;
+  const executionBytes = batchBytesWithin(appended[0], limit);
+  const bytes = executionBytes > limit ? executionBytes : executionBytes + batchBytesWithin(appended[1], limit - executionBytes);
   return {
     base: log.base,
     cursor: { revision: throughRevision, sourceTypes: [...sourceTypes] },
