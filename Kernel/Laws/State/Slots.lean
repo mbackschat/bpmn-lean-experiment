@@ -136,7 +136,7 @@ theorem multiInstances_eq (slots : FeatureSlots) : slots.multiInstances = multiI
 
 /-- A record's run, field by field. -/
 theorem run_eq (record : MultiInstanceRecord) (occurrence : OccurrenceId) : record.toRun occurrence =
-    { scope := record.scope, element := record.element, occurrence, collection := record.collection
+    { scope := record.scope, element := record.element, occurrence, members := record.members, strings := record.strings
       instances := record.instances, results := record.results } := by
   simp only [MultiInstanceRecord.toRun]
 

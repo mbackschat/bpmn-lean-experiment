@@ -163,8 +163,6 @@ export function collectionItems(collection: Value): readonly Value[] | null {
   return assertNever(collection);
 }
 
-export const multiInstanceRunItems = (run: MultiInstanceRun): readonly Value[] | null => collectionItems(run.collection);
-
 // The portable value domain (docs/kernel/semantics/DATA-SEMANTICS-SPEC.md#values). Step checks every input's values
 // against it and features measure submissions by it; they share it here because they never import each other.
 

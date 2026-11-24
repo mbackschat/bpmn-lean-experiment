@@ -56,13 +56,19 @@ def Iteration.holds (iteration : Iteration) (scope : ScopeOccurrenceId) : Bool :
   | .completed _ => false
 
 /-- A running Multi-Instance Activity (`Kernel.Feature.MultiInstance`): the scope occurrence it holds its instances
-in, its element and body occurrence, the input collection as evaluated once on entry, and one instance per item in
-collection order. -/
+in, its element and body occurrence, the input collection's members as evaluated once on entry and its form, and one
+instance per item in collection order. -/
 structure MultiInstanceRun where
   scope : ScopeOccurrenceId
   element : ElementId
   occurrence : OccurrenceId
-  collection : Value
+  /-- The input collection's members as evaluated once on entry, indexed by item, so an instance reads its item without
+  a walk along the collection (probe P11: a sequential loop's list read made it quadratic); none for a cardinality
+  loop. -/
+  members : Array Value
+  /-- Whether the input collection is a String List, whose instances submit Strings and whose output collection is
+  one. -/
+  strings : Bool
   instances : List Iteration
   /-- The effect-result names earlier sequential instances left, which CIB keeps on the body until it ends
   (EXPRESSION-SEMANTICS-SPEC "Multi-Instance level", result locals). -/
@@ -75,7 +81,8 @@ type. -/
 structure MultiInstanceRecord where
   scope : ScopeOccurrenceId
   element : ElementId
-  collection : Value
+  members : Array Value
+  strings : Bool
   instances : List Iteration
   /-- The effect-result names earlier sequential instances left (`MultiInstanceRun.results`). -/
   results : List String := []
@@ -83,13 +90,13 @@ structure MultiInstanceRecord where
 
 /-- The run of the body occurrence `occurrence` whose record is `record`. -/
 def MultiInstanceRecord.toRun (record : MultiInstanceRecord) (occurrence : OccurrenceId) : MultiInstanceRun :=
-  { scope := record.scope, element := record.element, occurrence, collection := record.collection
+  { scope := record.scope, element := record.element, occurrence, members := record.members, strings := record.strings
     instances := record.instances, results := record.results }
 
 /-- A run's record under its body occurrence's key. -/
 def MultiInstanceRun.toRecord (run : MultiInstanceRun) : MultiInstanceRecord :=
-  { scope := run.scope, element := run.element, collection := run.collection, instances := run.instances
-    results := run.results }
+  { scope := run.scope, element := run.element, members := run.members, strings := run.strings
+    instances := run.instances, results := run.results }
 
 /-- A record a completed Sub-Process's record keeps (`Compensable.children`), flat: the `Compensable` it was, without a
 scope occurrence, which it takes only when its holder's handler or group begins, and its group key `group`, the

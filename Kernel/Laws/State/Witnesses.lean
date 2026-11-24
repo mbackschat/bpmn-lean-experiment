@@ -260,7 +260,8 @@ theorem parked_begun_settled (kind : OpenKind) :
 
 /-- A body's run, in `body`, whose one instance is active in `subScope`. -/
 def instanceRun (body : ScopeOccurrenceId) : MultiInstanceRun :=
-  { scope := body, element := ⟨"Sub"⟩, occurrence := subKey, collection := .null, instances := [.active subScope] }
+  { scope := body, element := ⟨"Sub"⟩, occurrence := subKey, members := #[], strings := false,
+    instances := [.active subScope] }
 
 /-- An instance entered below the body's scope occurrence is placed. -/
 theorem nested_instance_placed (kind : OpenKind) : Placed (sample kind) (instanceRun processRoot) := by

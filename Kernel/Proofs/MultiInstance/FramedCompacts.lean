@@ -197,7 +197,7 @@ theorem orderJournal_shaped
         (∀ slot ∈ current, ∃ scope, slot = .active scope) ∧ ∀ slot ∈ waiting, slot = .waiting) ∧
       (loop.mode = .parallel → ∀ slot ∈ run.instances, slot ≠ .waiting) ∧
       ∀ output, Iteration.completed output ∈ run.instances → (loop.outputDataItem.isSome → output.isSome) ∧
-        ∀ value, output = some value → ∀ items, run.collection = .stringList items → ∃ text, value = .string text)
+        ∀ value, output = some value → run.strings = true → ∃ text, value = .string text)
     (made : orderJournal schedule start (.ok (state, log)) = .ok after) :
     ∀ run ∈ after.slots.multiInstances, ∀ loop : MultiInstance,
       ((program.element? run.element).bind (·.envelope?)).bind (·.multiInstance) = some loop →
@@ -206,7 +206,7 @@ theorem orderJournal_shaped
         (∀ slot ∈ current, ∃ scope, slot = .active scope) ∧ ∀ slot ∈ waiting, slot = .waiting) ∧
       (loop.mode = .parallel → ∀ slot ∈ run.instances, slot ≠ .waiting) ∧
       ∀ output, Iteration.completed output ∈ run.instances → (loop.outputDataItem.isSome → output.isSome) ∧
-        ∀ value, output = some value → ∀ items, run.collection = .stringList items → ∃ text, value = .string text := by
+        ∀ value, output = some value → run.strings = true → ∃ text, value = .string text := by
   have ran := orderJournal_of made
   intro run member loop looped
   obtain ⟨old, inside, rfl⟩ := compact_bodies ran member
@@ -286,7 +286,7 @@ theorem orderJournal_snapshots {programBefore : Program} {b : State} (formedBefo
     (bodies : ∀ run ∈ state.slots.multiInstances, ∃ occurrence ∈ state.occurrences, occurrence.id = run.occurrence)
     (below : ∀ earlier ∈ b.slots.multiInstances, OccurrenceIssued state earlier.occurrence)
     (fixed : ∀ earlier ∈ b.slots.multiInstances, ∀ run ∈ state.slots.multiInstances, run.occurrence = earlier.occurrence →
-      run.collection = earlier.collection ∧ run.instances.length = earlier.instances.length ∧ run.scope = earlier.scope ∧
+      (run.members, run.strings) = (earlier.members, earlier.strings) ∧ run.instances.length = earlier.instances.length ∧ run.scope = earlier.scope ∧
       run.element = earlier.element ∧ run.occurrence = earlier.occurrence ∧
       ∀ (index : Nat) (output : Option Value), earlier.instances[index]? = some (.completed output) →
         run.instances[index]? = some (.completed output))
@@ -294,7 +294,7 @@ theorem orderJournal_snapshots {programBefore : Program} {b : State} (formedBefo
       0 < run.instances.length)
     (made : orderJournal schedule start (.ok (state, log)) = .ok after) :
     (∀ earlier ∈ b.slots.multiInstances, ∀ run ∈ after.slots.multiInstances, run.occurrence = earlier.occurrence →
-      run.collection = earlier.collection ∧ run.instances.length = earlier.instances.length ∧ run.scope = earlier.scope ∧
+      (run.members, run.strings) = (earlier.members, earlier.strings) ∧ run.instances.length = earlier.instances.length ∧ run.scope = earlier.scope ∧
       run.element = earlier.element ∧ run.occurrence = earlier.occurrence ∧
       ∀ (index : Nat) (output : Option Value), earlier.instances[index]? = some (.completed output) →
         run.instances[index]? = some (.completed output)) ∧

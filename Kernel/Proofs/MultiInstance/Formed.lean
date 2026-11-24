@@ -249,8 +249,8 @@ theorem opens_shaped {s : State} {base next : MultiInstanceRun} {loop : MultiIns
   · obtain ⟨index, found⟩ := List.mem_iff_getElem?.mp member
     rcases slotOf index _ found with ⟨scope, same⟩ | ⟨_, earlier⟩
     · cases same
-    · have collection : next.collection = base.collection := by rw [opens.kept]
-      exact collection ▸ fits output (List.mem_of_getElem? earlier)
+    · have strings : next.strings = base.strings := by rw [opens.kept]
+      exact strings ▸ fits output (List.mem_of_getElem? earlier)
 
 /-- The slot record an instance's completion sets keeps the slot shapes of its loop's mode: a sequential body's running
 slot becomes its last filled one. -/
@@ -371,7 +371,7 @@ open Kernel.Laws.MultiInstance (SnapshotFixed recorded)
 
 /-- Entering instances from a record that keeps `Snapshots` sets one that keeps its snapshot and slot count. -/
 theorem beginInstances_snapshots (mi : ∀ program, Laws.MultiInstance.MultiInstanceOps program (WellFormed program) Laws.State.Settled)
-    {ctx : Ctx} {loop : MultiInstance} {items : List Value} {b state : State}
+    {ctx : Ctx} {loop : MultiInstance} {items : Array Value} {b state : State}
     {base : MultiInstanceRun}
     (entering : Laws.MultiInstance.Entering (WellFormed ctx.program) Laws.State.Settled base state base.instances [])
     (kept : Snapshots b state)
@@ -406,7 +406,7 @@ theorem arriveMultiInstance_snapshots (mi : ∀ program, Laws.MultiInstance.Mult
     exact kept.same rfl
   · rw [Laws.State.signal_eq]
     exact kept.same rfl
-  · obtain ⟨collection, count, items, ⟨positive, rfl⟩⟩ := entered
+  · obtain ⟨strings, count, items, ⟨positive, rfl⟩⟩ := entered
     have enteredKept : Snapshots b (if unarmed then (state.enterScope header.id occurrence.scope locals (some occurrence.id)).1
         else (state.enterScope header.id occurrence.scope locals (some occurrence.id)).1.signal
           (.arm occurrence.id header.id occurrence.scope)) := by
@@ -417,7 +417,7 @@ theorem arriveMultiInstance_snapshots (mi : ∀ program, Laws.MultiInstance.Mult
       (enterBody_enters (mi ctx.program) formed member begun named)
       (fun current kept present =>
         (mi ctx.program).arm current occurrence _ kept present begun named)
-      locals unarmed collection _ fun _ inside => List.eq_of_mem_replicate inside).1
+      locals unarmed items strings _ fun _ inside => List.eq_of_mem_replicate inside).1
       enteredKept (fun earlier inside same => absurd same (fresh earlier inside)) fun _ => ?_
     simpa using positive
 
@@ -484,7 +484,7 @@ open Kernel.Laws.MultiInstance (recorded)
 settled. -/
 theorem beginInstances_continuedFrame
     (mi : ∀ program, Laws.MultiInstance.MultiInstanceOps program (WellFormed program) Laws.State.Settled)
-    {ctx : Ctx} {loop : MultiInstance} {items : List Value} {state : State} {base : MultiInstanceRun}
+    {ctx : Ctx} {loop : MultiInstance} {items : Array Value} {state : State} {base : MultiInstanceRun}
     (entering : Laws.MultiInstance.Entering (WellFormed ctx.program) Laws.State.Settled base state base.instances []) :
     ContinuedFrame state (Feature.MultiInstance.beginInstances ctx loop items base state) := by
   obtain ⟨queued, instances, ran, begun⟩ := Laws.MultiInstance.beginInstances_spec (ctx := ctx) (loop := loop)
@@ -540,11 +540,11 @@ theorem arriveMultiInstance_continued
   · rw [Laws.Hooks.hold_eq]
     exact kept.same (fun _ issued => issued) rfl rfl rfl
   · exact kept.signal _
-  obtain ⟨collection, count, items, ⟨_, rfl⟩⟩ := entered
+  obtain ⟨strings, count, items, ⟨_, rfl⟩⟩ := entered
   have frame := beginInstances_continuedFrame mi (loop := loop) (items := items) (enterBody_entering (mi ctx.program)
     formed member begun header.id (enterBody_enters (mi ctx.program) formed member begun named)
     (fun current kept present => (mi ctx.program).arm current occurrence _ kept present begun named)
-    locals unarmed collection (List.replicate count .waiting) fun _ inside => List.eq_of_mem_replicate inside).1
+    locals unarmed items strings (List.replicate count .waiting) fun _ inside => List.eq_of_mem_replicate inside).1
   refine kept.hooked grows ⟨fun o inside => ?_, fun request inside body on => ?_⟩
   · have held := frame.occurrences o inside
     cases unarmed <;> simpa [Laws.State.signal_eq, Laws.State.enterScope_eq] using held

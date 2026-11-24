@@ -345,7 +345,8 @@ theorem unstood_reserve_rejected :
 
 /-- A Multi-Instance run of `T`'s boundary held in `leftKey`. -/
 def leftRunRecord : MultiInstanceRun :=
-  { scope := leftKey, element := sharedX.id, occurrence := ⟨leftKey, sharedX.id, 0⟩, collection := .null, instances := [] }
+  { scope := leftKey, element := sharedX.id, occurrence := ⟨leftKey, sharedX.id, 0⟩, members := #[]
+    strings := false, instances := [] }
 
 /-- `leftRunRecord` alone. -/
 def leftRuns : MultiInstanceMap := (∅ : MultiInstanceMap).insert leftRunRecord.occurrence leftRunRecord.toRecord

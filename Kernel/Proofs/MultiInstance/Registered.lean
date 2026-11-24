@@ -39,7 +39,7 @@ open Kernel.Proofs.Frame (phases_alongside closurePhases_alongside bodyPhases_al
 
 /-- A body's instances, entered and queued from a state that keeps the invariant and places the body, its loop the one
 its element carries and its slots of a sequential body's shape, keep the invariant once their slot record is set. -/
-theorem beginInstances_framed {ctx : Ctx} {loop : MultiInstance} {items : List Value} {state : State}
+theorem beginInstances_framed {ctx : Ctx} {loop : MultiInstance} {items : Array Value} {state : State}
     {base : MultiInstanceRun}
     (entering : Laws.MultiInstance.Entering (WellFormed ctx.program) Laws.State.Settled base state base.instances [])
     (framed : RunsFramed ctx.program state) (placed : RunPlaced state base)
@@ -60,7 +60,7 @@ keeps the invariant and places the body, every slot waiting. -/
 theorem enterBody_placed {program : Program} {occurrence : Occurrence} {state : State} (formed : WellFormed program state)
     (framed : RunsFramed program state) (member : occurrence ∈ state.occurrences)
     (body : occurrence.role = .multiInstanceBody) (element : ElementId) (named : occurrence.element = element)
-    (locals : List (String × Value)) (unarmed : Bool) (collection : Value) (count : Nat) :
+    (locals : List (String × Value)) (unarmed : Bool) (members : Array Value) (strings : Bool) (count : Nat) :
     RunsFramed program (if unarmed then (state.enterScope element occurrence.scope locals (some occurrence.id)).1
         else (state.enterScope element occurrence.scope locals (some occurrence.id)).1.signal
           (.arm occurrence.id element occurrence.scope)) ∧
@@ -68,7 +68,7 @@ theorem enterBody_placed {program : Program} {occurrence : Occurrence} {state : 
         else (state.enterScope element occurrence.scope locals (some occurrence.id)).1.signal
           (.arm occurrence.id element occurrence.scope))
         { scope := (state.enterScope element occurrence.scope locals (some occurrence.id)).2, element,
-          occurrence := occurrence.id, collection, instances := List.replicate count .waiting } := by
+          occurrence := occurrence.id, members, strings, instances := List.replicate count .waiting } := by
   have entered := (runsFramed_frameAlongside program).enterScope state element occurrence.scope locals
     (some occurrence.id) formed (formed.owned.occurrenceScopes occurrence member)
     (named ▸ Laws.Flow.Anchored.occurrence member) framed
@@ -76,7 +76,7 @@ theorem enterBody_placed {program : Program} {occurrence : Occurrence} {state : 
     cases List.eq_of_mem_replicate active
   have placed : RunPlaced (state.enterScope element occurrence.scope locals (some occurrence.id)).1
       { scope := (state.enterScope element occurrence.scope locals (some occurrence.id)).2, element,
-        occurrence := occurrence.id, collection, instances := List.replicate count .waiting } := by
+        occurrence := occurrence.id, members, strings, instances := List.replicate count .waiting } := by
     rw [Laws.State.enterScope_eq]
     refine ⟨⟨⟨occurrence, member, rfl, named, body⟩, List.mem_map.mpr ⟨_, Laws.State.mem_scopeList_insert_self, rfl⟩,
       fun _ scope slot =>
@@ -108,17 +108,17 @@ theorem arriveMultiInstance_framed {ctx : Ctx} {header : Header} {envelope : Env
     exact framed.carry (.equal (by rw [same]) (by rw [same]) (by rw [same]) (by rw [same]))
   · have same := Laws.State.signal_eq state (.complete occurrence.id .outgoing writes .outward)
     exact framed.carry (.equal (by rw [same]) (by rw [same]) (by rw [same]) (by rw [same]))
-  · obtain ⟨collection, count, items, ⟨_, rfl⟩⟩ := entered
+  · obtain ⟨strings, count, items, ⟨_, rfl⟩⟩ := entered
     have waiting : ∀ slot ∈ List.replicate count Iteration.waiting, slot = .waiting := fun _ inside =>
       List.eq_of_mem_replicate inside
     obtain ⟨enteredFramed, placed⟩ := enterBody_placed formed framed member body header.id named.symm locals unarmed
-      collection count
+      items strings count
     exact beginInstances_framed (enterBody_entering (Proofs.Step.registeredOps_wellFormed.multiInstance
       ctx.program) formed member begun header.id
       (enterBody_enters (Proofs.Step.registeredOps_wellFormed.multiInstance ctx.program) formed member begun named)
       (fun current kept present =>
         (Proofs.Step.registeredOps_wellFormed.multiInstance ctx.program).arm current occurrence _ kept present begun named)
-      locals unarmed collection _ waiting).1 enteredFramed placed
+      locals unarmed items strings _ waiting).1 enteredFramed placed
       (fun _ => ⟨[], [], List.replicate count .waiting, by simp, by simp, by simp, by simp, waiting⟩)
       (fun _ inside => by cases waiting _ inside) looped
 
@@ -617,7 +617,7 @@ theorem multiInstanceKeeps_composed : Proofs.Step.MultiInstanceKeeps Composed wh
       member begun body named looped newest unrun ran
     ⟨framed.1, ⟨framed.2, fun apart => numbered_arrive (Proofs.Step.registeredOps_wellFormed.multiInstance ctx.program)
       holds.1 holds.2.1.1.owns (holds.2.1.2 apart) member begun named looped (fun locals unarmed =>
-        (enterBody_placed holds.1 holds.2.1.1 member body header.id named.symm locals unarmed .null 0).1.owns) unrun ran⟩,
+        (enterBody_placed holds.1 holds.2.1.1 member body header.id named.symm locals unarmed #[] false 0).1.owns) unrun ran⟩,
       arriveMultiInstance_continued Proofs.Step.registeredOps_wellFormed.multiInstance holds.1 holds.2.2
         ((grown_keeps state).arrive ctx header envelope loop occurrence state after ⟨holds.1, fun _ issued => issued⟩
           member begun body named looped newest unrun ran).2 member begun named ran⟩

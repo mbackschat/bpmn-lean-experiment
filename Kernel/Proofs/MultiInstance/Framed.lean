@@ -469,7 +469,7 @@ theorem opens_fixed {s : State} {base next : MultiInstanceRun} {loop : MultiInst
     SnapshotFixed base next := by
   have field : ∀ {α : Type} (read : MultiInstanceRun → α), (∀ instances, read { base with instances } = read base) →
       read next = read base := fun read keeps => by rw [opens.kept]; exact keeps _
-  refine ⟨field (·.collection) fun _ => rfl, opens.length, field (·.scope) fun _ => rfl, field (·.element) fun _ => rfl,
+  refine ⟨field (fun run => (run.members, run.strings)) fun _ => rfl, opens.length, field (·.scope) fun _ => rfl, field (·.element) fun _ => rfl,
     field (·.occurrence) fun _ => rfl, fun index output filled => ?_⟩
   by_cases named : index ∈ Feature.MultiInstance.opening loop.mode base.instances
   · rw [Laws.MultiInstance.opening_waiting named] at filled

@@ -57,8 +57,6 @@ def collectionItems : Value → Option (List Value)
   | .string _ => none
   | .map _ => none
 
-def MultiInstanceRun.items (run : MultiInstanceRun) : Option (List Value) := collectionItems run.collection
-
 /-! ## The portable value domain
 
 [DATA-SEMANTICS-SPEC "Values"](../docs/kernel/semantics/DATA-SEMANTICS-SPEC.md#values). `Step` checks every input's

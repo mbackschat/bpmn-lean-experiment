@@ -72,7 +72,7 @@ import {
   semanticFailure, type OccurrenceId, ownVariables, insertRun,
 } from "../state.js";
 import {
-  EvaluationTag, collectionItems, ctxPositionLe, evalContext, hold, leaveScope, multiInstanceRunItems, type Ctx,
+  EvaluationTag, collectionItems, ctxPositionLe, evalContext, hold, leaveScope, type Ctx,
 } from "../hooks.js";
 import { opening, sequential } from "./multi-instance/opening.js";
 
@@ -257,28 +257,11 @@ function beginInstances(ctx: Ctx, loop: MultiInstance, items: readonly Value[], 
   return setRun(queueInstances(ctx, loop.mode, requests, current), { ...run, instances });
 }
 
-/** The output collection of `outputs` in the form of the input collection: a String List of Strings, else a List. */
-function outputCollection(collection: Value, collected: readonly Value[]): Value {
+/** Lean's `stringsOf`: whether an input collection is a String List (`MultiInstanceRun.strings`). */
+function stringsOf(collection: Value): boolean {
   switch (collection.tag) {
     case ValueTag.StringList:
-      return { tag: ValueTag.StringList, items: collected.flatMap((value): string[] => {
-        switch (value.tag) {
-          case ValueTag.String:
-            return [value.value];
-          case ValueTag.Null:
-          case ValueTag.Bool:
-          case ValueTag.Int:
-          case ValueTag.Decimal:
-          case ValueTag.Double:
-          case ValueTag.Date:
-          case ValueTag.StringList:
-          case ValueTag.List:
-          case ValueTag.Map:
-            return [];
-        }
-        return assertNever(value);
-      }) };
-    case ValueTag.List:
+      return true;
     case ValueTag.Null:
     case ValueTag.Bool:
     case ValueTag.Int:
@@ -286,17 +269,45 @@ function outputCollection(collection: Value, collected: readonly Value[]): Value
     case ValueTag.Double:
     case ValueTag.Date:
     case ValueTag.String:
+    case ValueTag.List:
     case ValueTag.Map:
-      return { tag: ValueTag.List, items: collected };
+      return false;
   }
   return assertNever(collection);
 }
 
+/**
+ * The output collection of `outputs` in the form of the input collection: a String List of Strings when it was one
+ * (`strings`), else a List.
+ */
+function outputCollection(strings: boolean, collected: readonly Value[]): Value {
+  if (strings) {
+    return { tag: ValueTag.StringList, items: collected.flatMap((value): string[] => {
+      switch (value.tag) {
+        case ValueTag.String:
+          return [value.value];
+        case ValueTag.Null:
+        case ValueTag.Bool:
+        case ValueTag.Int:
+        case ValueTag.Decimal:
+        case ValueTag.Double:
+        case ValueTag.Date:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return [];
+      }
+      return assertNever(value);
+    }) };
+  }
+  return { tag: ValueTag.List, items: collected };
+}
+
 /** The output collection a filled body writes: BPMN 2.0.2 §13.3.7 aggregates; CIB-LIM-0001 selects none. */
-function written(ctx: Ctx, loop: MultiInstance, collection: Value, collected: readonly Value[]): readonly Binding[] {
+function written(ctx: Ctx, loop: MultiInstance, strings: boolean, collected: readonly Value[]): readonly Binding[] {
   switch (ctx.program.options.multiInstanceOutputs) {
     case MultiInstanceOutputs.Aggregates:
-      return loop.outputCollection === null ? [] : [[loop.outputCollection, outputCollection(collection, collected)]];
+      return loop.outputCollection === null ? [] : [[loop.outputCollection, outputCollection(strings, collected)]];
     case MultiInstanceOutputs.None:
       return [];
   }
@@ -397,11 +408,11 @@ function entryInput<T>(ctx: Ctx, state: State, scope: ScopeOccurrenceId, express
   return assertNever(evaluation);
 }
 
-type EntryRead = readonly [collection: Value, items: readonly Value[], count: number];
+type EntryRead = readonly [strings: boolean, items: readonly Value[], count: number];
 
 /**
- * What an entry reads: the collection, its items and the number of instances; a cardinality loop's collection is
- * `null` and its instances get no item (`MultiInstanceActivityBehavior:85`).
+ * What an entry reads: whether the collection is a String List, its members and the number of instances; a cardinality
+ * loop has no collection and its instances get no item (`MultiInstanceActivityBehavior:85`).
  */
 function entryRead(ctx: Ctx, loop: MultiInstance, state: State, scope: ScopeOccurrenceId): Result<EntryRead | null> {
   const count = loop.count;
@@ -411,13 +422,13 @@ function entryRead(ctx: Ctx, loop: MultiInstance, state: State, scope: ScopeOccu
         ? "multiInstance.notACollection" : "multi-instance-collection";
       return entryInput(ctx, state, scope, collectionOf(ctx, loop, count.items), (collection): Result<EntryRead> => {
         const members = collectionItems(collection);
-        return members === null ? semanticFailure(SemanticCause.Model, code) : committed([collection, members, members.length]);
+        return members === null ? semanticFailure(SemanticCause.Model, code) : committed([stringsOf(collection), members, members.length]);
       });
     }
     case InstanceCountTag.Cardinality:
       return entryInput(ctx, state, scope, count.count, (value): Result<EntryRead> => {
         const instances = countOf(ctx.program.options.multiInstanceCount, value);
-        return instances.ok ? committed([{ tag: ValueTag.Null }, [], instances.value]) : instances;
+        return instances.ok ? committed([false, [], instances.value]) : instances;
       });
     case InstanceCountTag.CountAndCollection:
       // Admission refuses it (`multiInstance.countAndCollection`).
@@ -441,9 +452,9 @@ export function arriveMultiInstance(
   const read = entryRead(ctx, loop, state, occurrence.scope);
   if (!read.ok) return read;
   if (read.value === null) return committed(hold(state, occurrence));
-  const [collection, items, count] = read.value;
+  const [strings, items, count] = read.value;
   if (count === 0) {
-    return committed(signal(state, completeSignal(occurrence.id, leaveOutgoing, written(ctx, loop, collection, []), WriteRule.Outward)));
+    return committed(signal(state, completeSignal(occurrence.id, leaveOutgoing, written(ctx, loop, strings, []), WriteRule.Outward)));
   }
   const waiting: Iteration = { tag: IterationTag.Waiting };
   const instances = Array.from({ length: count }, () => waiting);
@@ -451,7 +462,7 @@ export function arriveMultiInstance(
   const armed = envelope.boundaries.length === 0
     ? entered
     : signal(entered, { tag: SignalTag.Arm, host: occurrence.id, element: header.id, scope: occurrence.scope });
-  const run: MultiInstanceRun = { scope, element: header.id, occurrence: occurrence.id, collection, instances };
+  const run: MultiInstanceRun = { scope, element: header.id, occurrence: occurrence.id, members: items, strings, instances };
   return committed(beginInstances(ctx, loop, items, run, armed));
 }
 
@@ -466,40 +477,27 @@ function submitted(loop: MultiInstance, run: MultiInstanceRun, writes: readonly 
   const [only] = writes;
   if (writes.length !== 1 || only === undefined) return failed(FailureTag.Rejected, "undeclared-output");
   const value = only[1];
-  switch (run.collection.tag) {
-    case ValueTag.StringList:
-      switch (value.tag) {
-        case ValueTag.String:
-          return committed(value);
-        case ValueTag.Null:
-        case ValueTag.Bool:
-        case ValueTag.Int:
-        case ValueTag.Decimal:
-        case ValueTag.Double:
-        case ValueTag.Date:
-        case ValueTag.StringList:
-        case ValueTag.List:
-        case ValueTag.Map:
-          return failed(FailureTag.Rejected, "instance-output-kind");
-      }
-      return assertNever(value);
+  if (!run.strings) return committed(value);
+  switch (value.tag) {
+    case ValueTag.String:
+      return committed(value);
     case ValueTag.Null:
     case ValueTag.Bool:
     case ValueTag.Int:
     case ValueTag.Decimal:
     case ValueTag.Double:
     case ValueTag.Date:
-    case ValueTag.String:
+    case ValueTag.StringList:
     case ValueTag.List:
     case ValueTag.Map:
-      return committed(value);
+      return failed(FailureTag.Rejected, "instance-output-kind");
   }
-  return assertNever(run.collection);
+  return assertNever(value);
 }
 
 /** The body is done: complete it, writing the output collection when every slot is filled. */
 function finish(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, state: State): State {
-  const writes = run.instances.every(slotFilled) ? written(ctx, loop, run.collection, completedOutputs(run)) : [];
+  const writes = run.instances.every(slotFilled) ? written(ctx, loop, run.strings, completedOutputs(run)) : [];
   return signal(state, completeSignal(run.occurrence, leaveOutgoing, writes, WriteRule.Outward));
 }
 
@@ -629,7 +627,7 @@ function rereadCollection(ctx: Ctx, loop: MultiInstance): Expression | null {
 
 /**
  * The items the instance at `next` takes its item from: the entry snapshot, or under a re-read the current collection,
- * while the entry total stays and `run.collection` keeps the entry value. CIB reads it in the body's execution, which
+ * while the entry total stays and `run.members` keeps the entry members. CIB reads it in the body's execution, which
  * holds the item, `loopCounter` and the result locals of this and every earlier instance (`Sequential…:53`), so it is
  * read in the completing instance's scope occurrence before that is left, as the completion condition is. A value that
  * is no collection fails the operation (a `ClassCastException`, `MultiInstanceActivityBehavior.java:96-97`), as does one
@@ -638,7 +636,7 @@ function rereadCollection(ctx: Ctx, loop: MultiInstance): Expression | null {
 function nextItems(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, next: number, scope: ScopeOccurrenceId, results: readonly string[],
   state: State): Result<readonly Value[]> {
   const read = rereadCollection(ctx, loop);
-  if (read === null) return committed(multiInstanceRunItems(run) ?? []);
+  if (read === null) return committed(run.members);
   // Dynamic-only: which names an earlier instance's result left on CIB's body depends on the run's effect results.
   if ((run.results ?? []).some((name) => !results.includes(name))) return failed(FailureTag.Unsupported, "multiInstance.sequentialResultLeftover");
   // Dynamic-only: a removed or null collection leaves CIB's previous item in place

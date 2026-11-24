@@ -31,7 +31,7 @@ variable {program : Program} {inv : State → Prop} {settled : State → Occurre
 /-- Entering and queuing a body's instances below its scope occurrence keeps `inv`, given that a body some slot of
 which no longer waits is held and opens by its element's loop. -/
 theorem beginInstances_keeps (ops : MultiInstanceOps program inv settled)
-    {ctx : Ctx} {loop : MultiInstance} {items : List Value} {run : MultiInstanceRun} {state : State}
+    {ctx : Ctx} {loop : MultiInstance} {items : Array Value} {run : MultiInstanceRun} {state : State}
     (entering : Entering inv settled run state run.instances [])
     (linked : (∃ slot ∈ run.instances, slot ≠ .waiting) →
       run ∈ state.slots.multiInstances ∧ LoopOf program run.element loop) :
@@ -99,11 +99,11 @@ theorem enterBody_entering (ops : MultiInstanceOps program inv settled) {occurre
     (armed : ∀ current, inv current → occurrence ∈ current.occurrences →
       inv (current.signal (.arm occurrence.id element occurrence.scope)) ∧
         ∀ id, settled current id → settled (current.signal (.arm occurrence.id element occurrence.scope)) id)
-    (locals : List (String × Value)) (unarmed : Bool) (collection : Value) (instances : List Iteration)
+    (locals : List (String × Value)) (unarmed : Bool) (members : Array Value) (strings : Bool) (instances : List Iteration)
     (waiting : ∀ slot ∈ instances, slot = .waiting) :
     Entering inv settled
       { scope := (state.enterScope element occurrence.scope locals (some occurrence.id)).2, element,
-        occurrence := occurrence.id, collection, instances }
+        occurrence := occurrence.id, members, strings, instances }
       (if unarmed then (state.enterScope element occurrence.scope locals (some occurrence.id)).1
         else (state.enterScope element occurrence.scope locals (some occurrence.id)).1.signal
           (.arm occurrence.id element occurrence.scope)) instances [] ∧
@@ -136,20 +136,20 @@ theorem enterBody_entering (ops : MultiInstanceOps program inv settled) {occurre
 /-- Entering the body's scope occurrence below a begun occurrence's own, which it owns, arming its boundaries or not, and
 beginning the instances below it, every slot waiting, keeps `inv`. -/
 theorem enterBody_keeps (ops : MultiInstanceOps program inv settled)
-    {ctx : Ctx} {loop : MultiInstance} {items : List Value} {occurrence : Occurrence} {state : State} (holds : inv state)
+    {ctx : Ctx} {loop : MultiInstance} {items : Array Value} {occurrence : Occurrence} {state : State} (holds : inv state)
     (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true) (element : ElementId)
-    (named : element = occurrence.element) (locals : List (String × Value)) (unarmed : Bool) (collection : Value)
+    (named : element = occurrence.element) (locals : List (String × Value)) (unarmed : Bool) (members : Array Value) (strings : Bool)
     (instances : List Iteration)
     (waiting : ∀ slot ∈ instances, slot = .waiting) :
     inv (Feature.MultiInstance.beginInstances ctx loop items
       { scope := (state.enterScope element occurrence.scope locals (some occurrence.id)).2, element,
-        occurrence := occurrence.id, collection, instances }
+        occurrence := occurrence.id, members, strings, instances }
       (if unarmed then (state.enterScope element occurrence.scope locals (some occurrence.id)).1
         else (state.enterScope element occurrence.scope locals (some occurrence.id)).1.signal
           (.arm occurrence.id element occurrence.scope))) :=
   beginInstances_keeps ops (enterBody_entering ops holds member begun element
     (enterBody_enters ops holds member begun named)
-    (fun current kept present => ops.arm current occurrence element kept present begun named) locals unarmed collection instances
+    (fun current kept present => ops.arm current occurrence element kept present begun named) locals unarmed members strings instances
     waiting).1 fun ⟨slot, inside, moved⟩ => absurd (waiting slot inside) moved
 
 /-- `Hooks.arriveMultiInstance` keeps `inv`, as `Laws.MultiInstance.arriveMultiInstance_spec` says what it does. -/
@@ -161,8 +161,8 @@ theorem arriveMultiInstance_keeps (ops : MultiInstanceOps program inv settled) {
   rcases arriveMultiInstance_spec ran with ⟨held, rfl⟩ | ⟨writes, rfl⟩ | ⟨locals, unarmed, entered⟩
   · exact ops.hold _ _ holds
   · exact ops.complete _ _ _ _ _ holds (ops.begun _ _ holds member begun) fun _ same => by cases same
-  · obtain ⟨collection, count, items, ⟨_, rfl⟩⟩ := entered
-    exact enterBody_keeps ops holds member begun _ named _ _ _ _ fun _ inside => List.eq_of_mem_replicate inside
+  · obtain ⟨strings, count, items, ⟨_, rfl⟩⟩ := entered
+    exact enterBody_keeps ops holds member begun _ named _ _ _ _ _ fun _ inside => List.eq_of_mem_replicate inside
 
 /-- An instance's completion leaves the position counter where it was. -/
 theorem leftWith_position (state : State) (scope : ScopeOccurrenceId) (next : MultiInstanceRun) :
@@ -273,7 +273,7 @@ theorem begun_counted {ctx : Ctx} {loop : MultiInstance}
 
 /-- Beginning a body's instances enters each anew holding its counter, as `begun_counted` says. -/
 theorem beginInstances_counted (ops : MultiInstanceOps program inv settled) {ctx : Ctx} {loop : MultiInstance}
-    {items : List Value} {run : MultiInstanceRun} {state before : State}
+    {items : Array Value} {run : MultiInstanceRun} {state before : State}
     (entering : Entering inv settled run state run.instances [])
     (others : ∀ other ∈ state.slots.multiInstances, ∀ scope, Iteration.active scope ∈ other.instances →
       Laws.State.ScopeIssued before scope)
@@ -288,24 +288,24 @@ theorem beginInstances_counted (ops : MultiInstanceOps program inv settled) {ctx
 
 /-- Entering a body and its first instances enters each holding its counter. -/
 theorem enterBody_counted (ops : MultiInstanceOps program inv settled)
-    {ctx : Ctx} {loop : MultiInstance} {items : List Value} {occurrence : Occurrence} {state : State} (holds : inv state)
+    {ctx : Ctx} {loop : MultiInstance} {items : Array Value} {occurrence : Occurrence} {state : State} (holds : inv state)
     (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true) (element : ElementId)
     (enters : ∀ locals, inv (state.enterScope element occurrence.scope locals (some occurrence.id)).1 ∧
       ∀ id, settled state id → settled (state.enterScope element occurrence.scope locals (some occurrence.id)).1 id)
     (armed : ∀ current, inv current → occurrence ∈ current.occurrences →
       inv (current.signal (.arm occurrence.id element occurrence.scope)) ∧
         ∀ id, settled current id → settled (current.signal (.arm occurrence.id element occurrence.scope)) id)
-    (locals : List (String × Value)) (unarmed : Bool) (collection : Value)
+    (locals : List (String × Value)) (unarmed : Bool) (members : Array Value) (strings : Bool)
     (instances : List Iteration)
     (waiting : ∀ slot ∈ instances, slot = .waiting) (cib : ctx.program.options.multiInstanceCounters = .cibLocals)
     (apart : Feature.MultiInstance.itemName ctx loop ≠ some "loopCounter") :
     SlotsCounted state (Feature.MultiInstance.beginInstances ctx loop items
       { scope := (state.enterScope element occurrence.scope locals (some occurrence.id)).2, element,
-        occurrence := occurrence.id, collection, instances }
+        occurrence := occurrence.id, members, strings, instances }
       (if unarmed then (state.enterScope element occurrence.scope locals (some occurrence.id)).1
         else (state.enterScope element occurrence.scope locals (some occurrence.id)).1.signal
           (.arm occurrence.id element occurrence.scope))) := by
-  obtain ⟨entering, slots, _⟩ := enterBody_entering ops holds member begun element enters armed locals unarmed collection
+  obtain ⟨entering, slots, _⟩ := enterBody_entering ops holds member begun element enters armed locals unarmed members strings
     instances waiting
   exact beginInstances_counted ops entering (fun other held scope active => by
       rw [slots] at held
@@ -330,8 +330,8 @@ theorem arriveMultiInstance_counted (ops : MultiInstanceOps program inv settled)
   · exact .inl held
   · exact .inr (nothingCounted fun other inside scope active =>
       (ops.placed state other holds (by rwa [Laws.State.signal_eq] at inside) scope active).1)
-  · obtain ⟨collection, count, items, ⟨_, rfl⟩⟩ := entered
-    exact .inr (enterBody_counted ops holds member begun _ enters armed _ _ _ _
+  · obtain ⟨strings, count, items, ⟨_, rfl⟩⟩ := entered
+    exact .inr (enterBody_counted ops holds member begun _ enters armed _ _ _ _ _
       (fun _ inside => List.eq_of_mem_replicate inside) cib apart)
 
 /-- Under `cibLocals` and loops whose item locals are not named `loopCounter`, `Hooks.instanceCompleted` enters each

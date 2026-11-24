@@ -177,7 +177,8 @@ def slotRows : List Field := [
   -- `MultiInstanceRecord`
   content ``Kernel.MultiInstanceRecord.scope,
   content ``Kernel.MultiInstanceRecord.element,
-  content ``Kernel.MultiInstanceRecord.collection,
+  content ``Kernel.MultiInstanceRecord.members,
+  content ``Kernel.MultiInstanceRecord.strings,
   ordered ``Kernel.MultiInstanceRecord.instances "one instance per item in collection order (BPMN 2.0.2 §10.2.8, `loopCounter`)",
   ordered ``Kernel.MultiInstanceRecord.results "the result names one sequential body's instances left, one instance after another",
   -- `Compensations`

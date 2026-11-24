@@ -30,8 +30,8 @@ def secondScope : ScopeOccurrenceId := .ofSegments [{ element := review, ordinal
 @[simp] def secondKey : OccurrenceId := { scope := secondScope, element := review, ordinal := 0 }
 
 def running : MultiInstanceRun :=
-  { scope := bodyScope, element := review, occurrence := bodyKey, collection := .stringList ["x", "x"]
-    instances := [.active firstScope, .active secondScope] }
+  { scope := bodyScope, element := review, occurrence := bodyKey, members := #[.string "x", .string "x"]
+    strings := true, instances := [.active firstScope, .active secondScope] }
 
 def bodyOccurrence : Occurrence := { id := bodyKey, element := review, scope := root, activation := 1, position := 1, role := .multiInstanceBody }
 def firstInstance : Occurrence :=
@@ -333,7 +333,7 @@ theorem outputs_fit :
   intro output member
   simp at member
   subst member
-  exact ⟨fun _ => rfl, fun value same _ _ => ⟨"a", (Option.some.inj same).symm⟩⟩
+  exact ⟨fun _ => rfl, fun value same _ => ⟨"a", (Option.some.inj same).symm⟩⟩
 
 /-- A filled slot without the output data item's value breaks `OutputsFit`. -/
 theorem missing_output_rejected : ¬ OutputsFit { running with instances := [.completed none] } (withOutput (some "out")) :=
@@ -342,7 +342,7 @@ theorem missing_output_rejected : ¬ OutputsFit { running with instances := [.co
 /-- A non-String output of a String List body breaks `OutputsFit`. -/
 theorem foreign_output_rejected :
     ¬ OutputsFit { running with instances := [.completed (some (.int 1))] } (withOutput none) := fun fit => by
-  obtain ⟨_, wrong⟩ := (fit (some (.int 1)) (by simp)).2 (.int 1) rfl ["x", "x"] rfl
+  obtain ⟨_, wrong⟩ := (fit (some (.int 1)) (by simp)).2 (.int 1) rfl rfl
   cases wrong
 
 

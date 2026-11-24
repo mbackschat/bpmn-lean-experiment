@@ -678,7 +678,8 @@ theorem elemented_root_rejected :
 
 /-- A Multi-Instance run of the root process inside a called instance. -/
 def misplacedRun : MultiInstanceRun :=
-  { scope := calledKey, element := ⟨"A"⟩, occurrence := aIn calledKey, collection := .null, instances := [] }
+  { scope := calledKey, element := ⟨"A"⟩, occurrence := aIn calledKey, members := #[], strings := false
+    instances := [] }
 
 /-- A Multi-Instance run of the root process inside a called instance breaks `PlacedLane.runs`. -/
 theorem misplaced_run_rejected :

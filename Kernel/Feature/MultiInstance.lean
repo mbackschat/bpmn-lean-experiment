@@ -107,7 +107,7 @@ def queueInstances (ctx : Ctx) (mode : MultiInstanceMode) (requests : List Begin
 
 /-- Begin the instances `opening` names, each in a scope occurrence holding its input data item and, under
 `cibLocals`, its `loopCounter`. -/
-def beginInstances (ctx : Ctx) (loop : MultiInstance) (items : List Value) (run : MultiInstanceRun) (state : State) :
+def beginInstances (ctx : Ctx) (loop : MultiInstance) (items : Array Value) (run : MultiInstanceRun) (state : State) :
     State :=
   let (state, instances, requests) := (opening loop.mode run.instances).foldl
     (fun (state, instances, requests) index =>
@@ -120,11 +120,15 @@ def beginInstances (ctx : Ctx) (loop : MultiInstance) (items : List Value) (run 
     (state, run.instances, [])
   setRun (queueInstances ctx loop.mode requests state) { run with instances }
 
-/-- The output collection of `outputs` in the form of the input collection: a String List of Strings, else a
-List. -/
-def outputCollection (collection : Value) (outputs : List Value) : Value :=
-  match collection with
-  | .stringList _ => .stringList (outputs.filterMap fun
+/-- Whether an input collection is a String List (`MultiInstanceRun.strings`). -/
+def stringsOf : Value → Bool
+  | .stringList _ => true
+  | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .string _ | .list _ | .map _ => false
+
+/-- The output collection of `outputs` in the form of the input collection: a String List of Strings when it was
+one (`strings`), else a List. -/
+def outputCollection (strings : Bool) (outputs : List Value) : Value :=
+  if strings then .stringList (outputs.filterMap fun
     | .string text => some text
     | .null => none
     | .bool _ => none
@@ -133,18 +137,12 @@ def outputCollection (collection : Value) (outputs : List Value) : Value :=
     | .stringList _ => none
     | .list _ => none
     | .map _ => none)
-  | .list _ => .list outputs
-  | .null => .list outputs
-  | .bool _ => .list outputs
-  | .int _ => .list outputs
-  | .decimal _ _ | .double _ | .date _ => .list outputs
-  | .string _ => .list outputs
-  | .map _ => .list outputs
+  else .list outputs
 
 /-- The output collection a filled body writes: BPMN 2.0.2 §13.3.7 aggregates; CIB-LIM-0001 selects none. -/
-def written (ctx : Ctx) (loop : MultiInstance) (collection : Value) (outputs : List Value) : List (String × Value) :=
+def written (ctx : Ctx) (loop : MultiInstance) (strings : Bool) (outputs : List Value) : List (String × Value) :=
   match ctx.program.options.multiInstanceOutputs, loop.outputCollection with
-  | .aggregates, some name => [(name, outputCollection collection outputs)]
+  | .aggregates, some name => [(name, outputCollection strings outputs)]
   | .aggregates, none => []
   | .none, _ => []
 
@@ -200,20 +198,20 @@ def entryInput {α : Type} (ctx : Ctx) (state : State) (scope : ScopeOccurrenceI
     | .error (.semanticFailure cause code) => .error (if rollback then .rolledBack code else .semanticFailure cause code)
     | .error failure => .error failure
 
-/-- What an entry reads: the collection, its items and the number of instances; a cardinality loop's collection is
-`null` and its instances get no item (`MultiInstanceActivityBehavior:85`). -/
+/-- What an entry reads: whether the collection is a String List, its members and the number of instances; a
+cardinality loop has no collection and its instances get no item (`MultiInstanceActivityBehavior:85`). -/
 def entryRead (ctx : Ctx) (loop : MultiInstance) (state : State) (scope : ScopeOccurrenceId) :
-    Except Failure (Option (Value × List Value × Nat)) :=
+    Except Failure (Option (Bool × Array Value × Nat)) :=
   match loop.count with
   | .collection items =>
     let code := if ctx.program.options.multiInstanceInputFailure == .rollback then "multiInstance.notACollection"
       else "multi-instance-collection"
     entryInput ctx state scope (collectionOf ctx loop items) fun collection =>
       match collectionItems collection with
-      | some members => .ok (collection, members, members.length)
+      | some members => .ok (stringsOf collection, members.toArray, members.length)
       | none => .error (.semanticFailure .model code)
   | .cardinality count =>
-    entryInput ctx state scope count fun value => do .ok (.null, [], ← countOf ctx.program.options.multiInstanceCount value)
+    entryInput ctx state scope count fun value => do .ok (false, #[], ← countOf ctx.program.options.multiInstanceCount value)
   -- Admission refuses it (`multiInstance.countAndCollection`).
   | .countAndCollection _ _ => .error (.unsupported "multiInstance.countAndCollection")
 
@@ -223,15 +221,16 @@ def arriveMultiInstance (ctx : Ctx) (header : Header) (envelope : Envelope) (loo
     (occurrence : Occurrence) (state : State) : Outcome := do
   match ← entryRead ctx loop state occurrence.scope with
   | none => .ok (state.hold occurrence)
-  | some (collection, _, 0) =>
-    .ok (state.signal (.complete occurrence.id .outgoing (written ctx loop collection []) .outward))
-  | some (collection, items, count) =>
+  | some (strings, _, 0) =>
+    .ok (state.signal (.complete occurrence.id .outgoing (written ctx loop strings []) .outward))
+  | some (strings, items, count) =>
     let instances := List.replicate count Iteration.waiting
     let (state, scope) :=
       state.enterScope header.id occurrence.scope (counterLocals ctx (bodyCounts loop instances)) (some occurrence.id)
     let state := if envelope.boundaries.isEmpty then state
       else state.signal (.arm occurrence.id header.id occurrence.scope)
-    let run : MultiInstanceRun := { scope, element := header.id, occurrence := occurrence.id, collection, instances }
+    let run : MultiInstanceRun :=
+      { scope, element := header.id, occurrence := occurrence.id, members := items, strings, instances }
     .ok (beginInstances ctx loop items run state)
 
 /-- An instance's output, kept as a String when the input collection is a String List, whose output collection holds
@@ -243,18 +242,17 @@ def submitted (loop : MultiInstance) (run : MultiInstanceRun) (writes : List (St
   match loop.outputDataItem, writes with
   | none, _ => .ok none
   | some _, [(_, value)] =>
-    match run.collection with
-    | .stringList _ =>
+    if run.strings then
       match value with
       | .string _ => .ok (some value)
       | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .stringList _ | .list _ | .map _ =>
         .error (.rejected "instance-output-kind")
-    | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .string _ | .list _ | .map _ => .ok (some value)
+    else .ok (some value)
   | _, _ => .error (.rejected "undeclared-output")
 
 /-- The body is done: complete it, writing the output collection when every slot is filled. -/
 def finish (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) (state : State) : State :=
-  let writes := if run.instances.all slotFilled then written ctx loop run.collection (run.instances.filterMap output?)
+  let writes := if run.instances.all slotFilled then written ctx loop run.strings (run.instances.filterMap output?)
     else []
   state.signal (.complete run.occurrence .outgoing writes .outward)
 
@@ -332,32 +330,32 @@ def rereadCollection (ctx : Ctx) (loop : MultiInstance) : Option Expression :=
   | .sequentialReread, .countAndCollection _ _ => none
 
 /-- The items the instance at `next` takes its item from: the entry snapshot, or under a re-read the current collection,
-while the entry total stays and `run.collection` keeps the entry value. CIB reads it in the body's execution, which
+while the entry total stays and `run.members` keeps the entry members. CIB reads it in the body's execution, which
 holds the item, `loopCounter` and the result locals of this and every earlier instance (`Sequential…:53`), so it is
 read in the completing instance's scope occurrence before that is left, as the completion condition is. A value that is
 no collection fails the operation (a `ClassCastException`, `MultiInstanceActivityBehavior.java:96-97`), as does one
 shorter than `next + 1` (`getElementAtIndex`'s iterator, `:131-138`) and a failing JUEL read. -/
 def nextItems (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) (next : Nat) (scope : ScopeOccurrenceId)
-    (results : List String) (state : State) : Except Failure (List Value) :=
+    (results : List String) (state : State) : Except Failure (Array Value) :=
   match rereadCollection ctx loop with
-  | none => .ok (run.items.getD [])
+  | none => .ok run.members
   | some read =>
     -- Dynamic-only: which names an earlier instance's result left on CIB's body depends on the run's effect results.
     if run.results.any (!results.contains ·) then .error (.unsupported "multiInstance.sequentialResultLeftover")
     else
       -- Dynamic-only: a removed or null collection leaves CIB's previous item in place
       -- (`MultiInstanceActivityBehavior.java:85-88`), a value the kernel does not reproduce.
-      let removed : Except Failure (List Value) := .error (.unsupported "multiInstance.collectionRemoved")
+      let removed : Except Failure (Array Value) := .error (.unsupported "multiInstance.collectionRemoved")
       match ctx.evaluate { state.evalContext ctx.program scope with domainChecked := false } read, read with
       | .unsupported code, _ => .error (.unsupported code)
       | .failure "unknown-variable", .variable _ => removed
       | .failure code, _ => .error (.rolledBack code)
       | .value value, _ =>
-        let read : Except Failure (List Value) :=
+        let read : Except Failure (Array Value) :=
           match collectionItems value with
           | none => .error (.rolledBack "multiInstance.notACollection")
           | some members =>
-            if next < members.length then .ok members else .error (.rolledBack "multiInstance.collectionShortened")
+            if next < members.length then .ok members.toArray else .error (.rolledBack "multiInstance.collectionShortened")
         match value with
         | .null => removed
         | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .string _ | .stringList _ | .list _ | .map _ => read

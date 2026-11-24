@@ -642,12 +642,12 @@ theorem numbered_arrive {ctx : Ctx} {header : Header} {envelope : Envelope} {loo
   rcases Laws.MultiInstance.arriveMultiInstance_spec ran with ⟨kept, rfl⟩ | ⟨writes, rfl⟩ | ⟨locals, unarmed, entered⟩
   · exact held.hold kept
   · exact held.signalOther Laws.Step.complete_apart
-  · obtain ⟨collection, count, items, ⟨_, rfl⟩⟩ := entered
+  · obtain ⟨strings, count, items, ⟨_, rfl⟩⟩ := entered
     have waiting : ∀ slot ∈ List.replicate count Iteration.waiting, slot = .waiting := fun _ inside =>
       List.eq_of_mem_replicate inside
     obtain ⟨entering, slots, _⟩ := enterBody_entering ops formed member begun header.id
       (enterBody_enters ops formed member begun named)
-      (fun current kept present => ops.arm current occurrence _ kept present begun named) locals unarmed collection _ waiting
+      (fun current kept present => ops.arm current occurrence _ kept present begun named) locals unarmed items strings _ waiting
     have enteredHeld : Numbered ctx.program (if unarmed then
         (state.enterScope header.id occurrence.scope locals (some occurrence.id)).1
         else (state.enterScope header.id occurrence.scope locals (some occurrence.id)).1.signal

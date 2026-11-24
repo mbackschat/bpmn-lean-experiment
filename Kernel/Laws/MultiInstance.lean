@@ -443,7 +443,7 @@ structure Begun (inv : State → Prop) (settled : State → OccurrenceId → Pro
 /-- Beginning a body's instances, from a state where it keeps what it keeps while it enters, queues their begins in a
 state it then sets the body's slot record in, as `Begun` says. -/
 theorem beginInstances_spec (ops : MultiInstanceOps program inv settled) {ctx : Ctx} {loop : MultiInstance}
-    {items : List Value} {run : MultiInstanceRun} {state : State}
+    {items : Array Value} {run : MultiInstanceRun} {state : State}
     (entering : Entering inv settled run state run.instances []) :
     ∃ queued instances, Feature.MultiInstance.beginInstances ctx loop items run state =
         Feature.MultiInstance.setRun queued { run with instances } ∧
@@ -523,10 +523,10 @@ theorem arriveMultiInstance_spec {ctx : Ctx} {header : Header} {envelope : Envel
     (ran : Feature.MultiInstance.arriveMultiInstance ctx header envelope loop occurrence state = .ok after) :
     (∃ held, after = state.hold held) ∨
       (∃ writes, after = state.signal (.complete occurrence.id .outgoing writes .outward)) ∨
-      ∃ locals, ∃ unarmed : Bool, ∃ collection count items, 0 < count ∧
+      ∃ locals, ∃ unarmed : Bool, ∃ strings count items, 0 < count ∧
         after = Feature.MultiInstance.beginInstances ctx loop items
         { scope := (state.enterScope header.id occurrence.scope locals (some occurrence.id)).2, element := header.id,
-          occurrence := occurrence.id, collection, instances := List.replicate count .waiting }
+          occurrence := occurrence.id, members := items, strings, instances := List.replicate count .waiting }
         (if unarmed then (state.enterScope header.id occurrence.scope locals (some occurrence.id)).1
           else (state.enterScope header.id occurrence.scope locals (some occurrence.id)).1.signal
             (.arm occurrence.id header.id occurrence.scope)) := by
@@ -557,11 +557,11 @@ theorem submitted_fits {ctx : Ctx} {run : MultiInstanceRun} {loop : MultiInstanc
     · simp_all
     · split at ran <;> (try split at ran) <;> cases ran <;> rfl
     · cases ran
-  · intro value is items collection
+  · intro value is strings
     split at ran
     · cases ran
       cases is
-    · simp only [collection] at ran
+    · simp only [strings, ↓reduceIte] at ran
       split at ran
       · cases ran
         cases is
@@ -677,20 +677,20 @@ theorem filled_outputs : ∀ {slots : List Iteration}, (∀ slot ∈ slots, ∃ 
       ← filled_outputs fun other inside => filled other (List.mem_cons_of_mem _ inside)]
 
 /-- The output collection of outputs that are Strings whenever the input collection is a String List lists them. -/
-theorem outputCollection_lists {collection : Value} {outputs : List Value}
-    (texts : ∀ value ∈ outputs, ∀ items, collection = .stringList items → ∃ text, value = .string text) :
-    ListsOutputs (Feature.MultiInstance.outputCollection collection outputs) outputs := by
+theorem outputCollection_lists {strings : Bool} {outputs : List Value}
+    (texts : ∀ value ∈ outputs, strings = true → ∃ text, value = .string text) :
+    ListsOutputs (Feature.MultiInstance.outputCollection strings outputs) outputs := by
   unfold Feature.MultiInstance.outputCollection
-  cases collection with
-  | stringList items =>
+  cases strings with
+  | true =>
     refine .inr ⟨_, rfl, ?_⟩
     induction outputs with
     | nil => rfl
     | cons value rest held =>
-      obtain ⟨text, rfl⟩ := texts value (List.mem_cons_self ..) items rfl
+      obtain ⟨text, rfl⟩ := texts value (List.mem_cons_self ..) rfl
       rw [List.filterMap_cons_some (by rfl), List.map_cons,
         held fun other inside => texts other (List.mem_cons_of_mem _ inside)]
-  | list _ | null | bool _ | int _ | decimal _ _ | double _ | date _ | string _ | map _ => exact .inl rfl
+  | false => exact .inl rfl
 
 /-- A body's completion completes its occurrence, writing what `WritesCollection` allows. -/
 theorem finish_spec (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) (state : State) :
@@ -706,11 +706,11 @@ theorem finish_spec (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) 
     split at member
     · rename_i _ aggregates _
       obtain ⟨-, rfl⟩ := Prod.mk.inj (List.mem_singleton.mp member)
-      refine ⟨aggregates, each, fun named fits => ⟨_, outputCollection_lists fun value inside items collection => ?_,
+      refine ⟨aggregates, each, fun named fits => ⟨_, outputCollection_lists fun value inside strings => ?_,
         filled_outputs fun slot inside => ?_⟩⟩
       · obtain ⟨slot, present, read⟩ := List.mem_filterMap.mp inside
         obtain ⟨output, rfl⟩ := each slot present
-        exact (fits output present).2 value read items collection
+        exact (fits output present).2 value read strings
       · obtain ⟨output, rfl⟩ := each slot inside
         obtain ⟨value, rfl⟩ := Option.isSome_iff_exists.mp ((fits output inside).1 named)
         exact ⟨value, rfl⟩
@@ -725,7 +725,7 @@ theorem finish_collects (ctx : Ctx) {loop : MultiInstance} (run : MultiInstanceR
     (filled : ∀ slot ∈ run.instances, ∃ output, slot = .completed output) :
     ∃ writes value, Feature.MultiInstance.finish ctx loop run state =
       state.signal (.complete run.occurrence .outgoing writes .outward) ∧ (name, value) ∈ writes := by
-  refine ⟨_, Feature.MultiInstance.outputCollection run.collection (run.instances.filterMap Feature.MultiInstance.output?),
+  refine ⟨_, Feature.MultiInstance.outputCollection run.strings (run.instances.filterMap Feature.MultiInstance.output?),
     rfl, ?_⟩
   rw [ite_eq_left_of_eq_true _ _ (eq_true (filled_all filled))]
   unfold Feature.MultiInstance.written
@@ -733,7 +733,7 @@ theorem finish_collects (ctx : Ctx) {loop : MultiInstance} (run : MultiInstanceR
   exact List.mem_singleton_self _
 
 /-- Beginning a body's instances queues only signals that begin its instances (`instanceRequest`). -/
-theorem beginInstances_signals (ctx : Ctx) (loop : MultiInstance) (items : List Value) (run : MultiInstanceRun)
+theorem beginInstances_signals (ctx : Ctx) (loop : MultiInstance) (items : Array Value) (run : MultiInstanceRun)
     (state : State) : ∃ begins : List BeginRequest,
       (Feature.MultiInstance.beginInstances ctx loop items run state).batchSignals = state.batchSignals ++ begins.map .begin ∧
         (Feature.MultiInstance.beginInstances ctx loop items run state).queuedSignals = state.queuedSignals ∧

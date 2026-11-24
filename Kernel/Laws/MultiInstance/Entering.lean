@@ -91,7 +91,7 @@ def recorded (run : MultiInstanceRun) (index : Nat) (output : Option Value) (res
 an output when the loop names an output data item, a String in a String List body (`MultiInstance.submitted`). -/
 def OutputFits (program : Program) (run : MultiInstanceRun) (output : Option Value) : Prop :=
   (∀ loop, LoopOf program run.element loop → loop.outputDataItem.isSome → output.isSome) ∧
-    ∀ value, output = some value → ∀ items, run.collection = .stringList items → ∃ text, value = .string text
+    ∀ value, output = some value → run.strings = true → ∃ text, value = .string text
 
 /-- A scope occurrence entered for an instance of the body `base`: it stands, directly below the body's scope
 occurrence, owned by no occurrence, holding no compensation handler, and no slot of `base` is active in it. -/

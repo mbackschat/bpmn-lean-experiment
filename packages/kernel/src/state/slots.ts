@@ -72,13 +72,16 @@ export function iterationHolds(iteration: Iteration, scope: ScopeOccurrenceId): 
 
 /**
  * A running Multi-Instance Activity: the scope occurrence it holds its instances in, its element and body occurrence,
- * the input collection as evaluated once on entry, and one instance per item in collection order.
+ * the input collection's members as evaluated once on entry, indexed by item (probe P11), and whether it is a String
+ * List, whose instances submit Strings and whose output collection is one, and one instance per item in collection
+ * order.
  */
 export interface MultiInstanceRun {
   readonly scope: ScopeOccurrenceId;
   readonly element: ElementId;
   readonly occurrence: OccurrenceId;
-  readonly collection: Value;
+  readonly members: readonly Value[];
+  readonly strings: boolean;
   readonly instances: readonly Iteration[];
   /**
    * The effect-result names earlier sequential instances left, which CIB keeps on the body until it ends

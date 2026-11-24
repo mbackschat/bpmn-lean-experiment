@@ -61,7 +61,7 @@ def Generated (run : MultiInstanceRun) (count : Nat) : Prop :=
 /-- While a body runs, its snapshot, slot count and identity never change, and a filled slot keeps its output whatever
 the completion order (`SMI-ITERATE-01`, `PMI-COMPLETE-01`). -/
 structure SnapshotFixed (before after : MultiInstanceRun) : Prop where
-  collection : after.collection = before.collection
+  collection : (after.members, after.strings) = (before.members, before.strings)
   count : after.instances.length = before.instances.length
   scope : after.scope = before.scope
   element : after.element = before.element
@@ -284,7 +284,7 @@ names an output data item, and a String when the input collection is a String Li
 Strings only (`MultiInstance.submitted`). -/
 def OutputsFit (run : MultiInstanceRun) (loop : MultiInstance) : Prop :=
   ∀ output, Iteration.completed output ∈ run.instances → (loop.outputDataItem.isSome → output.isSome) ∧
-    ∀ value, output = some value → ∀ items, run.collection = .stringList items → ∃ text, value = .string text
+    ∀ value, output = some value → run.strings = true → ∃ text, value = .string text
 
 /-! ## Completion and output -/
 
@@ -307,7 +307,7 @@ def FormKept : Value → Value → Prop
   | .null, _ | .bool _, _ | .int _, _ | .decimal _ _, _ | .double _, _ | .date _, _ | .string _, _ | .map _, _ => False
 
 /-- Under `CollectionRead.sequentialReread` a later sequential instance holds the item at its index in the collection
-`current` read as it is generated, while the slot count stays the entry count and `run.collection` the entry value
+`current` read as it is generated, while the slot count stays the entry count and `run.members` the entry members
 (`SnapshotFixed`): a grown collection adds no instance, and one shorter than the index generates none (CIB-INT-0043). -/
 def RereadItem (run : MultiInstanceRun) (current : List Value) (index : Nat) (item : Value) : Prop :=
   index < run.instances.length ∧ current[index]? = some item
