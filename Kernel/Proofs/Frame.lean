@@ -82,7 +82,8 @@ theorem closurePhases_alongside {rel : Program → State → Prop} (phases : Law
     journal := fun _ s unit transition holds fresh started ended =>
       ⟨phases.journal _ _ unit transition holds.1 fresh started ended,
         (side _).journal s unit transition holds.1 holds.2 fresh started ended⟩
-    queueBatch := fun _ s unit holds => ⟨phases.queueBatch _ _ unit holds.1, (side _).queueBatch s unit holds.1 holds.2⟩
+    queueBatch := fun _ s unit grouped groups holds =>
+      ⟨phases.queueBatch _ _ unit grouped groups holds.1, (side _).queueBatch s unit grouped groups holds.1 holds.2⟩
     enterUnit := fun _ _ unit holds unrun unseeded untabled =>
       ⟨phases.enterUnit _ _ unit holds.1 unrun unseeded untabled, reissue _ _ unit holds.2⟩
     leaveUnit := fun _ _ holds ran seed => ⟨phases.leaveUnit _ _ holds.1 ran seed, reissue _ _ _ holds.2⟩ }
@@ -171,7 +172,7 @@ theorem countersFrom_closure : ClosureAlongside program (Laws.State.CountersFrom
           (Nat.le_of_eq ((Laws.State.orders_kept s).2.1 request role sourceType))
     cancel := fun le _ id _ held => Laws.State.cancelOccurrence_countersFrom held id
     journal := fun _ _ _ _ held _ _ _ => held.same rfl rfl rfl
-    queueBatch := fun _ _ _ held => by rw [Laws.State.queueBatch_eq]; exact held.same rfl rfl rfl }
+    queueBatch := fun _ _ _ _ _ held => by rw [Laws.State.queueBatch_grouped_eq]; exact held.same rfl rfl rfl }
 
 /-- The completion pipeline keeps `WellFormed` and `CountersFrom start` beside it: starting a reservation and closing
 what waited for it move no counter, removing an occurrence prunes them and journalling an end moves none. -/

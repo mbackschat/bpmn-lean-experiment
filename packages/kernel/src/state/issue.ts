@@ -1,12 +1,12 @@
 /**
  * Committed key forms and in-closure issue slots, transcribed from `Kernel/State/Issue.lean`: what the closure in
  * progress issues (DC12) reads of a key: whether it holds only committed issues (`committedScope`), whether it names an
- * issue of the closure in progress (`scopeFresh`, `occurrenceFresh`), the unit keys of the idle check and the offer it
- * owns (`idleUnit`, `offerUnit`), and the slot an issue takes its committed ordinal in at commit (`ClaimSlot`), the issue
+ * issue of the closure in progress (`scopeFresh`, `occurrenceFresh`), the unit keys of the idle check, the offer and the
+ * finish it owns (`idleUnit`, `offerUnit`, `finishUnit`), and the slot an issue takes its committed ordinal in at commit (`ClaimSlot`), the issue
  * table's value (`State.issued`), beside the issuing unit's key, which a fresh issue's text names only by its digest
  * (`IssuerText`). Part of `state.ts`, which re-exports it.
  */
-import { assertNever } from "../il/types.js";
+import { assertNever, type ElementId } from "../il/types.js";
 import {
   compareIssue, compareOccurrenceId, compareScopeSlot, type FreshIssue, freshIssue, type Issue, occurrenceIdParts, type OccurrenceId, pushUnit,
   type IssuerText, rootScope, sameUnitKey, scopeHead, type ScopeOccurrenceId, type ScopeSlot, type UnitKey, unitRoot, UnitRootTag,
@@ -72,6 +72,23 @@ export function offerUnit(issued: IssueTable, occurrence: OccurrenceId, round: n
   if (fresh === null) return committedScope(scope) === null ? null : unitRoot({ tag: UnitRootTag.Offer, occurrence, round });
   const issuer = issuerOf(issued, fresh);
   return issuer === null ? null : pushUnit(issuer, { tag: UnitStepTag.Offer, index: fresh.index, round });
+}
+
+/**
+ * Lean's `UnitKey.finishUnit?`: the unit key of the `ordinal`th finish of the Multi-Instance body of `element` whose
+ * instances `scope` holds (DC30), as `idleUnit` keys an idle check; `null` for the process root, which holds no body's
+ * instances, a committed segment above a fresh one, or a fresh one the table does not hold.
+ */
+export function finishUnit(issued: IssueTable, scope: ScopeOccurrenceId, element: ElementId, ordinal: number): UnitKey | null {
+  const head = scopeHead(scope);
+  if (head === null) return null;
+  const fresh = freshIssue(head[0].ordinal);
+  if (fresh === null) {
+    const path = committedScope(scope);
+    return path === null ? null : unitRoot({ tag: UnitRootTag.Finish, scope: path, element, ordinal });
+  }
+  const issuer = issuerOf(issued, fresh);
+  return issuer === null ? null : pushUnit(issuer, { tag: UnitStepTag.Finish, index: fresh.index, ordinal });
 }
 
 /** Lean's `UnitKey.offers`: whether `key` is an offer of the parked occurrence `occurrence`, of any round (`offerUnit`). */

@@ -389,8 +389,8 @@ theorem microStep_draft {hooks : Hooks} {keeps : Draft → Prop} (empty : keeps 
     {ctx : Ctx} {unit : UnitKey} {cause : Cause} {element : Option ElementId} {owner : ScopeOccurrenceId}
     {body : State → Outcome} {state after : State} (ran : microStep hooks ctx unit cause element owner body state = .ok after) : keeps after.draft := by
   obtain ⟨_, _, _, ⟨_, _, _, concluded⟩⟩ := microStep_ok ran
-  obtain ⟨notified, written', rest₁⟩ := conclude_ok concluded
-  obtain ⟨notifying, writing, rfl⟩ := rest₁
+  obtain ⟨notified, written', grouped, rest₁⟩ := conclude_ok concluded
+  obtain ⟨notifying, writing, _, rfl⟩ := rest₁
   have fold : ∀ (occurrences : List Occurrence) (start finish : State), keeps start.draft →
       occurrences.foldlM (fun state occurrence => hooks.cancelled ctx occurrence state) start = .ok finish →
       keeps finish.draft := by
@@ -405,7 +405,7 @@ theorem microStep_draft {hooks : Hooks} {keeps : Draft → Prop} (empty : keeps 
       simp only [List.foldlM_cons] at folded
       obtain ⟨mid, told, folded⟩ := bind_ok folded
       exact ih mid finish (cancelled _ _ _ _ kept told) folded
-  rw [Laws.State.queueBatch_eq]
+  rw [Laws.State.queueBatch_grouped_eq]
   exact (show keeps written'.draft from written _ _ _ _ (fold _ _ _ empty notifying) writing)
 
 /-- A committed micro-step leaves no end fact in the draft when the hooks `Step.conclude` runs once it has journalled the

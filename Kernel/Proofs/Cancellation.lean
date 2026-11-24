@@ -381,7 +381,7 @@ theorem scopesKept_stepAlongside {programBefore : Program} (before : State) (for
     (committed : Laws.State.Committed before) (program : Program) : StepAlongside program (ScopesKept before) where
   toFrameAlongside := (scopesKept_alongside before program).toFrameAlongside
   journal _ _ _ _ kept _ _ _ := kept
-  queueBatch _ _ _ kept := by rw [Laws.State.queueBatch_eq]; exact kept
+  queueBatch _ _ _ _ _ kept := by rw [Laws.State.queueBatch_grouped_eq]; exact kept
   runOrder _ _ _ formed kept counted batches _ _ made :=
     orderJournal_scopesKept formedBefore committed formed counted batches kept made
   dequeue _ _ _ _ kept := kept

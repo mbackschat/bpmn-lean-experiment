@@ -168,19 +168,19 @@ test("two issuing units that differ in fingerprint commit", async () => {
 });
 
 /**
- * Lean's `SpineStep UnitStep` code is `4 * cantorPair index round + rank` (`Kernel/State/Key.lean`), mixed into a
+ * Lean's `SpineStep UnitStep` code is `5 * cantorPair index round + rank` (`Kernel/State/Key.lean`), mixed into a
  * fingerprint as `(fingerprint ^ code) * 0x9E3779B97F4A7C15` mod 2^64; the oracle computes it here, beside the kernel's.
  */
 test("a unit step's fingerprint code is Lean's Cantor code, distinct for distinct steps", async () => {
   const key = await kernelModule("state/key.js");
   const input = key.unitRoot({ tag: key.UnitRootTag.Input });
-  const tags = [key.UnitStepTag.Signal, key.UnitStepTag.Token, key.UnitStepTag.Idle, key.UnitStepTag.Offer];
+  const tags = [key.UnitStepTag.Signal, key.UnitStepTag.Token, key.UnitStepTag.Idle, key.UnitStepTag.Offer, key.UnitStepTag.Finish];
   const seen = new Map<bigint, string>();
   for (const [rank, tag] of tags.entries()) {
     for (let index = 0; index < 12; index += 1) {
-      for (let round = 0; round < (tag === key.UnitStepTag.Offer ? 12 : 1); round += 1) {
-        const step = tag === key.UnitStepTag.Offer ? { tag, index, round } : { tag, index };
-        const code = 4n * BigInt((index + round) * (index + round + 1) / 2 + round) + BigInt(rank);
+      for (let round = 0; round < (tag === key.UnitStepTag.Offer || tag === key.UnitStepTag.Finish ? 12 : 1); round += 1) {
+        const step = tag === key.UnitStepTag.Offer ? { tag, index, round } : tag === key.UnitStepTag.Finish ? { tag, index, ordinal: round } : { tag, index };
+        const code = 5n * BigInt((index + round) * (index + round + 1) / 2 + round) + BigInt(rank);
         const { fingerprint } = key.pushUnit(input, step);
         assert.equal(fingerprint, BigInt.asUintN(64, code * 0x9E3779B97F4A7C15n), JSON.stringify(step));
         assert.equal(seen.get(fingerprint), undefined, `${JSON.stringify(step)} collides with ${seen.get(fingerprint)}`);

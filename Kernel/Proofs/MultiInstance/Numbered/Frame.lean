@@ -292,15 +292,18 @@ theorem batch_entry {β : Type} {batch : List β} {m : TreeMap UnitKey β compar
     ⟨index, named, List.mem_zipIdx_iff_getElem?.mp inside⟩
 
 /-- Moving the running batch under the micro-step's unit key keeps `Numbered`: the batch's begins become siblings under
-that unit, whose index order is their batch order, and a body's begins are never both in the batch and keyed. -/
-theorem Numbered.queueBatch {program : Program} {s : State} (unit : UnitKey) (held : Numbered program s) :
-    Numbered program (s.queueBatch unit) := by
-  have signalsIn := (Laws.State.allSignals_queueBatch s unit).subset
-  have tokensIn := (Laws.State.allQueuedTokens_queueBatch s unit).subset
+that unit, whose index order is their batch order, since only completions key under a root of their own
+(`Laws.Step.GroupsCompletions`), and a body's begins are never both in the batch and keyed. -/
+theorem Numbered.queueBatch {program : Program} {s : State} (unit : UnitKey) (grouped : Nat → Option UnitKey)
+    (groups : Laws.Step.GroupsCompletions s grouped) (held : Numbered program s) :
+    Numbered program (s.queueBatch unit grouped) := by
+  have signalsIn := (Laws.State.allSignals_queueBatch s unit grouped).subset
+  have tokensIn := (Laws.State.allQueuedTokens_queueBatch s unit grouped).subset
   obtain ⟨each, queued⟩ := held
-  have queuedIn : ∀ request, Laws.State.Queued (s.queueBatch unit) request → Laws.State.Queued s request :=
+  have queuedIn : ∀ request, Laws.State.Queued (s.queueBatch unit grouped) request → Laws.State.Queued s request :=
     fun _ inQueue => inQueue.imp (fun signal => signalsIn signal) fun token => tokensIn token
-  rw [Laws.State.queueBatch_eq] at signalsIn tokensIn queuedIn ⊢
+  rw [Laws.State.queueBatch_grouped_eq] at signalsIn tokensIn queuedIn ⊢
+  let keyOf (index : Nat) : UnitKey := (grouped index).getD (unit.signalUnit index)
   refine ⟨each, { queued with
     targets := fun request inQueue => queued.targets request (queuedIn request inQueue)
     reserved := fun request inQueue => queued.reserved request (queuedIn request inQueue)
@@ -317,8 +320,11 @@ theorem Numbered.queueBatch {program : Program} {s : State} (unit : UnitKey) (he
     queues := fun _ _ _ _ signal => absurd signal (by simp)
     apart := fun _ _ _ _ batch => absurd batch (by simp)
     keyedSignals := fun one two first second first' second' found found' a b order => by
-      rcases batch_entry found with ⟨x, rfl, atX⟩ | old <;> rcases batch_entry found' with ⟨y, rfl, atY⟩ | old'
-      · rw [Laws.State.UnitKey.breadth_siblings, Laws.State.UnitKey.compare_signal] at order
+      rcases batch_entry (step := keyOf) found with ⟨x, rfl, atX⟩ | old <;>
+        rcases batch_entry (step := keyOf) found' with ⟨y, rfl, atY⟩ | old'
+      · have unitX : keyOf x = unit.signalUnit x := by simp only [keyOf, groups.begin atX, Option.getD_none]
+        have unitY : keyOf y = unit.signalUnit y := by simp only [keyOf, groups.begin atY, Option.getD_none]
+        rw [unitX, unitY, Laws.State.UnitKey.breadth_siblings, Laws.State.UnitKey.compare_signal] at order
         exact ordered.signals first second first' second'
           (Laws.State.pair_of_getElem? (Nat.compare_eq_lt.mp order) atX atY) a b
       · exact (ordered.apart first second first' second' (.inl (List.mem_of_getElem? atX)) a two (.inl old') b).elim
@@ -332,7 +338,7 @@ theorem Numbered.queueBatch {program : Program} {s : State} (unit : UnitKey) (he
       · exact (ordered.apart second first second' first' (.inr (List.mem_of_getElem? atY)) b one (.inr old) a).elim
       · exact ordered.keyedTokens one two first second first' second' old old' a b
     keyedQueues := fun one two first second first' second' found found' a b => by
-      rcases batch_entry found with ⟨x, rfl, atX⟩ | old <;> rcases batch_entry found' with ⟨y, rfl, atY⟩ | old'
+      rcases batch_entry (step := keyOf) found with ⟨x, rfl, atX⟩ | old <;> rcases batch_entry found' with ⟨y, rfl, atY⟩ | old'
       · exact ordered.queues first second first' second' (List.mem_of_getElem? atX) (List.mem_of_getElem? atY) a b
       · exact (ordered.apart first second first' second' (.inl (List.mem_of_getElem? atX)) a two (.inr old') b).elim
       · exact (ordered.apart second first second' first' (.inr (List.mem_of_getElem? atY)) b one (.inl old) a).elim

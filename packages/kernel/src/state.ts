@@ -99,7 +99,7 @@ export {
   unitRoot, UnitRootTag,
 } from "./state/key.js";
 export {
-  type ClaimSlot, ClaimSlotTag, compareClaimSlot, compareIssuePlace, committedScope, idleUnit, type Issued, type Issuer,
+  type ClaimSlot, ClaimSlotTag, compareClaimSlot, compareIssuePlace, committedScope, finishUnit, idleUnit, type Issued, type Issuer,
   type IssueTable, issueNotAfter, occurrenceFresh, positionOutsideIssueTable, offersOccurrence, offerUnit, scopeFresh, seedUnit,
 } from "./state/issue.js";
 export {
@@ -522,13 +522,14 @@ export function allTokens(state: State): readonly Token[] {
 
 /**
  * Lean's `State.queueBatch`: move the running micro-step's batches under its unit key `unit` (DC4), each signal and token
- * keyed by its index in the batch, the micro-step's intents as one entry.
+ * keyed by its index in the batch, but the signal at an index `grouped` keys under that key, a group root of its own
+ * (`finishKey` in `step.ts`, DC30), the micro-step's intents as one entry.
  */
-export function queueBatch(state: State, unit: UnitKey): State {
+export function queueBatch(state: State, unit: UnitKey, grouped: (index: number) => UnitKey | null = () => null): State {
   return {
     ...state,
-    queuedSignals: state.batchSignals.reduce((queued, next, index) => orderedInsert(queued, signalUnit(unit, index), next, compareUnitKey),
-      state.queuedSignals),
+    queuedSignals: state.batchSignals.reduce(
+      (queued, next, index) => orderedInsert(queued, grouped(index) ?? signalUnit(unit, index), next, compareUnitKey), state.queuedSignals),
     queuedTokens: state.batchTokens.reduce((queued, token, index) => orderedInsert(queued, tokenUnit(unit, index), token, compareUnitKey),
       state.queuedTokens),
     outboxes: state.batchIntents.length === 0 ? state.outboxes : orderedInsert(state.outboxes, unit, state.batchIntents, compareUnitKey),

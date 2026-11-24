@@ -9,6 +9,9 @@
  */
 import { assertNever, compareStrings, type ElementId } from "../il/types.js";
 import { keyOrderOpposite } from "./key-order.js";
+import { UnitRootTag, UnitStepTag, compareUnitStep, rootRank, unitStepCode, type UnitStep } from "./root.js";
+
+export { UnitRootTag, UnitStepTag, type UnitStep };
 
 declare const issuerBrand: unique symbol;
 
@@ -217,47 +220,13 @@ export function compareOccurrenceId(left: OccurrenceId, right: OccurrenceId): nu
     orientKeyOrder(compareStrings(a.element, b.element) || compareIssue(a.ordinal, b.ordinal));
 }
 
-/**
- * Lean's `UnitStep`: one step down a closure's unit chain, the `index`th signal or token the unit above queued; or the
- * idle check of the scope occurrence, or the `round`th offer of the parked occurrence, that the unit above issued as its
- * `index`th issue (DC12).
- */
-export enum UnitStepTag { Signal = "signal", Token = "token", Idle = "idle", Offer = "offer" }
-export type UnitStep =
-  | Readonly<{ tag: UnitStepTag.Signal | UnitStepTag.Token | UnitStepTag.Idle; index: number }>
-  | Readonly<{ tag: UnitStepTag.Offer; index: number; round: number }>;
-
-/** Lean's `UnitStep.stepRank`: signals, tokens, idle checks, then offers, each by index, then round. */
-function unitStepRank(step: UnitStep): readonly [number, number, number] {
-  switch (step.tag) {
-    case UnitStepTag.Signal:
-      return [0, step.index, 0];
-    case UnitStepTag.Token:
-      return [1, step.index, 0];
-    case UnitStepTag.Idle:
-      return [2, step.index, 0];
-    case UnitStepTag.Offer:
-      return [3, step.index, step.round];
-  }
-  return assertNever(step);
-}
-
-function compareUnitStep(left: UnitStep, right: UnitStep): number {
-  const [a, b] = [unitStepRank(left), unitStepRank(right)];
-  return a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
-}
-
-/**
- * Lean's `UnitRoot`: where a closure's unit chain starts (DC4), a structured root no element can take the name of. An
- * idle or offer root names a committed identity, held as its key text, all of whose issues are committed; the idle
- * check or offer of an identity issued in the closure is a step below its issuer (`UnitStepTag.Idle`, `.Offer`).
- */
-export enum UnitRootTag { Seed = "seed", Input = "input", Idle = "idle", Offer = "offer" }
+/** Lean's `UnitRoot` (`root.ts`), whose committed identities are held as their key text. */
 export type UnitRoot =
   | Readonly<{ tag: UnitRootTag.Seed }>
   | Readonly<{ tag: UnitRootTag.Input }>
   | Readonly<{ tag: UnitRootTag.Idle; scope: ScopeOccurrenceId }>
-  | Readonly<{ tag: UnitRootTag.Offer; occurrence: OccurrenceId; round: number }>;
+  | Readonly<{ tag: UnitRootTag.Offer; occurrence: OccurrenceId; round: number }>
+  | Readonly<{ tag: UnitRootTag.Finish; scope: ScopeOccurrenceId; element: ElementId; ordinal: number }>;
 
 /** Lean's `Ord CommittedOccurrence`: the committed path of its scope occurrence, then the element, then the ordinal. */
 function compareCommittedOccurrence(left: OccurrenceId, right: OccurrenceId): number {
@@ -267,19 +236,23 @@ function compareCommittedOccurrence(left: OccurrenceId, right: OccurrenceId): nu
 }
 
 /**
- * Lean's `Ord UnitRoot`: the seed, the input, then idle completions by their committed path and offers by their
- * committed occurrence and round.
+ * Lean's `Ord UnitRoot`: the seed, the input, then idle completions by their committed path, offers by their committed
+ * occurrence and round, and finishes by their committed path, element and ordinal.
  */
 function compareUnitRoot(left: UnitRoot, right: UnitRoot): number {
+  if (left.tag !== right.tag) return rootRank(left) - rootRank(right);
   switch (left.tag) {
     case UnitRootTag.Seed:
-      return right.tag === UnitRootTag.Seed ? 0 : -1;
     case UnitRootTag.Input:
-      return right.tag === UnitRootTag.Seed ? 1 : right.tag === UnitRootTag.Input ? 0 : -1;
+      return 0;
     case UnitRootTag.Idle:
-      return right.tag === UnitRootTag.Idle ? compareCommittedPath(left.scope, right.scope) : right.tag === UnitRootTag.Offer ? -1 : 1;
+      return right.tag === UnitRootTag.Idle ? compareCommittedPath(left.scope, right.scope) : 0;
     case UnitRootTag.Offer:
-      return right.tag === UnitRootTag.Offer ? compareCommittedOccurrence(left.occurrence, right.occurrence) || left.round - right.round : 1;
+      return right.tag === UnitRootTag.Offer ? compareCommittedOccurrence(left.occurrence, right.occurrence) || left.round - right.round : 0;
+    case UnitRootTag.Finish:
+      return right.tag === UnitRootTag.Finish
+        ? compareCommittedPath(left.scope, right.scope) || compareStrings(left.element, right.element) || left.ordinal - right.ordinal
+        : 0;
   }
   return assertNever(left);
 }
@@ -295,6 +268,8 @@ function rootText(root: UnitRoot): string {
       return `D${root.scope.length}:${root.scope}`;
     case UnitRootTag.Offer:
       return `O${root.round},${root.occurrence.length}:${root.occurrence}`;
+    case UnitRootTag.Finish:
+      return `F${root.ordinal},${root.element.length}:${root.element}${root.scope}`;
   }
   return assertNever(root);
 }
@@ -322,20 +297,6 @@ export function unitRoot(root: UnitRoot): UnitKey {
 
 /** Lean's `Spine.jump`, with the root its own jump as Lean's `.root` is. */
 const jumpOf = (key: UnitKey): UnitKey => key.jump ?? key;
-
-/** Lean's `cantorPair`: the Cantor pairing of `index` and `round`, a bijection of pairs of naturals onto the naturals. */
-function cantorPair(index: bigint, round: bigint): bigint {
-  return (index + round) * (index + round + 1n) / 2n + round;
-}
-
-/**
- * Lean's `UnitStep.stepCode`: its kind's rank, below 4, beside the Cantor pair of its index and round, so distinct steps
- * have distinct codes. In `bigint`, as Lean's `Nat`, so no index loses precision before the cast mod 2^64.
- */
-function unitStepCode(step: UnitStep): bigint {
-  const [rank, index, round] = unitStepRank(step);
-  return 4n * cantorPair(BigInt(index), BigInt(round)) + BigInt(rank);
-}
 
 /** Lean's `Spine.fingerprintStep` over `SpineStep UnitStep`'s code (`unitStepCode` mod 2^64): xor, then the odd factor mod 2^64. */
 function fingerprintStep(fingerprint: bigint, step: UnitStep): bigint {
@@ -367,8 +328,14 @@ function rootOfText(text: string): UnitRoot {
   if (kind === "I") return { tag: UnitRootTag.Input };
   if (kind === "D") return { tag: UnitRootTag.Idle, scope: text.slice(text.indexOf(":") + 1) as ScopeOccurrenceId };
   const comma = text.indexOf(",");
+  if (kind === "F") {
+    const colon = text.indexOf(":", comma);
+    const end = colon + 1 + Number(text.slice(comma + 1, colon));
+    return { tag: UnitRootTag.Finish, ordinal: Number(text.slice(1, comma)), element: text.slice(colon + 1, end), scope: text.slice(end) as ScopeOccurrenceId };
+  }
   return { tag: UnitRootTag.Offer, round: Number(text.slice(1, comma)), occurrence: text.slice(text.indexOf(":", comma) + 1) as OccurrenceId };
 }
+
 
 /** The order of two paths of one depth, innermost step first (Lean's `List` order), a shared tail at once. */
 function comparePath(left: UnitKey, right: UnitKey): number {

@@ -8,6 +8,7 @@ public import Kernel.Laws.Step.Order
 public import Kernel.Laws.Step.Jobs
 public import Kernel.Laws.Step.Stale
 public import Kernel.Laws.Step.Offer
+public import Kernel.Laws.Step.Finish
 import all Kernel.Step
 import all Kernel.Step.Inputs
 
@@ -22,7 +23,7 @@ made of, phase by phase; and which hook or state operation each committed body r
 ([module table](../../docs/kernel/ARCHITECTURE-SPEC.md#modules-and-build-shape)), and it holds only these body
 equations; it names no feature, no registry and no law of a feature, so a feature edit never rebuilds it. The bodies of
 `Kernel.Step.Commit`, `Kernel.Step.Jobs`, `Kernel.Step.Stale` and `Kernel.Step.Offer` are their own `Laws` modules'
-(`Kernel.Laws.Step.Commit`, `Kernel.Laws.Step.Jobs`, `Kernel.Laws.Step.Stale`, `Kernel.Laws.Step.Offer`), whose facts this module composes and re-exports. Nothing executable imports this module.
+(`Kernel.Laws.Step.Commit`, `Kernel.Laws.Step.Jobs`, `Kernel.Laws.Step.Stale`, `Kernel.Laws.Step.Offer`, `Kernel.Laws.Step.Finish`), whose facts this module composes and re-exports. Nothing executable imports this module.
 
 What the registered hooks do is `Kernel.Laws.Registry`'s and each feature's `Laws` module's; an input body is restated
 whole here (`step_eq` and its siblings) and `Kernel.Laws.Step.Inputs` derives from it what a committed or rejected input
@@ -391,29 +392,34 @@ theorem absorb_ok {hooks : Hooks} {ctx : Ctx} {before : Nat} {state after : Stat
     dsimp only at ran
     split at ran
     · rename_i completion
+      have completion := (Bool.and_eq_true _ _ ▸ completion).1
       cases sole <;> simp only [signalWork, Bool.false_eq_true] at completion
       exact .inr ⟨_, _, _, _, queued, by simpa [signalWork] using (perform_ok ran).2.2⟩
     · exact .inl (Except.ok.inj ran).symm
   · exact .inl (Except.ok.inj ran).symm
 
 /-- A committed transition journalled the draft under its unit, emptied the draft and the write log,
-told `Hooks.cancelled` of each cancelled occurrence in order, then `Hooks.written` of the writes, and reset the issuer
-to the seed's (DC12). -/
+told `Hooks.cancelled` of each cancelled occurrence in order, then `Hooks.written` of the writes, queued the batches
+under its unit, a body's finish under its finish root (`grouped`, DC30), and reset the issuer to the seed's (DC12). -/
 theorem conclude_ok {hooks : Hooks} {ctx : Ctx} {unit : UnitKey} {cause : Cause} {element : Option ElementId}
     {owner : ScopeOccurrenceId} {state after : State} (ran : conclude hooks ctx unit cause element owner state = .ok after) :
-    ∃ notified written,
+    ∃ (notified written : State) (grouped : Nat → Option UnitKey),
       state.draft.cancelled.foldlM (fun state occurrence => hooks.cancelled ctx occurrence state)
         { state with
           transitions := state.transitions.insert unit
             { cause, element, owner, started := state.draft.started, ended := state.draft.ended, ready := state.draft.ready },
           draft := {}, writes := [] } = .ok notified ∧
-      hooks.written ctx state.writes notified = .ok written ∧
-      after = { written.queueBatch unit with issuing := .ofRoot .seed, issueNext := 0 } := by
+      hooks.written ctx state.writes notified = .ok written ∧ GroupsCompletions written grouped ∧
+      after = { written.queueBatch unit grouped with issuing := .ofRoot .seed, issueNext := 0 } := by
   unfold conclude at ran
   rw [journalDraft_eq] at ran
   obtain ⟨notified, folded, ran⟩ := bind_ok ran
   obtain ⟨written, wrote, ran⟩ := bind_ok ran
-  exact ⟨notified, written, folded, wrote, (Except.ok.inj ran).symm⟩
+  obtain ⟨finishes, keyed, ran⟩ := bind_ok ran
+  refine ⟨notified, written, _, folded, wrote, fun index key found => ?_, (Except.ok.inj ran).symm⟩
+  obtain ⟨signal, queued, completion⟩ := finishKeys_completion keyed index key found
+  cases signal <;> simp only [signalWork, Bool.false_eq_true] at completion
+  exact ⟨_, _, _, _, queued⟩
 
 /-- A micro-step runs forward through its body, absorb and conclusion: `microStep_ok` read backwards. -/
 theorem microStep_of {hooks : Hooks} {ctx : Ctx} {unit : UnitKey} {cause : Cause} {element : Option ElementId}
@@ -437,14 +443,15 @@ theorem absorb_quiet {hooks : Hooks} {ctx : Ctx} {before : Nat} {state : State}
 with the batches queued under its unit and the issuer reset (`conclude_ok`, forward). -/
 theorem conclude_quiet {hooks : Hooks} {ctx : Ctx} {unit : UnitKey} {cause : Cause} {element : Option ElementId}
     {owner : ScopeOccurrenceId} {state : State} (quiet : ∀ writes t, hooks.written ctx writes t = .ok t)
-    (clean : state.draft.cancelled = []) :
+    (clean : state.draft.cancelled = []) (unsignalled : state.batchSignals = []) :
     conclude hooks ctx unit cause element owner state = .ok
       { ({ state with
           transitions := state.transitions.insert unit
             { cause, element, owner, started := state.draft.started, ended := state.draft.ended, ready := state.draft.ready },
           draft := {}, writes := [] } : State).queueBatch unit with issuing := .ofRoot .seed, issueNext := 0 } := by
   unfold conclude
-  simp only [journalDraft_eq, clean, List.foldlM_nil, pure, Except.pure, bind, Except.bind, quiet]
+  simp only [journalDraft_eq, clean, List.foldlM_nil, pure, Except.pure, bind, Except.bind, quiet, unsignalled,
+    List.mapM_nil, List.getElem?_nil, Option.join_none]
 
 /-- No running batch: what every micro-step leaves, since `Step.conclude` moves the batches under its unit. -/
 abbrev Unbatched (state : State) : Prop :=
@@ -452,16 +459,16 @@ abbrev Unbatched (state : State) : Prop :=
 
 /-- A committed micro-step leaves no running batch, since `State.queueBatch` leaves none
 (`Laws.State.queueBatch_unbatched`, which this module cannot read). -/
-theorem microStep_unbatched (queued : ∀ (state : State) unit, Unbatched (state.queueBatch unit)) {hooks : Hooks}
+theorem microStep_unbatched (queued : ∀ (state : State) unit grouped, Unbatched (state.queueBatch unit grouped)) {hooks : Hooks}
     {ctx : Ctx} {unit : UnitKey} {cause : Cause} {element : Option ElementId} {owner : ScopeOccurrenceId}
     {body : State → Outcome} {state after : State}
     (ran : microStep hooks ctx unit cause element owner body state = .ok after) : Unbatched after := by
   obtain ⟨_, _, _, ⟨_, _, _, concluded⟩⟩ := microStep_ok ran
-  obtain ⟨_, _, ⟨_, _, rfl⟩⟩ := conclude_ok concluded
-  exact queued _ _
+  obtain ⟨_, _, _, ⟨_, _, _, rfl⟩⟩ := conclude_ok concluded
+  exact queued _ _ _
 
 /-- A closure micro-step leaves no running batch. -/
-theorem closureStep_unbatched (queued : ∀ (state : State) unit, Unbatched (state.queueBatch unit)) {hooks : Hooks}
+theorem closureStep_unbatched (queued : ∀ (state : State) unit grouped, Unbatched (state.queueBatch unit grouped)) {hooks : Hooks}
     {ctx : Ctx} {log : RunLog} {unit : UnitKey} {state after : State}
     (step : ClosureStep hooks ctx log unit state after) : Unbatched after := by
   cases step with
@@ -472,7 +479,7 @@ theorem closureStep_unbatched (queued : ∀ (state : State) unit, Unbatched (sta
   | finish _ _ _ _ _ _ _ ran => exact microStep_unbatched queued ran
 
 /-- A committed closure from a micro-step's result settles with no running batch: what `Phases.runOrder` orders. -/
-theorem settle_unbatched (queued : ∀ (state : State) unit, Unbatched (state.queueBatch unit)) {hooks : Hooks}
+theorem settle_unbatched (queued : ∀ (state : State) unit grouped, Unbatched (state.queueBatch unit grouped)) {hooks : Hooks}
     {ctx : Ctx} {fuel work : Nat} {log : RunLog} {state : State} {after : State × RunLog} (unbatched : Unbatched state)
     (ran : settle hooks ctx fuel work log state = .ok after) : Unbatched after.1 :=
   settle_induction Unbatched (fun _ _ _ _ _ step => closureStep_unbatched queued step) fuel work log state after

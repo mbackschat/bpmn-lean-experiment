@@ -766,8 +766,8 @@ theorem callsFormed_occursAlongside (program : Program) : OccursAlongside progra
 theorem callsFormed_stepAlongside (program : Program) : StepAlongside program (CallsFormed program) where
   toFrameAlongside := (callsFormed_alongside program).toFrameAlongside
   journal _ _ _ _ held _ _ _ := held.same rfl (fun _ member => member) rfl
-  queueBatch _ _ _ held := by
-    rw [Laws.State.queueBatch_eq]
+  queueBatch _ _ _ _ _ held := by
+    rw [Laws.State.queueBatch_grouped_eq]
     exact held.same rfl (fun _ member => member) rfl
   dequeue _ _ _ _ held := held.same rfl (fun _ member => member) rfl
   unqueue _ _ _ held := held.same rfl (fun _ member => member) rfl

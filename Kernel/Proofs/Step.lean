@@ -163,7 +163,7 @@ journalling the draft, moving the batches under the unit key and ordering the jo
 theorem phases : Laws.Step.Phases Laws.State.WellFormed :=
   { bodyPhases with
     journal := fun _ _ _ _ formed fresh started _ => Laws.State.journal_wellFormed formed fresh started
-    queueBatch := fun _ _ unit formed => Laws.State.queueBatch_wellFormed formed unit
+    queueBatch := fun _ _ unit grouped _ formed => Laws.State.queueBatch_wellFormed formed unit grouped
     enterUnit := fun _ _ _ formed unrun _ untabled => Laws.State.enterUnit_wellFormed formed unrun untabled
     leaveUnit := fun _ _ formed ran seed => Laws.State.leaveUnit_wellFormed formed ran seed
     runOrder := fun _ _ _ _ formed counted batches keys _ made =>

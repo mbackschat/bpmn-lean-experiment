@@ -768,8 +768,9 @@ structure ClosurePhases (inv : Program → State → Prop) : Prop extends BodyPh
   journal : ∀ program state unit (transition : Transition), inv program state → state.transitions[unit]? = none →
     transition.started = state.draft.started → transition.ended = state.draft.ended →
     inv program { state with transitions := state.transitions.insert unit transition, draft := {}, writes := [] }
-  /-- `Step.conclude` moves the micro-step's batches under its unit key (`State.queueBatch`). -/
-  queueBatch : ∀ program state unit, inv program state → inv program (state.queueBatch unit)
+  /-- `Step.conclude` moves the micro-step's batches under its unit key, a body's finish under its root (`queueBatch`). -/
+  queueBatch : ∀ program state unit grouped, GroupsCompletions state grouped → inv program state →
+    inv program (state.queueBatch unit grouped)
   /-- `Step.microStep` makes its unit the issuer before the body runs (DC12): a unit the closure has not run and not the
   seed's, while the issue table holds no issue of the issuer it replaces. -/
   enterUnit : ∀ program state unit, inv program state → state.transitions.contains unit = false →

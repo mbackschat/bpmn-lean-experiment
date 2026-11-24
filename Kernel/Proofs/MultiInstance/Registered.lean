@@ -563,9 +563,10 @@ theorem composed_phases : Laws.Step.Phases Composed :=
   { composed_bodyPhases with
     journal := fun _ _ unit transition holds fresh started ended =>
       ⟨phases.journal _ _ unit transition holds.1 fresh started ended, framedNumbered_unmoved holds.2 rfl rfl rfl rfl rfl rfl rfl⟩
-    queueBatch := fun _ s unit holds => ⟨phases.queueBatch _ _ unit holds.1,
-      ⟨(runsFramed_stepAlongside _).queueBatch s unit holds.1 holds.2.1.1, fun apart => (holds.2.1.2 apart).queueBatch unit⟩,
-      (continued_stepAlongside _).queueBatch s unit holds.1 holds.2.2⟩
+    queueBatch := fun _ s unit grouped groups holds => ⟨phases.queueBatch _ _ unit grouped groups holds.1,
+      ⟨(runsFramed_stepAlongside _).queueBatch s unit grouped groups holds.1 holds.2.1.1,
+        fun apart => (holds.2.1.2 apart).queueBatch unit grouped groups⟩,
+      (continued_stepAlongside _).queueBatch s unit grouped groups holds.1 holds.2.2⟩
     enterUnit := fun _ _ unit holds unrun unseeded untabled => ⟨phases.enterUnit _ _ unit holds.1 unrun unseeded untabled,
       framedNumbered_unmoved holds.2 rfl rfl rfl rfl rfl rfl rfl⟩
     leaveUnit := fun _ _ holds ran seed => ⟨phases.leaveUnit _ _ holds.1 ran seed,

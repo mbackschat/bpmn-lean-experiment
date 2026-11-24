@@ -584,7 +584,7 @@ theorem framing_registered (ops : Proofs.Step.RegisteredOps WellFormed) (phases 
   { phases, contract, body
     pipeline := fun b => Laws.Step.complete_keeps (contract b) (body b) (issuerOf_pipelinePhases b pipeline)
       Proofs.State.stateFacts
-    queueBatch := Laws.State.queueBatch_issuer }
+    queueBatch := fun s unit grouped => Laws.State.queueBatch_issuer s unit grouped }
 
 /-- The registered hooks and `Step`'s phases keep beside `WellFormed` the counters of the state a closure starts from
 (`Laws.State.CountersFrom`, DC12) and every occurrence keyed in its scope occurrence (`Proofs.Frame.Keyed`, DC26), for
@@ -686,8 +686,8 @@ theorem endsKept_closureAlongside (b : State) (program : Program) :
     refine List.Perm.map _ ((List.Perm.append_right _ ((Laws.State.values_insert_perm fresh).flatMap_right _)).trans ?_)
     simp only [List.flatMap_cons, ended]
     simpa using List.perm_append_comm)
-  queueBatch s unit _ kept := by
-    rw [Laws.State.queueBatch_eq]
+  queueBatch s unit _ _ _ kept := by
+    rw [Laws.State.queueBatch_grouped_eq]
     exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (.refl _) (.refl _)
   dequeue _ _ _ _ kept := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (.refl _) (.refl _)
   unqueue _ _ _ kept := kept.unmoved rfl rfl ⟨rfl, rfl⟩ (.refl _) (.refl _)

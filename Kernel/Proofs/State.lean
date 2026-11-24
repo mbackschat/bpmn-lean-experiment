@@ -163,7 +163,7 @@ theorem step_keeps {hooks : Hooks} {inv : Program → State → Prop} (contract 
     (ran : Step.step hooks program before input = .ok after) : inv program after ∧ Laws.State.Committed after :=
   Laws.Step.step_keeps contract phases stateFacts pipeline counters framing based (fun _ _ _ held => held.1)
     (fun _ _ formed keys => ⟨based _ _ formed, .refl _, keys⟩) (fun _ _ _ held => held.2.1)
-    (fun _ _ _ held _ => held.2.2) (fun state unit => Laws.State.queueBatch_unbatched state unit) reset initial
+    (fun _ _ _ held _ => held.2.2) (fun state unit grouped => Laws.State.queueBatch_unbatched state unit grouped) reset initial
     initial_between held ran
 
 /-- `Step.step` on a running instance keeps `inv`, an invariant beside `WellFormed`, for hooks that keep their contract,
@@ -178,7 +178,7 @@ theorem running_keeps {hooks : Hooks} {inv : Program → State → Prop} (contra
     (ran : Step.step hooks program (some before) input = .ok after) : inv program after ∧ Laws.State.Committed after :=
   Laws.Step.running_keeps contract phases stateFacts pipeline counters framing based (fun _ _ _ held => held.1)
     (fun _ _ formed keys => ⟨based _ _ formed, .refl _, keys⟩) (fun _ _ _ held => held.2.1)
-    (fun _ _ _ held _ => held.2.2) (fun state unit => Laws.State.queueBatch_unbatched state unit) committed holds ran
+    (fun _ _ _ held _ => held.2.2) (fun state unit grouped => Laws.State.queueBatch_unbatched state unit grouped) committed holds ran
 
 /-- The composition of the state-invariant lane: hooks that keep their contract (`Laws.Step.HookContract`) and the
 phases of `Step` (`Laws.Step.Phases`, `Laws.Step.PipelinePhases`) keep `WellFormed` through every committed input, with

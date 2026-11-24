@@ -273,10 +273,10 @@ or was taken off a queue that kept `Continued`; the commit renames every continu
 theorem continued_stepAlongside (program : Program) : StepAlongside program Continued where
   toFrameAlongside := (continued_stores program).toFrameAlongside
   journal _ _ _ _ kept _ _ _ := kept.same (fun _ issued => issued) rfl rfl rfl
-  queueBatch s unit _ kept := by
-    have signals := Laws.State.allSignals_queueBatch s unit
-    have tokens := Laws.State.allQueuedTokens_queueBatch s unit
-    rw [Laws.State.queueBatch_eq] at signals tokens ⊢
+  queueBatch s unit grouped _ _ kept := by
+    have signals := Laws.State.allSignals_queueBatch s unit grouped
+    have tokens := Laws.State.allQueuedTokens_queueBatch s unit grouped
+    rw [Laws.State.queueBatch_grouped_eq] at signals tokens ⊢
     exact kept.shrink (fun _ issued => issued) (fun _ inside => inside) (fun _ held => signals.subset held)
       fun _ held => tokens.subset held
   runOrder start s log formed kept counted batches _ after made := by

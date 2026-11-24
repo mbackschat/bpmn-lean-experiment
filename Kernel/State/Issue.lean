@@ -6,7 +6,7 @@ public import Kernel.State.Key
 
 What the closure in progress issues (DC12) reads of a key: its committed form (`ScopeOccurrenceId.committedScope`), whether
 it names an issue of the closure in progress (`fresh`), the unit keys of the idle check and the offer it owns
-(`UnitKey.idleUnit?`, `UnitKey.offerUnit?`), and the slot an issue takes its committed ordinal in at commit
+(`UnitKey.idleUnit?`, `UnitKey.offerUnit?`, `UnitKey.finishUnit?`), and the slot an issue takes its committed ordinal in at commit
 (`ClaimSlot`), the issue table's value (`State.issued`). Part of `Kernel.State`, which re-exports it.
 -/
 
@@ -53,6 +53,18 @@ def UnitKey.offers (occurrence : OccurrenceId) (key : UnitKey) : Bool :=
   | .fresh _ _, _ => false
   | .committed ordinal, _ => key.path.isEmpty && occurrence.scope.committedScope.any fun scope =>
       key.root.offerOf? == some { scope, element := occurrence.element, ordinal }
+
+/-- The unit key of the `ordinal`th finish of the Multi-Instance body of `element` whose instances the scope occurrence
+`scope` holds (DC30), as `idleUnit?` keys an idle check: a root naming it when it is committed, a step below the unit
+that issued it when it was issued in the closure; `none` for the process root, which holds no body's instances, and for
+a committed segment above a fresh one. -/
+def UnitKey.finishUnit? (scope : ScopeOccurrenceId) (element : ElementId) (ordinal : Nat) : Option UnitKey :=
+  match scope.segments with
+  | [] => none
+  | segment :: _ =>
+    match segment.ordinal with
+    | .fresh unit index => some (unit.push (.finish index ordinal))
+    | .committed _ => scope.committedScope.map fun path => .ofRoot (.finish path element ordinal)
 
 /-- The slot a fresh issue takes its committed ordinal in at commit (DC12), one constructor per counter map, so the
 commit's assignment keys exactly what each counter compares (P07 F3): a scope occurrence's (parent, element)

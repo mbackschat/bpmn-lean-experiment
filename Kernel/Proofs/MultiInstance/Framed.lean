@@ -390,7 +390,7 @@ removes an occurrence (`FrameAlongside.cancelOccurrence`). -/
 theorem runsFramed_stepAlongside (program : Program) : StepAlongside program (RunsFramed program) where
   toFrameAlongside := (runsFramed_frameAlongside program).toFrameAlongside
   journal _ _ _ _ kept _ _ _ := kept.carry (.equal rfl rfl rfl rfl)
-  queueBatch _ _ _ kept := by rw [Laws.State.queueBatch_eq]; exact kept.carry (.equal rfl rfl rfl rfl)
+  queueBatch _ _ _ _ _ kept := by rw [Laws.State.queueBatch_grouped_eq]; exact kept.carry (.equal rfl rfl rfl rfl)
   runOrder _ _ _ formed held counted batches keys _ made := by
     have framed := held.framed
     have owned := orderJournal_runsOwned formed counted batches keys (fun run member =>

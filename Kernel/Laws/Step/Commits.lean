@@ -59,7 +59,7 @@ theorem running_relative {aux : State → Program → State → Prop} (contract 
     (auxBased : ∀ start program s, aux start program s → base program s)
     (entry : ∀ program s, inv program s → (∀ occurrence ∈ s.occurrences, occurrence.id.scope = occurrence.scope) →
       aux s program s)
-    (queued : ∀ (state : State) unit, Unbatched (state.queueBatch unit)) {program : Program} {before : State}
+    (queued : ∀ (state : State) unit grouped, Unbatched (state.queueBatch unit grouped)) {program : Program} {before : State}
     {input : Input} {after : State} (committed : Laws.State.Committed before)
     (holds : inv program { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := before.nextCompletion })
     (ran : step hooks program (some before) input = .ok after) :
@@ -98,7 +98,7 @@ theorem running_keeps {aux : State → Program → State → Prop} (contract : H
     (counted : ∀ start program s, aux start program s → Laws.State.CountersFrom start s)
     (keyed : ∀ start program s, aux start program s → Unbatched s →
       ∀ occurrence ∈ s.occurrences, occurrence.id.scope = occurrence.scope)
-    (queued : ∀ (state : State) unit, Unbatched (state.queueBatch unit)) {program : Program} {before : State}
+    (queued : ∀ (state : State) unit grouped, Unbatched (state.queueBatch unit grouped)) {program : Program} {before : State}
     {input : Input} {after : State} (committed : Laws.State.Committed before)
     (holds : inv program { before with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := before.nextCompletion })
     (ran : step hooks program (some before) input = .ok after) : inv program after ∧ Laws.State.Committed after := by
@@ -146,7 +146,7 @@ theorem start_relative {aux : State → Program → State → Prop} (contract : 
     (auxBased : ∀ start program s, aux start program s → base program s)
     (entry : ∀ program s, inv program s → (∀ occurrence ∈ s.occurrences, occurrence.id.scope = occurrence.scope) →
       aux s program s)
-    (queued : ∀ (state : State) unit, Unbatched (state.queueBatch unit)) {program : Program}
+    (queued : ∀ (state : State) unit grouped, Unbatched (state.queueBatch unit grouped)) {program : Program}
     (initial : ∀ instanceId variables businessKey,
       inv program (((State.initial instanceId variables businessKey).signal (.armScope State.root)).queueBatch (.ofRoot .seed)))
     (fresh : ∀ instanceId variables businessKey,
@@ -194,7 +194,7 @@ theorem step_keeps {aux : State → Program → State → Prop} (contract : Hook
     (counted : ∀ start program s, aux start program s → Laws.State.CountersFrom start s)
     (keyed : ∀ start program s, aux start program s → Unbatched s →
       ∀ occurrence ∈ s.occurrences, occurrence.id.scope = occurrence.scope)
-    (queued : ∀ (state : State) unit, Unbatched (state.queueBatch unit))
+    (queued : ∀ (state : State) unit grouped, Unbatched (state.queueBatch unit grouped))
     (reset : ∀ program state, inv program state → Laws.State.Committed state →
       inv program { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := state.nextCompletion })
     {program : Program}
@@ -213,7 +213,7 @@ theorem step_keeps {aux : State → Program → State → Prop} (contract : Hook
       (held state rfl).2 (reset _ _ (held state rfl).1 (held state rfl).2) ran
   | none =>
     obtain ⟨start, settled, ⟨kept, related, unbatched⟩, made⟩ := start_relative contract phases.toClosurePhases pipeline
-      relative facts framing based auxBased entry queued (fun _ _ _ => phases.queueBatch _ _ _ (initial _ _ _)) fresh ran
+      relative facts framing based auxBased entry queued (fun _ _ _ => phases.queueBatch _ _ _ _ (groupsCompletions_none _) (initial _ _ _)) fresh ran
     exact ⟨phases.runOrder _ _ _ settled.2 kept (counted _ _ _ related) unbatched (keyed _ _ _ related unbatched) _ made,
       orderJournal_committed made (keyed _ _ _ related unbatched)⟩
 

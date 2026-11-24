@@ -118,6 +118,7 @@ public import Kernel.Laws.State.Removal
 public import Kernel.Laws.State.RemovalKeeps
 public import Kernel.Laws.State.Rename
 public import Kernel.Laws.State.Reserve
+public import Kernel.Laws.State.Root
 public import Kernel.Laws.State.Sample
 public import Kernel.Laws.State.Slots
 public import Kernel.Laws.State.Subtree
@@ -137,6 +138,7 @@ public import Kernel.Laws.Step.Contract
 public import Kernel.Laws.Step.Elements
 public import Kernel.Laws.Step.Ends
 public import Kernel.Laws.Step.EndsFrames
+public import Kernel.Laws.Step.Finish
 public import Kernel.Laws.Step.Inputs
 public import Kernel.Laws.Step.Jobs
 public import Kernel.Laws.Step.Keeps
@@ -228,12 +230,14 @@ public import Kernel.State.Occurrence
 public import Kernel.State.Raise
 public import Kernel.State.Removal
 public import Kernel.State.Rename
+public import Kernel.State.Root
 public import Kernel.State.Slots
 public import Kernel.State.Tree
 public import Kernel.State.Variables
 public import Kernel.State.Wait
 public import Kernel.Step
 public import Kernel.Step.Commit
+public import Kernel.Step.Finish
 public import Kernel.Step.Inputs
 public import Kernel.Step.Jobs
 public import Kernel.Step.Offer

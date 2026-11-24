@@ -385,8 +385,8 @@ structure Framing (hooks : Hooks) (base : Program → State → Prop) : Prop whe
   contract : ∀ b, HookContract hooks (Framed base b)
   body : ∀ b, BodyPhases (Framed base b)
   pipeline : ∀ b, PipelineKeeps hooks (Framed base b)
-  queueBatch : ∀ (s : State) unit, (s.queueBatch unit).transitions = s.transitions ∧
-    (s.queueBatch unit).issuing = s.issuing
+  queueBatch : ∀ (s : State) unit grouped, (s.queueBatch unit grouped).transitions = s.transitions ∧
+    (s.queueBatch unit grouped).issuing = s.issuing
 
 /-- Journalling a unit other than `other` adds no transition of `other`. -/
 theorem contains_insert_ne {m : TreeMap UnitKey Transition compare} {unit other : UnitKey} {transition : Transition}
@@ -409,7 +409,7 @@ theorem conclude_carries (contract : HookContract hooks inv) (phases : ClosurePh
     (holds : inv ctx.program state) (framed : Framed base b ctx.program state)
     (ran : conclude hooks ctx unit cause element owner state = .ok after) : inv ctx.program after ∧ Between after := by
   obtain ⟨based, transitions, issuer⟩ := framed
-  obtain ⟨notified, written, ⟨notifying, writing, rfl⟩⟩ := conclude_ok ran
+  obtain ⟨notified, written, grouped, ⟨notifying, writing, groups, rfl⟩⟩ := conclude_ok ran
   have fresh : state.transitions.contains unit = false := by rw [transitions]; exact unrun
   let transition : Transition := ⟨cause, element, owner, state.draft.started, state.draft.ended, state.draft.ready⟩
   have journalled := phases.journal _ state unit transition holds (Laws.State.getElem?_of_contains fresh)
@@ -423,24 +423,24 @@ theorem conclude_carries (contract : HookContract hooks inv) (phases : ClosurePh
     (⟨journalledBase, rfl, rfl⟩ : Framed base
       { state with transitions := state.transitions.insert unit transition, draft := {}, writes := [] } ctx.program
       { state with transitions := state.transitions.insert unit transition, draft := {}, writes := [] }) notifying) writing
-  have queued := phases.queueBatch _ _ unit kept
-  obtain ⟨queuedTransitions, queuedIssuing⟩ := framing.queueBatch written unit
-  have recorded : (written.queueBatch unit).transitions = state.transitions.insert unit transition :=
+  have queued := phases.queueBatch _ _ unit grouped groups kept
+  obtain ⟨queuedTransitions, queuedIssuing⟩ := framing.queueBatch written unit grouped
+  have recorded : (written.queueBatch unit grouped).transitions = state.transitions.insert unit transition :=
     queuedTransitions.trans framedWritten.2.1
-  have issued : (written.queueBatch unit).issuing = unit :=
+  have issued : (written.queueBatch unit grouped).issuing = unit :=
     queuedIssuing.trans (framedWritten.2.2.trans (issuer.trans issuing))
-  have seedAbsent : (written.queueBatch unit).transitions.contains (.ofRoot .seed) = false := by
+  have seedAbsent : (written.queueBatch unit grouped).transitions.contains (.ofRoot .seed) = false := by
     rw [recorded]
     exact contains_insert_ne unseeded (by rw [transitions]; exact seed)
-  have untabled : ∀ index, (written.queueBatch unit).issued[Issue.fresh (.ofRoot .seed) index]? = none := fun index => by
-    cases tabled : (written.queueBatch unit).issued[Issue.fresh (.ofRoot .seed) index]? with
+  have untabled : ∀ index, (written.queueBatch unit grouped).issued[Issue.fresh (.ofRoot .seed) index]? = none := fun index => by
+    cases tabled : (written.queueBatch unit grouped).issued[Issue.fresh (.ofRoot .seed) index]? with
     | none => rfl
     | some slot =>
       rcases (phases.issuer _ _ queued).ran _ index slot tabled with contains | same
       · rw [seedAbsent] at contains
         cases contains
       · exact absurd (same.trans issued).symm unseeded
-  have closed : (written.queueBatch unit).transitions.contains (written.queueBatch unit).issuing = true := by
+  have closed : (written.queueBatch unit grouped).transitions.contains (written.queueBatch unit grouped).issuing = true := by
     rw [recorded, issued]
     exact Std.ExtTreeMap.contains_insert_self
   exact ⟨phases.leaveUnit _ _ queued closed untabled, untabled, seedAbsent⟩

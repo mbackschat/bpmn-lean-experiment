@@ -176,7 +176,8 @@ theorem closureAlongside_both (a : ClosureAlongside program A) (b : ClosureAlong
     journal := fun s unit transition formed held unjournalled started ended =>
       ⟨a.journal s unit transition formed held.1 unjournalled started ended,
         b.journal s unit transition formed held.2 unjournalled started ended⟩
-    queueBatch := fun s unit formed held => ⟨a.queueBatch s unit formed held.1, b.queueBatch s unit formed held.2⟩ }
+    queueBatch := fun s unit grouped groups formed held =>
+      ⟨a.queueBatch s unit grouped groups formed held.1, b.queueBatch s unit grouped groups formed held.2⟩ }
 
 end Both
 

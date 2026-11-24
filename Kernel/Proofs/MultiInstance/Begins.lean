@@ -278,11 +278,12 @@ theorem BeginsKept.journal {program : Program} {s : State} (unit : UnitKey) (tra
     fun _ _ _ _ => by simp [BeginsInOrder], fun _ _ _ _ _ _ _ inside => by simp at inside⟩
 
 /-- Moving a micro-step's batches under its unit key keeps `BeginsKept`: the queue views keep their signals. -/
-theorem BeginsKept.queueBatch {program : Program} {s : State} (unit : UnitKey) (held : BeginsKept program T s) :
-    BeginsKept program T (s.queueBatch unit) := by
-  have signals := Laws.State.allSignals_queueBatch s unit
-  have same := Laws.State.queueBatch_eq s unit
-  exact held.frame (t := s.queueBatch unit) (fun _ inside => by rw [same] at inside; exact inside)
+theorem BeginsKept.queueBatch {program : Program} {s : State} (unit : UnitKey)
+    (grouped : Nat → Option UnitKey := fun _ => none) (held : BeginsKept program T s) :
+    BeginsKept program T (s.queueBatch unit grouped) := by
+  have signals := Laws.State.allSignals_queueBatch s unit grouped
+  have same := Laws.State.queueBatch_grouped_eq s unit grouped
+  exact held.frame (t := s.queueBatch unit grouped) (fun _ inside => by rw [same] at inside; exact inside)
     (fun _ named => pending_of_sublist (fun _ inside => signals.subset inside)
       (fun _ member => by rw [same] at member; exact member) named)
     (by rw [same]) (by rw [same])
@@ -615,8 +616,8 @@ theorem logged_conclude {ctx : Ctx} {log : Step.RunLog} {unit : UnitKey} {cause 
     (ran : Step.conclude hooks ctx unit cause element owner mid = .ok after) :
     IdsUnique ctx.program → Unlooped ctx.program after.transitions after ∧
       LogOrder ctx.program (log.record unit) after.transitions := fun apart => by
-  obtain ⟨notified, written, rest⟩ := Laws.Step.conclude_ok ran
-  obtain ⟨notifying, writing, made⟩ := rest
+  obtain ⟨notified, written, grouped, rest⟩ := Laws.Step.conclude_ok ran
+  obtain ⟨notifying, writing, _, made⟩ := rest
   subst made
   have before := holds.2 apart
   have unrun : mid.transitions.contains unit = false := by rw [before.transitions]; exact fresh
@@ -629,7 +630,7 @@ theorem logged_conclude {ctx : Ctx} {log : Step.RunLog} {unit : UnitKey} {cause 
     (Laws.Step.foldlM_keeps
       (inv := fun program s => WellFormed program s ∧ BeginsKept program (mid.transitions.insert unit transition) s)
       (fun _ _ _ kept ran => (contract _).cancelled _ _ _ _ kept ran) _ _ _ journalled notifying) writing
-  have queued := ((kept.2.queueBatch unit).issuer (.ofRoot .seed) 0) apart
+  have queued := ((kept.2.queueBatch unit grouped).issuer (.ofRoot .seed) 0) apart
   rw [queued.transitions]
   refine ⟨queued, ?_⟩
   rw [before.transitions]
@@ -762,7 +763,8 @@ theorem logged_start
           (((State.initial payload.instanceId payload.variables payload.businessKey).signal
             (.armScope State.root)).queueBatch (.ofRoot .seed)) := by
       rw [Laws.Step.inputCtx_program]
-      exact ⟨formed.queueBatch _ _ _ (initial _ _ _ _), (beginsKept_initial _ _ _ _).queueBatch _⟩
+      exact ⟨formed.queueBatch _ _ _ _ (Laws.Step.groupsCompletions_none _) (initial _ _ _ _),
+        (beginsKept_initial _ _ _ _).queueBatch _⟩
     have done := logged_settles contract phases pipeline wellFormed formed formedPipeline framing facts
       (Laws.Step.advanceClock_keeps (phases ∅) queued clocked) (Laws.Step.advanceClock_between (fresh _ _ _) clocked)
       byBody stepped settling

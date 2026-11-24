@@ -515,10 +515,10 @@ theorem placedOccursAlongside (program : Program) : OccursAlongside program (Pla
 theorem placedStepAlongside (program : Program) : StepAlongside program (Placing program) where
   toFrameAlongside := (placedAlongside program).toFrameAlongside
   journal _ _ _ _ held _ _ _ refs := (held refs).queue rfl rfl rfl (.refl _) (fun _ member => member) rfl rfl listKept
-  queueBatch s unit formed held refs := by
-    have tokens := Laws.State.allQueuedTokens_queueBatch s unit
-    have signals := Laws.State.allSignals_queueBatch s unit
-    rw [Laws.State.queueBatch_eq] at tokens signals ⊢
+  queueBatch s unit grouped _ formed held refs := by
+    have tokens := Laws.State.allQueuedTokens_queueBatch s unit grouped
+    have signals := Laws.State.allSignals_queueBatch s unit grouped
+    rw [Laws.State.queueBatch_grouped_eq] at tokens signals ⊢
     exact (held refs).within formed rfl rfl rfl (.refl _) (fun _ member => .inl member)
       (fun _ member => .inl (signals.subset member)) (fun _ member => .inl (tokens.subset member)) listKept listKept
       listKept listKept

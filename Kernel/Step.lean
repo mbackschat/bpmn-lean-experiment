@@ -7,6 +7,7 @@ public import Kernel.Step.Jobs
 public import Kernel.Step.Stale
 public import Kernel.Step.Inputs
 public import Kernel.Step.Offer
+public import Kernel.Step.Finish
 
 /-! # Step
 
@@ -200,24 +201,27 @@ def dispatchSignal (hooks : Hooks) (ctx : Ctx) (signal : Signal) (state : State)
   (signalWork hooks ctx signal).perform state
 
 /-- Run a completion when it is the only signal the micro-step enqueued, inside the micro-step, as `dispatchSignal` runs
-it (`SignalWork.perform`). -/
+it (`SignalWork.perform`); never a body's finish, which runs under its own root (`finishOf?`). -/
 def absorb (hooks : Hooks) (ctx : Ctx) (before : Nat) (state : State) : Outcome :=
   match state.batchSignals.drop before with
   | [sole] =>
     let work := signalWork hooks ctx sole
-    if work.completion then work.perform { state with batchSignals := state.batchSignals.take before } else .ok state
+    if work.completion && (finishOf? ctx state work).isNone then
+      work.perform { state with batchSignals := state.batchSignals.take before }
+    else .ok state
   | _ => .ok state
 
 /-- Turn the draft into the transition of the unit `unit` (`journalDraft`), tell the features what the micro-step
-removed and wrote, and queue the micro-step's batches under `unit` (`State.queueBatch`). `microStep` refused a unit key
-the closure already ran before its body, and nothing the body or the absorbed completion runs writes a transition, so
-the journalled key is new (DC4). -/
+removed and wrote, and queue the micro-step's batches under `unit` (`State.queueBatch`), a body's finish under its
+finish root (`finishKey?`). `microStep` refused a unit key the closure already ran before its body, and nothing the body
+or the absorbed completion runs writes a transition, so the journalled key is new (DC4). -/
 def conclude (hooks : Hooks) (ctx : Ctx) (unit : UnitKey) (cause : Cause) (element : Option ElementId)
     (owner : ScopeOccurrenceId) (state : State) : Outcome := do
   let journalled := journalDraft unit cause element owner state
   let journalled ← state.draft.cancelled.foldlM (fun state occurrence => hooks.cancelled ctx occurrence state) journalled
   let written ← hooks.written ctx state.writes journalled
-  .ok { written.queueBatch unit with issuing := .ofRoot .seed, issueNext := 0 }
+  let finishes ← written.batchSignals.mapM fun signal => finishKey? ctx written (signalWork hooks ctx signal)
+  .ok { written.queueBatch unit (fun index => finishes[index]?.join) with issuing := .ofRoot .seed, issueNext := 0 }
 
 /-- One micro-step: run `body`, absorb its sole completion and record the transition. Each stage's failure is
 `deferred` against the state it started from, so a boundary an earlier micro-step or stage crossed counts. Every

@@ -46,7 +46,7 @@ theorem enterStep_ok {hooks : Hooks} {ctx : Ctx} (quiet : ∀ writes t, hooks.wr
     enterStep hooks ctx unit cause element parent s = .ok (entered unit cause element parent s) := by
   obtain ⟨signals, tokens, intents⟩ := unbatched
   refine microStep_of fresh unseeded rfl (absorb_quiet (by rw [enterScope_eq]; simp [signals]))
-    ((conclude_quiet quiet (by rw [enterScope_eq]; exact clean)).trans ?_)
+    ((conclude_quiet quiet (by rw [enterScope_eq]; exact clean) (by rw [enterScope_eq]; simp [signals])).trans ?_)
   rw [enterScope_eq, queueBatch_eq]
   simp [entered, signals, tokens, intents]
 

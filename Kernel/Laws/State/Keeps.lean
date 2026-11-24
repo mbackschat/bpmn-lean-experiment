@@ -102,24 +102,26 @@ theorem untoken_wellFormed {s : State} (formed : WellFormed program s) (unit : U
 
 /-- `Step.conclude` moves a micro-step's signals under its unit key (`State.queueBatch`): the queue keeps them, at
 most. -/
-theorem allSignals_queueBatch (s : State) (unit : UnitKey) : Fewer (allSignals (s.queueBatch unit)) (allSignals s) := by
-  rw [queueBatch_eq]
-  simpa [allSignals, List.zipIdx_map_fst] using foldl_insert_fewer unit.signalUnit s.batchSignals.zipIdx s.queuedSignals
+theorem allSignals_queueBatch (s : State) (unit : UnitKey) (grouped : Nat → Option UnitKey := fun _ => none) :
+    Fewer (allSignals (s.queueBatch unit grouped)) (allSignals s) := by
+  rw [queueBatch_grouped_eq]
+  simpa [allSignals, List.zipIdx_map_fst] using
+    foldl_insert_fewer (fun index => (grouped index).getD (unit.signalUnit index)) s.batchSignals.zipIdx s.queuedSignals
 
 /-- `Step.conclude` moves a micro-step's tokens under its unit key (`State.queueBatch`): the queue keeps them, at
 most. -/
-theorem allQueuedTokens_queueBatch (s : State) (unit : UnitKey) :
-    Fewer (allQueuedTokens (s.queueBatch unit)) (allQueuedTokens s) := by
-  rw [queueBatch_eq]
+theorem allQueuedTokens_queueBatch (s : State) (unit : UnitKey) (grouped : Nat → Option UnitKey := fun _ => none) :
+    Fewer (allQueuedTokens (s.queueBatch unit grouped)) (allQueuedTokens s) := by
+  rw [queueBatch_grouped_eq]
   simpa [allQueuedTokens, List.zipIdx_map_fst] using foldl_insert_fewer unit.tokenUnit s.batchTokens.zipIdx s.queuedTokens
 
-/-- `Step.conclude` moves a micro-step's batches under its unit key (`State.queueBatch`): the queue views keep their
-entries, at most. -/
-theorem queueBatch_wellFormed {s : State} (formed : WellFormed program s) (unit : UnitKey) :
-    WellFormed program (s.queueBatch unit) := by
-  have tokens := allQueuedTokens_queueBatch s unit
-  have signals := allSignals_queueBatch s unit
-  rw [queueBatch_eq] at tokens signals ⊢
+/-- `Step.conclude` moves a micro-step's batches under its unit key (`State.queueBatch`), a body's finish under its
+finish root: the queue views keep their entries, at most. -/
+theorem queueBatch_wellFormed {s : State} (formed : WellFormed program s) (unit : UnitKey)
+    (grouped : Nat → Option UnitKey := fun _ => none) : WellFormed program (s.queueBatch unit grouped) := by
+  have tokens := allQueuedTokens_queueBatch s unit grouped
+  have signals := allSignals_queueBatch s unit grouped
+  rw [queueBatch_grouped_eq] at tokens signals ⊢
   exact formed.narrow {
       scopeMap := rfl, scopeOrdinals := rfl, occurrenceMap := rfl, activations := rfl, occurrenceOrdinals := rfl,
       instances := fun _ => by apply instanceOf_congr <;> rfl, recorded := id, items := .refl _, tokens, signals,

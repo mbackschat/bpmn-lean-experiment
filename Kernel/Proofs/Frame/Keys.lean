@@ -115,7 +115,7 @@ theorem keyed_closure : ClosureAlongside program Keyed :=
     begin := fun _ request role sourceType formed _ _ _ _ held => keyed_begin formed held request role sourceType
     cancel := fun le _ id formed held => keyed_cancel program formed held id
     journal := fun _ _ _ _ held _ _ _ => held
-    queueBatch := fun _ _ _ held => by rw [Laws.State.queueBatch_eq]; exact held }
+    queueBatch := fun _ _ _ _ _ held => by rw [Laws.State.queueBatch_grouped_eq]; exact held }
 
 /-- The completion pipeline keeps `WellFormed` and the occurrences keyed: starting a reservation changes no key or scope
 occurrence, and removing an occurrence drops records. -/

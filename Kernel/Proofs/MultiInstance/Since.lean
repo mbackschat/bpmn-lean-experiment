@@ -381,8 +381,8 @@ theorem since_closureAlongside (b : State) (program : Program) :
     ClosureAlongside program fun s => Unstarted b s ∧ Snapshots b s where
   toFrameAlongside := (since_frameAlongside b program).toFrameAlongside
   journal _ _ _ _ kept _ _ _ := ⟨⟨kept.1.below, kept.1.begun, fun _ _ _ _ _ => by simp⟩, kept.2.same rfl⟩
-  queueBatch _ _ _ kept := by
-    rw [Laws.State.queueBatch_eq]
+  queueBatch _ _ _ _ _ kept := by
+    rw [Laws.State.queueBatch_grouped_eq]
     exact ⟨kept.1.move (.same rfl rfl rfl (.refl _) rfl), kept.2.same rfl⟩
   dequeue _ _ _ _ kept := ⟨kept.1.move (.same rfl rfl rfl (.refl _) rfl), kept.2.same rfl⟩
   unqueue _ _ _ kept := ⟨kept.1.move (.same rfl rfl rfl (.refl _) rfl), kept.2.same rfl⟩

@@ -287,11 +287,13 @@ def allTokens (state : State) : List Token :=
   state.queuedTokens.toList.map (·.2) ++ state.batchTokens
 
 /-- Move the running micro-step's batches under its unit key `unit` (DC4): each signal and token keyed by its index in
-the batch (`UnitKey.signalUnit`, `UnitKey.tokenUnit`), the micro-step's intents as one entry, so every writer keeps appending to
-the running batch and the feature layer never sees a key. -/
-def queueBatch (state : State) (unit : UnitKey) : State :=
+the batch (`UnitKey.signalUnit`, `UnitKey.tokenUnit`), but the signal at an index `grouped` keys under that key, a group
+root of its own (`Step.finishKey?`, DC30), the micro-step's intents as one entry, so every writer keeps appending to the running batch
+and the feature layer never sees a key. -/
+def queueBatch (state : State) (unit : UnitKey) (grouped : Nat → Option UnitKey := fun _ => none) : State :=
   { state with
-      queuedSignals := state.batchSignals.zipIdx.foldl (fun queued (signal, index) => queued.insert (unit.signalUnit index) signal)
+      queuedSignals := state.batchSignals.zipIdx.foldl
+        (fun queued (signal, index) => queued.insert ((grouped index).getD (unit.signalUnit index)) signal)
         state.queuedSignals
       queuedTokens := state.batchTokens.zipIdx.foldl (fun queued (token, index) => queued.insert (unit.tokenUnit index) token)
         state.queuedTokens

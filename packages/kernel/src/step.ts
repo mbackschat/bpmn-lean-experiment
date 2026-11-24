@@ -20,7 +20,7 @@
  * input's outcome where CIB runs the work in a job is `step/jobs.ts`; what becomes of a queued signal whose target an
  * interruption removed is `step/stale.ts`; the clock an input advances, its ranking of competing Conditional items and the
  * transitions of a command and an effect result are `step/inputs.ts`; which parked join a quiescent closure fires is
- * `step/offer.ts`.
+ * `step/offer.ts`; which unit a Multi-Instance body's finish runs as is `step/finish.ts`.
  */
 import {
   BranchSchedule, ElementTag, EventRoleTag, assertNever, elementActivity, elementEnvelope, elementHeader, programElement,
@@ -48,6 +48,7 @@ import { deferred, effectContinuation, timerJob } from "./step/jobs.js";
 import { advanceClock, admitChoicesThen, command, deliverEffectResult } from "./step/inputs.js";
 import { perform, requireScope, queuedNames, type SignalRun } from "./step/stale.js";
 import { reoffer } from "./step/offer.js";
+import { finishKey, finishOf } from "./step/finish.js";
 
 /** The name a transition records for a signal: its tag, which spells the Lean constructor. */
 export function signalName(next: Signal): string {
@@ -268,13 +269,16 @@ function dispatchSignal(hooks: Hooks, ctx: Ctx, next: Signal): (state: State) =>
 /** Run a completion when it is the only signal the micro-step enqueued, inside the micro-step, as `dispatchSignal` runs it. */
 function absorb(hooks: Hooks, ctx: Ctx, before: number, state: State): Outcome {
   const queued = state.batchSignals.slice(before);
-  const sole = queued.length === 1 && queued[0] !== undefined ? signalRun(hooks, ctx, queued[0]) : null;
-  return sole?.completion === true ? perform(sole, { ...state, batchSignals: state.batchSignals.slice(0, before) }) : committed(state);
+  const only = queued.length === 1 ? queued[0] ?? null : null;
+  const sole = only === null ? null : signalRun(hooks, ctx, only);
+  return sole?.completion === true && finishOf(ctx, state, sole) === null
+    ? perform(sole, { ...state, batchSignals: state.batchSignals.slice(0, before) }) : committed(state);
 }
 
 /**
  * Turn the draft into the transition of the unit `unit` (`journalDraft`), tell the features what the micro-step removed
- * and wrote, and queue the micro-step's batches under `unit` (`queueBatch`).
+ * and wrote, and queue the micro-step's batches under `unit` (`queueBatch`), a body's finish under its finish root
+ * (`finishKey`).
  */
 function conclude(hooks: Hooks, ctx: Ctx, unit: UnitKey, cause: Cause, element: ElementId | null, owner: ScopeOccurrenceId, state: State): Outcome {
   let current = journalDraft(unit, cause, element, owner, state);
@@ -284,7 +288,14 @@ function conclude(hooks: Hooks, ctx: Ctx, unit: UnitKey, cause: Cause, element: 
     current = notified.value;
   }
   const written = hooks.written(ctx, state.writes, current);
-  return written.ok ? committed({ ...queueBatch(written.value, unit), issuing: null, issueNext: 0 }) : written;
+  if (!written.ok) return written;
+  const finishes: (UnitKey | null)[] = [];
+  for (const next of written.value.batchSignals) {
+    const key = finishKey(ctx, written.value, signalRun(hooks, ctx, next));
+    if (!key.ok) return key;
+    finishes.push(key.value);
+  }
+  return committed({ ...queueBatch(written.value, unit, (index) => finishes[index] ?? null), issuing: null, issueNext: 0 });
 }
 
 /**

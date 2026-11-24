@@ -409,9 +409,9 @@ theorem formed_stepAlongside (precedes : Compensable → Compensable → Prop) (
     StepAlongside program (Formed precedes) where
   toFrameAlongside := formed_frameAlongside precedes program
   journal _ _ _ _ kept _ _ _ := kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
-  queueBatch s unit _ kept := by
-    have fewer := Laws.State.allSignals_queueBatch s unit
-    rw [Laws.State.queueBatch_eq] at fewer ⊢
+  queueBatch s unit grouped _ _ kept := by
+    have fewer := Laws.State.allSignals_queueBatch s unit grouped
+    rw [Laws.State.queueBatch_grouped_eq] at fewer ⊢
     exact kept.same rfl rfl (Nat.le_refl _) rfl rfl fewer
   runOrder _ _ _ formed held counted batches _ _ made := orderJournal_formed formed counted batches blind held made
   dequeue _ _ _ fewer kept := kept.same rfl rfl (Nat.le_refl _) rfl rfl ((Laws.State.Fewer.of_sublist fewer).append_left _)

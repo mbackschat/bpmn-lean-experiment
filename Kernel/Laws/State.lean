@@ -255,6 +255,18 @@ theorem busyScope_begin (request : BeginRequest) : (Token.begin request).busySco
 theorem allTokens_eq (state : State) : state.allTokens = allQueuedTokens state := by
   simp only [State.allTokens, allQueuedTokens]
 
+/-- A micro-step's batches move under its unit key, each entry keyed by its index in the batch (DC4), a signal at an
+index `grouped` keys under that key (DC30). -/
+theorem queueBatch_grouped_eq (state : State) (unit : UnitKey) (grouped : Nat → Option UnitKey) :
+    state.queueBatch unit grouped = { state with
+    queuedSignals := state.batchSignals.zipIdx.foldl
+      (fun queued (signal, index) => queued.insert ((grouped index).getD (unit.signalUnit index)) signal) state.queuedSignals
+    queuedTokens := state.batchTokens.zipIdx.foldl (fun queued (token, index) => queued.insert (unit.tokenUnit index) token)
+      state.queuedTokens
+    outboxes := if state.batchIntents.isEmpty then state.outboxes else state.outboxes.insert unit state.batchIntents
+    batchSignals := [], batchTokens := [], batchIntents := [] } := by
+  simp only [State.queueBatch]
+
 /-- A micro-step's batches move under its unit key, each entry keyed by its index in the batch (DC4). -/
 theorem queueBatch_eq (state : State) (unit : UnitKey) : state.queueBatch unit = { state with
     queuedSignals := state.batchSignals.zipIdx.foldl (fun queued (signal, index) => queued.insert (unit.signalUnit index) signal)
@@ -263,18 +275,19 @@ theorem queueBatch_eq (state : State) (unit : UnitKey) : state.queueBatch unit =
       state.queuedTokens
     outboxes := if state.batchIntents.isEmpty then state.outboxes else state.outboxes.insert unit state.batchIntents
     batchSignals := [], batchTokens := [], batchIntents := [] } := by
-  simp only [State.queueBatch]
+  simp only [State.queueBatch, Option.getD_none]
 
 /-- `State.queueBatch` leaves no running batch (`Laws.Step.Unbatched`). -/
-theorem queueBatch_unbatched (state : State) (unit : UnitKey) :
-    (state.queueBatch unit).batchSignals = [] ∧ (state.queueBatch unit).batchTokens = [] ∧
-      (state.queueBatch unit).batchIntents = [] := by
-  simp [queueBatch_eq]
+theorem queueBatch_unbatched (state : State) (unit : UnitKey) (grouped : Nat → Option UnitKey := fun _ => none) :
+    (state.queueBatch unit grouped).batchSignals = [] ∧ (state.queueBatch unit grouped).batchTokens = [] ∧
+      (state.queueBatch unit grouped).batchIntents = [] := by
+  simp [queueBatch_grouped_eq]
 
 /-- `State.queueBatch` keeps the transitions and the issuer (`Laws.Step.Framing.queueBatch`). -/
-theorem queueBatch_issuer (state : State) (unit : UnitKey) :
-    (state.queueBatch unit).transitions = state.transitions ∧ (state.queueBatch unit).issuing = state.issuing := by
-  simp [queueBatch_eq]
+theorem queueBatch_issuer (state : State) (unit : UnitKey) (grouped : Nat → Option UnitKey := fun _ => none) :
+    (state.queueBatch unit grouped).transitions = state.transitions ∧
+      (state.queueBatch unit grouped).issuing = state.issuing := by
+  simp [queueBatch_grouped_eq]
 
 /-- The busy scope occurrences: each queued token's, each live open item's, each begun occurrence's, each parent and
 each one a feature slot keeps alive. -/
