@@ -211,8 +211,8 @@ theorem BeginsKept.defer {program : Program} {s : State} (requests : List BeginR
   rw [Laws.State.deferBegins_eq]
   exact held.frame (fun _ inside => inside) (fun _ named => named) rfl rfl
 
-theorem BeginsKept.runs {program : Program} {s : State} (runs : List MultiInstanceRun) (held : BeginsKept program T s) :
-    BeginsKept program T { s with slots := { s.slots with multiInstances := runs } } :=
+theorem BeginsKept.runs {program : Program} {s : State} (runs : MultiInstanceMap) (held : BeginsKept program T s) :
+    BeginsKept program T { s with slots := { s.slots with multiInstanceMap := runs } } :=
   held.frame (fun _ inside => inside) (fun _ named => named) rfl rfl
 
 /-- Dropping an occurrence's record keeps `BeginsKept`. -/

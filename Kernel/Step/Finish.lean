@@ -25,7 +25,7 @@ def finishOf? (ctx : Ctx) (state : State) (work : SignalWork) : Option MultiInst
   | .declarationDepthFirst => none
   | .orderInvariant =>
     match work.completion, work.acts with
-    | true, [body] => state.slots.multiInstances.find? (·.occurrence == body)
+    | true, [body] => state.slots.multiInstanceMap[body]?.map (·.toRun body)
     | _, _ => none
 
 /-- The ordinal of the next finish of the body of `element` whose instances `scope` holds: the least one whose unit key

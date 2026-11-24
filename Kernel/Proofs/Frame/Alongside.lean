@@ -319,9 +319,9 @@ structure Alongside (program : Program) (rel : State → Prop) (srel : State →
   /-- The Multi-Instance runs replaced by runs whose elements are anchored at their scope occurrences. -/
   leaveInstance : ∀ le s run scope, WellFormed program s → run ∈ s.slots.multiInstances →
     Iteration.active scope ∈ run.instances → scope ∈ scopeIds s → rel s → rel (s.leaveScope le scope)
-  runs : ∀ s (runs : List MultiInstanceRun), WellFormed program s →
-    (∀ run ∈ runs, Laws.Flow.Anchored (fun t => WellFormed program t ∧ rel t) program s run.element run.scope) → rel s →
-    rel { s with slots := { s.slots with multiInstances := runs } }
+  runs : ∀ s (runs : MultiInstanceMap), WellFormed program s →
+    (∀ run ∈ multiInstanceList runs, Laws.Flow.Anchored (fun t => WellFormed program t ∧ rel t) program s run.element run.scope) →
+    rel s → rel { s with slots := { s.slots with multiInstanceMap := runs } }
 
 /-- A queued signal that queues no begin, makes no reservation and carries no trigger, no resume and places no work moves nothing `rel`
 reads. -/

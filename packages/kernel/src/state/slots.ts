@@ -186,7 +186,10 @@ export interface InstanceData {
 /**
  * Feature-owned data. `parked` holds the occurrences that reached a join and wait for its other incoming flows
  * (`feature/flow.ts`); `held` holds those at an Activity whose InputSet is unavailable (BPMN 2.0.2 §10.4.2,
- * `feature/work.ts`), by occurrence: Lean's `heldMap` through its list view `FeatureSlots.held`.
+ * `feature/work.ts`), by occurrence: Lean's `heldMap` through its list view `FeatureSlots.held`. `multiInstances` holds
+ * the running Multi-Instance Activities keyed by body occurrence: Lean's `multiInstanceMap` through its list view
+ * `FeatureSlots.multiInstances`, the runs in key order (`insertRun`), the form the state codec writes (T75); no reader
+ * takes an order from it.
  */
 export interface FeatureSlots {
   readonly parked: readonly Parked[];

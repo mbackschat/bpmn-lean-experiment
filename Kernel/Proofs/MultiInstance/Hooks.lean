@@ -247,7 +247,7 @@ theorem counted_bodies {state counted : State} {scope : ScopeOccurrenceId} {next
   rcases mem_setRun (state := state.leaveScope le scope) kept with ⟨held, _⟩ | same
   · rw [(Laws.State.leaveScope_slots state scope).2.1] at held
     obtain ⟨_, made⟩ := Laws.State.clearInside_eq (le := le) state scope []
-    rw [made] at held
+    rw [made, Laws.State.multiInstances_mk, Laws.State.multiInstanceList_filter_map, ← Laws.State.multiInstances_eq] at held
     exact .inl (List.mem_filter.mp held).1
   · exact .inr same
 

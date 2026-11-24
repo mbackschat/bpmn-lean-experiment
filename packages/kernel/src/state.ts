@@ -801,6 +801,13 @@ export function insertHeld(held: HeldMap, entry: Held): HeldMap {
 
 const heldKey = (entry: Held): OccurrenceId => entry.occurrence;
 
+/** Lean's `MultiInstanceMap.insert` under the body occurrence's key: it replaces the run there and keeps key order. */
+export function insertRun(runs: readonly MultiInstanceRun[], run: MultiInstanceRun): readonly MultiInstanceRun[] {
+  return keyedInsert(runs, run, runKey, compareOccurrenceId);
+}
+
+const runKey = (run: MultiInstanceRun): OccurrenceId => run.occurrence;
+
 /**
  * Enter a new scope occurrence of `element` inside `parent`, with the given local variables (`variablesOfBindings`). The scope belongs
  * to `occurrence`, when it has one.

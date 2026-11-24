@@ -182,7 +182,9 @@ theorem clearInside_cleared {s : State} (formed : WellFormed program s) {scope :
       signals := rfl, queues := clearInside_queues s scope keep, status := rfl, failure := rfl, journal := rfl,
       transitions := rfl, started := rfl,
       slots := ⟨fun _ member => ?_, fun _ member => ?_, fun _ member => ?_⟩,
-      bodies := by simp [State.clearInside, State.recordCancelled, featureSlotsClear_eq, mem_subtree_inside],
+      bodies := by
+        simp [State.clearInside, State.recordCancelled, featureSlotsClear_eq, mem_subtree_inside, multiInstances_eq,
+          multiInstanceList_filter_map, record_scope],
       issued := rfl, issuing := rfl, issueNext := rfl }
   rotate_left 3
   · simp only [allQueuedTokens, State.clearInside, State.recordCancelled, Std.ExtTreeMap.toList_filter]
@@ -197,7 +199,8 @@ theorem clearInside_cleared {s : State} (formed : WellFormed program s) {scope :
     rw [same] at within
     exact Within.antisymm formed (List.mem_map.mpr ⟨above, upper, rfl⟩) inner within
   iterate 3
-    · simp only [State.clearInside, State.recordCancelled, featureSlotsClear_eq] at member
+    · simp only [State.clearInside, State.recordCancelled, featureSlotsClear_eq, multiInstances_eq,
+        multiInstanceList_filter_map, record_scope] at member
       exact (List.mem_filter.mp member).1
   all_goals simp [State.clearInside, State.recordCancelled, mem, mem_itemList_filter formed.distinct.items,
     allQueuedTokens, Std.ExtTreeMap.toList_filter, or_and_right, occurrences_eq, occurrenceList_filter_val]
@@ -259,7 +262,7 @@ theorem clearInside_eq (s : State) (scope : ScopeOccurrenceId) (keep : List Occu
       slots := {
         parked := s.slots.parked.filter (!(s.subtree le scope).contains ·.scope)
         heldMap := s.slots.heldMap.filter fun _ held => !(s.subtree le scope).contains held
-        multiInstances := s.slots.multiInstances.filter (!(s.subtree le scope).contains ·.scope)
+        multiInstanceMap := s.slots.multiInstanceMap.filter fun _ record => !(s.subtree le scope).contains record.scope
         compensation := {
           retained := s.slots.compensation.retained.filter (!((s.subtree le scope).filter (· != scope)).contains ·.scope)
           runs := s.slots.compensation.runs.filter (!(s.subtree le scope).contains ·.scope) }

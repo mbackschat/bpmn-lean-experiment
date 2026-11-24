@@ -676,12 +676,17 @@ theorem elemented_root_rejected :
   simpa using (lane.rootBare _ ((Laws.State.mem_ofScopes (by simp [placedCalled, calledKey,
     Laws.State.ScopeOccurrenceId.ofSegments_inj])).mpr (List.mem_cons_self ..))).mpr (by simp)
 
+/-- A Multi-Instance run of the root process inside a called instance. -/
+def misplacedRun : MultiInstanceRun :=
+  { scope := calledKey, element := ⟨"A"⟩, occurrence := aIn calledKey, collection := .null, instances := [] }
+
 /-- A Multi-Instance run of the root process inside a called instance breaks `PlacedLane.runs`. -/
 theorem misplaced_run_rejected :
     ¬ PlacedLane { program with elements := [] } { placedState definition with
         slots := { (placedState definition).slots with
-          multiInstances := [{ scope := calledKey, element := ⟨"A"⟩, occurrence := aIn calledKey, collection := .null, instances := [] }] } } :=
-  fun lane => placed_misplaced (definition := definition) (lane.runs _ (List.mem_singleton_self _) (placed_present definition))
+          multiInstanceMap := (∅ : MultiInstanceMap).insert misplacedRun.occurrence misplacedRun.toRecord } } :=
+  fun lane => placed_misplaced (definition := definition)
+    (lane.runs _ (Laws.State.mem_multiInstanceList_single.mpr rfl) (placed_present definition))
     (placed_calledRoot (definition := definition) rfl) (by simp [placedState])
 
 /-- A raise from the root process inside a called instance breaks `PlacedLane.raises`. -/

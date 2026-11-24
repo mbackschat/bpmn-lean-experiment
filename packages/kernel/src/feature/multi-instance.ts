@@ -69,7 +69,7 @@ import {
   type ScopeOccurrenceId,
   type State,
   SemanticCause,
-  semanticFailure, type OccurrenceId, ownVariables,
+  semanticFailure, type OccurrenceId, ownVariables, insertRun,
 } from "../state.js";
 import {
   EvaluationTag, collectionItems, ctxPositionLe, evalContext, hold, leaveScope, multiInstanceRunItems, type Ctx,
@@ -135,16 +135,14 @@ function itemName(ctx: Ctx, loop: MultiInstance): string | null {
   return assertNever(ctx.program.options.multiInstanceBinding);
 }
 
+/** Lean's `runOf?`: the run of the body occurrence `body`, under its key. */
 function runOf(state: State, body: OccurrenceId): MultiInstanceRun | null {
   return state.slots.multiInstances.find((run) => run.occurrence === body) ?? null;
 }
 
+/** Lean's `setRun`: a body's run in place of the one under its body occurrence's key. */
 function setRun(state: State, run: MultiInstanceRun): State {
-  const runs = state.slots.multiInstances;
-  const multiInstances = runs.some((other) => other.occurrence === run.occurrence)
-    ? runs.map((other) => (other.occurrence === run.occurrence ? run : other))
-    : [...runs, run];
-  return { ...state, slots: { ...state.slots, multiInstances } };
+  return { ...state, slots: { ...state.slots, multiInstances: insertRun(state.slots.multiInstances, run) } };
 }
 
 type Counts = ReadonlyArray<readonly [string, number]>;

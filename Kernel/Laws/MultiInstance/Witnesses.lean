@@ -89,7 +89,7 @@ def entered : State :=
     occurrenceMap := enteredOccurrences
     variables := ((∅ : TreeMap ScopeOccurrenceId Variables compare).insert firstScope (Variables.ofBindings firstLocals)).insert
       secondScope (Variables.ofBindings secondLocals)
-    slots := { multiInstances := [running] } }
+    slots := { multiInstanceMap := (∅ : MultiInstanceMap).insert running.occurrence running.toRecord } }
 
 theorem entered_second : entered.variables[secondScope]? = some (Variables.ofBindings secondLocals) :=
   Std.ExtTreeMap.getElem?_insert_self
@@ -164,11 +164,7 @@ theorem held_instance_rejected :
     ¬ InstancesUnheld { entered with slots := { entered.slots with compensation := { runs := [heldFirst] } } } running :=
   fun unheld => unheld firstScope (by simp [running]) heldFirst (by simp) (by simp [heldFirst])
 
-theorem runs_keyed : RunsKeyed entered := by simp [RunsKeyed, entered, running]
-
-/-- Two runs of one body occurrence break `RunsKeyed`. -/
-theorem twice_keyed_rejected : ¬ RunsKeyed { entered with slots := { multiInstances := [running, running] } } := by
-  simp [RunsKeyed]
+theorem runs_keyed : RunsKeyed entered := runsKeyed entered
 
 theorem entered_numbered : NumberedInOrder entered running := by
   intro first second one two lower inFirst inSecond earlier earlierMember later laterMember atFirst atSecond continued
@@ -247,7 +243,7 @@ theorem stray_occurrence_rejected :
 
 theorem slots_counted : SlotsCounted { entered with scopeMap := outerScopes } entered := by
   intro run member index scope slot _
-  simp only [entered, List.mem_singleton] at member
+  simp only [entered, Laws.State.multiInstances_mk, Laws.State.mem_multiInstanceList_single] at member
   subst member
   match index with
   | 0 => simp [running] at slot; subst slot; exact ⟨_, entered_first, by
@@ -396,15 +392,15 @@ theorem queuing_queued : QueuedFor running 1 secondBegin := ⟨rfl, rfl⟩
 theorem begins_queued {program : Program} {loop : MultiInstance} (looping : LoopOf program review loop) :
     BeginsQueued program queuing where
   looped run member := by
-    simp only [queuing, entered, List.mem_singleton] at member
+    simp only [queuing, entered, Laws.State.multiInstances_mk, Laws.State.mem_multiInstanceList_single] at member
     subst member
     exact ⟨loop, looping⟩
   uncalled run member scope _ entry inside _ := by
-    simp only [queuing, entered, List.mem_singleton] at member
+    simp only [queuing, entered, Laws.State.multiInstances_mk, Laws.State.mem_multiInstanceList_single] at member
     simp only [queuing, entered, Laws.State.scopes_eq, mem_enteredScopes] at inside
     rcases inside with rfl | rfl | rfl | rfl <;> rfl
   continued run member o inside _ _ := by
-    simp only [queuing, entered, List.mem_singleton, Laws.State.occurrences_eq, Laws.State.mem_ofOccurrences_singleton]
+    simp only [queuing, entered, Laws.State.multiInstances_mk, Laws.State.mem_multiInstanceList_single, Laws.State.occurrences_eq, Laws.State.mem_ofOccurrences_singleton]
       at member inside
     subst member inside
     exact ⟨rfl, rfl⟩
@@ -451,7 +447,7 @@ theorem begins_queued {program : Program} {loop : MultiInstance} (looping : Loop
     keyedQueues := fun _ _ _ _ _ _ one _ _ _ => by simp [queuing, entered] at one }
   deferred _ _ token := by simp [Laws.State.allQueuedTokens, queuing, entered] at token
   above run member request index queued scope inQueue for_ slot begun := by
-    simp only [queuing, entered, List.mem_singleton] at member
+    simp only [queuing, entered, Laws.State.multiInstances_mk, Laws.State.mem_multiInstanceList_single] at member
     subst member
     obtain ⟨o, inside, at_, _⟩ := begun
     simp only [queuing, Laws.State.occurrences_eq, Laws.State.mem_ofOccurrences_singleton] at inside

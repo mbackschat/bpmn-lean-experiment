@@ -167,20 +167,19 @@ def slotRows : List Field := [
   -- `FeatureSlots`
   keyedLater ``Kernel.FeatureSlots.parked "K0.12 DC14: the parked map keyed (scope occurrence, flow, occurrence)",
   content ``Kernel.FeatureSlots.heldMap,
-  keyedLater ``Kernel.FeatureSlots.multiInstances "K0.12 group 3a: Multi-Instance records keyed",
+  content ``Kernel.FeatureSlots.multiInstanceMap,
   content ``Kernel.FeatureSlots.compensation,
   keyedLater ``Kernel.FeatureSlots.instances "keyed by the instance's root scope occurrence; no K0.12 group names it yet",
   -- `Parked`
   content ``Kernel.Parked.occurrence,
   content ``Kernel.Parked.flow,
   content ``Kernel.Parked.scope,
-  -- `MultiInstanceRun`
-  content ``Kernel.MultiInstanceRun.scope,
-  content ``Kernel.MultiInstanceRun.element,
-  content ``Kernel.MultiInstanceRun.occurrence,
-  content ``Kernel.MultiInstanceRun.collection,
-  ordered ``Kernel.MultiInstanceRun.instances "one instance per item in collection order (BPMN 2.0.2 §10.2.8, `loopCounter`)",
-  keyedLater ``Kernel.MultiInstanceRun.results "a name set read by membership; K0.12 group 3a keys it with its record",
+  -- `MultiInstanceRecord`
+  content ``Kernel.MultiInstanceRecord.scope,
+  content ``Kernel.MultiInstanceRecord.element,
+  content ``Kernel.MultiInstanceRecord.collection,
+  ordered ``Kernel.MultiInstanceRecord.instances "one instance per item in collection order (BPMN 2.0.2 §10.2.8, `loopCounter`)",
+  ordered ``Kernel.MultiInstanceRecord.results "the result names one sequential body's instances left, one instance after another",
   -- `Compensations`
   keyedLater ``Kernel.Compensations.retained "K0.12 group 3b: compensation records keyed",
   keyedLater ``Kernel.Compensations.runs "K0.12 group 3b: compensation runs keyed, with a keyed index from a running context to its run",

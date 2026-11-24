@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Laws.State.Transitions
+public import Kernel.Laws.State.Slots
 
 /-! # Laws of the kernel state: the invariant's witnesses
 
@@ -249,10 +250,10 @@ theorem parked_begun_settled (kind : OpenKind) :
     · simp only [armedState, occurrences_eq, mem_armedOccurrences] at member
       rcases member with rfl | rfl | rfl | rfl <;> simp_all [subProcess, innerTask, outerTask, reservation]
     · simp [Queued, armedState, sample] at queued
-  bodies := by simp
+  bodies := by simp [multiInstances_eq]
   resumed := by simp
   queued := by simp [armedState, sample]
-  placed := by simp
+  placed := by simp [multiInstances_eq]
   runsPlaced := by simp
   grouped := by simp [armedState, sample]
   raised := by simp [armedState, sample]
@@ -294,12 +295,17 @@ theorem unsettled_resume_rejected (kind : OpenKind) :
   have := (resumable.1 timerKey .outgoing rfl).2.1 reservation (by simp [armedState]) rfl
   simp [reservation] at this
 
+/-- The run of `instanceRun` whose body is the unbegun reservation `timerKey`. -/
+def timerRun : MultiInstanceRun := { instanceRun processRoot with occurrence := timerKey }
+
 /-- The unbegun reservation `timerKey` as a Multi-Instance body breaks `SlotsSettled`, as it does as what a compensation run, or
 a queued one, completes once it ends, and as the host a queued raise leaves. -/
 theorem reserved_body_rejected (kind : OpenKind) :
-    ¬ SlotsSettled { armedState kind with slots := { multiInstances := [{ instanceRun processRoot with occurrence := timerKey }] } } :=
+    ¬ SlotsSettled { armedState kind with slots := { multiInstanceMap := (∅ : MultiInstanceMap).insert timerKey timerRun.toRecord } } :=
   fun settled => by
-    have := (settled.bodies _ (List.mem_singleton.mpr rfl)).2.1 reservation (by simp [armedState]) rfl
+    have member : timerRun ∈ multiInstanceList ((∅ : MultiInstanceMap).insert timerKey timerRun.toRecord) :=
+      mem_multiInstanceList.mpr (by simp [timerRun])
+    have := (settled.bodies _ member).2.1 reservation (by simp [armedState, timerRun]) rfl
     simp [reservation] at this
 
 theorem reserved_resume_rejected (kind : OpenKind) :

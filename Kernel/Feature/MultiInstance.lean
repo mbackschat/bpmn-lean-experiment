@@ -53,14 +53,13 @@ def itemName (ctx : Ctx) (loop : MultiInstance) : Option String :=
   | .dataAssociations => loop.inputDataItem
   | .loopReferences => loop.inputDataItemName <|> loop.elementVariable
 
+/-- The run of the body occurrence `body`, under its key. -/
 def runOf? (state : State) (body : OccurrenceId) : Option MultiInstanceRun :=
-  state.slots.multiInstances.find? (·.occurrence == body)
+  state.slots.multiInstanceMap[body]?.map (·.toRun body)
 
+/-- Set a body's run in place of the one under its body occurrence's key. -/
 def setRun (state : State) (run : MultiInstanceRun) : State :=
-  let runs := state.slots.multiInstances
-  let runs := if runs.any (·.occurrence == run.occurrence) then runs.map (fun other => if other.occurrence == run.occurrence then run else other)
-    else runs ++ [run]
-  { state with slots := { state.slots with multiInstances := runs } }
+  { state with slots := { state.slots with multiInstanceMap := state.slots.multiInstanceMap.insert run.occurrence run.toRecord } }
 
 /-- CIB's counts on the body (CIB-INT-0018): the count, from entry in sequential mode (CIB-INT-0002); the active
 instances, which CIB never lowers below 1 in sequential mode (`SequentialMultiInstanceActivityBehavior:38-45`,

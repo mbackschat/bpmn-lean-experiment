@@ -347,10 +347,13 @@ theorem unstood_reserve_rejected :
 def leftRunRecord : MultiInstanceRun :=
   { scope := leftKey, element := sharedX.id, occurrence := ⟨leftKey, sharedX.id, 0⟩, collection := .null, instances := [] }
 
+/-- `leftRunRecord` alone. -/
+def leftRuns : MultiInstanceMap := (∅ : MultiInstanceMap).insert leftRunRecord.occurrence leftRunRecord.toRecord
+
 /-- The process root and `leftRunRecord`, whose `leftKey` was issued and left. -/
 def leftRun : State :=
   { instanceId := "I", scopeMap := (∅ : ScopeMap).insert State.root { id := State.root, element := none, position := 0 }, scopeOrdinals := leftOrdinals
-    slots := { instances := [{ root := State.root }], multiInstances := [leftRunRecord] } }
+    slots := { instances := [{ root := State.root }], multiInstanceMap := leftRuns } }
 
 /-- A subscription of `T`'s boundary anchored by the run in the left `leftKey` reserves under the process root, although
 the lane held and the boundary is reservable and anchored there. -/
@@ -362,11 +365,11 @@ theorem unstood_subscription_rejected :
   have lane : PlacedLane (topCalled program definition) leftRun :=
     rootOnly_lane program definition Laws.State.scopeList_single rfl Laws.State.occurrenceList_empty rfl rfl rfl (by simp [Laws.State.allSignals, leftRun])
       (fun run member => by
-        simp only [leftRun, List.mem_singleton] at member
+        simp only [leftRun, leftRuns, Laws.State.multiInstances_mk, Laws.State.mem_multiInstanceList_single] at member
         exact member ▸ ⟨by simp [leftRunRecord, Laws.State.root_eq, Laws.State.child_eq], leftKey_issued Laws.State.scopeList_single rfl⟩)
   refine ⟨lane, fun ⟨entry, member, named⟩ => ?_,
     .inl ⟨sharedHost "T", by simp [topCalled], _, Laws.IL.envelope?_scope _ _, sharedX, by simp, rfl⟩,
-    ⟨sharedX.id, .inl rfl, .inl (.inr (.inr (.inr (.inr (.inl ⟨leftRunRecord, by simp [leftRun], rfl, rfl⟩)))))⟩, fun after => ?_⟩
+    ⟨sharedX.id, .inl rfl, .inl (.inr (.inr (.inr (.inr (.inl ⟨leftRunRecord, by simp [leftRun, leftRuns], rfl, rfl⟩)))))⟩, fun after => ?_⟩
   · simp [leftRun] at member; subst member; simp [Laws.State.root_eq, Laws.State.child_eq] at named
   · have reserves := Laws.State.reserve_reserves leftRun sharedX.id leftKey
     have root : (leftRun.reserve sharedX.id leftKey).1.instanceRoot leftKey = State.root := by

@@ -40,7 +40,7 @@ theorem featureSlotsClear_eq (slots : FeatureSlots) (inside nested : List ScopeO
     slots.clear inside nested = {
       parked := slots.parked.filter (!inside.contains ·.scope)
       heldMap := slots.heldMap.filter fun _ scope => !inside.contains scope
-      multiInstances := slots.multiInstances.filter (!inside.contains ·.scope)
+      multiInstanceMap := slots.multiInstanceMap.filter fun _ record => !inside.contains record.scope
       compensation := {
         retained := slots.compensation.retained.filter (!nested.contains ·.scope)
         runs := slots.compensation.runs.filter (!inside.contains ·.scope) }
@@ -122,5 +122,81 @@ theorem mem_heldList_insert {m : HeldMap} {k : OccurrenceId} {scope : ScopeOccur
   · rintro (rfl | ⟨found, apart⟩)
     · simp
     · rw [ite_eq_right fun same => apart (Std.LawfulEqCmp.eq_of_compare same).symm]; exact found
+
+/-! ## The Multi-Instance map -/
+
+theorem multiInstances_eq (slots : FeatureSlots) : slots.multiInstances = multiInstanceList slots.multiInstanceMap := rfl
+
+@[simp] theorem record_run (record : MultiInstanceRecord) (occurrence : OccurrenceId) :
+    (record.toRun occurrence).toRecord = record := by
+  simp only [MultiInstanceRecord.toRun, MultiInstanceRun.toRecord]
+
+@[simp] theorem run_record (run : MultiInstanceRun) : run.toRecord.toRun run.occurrence = run := by
+  simp only [MultiInstanceRecord.toRun, MultiInstanceRun.toRecord]
+
+/-- A record's run, field by field. -/
+theorem run_eq (record : MultiInstanceRecord) (occurrence : OccurrenceId) : record.toRun occurrence =
+    { scope := record.scope, element := record.element, occurrence, collection := record.collection
+      instances := record.instances, results := record.results } := by
+  simp only [MultiInstanceRecord.toRun]
+
+/-- The list view of a literal's map. -/
+@[simp] theorem multiInstances_mk (parked : List Parked) (heldMap : HeldMap) (multiInstanceMap : MultiInstanceMap)
+    (compensation : Compensations) (instances : List InstanceData) :
+    ({ parked, heldMap, multiInstanceMap, compensation, instances } : FeatureSlots).multiInstances =
+      multiInstanceList multiInstanceMap := rfl
+
+@[simp] theorem run_occurrence (record : MultiInstanceRecord) (occurrence : OccurrenceId) :
+    (record.toRun occurrence).occurrence = occurrence := by
+  simp only [MultiInstanceRecord.toRun]
+
+theorem mem_multiInstanceList {m : MultiInstanceMap} {run : MultiInstanceRun} :
+    run ∈ multiInstanceList m ↔ m[run.occurrence]? = some run.toRecord := by
+  simp only [multiInstanceList, List.mem_map]
+  constructor
+  · rintro ⟨⟨k, v⟩, inside, rfl⟩; exact Std.ExtTreeMap.mem_toList_iff_getElem?_eq_some.mp inside
+  · intro found; exact ⟨(run.occurrence, run.toRecord), Std.ExtTreeMap.mem_toList_iff_getElem?_eq_some.mpr found, rfl⟩
+
+/-- One run per body occurrence: the list view's body occurrences are the map's distinct keys. -/
+theorem multiInstanceList_nodup (m : MultiInstanceMap) : ((multiInstanceList m).map (·.occurrence)).Nodup := by
+  have keys : (multiInstanceList m).map (·.occurrence) = m.toList.map (·.1) := by
+    simp only [multiInstanceList, List.map_map]; rfl
+  rw [keys, List.Nodup, List.pairwise_map]
+  exact Std.ExtTreeMap.distinct_keys_toList.imp fun ne eq => ne (by rw [eq]; exact Std.ReflCmp.compare_self)
+
+@[simp] theorem multiInstanceList_empty : multiInstanceList (∅ : MultiInstanceMap) = [] := by simp [multiInstanceList]
+
+/-- A filter of the map filters the list view, in key order: what clearing reads. -/
+theorem multiInstanceList_filter_map (m : MultiInstanceMap) (f : OccurrenceId → MultiInstanceRecord → Bool) :
+    multiInstanceList (m.filter f) = (multiInstanceList m).filter fun run => f run.occurrence run.toRecord := by
+  simp only [multiInstanceList, Std.ExtTreeMap.toList_filter, List.filter_map]; rfl
+
+@[simp] theorem record_scope (run : MultiInstanceRun) : run.toRecord.scope = run.scope := by
+  simp only [MultiInstanceRun.toRecord]
+
+/-- Setting a run puts it in place of the one under its body occurrence's key. -/
+theorem mem_multiInstanceList_insert {m : MultiInstanceMap} {next run : MultiInstanceRun} :
+    run ∈ multiInstanceList (m.insert next.occurrence next.toRecord) ↔
+      run = next ∨ (run ∈ multiInstanceList m ∧ run.occurrence ≠ next.occurrence) := by
+  rw [mem_multiInstanceList, mem_multiInstanceList, Std.ExtTreeMap.getElem?_insert]
+  constructor
+  · intro found
+    split at found
+    · rename_i same
+      have key := Std.LawfulEqCmp.eq_of_compare same
+      have record := Option.some.inj found
+      rw [← run_record run, ← run_record next, ← key, record]
+      exact .inl rfl
+    · rename_i apart
+      exact .inr ⟨found, fun eq => apart (by rw [eq]; exact Std.ReflCmp.compare_self)⟩
+  · rintro (rfl | ⟨found, apart⟩)
+    · simp
+    · rw [ite_eq_right fun same => apart (Std.LawfulEqCmp.eq_of_compare same).symm]; exact found
+
+/-- The list view of one run's map is that run. -/
+@[simp] theorem mem_multiInstanceList_single {next run : MultiInstanceRun} :
+    run ∈ multiInstanceList ((∅ : MultiInstanceMap).insert next.occurrence next.toRecord) ↔ run = next := by
+  rw [mem_multiInstanceList_insert]
+  simp
 
 end Kernel.Laws.State

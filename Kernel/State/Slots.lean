@@ -69,6 +69,28 @@ structure MultiInstanceRun where
   results : List String := []
   deriving Repr
 
+/-- A running Multi-Instance Activity's record under its body occurrence's key (`MultiInstanceMap`): the
+`MultiInstanceRun` without the body occurrence, which the key holds, so one record per body occurrence holds by
+type. -/
+structure MultiInstanceRecord where
+  scope : ScopeOccurrenceId
+  element : ElementId
+  collection : Value
+  instances : List Iteration
+  /-- The effect-result names earlier sequential instances left (`MultiInstanceRun.results`). -/
+  results : List String := []
+  deriving Repr
+
+/-- The run of the body occurrence `occurrence` whose record is `record`. -/
+def MultiInstanceRecord.toRun (record : MultiInstanceRecord) (occurrence : OccurrenceId) : MultiInstanceRun :=
+  { scope := record.scope, element := record.element, occurrence, collection := record.collection
+    instances := record.instances, results := record.results }
+
+/-- A run's record under its body occurrence's key. -/
+def MultiInstanceRun.toRecord (run : MultiInstanceRun) : MultiInstanceRecord :=
+  { scope := run.scope, element := run.element, collection := run.collection, instances := run.instances
+    results := run.results }
+
 /-- A record a completed Sub-Process's record keeps (`Compensable.children`), flat: the `Compensable` it was, without a
 scope occurrence, which it takes only when its holder's handler or group begins, and its group key `group`, the
 completion numbers of the kept records it lies within, outermost first, `[]` for one its holder keeps directly. The
@@ -151,6 +173,15 @@ abbrev HeldMap := TreeMap OccurrenceId ScopeOccurrenceId compare
 it. -/
 def heldList (held : HeldMap) : List Held := held.toList.map fun (occurrence, scope) => { occurrence, scope }
 
+/-- The running Multi-Instance Activities, each its record under its body occurrence's key (DC21). Every reader looks
+a run up by its body occurrence (`MultiInstance.runOf?`, `Step.finishOf?`), filters or searches all of them; none
+takes an order from the map. -/
+abbrev MultiInstanceMap := TreeMap OccurrenceId MultiInstanceRecord compare
+
+/-- The runs of `runs` in key order, the list view the state codec writes; no reader takes an order from it. -/
+def multiInstanceList (runs : MultiInstanceMap) : List MultiInstanceRun :=
+  runs.toList.map fun (occurrence, record) => record.toRun occurrence
+
 /-- A process instance's own facts: its root scope occurrence, its business key and, for a called instance, the
 definition its Call bound, kept per instance so recovery never re-resolves it (PC-SCOPE-03, PC-MESSAGE-08). -/
 structure InstanceData where
@@ -166,13 +197,17 @@ structure InstanceData where
 structure FeatureSlots where
   parked : List Parked := []
   heldMap : HeldMap := ∅
-  multiInstances : List MultiInstanceRun := []
+  multiInstanceMap : MultiInstanceMap := ∅
   compensation : Compensations := {}
   instances : List InstanceData := []
   deriving Repr
 
 /-- The held occurrences in key order (`heldList`). -/
 abbrev FeatureSlots.held (slots : FeatureSlots) : List Held := heldList slots.heldMap
+
+/-- The running Multi-Instance Activities in key order (`multiInstanceList`). -/
+abbrev FeatureSlots.multiInstances (slots : FeatureSlots) : List MultiInstanceRun :=
+  multiInstanceList slots.multiInstanceMap
 
 /-- The scope occurrences a slot keeps alive. Every slot's own entry is an open occurrence or a child occurrence
 already, so only the join and held waits count here. One of the three places that enumerate the slots. -/
@@ -184,7 +219,7 @@ the three places that enumerate the slots. -/
 def FeatureSlots.clear (slots : FeatureSlots) (inside nested : List ScopeOccurrenceId) : FeatureSlots :=
   { parked := slots.parked.filter (!inside.contains ·.scope)
     heldMap := slots.heldMap.filter fun _ scope => !inside.contains scope
-    multiInstances := slots.multiInstances.filter (!inside.contains ·.scope)
+    multiInstanceMap := slots.multiInstanceMap.filter fun _ record => !inside.contains record.scope
     compensation := {
       retained := slots.compensation.retained.filter (!nested.contains ·.scope)
       runs := slots.compensation.runs.filter (!inside.contains ·.scope) }

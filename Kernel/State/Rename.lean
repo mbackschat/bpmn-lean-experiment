@@ -52,9 +52,8 @@ def renameSlots (slots : FeatureSlots) : FeatureSlots :=
   { parked := slots.parked.map fun parked =>
       { parked with occurrence := renameId r parked.occurrence, scope := renameScope r parked.scope }
     heldMap := slots.heldMap.foldl (fun renamed occurrence scope => renamed.insert (renameId r occurrence) (renameScope r scope)) ∅
-    multiInstances := slots.multiInstances.map fun run =>
-      { run with scope := renameScope r run.scope, occurrence := renameId r run.occurrence
-                 instances := run.instances.map (renameIteration r) }
+    multiInstanceMap := slots.multiInstanceMap.foldl (fun renamed occurrence record => renamed.insert (renameId r occurrence)
+      { record with scope := renameScope r record.scope, instances := record.instances.map (renameIteration r) }) ∅
     compensation := {
       retained := slots.compensation.retained.map (renameCompensable r)
       runs := slots.compensation.runs.map fun run =>

@@ -301,8 +301,7 @@ theorem orderJournal_placedLane (formed : WellFormed program state) (counted : C
     simpa using bare
   case runs =>
     intro run member standing
-    rw [compact_bodies ran] at member
-    obtain ⟨run, runIn, rfl⟩ := List.mem_map.mp member
+    obtain ⟨run, runIn, rfl⟩ := compact_bodies ran member
     have runPresent := present (held.issued run.scope (.inr (.inr (.inr (.inr ⟨run, runIn, rfl⟩))))) standing
     exact place (held.runs run runIn runPresent) runPresent
   case issued =>
@@ -326,8 +325,7 @@ theorem orderJournal_placedLane (formed : WellFormed program state) (counted : C
       obtain ⟨run, runIn, rfl⟩ := List.mem_map.mp member
       exact compact_scopeIssued ran counted' rooted
         (held.issued run.scope (.inr (.inr (.inr (.inl ⟨run, runIn, rfl, by simpa using pending⟩)))))
-    · rw [compact_bodies ran] at member
-      obtain ⟨run, runIn, rfl⟩ := List.mem_map.mp member
+    · obtain ⟨run, runIn, rfl⟩ := compact_bodies ran member
       exact compact_scopeIssued ran counted' rooted (held.issued run.scope (.inr (.inr (.inr (.inr ⟨run, runIn, rfl⟩)))))
   case waits =>
     intro w member o oMember same

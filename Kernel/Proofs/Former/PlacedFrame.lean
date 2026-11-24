@@ -280,10 +280,10 @@ theorem PlacedLane.deferred (refs : ReferencesPlaced program) (formed : WellForm
 
 /-- Multi-Instance runs anchored at their scope occurrences keep the lane. -/
 theorem PlacedLane.bodied (refs : ReferencesPlaced program) (formed : WellFormed program s) (lane : PlacedLane program s)
-    {runs : List MultiInstanceRun}
-    (anchored : ∀ run ∈ runs,
+    {runs : MultiInstanceMap}
+    (anchored : ∀ run ∈ multiInstanceList runs,
       Laws.Flow.Anchored (fun t => WellFormed program t ∧ Placing program t) program s run.element run.scope) :
-    PlacedLane program { s with slots := { s.slots with multiInstances := runs } } :=
+    PlacedLane program { s with slots := { s.slots with multiInstanceMap := runs } } :=
   lane.within formed rfl rfl rfl (.refl _) (fun _ member => .inl member) listKept listKept listKept listKept
     (fun run member => .inr ⟨fun stands => (anchored_placed refs formed lane ((anchored run member).mono
       (placing_held refs)) stands).same rfl fun _ inside => inside, anchored_issued refs formed lane (anchored run member)⟩)

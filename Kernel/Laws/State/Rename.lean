@@ -267,6 +267,7 @@ theorem renameSlots_id (slots : FeatureSlots) : renameSlots r slots = slots := b
     cases iteration <;> simp [renameIteration, renameScope_id same]
   cases slots
   simp [renameSlots, ids, compensable, resume, iteration, renameScope_id same, Keyed.rebuild_self]
+  exact Keyed.rebuild_self _
 
 end Identity
 
@@ -325,9 +326,8 @@ theorem renameSlots_eq (r : Issue → Issue) (slots : FeatureSlots) : renameSlot
     { parked := slots.parked.map fun parked =>
         { parked with occurrence := renameId r parked.occurrence, scope := renameScope r parked.scope }
       heldMap := slots.heldMap.foldl (fun renamed occurrence scope => renamed.insert (renameId r occurrence) (renameScope r scope)) ∅
-      multiInstances := slots.multiInstances.map fun run =>
-        { run with scope := renameScope r run.scope, occurrence := renameId r run.occurrence
-                   instances := run.instances.map (renameIteration r) }
+      multiInstanceMap := slots.multiInstanceMap.foldl (fun renamed occurrence record => renamed.insert (renameId r occurrence)
+        { record with scope := renameScope r record.scope, instances := record.instances.map (renameIteration r) }) ∅
       compensation := {
         retained := slots.compensation.retained.map (renameCompensable r)
         runs := slots.compensation.runs.map fun run =>
@@ -347,6 +347,18 @@ theorem renameSlots_held_of {r : Issue → Issue} {slots : FeatureSlots} {entry 
   rw [held_eq, renameSlots_eq, mem_heldList] at member
   obtain ⟨k, v, found, renamed⟩ := Keyed.rekey_getElem? member
   exact ⟨{ occurrence := k, scope := v }, mem_heldList.mpr found, by cases entry; simp_all⟩
+
+/-- Every running body of the renamed slots is one of `slots`, renamed. -/
+theorem renameSlots_bodies_of {r : Issue → Issue} {slots : FeatureSlots} {run : MultiInstanceRun}
+    (member : run ∈ (renameSlots r slots).multiInstances) :
+    ∃ old, old ∈ slots.multiInstances ∧
+      { old with scope := renameScope r old.scope, occurrence := renameId r old.occurrence
+                 instances := old.instances.map (renameIteration r) } = run := by
+  rw [multiInstances_eq, renameSlots_eq, mem_multiInstanceList] at member
+  obtain ⟨k, v, found, renamed⟩ := Keyed.rekey_getElem? member
+  refine ⟨v.toRun k, mem_multiInstanceList.mpr (by simpa using found), ?_⟩
+  rw [← run_record run, ← renamed.1, ← renamed.2]
+  simp [run_eq]
 
 theorem renameId_keep {r : Issue → Issue} (fixes : Fixes r) {id : OccurrenceId} (scope : renameScope r id.scope = id.scope)
     {m : Nat} (ordinal : id.ordinal = .committed m) : renameId r id = id := by

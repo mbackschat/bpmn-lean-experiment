@@ -33,16 +33,14 @@ open Kernel.Laws.State (Within)
 /-- Setting a body's slot record changes the Multi-Instance slot only. -/
 theorem setRun_eq (state : State) (next : MultiInstanceRun) :
     Feature.MultiInstance.setRun state next = { state with slots := { state.slots with
-      multiInstances := (Feature.MultiInstance.setRun state next).slots.multiInstances } } := by
+      multiInstanceMap := (Feature.MultiInstance.setRun state next).slots.multiInstanceMap } } := by
   unfold Feature.MultiInstance.setRun
   rfl
 
-/-- The records after setting `next`: `next` in place of each record of its occurrence, or added. -/
+/-- The records after setting `next`: `next`'s under its body occurrence's key, in place of the one there. -/
 theorem setRun_runs (state : State) (next : MultiInstanceRun) :
-    (Feature.MultiInstance.setRun state next).slots.multiInstances =
-      if state.slots.multiInstances.any (·.occurrence == next.occurrence) then
-        state.slots.multiInstances.map fun other => if other.occurrence == next.occurrence then next else other
-      else state.slots.multiInstances ++ [next] := by
+    (Feature.MultiInstance.setRun state next).slots.multiInstanceMap =
+      state.slots.multiInstanceMap.insert next.occurrence next.toRecord := by
   unfold Feature.MultiInstance.setRun
   rfl
 
@@ -614,14 +612,15 @@ theorem itemName_ne {ctx : Ctx} {loop : MultiInstance} {name : String} (data : l
 theorem found_mem {state : State} {body : OccurrenceId} {run : MultiInstanceRun}
     (found : Feature.MultiInstance.runOf? state body = some run) : run ∈ state.slots.multiInstances := by
   unfold Feature.MultiInstance.runOf? at found
-  exact List.mem_of_find?_eq_some found
+  obtain ⟨record, stored, rfl⟩ := Option.map_eq_some_iff.mp found
+  exact Laws.State.mem_multiInstanceList.mpr (by simpa using stored)
 
 /-- The record `MultiInstance.runOf?` finds for a body occurrence is that occurrence's. -/
 theorem found_occurrence {state : State} {body : OccurrenceId} {run : MultiInstanceRun}
     (found : Feature.MultiInstance.runOf? state body = some run) : run.occurrence = body := by
   unfold Feature.MultiInstance.runOf? at found
-  have same := List.find?_some found
-  exact beq_iff_eq.mp same
+  obtain ⟨record, _, rfl⟩ := Option.map_eq_some_iff.mp found
+  exact Laws.State.run_occurrence record body
 
 /-- A committed `Hooks.instanceCompleted` did what `Completes` says. -/
 theorem instanceCompleted_spec {ctx : Ctx} {body : OccurrenceId} {occurrence : Occurrence} {writes : List (String × Value)}
@@ -767,13 +766,14 @@ theorem beginInstances_signals (ctx : Ctx) (loop : MultiInstance) (items : List 
 What `Hooks.instanceCompleted` reads of CIB's counter locals (CIB-INT-0018). -/
 
 /-- The run `MultiInstance.runOf?` finds for a body occurrence is the one record of it. -/
-theorem runOf?_keyed {state : State} {body : OccurrenceId} {found run : MultiInstanceRun} (keyed : RunsKeyed state)
+theorem runOf?_keyed {state : State} {body : OccurrenceId} {found run : MultiInstanceRun} (_keyed : RunsKeyed state)
     (located : Feature.MultiInstance.runOf? state body = some found) (member : run ∈ state.slots.multiInstances)
     (owns : run.occurrence = body) : found = run := by
   unfold Feature.MultiInstance.runOf? at located
-  have inside := List.mem_of_find?_eq_some located
-  have same := List.find?_some located
-  exact Laws.State.nodup_map_eq keyed inside member ((beq_iff_eq.mp same).trans owns.symm)
+  obtain ⟨record, stored, rfl⟩ := Option.map_eq_some_iff.mp located
+  have mine := Laws.State.mem_multiInstanceList.mp member
+  rw [owns, stored] at mine
+  rw [← Laws.State.run_record run, ← Option.some.inj mine, owns]
 
 /-- `MultiInstance.holdsCounts` holding a count binds its counter local to it. -/
 theorem holdsCounts_lookup {ctx : Ctx} {variables : List (String × Value)} {name : String} {count : Nat}

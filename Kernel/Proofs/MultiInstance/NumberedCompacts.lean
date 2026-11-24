@@ -88,8 +88,7 @@ theorem orderJournal_numbered (formed : WellFormed program state) (counted : Cou
         (owned.occurrenceScopes o present) same
   obtain ⟨numbered, queued⟩ := held
   refine ⟨fun run member => ?_, ?_⟩
-  · rw [compact_bodies ran] at member
-    obtain ⟨run, runIn, rfl⟩ := List.mem_map.mp member
+  · obtain ⟨run, runIn, rfl⟩ := compact_bodies ran member
     refine ⟨?_, ?_⟩
     · intro first second firstScope secondScope lower one two earlier earlierIn later laterIn atFirst atSecond
         earlierBody laterBody
@@ -113,13 +112,11 @@ theorem orderJournal_numbered (formed : WellFormed program state) (counted : Cou
       deferred := ?deferred, above := ?above }
     case looped =>
       intro run member
-      rw [compact_bodies ran] at member
-      obtain ⟨run, runIn, rfl⟩ := List.mem_map.mp member
+      obtain ⟨run, runIn, rfl⟩ := compact_bodies ran member
       exact queued.looped run runIn
     case uncalled =>
       intro run member scope active entry entryIn named
-      rw [compact_bodies ran] at member
-      obtain ⟨run, runIn, rfl⟩ := List.mem_map.mp member
+      obtain ⟨run, runIn, rfl⟩ := compact_bodies ran member
       obtain ⟨slot, slotIn, rfl⟩ := renamed_active active
       obtain ⟨old, oldIn, rfl⟩ := compact_scope_eq ran entryIn
       have same := renameScope_apart counted' rooted (formed.settled.placed run runIn slot slotIn).1
@@ -127,8 +124,7 @@ theorem orderJournal_numbered (formed : WellFormed program state) (counted : Cou
       exact queued.uncalled run runIn slot slotIn old oldIn same.symm
     case continued =>
       intro run member o oIn continuation active
-      rw [compact_bodies ran] at member
-      obtain ⟨run, runIn, rfl⟩ := List.mem_map.mp member
+      obtain ⟨run, runIn, rfl⟩ := compact_bodies ran member
       obtain ⟨old, oldIn, rfl⟩ := compact_occurrence_eq ran oIn
       obtain ⟨slot, slotIn, same⟩ := renamed_active active
       have slotIs := inSlot run runIn slot slotIn old oldIn same.symm

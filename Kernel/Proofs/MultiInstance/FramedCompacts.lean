@@ -48,30 +48,6 @@ section Framed
 
 variable {schedule : BranchSchedule} {program : Program} {start state : State} {log : RunLog} {after : State}
 
-/-- **`RunsFramed.keyed` across the commit** (`RunsKeyed`, stated over its body): standing bodies' keys rename apart. -/
-theorem orderJournal_runsKeyed (formed : WellFormed program state) (counted : CountersFrom start state)
-    (batches : state.batchSignals = [] ∧ state.batchTokens = [] ∧ state.batchIntents = [])
-    (keys : ∀ occurrence ∈ state.occurrences, occurrence.id.scope = occurrence.scope)
-    (bodies : ∀ run ∈ state.slots.multiInstances, ∃ occurrence ∈ state.occurrences, occurrence.id = run.occurrence)
-    (keyed : (state.slots.multiInstances.map (·.occurrence)).Nodup)
-    (made : orderJournal schedule start (.ok (state, log)) = .ok after) :
-    (after.slots.multiInstances.map (·.occurrence)).Nodup := by
-  have ran := orderJournal_of made
-  have facts := ordered_facts log formed counted batches
-  have counted := facts.counted
-  have issued := facts.issued
-  have owned := facts.owned
-  have rooted := facts.rooted
-  rw [compact_bodies ran, List.map_map]
-  unfold List.Nodup at keyed ⊢
-  rw [List.pairwise_map] at keyed ⊢
-  refine keyed.imp_of_mem fun {a b} am bm apart same => apart ?_
-  obtain ⟨one, oneIn, oneId⟩ := bodies a am
-  obtain ⟨two, twoIn, twoId⟩ := bodies b bm
-  change renameId _ a.occurrence = renameId _ b.occurrence at same
-  rw [← oneId, ← twoId] at same ⊢
-  exact renamed_apart counted issued owned rooted keys (issued.occurrences one oneIn) twoIn same
-
 /-- **`RunFramed.owned` across the commit** (`Laws.MultiInstance.Owned`, its four fields stated over their bodies): the
 body occurrence, the body's and the instances' scope occurrences are renamed with the body. -/
 theorem orderJournal_runsOwned (formed : WellFormed program state) (counted : CountersFrom start state)
@@ -100,8 +76,7 @@ theorem orderJournal_runsOwned (formed : WellFormed program state) (counted : Co
   obtain ⟨H, history⟩ := historic_of issued rooted
   have fixes : Fixes (commitRenaming schedule start log (ordered log state)) := renameBy_fixes _
   intro run member
-  rw [compact_bodies ran] at member
-  obtain ⟨old, inside, rfl⟩ := List.mem_map.mp member
+  obtain ⟨old, inside, rfl⟩ := compact_bodies ran member
   obtain ⟨body, scope, instances, own⟩ := owned old inside
   refine ⟨?_, ?_, fun index scope' active => ?_, fun first second scope' one two => ?_⟩
   · obtain ⟨occurrence, present, links⟩ := body
@@ -145,8 +120,7 @@ theorem orderJournal_bodyOwns (formed : WellFormed program state) (counted : Cou
   have issued := facts.issued
   have rooted := facts.rooted
   intro run member entry entryIn named
-  rw [compact_bodies ran] at member
-  obtain ⟨old, inside, rfl⟩ := List.mem_map.mp member
+  obtain ⟨old, inside, rfl⟩ := compact_bodies ran member
   obtain ⟨original, originalIn, rfl⟩ := compact_scope_eq ran entryIn
   have same : original.id = old.scope := renameScope_apart counted rooted
     ((historic_of issued rooted).issued originalIn) (bodyScopes old inside) named
@@ -170,8 +144,7 @@ theorem orderJournal_instancesUnowned (formed : WellFormed program state) (count
   have issued := facts.issued
   have rooted := facts.rooted
   intro run member scope active entry entryIn named
-  rw [compact_bodies ran] at member
-  obtain ⟨old, inside, rfl⟩ := List.mem_map.mp member
+  obtain ⟨old, inside, rfl⟩ := compact_bodies ran member
   obtain ⟨original, held, rfl⟩ := renamed_active active
   obtain ⟨index, indexed⟩ := List.mem_iff_getElem?.mp held
   obtain ⟨slot, slotIn, slotId, -⟩ := instances old inside index original indexed
@@ -201,8 +174,7 @@ theorem orderJournal_instancesUnheld (formed : WellFormed program state) (counte
   have issued := facts.issued
   have rooted := facts.rooted
   intro run member scope active other otherIn held
-  rw [compact_bodies ran] at member
-  obtain ⟨old, inside, rfl⟩ := List.mem_map.mp member
+  obtain ⟨old, inside, rfl⟩ := compact_bodies ran member
   obtain ⟨original, activeOld, rfl⟩ := renamed_active active
   obtain ⟨index, indexed⟩ := List.mem_iff_getElem?.mp activeOld
   obtain ⟨slot, slotIn, slotId, -⟩ := instances old inside index original indexed
@@ -237,8 +209,7 @@ theorem orderJournal_shaped
         ∀ value, output = some value → ∀ items, run.collection = .stringList items → ∃ text, value = .string text := by
   have ran := orderJournal_of made
   intro run member loop looped
-  rw [compact_bodies ran] at member
-  obtain ⟨old, inside, rfl⟩ := List.mem_map.mp member
+  obtain ⟨old, inside, rfl⟩ := compact_bodies ran member
   obtain ⟨sequential, parallel, outputs⟩ := shaped old inside loop looped
   refine ⟨fun mode => ?_, fun mode slot slotIn waiting => ?_, fun output completed => ?_⟩
   · obtain ⟨filled, current, waiting, shape⟩ := sequential mode
@@ -336,8 +307,7 @@ theorem orderJournal_snapshots {programBefore : Program} {b : State} (formedBefo
   have owned := facts.owned
   have rooted := facts.rooted
   refine ⟨fun earlier member run runIn named => ?_, fun run runIn fresh => ?_⟩
-  · rw [compact_bodies ran] at runIn
-    obtain ⟨old, oldIn, rfl⟩ := List.mem_map.mp runIn
+  · obtain ⟨old, oldIn, rfl⟩ := compact_bodies ran runIn
     obtain ⟨body, bodyIn, bodyId⟩ := bodies old oldIn
     have same : earlier.occurrence = old.occurrence := by
       rw [← bodyId]
@@ -353,8 +323,7 @@ theorem orderJournal_snapshots {programBefore : Program} {b : State} (formedBefo
     change (old.instances.map _)[index]? = _
     rw [List.getElem?_map, stays index output filled]
     simp
-  · rw [compact_bodies ran] at runIn
-    obtain ⟨old, oldIn, rfl⟩ := List.mem_map.mp runIn
+  · obtain ⟨old, oldIn, rfl⟩ := compact_bodies ran runIn
     have count := generated old oldIn fun earlier member same => fresh earlier member (by
       change earlier.occurrence = renameId _ old.occurrence
       rw [← same, before_fixed formedBefore committed member])

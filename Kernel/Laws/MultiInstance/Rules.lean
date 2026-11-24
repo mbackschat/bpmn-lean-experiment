@@ -96,9 +96,14 @@ occurrence entered afresh for its handler (`Compensation.beginHandler`), so rele
 def InstancesUnheld (s : State) (run : MultiInstanceRun) : Prop :=
   ∀ scope, Iteration.active scope ∈ run.instances → ∀ other ∈ s.slots.compensation.runs, scope ∉ other.running.map (·.1)
 
-/-- One running body per body occurrence: the slot record of an occurrence is the one `MultiInstance.runOf?` finds. -/
+/-- One running body per body occurrence: the slot record of an occurrence is the one `MultiInstance.runOf?` finds. It
+holds of every state (`runsKeyed`), since the records are keyed by their body occurrence. -/
 def RunsKeyed (s : State) : Prop :=
   (s.slots.multiInstances.map (·.occurrence)).Nodup
+
+/-- The list view's body occurrences are its map's keys, which are distinct. -/
+theorem runsKeyed (s : State) : RunsKeyed s :=
+  Laws.State.multiInstanceList_nodup _
 
 /-- The instances of one body are numbered in item order: of two active slots, the instance in the earlier slot's scope
 occurrence has the lower activation. An instance is an occurrence carrying the continuation `.multiInstance` of the

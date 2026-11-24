@@ -356,9 +356,11 @@ theorem compact_occurrence_eq (ran : compact schedule start log s = .ok t) {occu
   exact ⟨old, inside, rfl⟩
 
 /-- The running bodies a commit leaves: the settled state's, renamed. -/
-theorem compact_bodies (ran : compact schedule start log s = .ok t) :
-    t.slots.multiInstances = s.slots.multiInstances.map (renamedBody (commitRenaming schedule start log s)) := by
-  rw [compact_slots ran, renameSlots_eq]
+theorem compact_bodies (ran : compact schedule start log s = .ok t) {run : MultiInstanceRun}
+    (member : run ∈ t.slots.multiInstances) :
+    ∃ old, old ∈ s.slots.multiInstances ∧ renamedBody (commitRenaming schedule start log s) old = run := by
+  rw [compact_slots ran] at member
+  exact renameSlots_bodies_of member
 
 /-- The compensation slot a commit leaves: the settled state's, renamed. -/
 theorem compact_compensation (ran : compact schedule start log s = .ok t) :
@@ -697,8 +699,7 @@ theorem compact_slotsSettled (ran : compact schedule start log s = .ok t) (count
       obtain ⟨old, inside, rfl⟩ := List.mem_map.mp member
       exact renamedSettled (settled.parked old inside)
     bodies := fun run member => by
-      rw [slots] at member
-      obtain ⟨old, inside, rfl⟩ := List.mem_map.mp member
+      obtain ⟨old, inside, rfl⟩ := compact_bodies ran member
       exact renamedSettled (settled.bodies old inside)
     resumed := fun run member occurrence leave resume => by
       rw [slots] at member
@@ -713,8 +714,7 @@ theorem compact_slotsSettled (ran : compact schedule start log s = .ok t) (count
       | group => simp at same
     queued := fun _ _ _ _ _ _ queued => by rw [quiet.1] at queued; cases queued
     placed := fun run member scope active => by
-      rw [slots] at member
-      obtain ⟨old, inside, rfl⟩ := List.mem_map.mp member
+      obtain ⟨old, inside, rfl⟩ := compact_bodies ran member
       obtain ⟨iteration, was, same⟩ := List.mem_map.mp active
       cases iteration with
       | active original =>

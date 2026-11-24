@@ -403,8 +403,7 @@ theorem runsFramed_stepAlongside (program : Program) : StepAlongside program (Ru
     have unheld := orderJournal_instancesUnheld formed counted batches
       (fun run member => (framed run member).owned.instanceScopes) (fun run member => (framed run member).unheld) made
     have shaped := orderJournal_shaped (program := program) (fun run member => (framed run member).shaped) made
-    refine ⟨orderJournal_runsKeyed formed counted batches keys (fun run member =>
-      (framed run member).owned.body.imp fun _ found => ⟨found.1, found.2.1⟩) held.keyed made, fun run member => ?_⟩
+    refine ⟨Laws.MultiInstance.runsKeyed _, fun run member => ?_⟩
     obtain ⟨body, bodyScope, instanceScopes, ownScopes⟩ := owned run member
     exact ⟨⟨body, bodyScope, instanceScopes, ownScopes⟩, shaped run member, owns run member, unowned run member,
       unheld run member⟩
