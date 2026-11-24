@@ -6,13 +6,17 @@
  */
 import { assertNever, compareStrings, mergeSort, programPublicId, type ElementId, type Program } from "./il/types.js";
 import {
+  breadthUnitKey,
+  issueNotAfter,
   scopeOccurrenceParent,
+  scopeParent,
   ActivationRole,
   InstanceStatus,
   instanceOf,
   occurrenceOf,
   root,
   type Binding,
+  type Issue,
   type ScopeOccurrence,
   type ScopeOccurrenceId,
   type State, ownVariables,
@@ -93,13 +97,31 @@ export interface PublishedScope {
   readonly variables: readonly Binding[];
 }
 
-/** Canonical order: process instance, element (none first), activation, role. */
-function publishedScopeLe(left: PublishedScope, right: PublishedScope): boolean {
+/** A published scope with the scope occurrence it was read from, whose depth and order position break a tie. */
+type Ranked = Readonly<{ published: PublishedScope; depth: number; position: Issue }>;
+
+/** The number of scope occurrences enclosing `scope`, the root's included (Lean's `segments.length`). */
+function scopeDepth(scope: ScopeOccurrenceId): number {
+  let depth = 0;
+  for (let at = scopeParent(scope); at !== null; at = scopeParent(at)) depth += 1;
+  return depth;
+}
+
+/**
+ * Canonical order: process instance, element (none first), activation, role. Two scope occurrences may publish one
+ * identity (a compensated Multi-Instance body's restored context and its instance's), so a tie is broken by the scope
+ * tree, the enclosing one first, then by order position (DC25), as `hostView` orders open waits; never by the order the
+ * state stores them in (KD7).
+ */
+function publishedScopeLe(state: State, left: Ranked, right: Ranked): boolean {
+  const [a, b] = [left.published, right.published];
   const name = (scope: PublishedScope): string => scope.element ?? "";
-  if (left.processInstanceId !== right.processInstanceId) return compareStrings(left.processInstanceId, right.processInstanceId) < 0;
-  if (name(left) !== name(right)) return compareStrings(name(left), name(right)) < 0;
-  if (left.activation !== right.activation) return left.activation < right.activation;
-  return scopeRoleRank(left.role) <= scopeRoleRank(right.role);
+  if (a.processInstanceId !== b.processInstanceId) return compareStrings(a.processInstanceId, b.processInstanceId) < 0;
+  if (name(a) !== name(b)) return compareStrings(name(a), name(b)) < 0;
+  if (a.activation !== b.activation) return a.activation < b.activation;
+  if (a.role !== b.role) return scopeRoleRank(a.role) < scopeRoleRank(b.role);
+  if (left.depth !== right.depth) return left.depth < right.depth;
+  return issueNotAfter(breadthUnitKey, state.issued, left.position, right.position);
 }
 
 function ownedByBody(state: State, scope: ScopeOccurrenceId): boolean {
@@ -134,10 +156,13 @@ function publishedScope(state: State, scope: ScopeOccurrence, entries: readonly 
 /** Every variable scope other than the instance root that holds a variable, by public element identifiers, in
  * canonical order. */
 export function publishedScopes(program: Program, state: State): readonly PublishedScope[] {
-  const published = state.scopes.flatMap((scope) => {
+  const published = state.scopes.flatMap((scope): Ranked[] => {
     const entries = ownVariables(state, scope.id);
     const found = entries.length === 0 ? null : publishedScope(state, scope, entries);
-    return found === null ? [] : [{ ...found, element: found.element === null ? null : programPublicId(program, found.element) }];
+    return found === null ? [] : [{
+      published: { ...found, element: found.element === null ? null : programPublicId(program, found.element) },
+      depth: scopeDepth(scope.id), position: scope.position,
+    }];
   });
-  return mergeSort(published, publishedScopeLe);
+  return mergeSort(published, (left, right) => publishedScopeLe(state, left, right)).map((ranked) => ranked.published);
 }

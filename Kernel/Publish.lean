@@ -59,13 +59,25 @@ structure PublishedScope where
   role : ScopeRole
   variables : List (String × Value)
 
-/-- Canonical order: process instance, element (none first), activation, role. -/
-def PublishedScope.le (left right : PublishedScope) : Bool :=
+/-- A published scope with the scope occurrence it was read from, whose depth and order position break a tie. -/
+structure RankedScope where
+  published : PublishedScope
+  depth : Nat
+  position : Issue
+
+/-- Canonical order: process instance, element (none first), activation, role. Two scope occurrences may publish one
+identity (a compensated Multi-Instance body's restored context and its instance's), so a tie is broken by the scope
+tree, the enclosing one first, then by order position (DC25), as `Host.hostView` orders open waits; never by the order
+the state stores them in (KD7). -/
+def PublishedScope.le (left right : RankedScope) : Bool :=
+  let (a, b) := (left.published, right.published)
   let name (scope : PublishedScope) := (scope.element.map (·.value)).getD ""
-  if left.processInstanceId != right.processInstanceId then decide (left.processInstanceId < right.processInstanceId)
-  else if name left != name right then decide (name left < name right)
-  else if left.activation != right.activation then decide (left.activation < right.activation)
-  else decide (scopeRoleRank left.role ≤ scopeRoleRank right.role)
+  if a.processInstanceId != b.processInstanceId then decide (a.processInstanceId < b.processInstanceId)
+  else if name a != name b then decide (name a < name b)
+  else if a.activation != b.activation then decide (a.activation < b.activation)
+  else if scopeRoleRank a.role != scopeRoleRank b.role then decide (scopeRoleRank a.role < scopeRoleRank b.role)
+  else if left.depth != right.depth then decide (left.depth < right.depth)
+  else Issue.notAfter UnitKey.breadth.val left.position right.position
 
 def ownedByBody (state : State) (scope : ScopeOccurrenceId) : Bool :=
   (((state.scopes.find? (·.id == scope)).bind (·.occurrence)).bind state.occurrence?).any
@@ -91,10 +103,11 @@ def publishedScope (state : State) (scope : ScopeOccurrence) (variables : List (
 /-- Every variable scope other than the instance root that holds a variable, by public element identifiers, in
 canonical order. -/
 def publishedScopes (program : Program) (state : State) : List PublishedScope :=
-  (state.scopes.filterMap fun scope =>
+  ((state.scopes.filterMap fun scope =>
     match state.ownVariables scope.id with
     | [] => none
     | entries => (publishedScope state scope entries).map fun published =>
-      { published with element := published.element.map program.publicId }).mergeSort PublishedScope.le
+      { published := { published with element := published.element.map program.publicId }
+        depth := scope.id.segments.length, position := scope.position }).mergeSort PublishedScope.le).map (·.published)
 
 end Kernel.Publish
