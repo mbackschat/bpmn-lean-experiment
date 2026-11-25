@@ -524,7 +524,8 @@ theorem named_resume_rejected (flow : FlowId) (thrown : OccurrenceRef) :
 /-- A retained compensation record of the root process inside a called instance breaks `PlacedLane.records`. -/
 theorem misplaced_record_rejected :
     ¬ PlacedLane { program with elements := [] }
-      (placedCompensating definition { retained := [{ subject := ⟨"A"⟩, handler := none, scope := calledKey }] }) :=
+      (placedCompensating definition { retained := [{ subject := ⟨"A"⟩, handler := none, scope := calledKey
+                                                      occurrence := { processInstanceId := "I", element := ⟨"A"⟩, activation := 1 } }] }) :=
   fun lane => placed_misplaced (definition := definition)
     (lane.records _ (List.mem_singleton_self _) (placed_present definition) ⟨"A"⟩
       (by simp [recordElements]))
@@ -533,7 +534,8 @@ theorem misplaced_record_rejected :
 /-- A run's pending record of the root process inside a called instance breaks `PlacedLane.pending`. -/
 theorem misplaced_pending_rejected (thrown : OccurrenceRef) :
     ¬ PlacedLane { program with elements := [] } (placedCompensating definition
-        { runs := [placedRun thrown calledKey [{ subject := ⟨"A"⟩, handler := none, scope := calledKey }] none] }) :=
+        { runs := [placedRun thrown calledKey [{ subject := ⟨"A"⟩, handler := none, scope := calledKey
+                                                 occurrence := { processInstanceId := "I", element := ⟨"A"⟩, activation := 1 } }] none] }) :=
   fun lane => placed_misplaced (definition := definition)
     (lane.pending _ (List.mem_singleton_self _) (placed_present definition) _ (List.mem_singleton_self _) ⟨"A"⟩
       (by simp [recordElements]))

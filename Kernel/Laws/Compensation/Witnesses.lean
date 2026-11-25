@@ -27,8 +27,12 @@ def outer : ScopeOccurrenceId := .ofSegments []
 /-- The context entered in `outer` for `B`'s handler. -/
 def inner : ScopeOccurrenceId := .ofSegments [{ element := ⟨"UndoB"⟩, ordinal := 0 }]
 
-def recordA : Compensable := { subject := subjectA, handler := some ⟨"UndoA"⟩, scope := outer, completion := 1 }
-def recordB : Compensable := { subject := subjectB, handler := some ⟨"UndoB"⟩, scope := outer, completion := 2 }
+def recordA : Compensable :=
+  { subject := subjectA, handler := some ⟨"UndoA"⟩, scope := outer, completion := 1
+    occurrence := { processInstanceId := "I", element := subjectA, activation := 1 } }
+def recordB : Compensable :=
+  { subject := subjectB, handler := some ⟨"UndoB"⟩, scope := outer, completion := 2
+    occurrence := { processInstanceId := "I", element := subjectB, activation := 1 } }
 def innerRecord : Compensable := { recordB with scope := inner }
 
 def flowAB (sources : List ElementId) (target : ElementId) : Bool := sources.contains subjectA && target == subjectB
@@ -124,7 +128,9 @@ def begun : State := { instanceId := "p", slots := { compensation := { runs := [
 after the first trigger. -/
 
 def subjectC : ElementId := ⟨"C"⟩
-def recordC : Compensable := { subject := subjectC, handler := some ⟨"UndoC"⟩, scope := outer, completion := 3 }
+def recordC : Compensable :=
+  { subject := subjectC, handler := some ⟨"UndoC"⟩, scope := outer, completion := 3
+    occurrence := { processInstanceId := "I", element := subjectC, activation := 1 } }
 def secondTrigger : OccurrenceRef := { trigger with activation := 2 }
 def second : CompensationRun := { trigger := secondTrigger, scope := outer, pending := [recordC], leave := none, resume := none }
 def secondBegun : CompensationRun :=

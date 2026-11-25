@@ -111,11 +111,9 @@ def publishedScope (state : State) (scope : ScopeOccurrence) (variables : List (
   | none, some element, none =>
     match state.slots.compensation.restoredIn? scope.id with
     | some record =>
-      match record.occurrence with
-      | some subject =>
-        .ok (some { processInstanceId := subject.processInstanceId, element := some subject.element
-                    activation := subject.activation, role := contextRole subject.role, variables })
-      | none => .error "published-context-without-subject"
+      let subject := record.occurrence
+      .ok (some { processInstanceId := subject.processInstanceId, element := some subject.element
+                  activation := subject.activation, role := contextRole subject.role, variables })
     | none =>
       if !scope.parent.any (ownedByBody state) then .error "published-scope-unnamed"
       else match state.occurrences.find? fun occurrence => occurrence.scope == scope.id && occurrence.element == element with

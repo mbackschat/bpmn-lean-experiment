@@ -175,7 +175,6 @@ function publishedScope(state: State, scope: ScopeOccurrence, entries: readonly 
   const record = compensationsRestoredIn(state.slots.compensation, scope.id);
   if (record !== null) {
     const subject = record.occurrence;
-    if (subject === null) return unnamed("published-context-without-subject");
     return named({
       processInstanceId: subject.processInstanceId, element: subject.element, activation: subject.activation,
       role: contextRole(subject.role), variables: entries,

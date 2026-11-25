@@ -157,7 +157,8 @@ theorem instances_unheld : InstancesUnheld entered running := fun _ _ _ member =
 
 def heldFirst : CompensationRun :=
   { trigger := ⟨"p", review, 1⟩, scope := bodyScope, pending := [], leave := none, resume := none
-    running := [(firstScope, { subject := review, handler := none, scope := bodyScope })] }
+    running := [(firstScope, { subject := review, handler := none, scope := bodyScope
+                               occurrence := { processInstanceId := "I", element := review, activation := 1 } })] }
 
 /-- A compensation run whose handler runs in an instance's scope occurrence breaks `InstancesUnheld`. -/
 theorem held_instance_rejected :

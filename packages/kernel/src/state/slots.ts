@@ -103,7 +103,7 @@ export interface MultiInstanceRun {
 export interface CompensableChild {
   readonly subject: ElementId;
   readonly handler: ElementId | null;
-  readonly occurrence: OccurrenceKey | null;
+  readonly occurrence: OccurrenceKey;
   readonly completion: number;
   readonly closure: number;
   readonly snapshot: Variables;
@@ -125,7 +125,7 @@ export interface Compensable {
   readonly subject: ElementId;
   readonly handler: ElementId | null;
   readonly scope: ScopeOccurrenceId;
-  readonly occurrence: OccurrenceKey | null;
+  readonly occurrence: OccurrenceKey;
   readonly completion: number;
   readonly closure: number;
   readonly snapshot: Variables;

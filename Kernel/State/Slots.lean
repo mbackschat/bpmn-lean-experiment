@@ -105,7 +105,7 @@ key, not a nested list, says which records a begun record keeps in turn, so no s
 structure CompensableChild where
   subject : ElementId
   handler : Option ElementId
-  occurrence : Option OccurrenceKey := none
+  occurrence : OccurrenceKey
   completion : Nat := 0
   closure : Nat := 0
   snapshot : Variables := ∅
@@ -126,7 +126,7 @@ structure Compensable where
   subject : ElementId
   handler : Option ElementId
   scope : ScopeOccurrenceId
-  occurrence : Option OccurrenceKey := none
+  occurrence : OccurrenceKey
   completion : Nat := 0
   closure : Nat := 0
   snapshot : Variables := ∅

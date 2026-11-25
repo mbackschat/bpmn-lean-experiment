@@ -175,7 +175,9 @@ def unissuedScope : ScopeOccurrenceId := rootScope.child thrower 0
 /-- The first occurrence of `T` in a scope occurrence. -/
 def throwerIn (scope : ScopeOccurrenceId) : OccurrenceId := { scope, element := thrower, ordinal := 0 }
 
-def recordA : Compensable := { subject := subjectA, handler := some ⟨"UndoA"⟩, scope := rootScope, completion := 1 }
+def recordA : Compensable :=
+  { subject := subjectA, handler := some ⟨"UndoA"⟩, scope := rootScope, completion := 1
+    occurrence := { processInstanceId := "I", element := subjectA, activation := 1 } }
 def thrownBy : OccurrenceRef := { processInstanceId := "p", element := thrower, activation := 1 }
 def pendingRun : CompensationRun := { trigger := thrownBy, scope := rootScope, pending := [recordA], leave := none, resume := none }
 

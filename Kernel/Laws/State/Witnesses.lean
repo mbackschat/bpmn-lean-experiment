@@ -283,7 +283,8 @@ def subTrigger : OccurrenceRef := { processInstanceId := "p", element := ⟨"Sub
 /-- A compensation run in `scope` whose one handler runs in the context `subScope`. -/
 def handlerRun (scope : ScopeOccurrenceId) : CompensationRun :=
   { trigger := subTrigger, scope, pending := [], leave := none, resume := none,
-    running := [(subScope, { subject := ⟨"Sub"⟩, handler := some ⟨"Undo"⟩, scope := processRoot })] }
+    running := [(subScope, { subject := ⟨"Sub"⟩, handler := some ⟨"Undo"⟩, scope := processRoot
+                             occurrence := { processInstanceId := "I", element := ⟨"Sub"⟩, activation := 1 } })] }
 
 /-- A handler context standing below another scope occurrence than its run's breaks `RunPlaced`. -/
 theorem misplaced_handler_rejected (kind : OpenKind) : ¬ RunPlaced (sample kind) (handlerRun subScope) := fun placed => by

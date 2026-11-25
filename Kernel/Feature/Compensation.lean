@@ -100,7 +100,7 @@ def completed (ctx : Ctx) (occurrence : Occurrence) (state : State) : Outcome :=
       let iteration := if isInstance ctx occurrence state then locals occurrence.scope else ∅
       let snapshot := if inside then iteration.foldl (fun kept name value => kept.insertIfNew name value) own else ∅
       let record : Compensable :=
-        { subject := occurrence.element, handler, scope := target, occurrence := some (state.keyOf occurrence), completion,
+        { subject := occurrence.element, handler, scope := target, occurrence := state.keyOf occurrence, completion,
           closure := state.completionBase, snapshot, children := inner.flatMap keptRecords }
       .ok (store state { compensation with retained := outer ++ [record] })
 
