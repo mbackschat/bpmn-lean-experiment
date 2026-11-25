@@ -13,8 +13,10 @@ import {
 import { EvaluationTag, type Evaluation } from "../../hooks.js";
 import type { EvalContext } from "../../state.js";
 import {
-  Carrier, JValTag, bool, dotEe, double, elError, fail, fromValue, integer, javaTrim, long, nullValue, ok,
-  portable, siteValue, stopped, text, toBool, toDecimal, toLong, toText, unsupported, type Decimal, type Eval, type JVal,
+  Carrier, EqualClassTag, JValTag, NumberClass, OrderClassTag, bool, deciding, dotEe, double, elError, equalClass,
+  equalRank, fail, fromValue, integer, isList, isMap, isNull, javaTrim, long, nullValue, numberClass, numberRank, ok,
+  orderClass, orderRank, portable, siteValue, stopped, text, toBool, toDecimal, toLong, toText, unsupported,
+  type Decimal, type Eval, type JVal,
 } from "./juel/coercion.js";
 
 /** Evaluate a JUEL node table against the context's variables, innermost binding first. */
@@ -26,7 +28,7 @@ export function evaluateJuel(context: EvalContext, nodes: readonly JuelNode[]): 
       ? { tag: EvaluationTag.Unsupported, code: result.stop.code }
       : { tag: EvaluationTag.Failure, code: result.stop.code };
   }
-  const value = context.domainChecked === false ? siteValue(result.value) : portable(result.value);
+  const value = context.domainChecked === false ? siteValue(result.value) : portable(context.bounds, result.value);
   return value === null
     // dynamic-only: whether a result is portable depends on the run's data.
     ? { tag: EvaluationTag.Unsupported, code: "juel.resultOutsideDomain" }
@@ -71,22 +73,22 @@ function node(context: EvalContext, nodes: readonly JuelNode[], at: number): Eva
       return ok(text(current.value));
     case JuelNodeTag.Identifier: {
       const found = context.variables.find(([name]) => name === current.name);
-      return found === undefined ? fail("unknown-variable") : ok(fromValue(found[1]));
+      return found === undefined ? fail("unknown-variable") : fromValue(found[1]);
     }
     case JuelNodeTag.Function:
       return unsupported("expression.juel.function");
     case JuelNodeTag.Dot: {
       const base = sub(current.base);
       if (!base.ok) return base;
-      return base.value.tag === JValTag.Null ? ok(nullValue) : property(base.value, text(current.property));
+      return isNull(base.value) ? ok(nullValue) : property(base.value, text(current.property));
     }
     case JuelNodeTag.Bracket: {
       const base = sub(current.base);
       if (!base.ok) return base;
-      if (base.value.tag === JValTag.Null) return ok(nullValue);
+      if (isNull(base.value)) return ok(nullValue);
       const name = sub(current.property);
       if (!name.ok) return name;
-      return name.value.tag === JValTag.Null ? ok(nullValue) : property(base.value, name.value);
+      return isNull(name.value) ? ok(nullValue) : property(base.value, name.value);
     }
     case JuelNodeTag.Call:
       return methodCall(current.payload, sub);
@@ -139,32 +141,49 @@ const multiplyDecimal = (left: Decimal, right: Decimal): Decimal => [left[0] * r
 function arithmetic(
   onDecimal: (left: Decimal, right: Decimal) => Decimal, onLong: (left: bigint, right: bigint) => bigint, left: JVal, right: JVal,
 ): Eval<JVal> {
-  if (left.tag === JValTag.Null && right.tag === JValTag.Null) return ok(long(0n));
-  if (left.tag === JValTag.Decimal || right.tag === JValTag.Decimal) {
-    const a = toDecimal(left);
-    if (!a.ok) return stopped(a);
-    const b = toDecimal(right);
-    if (!b.ok) return stopped(b);
-    const [coefficient, scale] = onDecimal(a.value, b.value);
-    return ok({ tag: JValTag.Decimal, coefficient, scale });
+  const decider = deciding(numberRank, numberClass(left), numberClass(right));
+  switch (decider) {
+    case NumberClass.Absent:
+      return ok(long(0n));
+    case NumberClass.BigDecimal: {
+      const a = toDecimal(left);
+      if (!a.ok) return stopped(a);
+      const b = toDecimal(right);
+      if (!b.ok) return stopped(b);
+      const [coefficient, scale] = onDecimal(a.value, b.value);
+      return ok({ tag: JValTag.Decimal, coefficient, scale });
+    }
+    case NumberClass.Double:
+      return double(left, right);
+    case NumberClass.Long: {
+      const a = toLong(left);
+      if (!a.ok) return stopped(a);
+      const b = toLong(right);
+      if (!b.ok) return stopped(b);
+      return ok(long(onLong(a.value, b.value)));
+    }
   }
-  if (dotEe(left) || dotEe(right)) return double(left, right);
-  const a = toLong(left);
-  if (!a.ok) return stopped(a);
-  const b = toLong(right);
-  if (!b.ok) return stopped(b);
-  return ok(long(onLong(a.value, b.value)));
+  return assertNever(decider);
 }
 
 function remainder(left: JVal, right: JVal): Eval<JVal> {
-  if (left.tag === JValTag.Null && right.tag === JValTag.Null) return ok(long(0n));
-  if (left.tag === JValTag.Decimal || right.tag === JValTag.Decimal || dotEe(left) || dotEe(right)) return double(left, right);
-  const a = toLong(left);
-  if (!a.ok) return stopped(a);
-  const b = toLong(right);
-  if (!b.ok) return stopped(b);
-  // `ArithmeticException`, which no EL resolver wraps (`NumberOperations.java:141`).
-  return b.value === 0n ? fail("juel.arithmetic") : ok(long(a.value % b.value));
+  const decider = deciding(numberRank, numberClass(left), numberClass(right));
+  switch (decider) {
+    case NumberClass.Absent:
+      return ok(long(0n));
+    case NumberClass.BigDecimal:
+    case NumberClass.Double:
+      return double(left, right);
+    case NumberClass.Long: {
+      const a = toLong(left);
+      if (!a.ok) return stopped(a);
+      const b = toLong(right);
+      if (!b.ok) return stopped(b);
+      // `ArithmeticException`, which no EL resolver wraps (`NumberOperations.java:141`).
+      return b.value === 0n ? fail("juel.arithmetic") : ok(long(a.value % b.value));
+    }
+  }
+  return assertNever(decider);
 }
 
 function negate(value: JVal): Eval<JVal> {
@@ -223,40 +242,47 @@ function unary(op: JuelUnary, value: JVal): Eval<JVal> {
   return assertNever(op);
 }
 
-const isCollection = (value: JVal): boolean => value.tag === JValTag.List || value.tag === JValTag.Map;
-
 /** `BooleanOperations.lt0`'s order of `left` against `right` (−1, 0, 1), both non-null. */
 function order(left: JVal, right: JVal): Eval<number> {
-  if (left.tag === JValTag.Decimal || right.tag === JValTag.Decimal) {
-    const a = toDecimal(left);
-    if (!a.ok) return stopped(a);
-    const b = toDecimal(right);
-    return b.ok ? ok(decimalCompare(a.value, b.value)) : stopped(b);
+  const [leftClass, rightClass] = [orderClass(left), orderClass(right)];
+  const decider = deciding(orderRank, leftClass, rightClass);
+  switch (decider.tag) {
+    case OrderClassTag.BigDecimal: {
+      const a = toDecimal(left);
+      if (!a.ok) return stopped(a);
+      const b = toDecimal(right);
+      return b.ok ? ok(decimalCompare(a.value, b.value)) : stopped(b);
+    }
+    case OrderClassTag.Long: {
+      const a = toLong(left);
+      if (!a.ok) return stopped(a);
+      const b = toLong(right);
+      return b.ok ? ok(a.value < b.value ? -1 : a.value > b.value ? 1 : 0) : stopped(b);
+    }
+    case OrderClassTag.Text: {
+      const a = toText(left);
+      if (!a.ok) return stopped(a);
+      const b = toText(right);
+      // JavaScript compares strings by UTF-16 code unit, as `String.compareTo` does.
+      return b.ok ? ok(a.value < b.value ? -1 : a.value > b.value ? 1 : 0) : stopped(b);
+    }
+    case OrderClassTag.Boolean:
+    case OrderClassTag.Incomparable:
+      if (leftClass.tag === OrderClassTag.Boolean && rightClass.tag === OrderClassTag.Boolean) {
+        return ok(Number(leftClass.value) - Number(rightClass.value));
+      }
+      // A Boolean against a List or Map is a `ClassCastException`; two collections are no `Comparable`.
+      return fail(elError);
   }
-  if (left.tag === JValTag.Int || right.tag === JValTag.Int) {
-    const a = toLong(left);
-    if (!a.ok) return stopped(a);
-    const b = toLong(right);
-    return b.ok ? ok(a.value < b.value ? -1 : a.value > b.value ? 1 : 0) : stopped(b);
-  }
-  if (left.tag === JValTag.String || right.tag === JValTag.String) {
-    const a = toText(left);
-    if (!a.ok) return stopped(a);
-    const b = toText(right);
-    // JavaScript compares strings by UTF-16 code unit, as `String.compareTo` does.
-    return b.ok ? ok(a.value < b.value ? -1 : a.value > b.value ? 1 : 0) : stopped(b);
-  }
-  if (left.tag === JValTag.Bool && right.tag === JValTag.Bool) return ok(Number(left.value) - Number(right.value));
-  // A Boolean against a List or Map is a `ClassCastException`; two collections are no `Comparable`.
-  return fail(elError);
+  return assertNever(decider);
 }
 
 /** `<`, `>`, `<=` or `>=`: `inclusive` answers two nulls, `holds` reads the order of two non-null operands. */
 function relational(inclusive: boolean, holds: (sign: number) => boolean, left: JVal, right: JVal): Eval<JVal> {
   // dynamic-only: Java answers two collections by reference identity first, which values do not have.
-  if (left.tag === right.tag && isCollection(left)) return unsupported("juel.identity");
-  if (left.tag === JValTag.Null && right.tag === JValTag.Null) return ok(bool(inclusive));
-  if (left.tag === JValTag.Null || right.tag === JValTag.Null) return ok(bool(false));
+  if ((isList(left) && isList(right)) || (isMap(left) && isMap(right))) return unsupported("juel.identity");
+  if (isNull(left) && isNull(right)) return ok(bool(inclusive));
+  if (isNull(left) || isNull(right)) return ok(bool(false));
   const compared = order(left, right);
   if (!compared.ok) return stopped(compared);
   return ok(bool(holds(compared.value)));
@@ -264,64 +290,83 @@ function relational(inclusive: boolean, holds: (sign: number) => boolean, left: 
 
 /** `BooleanOperations.eq`. */
 function equal(left: JVal, right: JVal): Eval<boolean> {
-  if (left.tag === JValTag.Null || right.tag === JValTag.Null) return ok(left.tag === right.tag);
-  if (left.tag === JValTag.Decimal || right.tag === JValTag.Decimal) {
-    const a = toDecimal(left);
-    if (!a.ok) return stopped(a);
-    const b = toDecimal(right);
-    return b.ok ? ok(a.value[0] === b.value[0] && a.value[1] === b.value[1]) : stopped(b);
+  const decider = deciding(equalRank, equalClass(left), equalClass(right));
+  switch (decider.tag) {
+    case EqualClassTag.Absent:
+      return ok(isNull(left) && isNull(right));
+    case EqualClassTag.BigDecimal: {
+      const a = toDecimal(left);
+      if (!a.ok) return stopped(a);
+      const b = toDecimal(right);
+      return b.ok ? ok(a.value[0] === b.value[0] && a.value[1] === b.value[1]) : stopped(b);
+    }
+    case EqualClassTag.Long: {
+      const a = toLong(left);
+      if (!a.ok) return stopped(a);
+      const b = toLong(right);
+      return b.ok ? ok(a.value === b.value) : stopped(b);
+    }
+    case EqualClassTag.Boolean: {
+      const a = toBool(left);
+      if (!a.ok) return stopped(a);
+      const b = toBool(right);
+      return b.ok ? ok(a.value === b.value) : stopped(b);
+    }
+    case EqualClassTag.Text: {
+      const a = toText(left);
+      if (!a.ok) return stopped(a);
+      const b = toText(right);
+      return b.ok ? ok(a.value === b.value) : stopped(b);
+    }
+    case EqualClassTag.Collection:
+      return decided(javaEquals(left, decider.value));
   }
-  if (left.tag === JValTag.Int || right.tag === JValTag.Int) {
-    const a = toLong(left);
-    if (!a.ok) return stopped(a);
-    const b = toLong(right);
-    return b.ok ? ok(a.value === b.value) : stopped(b);
-  }
-  if (left.tag === JValTag.Bool || right.tag === JValTag.Bool) {
-    const a = toBool(left);
-    if (!a.ok) return stopped(a);
-    const b = toBool(right);
-    return b.ok ? ok(a.value === b.value) : stopped(b);
-  }
-  if (left.tag === JValTag.String || right.tag === JValTag.String) {
-    const a = toText(left);
-    if (!a.ok) return stopped(a);
-    const b = toText(right);
-    return b.ok ? ok(a.value === b.value) : stopped(b);
-  }
-  return decided(javaEquals(left, right.tag === JValTag.List
-    ? { tag: ValueTag.List, items: right.items }
-    : { tag: ValueTag.Map, entries: right.entries }));
+  return assertNever(decider);
 }
 
 /**
  * Java `equals` of an evaluated value against a context value, three-valued: `null` when it depends on an Integer's
- * class, which a context value does not record. Every comparison the evaluator makes has a context value on one side, an
- * item or entry of a collection or the collection itself, whose `equals` Java keeps symmetric; so two equal Integers
- * always leave the answer to their classes.
+ * class, which a context value does not record, or on a Double or a Date, which no admitted run holds until A3. Every
+ * comparison the evaluator makes has a context value on one side, an item or entry of a collection or the collection
+ * itself, whose `equals` Java keeps symmetric; so two equal Integers always leave the answer to their classes.
  */
 function javaEquals(left: JVal, value: Value): boolean | null {
-  const right = fromValue(value);
-  if (left.tag === JValTag.Int && right.tag === JValTag.Int) return left.value !== right.value ? false : null;
-  if (left.tag === JValTag.Decimal && right.tag === JValTag.Decimal) {
-    return left.coefficient === right.coefficient && left.scale === right.scale;
+  const converted = fromValue(value);
+  if (!converted.ok) return null;
+  const right = converted.value;
+  const itemEquals = (item: Value, other: Value): boolean | null => {
+    const leftItem = fromValue(item);
+    return leftItem.ok ? javaEquals(leftItem.value, other) : null;
+  };
+  switch (left.tag) {
+    case JValTag.Int:
+      return !sameKind(left, right) ? false : left.value !== right.value ? false : null;
+    case JValTag.Decimal:
+      return sameKind(left, right) && left.coefficient === right.coefficient && left.scale === right.scale;
+    case JValTag.List: {
+      if (!sameKind(left, right) || left.items.length !== right.items.length) return false;
+      return every(left.items.map((item, index) => itemEquals(item, right.items[index] as Value)));
+    }
+    case JValTag.Map: {
+      if (!sameKind(left, right) || left.entries.length !== right.entries.length) return false;
+      const pairs = left.entries.map(([name, item]) => {
+        const other = right.entries.find(([key]) => key === name);
+        return other === undefined ? false : itemEquals(item, other[1]);
+      });
+      return every(pairs);
+    }
+    case JValTag.Null:
+      return sameKind(left, right);
+    case JValTag.Bool:
+    case JValTag.String:
+      return sameKind(left, right) && left.value === right.value;
   }
-  if (left.tag === JValTag.List && right.tag === JValTag.List) {
-    if (left.items.length !== right.items.length) return false;
-    return every(left.items.map((item, index) => javaEquals(fromValue(item), right.items[index] as Value)));
-  }
-  if (left.tag === JValTag.Map && right.tag === JValTag.Map) {
-    if (left.entries.length !== right.entries.length) return false;
-    const pairs = left.entries.map(([name, item]) => {
-      const other = right.entries.find(([key]) => key === name);
-      return other === undefined ? false : javaEquals(fromValue(item), other[1]);
-    });
-    return every(pairs);
-  }
-  if (left.tag === JValTag.Null && right.tag === JValTag.Null) return true;
-  if (left.tag === JValTag.Bool && right.tag === JValTag.Bool) return left.value === right.value;
-  if (left.tag === JValTag.String && right.tag === JValTag.String) return left.value === right.value;
-  return false;
+  return assertNever(left);
+}
+
+/** Whether `right` is of `left`'s kind, the one kind `equals` of two carriers compares within. */
+function sameKind<T extends JVal>(left: T, right: JVal): right is Extract<JVal, { readonly tag: T["tag"] }> {
+  return right.tag === left.tag;
 }
 
 /** Three-valued conjunction: false wins, then unknown. */
@@ -402,49 +447,61 @@ function binary(op: JuelBinary, sub: (index: number) => Eval<JVal>, leftIndex: n
 
 // Property access (AstProperty.eval; EL §1.6)
 
-const beanProperties = new Set(["empty", "blank", "bytes", "class"]);
+/** A property of a scalar base: one of the bean properties its class has is a host property, anything else is not found. */
+function scalarProperty(beanProperties: readonly string[], name: JVal): Eval<JVal> {
+  const rendered = toText(name);
+  if (!rendered.ok) return stopped(rendered);
+  // dynamic-only: a Java bean property of a host class.
+  return beanProperties.includes(rendered.value) ? unsupported("juel.beanProperty") : fail("juel.propertyNotFound");
+}
 
 /** `base.name` or `base[name]` over a non-null base and property. */
 function property(base: JVal, name: JVal): Eval<JVal> {
   switch (base.tag) {
     case JValTag.Map: {
+      const key = textArgument(name);
       // dynamic-only: a non-String key's lookup depends on the host Map class.
-      if (name.tag !== JValTag.String) return unsupported("juel.indexType");
-      const entry = base.entries.find(([key]) => key === name.value);
-      return ok(entry === undefined ? nullValue : fromValue(entry[1]));
+      if (key === null) return unsupported("juel.indexType");
+      const entry = base.entries.find(([candidate]) => candidate === key);
+      return entry === undefined ? ok(nullValue) : fromValue(entry[1]);
     }
     case JValTag.List: {
       const index = listIndex(name);
       if (!index.ok) return stopped(index);
       const item = index.value >= 0 && index.value < base.items.length ? base.items[index.value] : undefined;
-      return ok(item === undefined ? nullValue : fromValue(item));
+      return item === undefined ? ok(nullValue) : fromValue(item);
     }
     case JValTag.String:
+      return scalarProperty(["class", "empty", "blank", "bytes"], name);
     case JValTag.Bool:
     case JValTag.Int:
     case JValTag.Decimal:
-    case JValTag.Null: {
-      const rendered = toText(name);
-      if (!rendered.ok) return stopped(rendered);
-      const exists = rendered.value === "class" || (base.tag === JValTag.String && beanProperties.has(rendered.value));
-      // dynamic-only: a Java bean property of a host class.
-      return exists ? unsupported("juel.beanProperty") : fail("juel.propertyNotFound");
-    }
+    case JValTag.Null:
+      return scalarProperty(["class"], name);
   }
   return assertNever(base);
 }
 
 /** `ListELResolver`'s index: an Integer narrowed as `intValue`, a String through `Integer.parseInt`. */
 function listIndex(name: JVal): Eval<number> {
-  if (name.tag === JValTag.Int) return ok(Number(BigInt.asIntN(32, name.value)));
-  if (name.tag === JValTag.String) {
-    // dynamic-only: `Integer.parseInt` reads Unicode digits the kernel does not model.
-    if (!isAscii(name.value)) return unsupported("juel.nonAsciiText");
-    const parsed = parseJavaInt(name.value);
-    return parsed === null ? fail(elError) : ok(Number(parsed));
+  switch (name.tag) {
+    case JValTag.Int:
+      return ok(Number(BigInt.asIntN(32, name.value)));
+    case JValTag.String: {
+      // dynamic-only: `Integer.parseInt` reads Unicode digits the kernel does not model.
+      if (!isAscii(name.value)) return unsupported("juel.nonAsciiText");
+      const parsed = parseJavaInt(name.value);
+      return parsed === null ? fail(elError) : ok(Number(parsed));
+    }
+    case JValTag.Null:
+    case JValTag.Bool:
+    case JValTag.Decimal:
+    case JValTag.List:
+    case JValTag.Map:
+      // dynamic-only: another index kind's coercion depends on the shaded resolver.
+      return unsupported("juel.indexType");
   }
-  // dynamic-only: another index kind's coercion depends on the shaded resolver.
-  return unsupported("juel.indexType");
+  return assertNever(name);
 }
 
 // Methods (AstMethod.invoke; the closed list)
@@ -458,7 +515,7 @@ function methodCall(payload: JuelCallNode, sub: (index: number) => Eval<JVal>): 
       if (!juelMethodCounts[target.method].includes(argIndexes.length)) return unsupported("expression.juel.method");
       const receiver = sub(receiverIndex);
       if (!receiver.ok) return receiver;
-      if (receiver.value.tag === JValTag.Null) return fail("juel.propertyNotFound");
+      if (isNull(receiver.value)) return fail("juel.propertyNotFound");
       const args: JVal[] = [];
       for (const index of argIndexes) {
         const arg = sub(index);
@@ -501,11 +558,35 @@ function applyMethod(method: JuelMethod, receiver: JVal, args: readonly JVal[]):
 }
 
 function textArgument(value: JVal | undefined): string | null {
-  return value?.tag === JValTag.String ? value.value : null;
+  if (value === undefined) return null;
+  switch (value.tag) {
+    case JValTag.String:
+      return value.value;
+    case JValTag.Null:
+    case JValTag.Bool:
+    case JValTag.Int:
+    case JValTag.Decimal:
+    case JValTag.List:
+    case JValTag.Map:
+      return null;
+  }
+  return assertNever(value);
 }
 
 function intArgument(value: JVal | undefined): number | null {
-  return value?.tag === JValTag.Int ? Number(BigInt.asIntN(32, value.value)) : null;
+  if (value === undefined) return null;
+  switch (value.tag) {
+    case JValTag.Int:
+      return Number(BigInt.asIntN(32, value.value));
+    case JValTag.Null:
+    case JValTag.Bool:
+    case JValTag.Decimal:
+    case JValTag.String:
+    case JValTag.List:
+    case JValTag.Map:
+      return null;
+  }
+  return assertNever(value);
 }
 
 /** A String a cut or insertion produced, unless it split a surrogate pair. */
@@ -535,7 +616,7 @@ function stringMethod(method: JuelMethod, receiver: string, args: readonly JVal[
     case JuelMethod.IsEmpty:
       return ok(bool(receiver.length === 0));
     case JuelMethod.Equals:
-      return ok(bool(first?.tag === JValTag.String && first.value === receiver));
+      return ok(bool(textArgument(first) === receiver));
     case JuelMethod.Contains:
       return withText(first, (argument) => bool(receiver.includes(argument)));
     case JuelMethod.StartsWith:
@@ -580,7 +661,7 @@ function stringMethod(method: JuelMethod, receiver: string, args: readonly JVal[
 }
 
 function listMethod(method: JuelMethod, receiver: JVal & { readonly tag: JValTag.List }, argument: JVal): Eval<JVal> {
-  const items = receiver.items.map(fromValue);
+  const items = receiver.items;
   const found = (order: readonly number[]): Eval<JVal> => {
     for (const index of order) {
       const answer = decided(javaEquals(argument, receiver.items[index] as Value));
@@ -611,7 +692,7 @@ function listMethod(method: JuelMethod, receiver: JVal & { readonly tag: JValTag
       if (index === null) return wrongArgument();
       const item = items[index];
       // `IndexOutOfBoundsException` (`List.get`).
-      return index < 0 || item === undefined ? fail(elError) : ok(item);
+      return index < 0 || item === undefined ? fail(elError) : fromValue(item);
     }
     case JuelMethod.Length:
     case JuelMethod.StartsWith:
@@ -639,11 +720,12 @@ function mapMethod(method: JuelMethod, receiver: JVal & { readonly tag: JValTag.
       const answer = decided(javaEquals(argument, { tag: ValueTag.Map, entries: receiver.entries }));
       return answer.ok ? ok(bool(answer.value)) : stopped(answer);
     }
-    case JuelMethod.Get:
-      return withText(argument, (key) => {
-        const entry = receiver.entries.find(([name]) => name === key);
-        return entry === undefined ? nullValue : fromValue(entry[1]);
-      });
+    case JuelMethod.Get: {
+      const key = textArgument(argument);
+      if (key === null) return wrongArgument();
+      const entry = receiver.entries.find(([name]) => name === key);
+      return entry === undefined ? ok(nullValue) : fromValue(entry[1]);
+    }
     case JuelMethod.ContainsKey:
       return withText(argument, (key) => bool(receiver.entries.some(([name]) => name === key)));
     case JuelMethod.ContainsValue: {

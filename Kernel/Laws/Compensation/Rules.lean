@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Hooks
+public import Kernel.Laws.State.Map
 
 /-! # Laws of compensation and Transaction cancellation: the rules
 
@@ -103,12 +104,13 @@ theorem ReleasesOwn.othersKept {context : ScopeOccurrenceId} {before after : Lis
 
 /-- §13.5.5's dependency between two records of one trigger (I1): `record`'s handler waits until `other`'s completed when
 a Sequence Flow path leads from a boundary Event of `record`'s subject to `other`'s, a different one, or `record`
-completed first and a Sequence Flow path leads from its subject to `other`'s, `other`'s subject reads a name
+completed first (`before`) and a Sequence Flow path leads from its subject to `other`'s, `other`'s subject reads a name
 `record`'s can write, or both are records of one subject. -/
 def Precedes (flowFrom : List ElementId → ElementId → Bool) (boundaries : ElementId → List ElementId)
-    (reads writes : ElementId → List String) (record other : Compensable) : Prop :=
+    (before : Compensable → Compensable → Prop) (reads writes : ElementId → List String) (record other : Compensable) :
+    Prop :=
   (record.subject ≠ other.subject ∧ flowFrom (boundaries record.subject) other.subject = true) ∨
-    (record.completion < other.completion ∧
+    (before record other ∧
       (record.subject = other.subject ∨ flowFrom [record.subject] other.subject = true ∨
         ∃ name ∈ reads other.subject, name ∈ writes record.subject))
 
@@ -131,9 +133,9 @@ theorem Advances.respectsOrder {precedes : Compensable → Compensable → Prop}
 
 /-- In particular a Sequence Flow from an earlier record's subject keeps its handler waiting for the later one's. -/
 theorem Advances.flowOrder {flowFrom : List ElementId → ElementId → Bool} {boundaries : ElementId → List ElementId}
-    {reads writes : ElementId → List String} {run after : CompensationRun} {started : List Compensable}
-    (law : Advances (Precedes flowFrom boundaries reads writes) run after started) {record other : Compensable}
-    (earlier : record.completion < other.completion) (flow : flowFrom [record.subject] other.subject = true)
+    {before : Compensable → Compensable → Prop} {reads writes : ElementId → List String} {run after : CompensationRun}
+    {started : List Compensable} (law : Advances (Precedes flowFrom boundaries before reads writes) run after started)
+    {record other : Compensable} (earlier : before record other) (flow : flowFrom [record.subject] other.subject = true)
     (waiting : other ∈ run.pending ++ run.running.map (·.2)) : record ∉ started := fun begun =>
   law.respectsOrder begun waiting (.inr ⟨earlier, .inr (.inl flow)⟩)
 
@@ -188,7 +190,7 @@ theorem Ready.any_iff {test : Compensable → Compensable → Bool} {run : Compe
   rfl
 
 /-- The run that `trigger` started in `scope`: two runs never share both. -/
-def Keyed (scope : ScopeOccurrenceId) (trigger : OccurrenceRef) (run : CompensationRun) : Prop :=
+def Keyed (scope : ScopeOccurrenceId) (trigger : OccurrenceName) (run : CompensationRun) : Prop :=
   run.scope = scope ∧ run.trigger = trigger
 
 /-- The run holds a handler running in the context scope occurrence `context`. -/
@@ -274,12 +276,12 @@ def EndsOnce (run : CompensationRun) (continuation : ElementId) (continued : Lis
 def DropBeginsNothing (interrupts : Bool) (inside : ScopeOccurrenceId → Prop) (before after : State) : Prop :=
   interrupts = true →
     (∀ run, run ∈ after.slots.compensation.runs ↔ run ∈ before.slots.compensation.runs ∧ ¬ inside run.scope) ∧
-      after.scopes = before.scopes ∧ after.tokens = before.tokens
+      after.scopes = before.scopes ∧ Laws.State.allQueuedTokens after = Laws.State.allQueuedTokens before
 
 /-- The instance has failed with a published failure, and nothing is left to continue: no token, open item or
 occurrence. -/
 def Failed (state : State) : Prop :=
-  state.status = .failed ∧ state.failure.isSome = true ∧ state.tokens = [] ∧ state.openItems = [] ∧ state.occurrences = []
+  state.status = .failed ∧ state.failure.isSome = true ∧ Laws.State.allQueuedTokens state = [] ∧ state.openItems = ∅ ∧ state.occurrences = []
 
 /-- Under `compensationHandlerFailure = failsInstance` (COMPH-FAIL-01), an Error that no catcher inside the handler's
 context takes (`caughtInside = false`) is searched no further (`searchedFrom = none`) and fails the instance. -/
@@ -297,55 +299,39 @@ def PropagatesFromHandler (policy : CompensationHandlerFailure) (caughtInside : 
 
 /-! ## Where stored records come from -/
 
-mutual
+/-- The completion numbers a record holds: its own and those of the records it keeps. -/
+def heldCompletions (record : Compensable) : List Nat :=
+  record.completion :: record.children.map (·.completion)
 
-/-- The elements a compensation record names at every depth: its subject, its handler and its children's. -/
-def recordElements : Compensable → List ElementId
-  | { subject, handler, children, .. } => subject :: handler.toList ++ recordsElements children
+/-- The elements a kept record names: its subject and its handler. -/
+def childElements (child : CompensableChild) : List ElementId :=
+  child.subject :: child.handler.toList
 
-/-- The elements `records` name at every depth. -/
-def recordsElements : List Compensable → List ElementId
-  | [] => []
-  | record :: rest => recordElements record ++ recordsElements rest
+/-- The elements a compensation record names at every depth: its subject, its handler and those of every record it
+keeps. -/
+def recordElements (record : Compensable) : List ElementId :=
+  record.subject :: record.handler.toList ++ record.children.flatMap childElements
 
-end
-
-/-- An element of a record listed among `records` is one they name. -/
-theorem recordsElements_mem {record : Compensable} {element : ElementId} :
-    ∀ {records : List Compensable}, record ∈ records → element ∈ recordElements record →
-      element ∈ recordsElements records
-  | _ :: _, .head _, named => by rw [recordsElements]; exact List.mem_append_left _ named
-  | _ :: _, .tail _ member, named => by rw [recordsElements]; exact List.mem_append_right _ (recordsElements_mem member named)
-
-/-- A record names its subject, its handler and its children's elements. -/
+/-- A record names its subject, its handler and the elements of the records it keeps. -/
 theorem recordElements_eq (record : Compensable) :
-    recordElements record = record.subject :: record.handler.toList ++ recordsElements record.children := by
-  cases record
-  simp only [recordElements]
+    recordElements record = record.subject :: record.handler.toList ++ record.children.flatMap childElements := rfl
 
-/-- An element records name is one of them names. -/
-theorem recordsElements_cases {element : ElementId} :
-    ∀ {records : List Compensable}, element ∈ recordsElements records → ∃ record ∈ records, element ∈ recordElements record
-  | [], named => by simp [recordsElements] at named
-  | record :: rest, named => by
-    rw [recordsElements] at named
-    rcases List.mem_append.mp named with here | there
-    · exact ⟨record, List.mem_cons_self .., here⟩
-    · obtain ⟨other, member, inside⟩ := recordsElements_cases there
-      exact ⟨other, List.mem_cons_of_mem _ member, inside⟩
-
-/-- A child's elements are its record's. -/
-theorem recordElements_child {record child : Compensable} {element : ElementId} (member : child ∈ record.children)
-    (named : element ∈ recordElements child) : element ∈ recordElements record := by
-  cases record
-  rw [recordElements]
-  exact List.mem_cons_of_mem _ (List.mem_append_right _ (recordsElements_mem member named))
+/-- A kept record's elements are its holder's. -/
+theorem recordElements_child {record : Compensable} {child : CompensableChild} {element : ElementId}
+    (member : child ∈ record.children) (named : element ∈ childElements child) : element ∈ recordElements record :=
+  List.mem_cons_of_mem _ (List.mem_append_right _ (List.mem_flatMap.mpr ⟨child, member, named⟩))
 
 /-- A record moved to another scope occurrence names the elements it named. -/
 theorem recordElements_scope (record : Compensable) (scope : ScopeOccurrenceId) :
-    recordElements { record with scope } = recordElements record := by
-  cases record
-  simp only [recordElements]
+    recordElements { record with scope } = recordElements record := rfl
+
+/-- A record whose keys the commit renames names the elements it named. -/
+theorem recordElements_rekey (record : Compensable) (scope : ScopeOccurrenceId) (rekey : OccurrenceKey → OccurrenceKey) :
+    recordElements { record with scope, occurrence := rekey record.occurrence
+                                 children := record.children.map fun child => { child with occurrence := rekey child.occurrence } } =
+      recordElements record := by
+  simp only [recordElements, List.flatMap_map]
+  rfl
 
 /-- A scope occurrence an `InstanceLinked` edge may leave: one that calls no instance, or one of a Scope element or
 owned by an occurrence of one, which the placement lane shows never calls one. -/
@@ -382,22 +368,23 @@ theorem InstanceLinked.congr {program : Program} {s t : State} (scopes : t.scope
   | symm _ back => exact back.symm
   | trans _ _ left right => exact left.trans right
 
-/-- A record held in `state`, retained or pending in a run, at a scope occurrence linked to `scope`, naming every
-element `record` names. -/
-def RecordHeld (program : Program) (state : State) (record : Compensable) (scope : ScopeOccurrenceId) : Prop :=
+/-- A record held in `state`, retained or pending in a run, at a scope occurrence linked to `scope`, naming every one
+of `elements`. -/
+def RecordHeld (program : Program) (state : State) (elements : List ElementId) (scope : ScopeOccurrenceId) : Prop :=
   ∃ held at_, ((held ∈ state.slots.compensation.retained ∧ held.scope = at_) ∨
     ∃ run ∈ state.slots.compensation.runs, held ∈ run.pending ∧ run.scope = at_) ∧
-    InstanceLinked program state at_ scope ∧ ∀ element ∈ recordElements record, element ∈ recordElements held
+    InstanceLinked program state at_ scope ∧ ∀ element ∈ elements, element ∈ recordElements held
 
 /-- Where a record stored at `scope` comes from: one `state` holds (`RecordHeld`), or the record of a completed
 occurrence of `state` whose scope occurrence is linked to `scope`, naming one of its element's compensation handlers and
 holding records `state` holds. -/
 def RecordFrom (program : Program) (state : State) (record : Compensable) (scope : ScopeOccurrenceId) : Prop :=
-  RecordHeld program state record scope ∨ ∃ occurrence ∈ state.occurrences, record.subject = occurrence.element ∧
+  RecordHeld program state (recordElements record) scope ∨
+    ∃ occurrence ∈ state.occurrences, record.subject = occurrence.element ∧
     InstanceLinked program state occurrence.scope scope ∧
     (∀ handler, record.handler = some handler → ∃ element ∈ program.elements, element.header.id = record.subject ∧
       ∃ envelope, element.envelope? = some envelope ∧ handler ∈ envelope.compensationHandlers) ∧
-    ∀ child ∈ record.children, RecordHeld program state child scope
+    ∀ child ∈ record.children, RecordHeld program state (childElements child) scope
 
 /-- Where a compensation stored in place of `state`'s comes from (the storage provenance): every record it retains and
 every record a run of it holds pending, at the scope occurrence holding it (`RecordFrom`), and every run's resume: a
@@ -406,7 +393,7 @@ def StoredFrom (program : Program) (state : State) (resumed : Resume → Prop) (
   (∀ record ∈ compensation.retained, RecordFrom program state record record.scope) ∧
     ∀ run ∈ compensation.runs, (∀ record ∈ run.pending, RecordFrom program state record run.scope) ∧
       ∀ resume, run.resume = some resume → (∃ held ∈ state.slots.compensation.runs, held.resume = some resume) ∨
-        (∃ outer context, resume = .group outer context) ∨ resumed resume
+        (∃ context, resume = .group context) ∨ resumed resume
 
 /-! ## What the hooks need -/
 
@@ -415,10 +402,10 @@ structure CompensationOps (program : Program) (inv : State → Prop) : Prop wher
   /-- The retained records replaced, from where `StoredFrom` says, and the runs by some of them. -/
   store : ∀ state compensation, inv state → (∀ run ∈ compensation.runs, run ∈ state.slots.compensation.runs) →
     StoredFrom program state (fun _ => False) compensation → inv { state with slots := { state.slots with compensation } }
-  issue : ∀ state, inv state → inv state.issue.1
-  /-- Issuing keeps the scope occurrences, the occurrences, the open items and the slots. -/
-  issued : ∀ state : State, state.issue.1.scopes = state.scopes ∧ state.issue.1.occurrences = state.occurrences ∧
-    state.issue.1.openItems = state.openItems ∧ state.issue.1.slots = state.slots
+  takeCompletion : ∀ state, inv state → inv state.takeCompletion.1
+  /-- Taking a position keeps the scope occurrences, the occurrences, the open items and the slots. -/
+  issued : ∀ state : State, state.takeCompletion.1.scopes = state.scopes ∧ state.takeCompletion.1.occurrences = state.occurrences ∧
+    state.takeCompletion.1.openItems = state.openItems ∧ state.takeCompletion.1.slots = state.slots
   fail : ∀ state failure, inv state → inv (state.signal (.endInstance .failed (some failure)))
 
 end Kernel.Laws.Compensation

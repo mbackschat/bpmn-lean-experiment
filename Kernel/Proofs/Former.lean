@@ -72,7 +72,8 @@ open Kernel.Laws.State (WellFormed Within CalledRoot InstanceRoot)
 def CalledReadsIsolated : Prop :=
   ∀ (program : Program) (state : State) (scope root : ScopeOccurrenceId) (binding : String × Value),
     WellFormed program state → CalledRoot state root → Within state scope root → binding ∈ state.visible program scope →
-    ∃ frame ∈ state.variables, Within state scope frame.scope ∧ Within state frame.scope root ∧ binding ∈ frame.entries
+    ∃ frame entries, state.variables[frame]? = some entries ∧ Within state scope frame ∧ Within state frame root ∧
+      binding ∈ entries.toList
 
 /-- PC-SCOPE-04 (`CVM-ISOLATE-01`): a write from inside a called instance changes no frame outside it
 (`Laws.Data.OthersKept`). Stated of `Hooks.writeOutputs`. -/
@@ -80,7 +81,7 @@ def CalledWritesIsolated (hooks : Hooks) : Prop :=
   ∀ (ctx : Ctx) (scope root : ScopeOccurrenceId) (writes : List (String × Value)) (rule : WriteRule) (state after : State),
     WellFormed ctx.program state → CalledRoot state root → Within state scope root →
     hooks.writeOutputs ctx scope writes rule state = .ok after →
-    ∀ frame ∈ state.variables, ¬ Within state frame.scope root → frame ∈ after.variables
+    ∀ x entries, state.variables[x]? = some entries → ¬ Within state x root → after.variables[x]? = some entries
 
 /-- PC-SCOPE-04 (`CVM-OUT-01`): an outward write of a name that no occurrence of an item's Scope on the way declares
 lands at the nearest scope occurrence that declares the name, within the writer's instance (`Laws.Data.WritesNearest`).
@@ -119,8 +120,8 @@ def OutputsAtDeclaringOccurrence (hooks : Hooks) : Prop :=
 /-- PC-SCOPE-05 (`CALLN-NEST-01`): a scope occurrence with a live child, a nested Call's root among them, is never the
 idle scope occurrence the closure completes (`Laws.Scopes.Idle`). -/
 def NestedCallKeepsRootBusy : Prop :=
-  ∀ (ctx : Ctx) (state : State) (scope child : ScopeOccurrence),
-    Step.idleScope? ctx state = some scope → child ∈ state.scopes → child.parent ≠ some scope.id
+  ∀ (hooks : Hooks) (ctx : Ctx) (state : State) (scope child : ScopeOccurrence),
+    Step.idleScope? hooks ctx state = some scope → child ∈ state.scopes → child.parent ≠ some scope.id
 
 /-! ## Proofs
 
@@ -135,58 +136,12 @@ every other frame. -/
 private theorem setVariable_writes (s : State) (target : ScopeOccurrenceId) (name : String) (value : Value) :
     Laws.Data.HoldsOnly (s.setVariable target name value) target name value ∧
       Laws.Data.OthersKept s (s.setVariable target name value) target := by
-  have replaced : ∀ entries : List (String × Value), ∀ old,
-      (name, old) ∈ (if entries.any (·.1 == name) then entries.map fun entry => if entry.1 == name then (name, value) else entry
-        else entries ++ [(name, value)]) ↔ old = value := by
-    intro entries old
-    split
-    · rename_i bound
-      constructor
-      · intro member
-        obtain ⟨entry, _, made⟩ := List.mem_map.mp member
-        by_cases named : entry.1 = name
-        · simp only [named, beq_self_eq_true, ↓reduceIte, Prod.mk.injEq, true_and] at made
-          exact made.symm
-        · simp only [beq_iff_eq, named, ↓reduceIte] at made
-          exact absurd (by rw [made]) named
-      · rintro rfl
-        obtain ⟨entry, inside, named⟩ := List.any_eq_true.mp bound
-        exact List.mem_map.mpr ⟨entry, inside, by simp [named]⟩
-    · rename_i unbound
-      simp only [List.any_eq_true, beq_iff_eq, not_exists, not_and] at unbound
-      simp only [List.mem_append, List.mem_singleton, Prod.mk.injEq, true_and]
-      exact ⟨fun found => found.elim (fun inside => absurd rfl (unbound _ inside)) id, .inr⟩
   unfold Laws.Data.HoldsOnly Laws.Data.OthersKept
   rw [Laws.State.setVariable_variables]
-  split
-  · rename_i housed
-    refine ⟨⟨?_, fun frame member owned old => ?_⟩, fun frame member other => ?_, fun frame member other => ?_⟩
-    · obtain ⟨frame, member, owned⟩ := List.any_eq_true.mp housed
-      exact ⟨_, List.mem_map.mpr ⟨frame, member, rfl⟩, by simp only [beq_iff_eq] at owned; simp [owned]⟩
-    · obtain ⟨original, _, rfl⟩ := List.mem_map.mp member
-      by_cases targeted : original.scope = target
-      · simp only [targeted, beq_self_eq_true, ↓reduceIte]
-        exact replaced original.entries old
-      · simp [targeted] at owned
-    · exact List.mem_map.mpr ⟨frame, member, by simp [other]⟩
-    · obtain ⟨original, inside, rfl⟩ := List.mem_map.mp member
-      by_cases targeted : original.scope = target
-      · simp [targeted] at other
-      · simpa [targeted] using inside
-  · rename_i unhoused
-    simp only [List.any_eq_true, beq_iff_eq, not_exists, not_and] at unhoused
-    refine ⟨⟨⟨_, List.mem_append_right _ (List.mem_singleton_self _), rfl⟩, fun frame member owned old => ?_⟩,
-      fun frame member _ => List.mem_append_left _ member, fun frame member other => ?_⟩
-    · rcases List.mem_append.mp member with inside | fresh
-      · exact absurd owned (unhoused frame inside)
-      · rw [List.mem_singleton] at fresh
-        subst fresh
-        simp
-    · rcases List.mem_append.mp member with inside | fresh
-      · exact inside
-      · rw [List.mem_singleton] at fresh
-        subst fresh
-        exact absurd rfl other
+  refine ⟨⟨Std.ExtTreeMap.mem_insert_self, fun entries found => ?_⟩, fun x other => ?_⟩
+  · rw [Std.ExtTreeMap.getElem?_insert_self] at found
+    rw [← Option.some.inj found, Std.ExtTreeMap.getElem?_insert_self]
+  · rw [Std.ExtTreeMap.getElem?_insert, ite_eq_right (by rw [Std.LawfulEqCmp.compare_eq_iff_eq]; exact fun same => other same.symm)]
 
 /-- An outward write of Data from a scope occurrence lands within its process instance. -/
 private theorem outward_within {program : Program} {s : State} (formed : WellFormed program s)
@@ -214,17 +169,18 @@ theorem calledReadsIsolated : CalledReadsIsolated := by
     obtain ⟨entry, member, named, _⟩ := called
     exact named ▸ List.mem_map.mpr ⟨entry, member, rfl⟩)
   have inInstance := instanceRoot_spec formed present
-  obtain ⟨frame, member, down, ⟨up, bound, _⟩⟩ := visible_spec formed inInstance seen
-  exact ⟨frame, member, down, up.trans (inInstance.within formed within called), bound⟩
+  obtain ⟨frame, entries, found, rest⟩ := visible_spec formed inInstance seen
+  obtain ⟨down, up, bound, _⟩ := rest
+  exact ⟨frame, entries, found, down, up.trans (inInstance.within formed within called), bound⟩
 
 /-- Writes that each land within the called instance rooted at `root`, on the state the earlier ones left, keep every
 frame outside it. -/
-private theorem outside_kept {program : Program} {scope root : ScopeOccurrenceId} {frame : ScopeVariables}
+private theorem outside_kept {program : Program} {scope root x : ScopeOccurrenceId} {entries : Variables}
     (target : State → String × Value → ScopeOccurrenceId)
     (lands : ∀ s binding, WellFormed program s → CalledRoot s root → Within s scope root → Within s (target s binding) root) :
     ∀ (writes : List (String × Value)) (s : State), WellFormed program s → CalledRoot s root → Within s scope root →
-      frame ∈ s.variables → ¬ Within s frame.scope root →
-      frame ∈ (writes.foldl (fun s binding => s.setVariable (target s binding) binding.1 binding.2) s).variables := by
+      s.variables[x]? = some entries → ¬ Within s x root →
+      (writes.foldl (fun s binding => s.setVariable (target s binding) binding.1 binding.2) s).variables[x]? = some entries := by
   intro writes
   induction writes with
   | nil => intro _ _ _ _ member _; exact member
@@ -238,12 +194,12 @@ private theorem outside_kept {program : Program} {scope root : ScopeOccurrenceId
     have scopes := (Laws.State.setVariable_frame s (target s binding) binding.1 binding.2).1
     exact ih _ (Laws.State.setVariable_wellFormed formed (landed.present rootPresent))
       (by rw [CalledRoot, scopes]; exact called) (within.congr scopes)
-      ((setVariable_writes s _ binding.1 binding.2).2.1 frame member fun same => outside (same ▸ landed))
+      (((setVariable_writes s _ binding.1 binding.2).2 x fun same => outside (same ▸ landed)).trans member)
       fun inside => outside (inside.congr scopes.symm)
 
 theorem calledWritesIsolated {hooks : Hooks} (data : hooks.writeOutputs = Feature.Data.writeOutputs) :
     CalledWritesIsolated hooks := by
-  intro ctx scope root writes rule state after formed called within ran frame member outside
+  intro ctx scope root writes rule state after formed called within ran x entries member outside
   rw [data] at ran
   rw [Laws.Data.write_outward ran]
   refine outside_kept _ (fun s binding formed called within => ?_) writes state formed called within member outside
@@ -287,6 +243,6 @@ theorem outputsAtDeclaringOccurrence {hooks : Hooks} (data : hooks.writeOutputs 
   exact fun _ => setVariable_writes state target name value
 
 theorem nestedCallKeepsRootBusy (facts : Laws.Step.StateFacts) : NestedCallKeepsRootBusy :=
-  fun _ _ _ child idle member => Laws.Step.idleScope?_childless facts idle child member
+  fun _ _ _ _ child idle member => Laws.Step.idleScope?_childless facts idle child member
 
 end Kernel.Proofs.Former

@@ -19,7 +19,7 @@ The wire form is Lean's derived JSON encoding of the IL types ([`Kernel/IL/Codec
 - A structure is an object keyed by field name. Encoders write every field; a decoder reads an absent field as `null`, so an absent `Option` field is `none` and any other absent field is a decoding error.
 - A nullary constructor is a string (`"parallel"`, `"none"`); a constructor with arguments is `{"<constructor>": {"<argument>": …}}`, each argument present even when it is an `Option`.
 - `ElementId` and `FlowId` are plain strings.
-- A data `Value` uses the scenario contract's `variableValue` form `{"kind": …, "value": …}` with kinds `null`, `boolean`, `integer`, `decimal` (`coefficient` as a decimal string, `scale` a natural), `string`, `stringList`, `list` and `map` (entries `{name, value}` in order). `Value` is the one nested inductive: kernel logic never recurses through a business value.
+- A data `Value` uses the scenario contract's `variableValue` form `{"kind": …, "value": …}` with kinds `null`, `boolean`, `integer`, `decimal` (`coefficient` as a decimal string, `scale` a natural), `double` (`bits`, the IEEE 754 binary64 bit pattern as a decimal string), `date` (`epochMs`, milliseconds since the Unix epoch as a signed decimal string, a Java `long`), `string`, `stringList`, `list` and `map` (entries `{name, value}` in order). `double` and `date` are shapes A3 fills: admission refuses a literal one (`value.double`, `value.date`), the value domain rejects one in any input (`value-outside-domain`), and every site that would read one stops as `unsupported` `value-kind`. `Value` is the one nested inductive: kernel logic never recurses through a business value.
 - Two limits are JavaScript's: the TypeScript decoder refuses integers outside the safe range and cannot tell `1` from `1.0`.
 - The reviewed artifact-admission rule is strict: a duplicate decoded key, an unpaired surrogate, an unknown or missing field and unconsumed input are refused ([strict JSON][lcd-json]). Both decoders follow it: the Lean decoder re-encodes what it read and refuses any difference (`Kernel.IL.Codec.strictly`), the TypeScript decoder parses strictly (`parseStrict`).
 
@@ -34,6 +34,7 @@ The wire form is Lean's derived JSON encoding of the IL types ([`Kernel/IL/Codec
 | `variables` | the item names the root process declares (Properties, Data Objects, its own Data Inputs and Outputs; a Data Object reference declares none), declared at the instance root before any value is bound (BPMN 2.0.2 §10.4.1) |
 | `processes` | the called processes the program carries: bound `definition` (`DefinitionRef`), process-level `children`, declared `variables`, `executable` |
 | `executable` | the root process's `isExecutable` (Table 10.1), absent read as `false` |
+| `retainedExtensions` | the extension attributes the reader retained without consuming them (AD1's inert tier), each its expanded `name`, `elementType`, source `element` and `value` text; admission refuses every one outside the profile's inert table `inertExtensions` (`extension.retained`), and the reader still refuses every unconsumed attribute, so none is retained today |
 
 The table is flat and identifier-keyed: a Scope names its children and a flow its endpoints by identifier, and no IL or state type is a nested or mutual inductive. A parentless element belongs to the root process unless a called process lists it. `Header.id` is unique in the program, so two versions of one called definition coexist; `origin.sourceId` is the identifier the model's author wrote, which publication shows.
 
@@ -76,6 +77,7 @@ One enumerated field per decision point the kernel branches on, each defaulting 
 | `evaluator` | `simpleBoolean`, `juel` |
 | `submission` | `outputSet`, `installsVariables` |
 | `scopeChainSubmissionBytes` | `null` or a byte limit |
+| `bounds` | the value domain's bounds (`containerLevels` 4, `containerMembers` 32, `valueNodes` 256, `canonicalBytes` 16,384, `textBytes` 1,024, `instanceIdentityBytes` 1,024 by default; a Call refuses a called instance whose identifier would exceed `instanceIdentityBytes`, `instance-identity-bound`, OD14), carried with the program so an instance keeps the bounds it started with (HD7 of the [rewrite proposal](../REWRITE-2-PROPOSAL.md)); the Lean `Bounds` defaults are their one owner, and a guard fails a copy elsewhere that disagrees |
 | `undeclaredWrite` | `refused`, `atInstanceRoot` |
 | `errorPathOutputs` | `none`, `mapped` |
 | `technicalFailure` | `hostFailure`, `incident` |
@@ -103,6 +105,10 @@ One enumerated field per decision point the kernel branches on, each defaulting 
 | `outputContext` | `submission`, `activityScope` |
 | `multiInstanceCollection` | `entrySnapshot`, `sequentialReread` |
 | `configuredTask` | `externalWork`, `refused` |
+| `deploymentErrors` | `bpmnValidity`, `cibDeployment` (refused as `profile.deploymentErrors.cibDeployment` until CIB's deployment errors are classified, AD7) |
+| `handlerEscalation` | `passesHandler`, `reentersHandler` (refused as `profile.handlerEscalation.reentersHandler`; both readings stay refused at run time as `escalation-rethrow-reenters-handler`) |
+| `defaultRetryCycle` | `null` or CIB's engine-wide `failedJobRetryTimeCycle` text (refused as `profile.defaultRetryCycle` until the job model reads it, AD8) |
+| `inertExtensions` | AD1's inert table: the element type and expanded name of each retained extension attribute admission lets pass, empty in every profile (a non-empty table is refused as `profile.inertExtensions` until the extension stage admits its first item with its register entry) |
 
 ## Inputs
 

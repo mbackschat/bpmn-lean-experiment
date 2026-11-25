@@ -5,7 +5,8 @@ public import Kernel.IL.Types
 /-! # Read and write footprints
 
 What an expression, a mapping list or an element reads and writes, over-approximated where the text cannot show it: a
-JUEL or foreign expression reads every name, and a Multi-Instance definition reads every name when its element begins.
+JUEL or foreign expression reads every name, a Multi-Instance definition reads every name when its element begins, and
+so does a Script Task, whose effect opens with every visible variable.
 `Kernel.Admission.Flow` compares branch footprints for `BranchSchedule.orderInvariant`, and `writes` is the one account of
 what an element writes, which that closure walk and `Kernel.Feature.Compensation`'s data dependency both read. The
 mechanisms whose units those comparisons pair (`QueuingMechanism`) are listed here once, for admission's checks and
@@ -51,13 +52,64 @@ def expressionReads : Expression → NameSet
   | .juel _ => { all := true }
   | .foreign _ _ => { all := true }
 
+/-- The names through which a write may turn a condition from true to false: none for `isPresent`, since no write of a
+closure removes a name (only a variable command does, `Kernel.Step.Inputs`) and an explicit null counts as present. -/
+def falsifiable : Expression → NameSet
+  | .simpleBoolean (.isPresent _) => {}
+  | expression => expressionReads expression
+
+/-- The names through which a write ordered against the opening (`opening`) or the end of a Conditional subscription
+with `trigger` may change what it fires, value-blind. Against the opening, under `edge` those that may turn the
+condition false (`falsifiable`), since a write that can only turn it true fires it after the opening as it would on
+arrival; that holds only without a filter, since arming ignores filters while a filter blocks a later write, so a
+filtered condition reads every name it reads (`edge` admits none, `event.condition.filter`). Under `eachWrite`, which fires again on every
+write its filter passes while the condition holds, every name the condition reads or the filter passes. Against the
+end, those through which the write may make it true (`mayMakeTrue`'s bound): under `edge` the names the condition reads,
+under `eachWrite` those the filter passes. -/
+def conditionNames (retrigger : ConditionalRetrigger) (opening : Bool) (trigger : ConditionTrigger) : NameSet :=
+  let filtered : NameSet := match trigger.variableName with
+    | some name => { names := [name] }
+    | none => { all := true }
+  let unfiltered := trigger.variableName.isNone && trigger.variableEvents.isEmpty
+  match retrigger, opening with
+  | .eachWrite, true => (expressionReads trigger.condition).union filtered
+  | .eachWrite, false => filtered
+  | .edge, true => if unfiltered then falsifiable trigger.condition else expressionReads trigger.condition
+  | .edge, false => expressionReads trigger.condition
+
 def mappingReads (mappings : List Mapping) : NameSet :=
   mappings.foldl (fun found mapping => found.union (expressionReads mapping.source)) {}
 
-/-- What `element` reads when it begins: its input mappings, and every name for a Multi-Instance definition, whose
-count, collection and condition it evaluates then or later in the closure. -/
-def beginReads (element : Element) : NameSet :=
-  (element.envelope?.map fun envelope => (mappingReads envelope.inputs).union { all := envelope.multiInstance.isSome }).getD {}
+/-- The variable inputs of the decision table a Business Rule Task's work names, or `none` where a name cannot be told:
+a decision key that is an expression or names no decision, a decision without a table, an input that is no variable.
+Admission refuses each (`work.rule.decisionExpression`, `work.rule.decisionMissing`, `decision.logic`,
+`decision.inputExpression`), so `workReads` counts every name for them only to stay an over-approximation. -/
+def decisionInputs (program : Program) (work : RuleWork) : Option (List String) := do
+  let key ← work.decision.literal?
+  let decision ← program.decision? key
+  match decision.logic with
+  | .table table =>
+    let names := table.inputs.filterMap fun input => match input.expression with
+      | .variable name => some name
+      | .foreign _ => none
+    if names.length == table.inputs.length then some names else none
+  | .foreign _ => none
+
+/-- What `element`'s work reads beside its mappings (`Work.reader?`): every name for a Script Task, whose effect opens
+with every visible variable (`Kernel.Feature.Work.scriptSnapshot`), and a Business Rule Task's decision table's
+variable inputs (`decisionInputs`, `Kernel.Feature.Decision.readInput`). -/
+def workReads (program : Program) (element : Element) : NameSet :=
+  match element.activity?.bind fun (_, payload) => payload.work.reader? with
+  | some (.inl _) => { all := true }
+  | some (.inr work) => ((decisionInputs program work).map fun names => { names }).getD { all := true }
+  | none => {}
+
+/-- What `element` reads when it begins: its input mappings, every name for a Multi-Instance definition, whose count,
+collection and condition it evaluates then or later in the closure, and what its work reads (`workReads`), which a
+Script Task's effect and a Business Rule Task's decision read as it begins. -/
+def beginReads (program : Program) (element : Element) : NameSet :=
+  ((element.envelope?.map fun envelope =>
+    (mappingReads envelope.inputs).union { all := envelope.multiInstance.isSome }).getD {}).union (workReads program element)
 
 /-- Whether an Event Sub-Process writes every name when its start begins it: a delivery's own variables are input
 data, unknown at admission, which the begin writes outward from the new occurrence (`Step.writeStart`) under
@@ -69,7 +121,7 @@ def deliveredWrites (program : Program) (element : Element) : Bool :=
     (view.message.isSome && program.options.deliveryVariables == .installs) ||
       (view.signal.isSome && program.options.signalPayload == .variables)
 
-/-- What `element` reads and writes when it runs through in the closure: it begins, its outputs read their sources
+/-- What `element` reads and writes when it runs through in the closure: it begins (`beginReads`), its outputs read their sources
 and write their targets, a Call maps its inputs and outputs, its outgoing conditions are evaluated, and an Event
 Sub-Process whose start carries a delivery's variables writes every name (`deliveredWrites`). -/
 def footprint (program : Program) (element : Element) : Footprint :=
@@ -78,7 +130,7 @@ def footprint (program : Program) (element : Element) : Footprint :=
   let conditions := (element.outgoing.filterMap fun flow => (program.flow? flow).bind (·.condition)).foldl
     (fun found condition => found.union (expressionReads condition)) {}
   let callOutputs := (call.map fun work => work.outputs.map (·.target)).getD []
-  { reads := ((beginReads element).union (mappingReads outputs)).union
+  { reads := ((beginReads program element).union (mappingReads outputs)).union
       (((call.map fun work => mappingReads work.inputs).getD {}).union conditions),
     writes := { names := outputs.map (·.target) ++ callOutputs,
                 all := call.any (·.propagateAllOutputs) || deliveredWrites program element } }
@@ -101,6 +153,43 @@ def writes (element : Element) : NameSet :=
   let collection := ((element.envelope?).bind (·.multiInstance)).bind (·.outputCollection)
   { names := work ++ caught.flatMap catchWrites ++ ((thrown.map (·.installs)).getD []) ++ collection.toList
     all := thrown.any (·.installsAll) }
+
+/-- Every element declared inside `element`, at any depth. -/
+def Program.interior (program : Program) (element : Element) : List Element :=
+  let rec go : Nat → List ElementId → List Element
+    | 0, _ => []
+    | fuel + 1, ids => ids.flatMap fun id =>
+      match program.element? id with
+      | some inner => inner :: go fuel ((inner.scope?.map (·.2.children)).getD [])
+      | none => []
+  go program.elements.length ((element.scope?.map (·.2.children)).getD [])
+
+/-- What `element` itself reads and writes over its whole run, over-approximated: the IL's one account of its run
+(`footprint`, with its work's own reads, `workReads`), what it writes when it runs (`writes`) and what its boundaries
+write when they fire (`catchWrites`), a Multi-Instance element's output data item, every name a User Task installs under
+`SubmissionRule.installsVariables`, and every name for work whose data the model does not show, a plain or Manual Task
+(none of User, Service, Call, Receive, Script or Business Rule work), as COMPENSATION-SEMANTICS-SPEC D1 (c) reads it:
+the account says such work touches no name, which holds for the closure, not for §13.5.5's dependency. -/
+def runData (program : Program) (element : Element) : Footprint :=
+  let boundaries := ((element.envelope?.map (·.boundaries)).getD []).flatMap (catchWrites ·.subscription)
+  let item := ((element.envelope?.bind (·.multiInstance)).bind (·.outputDataItem)).toList
+  let caught : Footprint := { writes := (writes element).union { names := boundaries ++ item } }
+  let work : Footprint := match element.activity? with
+    | some (_, payload) =>
+      let abstract := !(payload.work.isUser || payload.work.isService || payload.work.call?.isSome ||
+        payload.work.receive?.isSome || payload.work.reader?.isSome)
+      let installs := payload.work.isUser && program.options.submission == .installsVariables
+      { reads := { all := abstract }, writes := { all := abstract || installs } }
+    | none => {}
+  ((footprint program element).union caught).union work
+
+/-- What a run of the compensation subject `subject` reads and writes, §13.5.5's data dependency, which
+`Kernel.Feature.Compensation.precedes` and admission's compensation order both read: its own and, for a Scope, its
+interior's. -/
+def subjectData (program : Program) (subject : ElementId) : Footprint :=
+  match program.element? subject with
+  | some element => (element :: program.interior element).foldl (fun found inner => found.union (runData program inner)) {}
+  | none => {}
 
 /-- A mechanism of the kernel that queues more than one unit of work in one closure, in an order no input states (P1's
 census of the queuing sites). Admission's order checks under `BranchSchedule.orderInvariant` and

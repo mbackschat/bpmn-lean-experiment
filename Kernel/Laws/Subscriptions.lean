@@ -28,6 +28,8 @@ What `Kernel.Feature.Subscriptions`' hooks do and keep of an invariant, under th
 
 namespace Kernel.Laws.Subscriptions
 
+variable {program : Program}
+
 open Kernel
 open Kernel.Laws.State (Within scopeIds occurrenceIds AwaitsTrigger)
 
@@ -63,7 +65,7 @@ structure SubscriptionsOps (program : Program) (inv : State → Prop) : Prop whe
   rekind : ∀ state (change : OpenItem → OpenItem), inv state →
     (∀ item, change item = { item with kind := (change item).kind }) →
     (∀ item, AwaitsTrigger item.kind → AwaitsTrigger (change item).kind) →
-    inv { state with openItems := state.openItems.map change }
+    inv { state with openItems := state.openItems.map fun _ item => change item }
   /-- A subscription's item waits for a trigger. -/
   awaits : (∀ detail, AwaitsTrigger (.timer detail)) ∧ (∀ detail, AwaitsTrigger (.message detail)) ∧
     (∀ detail, AwaitsTrigger (.signal detail)) ∧ ∀ detail, AwaitsTrigger (.conditional detail)
@@ -89,45 +91,45 @@ structure SubscriptionsOps (program : Program) (inv : State → Prop) : Prop whe
   /-- A fired item closed, then what it waited on completed, by flows its element lists; an Event-Based Gateway's arm
   disarms and completes its Gateway first, an interrupting boundary withdraws and cancels its host first, a cycle Timer
   reopens first. -/
-  closeComplete : ∀ state item leave writes, inv state → item ∈ state.openItems →
+  closeComplete : ∀ state item leave writes, inv state → item ∈ itemList state.openItems →
     (∀ selected, leave = .flows selected → ∀ flow ∈ selected, Laws.Flow.Lists program item.element flow) →
-    inv ((state.closeItem item.id).signal (.complete item.occurrence leave writes .outward))
-  gatewayComplete : ∀ state item gateway leave writes, inv state → item ∈ state.openItems →
+    inv ((state.closeItem item.id).signal (.complete item.id.occurrence leave writes .outward))
+  gatewayComplete : ∀ state item gateway leave writes, inv state → item ∈ itemList state.openItems →
     item.attachedTo = some gateway →
     (∀ selected, leave = .flows selected → ∀ flow ∈ selected, Laws.Flow.Lists program item.element flow) →
     inv ((((state.closeItem item.id).disarm gateway).signal
-      (.complete gateway (.flows []) [] .outward)).signal (.complete item.occurrence leave writes .outward))
-  interruptComplete : ∀ state item host leave writes, inv state → item ∈ state.openItems →
+      (.complete gateway (.flows []) [] .outward)).signal (.complete item.id.occurrence leave writes .outward))
+  interruptComplete : ∀ state item host leave writes, inv state → item ∈ itemList state.openItems →
     (∀ selected, leave = .flows selected → ∀ flow ∈ selected, Laws.Flow.Lists program item.element flow) →
     inv ((((state.closeItem item.id).withdrawOccurrence host).signal (.cancel host)).signal
-      (.complete item.occurrence leave writes .outward))
-  reopenComplete : ∀ state item detail leave writes, inv state → item ∈ state.openItems →
+      (.complete item.id.occurrence leave writes .outward))
+  reopenComplete : ∀ state item detail leave writes, inv state → item ∈ itemList state.openItems →
     Laws.IL.Reservable program item.element → (∀ selected, leave = .flows selected → ∀ flow ∈ selected, Laws.Flow.Lists program item.element flow) →
     inv (((state.closeItem item.id).openSubscription (.timer detail) item.element item.scope item.attachedTo
-      item.passive).1.signal (.complete item.occurrence leave writes .outward))
+      item.passive).1.signal (.complete item.id.occurrence leave writes .outward))
   /-- A fresh occurrence of the item's boundary in the item's scope occurrence, of a subscription that stays open,
   leaving by flows the boundary lists. -/
-  occur : ∀ state item element leave writes, inv state → item ∈ state.openItems → Laws.IL.BoundaryOf program element →
+  occur : ∀ state item element leave writes, inv state → item ∈ itemList state.openItems → Laws.IL.BoundaryOf program element →
     element = item.element →
     (∀ selected, leave = .flows selected → ∀ flow ∈ selected, Laws.Flow.Lists program item.element flow) →
     inv (state.signal (.occur element item.scope leave writes .outward))
   /-- A start Event's item closed, then its Event Sub-Process, the start's parent (`Laws.Flow.Linked`), begun with the
   item's reservation; an interrupting start withdraws the items of its scope occurrence first, a cycle Timer reopens
   first. -/
-  insideBegin : ∀ state item element writes, inv state → item ∈ state.openItems →
+  insideBegin : ∀ state item element writes, inv state → item ∈ itemList state.openItems →
     ((program.element? item.element).bind (·.start?)).isSome = true → Laws.Flow.Linked program item.element element →
     inv (((state.closeItem item.id).withdrawInside item.scope).signal
-      (.begin { element, scope := item.scope, writes, inner := some item.occurrence }))
-  closeBegin : ∀ state item element writes, inv state → item ∈ state.openItems →
+      (.begin { element, scope := item.scope, writes, inner := some item.id.occurrence }))
+  closeBegin : ∀ state item element writes, inv state → item ∈ itemList state.openItems →
     ((program.element? item.element).bind (·.start?)).isSome = true → Laws.Flow.Linked program item.element element →
-    inv ((state.closeItem item.id).signal (.begin { element, scope := item.scope, writes, inner := some item.occurrence }))
-  reopenBegin : ∀ state item detail element writes, inv state → item ∈ state.openItems →
+    inv ((state.closeItem item.id).signal (.begin { element, scope := item.scope, writes, inner := some item.id.occurrence }))
+  reopenBegin : ∀ state item detail element writes, inv state → item ∈ itemList state.openItems →
     ((program.element? item.element).bind (·.start?)).isSome = true → Laws.IL.Reservable program item.element →
     Laws.Flow.Linked program item.element element →
     inv (((state.closeItem item.id).openSubscription (.timer detail) item.element item.scope item.attachedTo
-      item.passive).1.signal (.begin { element, scope := item.scope, writes, inner := some item.occurrence }))
+      item.passive).1.signal (.begin { element, scope := item.scope, writes, inner := some item.id.occurrence }))
   /-- An Event Sub-Process, the start's parent, begun without a reservation in the item's scope occurrence. -/
-  bareBegin : ∀ state item element writes, inv state → item ∈ state.openItems →
+  bareBegin : ∀ state item element writes, inv state → item ∈ itemList state.openItems →
     Laws.Flow.Linked program item.element element →
     inv (state.signal (.begin { element, scope := item.scope, writes }))
 
@@ -195,6 +197,7 @@ theorem arriveCatch_keeps {inv : State → Prop} {ctx : Ctx} (ops : Subscription
   obtain ⟨kind?, _, ran⟩ := ok_bind ran
   split at ran
   · have opened := ops.openItem state ‹_› occurrence holds member begun unstarted role
+    rw [← Laws.State.openItemKey_fst] at opened
     dsimp only at ran
     split at ran
     · obtain ⟨⟨evaluated, fires⟩, evaluation, ran⟩ := ok_bind ran
@@ -218,15 +221,15 @@ theorem evaluateItem_frame {ctx : Ctx} {item : OpenItem} {trigger : ConditionTri
   all_goals cases ran
   all_goals exact ⟨rfl, rfl, rfl⟩
 
-/-- An item's evaluation issues nothing. -/
-theorem evaluateItem_issues {ctx : Ctx} {item : OpenItem} {trigger : ConditionTrigger} {state after : State}
+/-- An item's evaluation keeps every scope-key history. -/
+theorem evaluateItem_grows {ctx : Ctx} {item : OpenItem} {trigger : ConditionTrigger} {state after : State}
     {fires : Bool} (ran : Feature.Subscriptions.evaluateItem ctx item trigger state = .ok (after, fires)) :
-    after.nextIssue = state.nextIssue := by
+    Laws.State.ScopeGrows state after := by
   unfold Feature.Subscriptions.evaluateItem at ran
   simp only [bind, Except.bind] at ran
   repeat' split at ran
   all_goals cases ran
-  all_goals rfl
+  all_goals exact .of_same rfl rfl (.of_eq rfl)
 
 /-- An item's evaluation at arming keeps the scope occurrences, the occurrences and the instance entries. -/
 theorem armed_frame {ctx : Ctx} {subscription : Subscription} {item : OpenItem} {state after : State} {fires : Bool}
@@ -241,12 +244,12 @@ theorem armed_frame {ctx : Ctx} {subscription : Subscription} {item : OpenItem} 
 
 /-- What an arming keeps beside `inv` while it opens subscriptions: its scope occurrence stands, and its host, if any,
 is begun there. -/
-def Hosted (scope : ScopeOccurrenceId) (host : Option Nat) (state : State) : Prop :=
+def Hosted (scope : ScopeOccurrenceId) (host : Option OccurrenceId) (state : State) : Prop :=
   (∃ entry ∈ state.scopes, entry.id = scope) ∧
     ∀ id, host = some id → ∃ occurrence ∈ state.occurrences, occurrence.id = id ∧ occurrence.begun = true ∧
       occurrence.scope = scope
 
-theorem Hosted.congr {scope : ScopeOccurrenceId} {host : Option Nat} {state after : State}
+theorem Hosted.congr {scope : ScopeOccurrenceId} {host : Option OccurrenceId} {state after : State}
     (hosted : Hosted scope host state) (scopes : after.scopes = state.scopes)
     (occurrences : ∀ occurrence ∈ state.occurrences, occurrence ∈ after.occurrences) : Hosted scope host after :=
   ⟨scopes ▸ hosted.1, fun id named =>
@@ -332,7 +335,7 @@ theorem startEvent_reservable {ctx : Ctx} {eventSubProcess start : ElementId}
 scope occurrences and the instance entries. -/
 theorem subscribe_keeps {inv : State → Prop} (ops : SubscriptionsOps program inv) {ctx : Ctx} {arming : Feature.Subscriptions.Arming}
     {state after : State} {subscription : Subscription} {element : ElementId} {scope : ScopeOccurrenceId}
-    {host : Option Nat} {passive evaluate : Bool} {fired : Option OpenItem} (holds : inv state)
+    {host : Option OccurrenceId} {passive evaluate : Bool} {fired : Option OpenItem} (holds : inv state)
     (hosted : Hosted scope host state) (reservable : Laws.IL.Reservable program element)
     (anchored : Laws.Flow.Anchored inv program state element scope)
     (ran : Feature.Subscriptions.subscribe ctx arming state subscription element scope host passive evaluate =
@@ -357,25 +360,26 @@ theorem subscribe_keeps {inv : State → Prop} (ops : SubscriptionsOps program i
     · cases ran
       exact ⟨opened, kept, scopes, instances⟩
 
-/-- A subscription issues no fewer identities: its reservation and item, and an evaluation issuing none. -/
-theorem subscribe_issues {ctx : Ctx} {arming : Feature.Subscriptions.Arming} {state after : State}
-    {subscription : Subscription} {element : ElementId} {scope : ScopeOccurrenceId} {host : Option Nat}
-    {passive evaluate : Bool} {fired : Option OpenItem}
+/-- A subscription keeps every scope-key history: its reservation and item, and an evaluation, enter no scope
+occurrence. -/
+theorem subscribe_grows {ctx : Ctx} {arming : Feature.Subscriptions.Arming} {state after : State}
+    {subscription : Subscription} {element : ElementId} {scope : ScopeOccurrenceId} {host : Option OccurrenceId}
+    {passive evaluate : Bool} {fired : Option OpenItem} (fresh : Laws.State.IssuerFresh state)
     (ran : Feature.Subscriptions.subscribe ctx arming state subscription element scope host passive evaluate =
-      .ok (after, fired)) : state.nextIssue ≤ after.nextIssue := by
+      .ok (after, fired)) : Laws.State.ScopeGrows state after := by
   unfold Feature.Subscriptions.subscribe at ran
   obtain ⟨kind?, _, ran⟩ := ok_bind ran
   split at ran
   · cases ran
-    exact Nat.le_refl _
-  · have opened := Laws.State.openSubscription_issues state ‹_› element scope host passive
+    exact .refl _
+  · have opened := Laws.State.openSubscription_grows state ‹_› element scope host passive fresh
     dsimp only at ran
     split at ran
     · obtain ⟨⟨evaluated, fires⟩, evaluation, ran⟩ := ok_bind ran
       cases ran
       unfold Feature.Subscriptions.armed at evaluation
       split at evaluation
-      · exact (evaluateItem_issues evaluation).symm ▸ opened
+      · exact opened.trans (evaluateItem_grows evaluation)
       · cases evaluation
         exact opened
     · cases ran
@@ -385,7 +389,7 @@ theorem subscribe_issues {ctx : Ctx} {arming : Feature.Subscriptions.Arming} {st
 of the state `start` the arming began from. -/
 theorem subscribe_covers {inv : State → Prop} (ops : SubscriptionsOps program inv) {ctx : Ctx}
     {arming : Feature.Subscriptions.Arming} {start state after : State} {subscription : Subscription}
-    {element : ElementId} {scope : ScopeOccurrenceId} {host : Option Nat} {passive evaluate : Bool}
+    {element : ElementId} {scope : ScopeOccurrenceId} {host : Option OccurrenceId} {passive evaluate : Bool}
     {fired : Option OpenItem}
     (kept : inv state ∧ Hosted scope host state ∧ state.scopes = start.scopes ∧
       state.slots.instances = start.slots.instances)
@@ -417,36 +421,38 @@ theorem subscribeAll_keeps {inv : State → Prop} (ops : SubscriptionsOps progra
 
 /-- `Hooks.arm` keeps `inv` for a host begun in a scope occurrence that stands, its arming taken off a queue that kept
 `inv`, which anchors the boundaries it opens. -/
-theorem arm_keeps {inv : State → Prop} {ctx : Ctx} (ops : SubscriptionsOps ctx.program inv) {host : Nat}
-    {element : ElementId} {scope : ScopeOccurrenceId} {state after : State} (holds : inv state)
-    (hosted : Hosted scope (some host) state) (popped : Laws.State.Popped inv (.arm host element scope) state)
+theorem arm_keeps {inv : State → Prop} {ctx : Ctx} (ops : SubscriptionsOps ctx.program inv) {host : OccurrenceId}
+    {element : ElementId} {scope : ScopeOccurrenceId} {state after : State}
+    (issuer : ∀ s, inv s → Laws.State.IssuerFresh s) (holds : inv state) (hosted : Hosted scope (some host) state) (popped : Laws.State.Popped inv (.arm host element scope) state)
     (ran : Feature.Subscriptions.arm ctx host element scope state = .ok after) : inv after := by
-  obtain ⟨queue, queued, heads, shape⟩ := popped
+  obtain ⟨queue, _, queued, rest₁⟩ := popped
+  obtain ⟨heads, shape⟩ := rest₁
   unfold Feature.Subscriptions.arm at ran
   split at ran
   · cases ran
   · rename_i envelope found
     obtain ⟨located, locatedIs, has⟩ := Option.bind_eq_some_iff.mp found
     refine subscribeAll_keeps ops (fun current => (Hosted scope (some host) current ∧ current.scopes = queue.scopes ∧
-        current.slots.instances = queue.slots.instances) ∧ queue.nextIssue ≤ current.nextIssue)
-      ⟨holds, ⟨hosted, by rw [shape], by rw [shape]⟩, Nat.le_of_eq (by rw [shape])⟩
+        current.slots.instances = queue.slots.instances) ∧ Laws.State.ScopeGrows queue current)
+      ⟨holds, ⟨hosted, by rw [shape], by rw [shape]⟩, by rw [shape]; exact .of_same rfl rfl (.of_eq rfl)⟩
       (fun _ boundary _ _ inside kept subscribing =>
         have next := subscribe_covers ops ⟨kept.1, kept.2.1⟩
           (.inl (Laws.IL.boundaryOf_envelope found inside))
           (Laws.Flow.Anchored.held queued kept.2.2 (fun _ held => kept.2.1.2.1 ▸ held)
             (fun _ held => kept.2.1.2.2 ▸ held)
             (.inr (.inr (.inr (.inl ⟨located, envelope, locatedIs, has, boundary, inside, rfl⟩))))
-            (.inr (.inl ⟨host, by rw [heads]; exact List.mem_cons_self ..⟩))) subscribing
-        ⟨next.1, next.2, Nat.le_trans kept.2.2 (subscribe_issues subscribing)⟩) ran
+            (.inr (.inl ⟨host, Laws.State.mem_allSignals_of heads⟩))) subscribing
+        ⟨next.1, next.2, kept.2.2.trans (subscribe_grows (issuer _ kept.1) subscribing)⟩) ran
 
 /-- `Hooks.armGateway` keeps `inv` for a gateway occurrence begun in a scope occurrence that stands, its arming taken
 off a queue that kept `inv`, which anchors the catch Events its flows reach. -/
-theorem armGateway_keeps {inv : State → Prop} {ctx : Ctx} (ops : SubscriptionsOps ctx.program inv) {occurrence : Nat}
-    {gateway : ElementId} {scope : ScopeOccurrenceId} {state after : State} (holds : inv state)
-    (hosted : Hosted scope (some occurrence) state)
+theorem armGateway_keeps {inv : State → Prop} {ctx : Ctx} (ops : SubscriptionsOps ctx.program inv) {occurrence : OccurrenceId}
+    {gateway : ElementId} {scope : ScopeOccurrenceId} {state after : State}
+    (issuer : ∀ s, inv s → Laws.State.IssuerFresh s) (holds : inv state) (hosted : Hosted scope (some occurrence) state)
     (popped : Laws.State.Popped inv (.armGateway occurrence gateway scope) state)
     (ran : Feature.Subscriptions.armGateway ctx occurrence gateway scope state = .ok after) : inv after := by
-  obtain ⟨queue, queued, heads, shape⟩ := popped
+  obtain ⟨queue, _, queued, rest₁⟩ := popped
+  obtain ⟨heads, shape⟩ := rest₁
   unfold Feature.Subscriptions.armGateway at ran
   split at ran
   · cases ran
@@ -454,19 +460,19 @@ theorem armGateway_keeps {inv : State → Prop} {ctx : Ctx} (ops : Subscriptions
     obtain ⟨located, locatedIs, typed⟩ := Option.bind_eq_some_iff.mp found
     refine subscribeAll_keeps ops (fun current => (Hosted scope (some occurrence) current ∧
         current.scopes = queue.scopes ∧ current.slots.instances = queue.slots.instances) ∧
-        queue.nextIssue ≤ current.nextIssue)
-      ⟨holds, ⟨hosted, by rw [shape], by rw [shape]⟩, Nat.le_of_eq (by rw [shape])⟩
+        Laws.State.ScopeGrows queue current)
+      ⟨holds, ⟨hosted, by rw [shape], by rw [shape]⟩, by rw [shape]; exact .of_same rfl rfl (.of_eq rfl)⟩
       (fun _ flow _ _ inside kept subscribing => ?_) ran
     dsimp only at subscribing
     split at subscribing
     · rename_i element subscription arm
-      refine (fun next => ⟨next.1, next.2, Nat.le_trans kept.2.2 (subscribe_issues subscribing)⟩)
+      refine (fun next => ⟨next.1, next.2, kept.2.2.trans (subscribe_grows (issuer _ kept.1) subscribing)⟩)
         (subscribe_covers ops ⟨kept.1, kept.2.1⟩ (gatewayArm_reservable arm) ?_ subscribing)
       exact Laws.Flow.Anchored.held queued kept.2.2 (fun _ held => kept.2.1.2.1 ▸ held)
           (fun _ held => kept.2.1.2.2 ▸ held)
           (.inr (.inr (.inr (.inr (.inl ⟨flow, .inl ⟨located, locatedIs, .inr (.inr ⟨_, payload, typed, .inl inside⟩)⟩,
             gatewayArm_target arm⟩)))))
-          (.inr (.inr (.inl ⟨occurrence, by rw [heads]; exact List.mem_cons_self ..⟩)))
+          (.inr (.inr (.inl ⟨occurrence, Laws.State.mem_allSignals_of heads⟩)))
     · cases subscribing
 
 /-- The Conditional boundaries evaluated at a scope's arming keep `inv` and the scope occurrences and occurrences. -/
@@ -495,14 +501,15 @@ theorem enabledBoundaries_keeps {inv : State → Prop} (ops : SubscriptionsOps p
 
 /-- `Hooks.armScope` keeps `inv` for a scope occurrence that stands. -/
 theorem armScope_keeps {inv : State → Prop} {ctx : Ctx} (ops : SubscriptionsOps ctx.program inv) {scope : ScopeOccurrenceId}
-    {state after : State} (holds : inv state) (stands : ∃ entry ∈ state.scopes, entry.id = scope)
+    {state after : State} (issuer : ∀ s, inv s → Laws.State.IssuerFresh s) (holds : inv state)
+    (stands : ∃ entry ∈ state.scopes, entry.id = scope)
     (ran : Feature.Subscriptions.armScope ctx scope state = .ok after) : inv after := by
   unfold Feature.Subscriptions.armScope at ran
   obtain ⟨⟨evaluated, boundaries⟩, evaluation, ran⟩ := ok_bind ran
   obtain ⟨kept, scopes, _⟩ := enabledBoundaries_keeps ops holds evaluation
   refine subscribeAll_keeps ops (fun current => (Hosted scope none current ∧ current.scopes = evaluated.scopes ∧
-      current.slots.instances = evaluated.slots.instances) ∧ evaluated.nextIssue ≤ current.nextIssue)
-    ⟨kept, ⟨⟨scopes ▸ stands, nofun⟩, rfl, rfl⟩, Nat.le_refl _⟩
+      current.slots.instances = evaluated.slots.instances) ∧ Laws.State.ScopeGrows evaluated current)
+    ⟨kept, ⟨⟨scopes ▸ stands, nofun⟩, rfl, rfl⟩, .refl _⟩
     (fun _ child _ _ inside held subscribing => ?_) ran
   dsimp only at subscribing
   split at subscribing
@@ -521,7 +528,7 @@ theorem armScope_keeps {inv : State → Prop} {ctx : Ctx} (ops : SubscriptionsOp
         (Laws.Flow.Anchored.held kept held.2.2 (fun _ inside => held.2.1.2.1 ▸ inside)
           (fun _ inside => held.2.1.2.2 ▸ inside) (startEvent_child found)
           (.inl (.inr (.inr (.inl ⟨scopes ▸ stands, child, inside, named⟩))))) subscribing
-      exact ⟨next.1, next.2, Nat.le_trans held.2.2 (subscribe_issues subscribing)⟩
+      exact ⟨next.1, next.2, held.2.2.trans (subscribe_grows (issuer _ held.1) subscribing)⟩
     · cases subscribing
       exact held
     · cases subscribing
@@ -558,9 +565,9 @@ theorem admitFiring_state {hooks : Feature.Subscriptions.SubscriptionsHooks} {ct
 
 /-- What remains of a fired item that does not interrupt: it stays open, closes, or reopens as a cycle Timer. -/
 theorem afterFiring_cases (state : State) (item : OpenItem) : Feature.Subscriptions.afterFiring state item = (state, none) ∨
-    Feature.Subscriptions.afterFiring state item = (state.closeItem item.id, some item.occurrence) ∨
+    Feature.Subscriptions.afterFiring state item = (state.closeItem item.id, some item.id.occurrence) ∨
     ∃ detail, Feature.Subscriptions.afterFiring state item = (((state.closeItem item.id).openSubscription (.timer detail)
-      item.element item.scope item.attachedTo item.passive).1, some item.occurrence) := by
+      item.element item.scope item.attachedTo item.passive).1, some item.id.occurrence) := by
   unfold Feature.Subscriptions.afterFiring
   dsimp only
   repeat' split
@@ -569,7 +576,7 @@ theorem afterFiring_cases (state : State) (item : OpenItem) : Feature.Subscripti
 /-- `Hooks.trigger` keeps `inv` for an item that is open. -/
 theorem trigger_keeps {inv : State → Prop} {ctx : Ctx} (ops : SubscriptionsOps ctx.program inv)
     {hooks : Feature.Subscriptions.SubscriptionsHooks} {item : OpenItem} {fired : Fired} {state after : State}
-    (holds : inv state) (member : item ∈ state.openItems)
+    (holds : inv state) (member : item ∈ itemList state.openItems)
     (ran : Feature.Subscriptions.trigger hooks ctx item fired state = .ok after) : inv after := by
   unfold Feature.Subscriptions.trigger at ran
   split at ran

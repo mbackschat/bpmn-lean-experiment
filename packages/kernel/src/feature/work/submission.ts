@@ -10,6 +10,7 @@
  */
 import { distinctCount } from "../../il/types.js";
 import {
+  scopeOccurrenceParent,
   FailureTag,
   committed,
   failed,
@@ -17,7 +18,7 @@ import {
   type Binding,
   type Result,
   type ScopeOccurrenceId,
-  type State,
+  type State, ownVariables,
 } from "../../state.js";
 import { arrayBytes, entriesBytes, type Ctx } from "../../hooks.js";
 import { submissionNames } from "./call.js";
@@ -29,8 +30,8 @@ function declared(state: State, scope: ScopeOccurrenceId): readonly string[] {
   let current: ScopeOccurrenceId | null = scope;
   for (let fuel = state.scopes.length; fuel > 0 && current !== null && current !== top; fuel -= 1) {
     const at: ScopeOccurrenceId = current;
-    names.push(...(state.variables.find((entry) => entry.scope === at)?.entries ?? []).map(([name]) => name));
-    current = state.scopes.find((candidate) => candidate.id === at)?.parent ?? null;
+    names.push(...ownVariables(state, at).map(([name]) => name));
+    current = scopeOccurrenceParent(state.scopes.find((candidate) => candidate.id === at));
   }
   return names;
 }

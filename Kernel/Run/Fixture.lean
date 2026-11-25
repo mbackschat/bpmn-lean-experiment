@@ -45,11 +45,11 @@ def intentFromJson (json : Json) : Except String BroadcastIntent := do
   pure { address := ← Codec.signalAddressFromJson (← json.getObjVal? "address")
          variables := ← Codec.bindingsAt json "variables"
          businessKey := ← nullableAt json "businessKey" (·.getStr?)
-         origin := ← Codec.occurrenceFromJson (← json.getObjVal? "origin") }
+         origin := (← Codec.occurrenceFromJson (← json.getObjVal? "origin")).toName }
 
 def intentJson (intent : BroadcastIntent) : Json :=
   Json.mkObj [("address", signalAddressJson intent.address), ("variables", Codec.bindingsToJson intent.variables),
-    ("businessKey", nullable intent.businessKey Json.str), ("origin", referenceJson intent.origin)]
+    ("businessKey", nullable intent.businessKey Json.str), ("origin", referenceJson intent.origin.toRef)]
 
 /-- Work a fan-out still has: `{receiver, emission}` (`emission` nullable for a root receiver) or `{intent, emitter}`. -/
 def pendingFromJson (json : Json) : Except String Population.Pending := do

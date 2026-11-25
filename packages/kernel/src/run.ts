@@ -28,7 +28,7 @@
  * admission refusal, the published entry (`index.ts`) leaves it out: the package's test-only `./testing` export, this
  * module, offers it to the unit tests' pairing helper (`packages/kernel/test/lean-paired.ts`).
  */
-import { assertNever, compareStrings, mergeSort, type DefinitionRef, type Program } from "./il/types.js";
+import { assertNever, compareStrings, defaultBounds, mergeSort, type DefinitionRef, type Program } from "./il/types.js";
 import {
   bindingsFromJson, bindingsToJson, decodeExpression, decodeProgram, encodeExpression, encodeProgram, parseStrict, valueCodec,
   type JsonValue,
@@ -42,19 +42,27 @@ import {
   FailureTag,
   type Cause,
   type EffectDetail,
+  type IncidentSubject,
+  IncidentSubjectTag,
+  type JobDetail,
+  type JobSubject,
+  JobSubjectTag,
+  type TimerRecurrence,
   type Input,
   type InstanceFailure,
   type OccurrenceKey,
   type BroadcastIntent,
   type OccurrenceRef,
   type Outcome,
+  type Result,
+  committed,
   type State,
   type Transition,
   type UserTaskDetail,
-  type WaitView,
+  type WaitView, instanceText, nameRef,
 } from "./state.js";
 import { step } from "./step.js";
-import { scopeRoleName, scopes, statusName, variables, type PublishedScope } from "./publish.js";
+import { publishedScopes, scopeRoleName, statusName, variables, type PublishedScope } from "./publish.js";
 import {
   definitionCapabilities,
   hostRequirements,
@@ -76,7 +84,7 @@ import { deploymentSummary, registerSummary, type DeploymentSummary } from "./po
 import { signalStartReceivers } from "./population/signals.js";
 import { EvaluationTag } from "./hooks.js";
 import { hooks } from "./registry.js";
-import { admit } from "./admission-registry.js";
+import { admit, admitLocated } from "./admission-registry.js";
 import { arrayField, field, nullable, referenceJson, requiredString, stimulusOf } from "./run/wire.js";
 import {
   definitionRefFromJson, deploymentSourceFromJson, populationResultJson, receiverJson, stimuliOfPopulation, type Declared,
@@ -127,13 +135,53 @@ function userTaskFields(task: UserTaskDetail): Record<string, JsonValue> {
   };
 }
 
+/** A job publishes its due time, as CIB exposes a job's due date; its retries and failures are not observed (AD8). */
+function jobFields(job: JobDetail): Record<string, JsonValue> {
+  return { dueMs: job.dueMs };
+}
+
+/** A Timer wait's due time and, for a cycle, its recurrence. */
+function timerFields(deadlineMs: number, recurrence: TimerRecurrence | null): Record<string, JsonValue> {
+  return {
+    deadlineMs,
+    recurrence: nullable(recurrence, (cycle) => ({
+      periodMs: nullable(cycle.periodMs, number),
+      cron: nullable(cycle.cron, jsonString),
+      remaining: nullable(cycle.remaining, number),
+    })),
+  };
+}
+
+/** A failed job, published under its own member: `job` for a continuation's, `timer` for a Timer's. */
+function jobSubjectFields(job: JobSubject): Record<string, JsonValue> {
+  switch (job.tag) {
+    case JobSubjectTag.Continuation:
+      return { job: jobFields(job.detail) };
+    case JobSubjectTag.Timer:
+      return { timer: timerFields(job.detail.deadlineMs, job.detail.recurrence) };
+  }
+  return assertNever(job);
+}
+
+/** What an incident's failure belongs to, published under its own member: `effect`, `job` or `timer`. */
+function subjectFields(subject: IncidentSubject): Record<string, JsonValue> {
+  switch (subject.tag) {
+    case IncidentSubjectTag.Effect:
+      return { effect: effectFields(subject.detail) };
+    case IncidentSubjectTag.Job:
+      return jobSubjectFields(subject.job);
+  }
+  return assertNever(subject);
+}
+
 /** A wait's detail kind and fields, read from the one view field its kind sets (`openKindView`). */
 function detail(view: WaitView): readonly [string, Record<string, JsonValue>] | null {
   if (view.userTask !== null) return ["userTask", userTaskFields(view.userTask)];
   if (view.incident !== null) {
     const incident = view.incident;
-    return ["incident", { effect: effectFields(incident.effect), generation: incident.generation, cancellable: incident.cancellable }];
+    return ["incident", { ...subjectFields(incident.subject), generation: incident.generation, cancellable: incident.cancellable }];
   }
+  if (view.job !== null) return ["job", jobFields(view.job)];
   if (view.effect !== null) return ["effect", effectFields(view.effect)];
   if (view.signal !== null) return ["signal", { ...signalAddressToJson(view.signal.address), payload: view.signal.payload }];
   if (view.conditional !== null) {
@@ -144,16 +192,7 @@ function detail(view: WaitView): readonly [string, Record<string, JsonValue>] | 
       lastValue: nullable(condition.lastValue, flag),
     }];
   }
-  if (view.deadlineMs !== null) {
-    return ["timer", {
-      deadlineMs: view.deadlineMs,
-      recurrence: nullable(view.recurrence, (recurrence) => ({
-        periodMs: nullable(recurrence.periodMs, number),
-        cron: nullable(recurrence.cron, jsonString),
-        remaining: nullable(recurrence.remaining, number),
-      })),
-    }];
-  }
+  if (view.deadlineMs !== null) return ["timer", timerFields(view.deadlineMs, view.recurrence)];
   if (view.channel !== null) {
     return ["message", { channel: channelToJson(view.channel), payload: view.payload, criteria: [...view.criteria] }];
   }
@@ -196,8 +235,8 @@ function failureJson(failure: InstanceFailure): JsonValue {
   return {
     code: failure.code,
     message: nullable(failure.message, jsonString),
-    occurrence: referenceJson(failure.occurrence),
-    related: failure.related.map(([name, ref]) => ({ name, occurrence: referenceJson(ref) })),
+    occurrence: referenceJson(nameRef(failure.occurrence)),
+    related: failure.related.map(([name, held]) => ({ name, occurrence: referenceJson(nameRef(held)) })),
   };
 }
 
@@ -219,7 +258,7 @@ function broadcastJson(intent: BroadcastIntent): JsonValue {
     ...signalAddressToJson(intent.address),
     variables: bindingsToJson(intent.variables),
     ...(intent.businessKey === null ? {} : { businessKey: intent.businessKey }),
-    origin: referenceJson(intent.origin),
+    origin: referenceJson(nameRef(intent.origin)),
   };
 }
 
@@ -228,30 +267,32 @@ function broadcastsJson(intents: readonly BroadcastIntent[]): Record<string, Jso
   return intents.length === 0 ? {} : { broadcasts: intents.map(broadcastJson) };
 }
 
-/** The state observation; `failure` appears only in a failed state, `broadcasts` only after an input that threw a Signal to the population. */
-export function observationJson(program: Program, state: State): JsonValue {
+/**
+ * The state observation; `failure` appears only in a failed state, `broadcasts` only after an input that threw a Signal
+ * to the population. A state whose scopes cannot be published (`publishedScopes`) has none: its invariant failure is the
+ * answer.
+ */
+export function observationJson(program: Program, state: State): Result<JsonValue> {
+  const scopes = publishedScopes(program, state);
+  if (!scopes.ok) return scopes;
   const view = hostView(program, state);
   const waits = mergeSort(view.openWaits.map(renderWait), publishedWaitLe);
-  return {
+  return committed({
     kind: "state",
     instanceId: state.instanceId,
     status: statusName(view.status),
     logicalTimeMs: state.logicalTimeMs,
     variables: bindingsToJson(variables(state)),
-    scopes: scopes(program, state).map(scopeJson),
+    scopes: scopes.value.map(scopeJson),
     openWaits: waits.map((wait) => wait.json),
     ...(view.failure === null ? {} : { failure: failureJson(view.failure) }),
     ...broadcastsJson(view.broadcasts),
-  };
+  });
 }
 
 /** `code` appears only on an input that did not commit. */
 function commandJson(commandId: string, outcome: string, code: string | null): JsonValue {
   return code === null ? { kind: "command", commandId, outcome } : { kind: "command", commandId, outcome, code };
-}
-
-function snapshot(program: Program, state: State | null): JsonValue[] {
-  return state === null ? [] : [observationJson(program, state)];
 }
 
 /**
@@ -268,19 +309,33 @@ export function runStep(program: Program, state: State | null, input: Input, fir
 /** A scenario stimulus: its command identifier, its input and the Timer firing it states. */
 type RunStimulus = readonly [string, Input, TimerFiring | null];
 
-/** The trace after deployment and the scenario outcome. */
+/** `runStep`, then the committed state's observation, whose failure (`observationJson`) fails the input as the step's would. */
+function observedStep(program: Program, state: State | null, input: Input, firing: TimerFiring | null): Result<readonly [State, JsonValue]> {
+  const stepped = runStep(program, state, input, firing);
+  if (!stepped.ok) return stepped;
+  const observed = observationJson(program, stepped.value);
+  return observed.ok ? committed([stepped.value, observed.value] as const) : observed;
+}
+
+/**
+ * The trace after deployment and the scenario outcome; `shown` is the observation of the state reached so far, which a
+ * rejected input repeats.
+ */
 function execute(program: Program, stimuli: readonly RunStimulus[]): readonly [JsonValue[], string] {
   const trace: JsonValue[] = [];
   let state: State | null = null;
+  let shown: JsonValue[] = [];
   for (const [index, [commandId, input, firing]] of stimuli.entries()) {
-    const outcome = runStep(program, state, input, firing);
+    const outcome = observedStep(program, state, input, firing);
     if (outcome.ok) {
-      trace.push(commandJson(commandId, "committed", null), ...snapshot(program, outcome.value));
-      state = outcome.value;
+      const [next, observed] = outcome.value;
+      trace.push(commandJson(commandId, "committed", null), observed);
+      state = next;
+      shown = [observed];
       continue;
     }
     const name = failureName(outcome.failure);
-    trace.push(commandJson(commandId, name, failureCode(outcome.failure)), ...snapshot(program, state));
+    trace.push(commandJson(commandId, name, failureCode(outcome.failure)), ...shown);
     const continues = outcome.failure.tag === FailureTag.Rejected && index < stimuli.length - 1;
     if (!continues) return [trace, name];
   }
@@ -331,9 +386,13 @@ export function runScenario(programJson: unknown, scenarioJson: unknown): unknow
 // Host-view mode
 
 function keyJson(key: OccurrenceKey): JsonValue {
-  return { processInstanceId: key.processInstanceId, elementId: key.element, activation: key.activation, role: key.role };
+  return { processInstanceId: instanceText(key.processInstanceId), elementId: key.element, activation: key.activation, role: key.role };
 }
 
+/**
+ * A transition's cause and occurrence facts, public fields only (PD2): the kernel's scope-occurrence ordinals
+ * (`Transition.owner`, a started fact's `owner`, an idle cause's scope) are internal identities and never published.
+ */
 function causeJson(cause: Cause): JsonValue {
   switch (cause.tag) {
     case CauseTag.Input:
@@ -343,7 +402,7 @@ function causeJson(cause: Cause): JsonValue {
     case CauseTag.Arrive:
       return { kind: "arrive", flow: cause.flow };
     case CauseTag.Idle:
-      return { kind: "idle", scope: cause.scope };
+      return { kind: "idle" };
   }
   return assertNever(cause);
 }
@@ -352,9 +411,10 @@ function transitionJson(transition: Transition): JsonValue {
   return {
     cause: causeJson(transition.cause),
     element: transition.element,
-    owner: transition.owner,
-    started: transition.started.map((fact) => ({ occurrence: keyJson(fact.occurrence), owner: fact.owner, sourceType: fact.sourceType })),
+    started: transition.started.map((fact) => ({ occurrence: keyJson(fact.occurrence), sourceType: fact.sourceType })),
     ended: transition.ended.map(([key, terminal]) => ({ occurrence: keyJson(key), terminal })),
+    // Absent when empty, so a run that holds nothing publishes what it published before PD2.
+    ...(transition.ready.length === 0 ? {} : { ready: transition.ready.map(keyJson) }),
   };
 }
 
@@ -386,8 +446,8 @@ function failureViewJson(failure: InstanceFailure): JsonValue {
   return {
     code: failure.code,
     message: failure.message,
-    occurrence: referenceJson(failure.occurrence),
-    related: Object.fromEntries(failure.related.map(([name, ref]) => [name, referenceJson(ref)])),
+    occurrence: referenceJson(nameRef(failure.occurrence)),
+    related: Object.fromEntries(failure.related.map(([name, held]) => [name, referenceJson(nameRef(held))])),
   };
 }
 
@@ -413,15 +473,19 @@ export function hostViewJson(view: View): JsonValue {
   };
 }
 
-/** Every committed input's host view, up to the first input that neither commits nor is rejected. */
+/**
+ * Every committed input's host view, up to where `execute`'s trace stops: the first input that neither commits nor is
+ * rejected, an input whose committed state's observation fails included (`observedStep`).
+ */
 function hostViews(program: Program, stimuli: readonly RunStimulus[]): readonly View[] {
   const views: View[] = [];
   let state: State | null = null;
   for (const [, input, firing] of stimuli) {
-    const outcome = runStep(program, state, input, firing);
+    const outcome = observedStep(program, state, input, firing);
     if (outcome.ok) {
-      views.push(hostView(program, outcome.value));
-      state = outcome.value;
+      const [next] = outcome.value;
+      views.push(hostView(program, next));
+      state = next;
     } else if (outcome.failure.tag !== FailureTag.Rejected) {
       return views;
     }
@@ -526,7 +590,9 @@ function populationRun(scenarioJson: unknown, sources: readonly DeploymentSource
   const stimuli = stimuliOfPopulation(declared, sources, arrayField(scenarioJson, "steps", where), digests, where);
   const population = runInstances(hooks, admit, stimuli);
   if (!population.ok) throw new Error(`${where}: ${population.error}`);
-  return populationResultJson(observationJson, scenarioId, population.value);
+  const rendered = populationResultJson(observationJson, scenarioId, population.value);
+  if (!rendered.ok) throw new Error(`${where}: ${failureCode(rendered.failure)}`);
+  return rendered.value;
 }
 
 // Fixture mode
@@ -605,8 +671,18 @@ function occurrenceAnswers(programs: readonly Program[], input: unknown): JsonVa
   });
 }
 
+/**
+ * The located refusal (`admitLocated`) of a fixture's one program, decoded but not admitted, since the refusal is the
+ * answer: `null` when admitted, else its code, element and related elements.
+ */
+function admitLocatedAnswer(fixture: unknown): JsonValue {
+  const refusal = admitLocated(onlyProgram(arrayField(fixture, "programs", "fixture").map((json) => programFromJson(json, "fixture"))));
+  return refusal === null ? null : { code: refusal.code, element: refusal.element, related: [...refusal.related] };
+}
+
 /** The host-facing functions a fixture's `entry` names, each over the fixture and its `input`. */
 const fixtureEntries: Readonly<Record<string, (fixture: unknown, input: unknown) => JsonValue>> = {
+  admitLocated: (fixture) => admitLocatedAnswer(fixture),
   rootStarts: (fixture) => rootStarts(onlyProgram(fixturePrograms(fixture))).map(([publicId, own]) => [publicId, own]),
   refusesSignalVariables: (fixture) => refusesSignalVariables(onlyProgram(fixturePrograms(fixture))),
   registerSummary: (fixture, input) => registrations(fixturePrograms(fixture), arrayField(input, "deploymentIds", "fixture")),
@@ -677,7 +753,7 @@ function evaluationAnswer(batchCase: unknown): JsonValue {
   if (!expression.ok) throw new Error(`batch: ${expression.refusal}`);
   const variables = bindingsFromJson(field(batchCase, "variables", "batch"));
   if (!variables.ok) throw new Error(`batch: ${variables.refusal}`);
-  const evaluation = hooks.evaluate({ variables: variables.value, nowMs: natField(batchCase, "nowMs") }, expression.value);
+  const evaluation = hooks.evaluate({ variables: variables.value, nowMs: natField(batchCase, "nowMs"), bounds: defaultBounds }, expression.value);
   switch (evaluation.tag) {
     case EvaluationTag.Value:
       return { value: valueCodec.encode(evaluation.result) };

@@ -27,7 +27,7 @@ import {
   failureName,
   occurrenceFromJson,
 } from "../il/codec/stimulus.js";
-import type { Binding, Failure, RecordedFailure, State } from "../state.js";
+import { committed, type Binding, type Failure, type RecordedFailure, type Result, type State } from "../state.js";
 import {
   CommandTag,
   DefinitionSelectorTag,
@@ -364,19 +364,28 @@ function deploymentResultJson(deployment: DeploymentResult): JsonValue {
   };
 }
 
-/** The result document; `observe` renders an instance's state as the canonical result's state observation. */
+/**
+ * The result document; `observe` renders an instance's state as the canonical result's state observation, whose
+ * failure is the document's.
+ */
 export function populationResultJson(
-  observe: (program: Program, state: State) => JsonValue,
+  observe: (program: Program, state: State) => Result<JsonValue>,
   scenarioId: string,
   population: PopulationResult,
-): JsonValue {
+): Result<JsonValue> {
+  const processStates: JsonValue[] = [];
+  for (const member of population.instances) {
+    const observed = observe(member.deployment.program, member.state);
+    if (!observed.ok) return observed;
+    processStates.push(observed.value);
+  }
   const inputFailures = population.inputFailures.length === 0 ? {} : {
     inputFailures: population.inputFailures.map(([commandId, failure]) => ({ commandId, ...failureFields(failure) })),
   };
   const inputCascades = population.inputCascades.length === 0 ? {} : {
     inputCascades: population.inputCascades.map(([commandId, entries]) => ({ commandId, entries: entries.map(fanOutEntryJson) })),
   };
-  return {
+  return committed({
     ...inputFailures,
     ...inputCascades,
     kind: "enginePopulationResult",
@@ -385,6 +394,6 @@ export function populationResultJson(
     steps: population.steps.map((stepped) => ({
       commandId: stepped.commandId, ordinal: stepped.ordinal, at: stepped.atMs, resolution: resolutionJson(stepped.resolution),
     })),
-    processStates: population.instances.map((member) => observe(member.deployment.program, member.state)),
-  };
+    processStates,
+  });
 }

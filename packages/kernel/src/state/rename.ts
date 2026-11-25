@@ -1,0 +1,165 @@
+/**
+ * The renaming at commit (DC12), transcribed from `Kernel/State/Rename.lean`: an issue renaming applied to every identity
+ * a committed state holds, scope occurrence keys, occurrence keys and item keys, wherever the state holds them. Part of
+ * the State layer, above `state.ts`, since it writes the state's families (guard 17); `step/commit.ts` chooses the
+ * renaming and renames continuations.
+ */
+import {
+  CauseTag, childScope, compareItemKey, type Cause, type Compensable, type CompensationRun, type Continuation, type FeatureSlots, freshIssue, putRun,
+  type HeldMap, insertHeld, insertRun, type MultiInstanceRun, insertOccurrence, insertScope, type Issue, type ItemKey, type Iteration, IterationTag, type OccurrenceId,
+  occurrenceId, type OccurrenceMap, occurrenceIdParts, type OccurrenceKey, type OccurrenceName, renameInstanceName, type InstanceFailure,
+  type Resume, ResumeTag, type ScopeMap, type ScopeOccurrenceId, scopeHead, type State, type Transition,
+  compareScopeOccurrenceId, treeMapInsert,
+} from "../state.js";
+import { assertNever } from "../il/types.js";
+
+/** An issue renaming that fixes every committed issue. */
+export type Rename = (issue: Issue) => Issue;
+
+/**
+ * Lean's `renameScope`: `scope` with every fresh segment renamed by `rename`. A committed segment has only committed
+ * segments above it, since a scope occurrence entered in a closure is entered in one that stands, so the walk stops at
+ * the first committed segment and a committed key is returned as it is.
+ */
+export function renameScope(rename: Rename, scope: ScopeOccurrenceId): ScopeOccurrenceId {
+  const head = scopeHead(scope);
+  if (head === null || freshIssue(head[0].ordinal) === null) return scope;
+  const [{ element, ordinal }, parent] = head;
+  return childScope(renameScope(rename, parent), element, rename(ordinal));
+}
+
+export function renameId(rename: Rename, id: OccurrenceId): OccurrenceId {
+  const { scope, element, ordinal } = occurrenceIdParts(id);
+  return occurrenceId(renameScope(rename, scope), element, rename(ordinal));
+}
+
+function renameItemKey(rename: Rename, key: ItemKey): ItemKey {
+  return { ...key, occurrence: renameId(rename, key.occurrence), ordinal: rename(key.ordinal) };
+}
+
+/** Lean's `renameKey`: a public key with its process instance's name and its activation committed. */
+function renameKey(rename: Rename, key: OccurrenceKey): OccurrenceKey {
+  return { ...key, processInstanceId: renameInstanceName(key.processInstanceId, rename), activation: rename(key.activation) };
+}
+
+function renameName(rename: Rename, name: OccurrenceName): OccurrenceName {
+  return { ...name, processInstanceId: renameInstanceName(name.processInstanceId, rename), activation: rename(name.activation) };
+}
+
+function renameFailure(rename: Rename, failure: InstanceFailure): InstanceFailure {
+  return { ...failure, occurrence: renameName(rename, failure.occurrence),
+    related: failure.related.map(([role, name]) => [role, renameName(rename, name)] as const) };
+}
+
+function renameCompensable(rename: Rename, record: Compensable): Compensable {
+  return { ...record, scope: renameScope(rename, record.scope), occurrence: renameKey(rename, record.occurrence),
+    children: record.children.map((child) => ({ ...child, occurrence: renameKey(rename, child.occurrence) })) };
+}
+
+function renameResume(rename: Rename, resume: Resume): Resume {
+  switch (resume.tag) {
+    case ResumeTag.Complete:
+      return { ...resume, occurrence: renameId(rename, resume.occurrence) };
+    case ResumeTag.Occur:
+      return { ...resume, scope: renameScope(rename, resume.scope) };
+    case ResumeTag.Group:
+      return { ...resume, context: renameScope(rename, resume.context) };
+  }
+  return assertNever(resume);
+}
+
+function renameIteration(rename: Rename, iteration: Iteration): Iteration {
+  switch (iteration.tag) {
+    case IterationTag.Active:
+      return { ...iteration, scope: renameScope(rename, iteration.scope) };
+    case IterationTag.Waiting:
+    case IterationTag.Completed:
+      return iteration;
+  }
+  return assertNever(iteration);
+}
+
+function renameSlots(rename: Rename, slots: FeatureSlots): FeatureSlots {
+  const scope = (key: ScopeOccurrenceId): ScopeOccurrenceId => renameScope(rename, key);
+  const id = (key: OccurrenceId): OccurrenceId => renameId(rename, key);
+  return {
+    parked: slots.parked.map((parked) => ({ ...parked, occurrence: id(parked.occurrence), scope: scope(parked.scope) })),
+    // Renamed held occurrences are inserted afresh under their renamed keys, as Lean's fold into an empty map inserts them.
+    held: slots.held.reduce<HeldMap>((renamed, held) =>
+      insertHeld(renamed, { ...held, occurrence: id(held.occurrence), scope: scope(held.scope) }), []),
+    // Renamed runs are inserted afresh under their renamed body occurrences, as Lean's fold into an empty map inserts them.
+    multiInstances: slots.multiInstances.reduce<readonly MultiInstanceRun[]>((renamed, run) => insertRun(renamed, {
+      ...run, scope: scope(run.scope), occurrence: id(run.occurrence), instances: run.instances.map((iteration) => renameIteration(rename, iteration)),
+    }), []),
+    compensation: {
+      retained: slots.compensation.retained.map((record) => renameCompensable(rename, record)),
+      // Renamed runs are inserted afresh under their renamed keys, as Lean's fold into an empty map inserts them.
+      runs: slots.compensation.runs.reduce<readonly CompensationRun[]>((renamed, run) => putRun(renamed, {
+        ...run, scope: scope(run.scope), trigger: renameName(rename, run.trigger), pending: run.pending.map((record) => renameCompensable(rename, record)),
+        running: run.running.map(([context, record]) => [scope(context), renameCompensable(rename, record)] as const),
+        leave: run.leave === null ? null : id(run.leave), resume: run.resume === null ? null : renameResume(rename, run.resume),
+      }), []),
+    },
+    instances: slots.instances.map((data) => ({ ...data, root: scope(data.root) })),
+  };
+}
+
+function renameCause(rename: Rename, cause: Cause): Cause {
+  switch (cause.tag) {
+    case CauseTag.Idle:
+      return { ...cause, scope: renameScope(rename, cause.scope) };
+    case CauseTag.Input:
+    case CauseTag.Signal:
+    case CauseTag.Arrive:
+      return cause;
+  }
+  return assertNever(cause);
+}
+
+function renameTransition(rename: Rename, transition: Transition): Transition {
+  return {
+    ...transition, cause: renameCause(rename, transition.cause), owner: renameScope(rename, transition.owner),
+    started: transition.started.map((fact) => ({ ...fact, owner: renameScope(rename, fact.owner), occurrence: renameKey(rename, fact.occurrence) })),
+    ended: transition.ended.map(([key, terminal]) => [renameKey(rename, key), terminal] as const),
+    ready: transition.ready.map((key) => renameKey(rename, key)),
+  };
+}
+
+/**
+ * Lean's `renameState`: `rename` applied to every identity a committed state holds: its scope occurrences (their called
+ * instances' names), occurrences (their activations, their continuations through `continuation`, which `step/commit.ts`
+ * supplies, since only the step matches on `Continuation`), variable sets, open items, slots, journal, intents and
+ * failure. The counters are keyed by committed keys already (`advanceCounters` inserts renamed ones), and the families
+ * keyed by unit keys are empty (`orderJournal`).
+ */
+export function renameState(
+  rename: Rename, position: Rename, continuation: (continuation: Continuation) => Continuation, state: State,
+): State {
+  const scope = (key: ScopeOccurrenceId): ScopeOccurrenceId => renameScope(rename, key);
+  const id = (key: OccurrenceId): OccurrenceId => renameId(rename, key);
+  return {
+    ...state,
+    // Renamed scope occurrences are inserted afresh under their renamed keys, as Lean's fold into an empty map inserts them.
+    scopes: state.scopes.reduce<ScopeMap>((renamed, entry) => insertScope(renamed, {
+      ...entry, id: scope(entry.id), position: rename(entry.position), occurrence: entry.occurrence === null ? null : id(entry.occurrence),
+      calledInstance: entry.calledInstance === null ? null : renameInstanceName(entry.calledInstance, rename),
+    }), []),
+    // Renamed occurrences are inserted afresh under their renamed keys, as Lean's fold into an empty map inserts them.
+    occurrences: state.occurrences.reduce<OccurrenceMap>((renamed, occurrence) => insertOccurrence(renamed, {
+      ...occurrence, id: id(occurrence.id), scope: scope(occurrence.scope), position: position(occurrence.position),
+      continuation: continuation(occurrence.continuation), activation: rename(occurrence.activation),
+    }), []),
+    // Renamed keys are inserted afresh, in the renamed key order, as Lean's fold into an empty map inserts them.
+    variables: state.variables.reduce<State["variables"]>((renamed, [key, entries]) =>
+      treeMapInsert(renamed, scope(key), entries, compareScopeOccurrenceId), []),
+    // Renamed keys are inserted afresh, in the renamed key order, as Lean's fold into an empty map inserts them.
+    openItems: state.openItems.map((item) => ({
+      ...item, id: renameItemKey(rename, item.id), position: rename(item.position), scope: scope(item.scope),
+      attachedTo: item.attachedTo === null ? null : id(item.attachedTo),
+    })).sort((left, right) => compareItemKey(left.id, right.id)),
+    slots: renameSlots(rename, state.slots),
+    journal: state.journal.map((transition) => renameTransition(rename, transition)),
+    intents: state.intents.map((intent) => ({ ...intent, origin: renameName(rename, intent.origin) })),
+    failure: state.failure === null ? null : renameFailure(rename, state.failure),
+  };
+}

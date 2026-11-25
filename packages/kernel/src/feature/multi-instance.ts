@@ -66,53 +66,15 @@ import {
   type Occurrence,
   type Outcome,
   type Result,
+  type ScopeOccurrenceId,
   type State,
   SemanticCause,
-  semanticFailure,
+  semanticFailure, type OccurrenceId, ownVariables, insertRun, lookupRun,
 } from "../state.js";
 import {
-  EvaluationTag, collectionItems, evalContext, hold, leaveScope, multiInstanceRunItems, ownVariables, type Ctx,
+  EvaluationTag, collectionItems, ctxPositionLe, evalContext, hold, leaveScope, type Ctx,
 } from "../hooks.js";
-
-function waitingIndex(slot: Iteration, index: number): readonly number[] {
-  switch (slot.tag) {
-    case IterationTag.Waiting:
-      return [index];
-    case IterationTag.Active:
-    case IterationTag.Completed:
-      return [];
-  }
-  return assertNever(slot);
-}
-
-function isActive(slot: Iteration): boolean {
-  switch (slot.tag) {
-    case IterationTag.Active:
-      return true;
-    case IterationTag.Waiting:
-    case IterationTag.Completed:
-      return false;
-  }
-  return assertNever(slot);
-}
-
-/** The feature's one match on the mode; every mode-specific rule below reads it. */
-function sequential(mode: MultiInstanceMode): boolean {
-  switch (mode) {
-    case MultiInstanceMode.Parallel:
-      return false;
-    case MultiInstanceMode.Sequential:
-      return true;
-  }
-  return assertNever(mode);
-}
-
-/** The instances to begin now: every waiting one in parallel, else the first waiting one once none runs. */
-function opening(mode: MultiInstanceMode, instances: readonly Iteration[]): readonly number[] {
-  const waiting = instances.flatMap(waitingIndex);
-  if (!sequential(mode)) return waiting;
-  return instances.some(isActive) ? [] : waiting.slice(0, 1);
-}
+import { opening, sequential } from "./multi-instance/opening.js";
 
 function slotFilled(slot: Iteration): boolean {
   switch (slot.tag) {
@@ -173,16 +135,14 @@ function itemName(ctx: Ctx, loop: MultiInstance): string | null {
   return assertNever(ctx.program.options.multiInstanceBinding);
 }
 
-function runOf(state: State, body: number): MultiInstanceRun | null {
-  return state.slots.multiInstances.find((run) => run.occurrence === body) ?? null;
+/** Lean's `runOf?`: the run of the body occurrence `body`, under its key. */
+function runOf(state: State, body: OccurrenceId): MultiInstanceRun | null {
+  return lookupRun(state.slots.multiInstances, body);
 }
 
+/** Lean's `setRun`: a body's run in place of the one under its body occurrence's key. */
 function setRun(state: State, run: MultiInstanceRun): State {
-  const runs = state.slots.multiInstances;
-  const multiInstances = runs.some((other) => other.occurrence === run.occurrence)
-    ? runs.map((other) => (other.occurrence === run.occurrence ? run : other))
-    : [...runs, run];
-  return { ...state, slots: { ...state.slots, multiInstances } };
+  return { ...state, slots: { ...state.slots, multiInstances: insertRun(state.slots.multiInstances, run) } };
 }
 
 type Counts = ReadonlyArray<readonly [string, number]>;
@@ -224,7 +184,36 @@ function counterLocals(ctx: Ctx, counts: Counts): readonly Binding[] {
 function holdsCounts(ctx: Ctx, variables: readonly Binding[], counts: Counts): boolean {
   return counterLocals(ctx, counts).every(([name, expected]) => {
     const actual = variables.find(([held]) => held === name)?.[1];
-    return actual !== undefined && actual.tag === ValueTag.Int && expected.tag === ValueTag.Int && actual.value === expected.value;
+    if (actual === undefined) return false;
+    switch (actual.tag) {
+      case ValueTag.Int:
+        switch (expected.tag) {
+          case ValueTag.Int:
+            return actual.value === expected.value;
+          case ValueTag.Null:
+          case ValueTag.Bool:
+          case ValueTag.Decimal:
+          case ValueTag.Double:
+          case ValueTag.Date:
+          case ValueTag.String:
+          case ValueTag.StringList:
+          case ValueTag.List:
+          case ValueTag.Map:
+            return false;
+        }
+        return assertNever(expected);
+      case ValueTag.Null:
+      case ValueTag.Bool:
+      case ValueTag.Decimal:
+      case ValueTag.Double:
+      case ValueTag.Date:
+      case ValueTag.String:
+      case ValueTag.StringList:
+      case ValueTag.List:
+      case ValueTag.Map:
+        return false;
+    }
+    return assertNever(actual);
   });
 }
 
@@ -268,28 +257,57 @@ function beginInstances(ctx: Ctx, loop: MultiInstance, items: readonly Value[], 
   return setRun(queueInstances(ctx, loop.mode, requests, current), { ...run, instances });
 }
 
-/** The output collection of `outputs` in the form of the input collection: a String List of Strings, else a List. */
-function outputCollection(collection: Value, collected: readonly Value[]): Value {
+/** Lean's `stringsOf`: whether an input collection is a String List (`MultiInstanceRun.strings`). */
+function stringsOf(collection: Value): boolean {
   switch (collection.tag) {
     case ValueTag.StringList:
-      return { tag: ValueTag.StringList, items: collected.flatMap((value) => (value.tag === ValueTag.String ? [value.value] : [])) };
-    case ValueTag.List:
+      return true;
     case ValueTag.Null:
     case ValueTag.Bool:
     case ValueTag.Int:
     case ValueTag.Decimal:
+    case ValueTag.Double:
+    case ValueTag.Date:
     case ValueTag.String:
+    case ValueTag.List:
     case ValueTag.Map:
-      return { tag: ValueTag.List, items: collected };
+      return false;
   }
   return assertNever(collection);
 }
 
+/**
+ * The output collection of `outputs` in the form of the input collection: a String List of Strings when it was one
+ * (`strings`), else a List.
+ */
+function outputCollection(strings: boolean, collected: readonly Value[]): Value {
+  if (strings) {
+    return { tag: ValueTag.StringList, items: collected.flatMap((value): string[] => {
+      switch (value.tag) {
+        case ValueTag.String:
+          return [value.value];
+        case ValueTag.Null:
+        case ValueTag.Bool:
+        case ValueTag.Int:
+        case ValueTag.Decimal:
+        case ValueTag.Double:
+        case ValueTag.Date:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return [];
+      }
+      return assertNever(value);
+    }) };
+  }
+  return { tag: ValueTag.List, items: collected };
+}
+
 /** The output collection a filled body writes: BPMN 2.0.2 §13.3.7 aggregates; CIB-LIM-0001 selects none. */
-function written(ctx: Ctx, loop: MultiInstance, collection: Value, collected: readonly Value[]): readonly Binding[] {
+function written(ctx: Ctx, loop: MultiInstance, strings: boolean, collected: readonly Value[]): readonly Binding[] {
   switch (ctx.program.options.multiInstanceOutputs) {
     case MultiInstanceOutputs.Aggregates:
-      return loop.outputCollection === null ? [] : [[loop.outputCollection, outputCollection(collection, collected)]];
+      return loop.outputCollection === null ? [] : [[loop.outputCollection, outputCollection(strings, collected)]];
     case MultiInstanceOutputs.None:
       return [];
   }
@@ -320,25 +338,52 @@ function parsedCount(rule: MultiInstanceCount, text: string): Result<number> {
  * integral Decimal, at Java's `int` width (CIB-EXT-0033, `MultiInstanceActivityBehavior:145-155`).
  */
 function countOf(rule: MultiInstanceCount, value: Value): Result<number> {
-  if (value.tag === ValueTag.Int) return counted(rule, BigInt(value.value));
-  if (rule === MultiInstanceCount.Integer) return notANumber;
-  switch (value.tag) {
-    case ValueTag.Decimal: {
-      const unit = 10n ** BigInt(value.scale);
-      // Dynamic-only: CIB's `BigDecimal.intValue` truncates a fraction.
-      if (value.coefficient % unit !== 0n) return failed(FailureTag.Unsupported, "multiInstance.fractionalCount");
-      return counted(rule, value.coefficient / unit);
-    }
-    case ValueTag.String:
-      return parsedCount(rule, value.value);
-    case ValueTag.Null:
-    case ValueTag.Bool:
-    case ValueTag.StringList:
-    case ValueTag.List:
-    case ValueTag.Map:
-      return notANumber;
+  // Every value kind is named under each rule, so a new kind decides how it counts (KD7, `docs/REWRITE-2-PROPOSAL.md`).
+  switch (rule) {
+    case MultiInstanceCount.Integer:
+      switch (value.tag) {
+        case ValueTag.Int:
+          return counted(rule, BigInt(value.value));
+        case ValueTag.Double:
+        case ValueTag.Date:
+          // dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+          return failed(FailureTag.Unsupported, "value-kind");
+        case ValueTag.Null:
+        case ValueTag.Bool:
+        case ValueTag.Decimal:
+        case ValueTag.String:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return notANumber;
+      }
+      return assertNever(value);
+    case MultiInstanceCount.JavaInt:
+      switch (value.tag) {
+        case ValueTag.Int:
+          return counted(rule, BigInt(value.value));
+        case ValueTag.Decimal: {
+          const unit = 10n ** BigInt(value.scale);
+          // Dynamic-only: CIB's `BigDecimal.intValue` truncates a fraction.
+          if (value.coefficient % unit !== 0n) return failed(FailureTag.Unsupported, "multiInstance.fractionalCount");
+          return counted(rule, value.coefficient / unit);
+        }
+        case ValueTag.String:
+          return parsedCount(rule, value.value);
+        case ValueTag.Double:
+        case ValueTag.Date:
+          // dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+          return failed(FailureTag.Unsupported, "value-kind");
+        case ValueTag.Null:
+        case ValueTag.Bool:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return notANumber;
+      }
+      return assertNever(value);
   }
-  return assertNever(value);
+  return assertNever(rule);
 }
 
 /**
@@ -346,7 +391,7 @@ function countOf(rule: MultiInstanceCount, value: Value): Result<number> {
  * `null` when an unavailable input holds the occurrence, as an unavailable InputSet does (BPMN 2.0.2 §10.4.2), and a
  * value `rule` refuses a semantic failure; under `rollback` both fail the operation.
  */
-function entryInput<T>(ctx: Ctx, state: State, scope: number, expression: Expression, rule: (value: Value) => Result<T>): Result<T | null> {
+function entryInput<T>(ctx: Ctx, state: State, scope: ScopeOccurrenceId, expression: Expression, rule: (value: Value) => Result<T>): Result<T | null> {
   const rollback = ctx.program.options.multiInstanceInputFailure === MultiInstanceInputFailure.Rollback;
   const evaluation = ctx.evaluate({ ...evalContext(state, ctx.program, scope), domainChecked: false }, expression);
   switch (evaluation.tag) {
@@ -363,13 +408,13 @@ function entryInput<T>(ctx: Ctx, state: State, scope: number, expression: Expres
   return assertNever(evaluation);
 }
 
-type EntryRead = readonly [collection: Value, items: readonly Value[], count: number];
+type EntryRead = readonly [strings: boolean, items: readonly Value[], count: number];
 
 /**
- * What an entry reads: the collection, its items and the number of instances; a cardinality loop's collection is
- * `null` and its instances get no item (`MultiInstanceActivityBehavior:85`).
+ * What an entry reads: whether the collection is a String List, its members and the number of instances; a cardinality
+ * loop has no collection and its instances get no item (`MultiInstanceActivityBehavior:85`).
  */
-function entryRead(ctx: Ctx, loop: MultiInstance, state: State, scope: number): Result<EntryRead | null> {
+function entryRead(ctx: Ctx, loop: MultiInstance, state: State, scope: ScopeOccurrenceId): Result<EntryRead | null> {
   const count = loop.count;
   switch (count.tag) {
     case InstanceCountTag.Collection: {
@@ -377,13 +422,13 @@ function entryRead(ctx: Ctx, loop: MultiInstance, state: State, scope: number): 
         ? "multiInstance.notACollection" : "multi-instance-collection";
       return entryInput(ctx, state, scope, collectionOf(ctx, loop, count.items), (collection): Result<EntryRead> => {
         const members = collectionItems(collection);
-        return members === null ? semanticFailure(SemanticCause.Model, code) : committed([collection, members, members.length]);
+        return members === null ? semanticFailure(SemanticCause.Model, code) : committed([stringsOf(collection), members, members.length]);
       });
     }
     case InstanceCountTag.Cardinality:
       return entryInput(ctx, state, scope, count.count, (value): Result<EntryRead> => {
         const instances = countOf(ctx.program.options.multiInstanceCount, value);
-        return instances.ok ? committed([{ tag: ValueTag.Null }, [], instances.value]) : instances;
+        return instances.ok ? committed([false, [], instances.value]) : instances;
       });
     case InstanceCountTag.CountAndCollection:
       // Admission refuses it (`multiInstance.countAndCollection`).
@@ -406,10 +451,10 @@ export function arriveMultiInstance(
 ): Outcome {
   const read = entryRead(ctx, loop, state, occurrence.scope);
   if (!read.ok) return read;
-  if (read.value === null) return committed(hold(state, { occurrence: occurrence.id, scope: occurrence.scope }));
-  const [collection, items, count] = read.value;
+  if (read.value === null) return committed(hold(state, occurrence));
+  const [strings, items, count] = read.value;
   if (count === 0) {
-    return committed(signal(state, completeSignal(occurrence.id, leaveOutgoing, written(ctx, loop, collection, []), WriteRule.Outward)));
+    return committed(signal(state, completeSignal(occurrence.id, leaveOutgoing, written(ctx, loop, strings, []), WriteRule.Outward)));
   }
   const waiting: Iteration = { tag: IterationTag.Waiting };
   const instances = Array.from({ length: count }, () => waiting);
@@ -417,7 +462,7 @@ export function arriveMultiInstance(
   const armed = envelope.boundaries.length === 0
     ? entered
     : signal(entered, { tag: SignalTag.Arm, host: occurrence.id, element: header.id, scope: occurrence.scope });
-  const run: MultiInstanceRun = { scope, element: header.id, occurrence: occurrence.id, collection, instances };
+  const run: MultiInstanceRun = { scope, element: header.id, occurrence: occurrence.id, members: items, strings, instances };
   return committed(beginInstances(ctx, loop, items, run, armed));
 }
 
@@ -432,13 +477,27 @@ function submitted(loop: MultiInstance, run: MultiInstanceRun, writes: readonly 
   const [only] = writes;
   if (writes.length !== 1 || only === undefined) return failed(FailureTag.Rejected, "undeclared-output");
   const value = only[1];
-  if (run.collection.tag === ValueTag.StringList && value.tag !== ValueTag.String) return failed(FailureTag.Rejected, "instance-output-kind");
-  return committed(value);
+  if (!run.strings) return committed(value);
+  switch (value.tag) {
+    case ValueTag.String:
+      return committed(value);
+    case ValueTag.Null:
+    case ValueTag.Bool:
+    case ValueTag.Int:
+    case ValueTag.Decimal:
+    case ValueTag.Double:
+    case ValueTag.Date:
+    case ValueTag.StringList:
+    case ValueTag.List:
+    case ValueTag.Map:
+      return failed(FailureTag.Rejected, "instance-output-kind");
+  }
+  return assertNever(value);
 }
 
 /** The body is done: complete it, writing the output collection when every slot is filled. */
 function finish(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, state: State): State {
-  const writes = run.instances.every(slotFilled) ? written(ctx, loop, run.collection, completedOutputs(run)) : [];
+  const writes = run.instances.every(slotFilled) ? written(ctx, loop, run.strings, completedOutputs(run)) : [];
   return signal(state, completeSignal(run.occurrence, leaveOutgoing, writes, WriteRule.Outward));
 }
 
@@ -484,7 +543,7 @@ function evaluatesFinalCondition(ctx: Ctx, loop: MultiInstance): boolean {
   return !sequential(loop.mode);
 }
 
-function activeIn(slot: Iteration, scope: number): boolean {
+function activeIn(slot: Iteration, scope: ScopeOccurrenceId): boolean {
   switch (slot.tag) {
     case IterationTag.Active:
       return slot.scope === scope;
@@ -501,7 +560,7 @@ function activeIn(slot: Iteration, scope: number): boolean {
  * instance's zero-based index; the count; the active instances, which CIB never lowers
  * below 1 in sequential mode (`SequentialMultiInstanceActivityBehavior:41`); the completed ones, this one included.
  */
-function conditionContext(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, index: number, scope: number, state: State): EvalContext {
+function conditionContext(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, index: number, scope: ScopeOccurrenceId, state: State): EvalContext {
   const context = evalContext(state, ctx.program, scope);
   const counters = counterLocals(ctx, [...instanceCounts(index), ...bodyCounts(loop, run.instances)]);
   return { ...context, variables: [...counters, ...context.variables] };
@@ -512,17 +571,33 @@ function conditionContext(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, 
  * mode an earlier instance's result this one did not overwrite, which CIB keeps on the body, has no kernel reading. A
  * failure fails the operation that reached it, so it follows the stimulus table (`MultiInstanceActivityBehavior:157-162`).
  */
-function stops(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, index: number, scope: number, results: readonly string[],
+function stops(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, index: number, scope: ScopeOccurrenceId, results: readonly string[],
   state: State): Result<boolean> {
   if (loop.completionCondition === null) return committed(false);
   // Dynamic-only: which names an earlier instance's result left depends on the run's effect results.
   if ((run.results ?? []).some((name) => !results.includes(name))) return failed(FailureTag.Unsupported, "multiInstance.sequentialResultLeftover");
   const evaluation = ctx.evaluate(conditionContext(ctx, loop, run, index, scope, state), loop.completionCondition);
   switch (evaluation.tag) {
-    case EvaluationTag.Value:
-      return evaluation.result.tag === ValueTag.Bool
-        ? committed(evaluation.result.value)
-        : failed(FailureTag.RolledBack, "multiInstance.completionNotBoolean");
+    case EvaluationTag.Value: {
+      const result = evaluation.result;
+      switch (result.tag) {
+        case ValueTag.Bool:
+          return committed(result.value);
+        case ValueTag.Double:
+        case ValueTag.Date:
+          // dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+          return failed(FailureTag.Unsupported, "value-kind");
+        case ValueTag.Null:
+        case ValueTag.Int:
+        case ValueTag.Decimal:
+        case ValueTag.String:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return failed(FailureTag.RolledBack, "multiInstance.completionNotBoolean");
+      }
+      return assertNever(result);
+    }
     case EvaluationTag.Failure:
       return failed(FailureTag.RolledBack, evaluation.code);
     case EvaluationTag.Unsupported:
@@ -552,16 +627,16 @@ function rereadCollection(ctx: Ctx, loop: MultiInstance): Expression | null {
 
 /**
  * The items the instance at `next` takes its item from: the entry snapshot, or under a re-read the current collection,
- * while the entry total stays and `run.collection` keeps the entry value. CIB reads it in the body's execution, which
+ * while the entry total stays and `run.members` keeps the entry members. CIB reads it in the body's execution, which
  * holds the item, `loopCounter` and the result locals of this and every earlier instance (`Sequential…:53`), so it is
  * read in the completing instance's scope occurrence before that is left, as the completion condition is. A value that
  * is no collection fails the operation (a `ClassCastException`, `MultiInstanceActivityBehavior.java:96-97`), as does one
  * shorter than `next + 1` (`getElementAtIndex`'s iterator, `:131-138`) and a failing JUEL read.
  */
-function nextItems(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, next: number, scope: number, results: readonly string[],
+function nextItems(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, next: number, scope: ScopeOccurrenceId, results: readonly string[],
   state: State): Result<readonly Value[]> {
   const read = rereadCollection(ctx, loop);
-  if (read === null) return committed(multiInstanceRunItems(run) ?? []);
+  if (read === null) return committed(run.members);
   // Dynamic-only: which names an earlier instance's result left on CIB's body depends on the run's effect results.
   if ((run.results ?? []).some((name) => !results.includes(name))) return failed(FailureTag.Unsupported, "multiInstance.sequentialResultLeftover");
   // Dynamic-only: a removed or null collection leaves CIB's previous item in place
@@ -574,16 +649,32 @@ function nextItems(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, next: n
     case EvaluationTag.Failure:
       return evaluation.code === "unknown-variable" && read.tag === ExpressionTag.Variable ? removed : failed(FailureTag.RolledBack, evaluation.code);
     case EvaluationTag.Value: {
-      if (evaluation.result.tag === ValueTag.Null) return removed;
-      const members = collectionItems(evaluation.result);
-      if (members === null) return failed(FailureTag.RolledBack, "multiInstance.notACollection");
-      return next < members.length ? committed(members) : failed(FailureTag.RolledBack, "multiInstance.collectionShortened");
+      const result = evaluation.result;
+      switch (result.tag) {
+        case ValueTag.Null:
+          return removed;
+        case ValueTag.Bool:
+        case ValueTag.Int:
+        case ValueTag.Decimal:
+        case ValueTag.Double:
+        case ValueTag.Date:
+        case ValueTag.String:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+        {
+          const members = collectionItems(result);
+          if (members === null) return failed(FailureTag.RolledBack, "multiInstance.notACollection");
+          return next < members.length ? committed(members) : failed(FailureTag.RolledBack, "multiInstance.collectionShortened");
+        }
+      }
+      return assertNever(result);
     }
   }
   return assertNever(evaluation);
 }
 
-export function instanceCompleted(ctx: Ctx, body: number, occurrence: Occurrence, writes: readonly Binding[], state: State): Outcome {
+export function instanceCompleted(ctx: Ctx, body: OccurrenceId, occurrence: Occurrence, writes: readonly Binding[], state: State): Outcome {
   const found = runOf(state, body);
   if (found === null) return semanticFailure(SemanticCause.Invariant, "instance-without-multi-instance");
   const loop = loopOf(ctx, found);
@@ -612,7 +703,7 @@ export function instanceCompleted(ctx: Ctx, body: number, occurrence: Occurrence
   // `SequentialMultiInstanceActivityBehavior:48-51`), and the body's compensation snapshot copies them as they then
   // stand (`MultiInstanceActivityBehavior.java:172-175`), so every path writes them (#106); without counter locals
   // there is no write.
-  const left = setRun(leaveScope(state, occurrence.scope), run);
+  const left = setRun(leaveScope(state, ctxPositionLe(ctx, state), occurrence.scope), run);
   const counts = counterLocals(ctx, bodyCounts(loop, run.instances));
   const counted = counts.length === 0 ? left : signal(left, { tag: SignalTag.Write, scope: run.scope, writes: counts, rule: WriteRule.Own });
   if (stop.value || exhausted) return committed(finish(ctx, loop, run, counted));

@@ -1,16 +1,19 @@
 /**
  * Read and write footprints, transcribed from `Kernel/IL/Footprint.lean`: what an expression, a mapping list or an
  * element reads and writes, over-approximated where the text cannot show it: a JUEL or foreign expression reads every
- * name, and a Multi-Instance definition reads every name when its element begins. `admission/flow.ts` compares branch
+ * name, a Multi-Instance definition reads every name when its element begins, and so does a Script Task, whose effect
+ * opens with every visible variable. `admission/flow.ts` compares branch
  * footprints for `BranchSchedule.OrderInvariant`, and `writes` is the one account of what an element writes, which that
  * closure walk and `feature/compensation.ts`'s data dependency both read. The mechanisms whose units those comparisons
  * pair (`QueuingMechanism`) are listed here once.
  */
 import {
+  ConditionalRetrigger,
   DeliveryVariables,
   ExpressionTag,
   SignalPayload,
   SimpleBooleanTag,
+  SubmissionRule,
   assertNever,
   elementActivity,
   elementEnvelope,
@@ -20,18 +23,29 @@ import {
   elementStart,
   eventPayloadCatch,
   eventPayloadThrow,
+  programDecision,
+  programElement,
   programFlow,
   scopeKindStart,
   throwView,
   triggerView,
   workCall,
+  workIsService,
+  workIsUser,
+  workReceive,
   workResults,
+  valueSourceLiteral,
+  type ConditionTrigger,
   type Element,
+  type ElementId,
   type Expression,
   type Mapping,
   type Program,
+  type RuleWork,
   type Subscription,
 } from "./types.js";
+import { DecisionLogicTag, InputExpressionTag, type InputExpression } from "./types/decision.js";
+import { workReader } from "./types/work.js";
 
 /** A set of variable names, or every name. */
 export type NameSet = Readonly<{ names: readonly string[]; all: boolean }>;
@@ -73,6 +87,35 @@ export function expressionReads(expression: Expression): NameSet {
   return assertNever(expression);
 }
 
+/**
+ * The names through which a write may turn a condition from true to false: none for `isPresent`, since no write of a
+ * closure removes a name (only a variable command does, `step/inputs.ts`) and an explicit null counts as present.
+ */
+export const falsifiable = (expression: Expression): NameSet =>
+  expression.tag === ExpressionTag.SimpleBoolean && expression.body.tag === SimpleBooleanTag.IsPresent ? noNames : expressionReads(expression);
+
+/**
+ * The names through which a write ordered against the opening (`opening`) or the end of a Conditional subscription with
+ * `trigger` may change what it fires, value-blind. Against the opening, under `edge` those that may turn the condition
+ * false (`falsifiable`), since a write that can only turn it true fires it after the opening as it would on arrival;
+ * that holds only without a filter, since arming ignores filters while a filter blocks a later write, so a filtered
+ * condition reads every name it reads (`edge` admits none, `event.condition.filter`). Under `eachWrite`, which fires
+ * again on every write its filter passes while the condition holds, every name the condition reads or the filter
+ * passes. Against the end, those through which the write may make it true (`mayMakeTrue`'s bound): under `edge` the
+ * names the condition reads, under `eachWrite` those the filter passes.
+ */
+export function conditionNames(retrigger: ConditionalRetrigger, opening: boolean, trigger: ConditionTrigger): NameSet {
+  const filtered: NameSet = trigger.variableName !== null ? { names: [trigger.variableName], all: false } : { names: [], all: true };
+  const unfiltered = trigger.variableName === null && trigger.variableEvents.length === 0;
+  switch (retrigger) {
+    case ConditionalRetrigger.EachWrite:
+      return opening ? union(expressionReads(trigger.condition), filtered) : filtered;
+    case ConditionalRetrigger.Edge:
+      return !opening || !unfiltered ? expressionReads(trigger.condition) : falsifiable(trigger.condition);
+  }
+  return assertNever(retrigger);
+}
+
 export const mappingReads = (mappings: readonly Mapping[]): NameSet =>
   mappings.reduce((found, mapping) => union(found, expressionReads(mapping.source)), noNames);
 
@@ -80,9 +123,58 @@ export const mappingReads = (mappings: readonly Mapping[]): NameSet =>
  * What `element` reads when it begins: its input mappings, and every name for a Multi-Instance definition, whose count,
  * collection and condition it evaluates then or later in the closure.
  */
-export function beginReads(element: Element): NameSet {
+/**
+ * The variable inputs of the decision table a Business Rule Task's work names, or `null` where a name cannot be told: a
+ * decision key that is an expression or names no decision, a decision without a table, an input that is no variable.
+ * Admission refuses each (`work.rule.decisionExpression`, `work.rule.decisionMissing`, `decision.logic`,
+ * `decision.inputExpression`), so `workReads` counts every name for them only to stay an over-approximation.
+ */
+export function decisionInputs(program: Program, work: RuleWork): readonly string[] | null {
+  const key = valueSourceLiteral(work.decision);
+  const decision = key === null ? null : programDecision(program, key);
+  if (decision === null) return null;
+  switch (decision.logic.tag) {
+    case DecisionLogicTag.Table: {
+      const names = decision.logic.value.inputs.map((input) => inputVariable(input.expression));
+      return names.every((name) => name !== null) ? names : null;
+    }
+    case DecisionLogicTag.Foreign: return null;
+  }
+  return assertNever(decision.logic);
+}
+
+/** The variable a decision input reads, `null` for an expression. */
+function inputVariable(expression: InputExpression): string | null {
+  switch (expression.tag) {
+    case InputExpressionTag.Variable: return expression.name;
+    case InputExpressionTag.Foreign: return null;
+  }
+  return assertNever(expression);
+}
+
+/**
+ * What `element`'s work reads beside its mappings (`workReader`): every name for a Script Task, whose effect opens with
+ * every visible variable (`feature/work.ts#scriptSnapshot`), and a Business Rule Task's decision table's variable inputs
+ * (`decisionInputs`, `feature/decision.ts#readInput`).
+ */
+export function workReads(program: Program, element: Element): NameSet {
+  const activity = elementActivity(element);
+  const reader = activity === null ? null : workReader(activity[1].work);
+  if (reader === null) return noNames;
+  if (reader.rule === null) return { names: [], all: true };
+  const names = decisionInputs(program, reader.rule);
+  return names === null ? { names: [], all: true } : { names, all: false };
+}
+
+/**
+ * What `element` reads when it begins: its input mappings, every name for a Multi-Instance definition, whose count,
+ * collection and condition it evaluates then or later in the closure, and what its work reads (`workReads`), which a
+ * Script Task's effect and a Business Rule Task's decision read as it begins.
+ */
+export function beginReads(program: Program, element: Element): NameSet {
   const envelope = elementEnvelope(element);
-  return envelope === null ? noNames : union(mappingReads(envelope.inputs), { names: [], all: envelope.multiInstance !== null });
+  const own = envelope === null ? noNames : union(mappingReads(envelope.inputs), { names: [], all: envelope.multiInstance !== null });
+  return union(own, workReads(program, element));
 }
 
 /**
@@ -114,7 +206,7 @@ export function footprint(program: Program, element: Element): Footprint {
     return condition === null ? [] : [condition];
   }).reduce((found, condition) => union(found, expressionReads(condition)), noNames);
   return {
-    reads: union(union(beginReads(element), mappingReads(outputs)), union(call === null ? noNames : mappingReads(call.inputs), conditions)),
+    reads: union(union(beginReads(program, element), mappingReads(outputs)), union(call === null ? noNames : mappingReads(call.inputs), conditions)),
     writes: {
       names: [...outputs.map((mapping) => mapping.target), ...(call?.outputs ?? []).map((mapping) => mapping.target)],
       all: call?.propagateAllOutputs === true || deliveredWrites(program, element),
@@ -152,6 +244,50 @@ export function writes(element: Element): NameSet {
       ...(collection === null ? [] : [collection])],
     all: thrown?.installsAll === true,
   };
+}
+
+/** Every element declared inside `element`, at any depth. */
+export function programInterior(program: Program, element: Element): Element[] {
+  const go = (fuel: number, ids: readonly ElementId[]): Element[] =>
+    fuel === 0 ? [] : ids.flatMap((id) => {
+      const inner = programElement(program, id);
+      return inner === null ? [] : [inner, ...go(fuel - 1, elementScope(inner)?.[1].children ?? [])];
+    });
+  return go(program.elements.length, elementScope(element)?.[1].children ?? []);
+}
+
+/**
+ * What `element` itself reads and writes over its whole run, over-approximated: the IL's one account of its run
+ * (`footprint`, with its work's own reads, `workReads`), what it writes when it runs (`writes`) and what its boundaries
+ * write when they fire (`catchWrites`), a Multi-Instance element's output data item, every name a User Task installs
+ * under `SubmissionRule.InstallsVariables`, and every name for work whose data the model does not show, a plain or
+ * Manual Task (none of User, Service, Call, Receive, Script or Business Rule work), as COMPENSATION-SEMANTICS-SPEC D1 (c)
+ * reads it: the account says such work touches no name, which holds for the closure, not for §13.5.5's dependency.
+ */
+export function runData(program: Program, element: Element): Footprint {
+  const boundaries = (elementEnvelope(element)?.boundaries ?? []).flatMap((boundary) => catchWrites(boundary.subscription));
+  const item = elementEnvelope(element)?.multiInstance?.outputDataItem ?? null;
+  const caught: Footprint = { reads: noNames, writes: union(writes(element), { names: [...boundaries, ...(item === null ? [] : [item])], all: false }) };
+  const activity = elementActivity(element);
+  let work: Footprint = { reads: noNames, writes: noNames };
+  if (activity !== null) {
+    const kind = activity[1].work;
+    const abstract = !(workIsUser(kind) || workIsService(kind) || workCall(kind) !== null || workReceive(kind) !== null || workReader(kind) !== null);
+    const installs = workIsUser(kind) && program.options.submission === SubmissionRule.InstallsVariables;
+    work = { reads: { names: [], all: abstract }, writes: { names: [], all: abstract || installs } };
+  }
+  return joined(joined(footprint(program, element), caught), work);
+}
+
+/**
+ * What a run of the compensation subject `subject` reads and writes, §13.5.5's data dependency, which
+ * `feature/compensation.ts`'s `precedes` and admission's compensation order both read: its own and, for a Scope, its
+ * interior's.
+ */
+export function subjectData(program: Program, subject: ElementId): Footprint {
+  const element = programElement(program, subject);
+  return element === null ? { reads: noNames, writes: noNames }
+    : [element, ...programInterior(program, element)].reduce((found, inner) => joined(found, runData(program, inner)), { reads: noNames, writes: noNames });
 }
 
 /**

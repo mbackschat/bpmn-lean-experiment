@@ -41,7 +41,7 @@ theorem PlacedIn.ofHeld {held : State} {element : ElementId} {x : ScopeOccurrenc
 theorem instanceRoot_entered (formed : WellFormed program s) (lane : PlacedLane program s) {x : ScopeOccurrenceId}
     (present : x ∈ scopeIds s) : ∃ entry ∈ s.slots.instances, entry.root = s.instanceRoot x := by
   obtain ⟨name, chain, reading, rest⟩ := Laws.State.instanceIn_exists formed present
-  rw [instanceRoot_chain reading rest.1 formed.distinct.scopes reading.mem]
+  rw [instanceRoot_chain reading formed.distinct.scopes reading.mem]
   unfold chainRoot
   split
   · rename_i last found
@@ -89,7 +89,7 @@ theorem offered_placed (refs : ReferencesPlaced program) (lane : PlacedLane prog
       ends
 
 /-- A queued completion's named flows end where every occurrence of its number lies (`Proofs.Frame.CompletesFrom`). -/
-theorem completesFrom_placed (refs : ReferencesPlaced program) (lane : PlacedLane program s) {id : Nat} {leave : Leave}
+theorem completesFrom_placed (refs : ReferencesPlaced program) (lane : PlacedLane program s) {id : OccurrenceId} {leave : Leave}
     (source : Proofs.Frame.CompletesFrom (Placing program) program s id leave) :
     ∀ selected, leave = .flows selected → ∀ o ∈ s.occurrences, o.id = id → ∀ flow ∈ selected, ∀ target,
       program.target? flow = some target → PlacedIn program s target o.scope := by
@@ -159,7 +159,7 @@ theorem gatewayOf_placed (lane : PlacedLane program s) {occurrence : Occurrence}
 
 /-- What a lane state holds anchors work only at an issued scope occurrence. -/
 theorem anchoredBy_issued (formed : WellFormed program s) (lane : PlacedLane program s) {anchor : ElementId}
-    {x : ScopeOccurrenceId} (anchored : Laws.Flow.AnchoredBy program s anchor x) : x.value < s.nextIssue := by
+    {x : ScopeOccurrenceId} (anchored : Laws.Flow.AnchoredBy program s anchor x) : Laws.State.ScopeIssued s x := by
   rcases anchored with ⟨o, member, rfl, -⟩ | ⟨entry, member, -, link⟩ | ⟨⟨entry, member, rfl⟩, -⟩ |
       ⟨⟨root, member, rfl, -⟩, -⟩ | ⟨run, member, -, rfl⟩ | ⟨run, member, rfl, rest⟩
   · exact present_issued formed (formed.owned.occurrenceScopes o member)
@@ -176,12 +176,12 @@ theorem anchoredBy_issued (formed : WellFormed program s) (lane : PlacedLane pro
 theorem anchored_issued (refs : ReferencesPlaced program) (formed : WellFormed program s)
     (lane : PlacedLane program s) {element : ElementId} {x : ScopeOccurrenceId}
     (anchored : Laws.Flow.Anchored (fun t => WellFormed program t ∧ Placing program t) program s element x) :
-    x.value < s.nextIssue := by
+    Laws.State.ScopeIssued s x := by
   obtain ⟨anchor, -, source⟩ := anchored
   rcases source with here | ⟨held, holds, issued, rest⟩
   · exact anchoredBy_issued formed lane here
   obtain ⟨-, -, there⟩ := rest
-  refine Nat.lt_of_lt_of_le ?_ issued
+  refine issued.issued ?_
   rcases there with by_ | ⟨host, armed⟩ | ⟨occurrence, armed⟩ | ⟨raised, origin, queued, rest⟩
   · exact anchoredBy_issued holds.1 (holds.2 refs) by_
   · exact (holds.1.queue.arm host anchor x armed).2.1
@@ -202,7 +202,7 @@ theorem occurAnchored_placed (refs : ReferencesPlaced program) (formed : WellFor
   have heldLane := holds.2 refs
   obtain ⟨placed, listed⟩ := heldLane.occurs element x leave (.inr (.inr ⟨run, member, resumes⟩))
   refine ⟨⟨fun stands => ?_, listed⟩,
-    Nat.lt_of_lt_of_le (heldLane.issued x (.inl ⟨element, leave, .inr (.inr ⟨run, member, resumes⟩)⟩)) issued⟩
+    issued.issued (heldLane.issued x (.inl ⟨element, leave, .inr (.inr ⟨run, member, resumes⟩)⟩))⟩
   obtain ⟨entry, inside, named⟩ := List.mem_map.mp stands
   exact (placed (List.mem_map.mpr ⟨entry, scopes entry inside, named⟩)).ofHeld formed stands holds.1 scopes instances
 
@@ -223,10 +223,10 @@ theorem beginAnchored_placed (refs : ReferencesPlaced program) (formed : WellFor
 
 /-- A stored record's scope occurrence was issued (`Laws.Compensation.RecordFrom`). -/
 theorem recordFrom_issued (formed : WellFormed program s) (lane : PlacedLane program s) {record : Compensable}
-    {x : ScopeOccurrenceId} (from_ : RecordFrom program s record x) : x.value < s.nextIssue := by
+    {x : ScopeOccurrenceId} (from_ : RecordFrom program s record x) : Laws.State.ScopeIssued s x := by
   rcases from_ with ⟨source, at_, holding, rest⟩ | ⟨occurrence, member, -, rest⟩
   · obtain ⟨linked, -⟩ := rest
-    have below : at_.value < s.nextIssue := by
+    have below : Laws.State.ScopeIssued s at_ := by
       rcases holding with ⟨retained, rfl⟩ | ⟨run, member, pending, rfl⟩
       · exact lane.issued _ (.inr (.inr (.inl ⟨source, retained, rfl⟩)))
       · exact lane.issued _ (.inr (.inr (.inr (.inl ⟨run, member, rfl, List.ne_nil_of_mem pending⟩))))

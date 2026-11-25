@@ -19,16 +19,14 @@ const startJournal: readonly TransitionView[] = [
   {
     cause: { kind: "input", input: "start" },
     element: "StartEvent_1",
-    owner: 0,
-    started: [{ occurrence: key("StartEvent_1"), owner: 0, sourceType: "startEvent" }],
+    started: [{ occurrence: key("StartEvent_1"), sourceType: "startEvent" }],
     ended: [{ occurrence: key("StartEvent_1"), terminal: "completed" }],
   },
-  { cause: { kind: "signal", signal: "armScope" }, element: null, owner: 0, started: [], ended: [] },
+  { cause: { kind: "signal", signal: "armScope" }, element: null, started: [], ended: [] },
   {
     cause: { kind: "arrive", flow: "Flow_StartToTask" },
     element: "Task_Probe",
-    owner: 0,
-    started: [{ occurrence: key("Task_Probe"), owner: 0, sourceType: "task" }],
+    started: [{ occurrence: key("Task_Probe"), sourceType: "task" }],
     ended: [],
   },
 ];
@@ -53,7 +51,7 @@ export const effectOpen: HostView = {
 export const incidentOpen: HostView = {
   status: "running",
   openWaits: [{ id: occurrence("Task_Probe"), input: "command", incident: { generation: 1, cancellable: false } }],
-  journal: [{ cause: { kind: "input", input: "effectResult" }, element: null, owner: 0, started: [], ended: [] }],
+  journal: [{ cause: { kind: "input", input: "effectResult" }, element: null, started: [], ended: [] }],
 };
 
 /** `retryIncident` reopened the effect with the same activation and one recorded failure. */
@@ -64,7 +62,7 @@ export const effectRetried: HostView = {
     input: "effectResult",
     effect: { ...effectOpen.openWaits[0]!.effect!, failures: 1 },
   }],
-  journal: [{ cause: { kind: "input", input: "command" }, element: null, owner: 0, started: [], ended: [] }],
+  journal: [{ cause: { kind: "input", input: "command" }, element: null, started: [], ended: [] }],
 };
 
 /** `activity-boundary-timer`: a User Task with an interrupting boundary timer due at 1000 ms. */
@@ -85,15 +83,13 @@ export const boundedTaskCompleted: HostView = {
     {
       cause: { kind: "input", input: "command" },
       element: null,
-      owner: 0,
       started: [],
       ended: [{ occurrence: key("BoundedTask"), terminal: "completed" }],
     },
     {
       cause: { kind: "arrive", flow: "Flow_TaskToAfter" },
       element: "AfterTask",
-      owner: 0,
-      started: [{ occurrence: key("AfterTask"), owner: 0, sourceType: "userTask" }],
+      started: [{ occurrence: key("AfterTask"), sourceType: "userTask" }],
       ended: [],
     },
   ],
@@ -110,26 +106,23 @@ export const deadlineWon: HostView = {
   status: "running",
   openWaits: [{ id: occurrence("Escalate"), input: "command", userTask: { inputs: [], name: "Escalate" } }],
   journal: [
-    { cause: { kind: "input", input: "timerFire" }, element: null, owner: 0, started: [], ended: [] },
+    { cause: { kind: "input", input: "timerFire" }, element: null, started: [], ended: [] },
     {
       cause: { kind: "signal", signal: "cancel" },
       element: null,
-      owner: 0,
       started: [],
       ended: [{ occurrence: key("Task_Probe"), terminal: "cancelled" }],
     },
     {
       cause: { kind: "signal", signal: "complete" },
       element: null,
-      owner: 0,
-      started: [{ occurrence: key("Deadline"), owner: 0, sourceType: "boundaryEvent" }],
+      started: [{ occurrence: key("Deadline"), sourceType: "boundaryEvent" }],
       ended: [{ occurrence: key("Deadline"), terminal: "completed" }],
     },
     {
       cause: { kind: "arrive", flow: "Flow_Boundary" },
       element: "Escalate",
-      owner: 0,
-      started: [{ occurrence: key("Escalate"), owner: 0, sourceType: "userTask" }],
+      started: [{ occurrence: key("Escalate"), sourceType: "userTask" }],
       ended: [],
     },
   ],
@@ -170,10 +163,9 @@ export const completed: HostView = {
     {
       cause: { kind: "arrive", flow: "Flow_ToEnd" },
       element: "EndEvent_1",
-      owner: 0,
-      started: [{ occurrence: key("EndEvent_1"), owner: 0, sourceType: "endEvent" }],
+      started: [{ occurrence: key("EndEvent_1"), sourceType: "endEvent" }],
       ended: [{ occurrence: key("EndEvent_1"), terminal: "completed" }],
     },
-    { cause: { kind: "idle", scope: 0 }, element: null, owner: 0, started: [], ended: [] },
+    { cause: { kind: "idle" }, element: null, started: [], ended: [] },
   ],
 };

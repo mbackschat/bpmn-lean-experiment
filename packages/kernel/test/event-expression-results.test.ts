@@ -24,7 +24,7 @@ const int = (value: number): Json => ({ kind: "integer", value });
 const nil: Json = { kind: "null" };
 
 const underJuel = (over: Json = {}) => (program: Json): Json => withOptions(program, { evaluator: "juel", ...over });
-const addresses: Json = { signalNames: "addresses", signalPayload: "variables" };
+const addresses: Json = { signalNames: "addresses", branchSchedule: "declarationDepthFirst", signalPayload: "variables" };
 
 const gateway = (condition: Json): Json => underJuel()(conditionOn(choice(["f2"])(base()), "f2", condition));
 const signalThrow = (over: Json): Json => ({
@@ -33,8 +33,8 @@ const signalThrow = (over: Json): Json => ({
 const throwing = (over: Json): Json => underJuel(addresses)(replace(base(), "E", end("E", signalThrow(over))));
 const catching = (trigger: Json, over: Json = {}): Json => underJuel(over)(task(catchEvent("T", trigger))(base()));
 const signalCatch = (name: Json): Json => catching({ signal: { payload: { signalRef: qName("Sig"), name: computed(name) } } }, addresses);
-const messageCatch = (name: Json): Json => catching(message(channel({ name: computed(name) })), { messageNames: "addresses" });
-const timerCatch = (value: Json): Json => catching({ timer: { payload: { schedule: { duration: { value: computed(value) } } } } });
+const messageCatch = (name: Json): Json => catching(message(channel({ name: computed(name) })), { messageNames: "addresses", branchSchedule: "declarationDepthFirst" });
+const timerCatch = (value: Json): Json => catching({ timer: { payload: { schedule: { duration: { value: computed(value) } }, exclusive: null } } });
 const conditionCatch = (condition: Json): Json => catching({ condition: { payload: { condition, variableName: null, variableEvents: [] } } });
 
 type Row = Readonly<{ site: string; result: string; program: Json; variables?: Array<[string, Json]>; expect: readonly [string, string | null] }>;

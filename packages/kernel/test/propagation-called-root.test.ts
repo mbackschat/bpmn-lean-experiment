@@ -21,7 +21,7 @@ import {
 } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
 
-const cib = { raisedCallOutputs: "atCalledRoot", undeclaredWrite: "atInstanceRoot" };
+const cib = { raisedCallOutputs: "atCalledRoot", branchSchedule: "declarationDepthFirst", undeclaredWrite: "atInstanceRoot" };
 const slot = [mapping("slot", literalValue({ kind: "string", value: "x" }))];
 
 /** An Intermediate throw Event `id` raising the Escalation `X`. */
@@ -72,14 +72,14 @@ test("a raise from a busy called root caught by the Call's boundary passes the C
   const outcome = started(calling(slot, true));
   assert.ok(outcome.ok, JSON.stringify(outcome));
   assert.deepEqual(outcome.value.openItems.map((item) => item.element), ["W"]);
-  assert.deepEqual(outcome.value.variables.flatMap((entry) => entry.entries), [["slot", { tag: "string", value: "x" }]]);
+  assert.deepEqual(outcome.value.variables.flatMap(([, entries]) => entries), [["slot", { tag: "string", value: "x" }]]);
 });
 
 test("a raise caught at an idle called root passes the Call's outputs before the catch", () => {
   const outcome = started(calling(slot, false));
   assert.ok(outcome.ok, JSON.stringify(outcome));
   assert.deepEqual(outcome.value.openItems.map((item) => item.element), ["W"]);
-  assert.deepEqual(outcome.value.variables.flatMap((entry) => entry.entries), [["slot", { tag: "string", value: "x" }]]);
+  assert.deepEqual(outcome.value.variables.flatMap(([, entries]) => entries), [["slot", { tag: "string", value: "x" }]]);
 });
 
 test("a raise caught at a busy called root whose Call maps nothing commits", () => {
@@ -100,6 +100,6 @@ test("a Call boundary's catch variables are written in the caller, not in the ca
   const outcome = started(withOptions(program, { errorCatchVariables: "eventScope", undeclaredWrite: "atInstanceRoot" }));
   assert.ok(outcome.ok, JSON.stringify(outcome));
   assert.deepEqual(outcome.value.openItems.map((item) => item.element), ["W"]);
-  assert.deepEqual(outcome.value.variables.flatMap((entry) => entry.entries),
+  assert.deepEqual(outcome.value.variables.flatMap(([, entries]) => entries),
     [["code", { tag: "string", value: "FAIL" }], ["message", { tag: "string", value: "boom" }]]);
 });

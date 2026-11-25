@@ -1,8 +1,8 @@
 /**
  * PC-CF-04: an Inclusive join's reach through a loop. The join fires once no position of its scope occurrence can
  * reach an incoming flow that holds no token without passing the gateway (BPMN 2.0.2 §13.4.3, Table 13.3); the search
- * visits each flow once, so a position inside a loop that never leads to the empty flow ends the search instead of
- * keeping the join waiting until the search's fuel runs out ([flow spec](../../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md#inclusive-join-activation-and-reach)).
+ * visits each flow once, so a position inside a loop that never leads to the empty flow ends the search and the join
+ * fires ([flow spec](../../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md#inclusive-join-activation-and-reach)).
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";

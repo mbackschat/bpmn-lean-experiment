@@ -73,7 +73,7 @@ structure Binds (before after : Progress) (commandId digest : String) (atMs : Na
   fresh : commandId ∉ before.ledger.map (·.commandId)
   answer : ∃ resolution,
     let result : StepResult := { commandId, ordinal := before.steps.length + 1, atMs, resolution }
-    after.steps = before.steps ++ [result] ∧ after.ledger = before.ledger ++ [{ commandId, digest, result }]
+    after.steps = before.steps ++ [result] ∧ after.ledger = before.ledger ++ [({ commandId, digest, result } : LedgerEntry)]
 
 theorem Replays.survive {before after : Progress} {entry : LedgerEntry} {digest : String} {atMs : Nat}
     (replays : Replays before after entry digest atMs) : BindingsSurvive before.ledger after.ledger := by
@@ -263,7 +263,7 @@ def scanRefusals {α : Type} (scans : List (Except Failure α)) : List Failure :
 
 /-- The code a refusal carries. -/
 def codeOf : Failure → String
-  | .rejected code | .rolledBack code | .semanticFailure _ code | .unsupported code => code
+  | .rejected code _ | .rolledBack code | .semanticFailure _ code | .unsupported code => code
 
 /-- A publication any of whose per-instance receiver scans refuses resolves to a refusal carrying the least refused code
 in the codes' string order and leaves every instance as it was: a refusal decides the resolution whatever the other

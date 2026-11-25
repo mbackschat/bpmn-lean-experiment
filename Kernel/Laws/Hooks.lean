@@ -2,6 +2,7 @@ module
 
 public import Kernel.Hooks
 public import Kernel.Laws.Data.Values
+public import Kernel.Laws.State.Items
 import all Kernel.Hooks
 
 /-! # Laws of the hooks module
@@ -19,21 +20,34 @@ open Kernel
 
 /-- An expression evaluated from `scope` reads the variables visible from it and the logical time. -/
 theorem evalContext_eq (state : State) (program : Program) (scope : ScopeOccurrenceId) :
-    state.evalContext program scope = { variables := state.visible program scope, nowMs := state.logicalTimeMs } := by
+    state.evalContext program scope =
+      { variables := state.visible program scope, nowMs := state.logicalTimeMs, bounds := program.options.bounds } := by
   simp only [State.evalContext]
 
-/-- A held occurrence joins `FeatureSlots.held`; nothing else changes. -/
-theorem hold_eq (state : State) (held : Held) :
-    state.hold held = { state with slots := { state.slots with held := state.slots.held ++ [held] } } := by
+/-- A held occurrence joins `FeatureSlots.held` and the micro-step's Ready list under its key; nothing else changes. -/
+theorem hold_eq (state : State) (occurrence : Occurrence) :
+    state.hold occurrence = { ({ state with slots := { state.slots with
+        heldMap := state.slots.heldMap.insert occurrence.id occurrence.scope } } : State) with
+      draft := { state.draft with ready := state.draft.ready ++ [state.keyOf occurrence] } } := by
   simp only [State.hold]
+
+/-- PD2's Ready list grows in lockstep with `FeatureSlots.held`: holding an occurrence puts its held entry under its
+key and appends, to the micro-step's Ready list, its key, and nothing else, so the Ready list a micro-step journals
+(`Laws.Step.conclude_ok`), empty when it began (`Laws.Step.microStep_ready`), names exactly the occurrences that
+micro-step holds. -/
+theorem hold_ready (state : State) (occurrence : Occurrence) :
+    (state.hold occurrence).slots.heldMap = state.slots.heldMap.insert occurrence.id occurrence.scope ∧
+      (state.hold occurrence).draft.ready = state.draft.ready ++ [state.keyOf occurrence] := by
+  rw [hold_eq]
+  exact ⟨rfl, rfl⟩
 
 /-- The item an input addresses is one of the state's open items, and its element, its occurrence's activation and
 its instance are the ones the input's reference names. -/
 theorem itemDetail?_some {α : Type} {ctx : Ctx} {state : State} {ref : OccurrenceRef} {detail : WaitView → Option α}
     {item : OpenItem} {value : α} (found : itemDetail? ctx state ref detail = some (item, value)) :
-    item ∈ state.openItems ∧ ctx.program.publicId item.element = ref.element ∧
-      (state.occurrence? item.occurrence).map (·.activation) = some ref.activation ∧
-      state.instanceOf item.scope = ref.processInstanceId := by
+    item ∈ itemList state.openItems ∧ ctx.program.publicId item.element = ref.element ∧
+      (state.occurrence? item.id.occurrence).map (·.activation) = some (.committed ref.activation) ∧
+      (state.instanceOf item.scope).text = ref.processInstanceId := by
   unfold itemDetail? at found
   obtain ⟨candidate, member, made⟩ := List.exists_of_findSome?_eq_some found
   split at made
@@ -41,16 +55,16 @@ theorem itemDetail?_some {α : Type} {ctx : Ctx} {state : State} {ref : Occurren
     obtain ⟨_, _, same⟩ := Option.map_eq_some_iff.mp made
     obtain ⟨rfl, _⟩ := Prod.mk.inj same
     simp only [Bool.and_eq_true, beq_iff_eq] at matches_
-    exact ⟨member, matches_.1.1, matches_.1.2, matches_.2⟩
+    exact ⟨Laws.State.mem_itemsInOrder.mp member, matches_.1.1, matches_.1.2, matches_.2⟩
   · simp at made
 
 theorem itemDetail?_mem {α : Type} {ctx : Ctx} {state : State} {occurrence : OccurrenceRef}
     {detail : WaitView → Option α} {item : OpenItem} {value : α}
-    (found : itemDetail? ctx state occurrence detail = some (item, value)) : item ∈ state.openItems :=
+    (found : itemDetail? ctx state occurrence detail = some (item, value)) : item ∈ itemList state.openItems :=
   (itemDetail?_some found).1
 
 theorem item?_mem {α : Type} {ctx : Ctx} {state : State} {occurrence : OccurrenceRef} {detail : WaitView → Option α}
-    {item : OpenItem} (found : item? ctx state occurrence detail = some item) : item ∈ state.openItems := by
+    {item : OpenItem} (found : item? ctx state occurrence detail = some item) : item ∈ itemList state.openItems := by
   unfold item? at found
   obtain ⟨⟨_, value⟩, made, same⟩ := Option.map_eq_some_iff.mp found
   cases same
@@ -92,7 +106,7 @@ theorem item?_view {α : Type} {ctx : Ctx} {state : State} {occurrence : Occurre
 
 /-- How a boundary fires (`Boundary.fire`): an interrupting one cancels its host first, if it names one; then the
 reservation completes, or a fresh occurrence occurs. -/
-theorem fire_eq (boundary : Boundary) (host reserved : Option Nat) (scope : ScopeOccurrenceId)
+theorem fire_eq (boundary : Boundary) (host reserved : Option OccurrenceId) (scope : ScopeOccurrenceId)
     (writes : List (String × Value)) (state : State) : boundary.fire host reserved scope writes state =
       (if boundary.interrupting then host.elim state (state.signal <| .cancel ·) else state).signal
         (reserved.elim (.occur boundary.id scope (.flows boundary.outgoing) writes .outward)
@@ -106,7 +120,8 @@ theorem item?_none {α : Type} {ctx : Ctx} {state : State} {occurrence : Occurre
   simp [item?, none_]
 
 /-- Admitting command values fails only by rejecting a value outside the value domain. -/
-theorem admitValues_error {values : List Value} {failure : Failure} (refused : admitValues values = .error failure) :
+theorem admitValues_error {bounds : Bounds} {values : List Value} {failure : Failure}
+    (refused : admitValues bounds values = .error failure) :
     failure = .rejected "value-outside-domain" := by
   unfold admitValues at refused
   split at refused
@@ -228,8 +243,9 @@ private theorem canonicalDecimal_sound {coefficient : Int} {scale : Nat}
     simp at nonzero canonical
     omega
 
-private theorem keysInDomain_sound {entries : List (String × Value)} (keys : keysInDomain entries = true) :
-    entries.Pairwise (fun left right => left.1 < right.1) ∧ ∀ entry ∈ entries, entry.1.utf8ByteSize ≤ 1024 := by
+private theorem keysInDomain_sound {bounds : Bounds} {entries : List (String × Value)}
+    (keys : keysInDomain bounds entries = true) :
+    entries.Pairwise (fun left right => left.1 < right.1) ∧ ∀ entry ∈ entries, entry.1.utf8ByteSize ≤ bounds.textBytes := by
   unfold keysInDomain at keys
   simp only [Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq] at keys
   refine ⟨?_, keys.1⟩
@@ -349,9 +365,9 @@ end
 
 mutual
 /-- A value `domainNodes` counts is portable at its depth, with `Laws.Data.nodes` nodes. -/
-private theorem domainNodes_some : ∀ {depth : Nat} {value : Value} {count : Nat},
-    domainNodes depth value = some count →
-    Laws.Data.Portable depth value ∧ Laws.Data.nodes value = count
+private theorem domainNodes_some {bounds : Bounds} : ∀ {depth : Nat} {value : Value} {count : Nat},
+    domainNodes bounds depth value = some count →
+    Laws.Data.Portable bounds depth value ∧ Laws.Data.nodes value = count
   | depth, .null, _, made => by
     simp only [domainNodes, Option.some.injEq] at made
     exact ⟨.null depth, by rw [← made]; rfl⟩
@@ -377,7 +393,7 @@ private theorem domainNodes_some : ∀ {depth : Nat} {value : Value} {count : Na
     split at made
     · rename_i bounded
       simp only [Option.some.injEq] at made
-      exact ⟨.string depth text (by simpa [textBytes] using bounded), by rw [← made]; rfl⟩
+      exact ⟨.string depth text (by simpa using bounded), by rw [← made]; rfl⟩
     · cases made
   | _, .stringList _, _, made => by simp [domainNodes] at made
   | depth, .list items, _, made => by
@@ -385,7 +401,7 @@ private theorem domainNodes_some : ∀ {depth : Nat} {value : Value} {count : Na
     split at made
     · rename_i bounded
       simp only [Bool.and_eq_true, decide_eq_true_eq] at bounded
-      cases measured : memberNodes (depth + 1) items with
+      cases measured : memberNodes bounds (depth + 1) items with
       | none => simp [measured] at made
       | some inner =>
         simp only [measured, Option.map_some, Option.some.injEq] at made
@@ -400,7 +416,7 @@ private theorem domainNodes_some : ∀ {depth : Nat} {value : Value} {count : Na
       simp only [Bool.and_eq_true, decide_eq_true_eq] at bounded
       obtain ⟨⟨shallow, few⟩, keys⟩ := bounded
       obtain ⟨ordered, short⟩ := keysInDomain_sound keys
-      cases measured : entryNodes (depth + 1) entries with
+      cases measured : entryNodes bounds (depth + 1) entries with
       | none => simp [measured] at made
       | some inner =>
         simp only [measured, Option.map_some, Option.some.injEq] at made
@@ -409,18 +425,18 @@ private theorem domainNodes_some : ∀ {depth : Nat} {value : Value} {count : Na
           by rw [← made, ← counted, Laws.Data.nodes]; omega⟩
     · cases made
 
-private theorem memberNodes_some : ∀ {depth : Nat} {items : List Value} {count : Nat},
-    memberNodes depth items = some count →
-    (∀ item ∈ items, Laws.Data.Portable depth item) ∧ Laws.Data.itemNodes items = count
+private theorem memberNodes_some {bounds : Bounds} : ∀ {depth : Nat} {items : List Value} {count : Nat},
+    memberNodes bounds depth items = some count →
+    (∀ item ∈ items, Laws.Data.Portable bounds depth item) ∧ Laws.Data.itemNodes items = count
   | _, [], _, made => by
     simp only [memberNodes, Option.some.injEq] at made
     exact ⟨nofun, by rw [← made]; rfl⟩
   | depth, item :: items, _, made => by
     simp only [memberNodes] at made
-    cases measured : domainNodes depth item with
+    cases measured : domainNodes bounds depth item with
     | none => simp [measured] at made
     | some size =>
-      cases rest : memberNodes depth items with
+      cases rest : memberNodes bounds depth items with
       | none => simp [measured, rest] at made
       | some sizes =>
         simp [measured, rest] at made
@@ -431,18 +447,18 @@ private theorem memberNodes_some : ∀ {depth : Nat} {items : List Value} {count
         · exact portable
         · exact portables other mem
 
-private theorem entryNodes_some : ∀ {depth : Nat} {entries : List (String × Value)} {count : Nat},
-    entryNodes depth entries = some count →
-      (∀ entry ∈ entries, Laws.Data.Portable depth entry.2) ∧ Laws.Data.entryNodes entries = count
+private theorem entryNodes_some {bounds : Bounds} : ∀ {depth : Nat} {entries : List (String × Value)} {count : Nat},
+    entryNodes bounds depth entries = some count →
+      (∀ entry ∈ entries, Laws.Data.Portable bounds depth entry.2) ∧ Laws.Data.entryNodes entries = count
   | _, [], _, made => by
     simp only [entryNodes, Option.some.injEq] at made
     exact ⟨nofun, by rw [← made]; rfl⟩
   | depth, (name, value) :: entries, _, made => by
     simp only [entryNodes] at made
-    cases measured : domainNodes depth value with
+    cases measured : domainNodes bounds depth value with
     | none => simp [measured] at made
     | some size =>
-      cases rest : entryNodes depth entries with
+      cases rest : entryNodes bounds depth entries with
       | none => simp [measured, rest] at made
       | some sizes =>
         simp [measured, rest] at made
@@ -456,11 +472,12 @@ end
 
 /-- Whatever `inValueDomain` admits lies in the value domain the data semantics states (`Laws.Data.InDomain`): the
 executable node count, byte census and bounds are checked against the law's, constant by constant. -/
-theorem inValueDomain_sound {value : Value} (admitted : inValueDomain value = true) : Laws.Data.InDomain value := by
+theorem inValueDomain_sound {bounds : Bounds} {value : Value} (admitted : inValueDomain bounds value = true) :
+    Laws.Data.InDomain bounds value := by
   cases value with
   | stringList items =>
-    simp only [inValueDomain, textBytes, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true] at admitted
-    exact .inr ⟨admitted.1, fun text mem => of_decide_eq_true (admitted.2 text mem)⟩
+    simp only [inValueDomain, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true] at admitted
+    exact .inr ⟨admitted.1, admitted.2⟩
   | _ =>
     simp only [inValueDomain] at admitted
     split at admitted
@@ -471,10 +488,11 @@ theorem inValueDomain_sound {value : Value} (admitted : inValueDomain value = tr
     · cases admitted
 
 /-- Admitting values rejects every list holding one value outside the value domain. -/
-theorem admitValues_rejects {values : List Value} (outside : ∃ value ∈ values, ¬ Laws.Data.InDomain value) :
-    admitValues values = .error (.rejected "value-outside-domain") := by
+theorem admitValues_rejects {bounds : Bounds} {values : List Value}
+    (outside : ∃ value ∈ values, ¬ Laws.Data.InDomain bounds value) :
+    admitValues bounds values = .error (.rejected "value-outside-domain") := by
   obtain ⟨value, mem, notIn⟩ := outside
-  have refused : values.all inValueDomain = false := Bool.eq_false_iff.mpr fun all =>
+  have refused : values.all (inValueDomain bounds) = false := Bool.eq_false_iff.mpr fun all =>
     notIn (inValueDomain_sound (List.all_eq_true.mp all value mem))
   simp [admitValues, refused]
 

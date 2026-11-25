@@ -51,12 +51,12 @@ def chainRoot (chain : List ScopeOccurrence) : ScopeOccurrenceId :=
   | none => State.root
 
 /-- A chain is never empty. -/
-theorem chain_ne_nil {s : State} {x : ScopeOccurrenceId} {name : String} {chain : List ScopeOccurrence}
+theorem chain_ne_nil {s : State} {x : ScopeOccurrenceId} {name : InstanceName} {chain : List ScopeOccurrence}
     (reading : InstanceIn s x name chain) : chain ≠ [] := by
   cases reading <;> simp
 
 /-- A record below a chain ends where the chain does. -/
-theorem chainRoot_cons {s : State} {x : ScopeOccurrenceId} {name : String} {chain : List ScopeOccurrence}
+theorem chainRoot_cons {s : State} {x : ScopeOccurrenceId} {name : InstanceName} {chain : List ScopeOccurrence}
     (reading : InstanceIn s x name chain) (entry : ScopeOccurrence) : chainRoot (entry :: chain) = chainRoot chain := by
   obtain ⟨last, rest, rfl⟩ : ∃ last rest, chain = last :: rest := by
     cases chain with
@@ -64,17 +64,26 @@ theorem chainRoot_cons {s : State} {x : ScopeOccurrenceId} {name : String} {chai
     | cons last rest => exact ⟨last, rest, rfl⟩
   simp only [chainRoot, List.getLast?_cons_cons]
 
+/-- An instance chain is at most one record longer than the key it starts at has segments: each record but the last
+lies directly in the next. -/
+theorem chain_length_le {s : State} {x : ScopeOccurrenceId} {name : InstanceName} {chain : List ScopeOccurrence}
+    (reading : InstanceIn s x name chain) : chain.length ≤ x.segments.length + 1 := by
+  induction reading with
+  | called => simp
+  | root => simp
+  | up entry parent _ chain _ _ link _ ih =>
+    obtain ⟨_, keyed⟩ := Laws.State.ScopeOccurrenceId.parent?_eq_some.mp
+      (by simpa only [Laws.State.ScopeOccurrence.parent_eq] using link)
+    simp only [List.length_cons, keyed]
+    omega
+
 /-- `State.instanceRoot` of any state holding a chain, with distinct scope identifiers, is where the chain ends: the
 search follows the chain's records, since a search by an identifier finds its own record. -/
-theorem instanceRoot_chain {s : State} {x : ScopeOccurrenceId} {name : String} {chain : List ScopeOccurrence}
-    (reading : InstanceIn s x name chain) (distinct : (chain.map (·.id)).Nodup) {u : State}
-    (nodup : (scopeIds u).Nodup) (held : ∀ entry ∈ chain, entry ∈ u.scopes) : u.instanceRoot x = chainRoot chain := by
+theorem instanceRoot_chain {s : State} {x : ScopeOccurrenceId} {name : InstanceName} {chain : List ScopeOccurrence}
+    (reading : InstanceIn s x name chain) {u : State} (nodup : (scopeIds u).Nodup)
+    (held : ∀ entry ∈ chain, entry ∈ u.scopes) : u.instanceRoot x = chainRoot chain := by
   obtain ⟨go, start, _, step⟩ := Laws.State.instanceRoot_go u
-  have bound : chain.length ≤ u.scopes.length := by
-    have := distinct.length_le_of_subset (l₂ := scopeIds u) fun id member => by
-      obtain ⟨entry, inside, named⟩ := List.mem_map.mp member
-      exact List.mem_map.mpr ⟨entry, held entry inside, named⟩
-    simpa [scopeIds] using this
+  have bound := chain_length_le reading
   have uncalled : ∀ entry ∈ u.scopes, entry.calledInstance = none → u.calledRoot entry.id = false := by
     intro entry member called
     cases found : u.calledRoot entry.id with
@@ -84,7 +93,7 @@ theorem instanceRoot_chain {s : State} {x : ScopeOccurrenceId} {name : String} {
       obtain rfl := Laws.State.nodup_map_eq nodup inside member named
       simp [called] at isCalled
   rw [start]
-  clear start distinct
+  clear start
   suffices walk : ∀ fuel, chain.length ≤ fuel → (∀ entry ∈ chain, entry ∈ u.scopes) → go fuel x = chainRoot chain from
     walk _ bound held
   clear bound held
@@ -117,9 +126,9 @@ theorem instanceRoot_transport {program : Program} {s u : State} (formed : WellF
     {x : ScopeOccurrenceId} (present : x ∈ scopeIds s) (nodup : (scopeIds u).Nodup)
     (above : ∀ entry ∈ s.scopes, Within s x entry.id → entry ∈ u.scopes) : u.instanceRoot x = s.instanceRoot x := by
   obtain ⟨name, chain, reading, rest⟩ := Laws.State.instanceIn_exists formed present
-  obtain ⟨distinct, within⟩ := rest
-  rw [instanceRoot_chain reading distinct nodup fun entry inside => above entry (reading.mem entry inside)
-      (within entry inside), instanceRoot_chain reading distinct formed.distinct.scopes reading.mem]
+  obtain ⟨-, within⟩ := rest
+  rw [instanceRoot_chain reading nodup fun entry inside => above entry (reading.mem entry inside)
+      (within entry inside), instanceRoot_chain reading formed.distinct.scopes reading.mem]
 
 /-- A scope occurrence of a well-formed state keeps its root in a state that holds all of its scope occurrences. -/
 theorem instanceRoot_wider {program : Program} {s u : State} (formed : WellFormed program s) {x : ScopeOccurrenceId}
@@ -142,8 +151,8 @@ theorem instanceRoot_child {program : Program} {s : State} (formed : WellFormed 
     obtain ⟨found, inChain, named⟩ := List.mem_map.mp inside
     exact Laws.State.parent_not_within formed member link (named ▸ within found inChain)
   have reading' := InstanceIn.up entry parent name chain member called link reading
-  rw [instanceRoot_chain reading' (List.nodup_cons.mpr ⟨fresh, distinct⟩) formed.distinct.scopes reading'.mem,
-    instanceRoot_chain reading distinct formed.distinct.scopes reading.mem, chainRoot_cons reading]
+  rw [instanceRoot_chain reading' formed.distinct.scopes reading'.mem,
+    instanceRoot_chain reading formed.distinct.scopes reading.mem, chainRoot_cons reading]
 
 /-- The instance root reads only the scope occurrences. -/
 theorem instanceRoot_congr {s t : State} (scopes : t.scopes = s.scopes) (x : ScopeOccurrenceId) :
@@ -157,7 +166,7 @@ theorem instanceRoot_congr {s t : State} (scopes : t.scopes = s.scopes) (x : Sco
     induction fuel with
     | zero => funext y; rw [zeroT, zeroS]
     | succ fuel ih => funext y; rw [stepT, stepS, called, scopes, ih]
-  rw [startT, startS, scopes, same]
+  rw [startT, startS, same]
 
 /-- Placement moves to a state with the same scope occurrences whose instance entries are among the state's. -/
 theorem PlacedIn.same {program : Program} {s t : State} {element : ElementId} {scope : ScopeOccurrenceId}

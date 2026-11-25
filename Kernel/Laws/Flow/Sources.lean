@@ -1,5 +1,7 @@
 module
 
+public import Kernel.Laws.State.History
+public import Kernel.Laws.State.Map
 public import Kernel.State
 
 /-! # Laws of flow: where queued work comes from
@@ -44,7 +46,7 @@ def Offered (program : Program) (state : State) (scope : ScopeOccurrenceId) (flo
 /-- A completion of the occurrence `id` by `leave`, queued in `state`, names only flows offered where the occurrence
 lies, as a state `held` that kept `inv` and whose occurrences of that identity, scope occurrences and instance entries
 include `state`'s records: in the occurrence's scope occurrence, or, for a join firing an occurrence it parked, in its join wait's. -/
-def LeaveOffered (inv : State → Prop) (program : Program) (state : State) (id : Nat) (leave : Leave) : Prop :=
+def LeaveOffered (inv : State → Prop) (program : Program) (state : State) (id : OccurrenceId) (leave : Leave) : Prop :=
   ∀ selected, leave = .flows selected → ∀ flow ∈ selected, ∃ held, inv held ∧
     (∀ occurrence ∈ state.occurrences, occurrence.id = id → occurrence ∈ held.occurrences) ∧
     (∀ entry ∈ state.scopes, entry ∈ held.scopes) ∧
@@ -74,8 +76,8 @@ def LeavesFrom (inv : State → Prop) (program : Program) (state : State) (occur
     (((∃ kept ∈ held.occurrences, kept.id = occurrence.id ∧ kept.element = occurrence.element ∧
         kept.scope = occurrence.scope) ∧
       ∀ selected, leave = .flows selected → ∀ flow ∈ selected, Lists program occurrence.element flow ∨
-        ∃ named writes rule, flow ∈ named ∧ Signal.complete occurrence.id (.flows named) writes rule ∈ held.signals) ∨
-      ∃ named writes rule, Signal.occur occurrence.element occurrence.scope named writes rule ∈ held.signals ∧
+        ∃ named writes rule, flow ∈ named ∧ Signal.complete occurrence.id (.flows named) writes rule ∈ Laws.State.allSignals held) ∨
+      ∃ named writes rule, Signal.occur occurrence.element occurrence.scope named writes rule ∈ Laws.State.allSignals held ∧
         ∀ selected, leave = .flows selected → ∀ flow ∈ selected, Lists program occurrence.element flow ∨
           ∃ flows, named = .flows flows ∧ flow ∈ flows)
 
@@ -130,11 +132,11 @@ later is none it named (`Proofs.Former.unissued_enter_rejected`). -/
 def Anchored (inv : State → Prop) (program : Program) (state : State) (element : ElementId)
     (scope : ScopeOccurrenceId) : Prop :=
   ∃ anchor, Linked program anchor element ∧ (AnchoredBy program state anchor scope ∨
-    ∃ held, inv held ∧ held.nextIssue ≤ state.nextIssue ∧ (∀ entry ∈ state.scopes, entry ∈ held.scopes) ∧
+    ∃ held, inv held ∧ Laws.State.ScopeGrows held state ∧ (∀ entry ∈ state.scopes, entry ∈ held.scopes) ∧
       (∀ entry ∈ state.slots.instances, entry ∈ held.slots.instances) ∧ (AnchoredBy program held anchor scope ∨
-        (∃ host, Signal.arm host anchor scope ∈ held.signals) ∨
-        (∃ occurrence, Signal.armGateway occurrence anchor scope ∈ held.signals) ∨
-        ∃ raised origin, Signal.raise raised origin ∈ held.signals ∧ origin.element = anchor ∧ origin.scope = scope))
+        (∃ host, Signal.arm host anchor scope ∈ Laws.State.allSignals held) ∨
+        (∃ occurrence, Signal.armGateway occurrence anchor scope ∈ Laws.State.allSignals held) ∨
+        ∃ raised origin, Signal.raise raised origin ∈ Laws.State.allSignals held ∧ origin.element = anchor ∧ origin.scope = scope))
 
 /-- An anchor read under `inv` is one read under anything `inv` implies. -/
 theorem Anchored.mono {inv weaker : State → Prop} {program : Program} {state : State} {element : ElementId}
@@ -151,11 +153,11 @@ theorem Anchored.occurrence {inv : State → Prop} {program : Program} {state : 
 /-- Work linked to an anchor that a state `held` that kept `inv`, issued no more and with `state`'s scope occurrences
 and instance entries, places or queued an arming for, is anchored in `state`. -/
 theorem Anchored.held {inv : State → Prop} {program : Program} {held state : State} {anchor element : ElementId}
-    {scope : ScopeOccurrenceId} (holds : inv held) (issued : held.nextIssue ≤ state.nextIssue) (scopes : ∀ entry ∈ state.scopes, entry ∈ held.scopes)
+    {scope : ScopeOccurrenceId} (holds : inv held) (issued : Laws.State.ScopeGrows held state) (scopes : ∀ entry ∈ state.scopes, entry ∈ held.scopes)
     (instances : ∀ entry ∈ state.slots.instances, entry ∈ held.slots.instances) (linked : Linked program anchor element)
-    (source : AnchoredBy program held anchor scope ∨ (∃ host, Signal.arm host anchor scope ∈ held.signals) ∨
-      (∃ occurrence, Signal.armGateway occurrence anchor scope ∈ held.signals) ∨
-      ∃ raised origin, Signal.raise raised origin ∈ held.signals ∧ origin.element = anchor ∧ origin.scope = scope) :
+    (source : AnchoredBy program held anchor scope ∨ (∃ host, Signal.arm host anchor scope ∈ Laws.State.allSignals held) ∨
+      (∃ occurrence, Signal.armGateway occurrence anchor scope ∈ Laws.State.allSignals held) ∨
+      ∃ raised origin, Signal.raise raised origin ∈ Laws.State.allSignals held ∧ origin.element = anchor ∧ origin.scope = scope) :
     Anchored inv program state element scope :=
   ⟨anchor, linked, .inr ⟨held, holds, issued, scopes, instances, source⟩⟩
 
@@ -163,7 +165,7 @@ theorem Anchored.held {inv : State → Prop} {program : Program} {held state : S
 and instance entries it includes, read off that state. -/
 theorem Anchored.weaken {inv : State → Prop} {program : Program} {state after : State} {element : ElementId}
     {scope : ScopeOccurrenceId} (holds : inv state) (anchored : Anchored inv program state element scope)
-    (issued : state.nextIssue ≤ after.nextIssue)
+    (issued : Laws.State.ScopeGrows state after)
     (scopes : ∀ entry ∈ after.scopes, entry ∈ state.scopes)
     (instances : ∀ entry ∈ after.slots.instances, entry ∈ state.slots.instances) :
     Anchored inv program after element scope := by
@@ -172,7 +174,7 @@ theorem Anchored.weaken {inv : State → Prop} {program : Program} {state after 
   rcases source with here | ⟨held, kept, rest⟩
   · exact ⟨state, holds, issued, scopes, instances, .inl here⟩
   · obtain ⟨heldIssued, heldScopes, heldInstances, there⟩ := rest
-    exact ⟨held, kept, Nat.le_trans heldIssued issued, fun _ inside => heldScopes _ (scopes _ inside),
+    exact ⟨held, kept, heldIssued.trans issued, fun _ inside => heldScopes _ (scopes _ inside),
       fun _ inside => heldInstances _ (instances _ inside), there⟩
 
 /-- Where a begin queued in `state` comes from: its element anchored in the scope occurrence it begins in
@@ -190,7 +192,7 @@ instance entries include `state`'s, resumes by reserving `element` in `scope` an
 comes from. -/
 def ResumedBy (inv : State → Prop) (state : State) (element : ElementId) (scope : ScopeOccurrenceId) (leave : Leave) :
     Prop :=
-  ∃ held, inv held ∧ held.nextIssue ≤ state.nextIssue ∧ (∀ entry ∈ state.scopes, entry ∈ held.scopes) ∧
+  ∃ held, inv held ∧ Laws.State.ScopeGrows held state ∧ (∀ entry ∈ state.scopes, entry ∈ held.scopes) ∧
     (∀ entry ∈ state.slots.instances, entry ∈ held.slots.instances) ∧
     ∃ run ∈ held.slots.compensation.runs, run.resume = some (.occur element scope leave)
 
@@ -269,7 +271,7 @@ theorem LeavesFrom.mono {inv weaker : State → Prop} {program : Program} {state
   exact ⟨held, implies held holds, kept⟩
 
 /-- A completion offered under `inv` is one offered under anything `inv` implies. -/
-theorem LeaveOffered.mono {inv weaker : State → Prop} {program : Program} {state : State} {id : Nat} {leave : Leave}
+theorem LeaveOffered.mono {inv weaker : State → Prop} {program : Program} {state : State} {id : OccurrenceId} {leave : Leave}
     (offered : LeaveOffered inv program state id leave) (implies : ∀ s, inv s → weaker s) :
     LeaveOffered weaker program state id leave := fun selected same flow inside => by
   obtain ⟨held, holds, kept⟩ := offered selected same flow inside

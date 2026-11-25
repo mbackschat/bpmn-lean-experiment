@@ -31,29 +31,31 @@ def CanonicalDecimal (coefficient : Int) (scale : Nat) : Prop :=
   (coefficient = 0 → scale = 0) ∧ scale ≤ 6 ∧ -9223372036854775808 ≤ coefficient ∧
     coefficient ≤ 9223372036854775807 ∧ (0 < scale → coefficient % 10 ≠ 0)
 
-/-- `value` is a portable value whose node lies `depth` containers below the root: an Integer `0..2^53 − 1`, a
-canonical Decimal, a String of at most 1,024 UTF-8 bytes, a null or Boolean, or a List or Map at most four containers
-deep with at most 32 members, each a portable value; Map keys are at most 1,024 UTF-8 bytes and strictly increasing
-in Unicode-scalar order. A String List is no portable value at any depth. -/
-inductive Portable : Nat → Value → Prop where
-  | null (depth : Nat) : Portable depth .null
-  | bool (depth : Nat) (value : Bool) : Portable depth (.bool value)
-  | int (depth : Nat) (value : Int) : 0 ≤ value → value ≤ 9007199254740991 → Portable depth (.int value)
+/-- `value` is a portable value under `bounds` whose node lies `depth` containers below the root: an Integer
+`0..2^53 − 1`, a canonical Decimal, a String of at most `bounds.textBytes` UTF-8 bytes, a null or Boolean, or a List
+or Map at most `bounds.containerLevels` containers deep with at most `bounds.containerMembers` members, each a portable
+value; Map keys are at most `bounds.textBytes` UTF-8 bytes and strictly increasing in Unicode-scalar order. A String
+List is no portable value at any depth. -/
+inductive Portable (bounds : Bounds) : Nat → Value → Prop where -- guard-exception(3): the portable domain over `Value`'s kinds, a law about values, not a copy of `JVal`.
+  | null (depth : Nat) : Portable bounds depth .null
+  | bool (depth : Nat) (value : Bool) : Portable bounds depth (.bool value)
+  | int (depth : Nat) (value : Int) : 0 ≤ value → value ≤ 9007199254740991 → Portable bounds depth (.int value)
   | decimal (depth : Nat) (coefficient : Int) (scale : Nat) :
-      CanonicalDecimal coefficient scale → Portable depth (.decimal coefficient scale)
-  | string (depth : Nat) (text : String) : text.utf8ByteSize ≤ 1024 → Portable depth (.string text)
-  | list (depth : Nat) (items : List Value) : depth < 4 → items.length ≤ 32 →
-      (∀ item ∈ items, Portable (depth + 1) item) → Portable depth (.list items)
-  | map (depth : Nat) (entries : List (String × Value)) : depth < 4 → entries.length ≤ 32 →
-      entries.Pairwise (fun left right => left.1 < right.1) → (∀ entry ∈ entries, entry.1.utf8ByteSize ≤ 1024) →
-      (∀ entry ∈ entries, Portable (depth + 1) entry.2) → Portable depth (.map entries)
+      CanonicalDecimal coefficient scale → Portable bounds depth (.decimal coefficient scale)
+  | string (depth : Nat) (text : String) : text.utf8ByteSize ≤ bounds.textBytes → Portable bounds depth (.string text)
+  | list (depth : Nat) (items : List Value) : depth < bounds.containerLevels → items.length ≤ bounds.containerMembers →
+      (∀ item ∈ items, Portable bounds (depth + 1) item) → Portable bounds depth (.list items)
+  | map (depth : Nat) (entries : List (String × Value)) : depth < bounds.containerLevels →
+      entries.length ≤ bounds.containerMembers → entries.Pairwise (fun left right => left.1 < right.1) →
+      (∀ entry ∈ entries, entry.1.utf8ByteSize ≤ bounds.textBytes) →
+      (∀ entry ∈ entries, Portable bounds (depth + 1) entry.2) → Portable bounds depth (.map entries)
 
 mutual
 /-- The tagged value nodes of a value, the root included; Map keys and entry wrappers are no nodes. -/
 def nodes : Value → Nat
   | .list items => 1 + itemNodes items
   | .map entries => 1 + entryNodes entries
-  | _ => 1
+  | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .string _ | .stringList _ => 1
 
 def itemNodes : List Value → Nat
   | [] => 0
@@ -87,8 +89,8 @@ def digitBytes (value : Int) : Nat :=
 mutual
 /-- The bytes of a portable value's canonical JSON: no whitespace, each node `{"kind":…,"value":…}` (a Decimal's
 coefficient a string beside its scale), each Map entry `{"name":…,"value":…}`; each constant is the bytes of the
-template its comment shows. A String List has no canonical value JSON; `Portable` excludes it before its measure is
-read. -/
+template its comment shows. A String List, a Double and a Date have no measure here; `Portable` excludes them
+before it is read. -/
 def jsonBytes : Value → Nat
   | .null => 15 -- {"kind":"null"}
   | .bool value => 27 + if value then 4 else 5 -- {"kind":"boolean","value":}
@@ -96,7 +98,7 @@ def jsonBytes : Value → Nat
   | .decimal coefficient scale => 42 + (2 + digitBytes coefficient) + digitBytes scale
     -- {"coefficient":,"kind":"decimal","scale":}
   | .string text => 26 + textBytes text -- {"kind":"string","value":}
-  | .stringList _ => 0
+  | .double _ | .date _ | .stringList _ => 0
   | .list items => 26 + itemBytes items + (items.length - 1) -- {"kind":"list","value":[]}
   | .map entries => 25 + entryBytes entries + (entries.length - 1) -- {"kind":"map","value":[]}
 
@@ -109,22 +111,23 @@ def entryBytes : List (String × Value) → Nat
   | (name, value) :: entries => 18 + textBytes name + jsonBytes value + entryBytes entries -- {"name":,"value":}
 end
 
-/-- The `stringList` arm, admitted only as a whole variable value within its wire bounds: at most 32 Strings of at
-most 1,024 UTF-8 bytes. -/
-def WholeStringList : Value → Prop
-  | .stringList items => items.length ≤ 32 ∧ ∀ text ∈ items, text.utf8ByteSize ≤ 1024
-  | _ => False
+/-- The `stringList` arm, admitted only as a whole variable value within its wire bounds: at most
+`bounds.containerMembers` Strings of at most `bounds.textBytes` UTF-8 bytes. -/
+def WholeStringList (bounds : Bounds) : Value → Prop
+  | .stringList items => items.length ≤ bounds.containerMembers ∧ ∀ text ∈ items, text.utf8ByteSize ≤ bounds.textBytes
+  | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .string _ | .list _ | .map _ => False
 
-/-- A value an input may carry: a portable root value of at most 256 nodes and 16,384 canonical JSON bytes, or a
-`stringList` as a whole. -/
-def InDomain (value : Value) : Prop :=
-  (Portable 0 value ∧ nodes value ≤ 256 ∧ jsonBytes value ≤ 16384) ∨ WholeStringList value
+/-- A value an input may carry under `bounds`: a portable root value of at most `bounds.valueNodes` nodes and
+`bounds.canonicalBytes` canonical JSON bytes, or a `stringList` as a whole. -/
+def InDomain (bounds : Bounds) (value : Value) : Prop :=
+  (Portable bounds 0 value ∧ nodes value ≤ bounds.valueNodes ∧ jsonBytes value ≤ bounds.canonicalBytes) ∨
+    WholeStringList bounds value
 
 /-- One value outside the domain rejects the whole input (`value-outside-domain`), so nothing of it is written; an
 input wholly inside is admitted (`PBV-BOUND-01`). -/
-def AdmitsWhole (values : List Value) (result : Except Failure Unit) : Prop :=
-  ((∃ value ∈ values, ¬ InDomain value) → result = .error (.rejected "value-outside-domain")) ∧
-  ((∀ value ∈ values, InDomain value) → result = .ok ())
+def AdmitsWhole (bounds : Bounds) (values : List Value) (result : Except Failure Unit) : Prop :=
+  ((∃ value ∈ values, ¬ InDomain bounds value) → result = .error (.rejected "value-outside-domain")) ∧
+  ((∀ value ∈ values, InDomain bounds value) → result = .ok ())
 
 /-! ## The measures, character by character
 
@@ -234,47 +237,47 @@ def FailedSource (dialect : MappingDialect) (code : String) (reading : Except Fa
 
 def sampleMap : Value := .map [("a", .bool true), ("b", .decimal (-125) 2)]
 
-theorem sample_map_portable : Portable 0 sampleMap :=
+theorem sample_map_portable : Portable {} 0 sampleMap :=
   .map 0 _ (by decide +kernel) (by decide +kernel) (by decide +kernel) (by decide +kernel) fun entry mem => by
     simp only [List.mem_cons, List.not_mem_nil, or_false] at mem
     rcases mem with rfl | rfl
     · exact .bool _ _
     · exact .decimal _ _ _ (by unfold CanonicalDecimal; decide +kernel)
 
-theorem sample_map_in_domain : InDomain sampleMap :=
+theorem sample_map_in_domain : InDomain {} sampleMap :=
   .inl ⟨sample_map_portable, by simp [sampleMap, nodes, entryNodes],
     by simp [sampleMap, jsonBytes, entryBytes, textBytes, charBytes, digitBytes,
       show 'a'.utf8Size = 1 by decide +kernel, show 'b'.utf8Size = 1 by decide +kernel,
       show digitsWithin 125 125 = 3 by decide +kernel, show digitsWithin 2 2 = 1 by decide +kernel]⟩
 
-theorem string_list_in_domain : InDomain (.stringList ["x"]) := .inr ⟨by decide +kernel, by decide +kernel⟩
+theorem string_list_in_domain : InDomain {} (.stringList ["x"]) := .inr ⟨by decide +kernel, by decide +kernel⟩
 
 /-- A value that is neither a whole `stringList` nor a portable root value is outside the domain. -/
-theorem outside_of_portable {value : Value} (notWhole : ¬ WholeStringList value) (outside : ¬ Portable 0 value) :
-    ¬ InDomain value := fun inside => by
+theorem outside_of_portable {bounds : Bounds} {value : Value} (notWhole : ¬ WholeStringList bounds value)
+    (outside : ¬ Portable bounds 0 value) : ¬ InDomain bounds value := fun inside => by
   rcases inside with ⟨portable, _⟩ | whole
   · exact outside portable
   · exact notWhole whole
 
-theorem negative_integer_outside : ¬ InDomain (.int (-1)) :=
+theorem negative_integer_outside : ¬ InDomain {} (.int (-1)) :=
   outside_of_portable nofun fun portable => by cases portable; omega
 
-theorem unsafe_integer_outside : ¬ InDomain (.int 9007199254740992) :=
+theorem unsafe_integer_outside : ¬ InDomain {} (.int 9007199254740992) :=
   outside_of_portable nofun fun portable => by cases portable; omega
 
-theorem trailing_zero_outside : ¬ InDomain (.decimal 10 1) :=
+theorem trailing_zero_outside : ¬ InDomain {} (.decimal 10 1) :=
   outside_of_portable nofun fun portable => by
     cases portable
     rename_i canonical
     exact canonical.2.2.2.2 (by decide +kernel) (by decide +kernel)
 
-theorem unordered_keys_outside : ¬ InDomain (.map [("b", Value.null), ("a", Value.null)]) :=
+theorem unordered_keys_outside : ¬ InDomain {} (.map [("b", Value.null), ("a", Value.null)]) :=
   outside_of_portable nofun fun portable => by
     cases portable
     rename_i ordered _ _
     simp at ordered
 
-theorem nested_string_list_outside : ¬ InDomain (.list [.stringList ["x"]]) :=
+theorem nested_string_list_outside : ¬ InDomain {} (.list [.stringList ["x"]]) :=
   outside_of_portable nofun fun portable => by
     cases portable
     rename_i members
@@ -283,13 +286,14 @@ theorem nested_string_list_outside : ¬ InDomain (.list [.stringList ["x"]]) :=
 /-- Five containers along one path. -/
 def fiveDeep : Value := .list [.list [.list [.list [.list []]]]]
 
-theorem five_deep_outside : ¬ InDomain fiveDeep :=
+theorem five_deep_outside : ¬ InDomain {} fiveDeep :=
   outside_of_portable nofun fun portable => by
     cases portable with | list _ _ _ _ first => ?_
     cases first (.list [.list [.list [.list []]]]) (by simp) with | list _ _ _ _ second => ?_
     cases second (.list [.list [.list []]]) (by simp) with | list _ _ _ _ third => ?_
     cases third (.list [.list []]) (by simp) with | list _ _ _ _ fourth => ?_
     cases fourth (.list []) (by simp) with | list _ _ shallow _ _ => ?_
+    dsimp only at shallow
     omega
 
 theorem text_bytes_replicate (count : Nat) (character : Char) :
@@ -307,7 +311,7 @@ theorem list_bytes (items : List Value) : jsonBytes (.list items) = 26 + itemByt
 /-- Three Strings whose JSON literals take 6,002 bytes each exceed the byte bound. The text stays a variable here:
 a proof over the concrete String makes the kernel decode its UTF-8 bytes and exhausts the memory ceiling. -/
 theorem oversized_of (text : String) (long : textBytes text = 6002) :
-    ¬ InDomain (.list [.string text, .string text, .string text]) := fun inside => by
+    ¬ InDomain {} (.list [.string text, .string text, .string text]) := fun inside => by
   rcases inside with ⟨_, _, bytes⟩ | whole
   · rw [list_bytes] at bytes
     simp only [itemBytes, jsonBytes, long, List.length_cons, List.length_nil] at bytes
@@ -320,10 +324,10 @@ def controls : String := String.ofList (List.replicate 1000 '\x01')
 theorem controls_bytes : textBytes controls = 6002 :=
   (text_bytes_replicate 1000 '\x01').trans (by simp [charBytes])
 
-theorem oversized_outside : ¬ InDomain (.list [.string controls, .string controls, .string controls]) :=
+theorem oversized_outside : ¬ InDomain {} (.list [.string controls, .string controls, .string controls]) :=
   oversized_of controls controls_bytes
 
-theorem admits_inside : AdmitsWhole [sampleMap, .stringList ["x"]] (.ok ()) :=
+theorem admits_inside : AdmitsWhole {} [sampleMap, .stringList ["x"]] (.ok ()) :=
   ⟨fun found => by
       obtain ⟨value, mem, outside⟩ := found
       simp only [List.mem_cons, List.not_mem_nil, or_false] at mem
@@ -332,15 +336,15 @@ theorem admits_inside : AdmitsWhole [sampleMap, .stringList ["x"]] (.ok ()) :=
       · exact absurd string_list_in_domain outside,
     fun _ => rfl⟩
 
-theorem one_outside_rejects : AdmitsWhole [sampleMap, .int (-1)] (.error (.rejected "value-outside-domain")) :=
+theorem one_outside_rejects : AdmitsWhole {} [sampleMap, .int (-1)] (.error (.rejected "value-outside-domain")) :=
   ⟨fun _ => rfl, fun inside => absurd (inside (.int (-1)) (by simp)) negative_integer_outside⟩
 
 /-- Admitting the inside part of an input with one value outside is rejected. -/
-theorem partial_admission_rejected : ¬ AdmitsWhole [sampleMap, .int (-1)] (.ok ()) := fun law => by
+theorem partial_admission_rejected : ¬ AdmitsWhole {} [sampleMap, .int (-1)] (.ok ()) := fun law => by
   simpa using law.1 ⟨.int (-1), by simp, negative_integer_outside⟩
 
 /-- Rejecting an input wholly inside is rejected. -/
-theorem inside_rejected_rejected : ¬ AdmitsWhole [sampleMap] (.error (.rejected "value-outside-domain")) := fun law => by
+theorem inside_rejected_rejected : ¬ AdmitsWhole {} [sampleMap] (.error (.rejected "value-outside-domain")) := fun law => by
   simpa using law.2 fun value mem => by simp at mem; subst mem; exact sample_map_in_domain
 
 theorem association_unavailable : FailedSource .dataAssociation "unknown-variable" (.ok none) :=

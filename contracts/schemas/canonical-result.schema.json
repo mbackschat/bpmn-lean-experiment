@@ -166,7 +166,7 @@
           "description": "The instance root's variables, in name order."
         },
         "scopes": {
-          "description": "Every other variable scope of the instance and its called instances that holds a variable, so that variables keep their scope; producers emit them in canonical order: by scope.processInstanceId, scope.elementId (absent first, Unicode scalar order), scope.activation, then scope.role in enumeration order. Optional because an observation boundary may not reach local scopes: the CIB Seven projection publishes the root scope only, and comparisons against it leave scopes out.",
+          "description": "Every other variable scope of the instance and its called instances that holds a variable, so that variables keep their scope. A scope's identity, its processInstanceId, elementId, activation and role, is unique within one observation and never reissued, so the canonical order is total: producers emit them by scope.processInstanceId, scope.elementId (absent first, Unicode scalar order), scope.activation, then scope.role in enumeration order. Optional because an observation boundary may not reach local scopes: the CIB Seven projection publishes the root scope only, and comparisons against it leave scopes out.",
           "type": "array",
           "items": {
             "$ref": "#/$defs/scopeVariables"
@@ -549,6 +549,37 @@
               "$ref": "#/$defs/incidentDetail"
             }
           }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "definition",
+            "input",
+            "detail"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/occurrenceId"
+            },
+            "definition": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/$defs/definitionRef"
+                }
+              ]
+            },
+            "input": {
+              "const": "timerFire"
+            },
+            "detail": {
+              "$ref": "#/$defs/jobDetail"
+            }
+          }
         }
       ]
     },
@@ -833,50 +864,53 @@
           "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
         },
         "recurrence": {
-          "oneOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "object",
-              "additionalProperties": false,
-              "required": [
-                "periodMs",
-                "cron",
-                "remaining"
-              ],
-              "properties": {
-                "periodMs": {
-                  "oneOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/positiveSafeInteger"
-                    }
-                  ]
-                },
-                "cron": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "remaining": {
-                  "oneOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
-                    }
-                  ]
-                }
-              }
-            }
-          ]
+          "$ref": "#/$defs/timerRecurrence"
         }
       }
+    },
+    "timerRecurrence": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "periodMs",
+            "cron",
+            "remaining"
+          ],
+          "properties": {
+            "periodMs": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/positiveSafeInteger"
+                }
+              ]
+            },
+            "cron": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "remaining": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
+                }
+              ]
+            }
+          }
+        }
+      ]
     },
     "effectDetail": {
       "type": "object",
@@ -917,12 +951,29 @@
         }
       }
     },
-    "incidentDetail": {
+    "jobDetail": {
+      "description": "A job the kernel runs as an input of its own (AD8): only its due time is observed, as CIB exposes a job's due date.",
       "type": "object",
       "additionalProperties": false,
       "required": [
         "kind",
-        "effect",
+        "dueMs"
+      ],
+      "properties": {
+        "kind": {
+          "const": "job"
+        },
+        "dueMs": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
+        }
+      }
+    },
+    "incidentDetail": {
+      "description": "An incident names its subject by exactly one member: the failed effect, the failed job or the Timer whose job failed.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
         "generation",
         "cancellable"
       ],
@@ -931,45 +982,117 @@
           "const": "incident"
         },
         "effect": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "protocol",
-            "operation",
-            "arguments",
-            "failures",
-            "send"
-          ],
-          "properties": {
-            "protocol": {
-              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
-            },
-            "operation": {
-              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
-            },
-            "arguments": {
-              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/bindings"
-            },
-            "failures": {
-              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
-            },
-            "send": {
-              "oneOf": [
-                {
-                  "type": "null"
-                },
-                {
-                  "$ref": "#/$defs/sendDescriptor"
-                }
-              ]
-            }
-          }
+          "$ref": "#/$defs/incidentEffect"
+        },
+        "job": {
+          "$ref": "#/$defs/incidentJob"
+        },
+        "timer": {
+          "$ref": "#/$defs/incidentTimer"
         },
         "generation": {
           "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/positiveSafeInteger"
         },
         "cancellable": {
           "type": "boolean"
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "effect": {
+              "$ref": "#/$defs/incidentEffect"
+            }
+          },
+          "required": [
+            "effect"
+          ]
+        },
+        {
+          "properties": {
+            "job": {
+              "$ref": "#/$defs/incidentJob"
+            }
+          },
+          "required": [
+            "job"
+          ]
+        },
+        {
+          "properties": {
+            "timer": {
+              "$ref": "#/$defs/incidentTimer"
+            }
+          },
+          "required": [
+            "timer"
+          ]
+        }
+      ]
+    },
+    "incidentEffect": {
+      "description": "The failed effect an incident replaces.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocol",
+        "operation",
+        "arguments",
+        "failures",
+        "send"
+      ],
+      "properties": {
+        "protocol": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+        },
+        "operation": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+        },
+        "arguments": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/bindings"
+        },
+        "failures": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
+        },
+        "send": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/sendDescriptor"
+            }
+          ]
+        }
+      }
+    },
+    "incidentJob": {
+      "description": "The failed job an incident replaces (AD8): only its due time is observed.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dueMs"
+      ],
+      "properties": {
+        "dueMs": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
+        }
+      }
+    },
+    "incidentTimer": {
+      "description": "The Timer whose job failed (AD8): its due time and, for a cycle, its recurrence.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "deadlineMs",
+        "recurrence"
+      ],
+      "properties": {
+        "deadlineMs": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
+        },
+        "recurrence": {
+          "$ref": "#/$defs/timerRecurrence"
         }
       }
     },
@@ -990,7 +1113,7 @@
       }
     },
     "variableScope": {
-      "description": "A variable scope, named by the occurrence it belongs to: an Activity's own scope (a Sub-Process's or its local variables), a Multi-Instance body's, a Multi-Instance instance or a compensation handler's restored context by the occurrence it hosts; a called process instance's root by that instance alone.",
+      "description": "A variable scope, named by the occurrence it belongs to: an Activity's own scope (a Sub-Process's or its local variables), a Multi-Instance body's, a Multi-Instance instance by the instance occurrence it hosts, a restored compensation context (a handler's or a group's) by the subject occurrence whose snapshot it restores, multiInstanceBodyCompensationContext for a Multi-Instance body's, whose first instance shares its element and activation; a called process instance's root by that instance alone.",
       "oneOf": [
         {
           "type": "object",
@@ -1026,6 +1149,7 @@
                 "activity",
                 "multiInstanceBody",
                 "multiInstanceInstance",
+                "multiInstanceBodyCompensationContext",
                 "compensationContext"
               ]
             },
@@ -1033,7 +1157,7 @@
               "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
             },
             "activation": {
-              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/positiveSafeInteger"
             }
           }
         }

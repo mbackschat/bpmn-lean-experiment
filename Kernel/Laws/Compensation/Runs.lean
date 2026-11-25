@@ -3,6 +3,7 @@ module
 public import Kernel.Hooks
 public import Kernel.Laws.Step.Contract
 public import Kernel.Laws.Compensation.Rules
+public import Kernel.Laws.State.Slots
 
 /-! # Laws of compensation runs: what preserving an invariant needs
 
@@ -17,6 +18,8 @@ a handler's begin keep (`Advanced`, `Ended`, `Begun`). Nothing executable import
 
 namespace Kernel.Laws.Compensation
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel
 
 /-! ## What a run needs
@@ -29,26 +32,28 @@ since no run holds its fresh context yet, so every scope occurrence that stood s
 /-- A compensation run fits `state`: the occurrence it completes once it ends has settled, a group it resumes is its
 own context, and each running handler's context was issued and, while it stands, lies directly in the run's scope
 occurrence. -/
-def Fits (settled : State → Nat → Prop) (state : State) (run : CompensationRun) : Prop :=
+def Fits (settled : State → OccurrenceId → Prop) (state : State) (run : CompensationRun) : Prop :=
   (∀ occurrence leave, run.resume = some (.complete occurrence leave) → settled state occurrence) ∧
-    (∀ outer context, run.resume = some (.group outer context) → context = run.scope) ∧
-    ∀ context ∈ run.running.map (·.1), context.value < state.nextIssue ∧
+    (∀ context, run.resume = some (.group context) → context = run.scope) ∧
+    ∀ context ∈ run.running.map (·.1), Laws.State.ScopeIssued state context ∧
       ∀ entry ∈ state.scopes, entry.id = context → entry.parent = some run.scope
 
 /-- `resume` is the resume of a compensation queued in a state that kept `inv`, issued no more than `state`, with
 `state`'s scope occurrences and instance entries: where a run a compensation starts resumes from (`StoredFrom`). -/
 def ResumeQueued (inv : State → Prop) (state : State) (resume : Resume) : Prop :=
-  ∃ queue, inv queue ∧ queue.nextIssue ≤ state.nextIssue ∧ some resume ∈ Laws.Step.resumesOf queue.signals ∧
+  ∃ queue, inv queue ∧ Laws.State.ScopeGrows queue state ∧ some resume ∈ Laws.Step.resumesOf (Laws.State.allSignals queue) ∧
     queue.scopes = state.scopes ∧ queue.slots.instances = state.slots.instances
 
 /-- What compensation runs need of the state operations they apply, for an invariant `inv` of instances of `program`
 and what it calls settled; each operation also keeps what has settled. -/
-structure RunsOps (program : Program) (inv : State → Prop) (settled : State → Nat → Prop) : Prop where
+structure RunsOps (program : Program) (inv : State → Prop) (settled : State → OccurrenceId → Prop) : Prop where
   fits : ∀ state run, inv state → run ∈ state.slots.compensation.runs → Fits settled state run
-  issued : ∀ state, inv state → ∀ entry ∈ state.scopes, entry.id.value < state.nextIssue
+  issued : ∀ state, inv state → ∀ entry ∈ state.scopes, Laws.State.ScopeIssued state entry.id
+  /-- Every scope occurrence sits under its own key, so a context entered at a fresh key displaces none. -/
+  keyed : ∀ state, inv state → Laws.State.ScopesKeyed state.scopeMap
   /-- Every active Multi-Instance instance's scope occurrence was issued, so no context entered later is one. -/
   slotsIssued : ∀ state, inv state → ∀ body ∈ state.slots.multiInstances, ∀ scope,
-    Iteration.active scope ∈ body.instances → scope.value < state.nextIssue
+    Iteration.active scope ∈ body.instances → Laws.State.ScopeIssued state scope
   /-- The records and runs replaced, each run held before or fitting, and each context they hold running a running
   context before or no active Multi-Instance instance's scope occurrence, so that an invariant keeping instances apart
   from handlers is kept by storing them; a run that resumes by a reservation names one pending in a state that kept
@@ -67,15 +72,25 @@ structure RunsOps (program : Program) (inv : State → Prop) (settled : State �
     Laws.Flow.RecordAnchor state element parent →
     inv (state.enterScope element parent locals none).1 ∧
       ∀ id, settled state id → settled (state.enterScope element parent locals none).1 id
-  entered : ∀ (state : State) element parent locals, (state.enterScope element parent locals none).2 = ⟨state.nextIssue⟩ ∧
-    (state.enterScope element parent locals none).1.nextIssue = state.nextIssue + 1 ∧
-    (state.enterScope element parent locals none).1.scopes =
-      state.scopes ++ [{ id := ⟨state.nextIssue⟩, element := some element, parent := some parent, occurrence := none }] ∧
+  entered : ∀ (state : State) element parent locals, (state.enterScope element parent locals none).2.parent? = some parent ∧
+    (state.enterScope element parent locals none).1.occurrenceOrdinals = state.occurrenceOrdinals ∧
+    (state.enterScope element parent locals none).1.scopeMap = state.scopeMap.insert (state.enterScope element parent locals none).2
+      { id := (state.enterScope element parent locals none).2, element := some element,
+        position := .fresh state.issuing (state.issueNext + 1), occurrence := none } ∧
     (state.enterScope element parent locals none).1.slots = state.slots
+  /-- A context entered below a scope occurrence that stands takes a key never issued, which every history then holds,
+  and the issue table keeps every entry (DC12). -/
+  fresh : ∀ state element parent locals, inv state → parent ∈ state.scopes.map (·.id) →
+    Laws.State.ScopeFresh state (state.enterScope element parent locals none).1 (state.enterScope element parent locals none).2 ∧
+      Laws.State.TableGrows state (state.enterScope element parent locals none).1
   signalled : ∀ (state : State) signal, (state.signal signal).scopes = state.scopes ∧
-    (state.signal signal).nextIssue = state.nextIssue ∧ (state.signal signal).slots = state.slots
+    Laws.State.OccurrenceGrows state (state.signal signal) ∧ (state.signal signal).slots = state.slots
+  signalGrows : ∀ (state : State) signal, Laws.State.ScopeGrows state (state.signal signal)
   cancel : ∀ state id, inv state → inv (state.signal (.cancel id)) ∧
     ∀ other, settled state other → settled (state.signal (.cancel id)) other
+  /-- A run's readiness work queued as a unit of its own (DC30). -/
+  ready : ∀ state scope context, inv state → inv (state.signal (.compensationReady scope context)) ∧
+    ∀ other, settled state other → settled (state.signal (.compensationReady scope context)) other
   /-- The completion a run held in a state that kept `inv` resumes by. -/
   complete : ∀ state id leave writes rule, inv state → settled state id →
     (∃ held, inv held ∧ ∃ run ∈ held.slots.compensation.runs, run.resume = some (.complete id leave)) →
@@ -95,36 +110,59 @@ structure RunsOps (program : Program) (inv : State → Prop) (settled : State �
   /-- A context left, which keeps its parent standing and adds no Multi-Instance body; it is a running handler's
   context, so an invariant that keeps every other scope occurrence a hook does not own (a Multi-Instance instance's) is
   kept by leaving it. -/
-  leave : ∀ state entry parent, inv state → entry ∈ state.scopes → entry.parent = some parent →
+  leave : ∀ le state entry parent, inv state → entry ∈ state.scopes → entry.parent = some parent →
     (∃ run ∈ state.slots.compensation.runs, entry.id ∈ run.running.map (·.1)) →
-    inv (state.leaveScope entry.id) ∧ parent ∈ (state.leaveScope entry.id).scopes.map (·.id) ∧
-      (state.leaveScope entry.id).nextIssue = state.nextIssue ∧ (∀ kept ∈ (state.leaveScope entry.id).scopes, kept ∈ state.scopes) ∧
-      (∀ body ∈ (state.leaveScope entry.id).slots.multiInstances, body ∈ state.slots.multiInstances) ∧
-      ∀ id, settled state id → settled (state.leaveScope entry.id) id
+    inv (state.leaveScope le entry.id) ∧ parent ∈ (state.leaveScope le entry.id).scopes.map (·.id) ∧
+      Laws.State.OccurrenceGrows state (state.leaveScope le entry.id) ∧ Laws.State.ScopeGrows state (state.leaveScope le entry.id) ∧
+      (∀ kept ∈ (state.leaveScope le entry.id).scopes, kept ∈ state.scopes) ∧
+      (∀ body ∈ (state.leaveScope le entry.id).slots.multiInstances, body ∈ state.slots.multiInstances) ∧
+      ∀ id, settled state id → settled (state.leaveScope le entry.id) id
 
-/-- `after` follows `before` while runs begin, advance and end: nothing issued is issued again, each scope occurrence
-of `after` stood in `before` or was issued since, what has settled stays settled, and no Multi-Instance body is added. -/
-def Follows (settled : State → Nat → Prop) (before after : State) : Prop :=
-  before.nextIssue ≤ after.nextIssue ∧
-    (∀ entry ∈ after.scopes, entry ∈ before.scopes ∨ before.nextIssue ≤ entry.id.value) ∧
+/-- `after` follows `before` while runs begin, advance and end: every occurrence key issued stays issued, each scope occurrence
+of `after` stood in `before` or was issued since, what has settled stays settled, no Multi-Instance body is added, and
+every scope key issued stays issued. -/
+def Follows (settled : State → OccurrenceId → Prop) (before after : State) : Prop :=
+  Laws.State.OccurrenceGrows before after ∧
+    (∀ entry ∈ after.scopes, entry ∈ before.scopes ∨ ¬ Laws.State.ScopeIssued before entry.id) ∧
     (∀ id, settled before id → settled after id) ∧
-    ∀ body ∈ after.slots.multiInstances, body ∈ before.slots.multiInstances
+    (∀ body ∈ after.slots.multiInstances, body ∈ before.slots.multiInstances) ∧ Laws.State.ScopeGrows before after
 
-theorem Follows.refl {settled : State → Nat → Prop} (state : State) : Follows settled state state :=
-  ⟨Nat.le_refl _, fun _ member => .inl member, fun _ => id, fun _ => id⟩
+theorem Follows.grows {settled : State → OccurrenceId → Prop} {before after : State} (follows : Follows settled before after) :
+    Laws.State.ScopeGrows before after :=
+  follows.2.2.2.2
 
-theorem Follows.trans {settled : State → Nat → Prop} {first second third : State} (one : Follows settled first second)
+theorem Follows.refl {settled : State → OccurrenceId → Prop} (state : State) : Follows settled state state :=
+  ⟨.refl _, fun _ member => .inl member, fun _ => id, fun _ => id, .refl _⟩
+
+theorem Follows.trans {settled : State → OccurrenceId → Prop} {first second third : State} (one : Follows settled first second)
     (two : Follows settled second third) : Follows settled first third :=
-  ⟨Nat.le_trans one.1 two.1, fun entry member => (two.2.1 entry member).elim (one.2.1 entry)
-    fun fresh => .inr (Nat.le_trans one.1 fresh), fun id settled => two.2.2.1 id (one.2.2.1 id settled),
-    fun body member => one.2.2.2 body (two.2.2.2 body member)⟩
+  ⟨one.1.trans two.1, fun entry member => (two.2.1 entry member).elim (one.2.1 entry)
+    fun fresh => .inr fun issued => fresh (one.grows.issued issued), fun id settled => two.2.2.1 id (one.2.2.1 id settled),
+    fun body member => one.2.2.2.1 body (two.2.2.2.1 body member), one.grows.trans two.grows⟩
 
 /-- A change that keeps the scope occurrences, the issued identities, the Multi-Instance bodies and what has settled is
 followed. -/
-theorem Follows.same {settled : State → Nat → Prop} {before after : State} (kept : ∀ id, settled before id → settled after id)
-    (scopes : after.scopes = before.scopes) (issued : after.nextIssue = before.nextIssue)
-    (bodies : after.slots.multiInstances = before.slots.multiInstances) : Follows settled before after :=
-  ⟨Nat.le_of_eq issued.symm, fun _ member => .inl (scopes ▸ member), kept, fun _ member => bodies ▸ member⟩
+theorem Follows.same {settled : State → OccurrenceId → Prop} {before after : State} (kept : ∀ id, settled before id → settled after id)
+    (scopes : after.scopes = before.scopes) (issued : Laws.State.OccurrenceGrows before after)
+    (bodies : after.slots.multiInstances = before.slots.multiInstances) (grows : Laws.State.ScopeGrows before after) :
+    Follows settled before after :=
+  ⟨issued, fun _ member => .inl (scopes ▸ member), kept, fun _ member => bodies ▸ member, grows⟩
+
+/-- A context entered below a scope occurrence that stands issues no occurrence key and takes a fresh scope key, so
+every occurrence key issued stays issued. -/
+theorem RunsOps.enteredGrows {inv : State → Prop} {settled : State → OccurrenceId → Prop} {program : Program}
+    (ops : RunsOps program inv settled) {state : State} (holds : inv state) {element : ElementId}
+    {parent : ScopeOccurrenceId} (stands : parent ∈ state.scopes.map (·.id)) (locals : List (String × Value)) :
+    Laws.State.OccurrenceGrows state (state.enterScope element parent locals none).1 := by
+  obtain ⟨_, counters, scopesEq, _⟩ := ops.entered state element parent locals
+  obtain ⟨⟨unissued, _, grows⟩, table⟩ := ops.fresh state element parent locals holds stands
+  refine .enter grows (fun x standing => ?_) counters table
+  change x ∈ (state.enterScope element parent locals none).1.scopes.map (·.id) at standing
+  obtain ⟨entry, inside, rfl⟩ := List.mem_map.mp standing
+  rw [Laws.State.scopes_eq, scopesEq] at inside
+  rcases Laws.State.mem_scopeList_insert_cases inside with old | rfl
+  · exact .inl (List.mem_map_of_mem old)
+  · exact .inr unissued
 
 /-- No run holds `context` as a running handler's. -/
 def Unheld (state : State) (context : ScopeOccurrenceId) : Prop :=
@@ -146,14 +184,14 @@ theorem foldlM_keeps {α β ε : Type} (P : α → Prop) (f : α → β → Exce
 
 /-- What ending the run in `scope` leaves before it resumes: `inv`, what follows, every scope occurrence, only runs
 held before, and every run of another scope occurrence. -/
-def Ended (inv : State → Prop) (settled : State → Nat → Prop) (scope : ScopeOccurrenceId) (state ended : State) : Prop :=
+def Ended (inv : State → Prop) (settled : State → OccurrenceId → Prop) (scope : ScopeOccurrenceId) (state ended : State) : Prop :=
   inv ended ∧ Follows settled state ended ∧ ended.scopes = state.scopes ∧
     (∀ run ∈ ended.slots.compensation.runs, run ∈ state.slots.compensation.runs) ∧
     ∀ run ∈ state.slots.compensation.runs, run.scope ≠ scope → run ∈ ended.slots.compensation.runs
 
 /-- What an advance of the run in `scope` keeps from `state` to `after`: `inv`, what follows, and, while no run holds
 `scope` as a handler's context, every scope occurrence and every run of another scope occurrence that stands. -/
-def Advanced (inv : State → Prop) (settled : State → Nat → Prop) (scope : ScopeOccurrenceId) (state after : State) :
+def Advanced (inv : State → Prop) (settled : State → OccurrenceId → Prop) (scope : ScopeOccurrenceId) (state after : State) :
     Prop :=
   inv after ∧ Follows settled state after ∧ (Unheld state scope → (∀ entry ∈ state.scopes, entry ∈ after.scopes) ∧
     ∀ run ∈ state.slots.compensation.runs, run.scope ∈ state.scopes.map (·.id) → run.scope ≠ scope →
@@ -162,10 +200,10 @@ def Advanced (inv : State → Prop) (settled : State → Nat → Prop) (scope : 
 /-- What a handler or group begun in `scope` keeps from `state` to `after`: `inv`, what follows, every scope
 occurrence and every run whose scope occurrence stands, and the context it began in is issued at or after `state`'s
 counter and lies directly in `scope`. -/
-def Begun (inv : State → Prop) (settled : State → Nat → Prop) (scope : ScopeOccurrenceId) (state after : State)
+def Begun (inv : State → Prop) (settled : State → OccurrenceId → Prop) (scope : ScopeOccurrenceId) (state after : State)
     (context : ScopeOccurrenceId) : Prop :=
   inv after ∧ Follows settled state after ∧ (∀ entry ∈ state.scopes, entry ∈ after.scopes) ∧
-    (state.nextIssue ≤ context.value ∧ context.value < after.nextIssue) ∧
+    (¬ Laws.State.ScopeIssued state context ∧ Laws.State.ScopeIssued after context) ∧
     (∀ entry ∈ after.scopes, entry.id = context → entry.parent = some scope) ∧
     ∀ run ∈ state.slots.compensation.runs, run.scope ∈ state.scopes.map (·.id) → run ∈ after.slots.compensation.runs
 
@@ -192,21 +230,22 @@ theorem held_resumes {inv : State → Prop} {state : State} {runs : List Compens
 
 /-- Runs `state`, which keeps `inv`, held, followed by one whose resume, if a reservation, is pending, resume only by
 pending reservations. -/
-theorem appended_resumes {inv : State → Prop} {state : State} {runs : List CompensationRun} {run : CompensationRun}
-    (holds : inv state) (held : ∀ other ∈ runs, other ∈ state.slots.compensation.runs)
+theorem put_resumes {inv : State → Prop} {state : State} {runs : RunMap} {run : CompensationRun}
+    (holds : inv state) (held : ∀ other ∈ runList runs, other ∈ state.slots.compensation.runs)
     (pending : ∀ element at_ leave, run.resume = some (.occur element at_ leave) → Laws.Step.PendingIn inv element) :
-    ∀ other ∈ runs ++ [run], ∀ element at_ leave, other.resume = some (.occur element at_ leave) →
+    ∀ other ∈ runList (runs.put run), ∀ element at_ leave, other.resume = some (.occur element at_ leave) →
       Laws.Step.PendingIn inv element := fun other member element at_ leave resumed =>
-  (List.mem_append.mp member).elim (fun old => held_pending holds (held other old) resumed) fun new =>
-    pending element at_ leave (List.mem_singleton.mp new ▸ resumed)
+  (Laws.State.mem_put_or member).elim (fun old => held_pending holds (held other old) resumed) fun new =>
+    pending element at_ leave (new ▸ resumed)
 
 /-- A run that ends by queuing a completion or an occurrence keeps what `Compensation.advance` keeps. -/
-theorem Ended.queue {inv : State → Prop} {settled : State → Nat → Prop} {program : Program} (ops : RunsOps program inv settled)
+theorem Ended.queue {inv : State → Prop} {settled : State → OccurrenceId → Prop} {program : Program} (ops : RunsOps program inv settled)
     {state ended : State} {scope : ScopeOccurrenceId} (done : Ended inv settled scope state ended) {signal : Signal}
     (queued : inv (ended.signal signal) ∧ ∀ id, settled ended id → settled (ended.signal signal) id) :
     Advanced inv settled scope state (ended.signal signal) :=
   have shape := ops.signalled ended signal
-  ⟨queued.1, done.2.1.trans (.same queued.2 shape.1 shape.2.1 (congrArg (·.multiInstances) shape.2.2)), fun _ =>
+  ⟨queued.1, done.2.1.trans (.same queued.2 shape.1 shape.2.1 (congrArg (·.multiInstances) shape.2.2)
+    (ops.signalGrows ended signal)), fun _ =>
     ⟨fun entry member => by
       rw [shape.1, done.2.2.1]
       exact member, fun run member _ other => by
@@ -214,13 +253,13 @@ theorem Ended.queue {inv : State → Prop} {settled : State → Nat → Prop} {p
       exact done.2.2.2.2 run member other⟩⟩
 
 /-- A run that ends without resuming anything keeps what `Compensation.advance` keeps. -/
-theorem Ended.done {inv : State → Prop} {settled : State → Nat → Prop} {state ended : State}
+theorem Ended.done {inv : State → Prop} {settled : State → OccurrenceId → Prop} {state ended : State}
     {scope : ScopeOccurrenceId} (done : Ended inv settled scope state ended) : Advanced inv settled scope state ended :=
   ⟨done.1, done.2.1, fun _ => ⟨fun _entry member => done.2.2.1 ▸ member,
     fun run member _ other => done.2.2.2.2 run member other⟩⟩
 
-theorem Ended.complete {inv : State → Prop} {settled : State → Nat → Prop} {program : Program} (ops : RunsOps program inv settled)
-    {state ended : State} {scope : ScopeOccurrenceId} (done : Ended inv settled scope state ended) {id : Nat}
+theorem Ended.complete {inv : State → Prop} {settled : State → OccurrenceId → Prop} {program : Program} (ops : RunsOps program inv settled)
+    {state ended : State} {scope : ScopeOccurrenceId} (done : Ended inv settled scope state ended) {id : OccurrenceId}
     (completes : settled state id) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule)
     (resumed : ∃ held, inv held ∧ ∃ run ∈ held.slots.compensation.runs, run.resume = some (.complete id leave)) :
     Advanced inv settled scope state (ended.signal (.complete id leave writes rule)) :=
@@ -229,10 +268,10 @@ theorem Ended.complete {inv : State → Prop} {settled : State → Nat → Prop}
 /-! ## Where stored records come from -/
 
 /-- A record held in `state` names its own elements where it is held. -/
-theorem RecordHeld.narrow {program : Program} {state : State} {record other : Compensable}
-    {scope at_ : ScopeOccurrenceId} (held : RecordHeld program state record scope)
-    (fewer : ∀ element ∈ recordElements other, element ∈ recordElements record)
-    (linked : InstanceLinked program state scope at_) : RecordHeld program state other at_ := by
+theorem RecordHeld.narrow {program : Program} {state : State} {elements others : List ElementId}
+    {scope at_ : ScopeOccurrenceId} (held : RecordHeld program state elements scope)
+    (fewer : ∀ element ∈ others, element ∈ elements)
+    (linked : InstanceLinked program state scope at_) : RecordHeld program state others at_ := by
   obtain ⟨source, from_, holding, rest⟩ := held
   exact ⟨source, from_, holding, rest.1.trans linked, fun element named => rest.2 element (fewer element named)⟩
 
@@ -258,34 +297,34 @@ theorem StoredFrom.mono {program : Program} {state : State} {resumed more : Resu
 
 /-- A record `state` retains is held where it is retained. -/
 theorem RecordHeld.retained {program : Program} {state : State} {record : Compensable}
-    (member : record ∈ state.slots.compensation.retained) : RecordHeld program state record record.scope :=
+    (member : record ∈ state.slots.compensation.retained) :
+    RecordHeld program state (recordElements record) record.scope :=
   ⟨record, _, .inl ⟨member, rfl⟩, .refl _, fun _ => id⟩
 
 /-- A record a run of `state` holds pending is held in the run's scope occurrence. -/
 theorem RecordHeld.pending {program : Program} {state : State} {run : CompensationRun} {record : Compensable}
     (member : run ∈ state.slots.compensation.runs) (pending : record ∈ run.pending) :
-    RecordHeld program state record run.scope :=
+    RecordHeld program state (recordElements record) run.scope :=
   ⟨record, _, .inr ⟨run, member, pending, rfl⟩, .refl _, fun _ => id⟩
 
-/-- A run appended to a compensation that comes from `state` keeps it coming from there, for records from there and a
+/-- A run put into a compensation that comes from `state` keeps it coming from there, for records from there and a
 resume that is a group's or one `resumed` admits. -/
-theorem StoredFrom.append {program : Program} {state : State} {resumed : Resume → Prop}
-    {retained : List Compensable} {runs : List CompensationRun} {run : CompensationRun}
+theorem StoredFrom.put {program : Program} {state : State} {resumed : Resume → Prop}
+    {retained : List Compensable} {runs : RunMap} {run : CompensationRun}
     (stored : StoredFrom program state resumed ⟨retained, runs⟩)
     (pending : ∀ record ∈ run.pending, RecordFrom program state record run.scope)
-    (resumes : ∀ resume, run.resume = some resume → (∃ outer context, resume = .group outer context) ∨ resumed resume) :
-    StoredFrom program state resumed ⟨retained, runs ++ [run]⟩ := by
+    (resumes : ∀ resume, run.resume = some resume → (∃ context, resume = .group context) ∨ resumed resume) :
+    StoredFrom program state resumed ⟨retained, runs.put run⟩ := by
   refine ⟨stored.1, fun other member => ?_⟩
-  rcases List.mem_append.mp member with old | new
+  rcases Laws.State.mem_runList_put.mp member with rfl | ⟨old, _⟩
+  · exact ⟨pending, fun resume same => .inr (resumes resume same)⟩
   · exact stored.2 other old
-  · rw [List.mem_singleton.mp new]
-    exact ⟨pending, fun resume same => .inr (resumes resume same)⟩
 
 /-- Where a record comes from reads only the scope occurrences, the occurrences and the compensation slot. -/
-theorem RecordHeld.congr {program : Program} {s t : State} {record : Compensable} {scope : ScopeOccurrenceId}
+theorem RecordHeld.congr {program : Program} {s t : State} {elements : List ElementId} {scope : ScopeOccurrenceId}
     (scopes : t.scopes = s.scopes) (occurrences : t.occurrences = s.occurrences)
-    (slot : t.slots.compensation = s.slots.compensation) (held : RecordHeld program s record scope) :
-    RecordHeld program t record scope := by
+    (slot : t.slots.compensation = s.slots.compensation) (held : RecordHeld program s elements scope) :
+    RecordHeld program t elements scope := by
   obtain ⟨source, at_, holding, rest⟩ := held
   exact ⟨source, at_, by rw [slot]; exact holding, rest.1.congr scopes occurrences, rest.2⟩
 
@@ -311,28 +350,27 @@ theorem StoredFrom.weaken {program : Program} {state : State} {inv more : State 
     StoredFrom program state (ResumeQueued more state) compensation :=
   stored.mono fun _ ⟨queue, holds, rest⟩ => ⟨queue, implies queue holds, rest⟩
 
-/-- The children of a record a run of `state` holds pending, moved into a context entered for it below the run's scope
-occurrence, come from that record: the context calls no instance. -/
-theorem entered_children {inv : State → Prop} {settled : State → Nat → Prop} {program : Program}
+/-- Records naming only elements of a record a run of `state` holds pending, as the records it keeps do once they are
+begun in a context entered for it below the run's scope occurrence, come from that record: the context calls no
+instance. -/
+theorem entered_children {inv : State → Prop} {settled : State → OccurrenceId → Prop} {program : Program}
     (ops : RunsOps program inv settled) {state : State} {run : CompensationRun} {scope : ScopeOccurrenceId}
     (member : run ∈ state.slots.compensation.runs) (own : run.scope = scope) {record : Compensable}
-    (pending : record ∈ run.pending) (element : ElementId) (locals : List (String × Value)) :
-    ∀ child ∈ record.children.map (fun child => { child with scope := (state.enterScope element scope locals none).2 }),
+    (pending : record ∈ run.pending) (element : ElementId) (locals : List (String × Value)) {records : List Compensable}
+    (kept : ∀ child ∈ records, ∀ named ∈ recordElements child, named ∈ recordElements record) :
+    ∀ child ∈ records,
       RecordFrom program (state.enterScope element scope locals none).1 child (state.enterScope element scope locals none).2 := by
   subst own
-  obtain ⟨named, -, scopesEq, slotsEq⟩ := ops.entered state element run.scope locals
+  obtain ⟨link, -, scopesEq, slotsEq⟩ := ops.entered state element run.scope locals
   intro child inside
-  obtain ⟨original, inChildren, rfl⟩ := List.mem_map.mp inside
   have linked : InstanceLinked program (state.enterScope element run.scope locals none).1
-      (state.enterScope element run.scope locals none).2 run.scope := by
-    rw [named]
-    exact .parent { id := ⟨state.nextIssue⟩, element := some element, parent := some run.scope, occurrence := none }
-      run.scope (by rw [scopesEq]; exact List.mem_append_right _ (List.mem_singleton_self _)) rfl (Or.inl rfl)
-  refine .inl (RecordHeld.narrow (.pending (by rw [slotsEq]; exact member) pending) (fun element listed => ?_) linked.symm)
-  rw [recordElements_scope] at listed
-  exact recordElements_child inChildren listed
+      (state.enterScope element run.scope locals none).2 run.scope :=
+    .parent { id := (state.enterScope element run.scope locals none).2, element := some element,
+              position := .fresh state.issuing (state.issueNext + 1), occurrence := none }
+      run.scope (by rw [Laws.State.scopes_eq, scopesEq]; exact Laws.State.mem_scopeList_insert_self) link (Or.inl rfl)
+  exact .inl (RecordHeld.narrow (.pending (by rw [slotsEq]; exact member) pending) (kept child inside) linked.symm)
 
-theorem ended_store {inv : State → Prop} {settled : State → Nat → Prop} {program : Program} (ops : RunsOps program inv settled) {state : State}
+theorem ended_store {inv : State → Prop} {settled : State → OccurrenceId → Prop} {program : Program} (ops : RunsOps program inv settled) {state : State}
     (holds : inv state) (scope : ScopeOccurrenceId) (compensation : Compensations)
     (held : ∀ run ∈ compensation.runs, run ∈ state.slots.compensation.runs)
     (kept : ∀ run ∈ state.slots.compensation.runs, run.scope ≠ scope → run ∈ compensation.runs)
@@ -341,18 +379,19 @@ theorem ended_store {inv : State → Prop} {settled : State → Nat → Prop} {p
   have stored := ops.store state compensation holds (fun run member => .inl (held run member)) (held_running held)
     (held_resumes holds held) (.held (fun _ member => retained ▸ member) fun run member =>
       ⟨run, held run member, rfl, rfl, fun _ => id⟩)
-  ⟨stored.1, .same stored.2 rfl rfl rfl, rfl, held, kept⟩
+  ⟨stored.1, .same stored.2 rfl (.refl _) rfl (.refl _), rfl, held, kept⟩
 
-theorem ended_cancel {inv : State → Prop} {settled : State → Nat → Prop} {program : Program} (ops : RunsOps program inv settled) {state : State}
+theorem ended_cancel {inv : State → Prop} {settled : State → OccurrenceId → Prop} {program : Program} (ops : RunsOps program inv settled) {state : State}
     (holds : inv state) (scope : ScopeOccurrenceId) (compensation : Compensations)
     (held : ∀ run ∈ compensation.runs, run ∈ state.slots.compensation.runs)
     (kept : ∀ run ∈ state.slots.compensation.runs, run.scope ≠ scope → run ∈ compensation.runs)
-    (retained : compensation.retained = state.slots.compensation.retained) (occurrence : Nat) :
+    (retained : compensation.retained = state.slots.compensation.retained) (occurrence : OccurrenceId) :
     Ended inv settled scope state (({ state with slots := { state.slots with compensation } } : State).signal (.cancel occurrence)) :=
   have stored := ended_store ops holds scope compensation held kept retained
   have cancelled := ops.cancel _ occurrence stored.1
   have shape := ops.signalled { state with slots := { state.slots with compensation } } (.cancel occurrence)
-  ⟨cancelled.1, stored.2.1.trans (.same cancelled.2 shape.1 shape.2.1 (congrArg (·.multiInstances) shape.2.2)),
+  ⟨cancelled.1, stored.2.1.trans (.same cancelled.2 shape.1 shape.2.1 (congrArg (·.multiInstances) shape.2.2)
+    (ops.signalGrows _ _)),
     shape.1.trans stored.2.2.1, fun run member => by
       rw [shape.2.2] at member
       exact held run member, fun run member other => by
@@ -361,7 +400,7 @@ theorem ended_cancel {inv : State → Prop} {settled : State → Nat → Prop} {
 
 /-- A handler begun in a context entered below a scope occurrence that stands keeps what `Compensation.beginHandler`
 keeps. -/
-theorem handler_keeps {inv : State → Prop} {settled : State → Nat → Prop} {program : Program} (ops : RunsOps program inv settled) {state : State}
+theorem handler_keeps {inv : State → Prop} {settled : State → OccurrenceId → Prop} {program : Program} (ops : RunsOps program inv settled) {state : State}
     (holds : inv state) {scope : ScopeOccurrenceId} (stands : scope ∈ state.scopes.map (·.id)) (handler : ElementId)
     (anchor : Laws.Flow.RecordAnchor state handler scope)
     {locals : List (String × Value)} (compensation : Compensations)
@@ -372,53 +411,54 @@ theorem handler_keeps {inv : State → Prop} {settled : State → Nat → Prop} 
       slots := { (state.enterScope handler scope locals none).1.slots with compensation } }.signal (.begin
         { element := handler, scope := (state.enterScope handler scope locals none).2, continuation := .compensation scope }))
       (state.enterScope handler scope locals none).2 := by
-  obtain ⟨named, issuedNext, scopesEq, slotsEq⟩ := ops.entered state handler scope locals
+  obtain ⟨link, issuedNext, scopesEq, slotsEq⟩ := ops.entered state handler scope locals
+  obtain ⟨⟨unissued, issuedAfter, grows⟩, -⟩ := ops.fresh state handler scope locals holds stands
   have enter := ops.enter state handler scope locals holds stands anchor
-  generalize entering : state.enterScope handler scope locals none = entered at named issuedNext scopesEq slotsEq enter runs provenance
-  have fresh : ∀ entry ∈ state.scopes, entry.id ≠ ⟨state.nextIssue⟩ := fun entry member same => by
-    have below := ops.issued state holds entry member
-    rw [same] at below
-    exact Nat.lt_irrefl _ below
+  generalize entering : state.enterScope handler scope locals none = entered
+    at link issuedNext scopesEq slotsEq unissued issuedAfter grows enter runs provenance
+  have fresh : ∀ entry ∈ state.scopes, entry.id ≠ entered.2 := fun entry member same =>
+    unissued (same ▸ ops.issued state holds entry member)
   have stored := ops.store entered.1 compensation enter.1 (fun run member => .inl (runs ▸ member))
     (held_running fun run member => runs ▸ member) (held_resumes enter.1 fun run member => runs ▸ member) provenance
   have standsEntered : entered.2 ∈ ({ entered.1 with slots := { entered.1.slots with compensation } } : State).scopes.map (·.id) := by
     change _ ∈ entered.1.scopes.map _
-    rw [scopesEq, named]
-    simp
+    rw [Laws.State.scopes_eq, scopesEq]
+    exact List.mem_map_of_mem Laws.State.mem_scopeList_insert_self
   have entry : ∃ entry ∈ ({ entered.1 with slots := { entered.1.slots with compensation } } : State).scopes, entry.id = entered.2 ∧
       entry.element = some handler ∧ entry.calledInstance = none := by
     change ∃ entry ∈ entered.1.scopes, _
-    rw [scopesEq, named]
-    exact ⟨_, List.mem_append_right _ (List.mem_singleton_self _), rfl, rfl, rfl⟩
+    rw [Laws.State.scopes_eq, scopesEq]
+    exact ⟨_, Laws.State.mem_scopeList_insert_self, rfl, rfl, rfl⟩
   have begun := ops.begin _ handler _ scope stored.1 standsEntered entry
   have shape := ops.signalled { entered.1 with slots := { entered.1.slots with compensation } }
     (.begin { element := handler, scope := entered.2, continuation := .compensation scope })
-  have scopesAfter : (({ entered.1 with slots := { entered.1.slots with compensation } } : State).signal
-      (.begin { element := handler, scope := entered.2, continuation := .compensation scope })).scopes = state.scopes ++
-      [{ id := ⟨state.nextIssue⟩, element := some handler, parent := some scope, occurrence := none }] :=
-    shape.1.trans scopesEq
+  have scopesAfter : ∀ found, found ∈ (({ entered.1 with slots := { entered.1.slots with compensation } } : State).signal
+      (.begin { element := handler, scope := entered.2, continuation := .compensation scope })).scopes ↔
+        found ∈ state.scopes ∨
+          found = { id := entered.2, element := some handler, position := .fresh state.issuing (state.issueNext + 1),
+                    occurrence := none } :=
+    fun found => by
+      rw [shape.1]
+      change found ∈ entered.1.scopes ↔ _
+      rw [Laws.State.scopes_eq, scopesEq]
+      exact Laws.State.mem_scopeList_insert_fresh (ops.keyed state holds)
+        (new := { id := entered.2, element := some handler, position := .fresh state.issuing (state.issueNext + 1),
+                  occurrence := none }) fresh
+  have signalGrows := ops.signalGrows { entered.1 with slots := { entered.1.slots with compensation } }
+    (.begin { element := handler, scope := entered.2, continuation := .compensation scope })
   refine ⟨begun.1, ⟨?_, fun entry member => ?_, fun id settled => begun.2 id (stored.2 id (enter.2 id settled)),
-    fun body member => ?_⟩, fun entry member => by rw [scopesAfter]; exact List.mem_append_left _ member,
-    ⟨by rw [named]; exact Nat.le_refl _, ?_⟩, fun entry member same => ?_, fun run member _ => ?_⟩
-  · rw [shape.2.1]
-    change state.nextIssue ≤ entered.1.nextIssue
-    omega
-  · rw [scopesAfter] at member
-    rcases List.mem_append.mp member with old | new
+    fun body member => ?_, grows.trans signalGrows⟩, fun entry member => (scopesAfter entry).mpr (.inl member),
+    ⟨unissued, signalGrows.issued issuedAfter⟩, fun entry member same => ?_, fun run member _ => ?_⟩
+  · exact Laws.State.OccurrenceGrows.trans (t := entered.1) (entering ▸ ops.enteredGrows holds stands locals) shape.2.1
+  · rcases (scopesAfter _).mp member with old | rfl
     · exact .inl old
-    · rw [List.mem_singleton.mp new]
-      exact .inr (Nat.le_refl _)
+    · exact .inr unissued
   · rw [shape.2.2] at member
     change body ∈ entered.1.slots.multiInstances at member
     rwa [slotsEq] at member
-  · rw [shape.2.1]
-    change entered.2.value < entered.1.nextIssue
-    rw [named, issuedNext]
-    exact Nat.lt_succ_self _
-  · rw [scopesAfter] at member
-    rcases List.mem_append.mp member with old | new
-    · exact absurd (same.trans named) (fresh entry old)
-    · rw [List.mem_singleton.mp new]
+  · rcases (scopesAfter _).mp member with old | rfl
+    · exact absurd same (fresh entry old)
+    · exact link
   · rw [shape.2.2]
     change run ∈ compensation.runs
     rw [runs, slotsEq]

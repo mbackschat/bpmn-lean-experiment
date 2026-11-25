@@ -46,8 +46,11 @@ inductive TimerSchedule where
   | cycle (value : ValueSource) (dialect : CycleDialect)
   deriving Repr
 
+/-- `exclusive` is the definition's `camunda:exclusive`, `none` when absent (`BpmnParse.java:3602`); admission refuses
+it (`job.exclusive`). -/
 structure TimerTrigger where
   schedule : TimerSchedule
+  exclusive : Option Bool := none
   deriving Repr
 
 /-- `signalRef` is the Signal the event references, `none` when the model names none; `name` is that Signal's `name`
@@ -107,12 +110,16 @@ inductive Trigger where
   deriving Repr
 
 /-- `alternatives` are a Multiple Event's definitions after the first, in document order, and `parallelMultiple` its
-Parallel Multiple mark (BPMN 2.0.2 §10.5.1); admission refuses both (CIB-LIM-0008). -/
+Parallel Multiple mark (BPMN 2.0.2 §10.5.1); admission refuses both (CIB-LIM-0008). `dataOutputs` are the catching
+Event's Data Outputs, which `outputs` read (#114), and `retryCycle` the text of its `camunda:failedJobRetryTimeCycle`
+(`DefaultFailedJobParseListener.java:49-80`), which admission refuses (`job.retryCycle`). -/
 structure Subscription where
   trigger : Trigger
   outputs : List Mapping := []
   alternatives : List Trigger := []
   parallelMultiple : Bool := false
+  dataOutputs : List DataOutputDecl := []
+  retryCycle : Option String := none
   deriving Repr
 
 /-- `sourceId` is the identifier the model's author wrote, which publication shows; `id` is unique in the program, as
@@ -191,6 +198,14 @@ structure Envelope where
   /-- A transaction boundary before the element begins and after it completes (CIB-EXT-0027). -/
   asyncBefore : Bool := false
   asyncAfter : Bool := false
+  /-- The `camunda:exclusive` of the element's jobs, `none` when absent (`BpmnParse.java:4750-4752`), and the text of its
+  `camunda:failedJobRetryTimeCycle` (`DefaultFailedJobParseListener.java:158-178`); admission refuses both
+  (`job.exclusive`, `job.retryCycle`). -/
+  exclusive : Option Bool := none
+  retryCycle : Option String := none
+  /-- The parameters of `camunda:inputOutput` with a structured value, which `inputs` and `outputs` cannot hold. -/
+  structuredInputs : List StructuredParameter := []
+  structuredOutputs : List StructuredParameter := []
   deriving Repr
 
 /-! ## Elements -/
@@ -274,9 +289,13 @@ structure GatewayPayload where
   outgoing : List FlowId := []
   deriving Repr
 
+/-- `initiator` is the `camunda:initiator` variable name (`BpmnParse.java:1009-1012`) and `formRef` the start form's
+reference (`BpmnParse.java:1050-1075`); admission refuses both (`start.initiator`, `start.formRef`). -/
 structure StartPayload where
   subscription : Option Subscription
   outgoing : List FlowId := []
+  initiator : Option String := none
+  formRef : Option FormRef := none
   deriving Repr
 
 /-- `sourceId` is the identifier the model's author wrote, which publication shows. `Header.id` is unique in the
@@ -322,6 +341,18 @@ structure CalledProcess where
   executable : Bool := true
   deriving Repr
 
+/-- An extension attribute the reader retained without consuming it (AD1's inert tier): its expanded `name`, the BPMN
+`elementType` it sits on, the source identifier of that `element` (a process's own included) and its `value` text. Only
+an item whose register entry finds it without effect at the observation boundary may ever pass; the profile's
+inert table (`ProfileOptions.inertExtensions`) decides per element type and name, and admission refuses every other
+(`extension.retained`). -/
+structure RetainedExtension where
+  name : QName
+  elementType : String
+  element : String
+  value : String
+  deriving Repr
+
 /-- `processes` lists the called processes; every other parentless element belongs to the root process, whose
 declared item names are `variables` (as `CalledProcess.variables`). -/
 structure Program where
@@ -335,6 +366,7 @@ structure Program where
   executable : Bool := true
   /-- The DMN resources deployed with the source, which a Business Rule Task's `decisionRef` names. -/
   decisionResources : List DecisionResource := []
+  retainedExtensions : List RetainedExtension := []
 
 /-! ## Queries
 
@@ -518,6 +550,15 @@ def Element.beginsImplicitly (element : Element) : Bool :=
   let eventSubProcess := ((element.scope?).bind fun (_, payload) => payload.kind.start?).isSome
   element.incoming.isEmpty && element.start?.isNone && !element.isCompensationActivity && !eventSubProcess
 
+/-- Whether `element` waits for an input before it completes, so a token that reaches it stops in its closure: a User,
+Service or Receive Task, a Script or Business Rule Task whose result an external worker delivers, or a catching Event.
+An Event-Based Gateway passes on, since each element it leads to waits. -/
+def Element.waitsForInput (element : Element) : Bool :=
+  (element.activity?.any fun (_, payload) =>
+    payload.work.isUser || payload.work.isService || payload.work.receive?.isSome ||
+      payload.work.reader?.any (·.isLeft)) ||
+  element.event?.any fun (_, payload) => payload.catch?.isSome
+
 namespace Program
 
 def element? (program : Program) (id : ElementId) : Option Element :=
@@ -619,5 +660,12 @@ def publicId (program : Program) (id : ElementId) : ElementId :=
   | none => ((program.boundary? id).map fun (_, boundary) => ⟨boundary.sourceId⟩).getD id
 
 end Program
+
+/-- Whether the element's occurrences are published: a Link Event, throw or catch, publishes none, since its token
+passes on as if the Sequence Flow connected the elements around it (`onward`), the observation contract's Link exception
+([publication](../../docs/kernel/semantics/PUBLICATION-AND-OBSERVATION-SEMANTICS-SPEC.md#flow-node-occurrences),
+CIB-AGR-0018). -/
+def Program.publishesOccurrences (program : Program) (id : ElementId) : Bool :=
+  ((program.element? id).bind (·.event?)).all fun (_, payload) => payload.linkThrow?.isNone && payload.linkCatch?.isNone
 
 end Kernel

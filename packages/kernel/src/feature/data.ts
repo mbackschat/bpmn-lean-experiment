@@ -22,12 +22,8 @@ import {
   SemanticCause,
   WriteRule,
   committed,
-  declaring,
   instanceRoot,
-  owner,
-  removeVariable,
   semanticFailure,
-  setVariable,
   type Binding,
   type EvalContext,
   type Outcome,
@@ -35,6 +31,7 @@ import {
   type State,
 } from "../state.js";
 import { EvaluationTag, type Ctx, type Evaluation } from "../hooks.js";
+import { declaring, owner, removeVariable, setVariable } from "../state/variables.js";
 
 export function lookup(variables: readonly Binding[], name: string): Value | null {
   return variables.find(([key]) => key === name)?.[1] ?? null;
@@ -47,11 +44,43 @@ export function simpleBoolean(variables: readonly Binding[], body: SimpleBoolean
       return body.value;
     case SimpleBooleanTag.IsPresent:
       return lookup(variables, body.name) !== null;
-    case SimpleBooleanTag.IsNull:
-      return lookup(variables, body.name)?.tag === ValueTag.Null;
+    case SimpleBooleanTag.IsNull: {
+      const actual = lookup(variables, body.name);
+      if (actual === null) return false;
+      switch (actual.tag) {
+        case ValueTag.Null:
+          return true;
+        case ValueTag.Bool:
+        case ValueTag.Int:
+        case ValueTag.Decimal:
+        case ValueTag.Double:
+        case ValueTag.Date:
+        case ValueTag.String:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return false;
+      }
+      return assertNever(actual);
+    }
     case SimpleBooleanTag.StringEquals: {
       const actual = lookup(variables, body.name);
-      return actual?.tag === ValueTag.String && actual.value === body.value;
+      if (actual === null) return false;
+      switch (actual.tag) {
+        case ValueTag.String:
+          return actual.value === body.value;
+        case ValueTag.Null:
+        case ValueTag.Bool:
+        case ValueTag.Int:
+        case ValueTag.Decimal:
+        case ValueTag.Double:
+        case ValueTag.Date:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return false;
+      }
+      return assertNever(actual);
     }
   }
   return assertNever(body);

@@ -17,7 +17,7 @@ declare const state: ExecutionState;
 declare const role: ExecutionRole;
 
 // @ts-expect-error publication pages are deeply immutable
-page.batches[0]!.transitions[0]!.owner = 1;
+page.batches[0]!.transitions[0]!.revision = 1;
 // @ts-expect-error a step's role is deeply immutable
 page.batches[0]!.transitions[0]!.role.kind = "idle";
 // @ts-expect-error the current state is deeply immutable
@@ -55,7 +55,8 @@ switch (role.kind) {
     role.flow satisfies string;
     break;
   case "idle":
-    role.scope satisfies number;
+    // @ts-expect-error an idle role publishes no scope-occurrence ordinal
+    void role.scope;
     break;
 }
 

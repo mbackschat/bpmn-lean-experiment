@@ -22,6 +22,7 @@ import {
   type Trigger,
 } from "../../il/types.js";
 import {
+  scopeOccurrenceParent,
   FailureTag,
   RaisedTag,
   calledRoot,
@@ -107,8 +108,8 @@ function heldOnChain(state: State, visited: ScopeOccurrenceId, start: ScopeOccur
     const at: ScopeOccurrenceId = current;
     const occurrence = state.scopes.find((scope) => scope.id === at);
     if (occurrence === undefined) return null;
-    if (occurrence.parent === visited) return occurrence;
-    current = occurrence.parent;
+    if (scopeOccurrenceParent(occurrence) === visited) return occurrence;
+    current = scopeOccurrenceParent(occurrence);
   }
   return null;
 }
@@ -218,7 +219,7 @@ export function contextCatcher(ctx: Ctx, raised: Raised, state: State, record: C
 function jumpCandidates(ctx: Ctx, raised: Raised, state: State, occurrence: ScopeOccurrence): Result<readonly Handler[]> {
   const handlers = eventSubProcesses(ctx, state, occurrence);
   const interrupted = handlers.some(([element, , interrupting]) =>
-    interrupting && state.scopes.some((entry) => entry.parent === occurrence.id && entry.element === element));
+    interrupting && state.scopes.some((entry) => scopeOccurrenceParent(entry) === occurrence.id && entry.element === element));
   if (interrupted && best(ctx, raised, ([, subscription]) => subscription.trigger, handlers) !== null) {
     return failed(FailureTag.Unsupported, "compensation-raise-in-interrupted-scope"); // dynamic-only: what a running handler raises
   }

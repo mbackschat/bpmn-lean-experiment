@@ -9,6 +9,10 @@ export const hostCapacityRestrictions: ReadonlyMap<string, Readonly<{ commandId:
   ["scenarios/open-rows/cycle-compositions/automatic-loop-long-burst.scenario.json", { commandId: "s01-start", code: "host.capacity.publicationBatch" }],
   ["scenarios/open-rows/cycle-compositions/automatic-loop-tail-at-closure-bound.scenario.json", { commandId: "s01-start", code: "host.capacity.publicationBatch" }],
   // Its 1,412 open User Tasks take the state past its bound before the batch is measured.
+  // DC3's fuel witnesses: one input loops 171 and 359 times past an Inclusive join, publishing 95,572 + 235,009 and
+  // 201,009 + 494,290 bytes (execution + occurrences) in one batch (measured 2026-11-19, spike T75).
+  ["scenarios/open-rows/inclusive-join-compositions/looped-arrivals-171-then-hold.scenario.json", { commandId: "s01-start", code: "host.capacity.publicationBatch" }],
+  ["scenarios/open-rows/inclusive-join-compositions/looped-arrivals-second-join-359-then-hold2.scenario.json", { commandId: "s01-start", code: "host.capacity.publicationBatch" }],
   ["scenarios/open-rows/cycle-compositions/automatic-loop-waiting-branch-at-work-bound.scenario.json", { commandId: "s01-start", code: "host.capacity.state" }],
 ]);
 

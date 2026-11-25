@@ -74,7 +74,7 @@ test("every kernel value kind has a reachable schema branch", async () => {
   assert.equal(kinds.length, declaredEnumValues(types, "ValueTag").length);
   assert.deepEqual(
     [...kinds].sort(),
-    ["boolean", "decimal", "integer", "list", "map", "null", "string", "stringList"],
+    ["boolean", "date", "decimal", "double", "integer", "list", "map", "null", "string", "stringList"],
   );
   const reachable = reachableDiscriminators({ $ref: "#/$defs/variableValue" }, $defs);
   assert.deepEqual(kinds.filter((kind) => !reachable.has(kind)), []);

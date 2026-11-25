@@ -19,6 +19,7 @@ const typeRef = inductive<TypeRef>("TypeRef", {
   [TypeRefTag.String]: {},
   [TypeRefTag.Integer]: {},
   [TypeRefTag.Boolean]: {},
+  [TypeRefTag.Double]: {},
   [TypeRefTag.Foreign]: { name: string },
 });
 

@@ -33,7 +33,7 @@ function page() {
       throughRevision: 1,
       transitions: [{
         revision: 1,
-        started: [{ occurrence, owner: 0, sourceType: "startEvent" }],
+        started: [{ occurrence, sourceType: "startEvent" }],
         ended: [{ occurrence, terminal: "completed" }],
       }],
     }, {
@@ -48,10 +48,14 @@ function page() {
 test("validates the strict request, page, and five closed result arms", async () => {
   const validate = await validator();
   const validPage = page();
+  const [first] = validPage.batches;
+  const held = (ready: unknown) =>
+    ({ ...validPage, batches: [{ ...first, transitions: [{ revision: 1, started: [{ occurrence, sourceType: "userTask" }], ended: [], ready }] }] });
   for (const document of [
     { afterRevision: 0 },
     { afterRevision: Number.MAX_SAFE_INTEGER, limit: 100 },
     validPage,
+    held([occurrence]),
     { kind: "available", page: validPage },
     { kind: "notFound" },
     { kind: "unavailable" },
@@ -60,15 +64,17 @@ test("validates the strict request, page, and five closed result arms", async ()
   ]) {
     assert.equal(validate(document), true, JSON.stringify(validate.errors));
   }
-  const [first] = validPage.batches;
   for (const malformed of [
+    // PD2's Ready list has one representation: absent when a step holds nothing, never empty.
+    held([]),
+    held([{ ...occurrence, owner: 0 }]),
     { afterRevision: 0, limit: 0 },
     { afterRevision: 0, limit: 101 },
     { ...validPage, privateAnchor: "forbidden" },
     { ...validPage, currentOpen: [] },
     { ...validPage, headRevision: Number.MAX_SAFE_INTEGER + 1 },
     { ...validPage, batches: [{ ...first, committedAtEpochMs: 0 }] },
-    { ...validPage, batches: [{ ...first, transitions: [{ revision: 1, started: [{ occurrence: { ...occurrence, role: "body" }, owner: 0, sourceType: "task" }], ended: [] }] }] },
+    { ...validPage, batches: [{ ...first, transitions: [{ revision: 1, started: [{ occurrence: { ...occurrence, role: "body" }, sourceType: "task" }], ended: [] }] }] },
     { kind: "notReady" },
     { kind: "partial", page: validPage },
   ]) {
@@ -77,14 +83,15 @@ test("validates the strict request, page, and five closed result arms", async ()
 });
 
 test("covers safe integers, terminal kinds, the kernel's occurrence roles, and forbids position identities", async () => {
-  const [schema, kernelJournal] = await Promise.all([
+  const [schema, kernelJournal, kernelKey] = await Promise.all([
     readSchema("flow-node-occurrence-publication.schema.json"),
     readFile(`${projectRoot}/packages/kernel/src/state/journal.ts`, "utf8"),
+    readFile(`${projectRoot}/packages/kernel/src/state/key.ts`, "utf8"),
   ]);
   const text = JSON.stringify(schema);
   for (const expected of [
     ...inlineEnumValues(kernelJournal, "Terminal"),
-    ...inlineEnumValues(kernelJournal, "ActivationRole"),
+    ...inlineEnumValues(kernelKey, "ActivationRole"),
     "available",
     "notFound",
     "unavailable",

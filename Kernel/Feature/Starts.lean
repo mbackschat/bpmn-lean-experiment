@@ -42,7 +42,7 @@ def startsFired (hooks : StartsHooks) (ctx : Ctx) (input : StartInput) : Except 
 and one without accepts none (`SUBSCRIPTIONS-SEMANTICS-SPEC.md` Messages, Payload). -/
 def startPayload (hooks : StartsHooks) (ctx : Ctx) (nowMs : Nat) (subscription : Subscription) (delivered : Option Value) :
     Except Failure (List (String × Value)) := do
-  admitValues delivered.toList
+  admitValues ctx.program.options.bounds delivered.toList
   match subscription.outputs.isEmpty, delivered with
   | false, some payload => hooks.payloadBindings ctx nowMs subscription.outputs payload
   | false, none => .error (.rejected "message-payload-required")
@@ -61,7 +61,7 @@ def arriveStart (hooks : StartsHooks) (ctx : Ctx) (_ : Header) (payload : StartP
     | .signal _ variables, _ => do
       if ctx.program.options.signalPayload == .none && !variables.isEmpty then
         throw (.rejected "signal-variables-not-admitted")
-      admitValues (variables.map (·.2))
+      admitValues ctx.program.options.bounds (variables.map (·.2))
       .ok (state, variables)
     | .none, _ | .condition, _ | .message _ _, none => .ok (state, [])
   .ok (state.signal (.complete occurrence.id .outgoing values .outward))

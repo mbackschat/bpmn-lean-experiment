@@ -182,6 +182,7 @@ def decodeStimulus (json : Json) : Except String (String × Input × Option Time
     fields json (common ++ ["occurrence", "trigger"]) ["correlation", "payload", "variables", "at", "conditionChoices"]
   | "timerFire" => fields json (common ++ ["occurrence", "logicalTimeMs"]) ["at", "conditionChoices"]
   | "effectResult" => fields json (common ++ ["occurrence", "outcome"]) ["at", "conditionChoices"]
+  | "cancelInstance" => fields json (common ++ ["processInstanceId"]) ["at", "conditionChoices"]
   | _ => pure ()
   let commandId ← json.getObjValAs? String "commandId"
   -- `at`, the input's logical time in milliseconds, is optional; absent or null leaves the clock unchanged.
@@ -214,6 +215,9 @@ def decodeStimulus (json : Json) : Except String (String × Input × Option Time
     | "effectResult" =>
       pure (.effectResult { occurrence := ← occurrence ()
                             outcome := ← effectOutcomeFromJson (← json.getObjVal? "outcome"), atMs, conditionChoices }, none)
+    | "cancelInstance" =>
+      pure (.cancelInstance { processInstanceId := ← json.getObjValAs? String "processInstanceId", atMs, conditionChoices },
+        none)
     | other => throw s!"unknown stimulus kind {other}"
   pure (commandId, input, firing)
 
@@ -227,13 +231,13 @@ def stimulusFromJson (json : Json) : Except String (String × Input) :=
 
 /-- The refusal or failure code a failure carries; the wire carries no cause. -/
 def failureCode {σ : Type} : FailureOf σ → String
-  | .rejected code => code
+  | .rejected code _ => code
   | .rolledBack code => code
   | .semanticFailure _ code => code
   | .unsupported code => code
 
 def failureName {σ : Type} : FailureOf σ → String
-  | .rejected _ => "rejected"
+  | .rejected _ _ => "rejected"
   | .rolledBack _ => "rolledBack"
   | .semanticFailure _ _ => "semanticFailure"
   | .unsupported _ => "unsupported"

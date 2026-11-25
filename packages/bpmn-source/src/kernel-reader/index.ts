@@ -273,6 +273,8 @@ export async function readKernelProgram(source: KernelSource, options: KernelPro
       // Table 10.1 `isExecutable`; admission refuses a process not marked executable (`process.notExecutable`).
       executable: ctx.rootProcess.isExecutable === true,
       decisionResources: await readDecisionResources(source),
+      // AD1: the reader still refuses every unconsumed extension attribute, so it retains none for admission.
+      retainedExtensions: [],
     };
     return { kind: "read", program, notCarried, versionTag };
   } catch (error: unknown) {

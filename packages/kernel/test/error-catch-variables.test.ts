@@ -49,7 +49,7 @@ function rootAfterCatch(json: Json): Record<string, unknown> {
   }));
   assert.ok(caught.ok, JSON.stringify(caught));
   assert.deepEqual(caught.value.openItems.map((item) => item.element), ["W"]);
-  return Object.fromEntries(caught.value.variables.flatMap((entry) => entry.entries));
+  return Object.fromEntries(caught.value.variables.flatMap(([, entries]) => entries));
 }
 
 const boom = { tag: "string", value: "boom" };
@@ -100,7 +100,7 @@ function rootAfterTaskCatch(json: Json): unknown {
     occurrence: { processInstanceId: "I", elementId: "T", activation: 1 },
     outcome: { kind: "businessFailure", code: "FAIL", message: "boom", outputs: [] },
   }));
-  return caught.ok ? Object.fromEntries(caught.value.variables.flatMap((entry) => entry.entries)) : caught.failure;
+  return caught.ok ? Object.fromEntries(caught.value.variables.flatMap(([, entries]) => entries)) : caught.failure;
 }
 
 const fail = { tag: "string", value: "FAIL" };

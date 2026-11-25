@@ -13,15 +13,15 @@ import * as Subscriptions from "./feature/subscriptions.js";
 import * as Starts from "./feature/starts.js";
 import * as Correlation from "./feature/correlation.js";
 import * as Delivery from "./feature/subscriptions/delivery.js";
-import { WriteRule } from "./state.js";
+import { FailureTag, WriteRule, failed, type Outcome } from "./state.js";
 
 /** What Work reaches of its sub-features: Decision's tables, Correlation's API criteria and a Message payload's bindings. */
 const workHooks: Work.WorkHooks = {
   ...Work.defaultWorkHooks, runDecision: Decision.runDecision, criteriaHold: Correlation.criteriaHold,
-  payloadBindings: Subscriptions.payloadBindings,
+  payloadBindings: Delivery.payloadBindings,
 };
 /** What Starts reaches of Subscriptions: whether a trigger fires a start, and a Message payload's bindings. */
-const startsHooks: Starts.StartsHooks = { ...Starts.defaultStartsHooks, fires: Subscriptions.fires, payloadBindings: Subscriptions.payloadBindings };
+const startsHooks: Starts.StartsHooks = { ...Starts.defaultStartsHooks, fires: Subscriptions.fires, payloadBindings: Delivery.payloadBindings };
 /** What Subscriptions reaches of Correlation: the recheck of a Message firing's correlation. */
 const subscriptionsHooks: Subscriptions.SubscriptionsHooks = {
   ...Subscriptions.defaultSubscriptionsHooks, correlationAccepts: Correlation.correlationAccepts,
@@ -37,6 +37,12 @@ const propagationHooks: Propagation.PropagationHooks = {
   dropRuns: Compensation.dropWithin,
   handlerRecord: Compensation.runningRecord,
 };
+
+/** `Hooks.failJob` until the job model's stage (AD8) fills it with Work's failure. */
+function jobFailureRefused(): Outcome {
+  // dynamic-only: no feature opens a job item before that stage, so no admission sees one
+  return failed(FailureTag.Unsupported, "job-failure");
+}
 
 export const hooks: Hooks = {
   ...defaultHooks,
@@ -55,6 +61,7 @@ export const hooks: Hooks = {
   effectResult: Work.effectResult,
   retryIncident: Work.retryIncident,
   cancelIncidentProcess: Work.cancelIncidentProcess,
+  failJob: jobFailureRefused,
   triggerActivity: (ctx, header, payload, item, fired, state) => Work.triggerActivity(workHooks, ctx, header, payload, item, fired, state),
   trigger: (ctx, item, fired, state) => Subscriptions.trigger(subscriptionsHooks, ctx, item, fired, state),
   arm: Subscriptions.arm,
@@ -62,6 +69,7 @@ export const hooks: Hooks = {
   armGateway: Subscriptions.armGateway,
   raise: (ctx, raised, origin, state) => Propagation.raise(propagationHooks, ctx, raised, origin, state),
   compensate: Compensation.compensate,
+  compensationReady: Compensation.ready,
   failCompensation: Compensation.failCompensation,
   leave: Subscriptions.leave,
   written: Subscriptions.offerWrites,

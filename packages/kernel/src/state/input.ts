@@ -1,8 +1,10 @@
 /**
  * Kernel inputs, transcribed from `Kernel/State/Input.lean`: the inputs a host submits, the occurrence identities they
- * name and the start triggers and deliveries they carry. Part of `state.ts`, which re-exports it.
+ * name and the start triggers and deliveries they carry, and the Signal broadcasts an instance hands the host to deliver to
+ * the population. Part of `state.ts`, which re-exports it.
  */
-import { type ElementId, type Value } from "../il/types.js";
+import { type Bounds, type ElementId, type Value } from "../il/types.js";
+import { instanceText, issueNumber, type OccurrenceName } from "./key.js";
 import { type Binding, InputTag, type MessageChannel, type SignalAddress } from "./wait.js";
 
 /** The public identity of an occurrence: its process instance, the element and its activation number. */
@@ -10,6 +12,11 @@ export interface OccurrenceRef {
   readonly processInstanceId: string;
   readonly element: ElementId;
   readonly activation: number;
+}
+
+/** Lean's `OccurrenceName.toRef`: the public identity of the occurrence `name` names in a committed state. */
+export function nameRef(name: OccurrenceName): OccurrenceRef {
+  return { processInstanceId: instanceText(name.processInstanceId), element: name.element, activation: issueNumber(name.activation) };
 }
 
 // guard-exception(3): the start input's own statement of how it fired, not a second dispatch over `Trigger`.
@@ -85,6 +92,16 @@ export interface DeliveryInput {
   readonly atMs: number | null;
   /** The input's ranking of competing Conditional items (`Input.conditionChoices`). */
   readonly conditionChoices: readonly ConditionChoice[];
+}
+
+/**
+ * Lean's `SignalFiring`: what a Signal firing hands the item it fires, its delivery's trigger, payload and variables;
+ * the item is the firing's own, so a throw within a closure stores no number its commit may still change (KD5).
+ */
+export interface SignalFiring {
+  readonly trigger: DeliveryTrigger;
+  readonly payload: Value | null;
+  readonly variables: readonly Binding[];
 }
 
 // Inputs
@@ -166,6 +183,17 @@ export interface EffectInput {
 }
 
 /**
+ * General cancellation of the process instance `processInstanceId` names (HD4): an input of its own, since an instance
+ * holding no published wait has no occurrence a command could address. `step.ts` refuses it until the cancellation's
+ * stage fills it.
+ */
+export interface CancelInstanceInput {
+  readonly processInstanceId: string;
+  readonly atMs: number | null;
+  readonly conditionChoices: readonly ConditionChoice[];
+}
+
+/**
  * Guarded type: `step.ts` owns matching on it. Every payload carries `atMs`, the input's logical time in milliseconds:
  * the clock advances to it before the input's transition, so a timer armed by the input counts from it, and `null` leaves
  * the clock where it is. Logical time is an explicit input, never a wall clock.
@@ -180,15 +208,26 @@ export type Input =
   | { readonly tag: InputTag.Command; readonly payload: CommandInput }
   | { readonly tag: InputTag.Deliver; readonly payload: DeliveryInput }
   | { readonly tag: InputTag.TimerFire; readonly payload: TimerInput }
-  | { readonly tag: InputTag.EffectResult; readonly payload: EffectInput };
+  | { readonly tag: InputTag.EffectResult; readonly payload: EffectInput }
+  | { readonly tag: InputTag.CancelInstance; readonly payload: CancelInstanceInput };
 
 /** What an expression reads: the variables in view and the logical time, never a wall clock. */
 export interface EvalContext {
   readonly variables: readonly Binding[];
   readonly nowMs: number;
+  /** The program's value bounds (`ProfileOptions.bounds`), which a JUEL result's portable-domain check reads. */
+  readonly bounds: Bounds;
   /**
    * Whether a JUEL result passes the portable-domain check before the site sees it, `true` when absent; the
    * Multi-Instance count and collection sites read it first (EXPRESSION-SEMANTICS-SPEC "Multi-Instance level", Results).
    */
   readonly domainChecked?: boolean;
+}
+
+/** A Signal thrown to the population, which the host publishes after the input commits (PC-SIGNAL-01, PC-SIGNAL-04). */
+export interface BroadcastIntent {
+  readonly address: SignalAddress;
+  readonly variables: readonly Binding[];
+  readonly businessKey: string | null;
+  readonly origin: OccurrenceName;
 }

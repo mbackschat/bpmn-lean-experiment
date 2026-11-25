@@ -17,9 +17,9 @@ import {
   ValueSourceTag,
   ValueTag,
   assertNever,
+  BranchSchedule,
   compareStrings,
   mergeSort,
-  programPublicId,
   valueSourceLiteral,
   type CompensationThrow,
   type EventPayload,
@@ -39,13 +39,14 @@ import {
   SignalTag,
   WriteRule,
   committed,
+  compareInstanceName,
   completeSignal,
+  type InstanceName,
   failed,
   failedWith,
   instanceOf,
   leaveFlows,
   leaveOutgoing,
-  occurrenceOf,
   openItem,
   openKindView,
   OpenKindTag,
@@ -54,11 +55,11 @@ import {
   visible,
   type Binding,
   type BroadcastIntent,
-  type DeliveryInput,
+  type SignalFiring,
   type EvalContext,
   type Leave,
   type Occurrence,
-  type OccurrenceRef,
+  type OccurrenceName,
   type OpenItem,
   type Origin,
   type Outcome,
@@ -68,7 +69,9 @@ import {
   SignalAddressTag,
   type State,
 } from "../../state.js";
-import { EvaluationTag, clearInside, ctxRequireMappings, evalContext, lastWrites, type Ctx } from "../../hooks.js";
+import {
+  EvaluationTag, clearInside, ctxNameText, ctxPositionLe, ctxRequireMappings, evalContext, lastWrites, type Ctx,
+} from "../../hooks.js";
 
 /** How a throw Event leaves once it has done its work. */
 export function throwLeave(payload: EventPayload): Leave {
@@ -82,7 +85,7 @@ export function throwLeave(payload: EventPayload): Leave {
 }
 
 /** The public identity of a trigger: the thrower's occurrence, as `origin` names it. */
-export function throwerRef(state: State, origin: Origin): OccurrenceRef {
+export function throwerRef(state: State, origin: Origin): OccurrenceName {
   return { processInstanceId: instanceOf(state, origin.scope), element: origin.element, activation: origin.activation };
 }
 
@@ -93,7 +96,9 @@ export function throwerRef(state: State, origin: Origin): OccurrenceRef {
  */
 function throwCompensation(header: Header, payload: EventPayload, thrown: CompensationThrow, occurrence: Occurrence, state: State): Outcome {
   if (!thrown.waitForCompletion) return failed(FailureTag.Unsupported, "throw-compensation-asynchronous");
-  const triggered = throwerRef(state, { element: header.id, scope: occurrence.scope, activation: occurrence.activation, host: null, patch: [] });
+  const triggered = throwerRef(state, {
+    element: header.id, scope: occurrence.scope, activation: occurrence.activation, thrower: occurrence.id, host: null, patch: [],
+  });
   return committed(signal(state, {
     tag: SignalTag.Compensate,
     scope: occurrence.scope,
@@ -119,10 +124,25 @@ function signalBusinessKey(ctx: Ctx, context: EvalContext, expression: Expressio
   switch (evaluation.tag) {
     case EvaluationTag.Value: {
       const result = evaluation.result;
-      if (result.tag === ValueTag.String) return committed(result.value);
-      if (result.tag === ValueTag.Null) return committed(null);
-      // dynamic-only: a key's value type is the run's data.
-      return failed(FailureTag.RolledBack, "signal-business-key-type");
+      switch (result.tag) {
+        case ValueTag.String:
+          return committed(result.value);
+        case ValueTag.Null:
+          return committed(null);
+        case ValueTag.Double:
+        case ValueTag.Date:
+          // dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+          return failed(FailureTag.Unsupported, "value-kind");
+        case ValueTag.Bool:
+        case ValueTag.Int:
+        case ValueTag.Decimal:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          // dynamic-only: a key's value type is the run's data.
+          return failed(FailureTag.RolledBack, "signal-business-key-type");
+      }
+      return assertNever(result);
     }
     case EvaluationTag.Failure:
       return failed(FailureTag.RolledBack, evaluation.code);
@@ -134,7 +154,10 @@ function signalBusinessKey(ctx: Ctx, context: EvalContext, expression: Expressio
 
 /**
  * The payload (CIB-EXT-0040): the `camunda:in` copies in document order, `variables="all"` copying every variable
- * `seen` from the throw at its position, a later target replacing an earlier (`VariableMap.put`).
+ * `seen` from the throw at its position, a later target replacing an earlier (`VariableMap.put`). `seen` lists the
+ * innermost frame first, and CIB collects a name from the nearest frame that holds it
+ * (`AbstractVariableScope.java:110-125`), so the copy is reversed: a shadowed name's innermost binding comes last and
+ * `lastWrites` keeps it.
  */
 function signalPayload(ctx: Ctx, context: EvalContext, seen: readonly Binding[], record: SignalThrow): Result<readonly Binding[]> {
   const position = record.propagateAll ?? record.payload.length;
@@ -142,7 +165,7 @@ function signalPayload(ctx: Ctx, context: EvalContext, seen: readonly Binding[],
   if (!before.ok) return failedWith(before.failure);
   const after = ctxRequireMappings(ctx, context, record.payload.slice(position));
   if (!after.ok) return failedWith(after.failure);
-  return committed(lastWrites([...before.value, ...(record.propagateAll === null ? [] : seen), ...after.value]));
+  return committed(lastWrites([...before.value, ...(record.propagateAll === null ? [] : [...seen].reverse()), ...after.value]));
 }
 
 /**
@@ -169,10 +192,25 @@ function thrownAddress(ctx: Ctx, context: EvalContext, record: SignalThrow): Res
           switch (evaluation.tag) {
             case EvaluationTag.Value: {
               const result = evaluation.result;
-              if (result.tag === ValueTag.String) return committed({ tag: SignalAddressTag.Named, name: result.value });
-              // dynamic-only: the evaluated name is the run's data.
-              if (result.tag === ValueTag.Null) return failed(FailureTag.Unsupported, "signal-name-null");
-              return failed(FailureTag.RolledBack, "signal-name-type");
+              switch (result.tag) {
+                case ValueTag.String:
+                  return committed({ tag: SignalAddressTag.Named, name: result.value });
+                case ValueTag.Null:
+                  // dynamic-only: the evaluated name is the run's data.
+                  return failed(FailureTag.Unsupported, "signal-name-null");
+                case ValueTag.Double:
+                case ValueTag.Date:
+                  // dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+                  return failed(FailureTag.Unsupported, "value-kind");
+                case ValueTag.Bool:
+                case ValueTag.Int:
+                case ValueTag.Decimal:
+                case ValueTag.StringList:
+                case ValueTag.List:
+                case ValueTag.Map:
+                  return failed(FailureTag.RolledBack, "signal-name-type");
+              }
+              return assertNever(result);
             }
             case EvaluationTag.Failure:
               return failed(FailureTag.RolledBack, evaluation.code);
@@ -189,35 +227,38 @@ function thrownAddress(ctx: Ctx, context: EvalContext, record: SignalThrow): Res
 }
 
 /**
- * The open items of `address` in the thrower's own State, by process instance, then in arming order, the order the
- * linearization of the population fixes for CIB's unordered `HashSet` (`EventSubscriptionManager.java:111-126`).
+ * Lean's `ownReceivers`: the open items of `address` in the thrower's own State, by process instance, then in arming
+ * order, the order the linearization of the population fixes for CIB's unordered `HashSet`
+ * (`EventSubscriptionManager.java:111-126`): under `declarationDepthFirst` by the instance's prospective identifier,
+ * exact there, under `orderInvariant` by its name (KD1's structural key, P09), which no schedule changes.
  */
-function ownReceivers(state: State, address: SignalAddress): readonly OpenItem[] {
+function ownReceivers(ctx: Ctx, state: State, address: SignalAddress): readonly OpenItem[] {
   const reached = state.openItems.filter((item) => {
     const detail = openKindView(item.kind).signal;
     return detail !== null && signalAddressMatches(address, detail.address);
   });
+  const positionLe = ctxPositionLe(ctx, state);
+  const compareInstances = instanceOrder(ctx, state);
   return mergeSort(reached, (left, right) => {
-    const order = compareStrings(instanceOf(state, left.scope), instanceOf(state, right.scope));
-    return order < 0 || (order === 0 && left.id <= right.id);
+    const order = compareInstances(instanceOf(state, left.scope), instanceOf(state, right.scope));
+    return order < 0 || (order === 0 && positionLe(left.position, right.position));
   });
 }
 
-/** The delivery that fires `item` from a throw. */
-function thrownDelivery(ctx: Ctx, state: State, address: SignalAddress, variables: readonly Binding[], item: OpenItem): DeliveryInput {
-  return {
-    occurrence: {
-      processInstanceId: instanceOf(state, item.scope),
-      element: programPublicId(ctx.program, item.element),
-      activation: occurrenceOf(state, item.occurrence)?.activation ?? 0,
-    },
-    trigger: { tag: DeliveryTriggerTag.Signal, address, reach: SignalReach.Broadcast },
-    correlation: [],
-    payload: null,
-    variables,
-    atMs: null,
-    conditionChoices: [],
-  };
+/** `ownReceivers`' order of process instances under the schedule. */
+function instanceOrder(ctx: Ctx, state: State): (left: InstanceName, right: InstanceName) => number {
+  switch (ctx.program.options.branchSchedule) {
+    case BranchSchedule.DeclarationDepthFirst:
+      return (left, right) => compareStrings(ctxNameText(ctx, state, left), ctxNameText(ctx, state, right));
+    case BranchSchedule.OrderInvariant:
+      return compareInstanceName;
+  }
+  return assertNever(ctx.program.options.branchSchedule);
+}
+
+/** The firing a throw hands each receiver: a broadcast of `address` with the thrown variables. */
+function thrownFiring(address: SignalAddress, variables: readonly Binding[]): SignalFiring {
+  return { trigger: { tag: DeliveryTriggerTag.Signal, address, reach: SignalReach.Broadcast }, payload: null, variables };
 }
 
 function throwSignal(ctx: Ctx, payload: EventPayload, record: SignalThrow, origin: Origin, occurrence: Occurrence, state: State): Outcome {
@@ -229,16 +270,16 @@ function throwSignal(ctx: Ctx, payload: EventPayload, record: SignalThrow, origi
   const address = thrownAddress(ctx, context, record);
   if (!address.ok) return failedWith(address.failure);
   let fired = state;
-  for (const item of ownReceivers(state, address.value)) {
+  for (const item of ownReceivers(ctx, state, address.value)) {
     fired = signal(fired, {
       tag: SignalTag.Fire, item: item.id,
-      fired: { tag: FiredTag.Signal, delivery: thrownDelivery(ctx, fired, address.value, variables.value, item) },
+      fired: { tag: FiredTag.Signal, firing: thrownFiring(address.value, variables.value) },
     });
   }
   const intent: BroadcastIntent = {
     address: address.value, variables: variables.value, businessKey: businessKey.value, origin: throwerRef(state, origin),
   };
-  return committed(signal({ ...fired, outbox: [...fired.outbox, intent] },
+  return committed(signal({ ...fired, batchIntents: [...fired.batchIntents, intent] },
     completeSignal(occurrence.id, throwLeave(payload), [], WriteRule.Outward)));
 }
 
@@ -257,14 +298,16 @@ function throwMessage(record: MessageThrow, occurrence: Occurrence, leave: (curr
 }
 
 export function arriveThrow(ctx: Ctx, header: Header, payload: EventPayload, thrown: Throw, occurrence: Occurrence, state: State): Outcome {
-  const origin: Origin = { element: header.id, scope: occurrence.scope, activation: occurrence.activation, host: null, patch: [] };
+  const origin: Origin = {
+    element: header.id, scope: occurrence.scope, activation: occurrence.activation, thrower: occurrence.id, host: null, patch: [],
+  };
   const leave = (current: State): State => signal(current, completeSignal(occurrence.id, throwLeave(payload), [], WriteRule.Outward));
   const raiseEvent = (event: Raised): Outcome => committed(signal(leave(state), { tag: SignalTag.Raise, event, origin }));
   switch (thrown.tag) {
     case ThrowTag.None:
       return committed(leave(state));
     case ThrowTag.Terminate:
-      return committed(signal(clearInside(state, occurrence.scope, [occurrence.id]),
+      return committed(signal(clearInside(state, ctxPositionLe(ctx, state), occurrence.scope, [occurrence.id]),
         completeSignal(occurrence.id, leaveFlows([]), [], WriteRule.Outward)));
     case ThrowTag.Error: {
       // `throw.error.message` at admission refuses an expression, the only message the kernel cannot read.

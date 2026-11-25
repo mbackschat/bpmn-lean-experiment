@@ -35,7 +35,8 @@ export {
 export { admit, admitLocated, closureReach, type AdmissionRefusal } from "./admission-registry.js";
 export { VisitTag, conditionalCatches, type Closure, type Visit } from "./admission/flow/closure.js";
 export { hooks } from "./registry.js";
-export { integerBound, textBytes } from "./hooks.js";
+export { integerBound } from "./hooks.js";
+export { defaultBounds, type Bounds } from "./il/types/options.js";
 export { isJavascriptFormat } from "./admission/work.js";
 export { step } from "./step.js";
 export { definitionCapabilities, hostRequirements, hostView, refusesSignalVariables, rootStarts } from "./host.js";
@@ -50,12 +51,13 @@ export type {
 } from "./il/types.js";
 export {
   DeliveryTriggerTag, EffectOutcomeTag, FailureTag, InputTag, LeaveTag, SignalAddressTag, SignalReach, StartTriggerTag,
-  leaveFlows, recorded,
+  itemKeyText, leaveFlows, recorded,
 } from "./state.js";
+export { compareScopeOccurrenceId, rootScope, scopeParent } from "./state/key.js";
 export { criteriaRefusal, startCriteriaRefusal } from "./state/criteria.js";
 export type {
   Binding, BroadcastIntent, ConditionChoice, CorrelationMatch, EffectOutcome, Failure, Input, Leave, MessageChannel, OccurrenceRef,
-  Outcome, RecordedFailure, SignalAddress, StartInput, StartTrigger, State,
+  Outcome, RecordedFailure, ScopeOccurrenceId, SignalAddress, StartInput, StartTrigger, State,
 } from "./state.js";
 export { leastRefusal, messageReceivers, messageStartCandidates } from "./population/messages.js";
 export {

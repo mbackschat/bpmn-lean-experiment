@@ -209,6 +209,7 @@ Every field outside the subset stays in the shape and is refused, so a later lev
 ```lean
 inductive TypeRef where
   | string | integer | boolean
+  | double                                       -- carried for A3, refused `decision.typeRef`
   | foreign (name : String)                      -- refused `decision.typeRef`, also any other spelling
 inductive Comparison where
   | lt | le | gt | ge

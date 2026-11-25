@@ -38,6 +38,9 @@ structure MultiInstance where
   characteristics; the envelope's marks are the body's (CIB-EXT-0027, `BpmnParse#parseMultiInstanceLoopCharacteristics`). -/
   asyncBefore : Bool := false
   asyncAfter : Bool := false
+  /-- The inner instances' job settings, as `Envelope.exclusive` and `Envelope.retryCycle` carry the body's. -/
+  exclusive : Option Bool := none
+  retryCycle : Option String := none
   /-- The element `loopDataInputRef` names and the `inputDataItem`'s `name`, which `MultiInstanceBinding.loopReferences`
   binds instead of the Data Associations (CIB-INT-0014). -/
   loopDataInputRef : Option String := none

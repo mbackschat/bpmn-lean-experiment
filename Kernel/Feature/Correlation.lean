@@ -25,13 +25,27 @@ public section
 namespace Kernel.Feature.Correlation
 
 /-- Exact equality of kind and value of a queryable criterion value: `41` never equals `"41"`, and a held value of
-another kind matches nothing. -/
-def sameKindAndValue : Value → Value → Bool
-  | .null, .null => true
-  | .bool left, .bool right => left == right
-  | .int left, .int right => left == right
-  | .string left, .string right => left == right
-  | _, _ => false
+another kind matches nothing. Every kind is named on both sides, so a new kind decides whether it matches (KD7,
+`docs/REWRITE-2-PROPOSAL.md`). -/
+def sameKindAndValue (left right : Value) : Bool :=
+  match left with
+  | .null =>
+    match right with
+    | .null => true
+    | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .string _ | .stringList _ | .list _ | .map _ => false
+  | .bool held =>
+    match right with
+    | .bool expected => held == expected
+    | .null | .int _ | .decimal _ _ | .double _ | .date _ | .string _ | .stringList _ | .list _ | .map _ => false
+  | .int held =>
+    match right with
+    | .int expected => held == expected
+    | .null | .bool _ | .decimal _ _ | .double _ | .date _ | .string _ | .stringList _ | .list _ | .map _ => false
+  | .string held =>
+    match right with
+    | .string expected => held == expected
+    | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .stringList _ | .list _ | .map _ => false
+  | .decimal _ _ | .double _ | .date _ | .stringList _ | .list _ | .map _ => false
 
 /-- Whether `criterion` holds for an item waiting in `scope`: `processVariable` names a variable the instance root holds
 and `localVariable` one `scope` holds itself, never one of an enclosing scope, each with an equal value
@@ -40,18 +54,21 @@ identifier. A null matches a present null, and an absent name nothing. -/
 def criterionHolds (state : State) (scope : ScopeOccurrenceId) (criterion : CorrelationMatch) : Bool :=
   let root := state.instanceRoot scope
   let holds (owner : ScopeOccurrenceId) (name : String) : Bool :=
-    match (state.variables.find? (·.scope == owner)).bind (·.entries.find? (·.1 == name)) with
-    | some (_, value) => sameKindAndValue value criterion.expected
+    match (state.variables.getD owner ∅)[name]? with
+    | some value => sameKindAndValue value criterion.expected
     | none => false
   let names (actual : Option String) : Bool :=
-    match criterion.expected, actual with
-    | .string expected, some actual => expected == actual
-    | _, _ => false
+    match criterion.expected with
+    | .string expected =>
+      match actual with
+      | some actual => expected == actual
+      | none => false
+    | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .stringList _ | .list _ | .map _ => false
   match criterion.target with
   | .processVariable name => holds root name
   | .localVariable name => holds scope name
   | .businessKey => names ((state.slots.instances.find? (·.root == root)).bind (·.businessKey))
-  | .processInstance => names (some (state.instanceOf scope))
+  | .processInstance => names (some (state.instanceOf scope).text)
 
 /-- Whether every one of a delivery's API `criteria` holds for an item waiting in `scope` (`criterionHolds`), the empty
 list included, unless `criteriaRefusal` refuses the criteria under `apiCriteria`. -/
@@ -68,10 +85,13 @@ the key domain excludes, so it is refused like an empty or non-String one, never
 def keyValue (ctx : Ctx) (context : EvalContext) (criterion : CorrelationCriterion) :
     Except Failure String :=
   match ctx.evaluate context criterion.value with
-  -- dynamic-only: a key's value is the run's data.
-  | .value (.string key) => if key.isEmpty then .error (.unsupported "correlation-key-empty") else .ok key
-  -- dynamic-only: a key's value type is the run's data.
-  | .value _ => .error (.unsupported "correlation-key-type")
+  | .value value =>
+    match value with
+    -- dynamic-only: a key's value is the run's data.
+    | .string key => if key.isEmpty then .error (.unsupported "correlation-key-empty") else .ok key
+    | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .stringList _ | .list _ | .map _ =>
+      -- dynamic-only: a key's value type is the run's data.
+      .error (.unsupported "correlation-key-type")
   -- dynamic-only: whether a key's variable is bound is the run's data.
   | .failure "unknown-variable" => .error (.unsupported "correlation-key-unbound")
   -- Unreachable: `message.correlation.value` admits only a variable read, which fails only as `unknown-variable`.
@@ -95,7 +115,7 @@ def correlationMatches (ctx : Ctx) (context : EvalContext) (bound : List Correla
     | .processVariable key =>
       criterion.key == key && match delivered.expected with
         | .string value => value == expected
-        | _ => false
+        | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .stringList _ | .list _ | .map _ => false
     -- `criteriaRefusal` refused every other target above; the arm keeps the match total.
     | .localVariable _ | .businessKey | .processInstance => false
 

@@ -15,12 +15,12 @@ public section
 namespace Kernel.Population
 
 def occurrence (program : Program) (state : State) (item : OpenItem) : OccurrenceRef :=
-  { processInstanceId := state.instanceOf item.scope, element := program.publicId item.element
-    activation := ((state.occurrence? item.occurrence).map (·.activation)).getD 0 }
+  { processInstanceId := (state.instanceOf item.scope).text, element := program.publicId item.element
+    activation := ((state.occurrence? item.id.occurrence).map (·.activation.number)).getD 0 }
 
 /-- The code a refusal carries. -/
 def refusalCode : Failure → String
-  | .rejected code | .rolledBack code | .semanticFailure _ code | .unsupported code => code
+  | .rejected code _ | .rolledBack code | .semanticFailure _ code | .unsupported code => code
 
 /-- The refusal with the least code in the codes' string order, so the code a publication reports never depends on the
 order its candidates are scanned in; of two refusals with one code the first is kept, which only a scan's refusal kinds
@@ -40,7 +40,7 @@ Criteria `criteriaRefusal` refuses are the command's refusal too, which the call
 def messageReceivers (hooks : Hooks) (program : Program) (state : State) (publication : Publication) :
     Except Failure (List (OccurrenceRef × MessageChannel)) :=
   let ctx := Step.context hooks program
-  let verdicts := state.openItems.filterMap fun item =>
+  let verdicts := (itemsInOrder ctx.positionLe state.openItems).filterMap fun item =>
     let view := item.kind.view
     let channel? := match publication.message with
       | .channel channel => some channel
@@ -116,7 +116,7 @@ def startFor (hooks : Hooks) (instances : List Instance) (publication : Publicat
 or a reached subscription's (`messageReceivers`). Each only rejects or refuses as unsupported, so another failure is a
 harness defect. -/
 def refusalOf : Failure → Except String Resolution
-  | .rejected code => pure (.rejected code)
+  | .rejected code _ => pure (.rejected code)
   | .unsupported code => pure (.unsupported code)
   | .rolledBack _ | .semanticFailure _ _ => throw "publication-refusal-not-command-level"
 

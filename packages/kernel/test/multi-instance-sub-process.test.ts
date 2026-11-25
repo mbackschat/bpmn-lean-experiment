@@ -19,27 +19,27 @@ const header = (id: string, sourceType: string, parent: string | null = null): J
   ({ id, origin: { definition: null, sourceId: id }, sourceType, parent });
 const envelope = (incoming: string[], outgoing: string[], over: Json = {}): Json => ({
   incoming, outgoing, inputs: [], outputs: [], boundaries: [], multiInstance: null, compensationHandlers: [], forCompensation: false,
-  defaultFlow: null, asyncBefore: false, asyncAfter: false, ...over,
+  defaultFlow: null, asyncBefore: false, asyncAfter: false, exclusive: null, retryCycle: null, structuredInputs: [], structuredOutputs: [], ...over,
 });
 const user = { user: { payload: { name: null, assignee: null, candidateUsers: [], candidateGroups: [], formKey: null,
-  formFields: [], dueDate: null, followUpDate: null, priority: null } } };
+  formFields: [], dueDate: null, followUpDate: null, priority: null, formRef: null } } };
 
 /** `Start → S → End`; `S` loops over `items` and runs `Inner → Review → InnerEnd`. */
 function program(mode: string, kind: Json | string = "embedded", loop: Json = {}): Json {
   return {
     ...slice,
     options: { ...(slice["options"] as Json), evaluator: "juel", multiInstanceBinding: "loopReferences",
-      multiInstanceCounters: "cibLocals", multiInstanceInputFailure: "rollback", multiInstanceCount: "javaInt" },
+      multiInstanceCounters: "cibLocals", branchSchedule: "declarationDepthFirst", multiInstanceInputFailure: "rollback", multiInstanceCount: "javaInt" },
     elements: [
-      { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["To_S"] } } },
+      { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["To_S"], initiator: null, formRef: null } } },
       { scope: { header: header("S", "subProcess"), payload: { kind, children: ["Inner", "Review", "InnerEnd"],
         localVariables: [], items: [], envelope: envelope(["To_S"], ["To_End"], { multiInstance: {
           mode, count: { collection: { items: { variable: { name: "items" } } } }, elementVariable: "item",
           completionCondition: null, inputDataItem: null, outputDataItem: null, outputCollection: null,
-          asyncBefore: false, asyncAfter: false, loopDataInputRef: null,
+          asyncBefore: false, asyncAfter: false, exclusive: null, retryCycle: null, loopDataInputRef: null,
           inputDataItemName: null, ...loop,
         } }) } } },
-      { start: { header: header("Inner", "startEvent", "S"), payload: { subscription: null, outgoing: ["To_Review"] } } },
+      { start: { header: header("Inner", "startEvent", "S"), payload: { subscription: null, outgoing: ["To_Review"], initiator: null, formRef: null } } },
       { activity: { header: header("Review", "userTask", "S"), payload: { work: user, envelope: envelope(["To_Review"], ["To_InnerEnd"]) } } },
       { event: { header: header("InnerEnd", "endEvent", "S"), payload: { role: { throw: { record: "none" } }, placement: "finish",
         incoming: ["To_InnerEnd"], outgoing: [], alternativeThrows: [] } } },

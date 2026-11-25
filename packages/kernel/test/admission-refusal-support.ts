@@ -38,7 +38,7 @@ export const mapping = (target: string, source: Json, dialect = "ioParameter"): 
 
 // Subscriptions.
 
-const timer = (schedule: Json): Json => ({ timer: { payload: { schedule } } });
+const timer = (schedule: Json): Json => ({ timer: { payload: { schedule, exclusive: null } } });
 export const duration = (lexeme: string): Json => timer({ duration: { value: text(lexeme) } });
 export const date = (lexeme: string): Json => timer({ date: { value: text(lexeme) } });
 export const cycle = (lexeme: string, dialect = "iso8601"): Json => timer({ cycle: { value: text(lexeme), dialect } });
@@ -55,7 +55,7 @@ export const compensationTrigger = "compensation";
 export const cancelTrigger = "cancel";
 /** `alternatives` are a Multiple Event's definitions after the first; `parallelMultiple` its Parallel Multiple mark. */
 export const subscription = (trigger: Json | string, outputs: Json[] = [], alternatives: Array<Json | string> = [], parallelMultiple = false): Json =>
-  ({ trigger, outputs, alternatives, parallelMultiple });
+  ({ trigger, outputs, alternatives, parallelMultiple, dataOutputs: [], retryCycle: null });
 export const criterion = (key: string, value: Json): Json => ({ key, value });
 /** A message trigger an Operation carries, the channel a correlated catch needs. */
 export const channel = (over: Json = {}): Json => ({ messageRef: "M", name: text("M"), interfaceRef: "I", operationRef: "O", ...over });
@@ -67,7 +67,7 @@ const header = (id: string, sourceType: string, parent: string | null): Json =>
 
 export const envelope = (over: Json = {}): Json => ({
   incoming: ["f1"], outgoing: ["f2"], inputs: [], outputs: [], boundaries: [], multiInstance: null, compensationHandlers: [], forCompensation: false,
-  defaultFlow: null, asyncBefore: false, asyncAfter: false, ...over,
+  defaultFlow: null, asyncBefore: false, asyncAfter: false, exclusive: null, retryCycle: null, structuredInputs: [], structuredOutputs: [], ...over,
 });
 
 export const boundary = (id: string, trigger: Json | string, over: Json = {}, outputs: Json[] = []): Json =>
@@ -77,7 +77,7 @@ export const userWork = (over: Json = {}): Json => ({
   user: {
     payload: {
       name: null, assignee: null, candidateUsers: [], candidateGroups: [], formKey: null, formFields: [], dueDate: null,
-      followUpDate: null, priority: null, ...over,
+      followUpDate: null, priority: null, formRef: null, ...over,
     },
   },
 });
@@ -113,7 +113,7 @@ export const ruleWork = (over: Json = {}): Json =>
 export const loop = (over: Json = {}): Json => ({
   mode: "parallel", count: { collection: { items: variable("items") } }, elementVariable: null, completionCondition: null,
   inputDataItem: "item", outputDataItem: "result", outputCollection: null,
-  asyncBefore: false, asyncAfter: false, loopDataInputRef: null, inputDataItemName: null, ...over,
+  asyncBefore: false, asyncAfter: false, exclusive: null, retryCycle: null, loopDataInputRef: null, inputDataItemName: null, ...over,
 });
 
 /** The definition a called process is bound to; a binding field set here is refused. */
@@ -127,7 +127,7 @@ export const activity = (id: string, work: Json | string, env: Json = {}, parent
 export const start = (id: string, trigger: Json | string | null = null, outputs: Json[] = [], parent: string | null = null): Json => ({
   start: {
     header: header(id, "startEvent", parent),
-    payload: { subscription: trigger === null ? null : subscription(trigger, outputs), outgoing: ["f1"] },
+    payload: { subscription: trigger === null ? null : subscription(trigger, outputs), outgoing: ["f1"], initiator: null, formRef: null },
   },
 });
 

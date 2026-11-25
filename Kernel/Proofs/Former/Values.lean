@@ -27,7 +27,7 @@ def ValuesRejectedWhole (hooks : Hooks) : Prop :=
     ((∃ payload : StartInput, input = .start payload ∧ payload.variables = values) ∨
       ∃ payload : CommandInput, input = .command payload ∧ payload.action = .setVariables values) →
     (∀ formed, before = some formed → WellFormed program formed) →
-    (∃ binding ∈ values, ¬ Laws.Data.InDomain binding.2) →
+    (∃ binding ∈ values, ¬ Laws.Data.InDomain program.options.bounds binding.2) →
     ∃ code, Step.step hooks program before input = .error (.rejected code)
 
 /-- PC-SCOPE-04 (`CVM-IN-01`, `CVM-OUT-01`): a mapping whose source fails to evaluate reads by its dialect

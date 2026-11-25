@@ -12,7 +12,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { test } from "node:test";
 
-import { admit, decodeProgram, hooks, step, stimulusFromJson } from "@bpmn-lean/kernel";
+import { admit, decodeProgram, hooks, rootScope, step, stimulusFromJson } from "@bpmn-lean/kernel";
 import type { Program, State } from "@bpmn-lean/kernel";
 
 import { readCaseSource } from "./kernel-program.ts";
@@ -87,7 +87,7 @@ test("a throw reaches the catch of its own Signal by QName under the standards r
   const { state, last } = run(await program(withPayload(""), {}), [start, complete("Dispatch")]);
   assert.ok(last.ok, JSON.stringify(last));
   assert.deepEqual(waiting(state), ["Catch_Other", "Notify"]);
-  assert.deepEqual(state!.outbox.map((intent) => [intent.address, intent.variables, intent.businessKey]), [
+  assert.deepEqual(state!.intents.map((intent) => [intent.address, intent.variables, intent.businessKey]), [
     [{ tag: "qualified", ref: { namespace, localName: "Signal_Shipped" } }, [], null],
   ]);
 });
@@ -96,7 +96,7 @@ test("a name-addressed delivery never reaches a QName subscription, and does und
   const named = { kind: "signal", name: "order-shipped" };
   const standards = run(await program(withPayload(""), { signalDelivery: "occurrenceTargeted" }), [start, deliver("Catch_Shipped", named)]);
   assert.deepEqual(standards.last.ok ? null : standards.last.failure, { tag: "rejected", code: "unknown-signal-subscription" });
-  const names = run(await program(withPayload(""), { signalNames: "addresses", signalDelivery: "occurrenceTargeted" }),
+  const names = run(await program(withPayload(""), { signalNames: "addresses", branchSchedule: "declarationDepthFirst", signalDelivery: "occurrenceTargeted" }),
     [start, deliver("Catch_Shipped", named)]);
   assert.ok(names.last.ok, JSON.stringify(names.last));
   assert.deepEqual(waiting(names.state), ["Catch_Other", "Dispatch", "Notify"]);
@@ -113,20 +113,20 @@ test("a delivery to one Signal catch is rejected unless the profile selects occu
 });
 
 test("a Signal delivery carrying a payload is rejected rather than dropped", async () => {
-  const { last } = run(await program(withPayload(""), { signalNames: "addresses", signalDelivery: "occurrenceTargeted" }),
+  const { last } = run(await program(withPayload(""), { signalNames: "addresses", branchSchedule: "declarationDepthFirst", signalDelivery: "occurrenceTargeted" }),
     [start, deliver("Catch_Shipped", { kind: "signal", name: "order-shipped" }, { payload: { kind: "string", value: "x" } })]);
   assert.deepEqual(last.ok ? null : last.failure, { tag: "rejected", code: "signal-payload-not-accepted" });
 });
 
 test("a throw's camunda:in copies install where the catch writes, and travel with its intent", async () => {
   const target = await program(withPayload(`<bpmn:extensionElements><camunda:in source="customer" target="notified"/></bpmn:extensionElements>`),
-    { signalNames: "addresses", signalPayload: "variables", evaluator: "juel", undeclaredWrite: "atInstanceRoot" });
+    { signalNames: "addresses", branchSchedule: "declarationDepthFirst", signalPayload: "variables", evaluator: "juel", undeclaredWrite: "atInstanceRoot" });
   const { state, last } = run(target, [start, complete("Dispatch")]);
   assert.ok(last.ok, JSON.stringify(last));
   assert.deepEqual(waiting(state), ["Catch_Other", "Notify"]);
-  const root = state!.variables.find((scope) => scope.scope === 0)?.entries ?? [];
+  const root = new Map(state!.variables).get(rootScope) ?? [];
   assert.deepEqual(root.find(([name]) => name === "notified"), ["notified", { tag: "string", value: "ACME" }]);
-  assert.deepEqual(state!.outbox.map((intent) => [intent.address, intent.variables]), [
+  assert.deepEqual(state!.intents.map((intent) => [intent.address, intent.variables]), [
     [{ tag: "named", name: "order-shipped" }, [["notified", { tag: "string", value: "ACME" }]]],
   ]);
 });

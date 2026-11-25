@@ -1,6 +1,6 @@
 import { asElement } from "../moddle-graph.js";
 import type { ElementRecord } from "../moddle-graph.js";
-import { asyncContinuations } from "./build.js";
+import { asyncContinuations, jobSettings } from "./build.js";
 import { associationSourceId, associationSourceItem, associationTargetId, associationTargetItem, conditionExpression, valueExpression } from "./data.js";
 import { ReadRefusal, ReadRefusalCode, itemName, list, optionalId, text } from "./model.js";
 import { scan } from "./schema.js";
@@ -67,6 +67,7 @@ export function readMultiInstance(ctx: ReadContext, activity: ElementRecord): Mu
       outputDataItem: itemOutputName,
       outputCollection: collectionOutput === undefined ? optionalItem(outputCollection) : associationTargetItem(collectionOutput),
       ...asyncContinuations(ctx, loop),
+      ...jobSettings(ctx, loop),
       loopDataInputRef: optionalItem(inputCollection),
       inputDataItemName: inputDataItem === undefined ? null : text(inputDataItem, "name"),
     },

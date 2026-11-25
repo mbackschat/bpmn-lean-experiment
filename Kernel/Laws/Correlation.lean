@@ -41,7 +41,7 @@ def RootOf (s : State) (scope root : ScopeOccurrenceId) : Prop :=
 /-- `owner`'s own variables bind `name` to `value`: a variable of an enclosing scope never counts, and an absent name
 matches nothing. -/
 def Binds (s : State) (owner : ScopeOccurrenceId) (name : String) (value : Value) : Prop :=
-  ∃ locals ∈ s.variables, locals.scope = owner ∧ (name, value) ∈ locals.entries
+  ∃ entries, s.variables[owner]? = some entries ∧ entries[name]? = some value
 
 /-- What one criterion means for an item waiting in `scope` of the instance rooted at `root`, whose public identifier is
 `publicId`: a Process variable the root holds, a local variable `scope` holds itself, the instance's own business key,
@@ -71,7 +71,7 @@ def NamesVariable (criterion : CorrelationMatch) : Prop :=
 
 /-- A Decimal, a String list, a list or a map, which CIB's variable query refuses as an Object value. -/
 def ObjectValued : Value → Prop
-  | .decimal _ _ | .stringList _ | .list _ | .map _ => True
+  | .decimal _ _ | .double _ | .date _ | .stringList _ | .list _ | .map _ => True
   | .null | .bool _ | .int _ | .string _ => False
 
 /-- Two criteria name one target: CIB's criteria are a map. -/
@@ -117,7 +117,7 @@ def StartVerdict : MessageCorrelation → List CorrelationMatch → Option Failu
 start writes, its delivered variables and its payload by the catch rule (`written`), since CIB uses a variable criterion
 only to seek a waiting execution and starts with the delivered variables alone. -/
 def StartInstallsOnly (written : List (String × Value)) (started : State) (root : ScopeOccurrenceId) : Prop :=
-  ∀ locals ∈ started.variables, locals.scope = root → ∀ entry ∈ locals.entries, entry ∈ written
+  ∀ entries, started.variables[root]? = some entries → ∀ name value, entries[name]? = some value → (name, value) ∈ written
 
 /-! ## A modeled key's value -/
 
@@ -127,9 +127,12 @@ outside the key domain and are `unsupported`, never a mismatch or a semantic fai
 rolls the command back, and an unsupported evaluation stays unsupported. -/
 def KeyVerdict (evaluation : Evaluation) (verdict : Except Failure String) : Prop :=
   match evaluation with
-  | .value (.string key) =>
-    (key ≠ "" ∧ verdict = .ok key) ∨ (key = "" ∧ verdict = .error (.unsupported "correlation-key-empty"))
-  | .value _ => verdict = .error (.unsupported "correlation-key-type")
+  | .value value =>
+    match value with
+    | .string key =>
+      (key ≠ "" ∧ verdict = .ok key) ∨ (key = "" ∧ verdict = .error (.unsupported "correlation-key-empty"))
+    | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .stringList _ | .list _ | .map _ =>
+      verdict = .error (.unsupported "correlation-key-type")
   | .failure code =>
     (code = "unknown-variable" ∧ verdict = .error (.unsupported "correlation-key-unbound")) ∨
       (code ≠ "unknown-variable" ∧ verdict = .error (.rolledBack code))
@@ -137,60 +140,80 @@ def KeyVerdict (evaluation : Evaluation) (verdict : Except Failure String) : Pro
 
 /-! ## Non-vacuity
 
-A root scope 0 whose instance has business key `k` and variable `order = 7`, and a waiting item's scope 1 below it
-holding `step = "a"`. -/
+A root scope occurrence whose instance has business key `k` and variable `order = 7`, and a waiting item's scope
+occurrence of `Sub` below it holding `step = "a"`. -/
 
-def root : ScopeOccurrenceId := ⟨0⟩
-def inner : ScopeOccurrenceId := ⟨1⟩
+def root : ScopeOccurrenceId := .ofSegments []
+def inner : ScopeOccurrenceId := .ofSegments [{ element := ⟨"Sub"⟩, ordinal := 0 }]
 
-def rootScope : ScopeOccurrence := { id := root, element := none, parent := none }
-def innerScope : ScopeOccurrence := { id := inner, element := some ⟨"Sub"⟩, parent := some root }
-def rootLocals : ScopeVariables := { scope := root, entries := [("order", .int 7)] }
-def innerLocals : ScopeVariables := { scope := inner, entries := [("step", .string "a")] }
+def rootScope : ScopeOccurrence := { id := root, element := none, position := 0 }
+def innerScope : ScopeOccurrence := { id := inner, element := some ⟨"Sub"⟩, position := 0 }
 def rootData : InstanceData := { root, businessKey := some "k" }
 
+/-- The witness's scope map, named so that a simp set unfolding its entries leaves it whole. -/
+def waitingScopes : ScopeMap := Laws.State.ofScopes [rootScope, innerScope]
+
+@[simp] theorem mem_waitingScopes {x : ScopeOccurrence} : x ∈ scopeList waitingScopes ↔ x = rootScope ∨ x = innerScope := by
+  rw [waitingScopes, Laws.State.mem_ofScopes (by simp [rootScope, innerScope, root, inner,
+    Laws.State.ScopeOccurrenceId.ofSegments_inj])]
+  simp
+
+/- The witnesses read their scopes through the scope map's list view. -/
+attribute [local simp] Laws.State.scopes_eq
+
 def waiting : State :=
-  { instanceId := "p", scopes := [rootScope, innerScope], variables := [rootLocals, innerLocals]
+  { instanceId := "p", scopeMap := waitingScopes
+    variables := (∅ : TreeMap ScopeOccurrenceId Variables compare).insert root ((∅ : Variables).insert "order" (.int 7))
+      |>.insert inner ((∅ : Variables).insert "step" (.string "a"))
     slots := { instances := [rootData] } }
 
 def orderIs (value : Value) : CorrelationMatch := { target := .processVariable "order", expected := value }
 def stepIs (value : Value) : CorrelationMatch := { target := .localVariable "step", expected := value }
 def keyIs (key : String) : CorrelationMatch := { target := .businessKey, expected := .string key }
 
+theorem waiting_inner : waiting.variables[inner]? = some ((∅ : Variables).insert "step" (.string "a")) :=
+  Std.ExtTreeMap.getElem?_insert_self
+
+theorem waiting_root : waiting.variables[root]? = some ((∅ : Variables).insert "order" (.int 7)) := by
+  have apart : compare inner root ≠ .eq := by
+    rw [Ne, Std.LawfulEqCmp.compare_eq_iff_eq]; simp [inner, root, Laws.State.ScopeOccurrenceId.ofSegments_inj]
+  simp only [waiting]
+  rw [Std.ExtTreeMap.getElem?_insert, ite_eq_right apart, Std.ExtTreeMap.getElem?_insert_self]
+
 theorem root_of_inner : RootOf waiting inner root := by
-  refine ⟨.parent innerScope root root (by simp [waiting]) rfl (.refl _), ⟨rootScope, by simp [waiting], rfl, .inl rfl⟩, ?_⟩
+  refine ⟨.parent innerScope root root (by simp [waiting]) (by simp [innerScope, inner, root]) (.refl _),
+    ⟨rootScope, by simp [waiting], rfl, .inl (by simp [rootScope, root])⟩, ?_⟩
   intro nearer _ _ ⟨scope, member, same, kind⟩
-  simp only [waiting, List.mem_cons, List.not_mem_nil, or_false] at member
+  simp only [waiting, Laws.State.scopes_eq, mem_waitingScopes] at member
   rcases member with rfl | rfl
   · exact same.symm
-  · simp [innerScope] at kind
+  · simp [innerScope, inner] at kind
 
 theorem conjunction_accepts : Accepts waiting inner root "p" [orderIs (.int 7), stepIs (.string "a"), keyIs "k"] true := by
   simp only [Accepts, true_iff, List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq]
-  refine ⟨⟨rootLocals, by simp [waiting], rfl, by simp [rootLocals, orderIs]⟩,
-    ⟨innerLocals, by simp [waiting], rfl, by simp [innerLocals, stepIs]⟩, ⟨rootData, by simp [waiting], "k", rfl, rfl, rfl⟩⟩
+  refine ⟨⟨_, waiting_root, by simp [orderIs]⟩, ⟨_, waiting_inner, by simp [stepIs]⟩, ⟨rootData, by simp [waiting], "k", rfl, rfl, rfl⟩⟩
 
 theorem empty_accepts : Accepts waiting inner root "p" [] true := by
   simp [Accepts]
 
 /-- `41` is not `"41"`: a value of another kind matches nothing. -/
 theorem other_kind_rejected : ¬ CriterionHolds waiting inner root "p" (orderIs (.string "7")) := by
-  rintro ⟨locals, member, scope, entry⟩
-  simp only [waiting, List.mem_cons, List.not_mem_nil, or_false] at member
-  rcases member with rfl | rfl <;> simp [rootLocals, innerLocals, orderIs, root, inner] at scope entry
+  rintro ⟨entries, found, entry⟩
+  obtain rfl := Option.some.inj (waiting_root.symm.trans found)
+  simp [orderIs] at entry
 
 /-- A local criterion reads the waiting item's own scope, never an enclosing one. -/
 theorem enclosing_local_rejected : ¬ CriterionHolds waiting inner root "p" { target := .localVariable "order", expected := .int 7 } := by
-  rintro ⟨locals, member, scope, entry⟩
-  simp only [waiting, List.mem_cons, List.not_mem_nil, or_false] at member
-  rcases member with rfl | rfl <;> simp [rootLocals, innerLocals, root, inner] at scope entry
+  rintro ⟨entries, found, entry⟩
+  obtain rfl := Option.some.inj (waiting_inner.symm.trans found)
+  simp at entry
 
 theorem one_failing_rejects : ¬ Accepts waiting inner root "p" [orderIs (.int 7), stepIs (.string "b")] true := by
   intro accepts
   have := (accepts.mp rfl) (stepIs (.string "b")) (by simp)
-  obtain ⟨locals, member, scope, entry⟩ := this
-  simp only [waiting, List.mem_cons, List.not_mem_nil, or_false] at member
-  rcases member with rfl | rfl <;> simp [rootLocals, innerLocals, stepIs, root, inner] at scope entry
+  obtain ⟨entries, found, entry⟩ := this
+  obtain rfl := Option.some.inj (waiting_inner.symm.trans found)
+  simp [stepIs] at entry
 
 theorem duplicate_first :
     CommandVerdict [.apiCriteria] true [orderIs (.int 1), orderIs (.int 2)] (some (.rejected "criteria-duplicate")) :=
@@ -234,15 +257,24 @@ theorem start_key_passing_rejected : ¬ StartVerdict .apiCriteria [keyIs "k"] no
   simp [StartVerdict, NamesVariable, keyIs]
 
 /-- The criterion `order = 1` reached the start; the instance holds only its delivered variable `amount`. -/
-def started : State := { waiting with variables := [{ scope := root, entries := [("amount", .int 3)] }] }
+def started : State :=
+  { waiting with
+    variables := (∅ : TreeMap ScopeOccurrenceId Variables compare).insert root ((∅ : Variables).insert "amount" (.int 3)) }
 
 theorem start_installs_delivered : StartInstallsOnly [("amount", .int 3)] started root := by
-  simp [StartInstallsOnly, started]
+  intro entries found name value held
+  obtain rfl := Option.some.inj ((Std.ExtTreeMap.getElem?_insert_self (t := ∅)).symm.trans found)
+  simp only [Std.ExtTreeMap.getElem?_insert, Std.LawfulEqCmp.compare_eq_iff_eq, Std.ExtTreeMap.getElem?_empty] at held
+  split at held
+  · next same => cases held; subst same; simp
+  · cases held
 
 theorem criterion_installed_rejected :
-    ¬ StartInstallsOnly [("amount", .int 3)] { started with variables := [{ scope := root, entries := [("order", .int 1)] }] }
-      root := fun only => by
-  simpa using only { scope := root, entries := [("order", .int 1)] } (by simp) rfl ("order", .int 1) (by simp)
+    ¬ StartInstallsOnly [("amount", .int 3)]
+      { started with
+        variables := (∅ : TreeMap ScopeOccurrenceId Variables compare).insert root ((∅ : Variables).insert "order" (.int 1)) } root :=
+  fun only => by
+    simpa using only _ Std.ExtTreeMap.getElem?_insert_self "order" (.int 1) Std.ExtTreeMap.getElem?_insert_self
 
 theorem unbound_key_unsupported :
     KeyVerdict (.failure "unknown-variable") (.error (.unsupported "correlation-key-unbound")) :=

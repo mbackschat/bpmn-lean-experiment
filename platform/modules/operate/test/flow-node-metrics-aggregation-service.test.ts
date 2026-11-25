@@ -328,7 +328,6 @@ function occurrence(
     occurrence: { processInstanceId, elementId, activation, role },
     startRevision: 1,
     startIndex: 0,
-    owner: 0,
     sourceType: "task",
     terminal,
   };

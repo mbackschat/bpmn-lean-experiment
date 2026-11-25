@@ -81,6 +81,32 @@ export const rows: readonly Row[] = [
     control: option({ timerZone: null }),
   },
   {
+    code: "profile.deploymentErrors.cibDeployment",
+    description: "CIB's deployment errors over forms BPMN 2.0.2 defines, before A1 classifies them (AD7)",
+    mutate: option({ deploymentErrors: "cibDeployment" }),
+    control: option({ deploymentErrors: "bpmnValidity" }),
+  },
+  {
+    code: "profile.handlerEscalation.reentersHandler",
+    description: "CIB's re-entry of a handler an Escalation from deeper inside it matches",
+    mutate: option({ handlerEscalation: "reentersHandler" }),
+    control: option({ handlerEscalation: "passesHandler" }),
+  },
+  {
+    code: "profile.defaultRetryCycle",
+    description: "an engine-wide default retry cycle, before the job model reads it (AD8)",
+    mutate: option({ defaultRetryCycle: "R3/PT5M" }),
+    control: option({ defaultRetryCycle: null }),
+  },
+  {
+    // AD1: every inert item needs its register entry; none is admitted yet.
+    code: "profile.inertExtensions",
+    description: "a non-empty inert extension table",
+    mutate: option({ inertExtensions: [{ elementType: "bpmn:Process",
+      name: { namespace: "http://camunda.org/schema/1.0/bpmn", localName: "historyTimeToLive" } }] }),
+    control: option({ inertExtensions: [] }),
+  },
+  {
     code: "profile.abnormalScopeEnd.withoutOutflow",
     description: "an abnormal scope end that leaves without outflow, reached by a Terminate in a Sub-Process",
     mutate: (program) => terminatingScope(withOptions(program, { abnormalScopeEnd: "withoutOutflow" })),
@@ -100,7 +126,28 @@ export const rows: readonly Row[] = [
   },
 ];
 
+/** DC28: each option value whose meaning depends on run order, refused under `orderInvariant` and admitted under the
+ * schedule it needs. Each is a forged option set no catalog profile selects: the CIB profiles select every such value
+ * together with `declarationDepthFirst` (CIB-OP-0016), so selecting, say, CIB-INT-0028's Signal addresses without it is
+ * caught by admission, not by a guard over the catalog. */
+const orderDependent: ReadonlyArray<readonly [string, Json, string]> = [
+  ["profile.unhandledError.endsThrowingPath.orderInvariant", { unhandledError: "endsThrowingPath" }, "an uncaught Error that ends only its path"],
+  ["profile.raisedCallOutputs.atCalledRoot.orderInvariant", { raisedCallOutputs: "atCalledRoot" }, "Call outputs mapped at a raised called root"],
+  ["profile.signalNames.addresses.orderInvariant", { signalNames: "addresses" }, "Signals addressed by name (CIB-INT-0028)"],
+  ["profile.messageNames.addresses.orderInvariant", { messageNames: "addresses" }, "Messages addressed by name"],
+  ["profile.multiInstanceCounters.cibLocals.orderInvariant", { multiInstanceCounters: "cibLocals" }, "CIB's Multi-Instance counters"],
+  ["profile.inclusiveJoinReach.outgoingOnly.orderInvariant", { inclusiveJoinReach: "outgoingOnly" }, "an Inclusive join reach without boundaries"],
+];
+
+const orderRows: readonly Row[] = orderDependent.map(([code, selects, description]) => ({
+  code,
+  description: `${description} under an order-invariant schedule`,
+  mutate: option({ ...selects, branchSchedule: "orderInvariant" }),
+  control: option({ ...selects, branchSchedule: "declarationDepthFirst" }),
+}));
+
 refusalTests("profile", rows);
+refusalTests("profile order", orderRows);
 
 // BPMN 2.0.2 Table 10.87: `isInterrupting` "cannot be applied to … Compensation Events (where it doesn't apply)", so a
 // Compensation Event Sub-Process whose start carries the attribute's default, `true`, reaches no abnormal scope end.

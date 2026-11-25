@@ -14,6 +14,14 @@
     "evaluator": "simpleBoolean",
     "submission": "outputSet",
     "scopeChainSubmissionBytes": null,
+    "bounds": {
+      "containerLevels": 4,
+      "containerMembers": 32,
+      "valueNodes": 256,
+      "canonicalBytes": 16384,
+      "textBytes": 1024,
+      "instanceIdentityBytes": 1024
+    },
     "undeclaredWrite": "refused",
     "errorPathOutputs": "none",
     "raisedCallOutputs": "none",
@@ -38,13 +46,31 @@
     "callBindingTime": "programAssembly",
     "timerZone": null,
     "multiInstanceBinding": "dataAssociations",
-    "effectResultValues": "outputSet", "outputContext": "submission",
-    "multiInstanceCounters": "none", "multiInstanceInputFailure": "hold", "multiInstanceCount": "integer", "multiInstanceCollection": "entrySnapshot", "businessRuleTask": "refused", "scriptTask": "refused", "configuredTask": "externalWork",
-    "inclusiveJoinReach": "withBoundaries", "branchSchedule": "orderInvariant",
-    "conditionalRetrigger": "edge", "malformedTimer": "refused", "messageNames": "description",
+    "effectResultValues": "outputSet",
+    "outputContext": "submission",
+    "multiInstanceCounters": "none",
+    "multiInstanceInputFailure": "hold",
+    "multiInstanceCount": "integer",
+    "multiInstanceCollection": "entrySnapshot",
+    "businessRuleTask": "refused",
+    "scriptTask": "refused",
+    "configuredTask": "externalWork",
+    "inclusiveJoinReach": "withBoundaries",
+    "branchSchedule": "orderInvariant",
+    "conditionalRetrigger": "edge",
+    "malformedTimer": "refused",
+    "messageNames": "description",
     "scopeStart": "implicit",
-    "signalNames": "identifier", "signalPayload": "none", "signalDelivery": "broadcastOnly", "conditionalStart": "refused",
-    "calledElementResolution": "qualifiedName", "messageThrowForms": "refused"
+    "signalNames": "identifier",
+    "signalPayload": "none",
+    "signalDelivery": "broadcastOnly",
+    "conditionalStart": "refused",
+    "calledElementResolution": "qualifiedName",
+    "messageThrowForms": "refused",
+    "deploymentErrors": "bpmnValidity",
+    "handlerEscalation": "passesHandler",
+    "defaultRetryCycle": null,
+    "inertExtensions": []
   },
   "elements": [
     {
@@ -172,7 +198,9 @@
           "subscription": null,
           "outgoing": [
             "Flow_Start"
-          ]
+          ],
+          "initiator": null,
+          "formRef": null
         }
       }
     },
@@ -199,7 +227,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -218,6 +247,10 @@
             "defaultFlow": null,
             "asyncBefore": false,
             "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": [],
             "boundaries": []
           }
         }
@@ -246,7 +279,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -265,6 +299,10 @@
             "defaultFlow": null,
             "asyncBefore": false,
             "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": [],
             "boundaries": []
           }
         }
@@ -293,7 +331,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -312,6 +351,10 @@
             "defaultFlow": null,
             "asyncBefore": false,
             "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": [],
             "boundaries": []
           }
         }
@@ -381,5 +424,6 @@
   "variables": [],
   "processes": [],
   "executable": true,
-  "decisionResources": []
+  "decisionResources": [],
+  "retainedExtensions": []
 }

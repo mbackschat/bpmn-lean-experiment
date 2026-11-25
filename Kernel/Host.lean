@@ -1,7 +1,6 @@
 module
 
 public import Kernel.Hooks
-public import Kernel.IL.Paths
 public import Kernel.IL.Timer
 
 /-! # Host interface
@@ -151,7 +150,7 @@ def addressesOf (waits : List OpenWait) : List WaitAddress :=
     | none, some signal => some { occurrence := wait.id, signal := some signal.address }
     | none, none => none
 
-/-- `broadcasts` are the Signals the input threw to the population (`State.outbox`), which the host publishes once the
+/-- `broadcasts` are the Signals the input threw to the population (`State.intents`), which the host publishes once the
 input commits (PC-SIGNAL-01); `addresses` are the open waits' addresses (`addressesOf`). -/
 structure View where
   status : InstanceStatus
@@ -168,16 +167,20 @@ def publicRef (program : Program) (ref : OccurrenceRef) : OccurrenceRef :=
 def publicKey (program : Program) (key : OccurrenceKey) : OccurrenceKey :=
   { key with element := program.publicId key.element }
 
+def publicName (program : Program) (name : OccurrenceName) : OccurrenceName :=
+  { name with element := program.publicId name.element }
+
 def publicTransition (program : Program) (transition : Transition) : Transition :=
   { transition with
     element := transition.element.map program.publicId
     started := transition.started.map fun fact => { fact with occurrence := publicKey program fact.occurrence }
-    ended := transition.ended.map fun (key, terminal) => (publicKey program key, terminal) }
+    ended := transition.ended.map fun (key, terminal) => (publicKey program key, terminal)
+    ready := transition.ready.map (publicKey program) }
 
 def publicFailure (program : Program) (failure : InstanceFailure) : InstanceFailure :=
   { failure with
-    occurrence := publicRef program failure.occurrence
-    related := failure.related.map fun (name, ref) => (name, publicRef program ref) }
+    occurrence := publicName program failure.occurrence
+    related := failure.related.map fun (role, name) => (role, publicName program name) }
 
 /-- An open User Task's inputs are its occurrence's input-mapped locals as they stand now, which a variable command can
 rewrite or remove while it waits (CIB projects `RuntimeService#getVariablesLocal`); an effect's arguments stay the
@@ -186,12 +189,12 @@ def currentInputs (state : State) (item : OpenItem) (view : WaitView) : WaitView
   match view.userTask with
   | none => view
   | some task =>
-    let own := state.ownVariables (state.ownScope item.occurrence item.scope)
+    let own := state.ownVariables (state.ownScope item.id.occurrence item.scope)
     { view with userTask := some { task with inputs := task.inputs.flatMap fun (name, _) => own.filter (·.1 == name) } }
 
 def openWait (program : Program) (state : State) (item : OpenItem) : OpenWait :=
-  { id := publicRef program { processInstanceId := state.instanceOf item.scope, element := item.element
-                              activation := ((state.occurrence? item.occurrence).map (·.activation)).getD 0 }
+  { id := publicRef program { processInstanceId := (state.instanceOf item.scope).text, element := item.element
+                              activation := ((state.occurrence? item.id.occurrence).map (·.activation.number)).getD 0 }
     definition := (state.slots.instances.find? (·.root == state.instanceRoot item.scope)).bind (·.definition)
     view := currentInputs state item item.kind.view }
 
@@ -201,15 +204,17 @@ def publicJournal (program : Program) (journal : List Transition) : List Transit
   journal.filterMap fun transition =>
     let started := transition.started.filter (program.publishesOccurrences ·.occurrence.element)
     let ended := transition.ended.filter (program.publishesOccurrences ·.1.element)
-    if transition.element.all program.publishesOccurrences || !started.isEmpty || !ended.isEmpty then
-      some (publicTransition program { transition with started, ended })
+    let ready := transition.ready.filter (program.publishesOccurrences ·.element)
+    if transition.element.all program.publishesOccurrences || !started.isEmpty || !ended.isEmpty || !ready.isEmpty then
+      some (publicTransition program { transition with started, ended, ready })
     else none
 
 def hostView (program : Program) (state : State) : View :=
-  let openWaits := state.openItems.map (openWait program state)
+  -- A committed state holds committed positions only, which every unit order orders alike.
+  let openWaits := (itemsInOrder (Issue.notAfter UnitKey.breadth.val) state.openItems).map (openWait program state)
   { status := state.status, failure := state.failure.map (publicFailure program), openWaits
     addresses := addressesOf openWaits
     journal := publicJournal program state.journal
-    broadcasts := state.outbox.map fun intent => { intent with origin := publicRef program intent.origin } }
+    broadcasts := state.intents.map fun intent => { intent with origin := publicName program intent.origin } }
 
 end Kernel.Host

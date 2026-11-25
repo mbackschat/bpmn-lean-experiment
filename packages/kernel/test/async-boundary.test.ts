@@ -31,7 +31,7 @@ function program(order: readonly ["Task" | "Choice", "Task" | "Choice"], marks: 
         work: "none",
         envelope: {
           incoming: [flowInto("Task")], outgoing: [outOf("Task")], inputs: [], outputs: [], boundaries: [], multiInstance: null,
-          compensationHandlers: [], forCompensation: false, defaultFlow: null, asyncBefore: marks.before, asyncAfter: marks.after,
+          compensationHandlers: [], forCompensation: false, defaultFlow: null, asyncBefore: marks.before, asyncAfter: marks.after, exclusive: null, retryCycle: null, structuredInputs: [], structuredOutputs: [],
         },
       },
     },
@@ -49,7 +49,7 @@ function program(order: readonly ["Task" | "Choice", "Task" | "Choice"], marks: 
   return {
     ...slice,
     elements: [
-      { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: [flowInto(first)] } } },
+      { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: [flowInto(first)], initiator: null, formRef: null } } },
       task,
       choice,
       { event: { header: header("End", "endEvent"), payload: { role: { throw: { record: "none" } }, placement: "finish", incoming: [flowInto("End"), "Spare"], outgoing: [], alternativeThrows: [] } } },

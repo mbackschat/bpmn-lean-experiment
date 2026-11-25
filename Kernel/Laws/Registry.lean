@@ -52,7 +52,7 @@ theorem hooks_raise : Registry.hooks.raise = Feature.Propagation.raise
         Feature.Data.writeOutputs ctx scope writes .outward state
       dropRuns := Feature.Compensation.dropWithin
       handlerRecord := Feature.Compensation.runningRecord } := by
-  simp only [Registry.hooks]
+  simp only [Registry.hooks, Registry.propagationHooks]
 
 /-- Scopes arrives at every Scope. -/
 theorem hooks_arriveScope : Registry.hooks.arriveScope = Feature.Scopes.arriveScope := by
@@ -91,6 +91,11 @@ theorem hooks_retryIncident : Registry.hooks.retryIncident = Feature.Work.retryI
 theorem hooks_cancelIncidentProcess : Registry.hooks.cancelIncidentProcess = Feature.Work.cancelIncidentProcess := by
   simp only [Registry.hooks]
 
+/-- No job fails yet: the job model's stage fills `Hooks.failJob` (AD8). -/
+theorem hooks_failJob : Registry.hooks.failJob = fun _ _ _ _ => .error (.unsupported "job-failure") := by
+  funext ctx item job state
+  simp only [Registry.hooks, Registry.jobFailureRefused]
+
 /-- Subscriptions disarms every completing occurrence. -/
 theorem hooks_leave : Registry.hooks.leave = Feature.Subscriptions.leave := by
   simp only [Registry.hooks]
@@ -105,6 +110,10 @@ theorem hooks_completed : Registry.hooks.completed = Feature.Compensation.comple
 
 /-- Compensation runs every queued trigger. -/
 theorem hooks_compensate : Registry.hooks.compensate = Feature.Compensation.compensate := by
+  simp only [Registry.hooks]
+
+/-- Compensation runs a run's readiness work (DC30). -/
+theorem hooks_compensationReady : Registry.hooks.compensationReady = Feature.Compensation.ready := by
   simp only [Registry.hooks]
 
 /-- Compensation releases every completed handler's context. -/

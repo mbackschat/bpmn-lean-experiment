@@ -3,9 +3,7 @@
  * where its search starts, and how a process instance fails. Part of `state.ts`, which re-exports it.
  */
 import { assertNever, type ElementId } from "../il/types.js";
-import { type OccurrenceRef } from "./input.js";
-import { type ScopeOccurrenceId } from "./slots.js";
-import { type Binding } from "./wait.js";
+import { type Binding, type Issue, type OccurrenceId, type OccurrenceName, type ScopeOccurrenceId } from "./slots.js";
 
 /**
  * Guarded type: `feature/propagation` owns matching on it; `feature/subscriptions`' `catches` is the cross-owner
@@ -27,14 +25,17 @@ export function raisedIsCancel(raised: Raised): boolean {
 }
 
 /**
- * Where a raised event starts its search: the throwing element, the scope occurrence it ran in, and its activation.
- * `host` is the Activity occurrence that raised it, whose boundaries are searched first; `null` for a throw Event.
+ * Where a raised event starts its search: the throwing element, the scope occurrence it ran in, its activation and
+ * `thrower`, the key of the occurrence that threw it, which the search reads to find the thrower, never its public
+ * activation. `host` is the Activity occurrence that raised it, whose boundaries are searched first; `null` for a throw
+ * Event.
  */
 export interface Origin {
   readonly element: ElementId;
   readonly scope: ScopeOccurrenceId;
-  readonly activation: number;
-  readonly host: number | null;
+  readonly activation: Issue;
+  readonly thrower: OccurrenceId;
+  readonly host: OccurrenceId | null;
   /**
    * The result an effect's business Error carries while `host` still runs, its mapped Error-path outputs not yet
    * written (`Propagation.raise`).
@@ -49,6 +50,6 @@ export interface Origin {
 export interface InstanceFailure {
   readonly code: string;
   readonly message: string | null;
-  readonly occurrence: OccurrenceRef;
-  readonly related: readonly (readonly [string, OccurrenceRef])[];
+  readonly occurrence: OccurrenceName;
+  readonly related: readonly (readonly [string, OccurrenceName])[];
 }

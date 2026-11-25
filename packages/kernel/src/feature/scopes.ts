@@ -26,6 +26,7 @@ import {
   type Subscription,
 } from "../il/types.js";
 import {
+  scopeOccurrenceParent,
   FailureTag,
   SignalTag,
   WriteRule,
@@ -43,10 +44,10 @@ import {
   type ScopeOccurrence,
   type State,
   SemanticCause,
-  semanticFailure,
+  semanticFailure, ownVariables,
 } from "../state.js";
 import {
-  clearInside, ctxOutputReads, ctxRequireMappings, ctxRequireMappingsWith, evalContext, ownVariables, type Ctx,
+  clearInside, ctxOutputReads, ctxPositionLe, ctxRequireMappings, ctxRequireMappingsWith, evalContext, type Ctx,
   type ScopeEntry,
 } from "../hooks.js";
 
@@ -134,7 +135,7 @@ export function arriveScope(ctx: Ctx, header: Header, payload: ScopePayload, occ
       const read = ctx.eventStart(payload);
       if (read === null) return semanticFailure(SemanticCause.Invariant, "event-subprocess-without-start-reading");
       const keep = entry.inner === null ? [occurrence.id] : [occurrence.id, entry.inner];
-      const cleared = read[1] ? clearInside(state, occurrence.scope, keep) : state;
+      const cleared = read[1] ? clearInside(state, ctxPositionLe(ctx, state), occurrence.scope, keep) : state;
       return enter(ctx, header, payload, occurrence, entry, cleared);
     }
   }
@@ -150,7 +151,8 @@ export function completeScope(
   owner: Occurrence,
   state: State,
 ): Outcome {
-  const outer = scope.parent === null ? [] : visible(state, ctx.program, scope.parent);
+  const parent = scopeOccurrenceParent(scope);
+  const outer = parent === null ? [] : visible(state, ctx.program, parent);
   const reads = ctxOutputReads(ctx, state.logicalTimeMs, ownVariables(state, scope.id), [], outer);
   const outputs = ctxRequireMappingsWith(ctx, reads, payload.envelope.outputs);
   if (!outputs.ok) return outputs;

@@ -9,7 +9,7 @@
 import {
   Evaluator, ExpressionTag, InstanceCountTag, MappingDialect, assertNever, elementEnvelope, elementScope, firstOf, integerLexeme,
   multiInstanceCounterNames, programElement, programProcessOf, type Envelope, type Expression, type Flow, type Header,
-  type Mapping, type MultiInstance, type Program,
+  type Mapping, type MultiInstance, type Program, type Value, ValueTag,
 } from "../il/types.js";
 import {
   JuelBinary, JuelCallTag, JuelNodeTag, juelMethodCounts, type JuelCall, type JuelFunctionNode, type JuelNode,
@@ -140,6 +140,28 @@ export function juelNodes(nodes: readonly JuelNode[], site: Site = outsideInstan
 /** The language the reader gives a JUEL text outside the pinned grammar (`kernel-reader/data.ts`). */
 const juelLanguage = "urn:cibseven:expression-language:juel";
 
+/** A literal value: a Double or a Date at any depth is refused until A3 gives the kernel their meaning. */
+function literal(value: Value): string | null {
+  switch (value.tag) {
+    case ValueTag.Double:
+      return "value.double";
+    case ValueTag.Date:
+      return "value.date";
+    case ValueTag.List:
+      return firstOf(value.items, literal);
+    case ValueTag.Map:
+      return firstOf(value.entries, ([, item]) => literal(item));
+    case ValueTag.Null:
+    case ValueTag.Bool:
+    case ValueTag.Int:
+    case ValueTag.Decimal:
+    case ValueTag.String:
+    case ValueTag.StringList:
+      return null;
+  }
+  return assertNever(value);
+}
+
 /**
  * A Multi-Instance loop expression under `Evaluator.juel`: JUEL, a variable read or text. CIB reads no declared
  * language there (`BpmnParse.java:1824-1838`), so a declared one is refused; `counters` admits the counter names, which
@@ -152,7 +174,7 @@ export function loopExpression(counters: boolean, expression: Expression): strin
     case ExpressionTag.Variable:
       return juelName({ ...outsideInstances, counters }, expression.name);
     case ExpressionTag.Literal:
-      return null;
+      return literal(expression.value);
     case ExpressionTag.SimpleBoolean:
       return "expression.outsideJuel";
     case ExpressionTag.Foreign:
@@ -263,7 +285,7 @@ export function mapping(evaluator: Evaluator, site: Site, entry: Mapping): strin
     case ExpressionTag.SimpleBoolean:
       return evaluator === Evaluator.Juel ? "expression.outsideJuel" : null;
     case ExpressionTag.Literal:
-      return null;
+      return literal(source.value);
     case ExpressionTag.Variable:
       return evaluator === Evaluator.Juel ? juelName(site, source.name) : null;
   }
@@ -279,12 +301,20 @@ export function mappings(evaluator: Evaluator, site: Site, list: readonly Mappin
 }
 
 /**
+ * A parameter whose value is a `camunda:list`, `map` or `script` (`BpmnParseUtil.java:152-239`) produces a value no
+ * kernel mapping builds, so it is refused while carried (a forward-compatible restriction, AD3).
+ */
+export function structuredParameters(fields: Envelope): string | null {
+  return fields.structuredInputs.length === 0 && fields.structuredOutputs.length === 0 ? null : "mapping.structuredParameter";
+}
+
+/**
  * An Activity's default flow is read by `feature/flow.ts` `ownFlows` (PC-CF-07). The asynchronous continuations are
  * admitted: `step.ts` reads them as transaction boundaries (CIB-EXT-0027). The inputs, the outputs and the loop each
  * have their site.
  */
 export function envelope(evaluator: Evaluator, inputs: Site, outputs: Site, loop: Site, fields: Envelope): string | null {
-  return mappings(evaluator, inputs, fields.inputs) ?? mappings(evaluator, outputs, fields.outputs) ??
+  return structuredParameters(fields) ?? mappings(evaluator, inputs, fields.inputs) ?? mappings(evaluator, outputs, fields.outputs) ??
     (fields.multiInstance === null ? null : loopItems(loop, fields.multiInstance));
 }
 

@@ -115,9 +115,45 @@ export interface EffectDetail {
   readonly send: SendDescriptor | null;
 }
 
+/**
+ * The job of an `asyncBefore` continuation no effect stands for, which the kernel runs as an input of its own (AD8): due
+ * at `dueMs`, with `retries` the executions left once one failed and `failures` its incidents. No feature opens a job
+ * item until the job model's stage fills `Hooks.failJob`; the shape is here so that stage changes no state shape.
+ */
+export interface JobDetail {
+  readonly dueMs: number;
+  readonly retries: number | null;
+  readonly failures: number;
+}
+
+/**
+ * A failed job no effect stands for, which the kernel runs as an input of its own (AD8): an asynchronous continuation's
+ * (`JobDetail`), or a Timer's firing, which CIB runs as a job too (`TimerEntity` is a `JobEntity`; `timer-job-failure`).
+ * No feature opens an incident of either until the job model's stage does; the shapes are here so that stage changes no
+ * state shape.
+ */
+export enum JobSubjectTag {
+  Continuation = "continuation",
+  Timer = "timer",
+}
+
+export type JobSubject =
+  | { readonly tag: JobSubjectTag.Continuation; readonly detail: JobDetail }
+  | { readonly tag: JobSubjectTag.Timer; readonly detail: TimerDetail };
+
+/** What an incident's failure belongs to: an effect, or a job the kernel runs itself. */
+export enum IncidentSubjectTag {
+  Effect = "effect",
+  Job = "job",
+}
+
+export type IncidentSubject =
+  | { readonly tag: IncidentSubjectTag.Effect; readonly detail: EffectDetail }
+  | { readonly tag: IncidentSubjectTag.Job; readonly job: JobSubject };
+
 /** `cancellable` publishes the `cancelIncidentProcess` interaction beside `retryIncident`. */
 export interface IncidentDetail {
-  readonly effect: EffectDetail;
+  readonly subject: IncidentSubject;
   readonly generation: number;
   readonly cancellable: boolean;
 }
@@ -134,6 +170,7 @@ export enum OpenKindTag {
   Timer = "timer",
   Effect = "effect",
   Incident = "incident",
+  Job = "job",
 }
 
 export type OpenKind =
@@ -143,7 +180,8 @@ export type OpenKind =
   | { readonly tag: OpenKindTag.Conditional; readonly detail: ConditionalWaitDetail }
   | { readonly tag: OpenKindTag.Timer; readonly detail: TimerDetail }
   | { readonly tag: OpenKindTag.Effect; readonly detail: EffectDetail }
-  | { readonly tag: OpenKindTag.Incident; readonly detail: IncidentDetail };
+  | { readonly tag: OpenKindTag.Incident; readonly detail: IncidentDetail }
+  | { readonly tag: OpenKindTag.Job; readonly detail: JobDetail };
 
 /** Guarded type: `step.ts` owns matching on it. The inputs a host can submit, one per `Input` constructor. */
 export enum InputTag {
@@ -152,6 +190,7 @@ export enum InputTag {
   Deliver = "deliver",
   TimerFire = "timerFire",
   EffectResult = "effectResult",
+  CancelInstance = "cancelInstance",
 }
 
 /**
@@ -172,6 +211,7 @@ export interface WaitView {
   readonly userTask: UserTaskDetail | null;
   readonly effect: EffectDetail | null;
   readonly incident: IncidentDetail | null;
+  readonly job: JobDetail | null;
 }
 
 const emptyView: WaitView = {
@@ -188,6 +228,7 @@ const emptyView: WaitView = {
   userTask: null,
   effect: null,
   incident: null,
+  job: null,
 };
 
 export function openKindView(kind: OpenKind): WaitView {
@@ -219,6 +260,9 @@ export function openKindView(kind: OpenKind): WaitView {
       return { ...emptyView, input: InputTag.EffectResult, published: ["effect", 3], effect: kind.detail };
     case OpenKindTag.Incident:
       return { ...emptyView, input: InputTag.Command, published: ["incident", 4], incident: kind.detail };
+    // No `deadlineMs`: a Timer firing finds no job item until the job model's stage fills `Hooks.failJob` (AD8).
+    case OpenKindTag.Job:
+      return { ...emptyView, input: InputTag.TimerFire, published: ["job", 5], job: kind.detail };
   }
   return assertNever(kind);
 }

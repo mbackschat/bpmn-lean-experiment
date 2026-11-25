@@ -30,6 +30,8 @@ everything, values that violate it.
 
 namespace Kernel.Laws.Scopes
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel
 open Kernel.Laws.State (ClearsInside)
 
@@ -42,11 +44,11 @@ def Enters (isScope : Bool) (arriving : Occurrence) (inputs : List (String × Va
   isScope = true → ∃ fresh ∈ after.scopes, (∀ old ∈ before.scopes, old.id ≠ fresh.id) ∧
     fresh.occurrence = some arriving.id ∧ fresh.parent = some arriving.scope ∧
     (∀ other ∈ after.scopes, other.occurrence = some arriving.id → other.id = fresh.id) ∧
-    ∀ locals ∈ after.variables, locals.scope = fresh.id → locals.entries = inputs
+    ∀ entries, after.variables[fresh.id]? = some entries → entries = Variables.ofBindings inputs
 
 /-- An element's next activation in an instance (`SRE-FRESH-01`): one greater than the count of its earlier
 occurrences there, the first being 1, so no identity is reused. -/
-def NextActivation (processInstance : String) (element : ElementId) (counts : List ActivationCount) (activation : Nat) : Prop :=
+def NextActivation (processInstance : InstanceName) (element : ElementId) (counts : List ActivationCount) (activation : Nat) : Prop :=
   (∀ counter ∈ counts, counter.processInstance = processInstance → counter.element = element → counter.role = .element →
     activation = counter.count + 1) ∧
   ((∀ counter ∈ counts, ¬ (counter.processInstance = processInstance ∧ counter.element = element ∧ counter.role = .element)) →
@@ -58,8 +60,8 @@ def NextActivation (processInstance : String) (element : ElementId) (counts : Li
 occurrence and no parked join or held wait (`SUBPROC-QUIESCE-01`); a passive item, a dormant Event Sub-Process start,
 keeps nothing alive. -/
 def Idle (s : State) (scope : ScopeOccurrenceId) : Prop :=
-  (∀ token ∈ s.tokens, token.busyScope ≠ scope) ∧
-  (∀ item ∈ s.openItems, item.passive = false → item.scope ≠ scope) ∧
+  (∀ token ∈ Laws.State.allQueuedTokens s, token.busyScope ≠ scope) ∧
+  (∀ item ∈ itemList s.openItems, item.passive = false → item.scope ≠ scope) ∧
   (∀ occurrence ∈ s.occurrences, occurrence.begun = true → occurrence.scope ≠ scope) ∧
   (∀ child ∈ s.scopes, child.parent ≠ some scope) ∧
   (∀ join ∈ s.slots.parked, join.scope ≠ scope) ∧ ∀ wait ∈ s.slots.held, wait.scope ≠ scope
@@ -74,7 +76,7 @@ in `parent`, every other token kept (`SCPH-EXIT-01`, `NSC-QUIESCE-01`). -/
 def ContinuesOnce (scope parent : ScopeOccurrenceId) (outgoing : List FlowId) (before after : State) : Prop :=
   Idle before scope →
     (∀ left ∈ after.scopes, left.id ≠ scope) ∧
-    ∃ kept, after.tokens = kept ++ outgoing.map (Token.flow · parent) ∧ ∀ token ∈ kept, token ∈ before.tokens
+    ∃ kept, Laws.State.allQueuedTokens after = kept ++ outgoing.map (Token.flow · parent) ∧ ∀ token ∈ kept, token ∈ Laws.State.allQueuedTokens before
 
 /-- A command addressed to an occurrence that is no longer live (`live = false`), a completed Scope's or an earlier
 iteration's, is rejected (`SUBPROC-REFUSE-01`, `SRE-STALE-01`). -/
@@ -85,19 +87,19 @@ def StaleRejected (live : Bool) (result : Except Failure State) : Prop :=
 
 /-- A Terminate End (`terminates`) arriving in `scope` as occurrence `own` clears the scope occurrence, keeping it and
 only its own occurrence (`TEND-REGION-01`, §13.5.6). -/
-def TerminateClears (terminates : Bool) (scope : ScopeOccurrenceId) (own : Nat) (before after : State) : Prop :=
+def TerminateClears (terminates : Bool) (scope : ScopeOccurrenceId) (own : OccurrenceId) (before after : State) : Prop :=
   terminates = true → ClearsInside before after scope [own]
 
 /-- An interrupting Event Sub-Process start (`interrupting`) clears its parent scope occurrence, keeping only the
 handler's occurrence and its start's reservation (`kept`) (§13.5.4, IMESP). -/
-def InterruptingStart (interrupting : Bool) (parent : ScopeOccurrenceId) (kept : List Nat) (before after : State) :
+def InterruptingStart (interrupting : Bool) (parent : ScopeOccurrenceId) (kept : List OccurrenceId) (before after : State) :
     Prop :=
   interrupting = true → ClearsInside before after parent kept
 
 /-- A non-interrupting one leaves every occurrence and open item of its parent running. -/
 def NonInterruptingStart (interrupting : Bool) (before after : State) : Prop :=
   interrupting = false →
-    (∀ occurrence ∈ before.occurrences, occurrence ∈ after.occurrences) ∧ ∀ item ∈ before.openItems, item ∈ after.openItems
+    (∀ occurrence ∈ before.occurrences, occurrence ∈ after.occurrences) ∧ ∀ item ∈ itemList before.openItems, item ∈ itemList after.openItems
 
 /-! ## The state invariant under Scopes' hooks
 
@@ -117,19 +119,19 @@ structure ScopesOps (program : Program) (inv : State → Prop) : Prop where
   /-- An interrupting Event Sub-Process's clearing of the scope occurrence its begun occurrence runs in, keeping that
   occurrence and its start Event's reservation, which lies there; the occurrence stands and the reservation stays
   claimable there. -/
-  clear : ∀ state occurrence (inner : Option Nat), inv state → occurrence ∈ state.occurrences →
+  clear : ∀ le state occurrence (inner : Option OccurrenceId), inv state → occurrence ∈ state.occurrences →
     occurrence.begun = true →
     (∀ id ∈ inner.toList, Laws.State.Beginnable state occurrence.scope id ∧ Laws.State.Unclaimed state id ∧
       ∀ found ∈ state.occurrences, found.id = id → found.scope = occurrence.scope) →
-    inv (state.clearInside occurrence.scope (occurrence.id :: inner.toList)) ∧
-      occurrence ∈ (state.clearInside occurrence.scope (occurrence.id :: inner.toList)).occurrences ∧
+    inv (state.clearInside le occurrence.scope (occurrence.id :: inner.toList)) ∧
+      occurrence ∈ (state.clearInside le occurrence.scope (occurrence.id :: inner.toList)).occurrences ∧
       ∀ id ∈ inner.toList,
-        Laws.State.Beginnable (state.clearInside occurrence.scope (occurrence.id :: inner.toList)) occurrence.scope id ∧
-        Laws.State.Unclaimed (state.clearInside occurrence.scope (occurrence.id :: inner.toList)) id
+        Laws.State.Beginnable (state.clearInside le occurrence.scope (occurrence.id :: inner.toList)) occurrence.scope id ∧
+        Laws.State.Unclaimed (state.clearInside le occurrence.scope (occurrence.id :: inner.toList)) id
   /-- A Scope's occurrence entered below the scope occurrence its begun occurrence runs in, which owns it and runs its
   element: the occurrences stay, the entered scope occurrence stands, and a reservation claimable in the parent is
   claimable in it. -/
-  enter : ∀ state element locals occurrence (inner : Option Nat), inv state → occurrence ∈ state.occurrences →
+  enter : ∀ state element locals occurrence (inner : Option OccurrenceId), inv state → occurrence ∈ state.occurrences →
     occurrence.begun = true → element = occurrence.element →
     (∀ id ∈ inner.toList, Laws.State.Beginnable state occurrence.scope id ∧ Laws.State.Unclaimed state id) →
     inv (state.enterScope element occurrence.scope locals (some occurrence.id)).1 ∧
@@ -155,13 +157,13 @@ structure ScopesOps (program : Program) (inv : State → Prop) : Prop where
     (∀ id ∈ Laws.State.names request, Laws.State.Beginnable state request.scope id ∧ Laws.State.Unclaimed state id) →
     Laws.Flow.BeginAnchored inv program state request → inv (state.signal (.begin request))
   /-- An arming keeps the scope occurrences and leaves reservations claimable. -/
-  armed : ∀ state host element hostScope scope (inner : Option Nat),
+  armed : ∀ state host element hostScope scope (inner : Option OccurrenceId),
     (∀ id ∈ inner.toList, Laws.State.Beginnable state scope id ∧ Laws.State.Unclaimed state id) →
     (state.signal (.arm host element hostScope)).scopes = state.scopes ∧ ∀ id ∈ inner.toList,
       Laws.State.Beginnable (state.signal (.arm host element hostScope)) scope id ∧
       Laws.State.Unclaimed (state.signal (.arm host element hostScope)) id
   /-- An arming of Event Sub-Process starts keeps the scope occurrences and leaves reservations claimable. -/
-  scopeArmed : ∀ state armed scope (inner : Option Nat),
+  scopeArmed : ∀ state armed scope (inner : Option OccurrenceId),
     (∀ id ∈ inner.toList, Laws.State.Beginnable state scope id ∧ Laws.State.Unclaimed state id) →
     (state.signal (.armScope armed)).scopes = state.scopes ∧ ∀ id ∈ inner.toList,
       Laws.State.Beginnable (state.signal (.armScope armed)) scope id ∧
@@ -215,12 +217,13 @@ theorem implicitBegins_keeps {inv : State → Prop} {program : Program} (ops : S
 /-- A scope occurrence entered for an occurrence belongs to it, runs the element it was entered for, lies in the scope
 occurrence it was entered in, and calls no instance. -/
 theorem enterScope_owned (state : State) (element : ElementId) (parent : ScopeOccurrenceId)
-    (locals : List (String × Value)) (id : Nat) :
+    (locals : List (String × Value)) (id : OccurrenceId) :
     ∃ entry ∈ (state.enterScope element parent locals (some id)).1.scopes,
       entry.id = (state.enterScope element parent locals (some id)).2 ∧ entry.occurrence.isSome ∧
         entry.element = some element ∧ entry.parent = some parent ∧ entry.calledInstance = none := by
   rw [Laws.State.enterScope_eq]
-  exact ⟨_, List.mem_append_right _ (List.mem_singleton_self _), rfl, rfl, rfl, rfl, rfl⟩
+  exact ⟨_, Laws.State.mem_scopeList.mpr ⟨_, Std.ExtTreeMap.getElem?_insert_self⟩, rfl, rfl, rfl,
+    Laws.State.ScopeOccurrenceId.parent?_child _ _ _, rfl⟩
 
 /-- The start Event `Feature.Scopes.innerStart?` chooses is a child of the Scope. -/
 theorem innerStart?_child {ctx : Ctx} {scope start : ElementId} {payload : ScopePayload}
@@ -360,11 +363,11 @@ theorem arriveScope_keeps {inv : State → Prop} {ctx : Ctx} (ops : ScopesOps ct
         dsimp only at ran
         cases interrupting
         · exact enter_keeps ops holds member begun named claimable lies ran
-        · obtain ⟨cleared, stays, clearedReady⟩ := ops.clear state occurrence entry.inner holds member begun ready
+        · obtain ⟨cleared, stays, clearedReady⟩ := ops.clear ctx.positionLe state occurrence entry.inner holds member begun ready
           refine enter_keeps ops cleared stays begun named clearedReady (fun found inside reserved => ?_) ran
-          obtain ⟨_, shape⟩ := Laws.State.clearInside_eq state occurrence.scope (occurrence.id :: entry.inner.toList)
+          obtain ⟨_, shape⟩ := Laws.State.clearInside_eq (le := ctx.positionLe) state occurrence.scope (occurrence.id :: entry.inner.toList)
           rw [shape] at inside
-          exact lies found (List.mem_filter.mp inside).1 reserved
+          exact lies found (Laws.State.mem_occurrenceList_filter_val.mp inside).1 reserved
 
 /-! ## Cancellation
 
@@ -375,43 +378,46 @@ the registered hooks in `Kernel.Proofs.Cancellation.Registered`, from `Laws.Prop
 
 /-- A clearing that keeps the instance identity is a `ClearsInside` transition: what `Laws.State.Cleared` keeps is what
 lies outside `scope` or is kept, and it adds nothing. -/
-theorem cleared_clears {before after : State} {scope : ScopeOccurrenceId} {keep : List Nat}
+theorem cleared_clears {before after : State} {scope : ScopeOccurrenceId} {keep : List OccurrenceId}
     (cleared : Laws.State.Cleared before after scope keep) (named : after.instanceId = before.instanceId) :
     ClearsInside before after scope keep where
   scopeStays entry member same := (cleared.scopes entry).mpr ⟨member, fun strictly => strictly.2 same⟩
   scopesOutside entry member outside := (cleared.scopes entry).mpr ⟨member, outside⟩
   occurrencesOutside occurrence member outside := (cleared.occurrences occurrence).mpr ⟨member, .inl outside⟩
-  itemsOutside item member outside := (cleared.openItems item).mpr ⟨member, .inl outside⟩
-  variablesOutside variables member outside :=
-    (cleared.variables variables).mpr ⟨member, fun strictly => outside strictly.1⟩
-  variablesOwn variables member same := (cleared.variables variables).mpr ⟨member, fun strictly => strictly.2 same⟩
+  itemsOutside item member outside := (cleared.items item).mpr ⟨member, .inl outside⟩
+  variablesOutside x entries held outside := (cleared.variables x entries).mpr ⟨held, fun strictly => outside strictly.1⟩
+  variablesOwn entries held := (cleared.variables scope entries).mpr ⟨held, fun strictly => strictly.2 rfl⟩
   tokensOutside token member outside := (cleared.tokens token).mpr ⟨member, outside⟩
   scopesInside entry member strictly := absurd strictly ((cleared.scopes entry).mp member).2
   occurrencesInside occurrence member within :=
     ((cleared.occurrences occurrence).mp member).2.resolve_left (· within)
-  itemsInside item member within := ((cleared.openItems item).mp member).2.resolve_left (· within)
-  variablesInside variables member strictly := absurd strictly ((cleared.variables variables).mp member).2
+  itemsInside item member within := ((cleared.items item).mp member).2.resolve_left (· within)
+  variablesInside x member strictly := by
+    obtain ⟨entries, held⟩ := Option.isSome_iff_exists.mp (Std.ExtTreeMap.mem_iff_isSome_getElem?.mp member)
+    exact absurd strictly ((cleared.variables x entries).mp held).2
   tokensInside token member := ((cleared.tokens token).mp member).2
-  noNewScopes _ member := cleared.scopesSublist.subset member
+  noNewScopes _ member := cleared.scopesSubset member
   noNewOccurrences _ member := cleared.occurrencesSublist.subset member
-  noNewItems _ member := cleared.openItemsSublist.subset member
-  noNewVariables _ member := cleared.variablesSublist.subset member
-  noIssue := cleared.nextIssue
+  noNewItems _ member := cleared.openItemsSub.items member
+  noNewVariables x entries held := ((cleared.variables x entries).mp held).1
+  noIssue := cleared.counters
   instanceKept := named
 
 /-- `State.clearInside` of a scope occurrence that stands in a well-formed state is a `ClearsInside` transition. -/
 theorem clearInside_clears {program : Program} {s : State} {scope : ScopeOccurrenceId}
-    (formed : Laws.State.WellFormed program s) (present : scope ∈ Laws.State.scopeIds s) (keep : List Nat) :
-    ClearsInside s (s.clearInside scope keep) scope keep :=
+    (formed : Laws.State.WellFormed program s) (present : scope ∈ Laws.State.scopeIds s) (keep : List OccurrenceId) :
+    ClearsInside s (s.clearInside le scope keep) scope keep :=
   cleared_clears (Laws.State.clearInside_cleared formed present keep) (Laws.State.clearInside_instanceId s scope keep)
 
 /-- A queued signal leaves a `ClearsInside` transition one, since the transition reads no queued signal. -/
-theorem clearsInside_signal {before after : State} {scope : ScopeOccurrenceId} {keep : List Nat}
+theorem clearsInside_signal {before after : State} {scope : ScopeOccurrenceId} {keep : List OccurrenceId}
     (clears : ClearsInside before after scope keep) (signal : Signal) :
     ClearsInside before (after.signal signal) scope keep := by
   rw [Laws.State.signal_eq]
+  have same : (itemList ({ after with batchSignals := after.batchSignals ++ [signal] } : State).openItems) = itemList after.openItems :=
+    Laws.State.items_congr rfl
   cases clears
-  constructor <;> assumption
+  constructor <;> (try rw [same]) <;> assumption
 
 /-- An Event Sub-Process's arrival at its occurrence, which stands in a well-formed state, enters its Scope on a state
 that its start's interruption, as `Ctx.eventStart` reads it (`interrupting`), made from the arrival's: interrupting, the
@@ -460,53 +466,59 @@ The states of `Kernel.Laws.State`: the root scope 0 holds the Sub-Process occurr
 the waiting occurrence 3. -/
 
 open Kernel.Laws.State (processRoot subScope subProcess innerTask outerTask innerItem outerItem rootScope childScope
-  sample cleared sample_clears survivor_rejected terminating terminated terminate_clears)
+  sample cleared sample_clears survivor_rejected terminating terminated terminate_clears rootScopes sampleScopes
+  mem_rootScopes mem_sampleScopes)
 
-def entering : State := { instanceId := "p", scopes := [rootScope], occurrences := [subProcess] }
+/- The witnesses read their scopes and occurrences through the maps' list views. -/
+attribute [local simp] Laws.State.scopes_eq Laws.State.occurrences_eq Laws.State.held_eq Laws.State.heldList_empty
+
+def entering : State := { instanceId := "p", scopeMap := rootScopes, occurrenceMap := Laws.State.ofOccurrences [subProcess] }
 
 def entered : State :=
   { entering with
-    scopes := [rootScope, childScope]
-    variables := [{ scope := subScope, entries := [("x", .int 1)] }] }
+    scopeMap := sampleScopes
+    variables := (∅ : TreeMap ScopeOccurrenceId Variables compare).insert subScope (Variables.ofBindings [("x", .int 1)]) }
 
 theorem enters_fresh : Enters true subProcess [("x", .int 1)] entering entered := fun _ =>
   ⟨childScope, by simp [entered], by simp [entering, rootScope, childScope, processRoot, subScope],
-    rfl, rfl, by simp [entered, rootScope, childScope, subProcess], by simp [entered, childScope]⟩
+    rfl, by simp [childScope, subScope, processRoot, subProcess], by simp [entered, rootScope, childScope, subProcess],
+    fun _ found => (Option.some.inj ((Std.ExtTreeMap.getElem?_insert_self (t := ∅)).symm.trans found)).symm⟩
 
-def staleLocals : ScopeVariables := { scope := subScope, entries := [("x", .int 1), ("old", .int 2)] }
+def staleLocals : Variables := Variables.ofBindings [("x", .int 1), ("old", .int 2)]
 
 /-- A re-entered Scope that still holds a local of an earlier occurrence is rejected. -/
 theorem stale_local_rejected :
-    ¬ Enters true subProcess [("x", .int 1)] entering { entered with variables := [staleLocals] } := fun law => by
+    ¬ Enters true subProcess [("x", .int 1)] entering
+      { entered with variables := (∅ : TreeMap ScopeOccurrenceId Variables compare).insert subScope staleLocals } := fun law => by
   obtain ⟨fresh, mem, rest⟩ := law rfl
   obtain ⟨_, owned, more⟩ := rest
   obtain ⟨_, _, inputs⟩ := more
   simp [entered, entering] at mem
   rcases mem with rfl | rfl
   · simp [rootScope, subProcess] at owned
-  · have := inputs staleLocals (by simp) (by simp [staleLocals, childScope])
-    simp [staleLocals] at this
+  · have := congrArg (·["old"]?) (inputs staleLocals Std.ExtTreeMap.getElem?_insert_self)
+    simp [staleLocals, Laws.State.ofBindings_eq] at this
 
-def firstCount : ActivationCount := { processInstance := "p", element := ⟨"Sub"⟩, role := .element, count := 1 }
+def firstCount : ActivationCount := { processInstance := .named "p", element := ⟨"Sub"⟩, role := .element, count := 1 }
 
 def counts : List ActivationCount := [firstCount]
 
-theorem second_traversal : NextActivation "p" ⟨"Sub"⟩ counts 2 :=
+theorem second_traversal : NextActivation (.named "p") ⟨"Sub"⟩ counts 2 :=
   ⟨by simp [counts, firstCount], fun none => absurd ⟨rfl, rfl, rfl⟩ (none firstCount (by simp [counts]))⟩
 
 /-- Reusing the first traversal's activation is rejected. -/
-theorem reused_activation_rejected : ¬ NextActivation "p" ⟨"Sub"⟩ counts 1 := fun law => by
+theorem reused_activation_rejected : ¬ NextActivation (.named "p") ⟨"Sub"⟩ counts 1 := fun law => by
   have := law.1 firstCount (by simp [counts]) rfl rfl rfl
   simp [firstCount] at this
 
-theorem first_traversal : NextActivation "p" ⟨"Sub"⟩ [] 1 := ⟨by simp, fun _ => rfl⟩
+theorem first_traversal : NextActivation (.named "p") ⟨"Sub"⟩ [] 1 := ⟨by simp, fun _ => rfl⟩
 
 theorem cleared_idle (kind : OpenKind) : Idle (cleared kind) subScope := by
-  simp [Idle, cleared, sample, outerTask, subProcess, outerItem, rootScope, childScope, processRoot, subScope]
+  simp [Idle, Laws.State.allQueuedTokens, cleared, sample, outerTask, subProcess, outerItem, rootScope, childScope, processRoot, subScope]
 
 /-- Completing a scope occurrence whose task still waits is rejected. -/
 theorem busy_completes_rejected (kind : OpenKind) : ¬ CompletesWhenIdle (sample kind) subScope true := fun law =>
-  ((law.1 rfl).2.1 (innerItem kind) (by simp [sample]) rfl) rfl
+  ((law.1 rfl).2.1 (innerItem kind) (Laws.State.mem_sample_items.mpr (.inl rfl)) rfl) rfl
 
 theorem idle_completes (kind : OpenKind) : CompletesWhenIdle (cleared kind) subScope true :=
   ⟨fun _ => cleared_idle kind, fun _ => rfl⟩
@@ -514,25 +526,25 @@ theorem idle_completes (kind : OpenKind) : CompletesWhenIdle (cleared kind) subS
 def outFlow : FlowId := ⟨"AfterSub"⟩
 
 def continued (kind : OpenKind) : State :=
-  { cleared kind with scopes := [rootScope], tokens := [Token.flow outFlow processRoot] }
+  { cleared kind with scopeMap := rootScopes, batchTokens := [Token.flow outFlow processRoot] }
 
 theorem continues_once (kind : OpenKind) : ContinuesOnce subScope processRoot [outFlow] (cleared kind) (continued kind) :=
   fun _ => ⟨by simp [continued, rootScope, processRoot, subScope], [], rfl, by simp⟩
 
 /-- Keeping the completed scope occurrence is rejected. -/
 theorem keeps_completed_rejected (kind : OpenKind) :
-    ¬ ContinuesOnce subScope processRoot [outFlow] (cleared kind) { continued kind with scopes := [rootScope, childScope] } :=
+    ¬ ContinuesOnce subScope processRoot [outFlow] (cleared kind) { continued kind with scopeMap := sampleScopes } :=
   fun law => (law (cleared_idle kind)).1 childScope (by simp) rfl
 
 /-- Continuing the parent twice is rejected. -/
 theorem continues_twice_rejected (kind : OpenKind) :
     ¬ ContinuesOnce subScope processRoot [outFlow] (cleared kind)
-      { continued kind with tokens := [Token.flow outFlow processRoot, Token.flow outFlow processRoot] } := fun law => by
+      { continued kind with batchTokens := [Token.flow outFlow processRoot, Token.flow outFlow processRoot] } := fun law => by
   obtain ⟨kept, split, keptOld⟩ := (law (cleared_idle kind)).2
   cases kept
-  · simp at split
+  · simp [Laws.State.allQueuedTokens, continued, cleared, sample] at split
   · rename_i token _
-    exact absurd (keptOld token (by simp)) (by simp [cleared, sample])
+    exact absurd (keptOld token (by simp)) (by simp [Laws.State.allQueuedTokens, cleared, sample])
 
 theorem stale_rejected : StaleRejected false (.error (.rejected "unknown-user-task")) := fun _ => ⟨_, rfl⟩
 
@@ -541,7 +553,7 @@ theorem stale_applied_rejected (kind : OpenKind) : ¬ StaleRejected false (.ok (
   obtain ⟨_, same⟩ := law rfl
   simp at same
 
-theorem terminate_witness (kind : OpenKind) : TerminateClears true subScope 8 (terminating kind) (terminated kind) :=
+theorem terminate_witness (kind : OpenKind) : TerminateClears true subScope Laws.State.endKey (terminating kind) (terminated kind) :=
   fun _ => terminate_clears kind
 
 theorem interrupting_witness (kind : OpenKind) : InterruptingStart true subScope [] (sample kind) (cleared kind) :=

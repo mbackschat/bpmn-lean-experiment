@@ -50,7 +50,7 @@ import {
   type ScriptSource,
   type WaitView,
 } from "./port.js";
-import { fromWire, toWire } from "./wire-codec.js";
+import { expandStrings, fromWire, internStrings, toWire } from "./wire-codec.js";
 
 function decoded<T>(result: { readonly ok: true; readonly value: T } | { readonly ok: false; readonly refusal: string }, what: string): T {
   if (!result.ok) throw new TypeError(`${what}: ${result.refusal}`);
@@ -72,6 +72,8 @@ function route(input: Input): Route {
     case InputTag.Deliver: return Route.Deliver;
     case InputTag.TimerFire: return Route.TimerFire;
     case InputTag.EffectResult: return Route.EffectResult;
+    // HD4: general cancellation rides the command Update.
+    case InputTag.CancelInstance: return Route.Command;
   }
   return assertNever(input);
 }
@@ -119,7 +121,7 @@ function scriptOf(program: Program, wait: WaitView): ScriptSource | null {
 export type HostInput = Readonly<{ input: Input; firing: TimerFiring | null }>;
 
 /** The kernel's owners of what the Script evaluator must match: the JavaScript format names and the String bound. */
-export { isJavascriptFormat, textBytes } from "@bpmn-lean/kernel";
+export { defaultBounds, isJavascriptFormat } from "@bpmn-lean/kernel";
 
 export const kernelPort: KernelPort<Program, State, HostInput> = {
   decodeProgram: (json) => decoded(decodeProgram(json), "program"),
@@ -153,12 +155,33 @@ export const kernelPort: KernelPort<Program, State, HostInput> = {
   },
   // The rendering is `Kernel.Run.hostViewJson`'s, which `HostView` types field by field.
   hostView: (program, state) => hostViewJson(hostView(program, state)) as unknown as HostView,
-  observation: (program, state) => observationJson(program, state) as JsonValue,
-  // Without the last input's journal and outbox: the host published them when it committed the input, and `step` empties
+  // Only a kernel defect fails an observation (an invariant failure); the host cannot publish such a state.
+  observation: (program, state) => {
+    const observed = observationJson(program, state);
+    if (!observed.ok) throw new Error(`observation-invariant: ${failureCode(observed.failure)}`);
+    return observed.value as JsonValue;
+  },
+  // Without the last input's journal and intents: the host published them when it committed the input, and `step` empties
   // both before every input (`onRunning`, `initial`), so no later input reads them; carried, they would charge the state
   // and continuation bounds with a second copy of the publication (2,066,022 of long-burst's 2,067,466 bytes, 2026-11-13).
-  encodeState: (state) => toWire({ ...state, journal: [], outbox: [] }),
+  // Nor the closure's unit-keyed families, the running micro-step's batches and the closure's issuer and issue table:
+  // every committed state holds them empty, the issuer the seed's (`orderJournal`, DC4; `queueBatch`; `compact`, DC12),
+  // and a unit key is never a wire value.
+  encodeState: (state) => {
+    const {
+      queuedTokens, queuedSignals, outboxes, transitions, batchTokens, batchSignals, batchIntents, issuing, issueNext, issued, ...committed
+    } = state;
+    if (queuedTokens !== null || queuedSignals !== null || outboxes !== null || transitions !== null) {
+      throw new Error("a committed state holds a unit key");
+    }
+    if (issued !== null || issueNext !== 0 || issuing !== null) throw new Error("a committed state holds an issue");
+    if (batchTokens.length > 0 || batchSignals.length > 0 || batchIntents.length > 0) throw new Error("a committed state holds a running batch");
+    return internStrings(toWire({ ...committed, journal: [], intents: [] }));
+  },
   // The host decodes only what `encodeState` produced for this program.
-  decodeState: (json) => fromWire(json) as State,
+  decodeState: (json): State => ({
+    ...(fromWire(expandStrings(json)) as State), batchTokens: [], batchSignals: [], batchIntents: [], queuedTokens: null, queuedSignals: null,
+    outboxes: null, transitions: null, issuing: null, issueNext: 0, issued: null,
+  }),
   scriptOf,
 };

@@ -22,8 +22,8 @@ theorem occur_ne_begin {element : ElementId} {scope : ScopeOccurrenceId} {leave 
     Signal.occur element scope leave writes rule ≠ .begin request := nofun
 
 /-- A queued compensation is no begin. -/
-theorem compensate_ne_begin {scope : ScopeOccurrenceId} {activity : Option ElementId} {trigger : OccurrenceRef}
-    {leave : Option Nat} {resume : Option Resume} {request : BeginRequest} :
+theorem compensate_ne_begin {scope : ScopeOccurrenceId} {activity : Option ElementId} {trigger : OccurrenceName}
+    {leave : Option OccurrenceId} {resume : Option Resume} {request : BeginRequest} :
     Signal.compensate scope activity trigger leave resume ≠ .begin request := nofun
 
 /-- Queued begins of one request are one request. -/
@@ -31,13 +31,13 @@ theorem begin_inj {request other : BeginRequest} (same : Signal.begin request = 
   Signal.begin.inj same
 
 /-- Queued completions that are one complete one occurrence, by one leave, with one set of writes under one rule. -/
-theorem complete_inj {id other : Nat} {leave leave' : Leave} {writes writes' : List (String × Value)}
+theorem complete_inj {id other : OccurrenceId} {leave leave' : Leave} {writes writes' : List (String × Value)}
     {rule rule' : WriteRule} (same : Signal.complete id leave writes rule = .complete other leave' writes' rule') :
     id = other ∧ leave = leave' ∧ writes = writes' ∧ rule = rule' :=
   Signal.complete.inj same
 
 /-- A queued completion is no begin, reservation or compensation. -/
-theorem complete_apart {id : Nat} {leave : Leave} {writes : List (String × Value)} {rule : WriteRule} :
+theorem complete_apart {id : OccurrenceId} {leave : Leave} {writes : List (String × Value)} {rule : WriteRule} :
     (∀ request, Signal.begin request ≠ .complete id leave writes rule) ∧
       (∀ element scope leave' writes' rule', Signal.occur element scope leave' writes' rule' ≠ .complete id leave writes rule) ∧
       ∀ scope activity trigger leave' resume, Signal.compensate scope activity trigger leave' resume ≠ .complete id leave writes rule :=
@@ -51,14 +51,14 @@ theorem write_apart {scope : ScopeOccurrenceId} {writes : List (String × Value)
   ⟨fun _ => nofun, fun _ _ _ _ _ => nofun, fun _ _ _ _ _ => nofun⟩
 
 /-- A queued arming is no begin, reservation or compensation. -/
-theorem arm_apart {host : Nat} {element : ElementId} {scope : ScopeOccurrenceId} :
+theorem arm_apart {host : OccurrenceId} {element : ElementId} {scope : ScopeOccurrenceId} :
     (∀ request, Signal.begin request ≠ .arm host element scope) ∧
       (∀ element' scope' leave writes rule, Signal.occur element' scope' leave writes rule ≠ .arm host element scope) ∧
       ∀ scope' activity trigger leave resume, Signal.compensate scope' activity trigger leave resume ≠ .arm host element scope :=
   ⟨fun _ => nofun, fun _ _ _ _ _ => nofun, fun _ _ _ _ _ => nofun⟩
 
 /-- A queued gateway arming is no begin, reservation or compensation. -/
-theorem armGateway_apart {occurrence : Nat} {gateway : ElementId} {scope : ScopeOccurrenceId} :
+theorem armGateway_apart {occurrence : OccurrenceId} {gateway : ElementId} {scope : ScopeOccurrenceId} :
     (∀ request, Signal.begin request ≠ .armGateway occurrence gateway scope) ∧
       (∀ element scope' leave writes rule, Signal.occur element scope' leave writes rule ≠ .armGateway occurrence gateway scope) ∧
       ∀ scope' activity trigger leave resume,

@@ -128,6 +128,15 @@ Locally: the Lean build of touched modules, the kernel runner, TypeScript type c
 
 In a managed sandbox, request host port-binding authorization before the first attempt to run `./scripts/verify.sh`, `./scripts/pnpm.sh run test:infrastructure`, `./scripts/pnpm.sh run test:temporal-host:hosted`, `./scripts/pnpm.sh run test:differential:hosted` or `./scripts/pnpm.sh run test:pipeline`; never probe inside the sandbox first. A loopback `EPERM` is a sandbox denial, not a port collision or test failure. Every helper process you start must terminate itself (bounded by `timeout`, a deadline or a fixed iteration count); capture each `$!` right after its own `&`.
 
+## Session scratch
+
+Scratch clones, builds and evidence live in the session scratchpad, which stays under 2 GiB (owner, 2026-11-19: about 160 scratch clones, each with its own Lean build, `node_modules`, pnpm store and caches, plus copied `kernelRun` binaries and replay outputs, reached about 200 GiB and filled the disk).
+
+- Delete a scratch clone as soon as its work is verified, after pushing its branches into one bare archive repository in the scratchpad and checking that every ref arrived; save its uncommitted work as a patch first.
+- Give a new clone its `node_modules` by APFS clone (`cp -c`) from one installed checkout instead of installing, so no clone keeps its own pnpm store.
+- Never copy `kernelRun` or other build outputs into evidence folders; record the commit and the command that rebuilds them. Delete replay, scan, pair and sample outputs once their results are in the report.
+- Do not start a heavy lane with less than 40 GiB of free disk, as macOS reports it available for important usage (`NSURLVolumeAvailableCapacityForImportantUsageKey`, which counts purgeable space such as local Time Machine snapshots); `df` and `diskutil` show only the non-purgeable part and understate it.
+
 ## Git and delivery
 
 - Preserve unrelated user changes and avoid destructive Git operations.

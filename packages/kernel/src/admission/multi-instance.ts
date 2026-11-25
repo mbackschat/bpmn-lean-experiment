@@ -226,7 +226,23 @@ export function mayRunNone(loop: MultiInstance): boolean {
   switch (count.tag) {
     case InstanceCountTag.Cardinality: {
       const expression = count.count;
-      return !(expression.tag === ExpressionTag.Literal && expression.value.tag === ValueTag.Int && expression.value.value > 0);
+      if (expression.tag !== ExpressionTag.Literal) return true;
+      const value = expression.value;
+      switch (value.tag) {
+        case ValueTag.Int:
+          return value.value <= 0;
+        case ValueTag.Null:
+        case ValueTag.Bool:
+        case ValueTag.Decimal:
+        case ValueTag.Double:
+        case ValueTag.Date:
+        case ValueTag.String:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return true;
+      }
+      return assertNever(value);
     }
     case InstanceCountTag.Collection:
     case InstanceCountTag.CountAndCollection:

@@ -23,6 +23,7 @@ import {
   assertNever,
   definitionRefEquals,
   triggerMessage,
+  triggerTimer,
   valueSourceLiteral,
   variableEventNamed,
   type Boundary,
@@ -287,6 +288,23 @@ function correlatedCatch(options: ProfileOptions, reading: Reading, subscription
 export function definitions(subscription: Subscription): string | null {
   if (subscription.parallelMultiple) return "event.parallelMultiple";
   return subscription.alternatives.length > 0 ? "event.multipleDefinitions" : null;
+}
+
+/**
+ * A catching Event's carried job settings and Data Outputs (AD3). A Timer's `camunda:exclusive`
+ * (`BpmnParse.java:3602`) and the Event's `camunda:failedJobRetryTimeCycle` (`DefaultFailedJobParseListener.java:49-80`)
+ * are refused. A Data Output of a catch with a Message must be equivalent to the Message's ItemDefinition (BPMN 2.0.2
+ * §10.4.1, §10.5.1); as a Receive Task's (`work.receive.dataOutputItem`), equivalence is read narrowly as the same
+ * ItemDefinition identifier, both absent included, and any other pair is refused (#114).
+ */
+export function carried(subscription: Subscription): string | null {
+  const timer = triggerTimer(subscription.trigger);
+  const message = triggerMessage(subscription.trigger);
+  if (timer !== null && timer.exclusive !== null) return "job.exclusive";
+  if (subscription.retryCycle !== null) return "job.retryCycle";
+  if (message !== null && message.messageRef !== null &&
+    subscription.dataOutputs.some((output) => output.itemRef !== message.itemRef)) return "event.dataOutputItem";
+  return null;
 }
 
 /** Only a Message subscription writes what its delivery carries; any other trigger's outputs would be dropped. */

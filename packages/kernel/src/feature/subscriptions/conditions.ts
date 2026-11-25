@@ -30,21 +30,23 @@ import {
   SignalTag,
   calledRoot,
   committed,
-  disarm,
   failed,
   failedWith,
   openKindView,
   ownScope,
+  scopeOccurrenceParent,
   signal,
-  subtree,
   type OpenItem,
   type Outcome,
   type Result,
   type ScopeOccurrenceId,
   type State,
   type WriteEvent,
+  itemKeyText, itemsInOrder, sameItemKey, type OccurrenceId,
 } from "../../state.js";
-import { EvaluationTag, evalContext, subscriptionOf, withdrawInside, withdrawOccurrence, type Ctx } from "../../hooks.js";
+import {
+  EvaluationTag, ctxPositionLe, disarm, evalContext, inside, subscriptionOf, withdrawInside, withdrawOccurrence, type Ctx,
+} from "../../hooks.js";
 
 /** `ownScope` of an open item: its host's own scope, else the item's scope. */
 function homeScope(state: State, item: OpenItem): ScopeOccurrenceId {
@@ -59,10 +61,26 @@ function homeScope(state: State, item: OpenItem): ScopeOccurrenceId {
 export function predicateHolds(ctx: Ctx, state: State, scope: ScopeOccurrenceId, condition: Expression): Result<boolean> {
   const evaluation = ctx.evaluate(evalContext(state, ctx.program, scope), condition);
   switch (evaluation.tag) {
-    case EvaluationTag.Value:
-      return evaluation.result.tag === ValueTag.Bool
-        ? committed(evaluation.result.value)
-        : failed(FailureTag.RolledBack, "condition-not-boolean");
+    case EvaluationTag.Value: {
+      const result = evaluation.result;
+      switch (result.tag) {
+        case ValueTag.Bool:
+          return committed(result.value);
+        case ValueTag.Double:
+        case ValueTag.Date:
+          // dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+          return failed(FailureTag.Unsupported, "value-kind");
+        case ValueTag.Null:
+        case ValueTag.Int:
+        case ValueTag.Decimal:
+        case ValueTag.String:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return failed(FailureTag.RolledBack, "condition-not-boolean");
+      }
+      return assertNever(result);
+    }
     case EvaluationTag.Failure:
       return evaluation.code === "unknown-variable" || evaluation.code === "juel.propertyNotFound"
         ? committed(false)
@@ -90,7 +108,7 @@ export function evaluateItem(ctx: Ctx, item: OpenItem, condition: ConditionTrigg
       const recorded: State = {
         ...state,
         openItems: state.openItems.map((open) =>
-          open.id === item.id ? { ...open, kind: { tag: OpenKindTag.Conditional, detail: { ...detail, lastValue: value.value } } } : open),
+          sameItemKey(open.id, item.id) ? { ...open, kind: { tag: OpenKindTag.Conditional, detail: { ...detail, lastValue: value.value } } } : open),
       };
       return committed([recorded, value.value && detail.lastValue !== true]);
     }
@@ -128,8 +146,8 @@ enum WithdrawalTag {
   Inside = "inside",
 }
 type Withdrawal =
-  | Readonly<{ tag: WithdrawalTag.Host; occurrence: number }>
-  | Readonly<{ tag: WithdrawalTag.Arms; gateway: number }>
+  | Readonly<{ tag: WithdrawalTag.Host; occurrence: OccurrenceId }>
+  | Readonly<{ tag: WithdrawalTag.Arms; gateway: OccurrenceId }>
   | Readonly<{ tag: WithdrawalTag.Inside; scope: ScopeOccurrenceId }>;
 
 /** `Withdrawal.withdrawFrom`: apply a withdrawal to `state`. */
@@ -153,11 +171,11 @@ function withdrawFrom(withdraw: Withdrawal, state: State): State {
 function region(state: State, withdraw: Withdrawal): readonly ScopeOccurrenceId[] {
   switch (withdraw.tag) {
     case WithdrawalTag.Host:
-      return state.scopes.filter((scope) => scope.occurrence === withdraw.occurrence).flatMap((scope) => subtree(state, scope.id));
+      return state.scopes.filter((scope) => scope.occurrence === withdraw.occurrence).flatMap((scope) => inside(state, scope.id));
     case WithdrawalTag.Arms:
       return [];
     case WithdrawalTag.Inside:
-      return subtree(state, withdraw.scope);
+      return inside(state, withdraw.scope);
   }
   return assertNever(withdraw);
 }
@@ -180,11 +198,13 @@ function withdrawal(ctx: Ctx, item: OpenItem): Withdrawal | null {
 }
 
 /** The open items other than `item` that firing `item` would withdraw from `state`, by identity. */
-function withdrawnBy(ctx: Ctx, state: State, item: OpenItem): readonly number[] {
+function withdrawnBy(ctx: Ctx, state: State, item: OpenItem): readonly string[] {
   const withdraw = withdrawal(ctx, item);
   if (withdraw === null) return [];
-  const kept = withdrawFrom(withdraw, state).openItems.map((open) => open.id);
-  return state.openItems.filter((open) => open.id !== item.id && !kept.includes(open.id)).map((open) => open.id);
+  const kept = withdrawFrom(withdraw, state).openItems.map((open) => itemKeyText(open.id));
+  const own = itemKeyText(item.id);
+  return itemsInOrder(ctxPositionLe(ctx, state), state.openItems).map((open) => itemKeyText(open.id))
+    .filter((open) => open !== own && !kept.includes(open));
 }
 
 /** The refusal of a contest the ranking leaves undecided: the Event-Based Gateway code when it holds an arm. */
@@ -200,7 +220,7 @@ function contestOf(
 ): readonly OpenItem[] {
   let current = members;
   for (let left = fuel; left > 0; left -= 1) {
-    const grown = fired.filter((item) => current.some((member) => member.id === item.id || linked(member, item)));
+    const grown = fired.filter((item) => current.some((member) => sameItemKey(member.id, item.id) || linked(member, item)));
     if (grown.length === current.length) return current;
     current = grown;
   }
@@ -220,10 +240,10 @@ function walk(
   let live = contest;
   const firings: OpenItem[] = [];
   const fire = (member: OpenItem): void => {
-    live = live.filter((other) => other.id !== member.id && !withdraws(member, other));
+    live = live.filter((other) => !sameItemKey(other.id, member.id) && !withdraws(member, other));
     firings.push(member);
   };
-  for (const member of pending) if (live.some((other) => other.id === member.id)) fire(member);
+  for (const member of pending) if (live.some((other) => sameItemKey(other.id, member.id))) fire(member);
   for (const choice of ctx.conditionChoices) {
     const listed = live.filter((member) => programPublicId(ctx.program, member.element) === choice.element);
     // dynamic-only: which Conditions hold at one evaluation is the run's data
@@ -243,7 +263,7 @@ function overtakes(ctx: Ctx, state: State, sequence: readonly OpenItem[]): boole
   return sequence.some((later, index) => {
     const withdraw = withdrawal(ctx, later);
     const removed = withdraw === null ? [] : region(state, withdraw);
-    return sequence.slice(0, index).some((earlier) => earlier.id !== later.id && removed.includes(earlier.scope));
+    return sequence.slice(0, index).some((earlier) => !sameItemKey(earlier.id, later.id) && removed.includes(earlier.scope));
   });
 }
 
@@ -262,23 +282,24 @@ export function resolveContests(
 ): Result<readonly OpenItem[]> {
   const pending = earlier.filter((item) => withdrawal(ctx, item) !== null);
   const gone = pending.flatMap((item) => withdrawnBy(ctx, state, item));
-  const fired = offered.filter((item) => !gone.includes(item.id));
-  const takes = new Map(fired.map((item) => [item.id, withdrawnBy(ctx, state, item)] as const));
-  const withdraws = (member: OpenItem, other: OpenItem): boolean => (takes.get(member.id) ?? []).includes(other.id);
+  const fired = offered.filter((item) => !gone.includes(itemKeyText(item.id)));
+  const takes = new Map(fired.map((item) => [itemKeyText(item.id), withdrawnBy(ctx, state, item)] as const));
+  const withdraws = (member: OpenItem, other: OpenItem): boolean =>
+    (takes.get(itemKeyText(member.id)) ?? []).includes(itemKeyText(other.id));
   const firings: OpenItem[] = [];
-  const handled: number[] = [];
+  const handled: string[] = [];
   for (const item of fired) {
-    if (handled.includes(item.id)) continue;
+    if (handled.includes(itemKeyText(item.id))) continue;
     const contest = contestOf((left, right) => withdraws(left, right) || withdraws(right, left), fired, fired.length, [item]);
     if (contest.length === 1) {
       firings.push(item);
-      handled.push(item.id);
+      handled.push(itemKeyText(item.id));
       continue;
     }
     const walked = walk(ctx, withdraws, pending, contest);
     if (!walked.ok) return walked;
     firings.push(...walked.value);
-    handled.push(...contest.map((member) => member.id));
+    handled.push(...contest.map((member) => itemKeyText(member.id)));
   }
   // dynamic-only: which Conditions hold at one evaluation is the run's data
   if (overtakes(ctx, state, [...earlier, ...firings])) return failed(FailureTag.Unsupported, "interrupted-before-wait");
@@ -323,7 +344,7 @@ function inSubtree(state: State, owner: ScopeOccurrenceId, scope: ScopeOccurrenc
     if (current === owner) return true;
     if (calledRoot(state, current)) return false;
     const at: ScopeOccurrenceId = current;
-    current = state.scopes.find((entry) => entry.id === at)?.parent ?? null;
+    current = scopeOccurrenceParent(state.scopes.find((entry) => entry.id === at));
   }
   return false;
 }
@@ -334,7 +355,7 @@ function depth(state: State, item: OpenItem): number {
   let current: ScopeOccurrenceId = item.scope;
   for (let fuel = state.scopes.length; fuel > 0; fuel -= 1) {
     const at: ScopeOccurrenceId = current;
-    const parent = state.scopes.find((entry) => entry.id === at)?.parent ?? null;
+    const parent = scopeOccurrenceParent(state.scopes.find((entry) => entry.id === at));
     if (parent === null) break;
     current = parent;
     levels += 1;
@@ -360,7 +381,9 @@ export function offerWrites(ctx: Ctx, writes: readonly WriteEvent[], state: Stat
         : [];
     });
     const at = current;
-    const ordered = [...offered].sort(([left], [right]) => depth(at, left) - depth(at, right) || left.id - right.id);
+    const positionLe = ctxPositionLe(ctx, at);
+    const ordered = [...offered].sort(([left], [right]) => depth(at, left) - depth(at, right) ||
+      (positionLe(left.position, right.position) ? (positionLe(right.position, left.position) ? 0 : -1) : 1));
     const fired: OpenItem[] = [];
     for (const [item, condition] of ordered) {
       const next = evaluateItem(ctx, item, condition, current);

@@ -6,7 +6,9 @@ defaultTargets = ["Kernel", "kernelRun"]
 # a private owner's included (`sparseCasesOnExt`, AuxRecursor.lean:53, unlike `sparseCasesOnInfoExt`, which keeps
 # hidden bodies' entries private), so a body edit adding or removing one rebuilt the module's public cone. Remove the
 # option once Lean filters those tags by exposed body; the build modularity specification lists the definitions that keep it.
-leanOptions = { Elab.async = false, backward.match.sparseCases = false }
+# Auto-bound implicits stay off: with them an unresolved name in a statement silently became a quantified argument
+# (eight law statements in K0.11's item-position slice, 2026-11-23); a module declares such names with `variable`.
+leanOptions = { Elab.async = false, backward.match.sparseCases = false, autoImplicit = false, relaxedAutoImplicit = false }
 # Lean's own per-process memory limit in MiB: a module whose elaboration or kernel check exceeds 2 GiB
 # fails the build (owner decision 2026-10-25). It is a command-line argument because Lake v4.34.1 passes
 # `leanOptions` through `--setup` (Lake/Build/Actions.lean), which the shell does not read for `max_memory`.

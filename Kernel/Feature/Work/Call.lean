@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Hooks
+public import Kernel.State.Called
 
 /-! # Work: Call Activities
 
@@ -41,9 +42,17 @@ def calledProcess (ctx : Ctx) (header : Header) (work : CallWork) : Except Failu
       | _ => .error (.semanticFailure .invariant "call-without-called-process")
 
 /-- Start the called instance: enter its root, arm the Call's boundaries and the called process's Event Sub-Process
-starts (`Signal.armScope`, as `Scopes.enter` arms a Sub-Process), and begin its none start. -/
+starts (`Signal.armScope`, as `Scopes.enter` arms a Sub-Process), and begin its none start. A called instance's
+identifier embeds its caller's and the Call's activation (`State.calledInstanceId`), so a deep enough chain of Calls
+outgrows `Bounds.instanceIdentityBytes` (OD14) and is refused before anything is evaluated, by the identifier its
+activation's provisional number gives (`Ctx.nameText`): exact under `declarationDepthFirst`; under `orderInvariant` the
+commit refuses what a higher number adds (`Step.boundIdentities`). -/
 def invoke (ctx : Ctx) (header : Header) (payload : ActivityPayload) (work : CallWork) (occurrence : Occurrence)
     (state : State) : Outcome := do
+  let called := ctx.nameText state
+    ((state.instanceOf occurrence.scope).calledBy (ctx.program.publicId occurrence.element) occurrence.activation)
+  if called.utf8ByteSize > ctx.program.options.bounds.instanceIdentityBytes then
+    .error (.unsupported "instance-identity-bound") -- dynamic-only: an identifier grows with its chain of Calls
   let process ← calledProcess ctx header work
   let children := ctx.program.processChildren process
   let inputs ← copy ctx "call-input-unavailable" (state.evalContext ctx.program occurrence.scope) work.inputs

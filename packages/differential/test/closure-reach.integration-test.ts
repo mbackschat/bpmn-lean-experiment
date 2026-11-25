@@ -102,7 +102,7 @@ test("admission's closure walk reaches every occurrence and counts every write o
         if (visit !== null) origins.push(visit);
       }
       const action = firing.tag === "command" ? firing.payload.action.tag : null;
-      const landing = firing.tag === "start" ? null : firing.payload.occurrence?.element ?? null;
+      const landing = firing.tag === "start" || firing.tag === "cancelInstance" ? null : firing.payload.occurrence?.element ?? null;
       const espStart = landing === null ? null : eventSubProcess(program, landing);
       if (espStart !== null) origins.push(espStart);
       for (const parked of before?.slots?.parked ?? []) {

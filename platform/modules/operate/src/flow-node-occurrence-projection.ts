@@ -35,7 +35,6 @@ export type ProjectedFlowNodeOccurrence = Readonly<{
   occurrence: FlowNodeOccurrenceKey;
   startRevision: number;
   startIndex: number;
-  owner: number;
   sourceType: string;
   terminal: FlowNodeOccurrenceTerminalKind | null;
 }>;
@@ -175,7 +174,6 @@ export function applyFlowNodeOccurrencePage(
           occurrence: structuredClone(started.occurrence),
           startRevision: transition.revision,
           startIndex,
-          owner: started.owner,
           sourceType: started.sourceType,
           terminal: null,
         });
@@ -253,13 +251,13 @@ export function canonicalBatchText(batch: FlowNodeOccurrenceBatch): string {
       revision: transition.revision,
       started: transition.started.map((started) => ({
         occurrence: keyValue(started.occurrence),
-        owner: started.owner,
         sourceType: started.sourceType,
       })),
       ended: transition.ended.map((ended) => ({
         occurrence: keyValue(ended.occurrence),
         terminal: ended.terminal,
       })),
+      ...(transition.ready === undefined ? {} : { ready: transition.ready.map(keyValue) }),
     })),
   });
 }
@@ -271,7 +269,6 @@ export function canonicalOccurrenceText(
     occurrence: keyValue(occurrence.occurrence),
     startRevision: occurrence.startRevision,
     startIndex: occurrence.startIndex,
-    owner: occurrence.owner,
     sourceType: occurrence.sourceType,
     terminal: occurrence.terminal,
   });

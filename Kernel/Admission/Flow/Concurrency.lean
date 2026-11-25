@@ -9,7 +9,8 @@ branches of a split and the instances of a parallel Multi-Instance Activity inte
 §13.3.1, §13.3.7). These checks compare the closures `Kernel.Admission.Flow.closureWalk` finds for them and refuse a
 model whose committed result would depend on that order: `flow.concurrentWrite` and `flow.concurrentInterference` for
 a split's branches and for the units one element's run fans out to (`fanOutConflict`), and the `races`
-`Kernel.Admission.MultiInstance.concurrentInstances` reads for instances.
+`Kernel.Admission.MultiInstance.concurrentInstances` reads for instances. A unit's write against another's opening or
+ending of a Conditional subscription is a race too, since nothing orders the two (CIB-OP-0016).
 -/
 
 public section
@@ -27,34 +28,18 @@ def branchClosure (reading : Reading) (program : Program) (start : FlowId) : Clo
 def wakeClosure (reading : Reading) (program : Program) (wakes : List Visit) : Closure :=
   closureWalk reading program { stop := awaitsStimulus, ascends := false } wakes
 
-/-- Whether `withdrawal` removes the element `id`: `id` lies in its region, or in a called process a Call in it
-calls. -/
-def removesElement (program : Program) (withdrawal : Withdrawal) : Nat → ElementId → Bool
-  | 0, _ => false
-  | fuel + 1, id =>
-    withdrawal.everything || match program.element? id with
-    | none => false
-    | some element =>
-      let enclosing := ancestors program program.elements.length element.header.parent
-      let top := (enclosing.getLast?).getD element
-      let inside := match withdrawal.root with
-        | some root => (withdrawal.inclusive && id == root) || enclosing.any (·.header.id == root)
-        | none => (program.element? withdrawal.source).any fun source =>
-          (program.processOf source.header).map (·.definition) == (program.processOf top.header).map (·.definition)
-      inside || ((program.processOf top.header).map fun process =>
-        (callers program process).any fun call => removesElement program withdrawal fuel call.header.id).getD false
-
 /-- Whether `own` acts on work `other` begins or completes, so their order decides what is left: it removes a region
 holding an element `other` begins, resumes a Signal subscription `other` opens, or compensates an Activity `other`
-completes. -/
+completes. A removal that ends a Conditional subscription against `other`'s write is a race, not this
+(`closureWalk`). -/
 def interferes (program : Program) (own other : Closure) : Bool :=
   own.withdraws.any (fun withdrawal =>
       other.begun.any (removesElement program withdrawal (program.elements.length + 1))) ||
     own.resumes.any other.begun.contains || own.compensates.any other.completed.contains
 
 /-- What two closures that may run in either order would answer differently: a name one writes and the other reads or
-writes (`flow.concurrentWrite`), or work one acts on that the other begins or completes
-(`flow.concurrentInterference`). -/
+writes, opening or ending a Conditional subscription counting as reading its condition's names (`closureWalk`;
+`flow.concurrentWrite`), or work one acts on that the other begins or completes (`flow.concurrentInterference`). -/
 def conflict (program : Program) (own other : Closure) : Option String :=
   if own.footprint.races other.footprint then some "flow.concurrentWrite"
   else if interferes program own other || interferes program other own then some "flow.concurrentInterference"
@@ -82,8 +67,10 @@ called instance waits, and a JUEL text as reading every name; any raise may meet
 throw any Signal subscription and any Compensation throw any record in its Scope; a later profile may take the
 interleaving as a choice input instead. A branch runs to its next wait through every Parallel and Inclusive join, so
 the work after a join two branches reach counts in both and is held against itself, though a join that synchronises
-every branch orders it after them (#162). Not counted: what an element it stops at evaluates besides its input mappings
-and Multi-Instance definition. -/
+every branch orders it after them (#162). A branch that opens or ends a Conditional subscription, by beginning,
+completing or removing what holds it, reads its condition's names (`closureWalk`), so a write of another branch on either
+side of that lifetime is refused, value-blind. Not counted: what an element it stops at evaluates besides its input
+mappings, its Multi-Instance definition and the conditions of the subscriptions it opens. -/
 def concurrentBranches (reading : Reading) (program : Program) (flow : Flow) : Option String :=
   match program.options.branchSchedule with
   | .declarationDepthFirst => none
@@ -104,17 +91,23 @@ writer, and the compensation handlers one trigger begins together. One check per
 Scope lets the Scope complete beside the other units (`Step.settle` completes idle scopes only after every signal and
 token). -/
 
-/-- The first conflict (`conflict`) between two of `units`, each against every later one. -/
-def firstConflict (program : Program) : List Closure → Option String
-  | [] => none
-  | unit :: rest => rest.findSome? (conflict program unit) <|> firstConflict program rest
-
 /-- The element a resumption's subscription hangs on: a catch, a boundary's host, an Event Sub-Process. -/
 def anchorOf (program : Program) : Visit → Option Element
   | .completes caught => some caught
   | .fires boundary => (program.boundary? boundary.id).map (·.1)
   | .enters started => some started
   | .passes _ => none
+
+/-- The elements enclosing `element` across Call boundaries: its Scopes and, from its process level, every Call of that
+process with what encloses it. -/
+def enclosingAcross (program : Program) (fuel : Nat) (element : Element) : List ElementId :=
+  match fuel with
+  | 0 => []
+  | fuel + 1 =>
+    let scopes := ancestors program program.elements.length element.header.parent
+    let top := (scopes.getLast?).getD element
+    scopes.map (·.header.id) ++ ((program.processOf top.header).map fun process =>
+      (callers program process).flatMap fun call => call.header.id :: enclosingAcross program fuel call).getD []
 
 /-- Whether a level, the children of a Scope or the elements of a process level, may hold two tokens at once: two
 starts or implicitly begun children, a split (a concurrent Gateway or any other element or boundary with several
@@ -206,9 +199,55 @@ def againstHolders (program : Program) (held : List ElementId) (wake : Closure) 
     some "flow.concurrentInterference"
   else none
 
-/-- A resumption against itself, when its subscription may be open twice at once (`holders`, `againstHolders`). -/
-def againstItself (reading : Reading) (program : Program) (visit : Visit) (wake : Closure) : Option String :=
-  againstHolders program (holders reading program visit) wake
+/-- Whether two tokens may arrive at `element` within one occurrence of its level, each beginning an occurrence while
+the other may still be open: two flows of one split lead to it, a boundary that does not interrupt, and so may fire
+beside its host and again, leads to it, a boundary leads to it along two flows, or two of the level's starts or
+implicitly begun children do (`reaches`, through Activities and boundary flows). One token reaches an element again only
+after the occurrence it left completed, so a loop without a split adds none. -/
+def arrivesTwice (program : Program) (element : Element) : Bool :=
+  let id := element.header.id
+  let arrives (source : Element) : Bool := source.header.id == id ||
+    reaches program (source.header.id :: ((source.envelope?.map (·.boundaries)).getD []).map (·.id)) id
+  let leads (flow : FlowId) : Bool := ((program.target? flow).bind program.element?).any arrives
+  let level := program.siblings element.header
+  let begun := if level.any (·.start?.isSome) then level.filter (·.start?.isSome) else level.filter (·.beginsImplicitly)
+  (begun.filter arrives).length ≥ 2 || level.any fun other =>
+    ((other.gateway?.all fun (_, payload) => (routing payload).concurrent) && (other.outgoing.filter leads).length ≥ 2) ||
+      ((other.envelope?.map (·.boundaries)).getD []).any fun boundary =>
+        (!boundary.interrupting && boundary.outgoing.any leads) || (boundary.outgoing.filter leads).length ≥ 2
+
+/-- Whether two occurrences of `element` may be open at once: a parallel loop's instances, a compensation handler, begun
+once per record, an Event Sub-Process that does not interrupt, which may start again, two tokens arriving in one
+occurrence of its level (`arrivesTwice`), or that level open twice: its Scope's, or a called process's that two Calls,
+or one Call that runs twice, call. Running out of fuel, which only a Call cycle does, answers yes. -/
+def runsTwice (reading : Reading) (program : Program) (fuel : Nat) (element : Element) : Bool :=
+  match fuel with
+  | 0 => true
+  | fuel + 1 =>
+    (((element.envelope?).bind (·.multiInstance)).isSome && !reading.nextInstance element) || handler reading element ||
+      (((element.scope?).bind fun (_, payload) => payload.kind.start?).isSome && !reading.interrupts element) ||
+      arrivesTwice program element ||
+      match element.header.parent with
+      | some parent => (program.element? parent).any (runsTwice reading program fuel)
+      | none => ((program.processOf element.header).map fun process =>
+          (callers program process).length ≥ 2 || (callers program process).any (runsTwice reading program fuel)).getD false
+
+/-- Whether two open occurrences of a subscription inside `holder`, a Scope or a Call, may lie in distinct occurrences of
+it, each completing beside the other: the holder may run twice (`runsTwice`), or a process it calls has two Calls. -/
+def heldTwice (reading : Reading) (program : Program) (holder : Element) : Bool :=
+  runsTwice reading program (program.elements.length + 1) holder ||
+    ((holder.activity?.bind fun (_, payload) => payload.work.call?).map fun work =>
+      (program.calledProcessFor program.options.calledElementResolution (program.callerDeployment holder.header) work).any
+        fun process => (callers program process).length ≥ 2).getD false
+
+/-- A resumption against itself, when its subscription may be open twice at once (`holders`, `againstHolders`), along a
+path that ascends into the completions of the Scopes and Calls that may hold the two occurrences apart (`heldTwice`,
+#194): each such holder may complete in this closure beside the other occurrence's, while one holding both completes
+only after both, as a pair's ascent stops below what the pair shares (`signalFanOut`). -/
+def againstItself (reading : Reading) (program : Program) (visit : Visit) : Option String :=
+  let apart (id : ElementId) : Bool := (program.element? id).any (heldTwice reading program)
+  againstHolders program (holders reading program visit)
+    (closureWalk reading program { stop := awaitsStimulus, ascends := true, ascendsInto := apart } [visit])
 
 /-- The walk of a resumption's or catcher's path: a branch's, stopping where it waits and passing every join. -/
 def pathOf (reading : Reading) (program : Program) (begun : List Visit) : Closure :=
@@ -227,17 +266,30 @@ program as `Kernel.Admission.Flow.beyond` counts, which the closure runs in armi
 (BPMN 2.0.2 §10.5.1 lets one Signal reach every catcher; issue #81). A resumption whose first visit removes the thrower
 (`preempts`) is not held against the continuation: that removal is a queued signal, which runs before any token the
 thrower's completion emits, whatever the schedule. A resumption that cannot be open while the thrower runs (`closedAt`)
-is dropped, and one whose subscription may be open twice at once is held against itself (`againstItself`). -/
+is dropped, and one whose subscription may be open twice at once is held against itself (`againstItself`), ascending
+into the holders that may keep its two occurrences apart. A
+resumption is compared with the continuation, and two resumptions pairwise, along paths that ascend into the
+completions of the Scopes and Calls not enclosing both (`enclosingAcross`, `Walk.ascendsInto`): one that holds only
+one of them may complete in this closure, its completion running beside the other, while one enclosing both completes
+only after both, so an ascent stops below the least Scope or Call the pair shares, and their shared completion is not
+held against itself. -/
 def signalFanOut (reading : Reading) (program : Program) (element : Element) : Option String :=
   if !((element.event?.bind (·.2.throw?)).any fun thrown => (throwView thrown).signal.isSome) then none
   else
-    let wakes := ((program.elements.flatMap (catching signalled)).filter (!closedAt reading program element ·)).map
-      fun visit => (visit, pathOf reading program [visit])
+    let wakes := (program.elements.flatMap (catching signalled)).filter (!closedAt reading program element ·)
     let own := continuation reading program element
-    (wakes.filter fun (visit, _) => !preempts reading program visit element).findSome?
-        (fun (_, wake) => conflict program own wake) <|>
-      firstConflict program (wakes.map (·.2)) <|>
-      wakes.findSome? fun (visit, wake) => againstItself reading program visit wake
+    let around (visit : Visit) : List ElementId :=
+      ((anchorOf program visit).map (enclosingAcross program (program.processes.length + 1))).getD []
+    let thrower := enclosingAcross program (program.processes.length + 1) element
+    let ascending (visit : Visit) (other : List ElementId) : Closure :=
+      let into (id : ElementId) : Bool := !((around visit).contains id && other.contains id)
+      closureWalk reading program { stop := awaitsStimulus, ascends := true, ascendsInto := into } [visit]
+    let rec pairs : List Visit → Option String
+      | [] => none
+      | visit :: rest => rest.findSome? (fun other =>
+          conflict program (ascending visit (around other)) (ascending other (around visit))) <|> pairs rest
+    (wakes.filter (!preempts reading program · element)).findSome? (fun visit => conflict program own (ascending visit thrower)) <|>
+      pairs wakes <|> wakes.findSome? (againstItself reading program)
 
 /-- Under `BranchSchedule.orderInvariant`, an Escalation thrower's continuation may not conflict with what a catcher
 that does not interrupt it runs: BPMN 2.0.2 §10.5.1 continues the thrower, an End Event's Scope included, while the
@@ -284,7 +336,7 @@ def armedOn (program : Program) (element : Element) : List Visit × List Element
     (program.calledProcessFor program.options.calledElementResolution (program.callerDeployment element.header)
       work).flatMap program.processChildren).getD []
   match element.scope? with
-  | some (header, _) => (boundaries ++ starts (program.children (some header.id)), enteredChildren program header.id)
+  | some (header, _) => (boundaries ++ starts (program.children (some header.id)), program.enteredChildren header.id)
   | none =>
     if element.start?.isSome && element.header.parent.isNone && !program.inCalledProcess element.header.id then
       (starts (program.siblings element.header), [element])
@@ -329,9 +381,9 @@ conservative bound. -/
 def writeFanOut (reading : Reading) (program : Program) (element : Element) : Option String :=
   let resumed (written : NameSet) : List (Visit × Closure) :=
     ((conditionalCatches program).filter (mayMakeTrue program written)).map fun visit => (visit, pathOf reading program [visit])
-  let written := (runs reading program element).footprint.writes
+  let written := (contribution reading program element).footprint.writes
   let inside : List Visit := if ((element.scope?).bind fun (_, payload) => payload.kind.start?).isSome then
-      (((element.scope?).map fun (header, _) => enteredChildren program header.id).getD []).map Visit.enters
+      (((element.scope?).map fun (header, _) => program.enteredChildren header.id).getD []).map Visit.enters
     else []
   let own := if written.names.isEmpty && !written.all then none
     else
@@ -352,10 +404,55 @@ def writeFanOut (reading : Reading) (program : Program) (element : Element) : Op
       (program.options.conditionalRetrigger == .eachWrite || (reads left).meets (reads right))
   let rivals := (catching conditional element).findSome? fun visit =>
     let wake := pathOf reading program [visit]
-    againstItself reading program visit wake <|>
+    againstItself reading program visit <|>
       ((conditionalCatches program).filter (together visit)).findSome? fun other =>
         conflict program wake (pathOf reading program [other])
   own <|> fired <|> rivals
+
+/-- What the instances of a looping `element` do in the closure that begins them, which
+`Kernel.Admission.MultiInstance.concurrentInstances` reads. -/
+structure InstanceClosure where
+  /-- One instance writes a name before it waits, removes the body, or resumes what a sibling instance opens, there or
+  after one broadcast resumes them all; every instance has the same closure, so it meets its own. -/
+  races : Bool
+  /-- An instance may complete in that closure, or in the one where a broadcast resumes the instances together. -/
+  completes : Bool
+
+/-- A Sub-Process instance runs from its `enteredChildren` through every join, as every unit's walk does; a task
+instance is its work, which completes at once unless it awaits a stimulus. `completes` over-approximates: a token reaching an element that neither waits nor continues, ignoring that a sibling branch of a
+Parallel split may wait, which flows a condition selects and whether a nested Call waits. -/
+def instanceClosure (reading : Reading) (program : Program) (element : Element) : InstanceClosure :=
+  let walk := closureWalk reading program { stop := awaitsStimulus, ascends := false }
+  -- An instance meets a sibling when it may remove the body, which holds them all, or act on what the sibling opens or
+  -- completes.
+  let meetsSibling (closure : Closure) : Bool :=
+    closure.withdraws.any (removesElement program · (program.elements.length + 1) element.header.id) ||
+      closure.resumes.any closure.begun.contains || closure.compensates.any closure.completed.contains
+  let conflicts (closure : Closure) : Bool := closure.footprint.races closure.footprint || meetsSibling closure
+  match element.scope? with
+  | some (header, _) =>
+    let closure := walk ((program.enteredChildren header.id).map Visit.enters)
+    -- A broadcast resumes every instance's subscription in one closure, which completes the idle instances in scope
+    -- order (`Step.settle`), so an instance completing there meets the completion condition in an order no input states.
+    let woken := if closure.wakes.isEmpty then none else some (walk closure.wakes)
+    { races := conflicts closure || woken.any conflicts, completes := closure.ends || woken.any (·.ends) }
+  | none =>
+    if awaitsStimulus element then { races := false, completes := false }
+    else
+      -- The instance's run counts as every path counts a run (`contribution`), its unhandled Error's withdrawal included.
+      let run := contribution reading program element
+      let beside := walk (beyond reading program element true)
+      { races := run.footprint.races run.footprint || meetsSibling { beside with withdraws := run.withdraws ++ beside.withdraws }
+        completes := true }
+
+/-- Whether `subject` may complete twice in one closure, so that its records there have no order and their handlers run
+together (COMPENSATION-SEMANTICS-SPEC I1 (d), DC15 (c)): it completes without waiting for an input and does not run
+once along one token's path (`runsOnce`), or it is a Multi-Instance Sub-Process whose instances may complete in one
+closure (`instanceClosure`). -/
+def completesTwice (reading : Reading) (program : Program) (subject : Element) : Bool :=
+  (!awaitsStimulus subject && !runsOnce reading program subject) ||
+    (subject.scope?.isSome && ((subject.envelope?).bind (·.multiInstance)).isSome &&
+      (instanceClosure reading program subject).completes)
 
 /-- Under `BranchSchedule.orderInvariant`, the compensation handlers one Compensation throw or Cancel End may begin
 together may not conflict: a handler's own run, without the resumption of the trigger once it completes, which comes
@@ -371,9 +468,12 @@ that pair the same way, or `a` runs once along one token's path (`runsOnce`) and
 `runsOnce` a second token completes `a` after `b` (a conditioned path from `a` to `b` beside a fork, the review's
 witness; a fork sending a second token to `a`, though every path to `b` passes `a`); without `reaches` one token
 returns to `a` through an Activity or a boundary flow; and a Scope around `a` entered again hands its parent the records
-of two occurrences, which meet in one run. A data dependency is not counted, a conservative reading. A handler runs once
-per record, so one that two distinct subjects name is held against itself too, unless their records are ordered
-(#155); an Event Sub-Process handler, whose one subject `subjectsOf` lists twice, is not. -/
+of two occurrences, which meet in one run. A data dependency is not counted, a conservative reading. Two records of one
+closure are ordered by the program's structure (`Kernel.structurallyBefore`), which admission holds to the closure's
+own order wherever `precedes` needs it (`Kernel.Admission.Flow.Order`), so the same pairs are ordered. A handler
+runs once per record, so one that two distinct subjects name is held against itself too, unless their records are
+ordered (#155), and so is one whose subject may complete twice in one closure (`completesTwice`), whose records there
+have no order (I1 (d)); an Event Sub-Process handler, whose one subject `subjectsOf` lists twice, is not. -/
 def compensationFanOut (reading : Reading) (program : Program) (element : Element) : Option String :=
   if !reading.compensates element then none
   else
@@ -383,7 +483,7 @@ def compensationFanOut (reading : Reading) (program : Program) (element : Elemen
         [Visit.enters handler]
       if awaitsStimulus handler then begun
       else
-        let run := runs reading program handler
+        let run := contribution reading program handler
         { begun with footprint := begun.footprint.union run.footprint, withdraws := run.withdraws ++ begun.withdraws
                      completed := handler.header.id :: begun.completed }
     let boundariesOf (id : ElementId) : List ElementId :=
@@ -392,13 +492,15 @@ def compensationFanOut (reading : Reading) (program : Program) (element : Elemen
       flowReaches program [first] second && (flowReaches program [second] first ||
         (!reaches program [second] first && (program.element? first).any (runsOnce reading program)))
     let joined (first second : ElementId) : Bool := flowReaches program (boundariesOf first) second || follows first second
+    let twice (subject : ElementId) : Bool := (program.element? subject).any (completesTwice reading program)
     let ordered (left right : Element) : Bool :=
       (subjectsOf program left).all fun first => (subjectsOf program right).all fun second =>
-        first == second || joined first second || joined second first
+        (first == second && !twice first) || joined first second || joined second first
     let rec pairs : List Element → Option String
       | [] => none
       | handler :: rest =>
-        let against := (if (subjectsOf program handler).eraseDups.length ≥ 2 then [handler] else []) ++ rest
+        let shared := (subjectsOf program handler).eraseDups.length ≥ 2 || (subjectsOf program handler).any twice
+        let against := (if shared then [handler] else []) ++ rest
         (against.filter (!ordered handler ·)).findSome? (fun other => conflict program (unit handler) (unit other)) <|>
           pairs rest
     pairs (handlersOf reading program element)
@@ -412,7 +514,7 @@ def implicitFanOut (reading : Reading) (program : Program) (element : Element) :
     | [] => none
     | child :: rest => branchesAgainst reading program (pathOf reading program [.enters child])
         (rest.map fun other => pathOf reading program [.enters other]) <|> pairs rest
-  ((element.scope?).map fun (header, _) => pairs (enteredChildren program header.id)).getD none
+  ((element.scope?).map fun (header, _) => pairs (program.enteredChildren header.id)).getD none
 
 /-- Whether `element` is an Inclusive join, which parks a token while a position may still reach an empty incoming flow
 (`Kernel.Feature.Flow.join`). -/
@@ -432,8 +534,8 @@ def joinHolders (reading : Reading) (program : Program) (element : Element) : Li
 
 /-- Under `BranchSchedule.orderInvariant`, the continuations of two Inclusive joins one quiescent closure may offer again
 may not conflict, nor two occurrences of one join that two occurrences of its Scope or called process may park at once
-(`joinHolders`, `againstHolders`): `Kernel.Step.reoffer?` fires the first ready one in parking order, which is the order
-earlier tokens arrived in, and runs its continuation to quiescence before it offers the next, so two joins Table 13.3
+(`joinHolders`, `againstHolders`): `Kernel.Step.reoffer?` fires the first ready one in join-slot order (DC16), which no input
+states, and runs its continuation to quiescence before it offers the next, so two joins Table 13.3
 activates by one state run in an order no input states (issue #81; P1 census, G4). Any two Inclusive joins count, a conservative bound: whether both can be
 parked and ready at once is the run's. -/
 def rejoinFanOut (reading : Reading) (program : Program) (element : Element) : Option String :=
@@ -467,41 +569,5 @@ def fanOutConflict (reading : Reading) (program : Program) (element : Element) :
   | .declarationDepthFirst => none
   | .orderInvariant => (QueuingMechanism.all.filter (·.queuedAt == .element)).findSome? fun mechanism =>
     mechanismConflict mechanism reading program element
-
-/-- What the instances of a looping `element` do in the closure that begins them, which
-`Kernel.Admission.MultiInstance.concurrentInstances` reads. -/
-structure InstanceClosure where
-  /-- One instance writes a name before it waits, removes the body, or resumes what a sibling instance opens, there or
-  after one broadcast resumes them all; every instance has the same closure, so it meets its own. -/
-  races : Bool
-  /-- An instance may complete in that closure, or in the one where a broadcast resumes the instances together. -/
-  completes : Bool
-
-/-- A Sub-Process instance runs from its `enteredChildren` through every join, as every unit's walk does; a task
-instance is its work, which completes at once unless it awaits a stimulus. `completes` over-approximates: a token reaching an element that neither waits nor continues, ignoring that a sibling branch of a
-Parallel split may wait, which flows a condition selects and whether a nested Call waits. -/
-def instanceClosure (reading : Reading) (program : Program) (element : Element) : InstanceClosure :=
-  let walk := closureWalk reading program { stop := awaitsStimulus, ascends := false }
-  -- An instance meets a sibling when it may remove the body, which holds them all, or act on what the sibling opens or
-  -- completes.
-  let meetsSibling (closure : Closure) : Bool :=
-    closure.withdraws.any (removesElement program · (program.elements.length + 1) element.header.id) ||
-      closure.resumes.any closure.begun.contains || closure.compensates.any closure.completed.contains
-  let conflicts (closure : Closure) : Bool := closure.footprint.races closure.footprint || meetsSibling closure
-  match element.scope? with
-  | some (header, _) =>
-    let closure := walk ((enteredChildren program header.id).map Visit.enters)
-    -- A broadcast resumes every instance's subscription in one closure, which completes the idle instances in scope
-    -- order (`Step.settle`), so an instance completing there meets the completion condition in an order no input states.
-    let woken := if closure.wakes.isEmpty then none else some (walk closure.wakes)
-    { races := conflicts closure || woken.any conflicts, completes := closure.ends || woken.any (·.ends) }
-  | none =>
-    if awaitsStimulus element then { races := false, completes := false }
-    else
-      -- The instance's run counts as every path counts a run (`runs`), its unhandled Error's withdrawal included.
-      let run := runs reading program element
-      let beside := walk (beyond reading program element true)
-      { races := run.footprint.races run.footprint || meetsSibling { beside with withdraws := run.withdraws ++ beside.withdraws }
-        completes := true }
 
 end Kernel.Admission.Flow.Concurrency

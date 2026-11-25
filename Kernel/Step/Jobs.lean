@@ -6,7 +6,8 @@ public import Kernel.Hooks
 
 How the failure of an input's closure becomes the input's outcome where CIB runs the work in a job rather than in
 the command: past a transaction boundary (`deferred`), in a timer firing (`timerJob`) and in the continuation an
-effect result reaches (`effectContinuation`). `Kernel.Step` applies them; none matches a guarded type.
+effect result reaches (`effectContinuation`); and the transition a failed job item commits (`jobFailure`).
+`Kernel.Step` applies them; none matches a guarded type.
 -/
 
 public section
@@ -23,7 +24,7 @@ def deferred (program : Program) (state : State) (outcome : Outcome) : Outcome :
   | .error (.rolledBack _) | .error (.semanticFailure .model _) =>
     -- dynamic-only: whether a closure fails after it crossed a boundary depends on the run's data and order
     if crossed program state then .error (.unsupported "async-boundary-failure") else outcome
-  | .error (.semanticFailure .invariant _) | .error (.rejected _) | .error (.unsupported _) | .ok _ => outcome
+  | .error (.semanticFailure .invariant _) | .error (.rejected _ _) | .error (.unsupported _) | .ok _ => outcome
 
 /-- `outcome` of a timer firing. CIB fires a timer in a job, whose failure lowers its retries and ends in an incident,
 never the rollback of a command (EXPRESSION-SEMANTICS-SPEC, failure outcomes per stimulus). Under
@@ -36,7 +37,14 @@ def timerJob (failure : ContinuationFailure) (outcome : Outcome) : Outcome :=
     -- dynamic-only: whether a firing's closure rolls back depends on the run's data
     .error (.unsupported "timer-job-failure")
   | .error (.rolledBack _), .rolledBack => outcome
-  | .error (.rejected _), _ | .error (.semanticFailure _ _), _ | .error (.unsupported _), _ | .ok _, _ => outcome
+  | .error (.rejected _ _), _ | .error (.semanticFailure _ _), _ | .error (.unsupported _), _ | .ok _, _ => outcome
+
+/-- The transition that fails the job item a Timer firing addresses (`Hooks.failJob`). `Kernel.Step` runs it on no
+input until the job model's stage (AD8) makes a job's failure an outcome of its firing. -/
+def jobFailure (hooks : Hooks) (ctx : Ctx) (data : TimerInput) (state : State) : Outcome :=
+  match itemDetail? ctx state data.occurrence (·.job) with
+  | none => .error (.rejected "unknown-job")
+  | some (item, job) => hooks.failJob ctx item job state
 
 /-- A continuation an effect result reaches that cannot go on rolls back; under a profile selecting the job-failure
 reading (`ContinuationFailure.incident`, CIB-EXT-0026, the boundary of CIB-INT-0003) it instead turns the

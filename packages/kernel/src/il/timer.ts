@@ -666,7 +666,7 @@ function cronMatches(fields: CronFields, limit: number, afterMs: number): readon
  * no occurrence a firing would refuse as `timer-occurrence-unknown`. A Cron schedule starts its matches after
  * `fromMs - 1`, since every match strictly after the origin is one `successor` reaches.
  */
-export function occurrences(originMs: number, fromMs: number, limit: number, resolved: Resolved): readonly number[] {
+export function dueInstants(originMs: number, fromMs: number, limit: number, resolved: Resolved): readonly number[] {
   switch (resolved.tag) {
     case ResolvedTag.Duration:
       return limit > 0 && originMs + resolved.ms >= fromMs ? [originMs + resolved.ms] : [];

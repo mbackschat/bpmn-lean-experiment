@@ -79,7 +79,8 @@
         "command",
         "deliver",
         "timerFire",
-        "effectResult"
+        "effectResult",
+        "cancelInstance"
       ]
     },
     "startTrigger": {
@@ -130,7 +131,8 @@
         "conditional",
         "timer",
         "effect",
-        "incident"
+        "incident",
+        "job"
       ]
     },
     "instanceStatus": {
@@ -155,6 +157,7 @@
         "activity",
         "multiInstanceBody",
         "multiInstanceInstance",
+        "multiInstanceBodyCompensationContext",
         "compensationContext"
       ]
     },
@@ -441,6 +444,18 @@
             "refused",
             "cibForms"
           ]
+        },
+        "deploymentErrors": {
+          "enum": [
+            "bpmnValidity",
+            "cibDeployment"
+          ]
+        },
+        "handlerEscalation": {
+          "enum": [
+            "passesHandler",
+            "reentersHandler"
+          ]
         }
       }
     },
@@ -470,6 +485,9 @@
         "compensation.handlerPlacement",
         "compensation.implicit",
         "compensation.processEventSubProcess",
+        "compensation.repeatsInClosure",
+        "compensation.sequentialInstancesInClosure",
+        "compensation.unorderedDependency",
         "data.itemInaccessible",
         "data.scopedItem",
         "decision.blankOutput",
@@ -496,6 +514,7 @@
         "event.condition.filter",
         "event.condition.foreign",
         "event.condition.variableEvents",
+        "event.dataOutputItem",
         "event.error.codeVariable",
         "event.error.messageVariable",
         "event.escalation.codeVariable",
@@ -515,6 +534,7 @@
         "expression.juel.syntax",
         "expression.outsideJuel",
         "expression.outsideSimpleBoolean",
+        "extension.retained",
         "flow.concurrentInterference",
         "flow.concurrentWrite",
         "flow.condition.foreign",
@@ -527,9 +547,12 @@
         "gateway.exclusive.unconditionedFlow",
         "gateway.inclusive.noOutgoingFlow",
         "il.reference",
+        "job.exclusive",
+        "job.retryCycle",
         "link.catch",
         "link.duplicateCatch",
         "mapping.expression",
+        "mapping.structuredParameter",
         "message.correlation",
         "message.correlation.channel",
         "message.correlation.keys",
@@ -562,13 +585,23 @@
         "profile.callBindingTime.invocation",
         "profile.compensationHandlerFailure.selected",
         "profile.compensationOrder.allAtOnce",
+        "profile.defaultRetryCycle",
+        "profile.deploymentErrors.cibDeployment",
         "profile.errorExitCompensation.compensatesContained",
+        "profile.handlerEscalation.reentersHandler",
+        "profile.inclusiveJoinReach.outgoingOnly.orderInvariant",
+        "profile.inertExtensions",
+        "profile.messageNames.addresses.orderInvariant",
         "profile.multiInstanceCollection.sequentialReread",
         "profile.multiInstanceCompensation.perInstance",
         "profile.multiInstanceCounters.cibLocals",
+        "profile.multiInstanceCounters.cibLocals.orderInvariant",
         "profile.multiInstanceCounters.none",
         "profile.multiInstanceInputFailure.hold",
+        "profile.raisedCallOutputs.atCalledRoot.orderInvariant",
+        "profile.signalNames.addresses.orderInvariant",
         "profile.timerZone",
+        "profile.unhandledError.endsThrowingPath.orderInvariant",
         "reader.conditionExpressionType",
         "reader.dataAssociationShape",
         "reader.dataObjectReferenceWithoutObject",
@@ -620,6 +653,8 @@
         "start.error",
         "start.error.nonInterrupting",
         "start.escalation",
+        "start.formRef",
+        "start.initiator",
         "start.messageNameExpression",
         "start.rootCombination",
         "start.signalNameExpression",
@@ -648,6 +683,8 @@
         "timer.cycle",
         "timer.date",
         "timer.duration",
+        "value.date",
+        "value.double",
         "work.call.ambiguous",
         "work.call.binding",
         "work.call.bindingExpression",
@@ -692,6 +729,7 @@
         "work.user.followUpDate",
         "work.user.formField",
         "work.user.formKey",
+        "work.user.formRef",
         "work.user.priority"
       ]
     }

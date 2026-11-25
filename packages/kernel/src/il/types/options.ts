@@ -438,6 +438,70 @@ export enum MessageThrowForms {
   CibForms = "cibForms",
 }
 
+/** Which deployment errors admission raises besides BPMN validity (AD7). */
+export enum DeploymentErrors {
+  /** BPMN 2.0.2 alone decides what deploys. */
+  BpmnValidity = "bpmnValidity",
+  /**
+   * CIB also refuses deploying forms BPMN 2.0.2 defines, such as a process without a start Event
+   * (`BpmnParse.java:966-968`, CIB-LIM-0056), each classified in the register with its own refusal code. Admission
+   * refuses the selection (`profile.deploymentErrors.cibDeployment`) until those codes exist.
+   */
+  CibDeployment = "cibDeployment",
+}
+
+/**
+ * Where the search for an Escalation raised deeper inside an Event Sub-Process that matches that same handler goes.
+ * Both readings are refused at run time today (`escalation-rethrow-reenters-handler`).
+ */
+export enum HandlerEscalation {
+  /** BPMN 2.0.2 §13.5.4: the running handler is passed and the search goes on outward. */
+  PassesHandler = "passesHandler",
+  /**
+   * CIB catches it with that handler again and re-enters it without bound (`EscalationEventDefinitionFinder.java:58-61`).
+   * Admission refuses the selection (`profile.handlerEscalation.reentersHandler`).
+   */
+  ReentersHandler = "reentersHandler",
+}
+
+/**
+ * The value domain's bounds (HD7, `docs/REWRITE-2-PROPOSAL.md`), Lean's `Bounds`: project policy, not CIB limits (the
+ * portable-values contract's "Finite limits"). A program carries them with its options, so an instance keeps the bounds
+ * it started with; `defaultBounds` are the ratified rows.
+ */
+export interface Bounds {
+  /** Container levels a value nests at most. */
+  readonly containerLevels: number;
+  /** Members of a List or a Map, and Strings of a String List, at most. */
+  readonly containerMembers: number;
+  /** Tagged value nodes of a value, the root included, at most. */
+  readonly valueNodes: number;
+  /** UTF-8 bytes of a value's canonical JSON at most. */
+  readonly canonicalBytes: number;
+  /** UTF-8 bytes of a String or a Map key at most. */
+  readonly textBytes: number;
+  /**
+   * UTF-8 bytes of a process instance's identifier at most (OD14): the host reserves room for an instance's identity
+   * across instances, so a shared bound, unlike the others, may be lowered only when no registered identity is longer
+   * (HD7).
+   */
+  readonly instanceIdentityBytes: number;
+}
+
+/** Lean's `Bounds` defaults, the one place TypeScript writes their figures. */
+export const defaultBounds: Bounds = {
+  containerLevels: 4, containerMembers: 32, valueNodes: 256, canonicalBytes: 16384, textBytes: 1024, instanceIdentityBytes: 1024,
+};
+
+/**
+ * An XML QName as the reader resolved it: the namespace its prefix is bound to (the Definitions' `targetNamespace` for
+ * an unprefixed name), and its local part, which names an element by its id (BPMN 2.0.2 §15.3.2).
+ */
+export interface QName { readonly namespace: string | null; readonly localName: string; }
+
+/** An extension attribute a profile finds inert (AD1): the BPMN element type it sits on and its expanded name. */
+export interface InertExtension { readonly elementType: string; readonly name: QName; }
+
 export interface ProfileOptions {
   readonly relations: readonly string[];
   readonly evaluator: Evaluator;
@@ -447,6 +511,7 @@ export interface ProfileOptions {
    * once, and its canonical JSON may take at most this many UTF-8 bytes (CIB-EXT-0020, `NSD-TASK-01`).
    */
   readonly scopeChainSubmissionBytes: number | null;
+  readonly bounds: Bounds;
   readonly undeclaredWrite: UndeclaredWrite;
   readonly errorPathOutputs: ErrorPathOutputs;
   readonly raisedCallOutputs: RaisedCallOutputs;
@@ -493,4 +558,17 @@ export interface ProfileOptions {
   readonly conditionalStart: ConditionalStart;
   readonly calledElementResolution: CalledElementResolution;
   readonly messageThrowForms: MessageThrowForms;
+  readonly deploymentErrors: DeploymentErrors;
+  readonly handlerEscalation: HandlerEscalation;
+  /**
+   * CIB's engine-wide `failedJobRetryTimeCycle` text, the retry cycle of a job whose element states none (AD8); admission
+   * refuses one (`profile.defaultRetryCycle`) until the job model's stage reads it.
+   */
+  readonly defaultRetryCycle: string | null;
+  /**
+   * AD1's inert table: the retained extension attributes (`Program.retainedExtensions`) admission lets pass; every
+   * other is refused (`extension.retained`). Each item needs its register entry, so admission refuses a non-empty
+   * table (`profile.inertExtensions`) until the extension stage admits the first.
+   */
+  readonly inertExtensions: readonly InertExtension[];
 }

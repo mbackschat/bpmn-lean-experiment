@@ -1,25 +1,12 @@
 /**
- * The occurrence journal, transcribed from `Kernel/State/Journal.lean`: an occurrence's public key, the facts each
- * micro-step records about the occurrences it began and ended, and the transaction-boundary marks an occurrence carries.
- * Part of `state.ts`, which re-exports it.
+ * The occurrence journal, transcribed from `Kernel/State/Journal.lean`: the facts each micro-step records about the
+ * occurrences it began and ended, each named by its public key (`key.ts`'s `OccurrenceKey`), the transaction-boundary
+ * marks an occurrence carries and the activation counter that numbers a key's activation. Part of `state.ts`, which
+ * re-exports it.
  */
 import { elementEnvelope, programElement, type ElementId, type FlowId, type Program } from "../il/types.js";
-import { type ScopeOccurrenceId } from "./slots.js";
+import { ActivationRole, type InstanceName, type OccurrenceKey, type ScopeOccurrenceId } from "./slots.js";
 import { type InputTag } from "./wait.js";
-
-/**
- * Which counter numbers an occurrence: a Multi-Instance body and its instances number apart, as CIB gives the body an
- * activity id of its own (`BpmnParse:185`).
- */
-export enum ActivationRole { Element = "element", MultiInstanceBody = "multiInstanceBody" }
-
-/** An occurrence's public key in the journal. */
-export interface OccurrenceKey {
-  readonly processInstanceId: string;
-  readonly element: ElementId;
-  readonly activation: number;
-  readonly role: ActivationRole;
-}
 
 export enum Terminal { Completed = "completed", Cancelled = "cancelled" }
 
@@ -39,13 +26,17 @@ export interface StartedFact {
   readonly sourceType: string;
 }
 
-/** One micro-step's occurrence facts. */
+/**
+ * One micro-step's occurrence facts. `ready` names the occurrences the micro-step leaves in BPMN's Ready state (BPMN
+ * 2.0.2 §13.3.2, Fig. 13.2): begun, their InputSet unavailable (§10.4.2); `hooks.ts#hold` is its only writer.
+ */
 export interface Transition {
   readonly cause: Cause;
   readonly element: ElementId | null;
   readonly owner: ScopeOccurrenceId;
   readonly started: readonly StartedFact[];
   readonly ended: readonly (readonly [OccurrenceKey, Terminal])[];
+  readonly ready: readonly OccurrenceKey[];
 }
 
 /**
@@ -59,4 +50,12 @@ export function marks(program: Program, key: OccurrenceKey): readonly [boolean, 
   // CIB skips loop marks on a compensation handler (`BpmnParse.java:2416`); admission refuses a Multi-Instance handler.
   const loop = key.role === ActivationRole.Element ? envelope.multiInstance : null;
   return loop === null ? [envelope.asyncBefore, envelope.asyncAfter] : [loop.asyncBefore, loop.asyncAfter];
+}
+
+/** One activation counter (R8: per process instance, element and role). */
+export interface ActivationCount {
+  readonly processInstance: InstanceName;
+  readonly element: ElementId;
+  readonly role: ActivationRole;
+  readonly count: number;
 }

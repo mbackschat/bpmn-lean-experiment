@@ -15,7 +15,7 @@
 import vm from "node:vm";
 
 import type { ScriptRequest } from "./host-machine.js";
-import { isJavascriptFormat, textBytes } from "./kernel-port.js";
+import { defaultBounds, isJavascriptFormat } from "./kernel-port.js";
 import { EffectResultKind, type EffectResult, type JsonValue } from "./port.js";
 
 export interface ScriptOptions {
@@ -52,7 +52,8 @@ function items(value: JsonValue | undefined): readonly JsonValue[] {
 
 /**
  * A `variableValue` in the context's form (item 4): String, Boolean, Null and Integer as themselves, a list or
- * `stringList` as an array, a map as an object; a decimal, or a collection holding one, has no form and is left out.
+ * `stringList` as an array, a map as an object; any other kind, a decimal or one this host does not know, or a
+ * collection holding one, has no form and is left out, so reading it is `unsupported`, never a host fault.
  */
 function scriptForm(value: JsonValue): ScriptForm {
   const object = record(value);
@@ -65,8 +66,8 @@ function scriptForm(value: JsonValue): ScriptForm {
       const binding = record(entry);
       return [String(binding["name"]), scriptForm(binding["value"] ?? null)] as const;
     })];
-    case "decimal": throw new LeftOut();
-    default: throw new TypeError(`unknown value kind ${String(object["kind"])}`);
+    // The arguments arrive as untyped JSON, so a kind this host does not know reaches here at run time.
+    case "decimal": default: throw new LeftOut();
   }
 }
 
@@ -78,7 +79,7 @@ function resultValue(value: unknown): JsonValue | null | undefined {
     case "number":
       return Number.isInteger(value) && value >= 0 && value <= maxResultInteger ? { kind: "integer", value: value + 0 } : undefined;
     case "string":
-      return value.isWellFormed() && Buffer.byteLength(value, "utf8") <= textBytes ? { kind: "string", value } : undefined;
+      return value.isWellFormed() && Buffer.byteLength(value, "utf8") <= defaultBounds.textBytes ? { kind: "string", value } : undefined;
     case "object": return value === null ? null : undefined;
     case "bigint": case "function": case "symbol": return undefined;
   }

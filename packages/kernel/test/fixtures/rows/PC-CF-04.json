@@ -147,6 +147,14 @@
     "evaluator": "juel",
     "submission": "installsVariables",
     "scopeChainSubmissionBytes": 16384,
+    "bounds": {
+      "containerLevels": 4,
+      "containerMembers": 32,
+      "valueNodes": 256,
+      "canonicalBytes": 16384,
+      "textBytes": 1024,
+      "instanceIdentityBytes": 1024
+    },
     "undeclaredWrite": "atInstanceRoot",
     "errorPathOutputs": "mapped",
     "raisedCallOutputs": "atCalledRoot",
@@ -191,7 +199,11 @@
     "signalDelivery": "occurrenceTargeted",
     "conditionalStart": "submittedContext",
     "calledElementResolution": "cibKey",
-    "messageThrowForms": "cibForms"
+    "messageThrowForms": "cibForms",
+    "deploymentErrors": "bpmnValidity",
+    "handlerEscalation": "passesHandler",
+    "defaultRetryCycle": null,
+    "inertExtensions": []
   },
   "elements": [
     {
@@ -209,7 +221,9 @@
           "subscription": null,
           "outgoing": [
             "Flow_Requested"
-          ]
+          ],
+          "initiator": null,
+          "formRef": null
         }
       }
     },
@@ -270,7 +284,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": true,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -321,7 +339,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -340,7 +359,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -401,7 +424,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -420,7 +444,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -471,7 +499,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -490,7 +519,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -518,7 +551,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -537,7 +571,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -588,7 +626,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -607,7 +646,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -687,7 +730,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -706,7 +750,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -899,5 +947,6 @@
   "variables": [],
   "processes": [],
   "executable": true,
-  "decisionResources": []
+  "decisionResources": [],
+  "retainedExtensions": []
 }

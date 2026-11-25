@@ -1,6 +1,6 @@
 module
 
-public import Kernel.Laws.State
+public import Kernel.Laws.State.Called
 public import Kernel.Laws.Data.Values
 
 /-! # Laws of the kernel state: the scope chain's searches
@@ -51,8 +51,8 @@ theorem visible_congr {s t : State} (scopes : t.scopes = s.scopes) (variables : 
       intro current
       cases current with
       | none => rw [laterNone, earlierNone]
-      | some id => rw [laterStep, earlierStep, shows, called, scopes, variables, ih]
-  rw [laterStart, earlierStart, go, scopes]
+      | some id => rw [laterStep, earlierStep]; simp only [ownVariables_eq]; rw [shows, called, scopes, variables, ih]
+  rw [laterStart, earlierStart, go]
 
 /-! ## What a search finds stands -/
 
@@ -65,7 +65,7 @@ theorem declaring?_stands {state : State} {scope found : ScopeOccurrenceId} {ele
     (ran : state.declaring? scope element = some found) : ∃ entry ∈ state.scopes, entry.id = found := by
   obtain ⟨go, start, zero, step⟩ := declaring?_go state element
   rw [start] at ran
-  generalize state.scopes.length = fuel at ran
+  generalize scope.segments.length + 1 = fuel at ran
   induction fuel generalizing scope with
   | zero => simp [zero] at ran
   | succ fuel ih =>
@@ -83,21 +83,19 @@ theorem declaring?_stands {state : State} {scope found : ScopeOccurrenceId} {ele
 
 /-- The owner `State.owner?` finds holds a variable set. -/
 theorem owner?_holds {state : State} {scope found : ScopeOccurrenceId} {name : String}
-    (ran : state.owner? scope name = some found) : ∃ variables ∈ state.variables, variables.scope = found := by
+    (ran : state.owner? scope name = some found) : found ∈ state.variables := by
   obtain ⟨go, start, zero, step⟩ := owner?_go state name
   rw [start] at ran
-  generalize state.scopes.length = fuel at ran
+  generalize scope.segments.length + 1 = fuel at ran
   induction fuel generalizing scope with
   | zero => simp [zero] at ran
   | succ fuel ih =>
     rw [step] at ran
     split at ran
     · rename_i declares
-      cases search : state.variables.find? (·.scope == scope) with
-      | none => simp [search] at declares
-      | some variables =>
-        cases ran
-        exact ⟨variables, List.mem_of_find?_eq_some search, by simpa using List.find?_some search⟩
+      obtain rfl := Option.some.inj ran
+      refine Classical.byContradiction fun outside => ?_
+      simp [Std.ExtTreeMap.getD_eq_fallback outside] at declares
     · split at ran
       · simp at ran
       · obtain ⟨parent, _, recursed⟩ := Option.bind_eq_some_iff.mp ran
@@ -108,7 +106,7 @@ theorem instanceRoot_stands (state : State) (scope : ScopeOccurrenceId) :
     state.instanceRoot scope = State.root ∨ ∃ entry ∈ state.scopes, entry.id = state.instanceRoot scope := by
   obtain ⟨go, start, zero, step⟩ := instanceRoot_go state
   rw [start]
-  generalize state.scopes.length = fuel
+  generalize scope.segments.length + 1 = fuel
   induction fuel generalizing scope with
   | zero => exact .inl (zero scope)
   | succ fuel ih =>
@@ -127,8 +125,8 @@ theorem instanceRoot_stands (state : State) (scope : ScopeOccurrenceId) :
 /-! ## The scope tree the searches walk
 
 What the searches need of `WellFormed`: a scope occurrence's record is the one a search by its identifier finds
-(`Distinct`), and each lies a finite depth below `State.root` (`Rooted`), less than the number of scope occurrences, so
-the fuel each search takes, that number, always reaches the end of the way. -/
+(`Distinct`), and each lies below `State.root` (`Rooted`) at the depth its key's segments count (`Depth.length`), so the
+characterization's fuel, one more than that, always reaches the end of the way. -/
 
 section Tree
 
@@ -205,36 +203,20 @@ theorem Within.comparable (distinct : (scopeIds s).Nodup) {scope first second : 
     · rw [← same]; exact .inr (.parent child parent outer member link above)
     · exact ih (Within.through distinct member link two same)
 
-/-- The scope occurrences on the way from one at depth `n` to `State.root`. -/
-private theorem Depth.chain (formed : WellFormed program s) {scope : ScopeOccurrenceId} {n : Nat}
-    (depth : Depth s scope n) : ∃ chain : List ScopeOccurrenceId, chain.length = n + 1 ∧ chain.Nodup ∧
-      ∀ x ∈ chain, x ∈ scopeIds s ∧ ∃ m ≤ n, Depth s x m := by
+/-- A scope occurrence's depth is the number of its key's segments: each step up drops one. -/
+theorem Depth.length {scope : ScopeOccurrenceId} {n : Nat} (depth : Depth s scope n) : n = scope.segments.length := by
   induction depth with
-  | root =>
-    refine ⟨[State.root], rfl, by simp, fun x member => ?_⟩
-    rw [List.mem_singleton] at member
-    subst member
-    exact ⟨formed.rooted.1, 0, Nat.le_refl 0, .root⟩
-  | child child parent n member link depth ih =>
-    obtain ⟨chain, length, nodup, inside⟩ := ih
-    refine ⟨child.id :: chain, by simp [length], List.nodup_cons.mpr ⟨fun mem => ?_, nodup⟩, fun x mem => ?_⟩
-    · obtain ⟨_, m, le, other⟩ := inside _ mem
-      have := Depth.unique formed (.child child parent n member link depth) other
-      omega
-    · rcases List.mem_cons.mp mem with rfl | mem
-      · exact ⟨List.mem_map.mpr ⟨child, member, rfl⟩, n + 1, Nat.le_refl _, .child child parent n member link depth⟩
-      · obtain ⟨present, m, le, d⟩ := inside x mem
-        exact ⟨present, m, Nat.le_succ_of_le le, d⟩
+  | root => rw [root_eq, ScopeOccurrenceId.ofSegments_segments]; rfl
+  | child child parent n _ link _ ih =>
+    obtain ⟨_, same⟩ := ScopeOccurrenceId.parent?_eq_some.mp (by simpa only [ScopeOccurrence.parent] using link)
+    simp [same, ih]
 
-/-- A present scope occurrence lies at a depth below the number of scope occurrences. -/
+/-- A present scope occurrence lies at a depth below one more than its key's segments. -/
 theorem depth_of (formed : WellFormed program s) {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s) :
-    ∃ n, Depth s scope n ∧ n < s.scopes.length := by
+    ∃ n, Depth s scope n ∧ n < scope.segments.length + 1 := by
   obtain ⟨entry, member, rfl⟩ := List.mem_map.mp present
   obtain ⟨n, depth⟩ := (formed.rooted.2.2 entry member).depth
-  obtain ⟨chain, length, nodup, inside⟩ := Depth.chain formed depth
-  have := nodup.length_le_of_subset (fun x mem => (inside x mem).1)
-  simp only [scopeIds, List.length_map] at this
-  exact ⟨n, depth, by omega⟩
+  exact ⟨n, depth, by rw [depth.length]; omega⟩
 
 /-- `State.root` lies within no other scope occurrence. -/
 theorem root_within (formed : WellFormed program s) {outer : ScopeOccurrenceId} (within : Within s State.root outer) :
@@ -406,7 +388,7 @@ instance rooted at `root`. -/
 private theorem search_spec (formed : WellFormed program s) {found : ScopeOccurrenceId → Bool}
     {go : Nat → ScopeOccurrenceId → Option ScopeOccurrenceId} (steps : Searches s found go)
     {scope root : ScopeOccurrenceId} (inInstance : InstanceRoot s scope root) (target : ScopeOccurrenceId) :
-    go s.scopes.length scope = some target ↔ Within s scope target ∧ Within s target root ∧ found target = true ∧
+    go (scope.segments.length + 1) scope = some target ↔ Within s scope target ∧ Within s target root ∧ found target = true ∧
       ∀ nearer, Within s scope nearer → Within s nearer target → found nearer = true → nearer = target := by
   constructor
   · intro ran
@@ -438,30 +420,17 @@ frame binds `name`. -/
 theorem owner?_spec (formed : WellFormed program s) {scope root : ScopeOccurrenceId}
     (inInstance : InstanceRoot s scope root) (name : String) (owner : ScopeOccurrenceId) :
     s.owner? scope name = some owner ↔ Within s scope owner ∧ Within s owner root ∧
-      (∃ frame ∈ s.variables, frame.scope = owner ∧ ∃ value, (name, value) ∈ frame.entries) ∧
+      (∃ entries, s.variables[owner]? = some entries ∧ name ∈ entries) ∧
       ∀ nearer, Within s scope nearer → Within s nearer owner →
-        (∃ frame ∈ s.variables, frame.scope = nearer ∧ ∃ value, (name, value) ∈ frame.entries) → nearer = owner := by
+        (∃ entries, s.variables[nearer]? = some entries ∧ name ∈ entries) → nearer = owner := by
   obtain ⟨go, start, zero, step⟩ := owner?_go s name
-  have binds : ∀ current, ((s.variables.find? (·.scope == current)).map (·.entries.any (·.1 == name))).getD false =
-      true ↔ ∃ frame ∈ s.variables, frame.scope = current ∧ ∃ value, (name, value) ∈ frame.entries := by
+  have binds : ∀ current, (s.variables.getD current ∅).contains name = true ↔
+      ∃ entries, s.variables[current]? = some entries ∧ name ∈ entries := by
     intro current
-    constructor
-    · intro bound
-      cases search : s.variables.find? (·.scope == current) with
-      | none => simp [search] at bound
-      | some frame =>
-        simp only [search, Option.map_some, Option.getD_some, List.any_eq_true, beq_iff_eq] at bound
-        obtain ⟨⟨named, value⟩, member, rfl⟩ := bound
-        exact ⟨frame, List.mem_of_find?_eq_some search, by simpa using List.find?_some search, value, member⟩
-    · rintro ⟨frame, member, rfl, ⟨value, bound⟩⟩
-      cases search : s.variables.find? (·.scope == frame.scope) with
-      | none => exact absurd (List.find?_eq_none.mp search frame member) (by simp)
-      | some found =>
-        have := nodup_map_eq (f := ScopeVariables.scope) formed.variables.scopes (List.mem_of_find?_eq_some search)
-          member (by simpa using List.find?_some search)
-        subst this
-        simp only [Option.map_some, Option.getD_some, List.any_eq_true, beq_iff_eq]
-        exact ⟨_, bound, rfl⟩
+    rw [Std.ExtTreeMap.getD_eq_getD_getElem?]
+    cases s.variables[current]? with
+    | none => simp
+    | some entries => simp [← Std.ExtTreeMap.contains_iff_mem]
   rw [start, search_spec formed ⟨zero, step⟩ inInstance owner, binds]
   simp only [binds]
 
@@ -495,8 +464,8 @@ and shows. -/
 theorem visible_spec (formed : WellFormed program s) {scope root : ScopeOccurrenceId}
     (inInstance : InstanceRoot s scope root) {reading : Program} {binding : String × Value}
     (seen : binding ∈ s.visible reading scope) :
-    ∃ frame ∈ s.variables, Within s scope frame.scope ∧ Within s frame.scope root ∧ binding ∈ frame.entries ∧
-      s.shows reading frame.scope binding.1 = true := by
+    ∃ frame entries, s.variables[frame]? = some entries ∧ Within s scope frame ∧ Within s frame root ∧
+      binding ∈ entries.toList ∧ s.shows reading frame binding.1 = true := by
   obtain ⟨go, start, ⟨zero, ended, step⟩⟩ := visible_go s reading
   have absent : ∀ fuel, go fuel none = [] := fun fuel => by cases fuel <;> simp [zero, ended]
   have onward : ∀ current, Within s current root → s.calledRoot current = false → ∀ parent,
@@ -512,8 +481,8 @@ theorem visible_spec (formed : WellFormed program s) {scope root : ScopeOccurren
     · simp [(formed.rooted.2.1 entry member).mpr (same.trans isRoot)] at linked
   rw [start] at seen
   suffices walk : ∀ fuel current, Within s scope current → Within s current root → binding ∈ go fuel (some current) →
-      ∃ frame ∈ s.variables, Within s scope frame.scope ∧ Within s frame.scope root ∧ binding ∈ frame.entries ∧
-        s.shows reading frame.scope binding.1 = true from
+      ∃ frame entries, s.variables[frame]? = some entries ∧ Within s scope frame ∧ Within s frame root ∧
+        binding ∈ entries.toList ∧ s.shows reading frame binding.1 = true from
     walk _ scope (.refl _) inInstance.1 seen
   intro fuel
   induction fuel with
@@ -522,13 +491,12 @@ theorem visible_spec (formed : WellFormed program s) {scope root : ScopeOccurren
     intro current down up seen
     rw [step] at seen
     rcases List.mem_append.mp seen with own | further
-    · cases search : s.variables.find? (·.scope == current) with
+    · rw [ownVariables_eq, Std.ExtTreeMap.getD_eq_getD_getElem?] at own
+      cases search : s.variables[current]? with
       | none => simp [search] at own
-      | some frame =>
-        simp only [search, Option.map_some, Option.getD_some, List.mem_filter] at own
-        have named : frame.scope = current := by simpa using List.find?_some search
-        subst named
-        exact ⟨frame, List.mem_of_find?_eq_some search, down, up, own⟩
+      | some entries =>
+        simp only [search, Option.getD_some, List.mem_filter] at own
+        exact ⟨current, entries, search, down, up, own⟩
     · by_cases called : s.calledRoot current = true
       · simp [called] at further
       · simp only [Bool.not_eq_true] at called
@@ -541,27 +509,34 @@ theorem visible_spec (formed : WellFormed program s) {scope root : ScopeOccurren
 
 /-- Entering a scope occurrence changes nothing a present scope occurrence sees: the new one lies below it. -/
 theorem visible_enterScope (formed : WellFormed program s) {scope : ScopeOccurrenceId} (present : scope ∈ scopeIds s)
-    (element : ElementId) (parent : ScopeOccurrenceId) (locals : List (String × Value)) (occurrence : Option Nat)
+    (element : ElementId) (parent : ScopeOccurrenceId) (locals : List (String × Value)) (occurrence : Option OccurrenceId)
     (reading : Program) : (s.enterScope element parent locals occurrence).1.visible reading scope = s.visible reading scope := by
   obtain ⟨t, entered⟩ : ∃ t : State, (s.enterScope element parent locals occurrence).1 = t := ⟨_, rfl⟩
   rw [entered]
-  have scopes : t.scopes = s.scopes ++
-      [{ id := ⟨s.nextIssue⟩, element := some element, parent := some parent, occurrence := occurrence }] := by
+  have scopes : t.scopeMap = s.scopeMap.insert (parent.child element (.fresh s.issuing s.issueNext))
+      { id := parent.child element (.fresh s.issuing s.issueNext), element := some element,
+        position := .fresh s.issuing (s.issueNext + 1), occurrence } := by
     rw [← entered, enterScope_eq]
-  have variables : t.variables = s.variables ++ [{ scope := ⟨s.nextIssue⟩, entries := keyed locals }] := by
+  have variables : t.variables = s.variables.insert (parent.child element (.fresh s.issuing s.issueNext)) (Variables.ofBindings locals) := by
     rw [← entered, enterScope_eq]
+  have keyedT : ScopesKeyed t.scopeMap := by
+    rw [scopes]; exact scopesKeyed_insert_at formed.distinct.scopesKeyed rfl
   have record : ∀ entry ∈ s.scopes, t.scopes.find? (·.id == entry.id) = s.scopes.find? (·.id == entry.id) := by
     intro entry member
-    rw [scopes, List.find?_append, find?_record formed.distinct.scopes member]; rfl
-  have frame : ∀ entry ∈ s.scopes, t.variables.find? (·.scope == entry.id) = s.variables.find? (·.scope == entry.id) := by
+    have apart : entry.id ≠ parent.child element (.fresh s.issuing s.issueNext) := fun same =>
+      entered_unissued parent element formed.issuer.next (same ▸ formed.issued.scopes entry member)
+    have kept : entry ∈ t.scopes := by
+      rw [scopes_eq, scopes]
+      exact (mem_scopeList_insert_at formed.distinct.scopesKeyed (k := parent.child element (.fresh s.issuing s.issueNext))
+        rfl).mpr (.inr ⟨(scopes_eq s) ▸ member, apart⟩)
+    rw [find?_record (by rw [scopeIds, scopes_eq]; exact scopeList_nodup keyedT) kept,
+      find?_record formed.distinct.scopes member]
+  have frame : ∀ entry ∈ s.scopes, t.ownVariables entry.id = s.ownVariables entry.id := by
     intro entry member
-    rw [variables, List.find?_append]
-    cases s.variables.find? (·.scope == entry.id) with
-    | some _ => rfl
-    | none =>
-      have below := formed.issued.scopes entry member
-      have : (⟨s.nextIssue⟩ : ScopeOccurrenceId) ≠ entry.id := fun same => by rw [← same] at below; exact Nat.lt_irrefl _ below
-      simp [this]
+    have apart : parent.child element (.fresh s.issuing s.issueNext) ≠ entry.id := fun same =>
+      entered_unissued parent element formed.issuer.next (same ▸ formed.issued.scopes entry member)
+    simp only [ownVariables_eq]
+    rw [variables, Std.ExtTreeMap.getD_insert, ite_eq_right (by rwa [Std.LawfulEqCmp.compare_eq_iff_eq])]
   obtain ⟨later, laterStart, ⟨laterZero, laterEnded, laterStep⟩⟩ := visible_go t reading
   obtain ⟨earlier, earlierStart, ⟨earlierZero, earlierEnded, earlierStep⟩⟩ := visible_go s reading
   have laterAbsent : ∀ fuel, later fuel none = [] := fun fuel => by cases fuel <;> simp [laterZero, laterEnded]
@@ -592,8 +567,8 @@ theorem visible_enterScope (formed : WellFormed program s) {scope : ScopeOccurre
       rw [shows, find?_record formed.distinct.scopes member]
       simp only [Option.bind_some, link, ih first second (by omega) (by omega)]
   obtain ⟨n, depth, lt⟩ := depth_of formed present
-  rw [laterStart, earlierStart, scopes]
-  exact walk scope n depth _ _ (by simp; omega) lt
+  rw [laterStart, earlierStart]
+  exact walk scope n depth _ _ lt lt
 
 end Searches
 
@@ -666,6 +641,18 @@ theorem calledInstanceId_longer (caller : String) (call : ElementId) (activation
   simp only [String.toList_append, List.length_append, toString]
   have : ("call:" : String).toList.length = 5 := by decide +kernel
   omega
+
+/-- One called name names one caller, Call and activation. -/
+theorem calledBy_injective {caller caller' : InstanceName} {call call' : ElementId} {activation activation' : Issue}
+    (same : caller.calledBy call activation = caller'.calledBy call' activation') :
+    caller = caller' ∧ call = call' ∧ activation = activation' :=
+  calledBy_inj same calledInstanceId_inj
+
+/-- A called name's identifier is longer than its caller's. -/
+theorem calledBy_longer (caller : InstanceName) (call : ElementId) (activation : Issue) :
+    caller.text.length < (caller.calledBy call activation).text.length := by
+  rw [calledBy_text]
+  exact calledInstanceId_longer _ _ _
 
 end Called
 

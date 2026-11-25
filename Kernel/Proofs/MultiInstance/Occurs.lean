@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Laws.MultiInstance.Rules
+public import Kernel.Laws.State.Map
 
 /-! # Proofs: what a reservation may name
 
@@ -56,5 +57,27 @@ theorem reservable_unlooped {program : Program} {element : ElementId} (apart : I
       ((Laws.IL.element?_header finds).trans named.symm)
     rw [same] at finds
     simp [LoopOf, finds, bare.1] at looped
+
+/-- A reservation pending in a state whose queued signals are among `s`'s, with `s`'s compensation runs, is pending in
+`s`. -/
+theorem pending_of_sublist {s t : State} (signals : ∀ signal ∈ Laws.State.allSignals t, signal ∈ Laws.State.allSignals s)
+    (runs : ∀ run ∈ t.slots.compensation.runs, run ∈ s.slots.compensation.runs) {element : ElementId}
+    (pending : OccurPending t element) : OccurPending s element := by
+  rcases pending with occur | compensate | resumed
+  · obtain ⟨scope, rest⟩ := occur
+    obtain ⟨leave, writes, rule, member⟩ := rest
+    exact .inl ⟨scope, leave, writes, rule, signals _ member⟩
+  · obtain ⟨scope, activity, trigger, rest⟩ := compensate
+    obtain ⟨leave, at_, resumed, member⟩ := rest
+    exact .inr (.inl ⟨scope, activity, trigger, leave, at_, resumed, signals _ member⟩)
+  · obtain ⟨run, member, rest⟩ := resumed
+    exact .inr (.inr ⟨run, runs run member, rest⟩)
+
+/-- A reservation pending in a state that keeps at most `s`'s queued work and has its compensation runs was pending in
+`s`. -/
+theorem pending_kept {s t : State} (kept : Laws.State.QueuesKept s t)
+    (runs : t.slots.compensation.runs = s.slots.compensation.runs) {element : ElementId}
+    (pending : OccurPending t element) : OccurPending s element :=
+  pending_of_sublist kept.signal_mem (fun _ member => runs ▸ member) pending
 
 end Kernel.Proofs.MultiInstance

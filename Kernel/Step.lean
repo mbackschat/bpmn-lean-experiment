@@ -1,8 +1,13 @@
 module
 
 public import Kernel.Hooks
+public import Kernel.Step.Commit
+public import Kernel.Step.Order
 public import Kernel.Step.Jobs
 public import Kernel.Step.Stale
+public import Kernel.Step.Inputs
+public import Kernel.Step.Offer
+public import Kernel.Step.Finish
 
 /-! # Step
 
@@ -21,8 +26,10 @@ by its Call Activity's, an idle Multi-Instance body by its feature; an idle proc
 removing the passive items left in it. An Activity's local-variable scope occurrence has no completion of its own: the
 completion pipeline disposes of it with its Activity.
 
-How a closure's failure becomes its input's outcome where CIB runs the work in a job is `Kernel.Step.Jobs`; what becomes
-of a queued signal whose target an interruption removed is `Kernel.Step.Stale`.
+How a micro-step's draft becomes a journalled transition is `Kernel.Step.Commit`; how a closure's failure becomes its
+input's outcome where CIB runs the work in a job is `Kernel.Step.Jobs`; what becomes of a queued signal whose target an
+interruption removed is `Kernel.Step.Stale`; what an input states besides its payload, and the transitions of a command
+and an effect result, are `Kernel.Step.Inputs`; which parked join a quiescent closure fires is `Kernel.Step.Offer`.
 -/
 
 public section
@@ -45,35 +52,7 @@ def signalName : Signal → String
   | .endInstance _ _ => "endInstance"
   | .compensate _ _ _ _ _ => "compensate"
   | .compensationFailed _ _ _ _ => "compensationFailed"
-
-/-- Advance the clock to an input's logical time, `none` leaving it where it is; a time before the clock is rejected,
-since logical time never runs backward. -/
-def advanceClock (at? : Option Nat) (state : State) : Outcome :=
-  match at? with
-  | none => .ok state
-  | some atMs =>
-    if atMs < state.logicalTimeMs then .error (.rejected "logical-time-backward")
-    else .ok { state with logicalTimeMs := atMs }
-
-/-- What every input states besides its payload: its tag, its logical time and its ranking of competing Conditional
-items. A Timer firing without its own time happens at the deadline it names; a host that wakes later states the later
-time. -/
-def inputHead : Input → InputTag × Option Nat × List ConditionChoice
-  | .start payload => (.start, payload.atMs, payload.conditionChoices)
-  | .command payload => (.command, payload.atMs, payload.conditionChoices)
-  | .deliver payload => (.deliver, payload.atMs, payload.conditionChoices)
-  | .timerFire payload => (.timerFire, some (payload.atMs.getD payload.logicalTimeMs), payload.conditionChoices)
-  | .effectResult payload => (.effectResult, payload.atMs, payload.conditionChoices)
-
-/-- Reject an input's ranking of competing Conditional items before its transition: an element listed twice
-(`condition-choice-duplicate`; the schema's `uniqueItems` does not reach a caller that decodes without it), or one that
-opens no Conditional item (`condition-choice-not-candidate`, `Hooks.competes`), so a ranking never names what no
-contest can contain. -/
-def admitChoices (hooks : Hooks) (ctx : Ctx) : Except Failure Unit :=
-  let elements := ctx.conditionChoices.map (·.element)
-  if elements.eraseDups.length != elements.length then .error (.rejected "condition-choice-duplicate")
-  else if elements.all (hooks.competes ctx) then .ok ()
-  else .error (.rejected "condition-choice-not-candidate")
+  | .compensationReady _ _ => "compensationReady"
 
 /-- The loop characteristics of a body occurrence, read from any element's envelope. -/
 def bodyLoop? (element : Element) (occurrence : Occurrence) : Option (Envelope × MultiInstance) :=
@@ -109,10 +88,7 @@ def dispatch (hooks : Hooks) (ctx : Ctx) (occurrence : Occurrence) (entry : Scop
 /-- The counter an occurrence numbers under: a Multi-Instance Activity's body apart from its instances. -/
 def roleOf (program : Program) (request : BeginRequest) : ActivationRole :=
   let loops := (((program.element? request.element).bind (·.envelope?)).bind (·.multiInstance)).isSome
-  match request.continuation with
-  | .multiInstance _ => .element
-  | .flow => if loops then .multiInstanceBody else .element
-  | .compensation _ => if loops then .multiInstanceBody else .element
+  if request.continuation.body?.isSome then .element else if loops then .multiInstanceBody else .element
 
 /-- An Event Sub-Process start's values (`BeginRequest.writes`), written outward from the scope occurrence its begun
 occurrence `occurrence` entered, never from the parent, so a name the Event Sub-Process declares an item for lands in
@@ -122,7 +98,7 @@ before any arming or begin the entry queued runs; a queued write would run after
 fail as `gone` where the arming fails as `stale` (`Kernel.Step.Stale`). The entered scope occurrence exists because
 admission refuses a looping Event Sub-Process (`scope.multiInstance`), whose begin would enter a Multi-Instance body
 instead; admitting one makes `start-writes-without-scope` reachable. -/
-def writeStart (hooks : Hooks) (ctx : Ctx) (occurrence : Nat) (writes : List (String × Value)) (state : State) : Outcome :=
+def writeStart (hooks : Hooks) (ctx : Ctx) (occurrence : OccurrenceId) (writes : List (String × Value)) (state : State) : Outcome :=
   if writes.isEmpty then .ok state
   else match state.localScope? occurrence with
     | some scope => hooks.writeOutputs ctx scope writes .outward state
@@ -148,8 +124,8 @@ def continueAfter (hooks : Hooks) (ctx : Ctx) (occurrence : Occurrence) (leave :
   match occurrence.continuation with
   | .flow => if raised then .ok state else hooks.outflow ctx occurrence leave state
   | .multiInstance body => if raised then .ok state else hooks.instanceCompleted ctx body occurrence writes state
-  | .compensation run =>
-    if raised then hooks.handlerEnded ctx run occurrence state else hooks.handlerCompleted ctx run occurrence state
+  | .compensation _ =>
+    if raised then hooks.handlerEnded ctx occurrence state else hooks.handlerCompleted ctx occurrence state
 
 /-- The one completion pipeline: disarm, write, retain, continue, remove and journal, in that order. The occurrence's
 record and owned scope go before its continuation runs, so that a continuation leaving its instance or handler scope
@@ -161,7 +137,7 @@ task inside it did not): signals run first in, first out, and an interrupting fi
 so a thrower's completion runs before any cancellation its receivers queue. The kernel thus completes a thrower its receiver then
 removes, where CIB leaves it only after its receivers ran (`ThrowSignalEventActivityBehavior#execute`); the order
 matters only once a per-activity end state is observed. -/
-def complete (hooks : Hooks) (ctx : Ctx) (id : Nat) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule)
+def complete (hooks : Hooks) (ctx : Ctx) (id : OccurrenceId) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule)
     (state : State) : Outcome := do
   let some occurrence := state.occurrence? id | .error (.semanticFailure .invariant "queued-work-occurrence-gone")
   let some sourceType := ctx.program.sourceType? occurrence.element | .error (.semanticFailure .invariant "complete-without-element")
@@ -171,10 +147,10 @@ def complete (hooks : Hooks) (ctx : Ctx) (id : Nat) (leave : Leave) (writes : Li
   let state ← hooks.writeOutputs ctx occurrence.scope writes rule state
   let key := state.keyOf occurrence
   match leave with
-  | .raised => continueAfter hooks ctx occurrence leave writes ((state.removeOccurrence id).recordEnd key .cancelled)
+  | .raised => continueAfter hooks ctx occurrence leave writes ((state.removeOccurrence ctx.positionLe id).recordEnd key .cancelled)
   | .outgoing | .flows _ =>
     let state ← hooks.completed ctx occurrence state
-    let state := state.removeOccurrence id
+    let state := state.removeOccurrence ctx.positionLe id
     -- An `asyncAfter` boundary lies before the continuation, though the completion's fact is journalled after it.
     let state ← deferred ctx.program (state.recordEnd key .completed) <| continueAfter hooks ctx occurrence leave writes state
     .ok (state.recordEnd key .completed)
@@ -185,9 +161,11 @@ def fireItem (hooks : Hooks) (ctx : Ctx) (item : OpenItem) (fired : Fired) (stat
   | some (header, payload) => hooks.triggerActivity ctx header payload item fired state
   | none => hooks.trigger ctx item fired state
 
-/-- The one writer of `State.status`: everything left in the instance goes first. -/
-def endInstance (status : InstanceStatus) (failure : Option InstanceFailure) (state : State) : State :=
-  { state.clearInside State.root with status, failure }
+/-- The one writer of `State.status`: everything left in the instance goes first, journalled in the order positions
+`le` orders (`State.clearInside`). -/
+def endInstance (le : Issue → Issue → Bool) (status : InstanceStatus) (failure : Option InstanceFailure) (state : State) :
+    State :=
+  { state.clearInside le State.root with status, failure }
 
 /-- What a queued signal does and the targets it names (`Kernel.Step.Stale`). -/
 def signalWork (hooks : Hooks) (ctx : Ctx) : Signal → SignalWork
@@ -195,59 +173,75 @@ def signalWork (hooks : Hooks) (ctx : Ctx) : Signal → SignalWork
   | .armScope scope => { scopes := [scope], run := hooks.armScope ctx scope }
   | .armGateway occurrence gateway scope =>
     { scopes := [scope], occurrences := [occurrence], run := hooks.armGateway ctx occurrence gateway scope }
-  | .raise event origin => { run := hooks.raise ctx event origin }
+  | .raise event origin => { holds := fun _ => [origin.scope], run := hooks.raise ctx event origin }
   | .begin request => { scopes := [request.scope], run := begin hooks ctx request }
-  | .complete occurrence leave writes rule => { acts := [occurrence], run := complete hooks ctx occurrence leave writes rule }
+  | .complete occurrence leave writes rule =>
+    { completion := true, acts := [occurrence], run := complete hooks ctx occurrence leave writes rule }
   | .write scope writes rule => { requires := [scope], run := hooks.writeOutputs ctx scope writes rule }
   | .remove scope names => { requires := [scope], run := hooks.removeVariables ctx scope names }
   | .occur element scope leave writes rule => { scopes := [scope], run := fun state => do
     requireScope state scope
     let (state, occurrence) := state.reserve element scope
     complete hooks ctx occurrence.id leave writes rule state }
-  | .cancel occurrence => { acts := [occurrence], run := fun state => .ok (state.cancelOccurrence occurrence) }
-  | .fire item fired => { run := fun state =>
-    match state.openItems.find? (·.id == item) with
-    | some open_ => fireItem hooks ctx open_ fired state
-    | none => .ok state }
-  | .endInstance status failure => { run := fun state => .ok (endInstance status failure state) }
+  | .cancel occurrence => { acts := [occurrence], run := fun state => .ok (state.cancelOccurrence ctx.positionLe occurrence) }
+  | .fire item fired =>
+    { holds := fun state => [((state.openItems[item]?).map (·.scope)).getD item.occurrence.scope]
+      run := fun state =>
+        match state.openItems[item]? with
+        | some open_ => fireItem hooks ctx open_ fired state
+        | none => .ok state }
+  | .endInstance status failure =>
+    { holds := fun state => state.scopes.map (·.id), run := fun state => .ok (endInstance ctx.positionLe status failure state) }
   | .compensate scope activity trigger leave resume =>
     { requires := [scope], run := hooks.compensate ctx scope activity trigger leave resume }
   | .compensationFailed handler code message origin =>
     { requires := [handler], run := hooks.failCompensation ctx handler code message origin }
+  | .compensationReady scope context =>
+    { requires := [scope], ready := some (scope, context), run := hooks.compensationReady ctx scope context }
 
 /-- Run a queued signal, refused when what it names is gone (`SignalWork.perform`). -/
 def dispatchSignal (hooks : Hooks) (ctx : Ctx) (signal : Signal) (state : State) : Outcome :=
   (signalWork hooks ctx signal).perform state
 
 /-- Run a completion when it is the only signal the micro-step enqueued, inside the micro-step, as `dispatchSignal` runs
-it (`SignalWork.perform`). -/
+it (`SignalWork.perform`); never a body's finish, which runs under its own root (`finishOf?`). -/
 def absorb (hooks : Hooks) (ctx : Ctx) (before : Nat) (state : State) : Outcome :=
-  match state.signals.drop before with
-  | [.complete occurrence leave writes rule] =>
-    (signalWork hooks ctx (.complete occurrence leave writes rule)).perform
-      { state with signals := state.signals.take before }
+  match state.batchSignals.drop before with
+  | [sole] =>
+    let work := signalWork hooks ctx sole
+    if work.completion && (finishOf? ctx state work).isNone then
+      work.perform { state with batchSignals := state.batchSignals.take before }
+    else .ok state
   | _ => .ok state
 
-/-- Turn the draft into one `Transition` and tell the features what the micro-step removed and wrote. -/
-def conclude (hooks : Hooks) (ctx : Ctx) (cause : Cause) (element : Option ElementId) (owner : ScopeOccurrenceId)
-    (state : State) : Outcome := do
-  let draft := state.draft
-  let writes := state.writes
-  let transition : Transition := { cause, element, owner, started := draft.started, ended := draft.ended }
-  -- Newest first while the input runs, reversed once by `orderJournal`: appending copied the journal on every micro-step,
-  -- which made a closure quadratic in its length (measured 2026-11-10 on `automatic-loop-beyond-bound`).
-  let state := { state with journal := transition :: state.journal, draft := {}, writes := [] }
-  let state ← draft.cancelled.foldlM (fun state occurrence => hooks.cancelled ctx occurrence state) state
-  hooks.written ctx writes state
+/-- Turn the draft into the transition of the unit `unit` (`journalDraft`), tell the features what the micro-step
+removed and wrote, and queue the micro-step's batches under `unit` (`State.queueBatch`), a body's finish and a
+compensation run's readiness under their group roots (`groupKey?`). `microStep` refused a unit key the closure already ran before its body, and nothing the body
+or the absorbed completion runs writes a transition, so the journalled key is new (DC4). -/
+def conclude (hooks : Hooks) (ctx : Ctx) (unit : UnitKey) (cause : Cause) (element : Option ElementId)
+    (owner : ScopeOccurrenceId) (state : State) : Outcome := do
+  let journalled := journalDraft unit cause element owner state
+  let journalled ← state.draft.cancelled.foldlM (fun state occurrence => hooks.cancelled ctx occurrence state) journalled
+  let written ← hooks.written ctx state.writes journalled
+  let groups ← written.batchSignals.mapM fun signal => groupKey? ctx written (signalWork hooks ctx signal)
+  .ok { written.queueBatch unit (fun index => groups[index]?.join) with issuing := .ofRoot .seed, issueNext := 0 }
 
 /-- One micro-step: run `body`, absorb its sole completion and record the transition. Each stage's failure is
-`deferred` against the state it started from, so a boundary an earlier micro-step or stage crossed counts. -/
-def microStep (hooks : Hooks) (ctx : Ctx) (cause : Cause) (element : Option ElementId) (owner : ScopeOccurrenceId)
-    (body : State → Outcome) (state : State) : Outcome := do
-  let before := state.signals.length
+`deferred` against the state it started from, so a boundary an earlier micro-step or stage crossed counts. Every
+identity the micro-step issues is `unit`'s (DC12), numbered from 0. A unit key the closure already ran, or the seed's
+reserved root, is an invariant failure before the body runs, never a second transition under one key (DC4): the issuer
+reset needs `unit` to hold no issue yet (`Laws.State.IssuerFresh`), which a unit that never ran guarantees, so a command
+that commits ran each unit once and its issues are fresh; a failed command's issues are discarded with its speculative
+state. -/
+def microStep (hooks : Hooks) (ctx : Ctx) (unit : UnitKey) (cause : Cause) (element : Option ElementId)
+    (owner : ScopeOccurrenceId) (body : State → Outcome) (state : State) : Outcome := do
+  if state.transitions.contains unit || unit == .ofRoot .seed then
+    .error (.semanticFailure .invariant "unit-key-reused") else
+  let state := { state with issuing := unit, issueNext := 0 }
+  let before := state.batchSignals.length
   let next ← deferred ctx.program state (body state)
   let absorbed ← deferred ctx.program next (absorb hooks ctx before next)
-  deferred ctx.program absorbed (conclude hooks ctx cause element owner absorbed)
+  deferred ctx.program absorbed (conclude hooks ctx unit cause element owner absorbed)
 
 /-- Route a token on `flow` to the element at the end of it. -/
 def arrive (hooks : Hooks) (ctx : Ctx) (flow : FlowId) (scope : ScopeOccurrenceId) (state : State) : Outcome :=
@@ -257,13 +251,13 @@ def arrive (hooks : Hooks) (ctx : Ctx) (flow : FlowId) (scope : ScopeOccurrenceI
 
 /-- Move one token in its own micro-step: route a flow token to the element at the end of its flow; dispatch a deferred
 begin as the `begin` signal it was, with that signal's journal cause. -/
-def moveToken (hooks : Hooks) (ctx : Ctx) (token : Token) (state : State) : Outcome :=
+def moveToken (hooks : Hooks) (ctx : Ctx) (unit : UnitKey) (token : Token) (state : State) : Outcome :=
   match token with
   | .flow flow scope =>
-    microStep hooks ctx (.arrive flow) (ctx.program.target? flow) scope (arrive hooks ctx flow scope) state
+    microStep hooks ctx unit (.arrive flow) (ctx.program.target? flow) scope (arrive hooks ctx flow scope) state
   | .begin request =>
     let next := Signal.begin request
-    microStep hooks ctx (.signal (signalName next)) none State.root (dispatchSignal hooks ctx next) state
+    microStep hooks ctx unit (.signal (signalName next)) none State.root (dispatchSignal hooks ctx next) state
 
 /-- An Activity's local-variable scope occurrence: owned by an Activity that is no Multi-Instance body and calls no
 instance. -/
@@ -302,13 +296,26 @@ in the TypeScript kernel (measured 2026-11-10). The longest closure of the retai
 (`automatic-loop-long-burst`); a closure of constant small size still meets `closureBound` first. -/
 def closureWorkBound : Nat := 10000000
 
-/-- The next scope occurrence other than the root that is idle, which the closure completes through its owner. The
-busy scope occurrences are computed once per search (`State.busyScopes`). -/
-def idleScope? (ctx : Ctx) (state : State) : Option ScopeOccurrence :=
+/-- Whether a queued signal names `scope` or a scope occurrence inside it (`SignalWork.names`), which keeps `scope` busy
+(DC5): an idle check never completes a scope occurrence that queued work still names. -/
+def signalsHold (hooks : Hooks) (ctx : Ctx) (state : State) (scope : ScopeOccurrenceId) : Bool :=
+  state.queuedSignals.any fun _ signal => ((signalWork hooks ctx signal).names state).any fun named =>
+    named.segments.drop (named.segments.length - scope.segments.length) == scope.segments
+
+/-- The scope occurrence of least order position among `scopes` under `le`, the first of those tied (`mergeSort` is
+stable), in the order `State.removeOccurrence` leaves owned scope occurrences in. -/
+def leastPosition (le : Issue → Issue → Bool) (scopes : List ScopeOccurrence) : Option ScopeOccurrence :=
+  (scopes.mergeSort fun a b => le a.position b.position).head?
+
+/-- The idle scope occurrence other than the root of least order position (`Ctx.positionLe`, DC25), which the closure
+completes through its owner: no queued work names it or a scope occurrence inside it (DC5). The busy scope occurrences
+are computed once per search (`State.busyScopes`). -/
+def idleScope? (hooks : Hooks) (ctx : Ctx) (state : State) : Option ScopeOccurrence :=
   if !state.scopes.any (·.id != State.root) then none
   else
     let busy := state.busyScopes
-    state.scopes.find? fun scope => scope.id != State.root && !busy.contains scope.id && !activityLocal ctx state scope
+    leastPosition ctx.positionLe (state.scopes.filter fun scope => scope.id != State.root && !busy.contains scope.id &&
+      !activityLocal ctx state scope && !signalsHold hooks ctx state scope.id)
 
 /-- The token the closure moves next, and the rest: the oldest under `BranchSchedule.orderInvariant`, whose admitted
 models no order changes (`flow.concurrentWrite`); the newest under `declarationDepthFirst` (CIB-OP-0016), where `Flow`
@@ -316,114 +323,62 @@ queues a split's flows reversed and `Feature.MultiInstance` a parallel body's in
 instance runs to its next wait, join or end before the next one starts. Under `declarationDepthFirst` an idle scope
 occurrence completes before any token moves, as CIB ends a Sub-Process in the operation that ends its last execution,
 before its LIFO queue reaches a sibling branch (`PvmAtomicOperationActivityEnd:105`). -/
-def nextToken (ctx : Ctx) (state : State) : Option (Token × List Token) :=
-  let queue := state.tokens
+def nextToken (hooks : Hooks) (ctx : Ctx) (log : RunLog) (state : State) : Option (UnitKey × Token) :=
   match ctx.program.options.branchSchedule with
-  | .orderInvariant => match queue with
-    | [] => none
-    | token :: rest => some (token, rest)
-  | .declarationDepthFirst =>
-    if (idleScope? ctx state).isSome then none else queue.getLast?.map (·, queue.dropLast)
+  | .orderInvariant => earliest log state.queuedTokens
+  | .declarationDepthFirst => if (idleScope? hooks ctx state).isSome then none else latest log state.queuedTokens
 
-/-- The first parked join that fires when it is offered again, as the gateway, its scope occurrence and the state it
-leaves. Table 13.3 activates an Inclusive join by the state, not by an arrival, and `settle` offers the parked joins
-only once no signal, token or idle scope occurrence is left, so `Feature.Flow.positions` sees every position: a
-completion still queued is no position it can see. Each join is offered its latest parked occurrence, in parking
-order; a Parallel join is ready only on an arrival, so offering it never fires it. -/
-def reoffer? (hooks : Hooks) (ctx : Ctx) (state : State) : Except Failure (Option (ElementId × ScopeOccurrenceId × State)) :=
-  state.slots.parked.foldlM (init := none) fun found waiting =>
-    match found, (ctx.program.target? waiting.flow).bind ctx.program.element? with
-    | some _, _ => .ok found
-    | none, none => .error (.semanticFailure .invariant "parked-without-gateway")
-    | none, some element =>
-      match element.gateway?, ((state.slots.parked.filter fun other => other.scope == waiting.scope &&
-          ctx.program.target? other.flow == ctx.program.target? waiting.flow).getLast?).bind (state.occurrence? ·.occurrence) with
-      | some (header, payload), some occurrence => do
-        let offered ← hooks.arriveGateway ctx header payload occurrence state
-        .ok (if offered.signals.isEmpty then none else some (header.id, waiting.scope, offered))
-      | _, _ => .error (.semanticFailure .invariant "parked-without-gateway")
-
-/-- The journal in the order the micro-steps ran (`conclude` keeps it newest first). -/
-def orderJournal (outcome : Outcome) : Outcome :=
-  outcome.map fun state => { state with journal := state.journal.reverse }
-
-/-- Signals first, then tokens, then idle scope occurrences, then the parked joins a quiescent closure offers again
-(`reoffer?`, journalled with the `idle` cause of the join's scope occurrence), then the instance's completion. -/
-def settle (hooks : Hooks) (ctx : Ctx) : Nat → Nat → State → Outcome
-  | 0, _, _ => .error (.unsupported "closure-bound") -- dynamic-only: a closure's length depends on the run
-  | fuel + 1, work, state =>
+/-- Signals first, in breadth-first key order (`firstBreadth`), then tokens (`nextToken`), then idle scope occurrences,
+then the parked joins a quiescent closure offers again (`reoffer?`, journalled with the `idle` cause of the join's scope
+occurrence), then the instance's completion, once no signal is queued (DC5). Each unit runs under its unit key, and the
+run log `log` records when it ran; the closure's queued work and transitions are content keyed by unit (DC4). -/
+def settle (hooks : Hooks) (ctx : Ctx) : Nat → Nat → RunLog → State → Except Failure (State × RunLog)
+  | 0, _, _, _ => .error (.unsupported "closure-bound") -- dynamic-only: a closure's length depends on the run
+  | fuel + 1, work, log, state =>
     if work < state.entryCount then .error (.unsupported "closure-bound") -- dynamic-only: so does its size
-    else if state.status != .running then .ok state
+    else if state.status != .running then .ok (state, log)
     else
       let work := work - state.entryCount
-      match state.signals, nextToken ctx state with
-      | next :: rest, _ => do
+      -- every unit's body orders the closure's pending positions by the units `log` records (DC13)
+      let body := unitCtx ctx log
+      match firstBreadth state.queuedSignals with
+      | some (unit, next) => do
         let cause := Cause.signal (signalName next)
-        settle hooks ctx fuel work (← microStep hooks ctx cause none State.root (dispatchSignal hooks ctx next) { state with signals := rest })
-      | [], some (token, rest) => do
-        settle hooks ctx fuel work (← moveToken hooks ctx token { state with tokens := rest })
-      | [], none =>
-        match idleScope? ctx state with
-        | some scope => do
-          settle hooks ctx fuel work (← microStep hooks ctx (.idle scope.id) scope.element scope.id
-            (completeIdleScope hooks ctx scope) state)
-        | none => do
-          match ← reoffer? hooks ctx state with
-          | some (gateway, scope, offered) =>
-            settle hooks ctx fuel work (← microStep hooks ctx (.idle scope) (some gateway) scope (fun _ => .ok offered) state)
-          | none =>
-            if state.idle State.root then
-              microStep hooks ctx (.idle State.root) none State.root
-                (fun state => .ok (endInstance .completed none state)) state
-            else .ok state
-
-/-- The occurrence with the public identity `ref`, the instance rather than the body of a Multi-Instance element: a begun
-one, or a reservation an open item holds, as a Conditional arm of an Event-Based Gateway is addressed before it fires
-(`conditional-catch/condition-wins`). -/
-def occurrenceOf? (ctx : Ctx) (state : State) (ref : OccurrenceRef) : Option Occurrence :=
-  state.occurrences.find? fun occurrence =>
-    (occurrence.begun || state.openItems.any (·.occurrence == occurrence.id)) && occurrence.role == .element && occurrence.activation == ref.activation &&
-      ctx.program.publicId occurrence.element == ref.element && state.instanceOf occurrence.scope == ref.processInstanceId
-
-/-- Run `onActivity` on the Activity an open item belongs to. -/
-def atActivity (ctx : Ctx) (item : OpenItem) (onActivity : Header → ActivityPayload → Outcome) : Outcome :=
-  match (ctx.program.element? item.element).bind (·.activity?) with
-  | some (header, payload) => onActivity header payload
-  | none => .error (.semanticFailure .invariant "activity-item-without-activity")
-
-def command (hooks : Hooks) (ctx : Ctx) (input : CommandInput) (state : State) : Outcome :=
-  let incident (resolve : OpenItem → IncidentDetail → Outcome) : Outcome :=
-    match itemDetail? ctx state input.occurrence (·.incident) with
-    | none => .error (.rejected "unknown-incident")
-    | some (item, detail) => resolve item detail
-  -- A variable command acts from the occurrence's own scope outward, its input-mapped locals first (DATA-SEMANTICS-SPEC,
-  -- Scope data), as CIB's `setVariables` on the waiting activity's execution does (`AbstractVariableScope#setVariable`).
-  let variables (act : ScopeOccurrenceId → Signal) : Outcome :=
-    match occurrenceOf? ctx state input.occurrence with
-    | none => .error (.rejected "unknown-occurrence")
-    | some occurrence => .ok (state.signal (act (state.ownScope occurrence.id occurrence.scope)))
-  match input.action with
-  | .completeUserTask values =>
-    match item? ctx state input.occurrence (·.userTask) with
-    | none => .error (.rejected "unknown-user-task")
-    | some item => atActivity ctx item fun header payload =>
-      hooks.completeUserTask ctx header payload item values state
-  | .retryIncident generation => incident fun item detail => hooks.retryIncident ctx item detail generation state
-  | .cancelIncidentProcess generation => incident fun _ detail => hooks.cancelIncidentProcess ctx detail generation state
-  | .setVariables values =>
-    admitValues (values.map (·.2)) *> variables fun scope => .write scope values .outward
-  | .removeVariables names => variables fun scope => .remove scope names
-
-def deliverEffectResult (hooks : Hooks) (ctx : Ctx) (input : EffectInput) (state : State) : Outcome :=
-  match item? ctx state input.occurrence (·.effect) with
-  | none => .error (.rejected "unknown-effect")
-  | some item => hooks.effectResult ctx item input.outcome state
+        settle hooks ctx fuel work (log.record unit) (← microStep hooks body unit cause none State.root
+          (dispatchSignal hooks body next) { state with queuedSignals := state.queuedSignals.erase unit })
+      | none =>
+        match nextToken hooks ctx log state with
+        | some (unit, token) => do
+          settle hooks ctx fuel work (log.record unit)
+            (← moveToken hooks body unit token { state with queuedTokens := state.queuedTokens.erase unit })
+        | none =>
+          match idleScope? hooks (unitCtx ctx log) state with
+          | some scope =>
+            match UnitKey.idleUnit? scope.id with
+            | none => .error (.semanticFailure .invariant "idle-unit-unkeyed")
+            | some unit => do
+              settle hooks ctx fuel work (log.record unit) (← microStep hooks body unit (.idle scope.id) scope.element scope.id
+                (completeIdleScope hooks body scope) state)
+          | none => do
+            match ← reoffer? hooks body state with
+            | some (gateway, scope, occurrence, offered) =>
+              match UnitKey.offerUnit? occurrence (offerRound state occurrence) with
+              | none => .error (.semanticFailure .invariant "offer-unit-unkeyed")
+              | some unit =>
+                settle hooks ctx fuel work (log.record unit) (← microStep hooks body unit (.idle scope) (some gateway) scope
+                  (fun _ => .ok offered) state)
+            | none =>
+              if state.idle State.root && state.queuedSignals.isEmpty then
+                let unit := UnitKey.ofRoot (.idle [])
+                return (← microStep hooks body unit (.idle State.root) none State.root
+                  (fun state => .ok (endInstance body.positionLe .completed none state)) state, log.record unit)
+              else .ok (state, log)
 
 /-- Run an input's transition on a running instance, then settle. The input starts from an empty per-input record
-(journal, outbox, draft and write log). A committed state holds no draft or write log, since every micro-step's
-`conclude` empties them and the registered `Hooks.cancelled` and `Hooks.written` it then runs refill neither (the
-cancellation lane proves it of the draft's end facts, `Proofs.Cancellation.registered_quiet`), so emptying them here
-changes no run; it makes the input's journal its own by the step's construction rather than by a property of every
+(journal, intents, draft and write log), and the records it completes take the compensation counter as it stands as
+their closure stamp (`State.completionBase`). A committed state holds no draft, which the commit empties
+(`orderJournal`), or write log, since every micro-step's `conclude` empties it and the registered `Hooks.cancelled` and
+`Hooks.written` it then runs refill none, so emptying them here changes no run; it makes the input's journal its own by the step's construction rather than by a property of every
 state a step is given. -/
 def onRunning (hooks : Hooks) (ctx : Ctx) (input : Input) (before : Option State) (transition : State → Outcome) : Outcome :=
   match before with
@@ -432,23 +387,19 @@ def onRunning (hooks : Hooks) (ctx : Ctx) (input : Input) (before : Option State
     if state.status != .running then .error (.rejected "instance-not-running")
     else do
       let (tag, at?, _) := inputHead input
-      let start ← advanceClock at? { state with journal := [], outbox := [], draft := {}, writes := [] }
+      let start ← advanceClock at? { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := state.nextCompletion }
       admitChoices hooks ctx
-      orderJournal (settle hooks ctx closureBound closureWorkBound (← microStep hooks ctx (.input tag) none State.root transition start))
+      let unit := UnitKey.ofRoot .input
+      boundIdentities ctx.program.options.bounds.instanceIdentityBytes =<< orderJournal ctx.program.options.branchSchedule start
+        (settle hooks ctx closureBound closureWorkBound (RunLog.record {} unit) (← microStep hooks ctx unit (.input tag) none
+          State.root transition start))
 
 /-- `Ctx.scopeRole`: read from the slots, since the occurrences that ended there may be gone when an event arrives. -/
 def scopeRole (state : State) (scope : ScopeOccurrenceId) : ScopeRole :=
-  let holds : Iteration → Bool
-    | .active held => held == scope
-    | .waiting => false
-    | .completed _ => false
   let ownedByInstance := (((state.scopes.find? (·.id == scope)).bind (·.occurrence)).bind state.occurrence?).any fun owner =>
-    match owner.continuation with
-    | .multiInstance _ => true
-    | .flow => false
-    | .compensation _ => false
+    owner.continuation.body?.isSome
   if state.slots.compensation.runs.any (·.running.any (·.1 == scope)) then .compensationHandler
-  else if ownedByInstance || state.slots.multiInstances.any (·.instances.any holds) then .multiInstanceInstance
+  else if ownedByInstance || state.slots.multiInstances.any (·.instances.any (·.holds scope)) then .multiInstanceInstance
   else .ordinary
 
 /-- The context every hook of `program` reads, its queries filled from `hooks`. -/
@@ -462,7 +413,7 @@ before any transition reads them, and a Conditional start's predicate reads the 
 start step and a population's Conditional start evaluation (`Population.conditionalStartVerdict`) both fire starts
 through it. -/
 def admittedStartsFired (hooks : Hooks) (ctx : Ctx) (input : StartInput) : Except Failure (List ElementId) :=
-  admitValues (input.variables.map (·.2)) *> hooks.startsFired ctx input
+  admitValues ctx.program.options.bounds (input.variables.map (·.2)) *> hooks.startsFired ctx input
 
 /-- One input. `none` is the state before the instance starts; only a start applies to it. The root's Event
 Sub-Process starts are armed before the start Event's tokens move. Every hook of the input's closure reads its
@@ -476,10 +427,15 @@ def step (hooks : Hooks) (program : Program) (before : Option State) (input : In
     | none => do
       let start ← chooseStart payload.startEvent (← admittedStartsFired hooks ctx payload)
       let initial ← advanceClock payload.atMs
-        ((State.initial payload.instanceId payload.variables payload.businessKey).signal (.armScope State.root))
+        (((State.initial payload.instanceId payload.variables payload.businessKey).signal (.armScope State.root)).queueBatch
+          (.ofRoot .seed))
       admitChoices hooks ctx
-      orderJournal <| settle hooks ctx closureBound closureWorkBound (← microStep hooks ctx (.input .start) (some start) State.root
-        (begin hooks ctx { element := start, scope := State.root, trigger := payload.trigger }) initial)
+      let unit := UnitKey.ofRoot .input
+      boundIdentities ctx.program.options.bounds.instanceIdentityBytes =<< orderJournal ctx.program.options.branchSchedule initial
+        (settle hooks ctx closureBound closureWorkBound
+        (RunLog.record {} unit) (← microStep hooks ctx unit
+        (.input .start) (some start) State.root (begin hooks ctx { element := start, scope := State.root, trigger := payload.trigger })
+        initial))
   | .command data => onRunning hooks ctx input before (command hooks ctx data)
   | .deliver data => onRunning hooks ctx input before fun state => do
     let (item, fired) ← hooks.delivered ctx data state
@@ -491,5 +447,7 @@ def step (hooks : Hooks) (program : Program) (before : Option State) (input : In
   | .effectResult data =>
     effectContinuation ctx data fun data =>
       onRunning hooks ctx (.effectResult data) before (deliverEffectResult hooks ctx data)
+  -- dynamic-only: an input, which no admission sees; general cancellation is HD4's, refused until its stage fills it
+  | .cancelInstance _ => .error (.unsupported "cancel-instance")
 
 end Kernel.Step

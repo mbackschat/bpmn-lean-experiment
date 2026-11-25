@@ -92,7 +92,7 @@ test("a copy whose stamp names no registered deployment, another namespace or an
 /** A program of `key` whose root start is a Message start named `name`, under Message name addressing. */
 const messageStarting = (key: string, name: string): Json => rooted(wired(withOptions(
   replace(base(), "S", start("S", message({ messageRef: `M_${name}`, name: text(name) }))),
-  { messageNames: "addresses", evaluator: "juel" })), key, `${key}-sha`);
+  { messageNames: "addresses", branchSchedule: "declarationDepthFirst", evaluator: "juel" })), key, `${key}-sha`);
 
 test("a root Message start name another key's current deployment subscribes is refused; the same key may redeploy it", () => {
   const result = deployments([messageStarting("A", "Order"), messageStarting("B", "Order"), messageStarting("A", "Order")]);

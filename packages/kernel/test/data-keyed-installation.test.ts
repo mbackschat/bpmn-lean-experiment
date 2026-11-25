@@ -10,8 +10,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { admit, decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
-import type { Outcome, Program, State } from "@bpmn-lean/kernel";
+import { admit, decodeProgram, rootScope, step, stimulusFromJson } from "./lean-paired.ts";
+import type { Outcome, Program, ScopeOccurrenceId, State } from "@bpmn-lean/kernel";
 
 import {
   activity, append, base, end, eventSubProcess, flow, message, replace, scope, start, text, userWork, withFlows, withOptions, wired,
@@ -42,7 +42,7 @@ const twice = (name: string): Json[] =>
   [{ name, value: { kind: "string", value: "first" } }, { name, value: { kind: "string", value: "second" } }];
 const begin = (variables: Json[] = []): Json => ({ kind: "start", commandId: "start", instanceId: "I", variables });
 /** The bindings of the variable set of the scope occurrence `scope`. */
-const frame = (state: State, scope: number): unknown => state.variables.find((vars) => vars.scope === scope)?.entries;
+const frame = (state: State, scope: ScopeOccurrenceId): unknown => new Map(state.variables).get(scope);
 
 const reply = message({ messageRef: "M", name: text("M") });
 /** `S -> T -> E`, `T` a User Task, beside the non-interrupting Message Event Sub-Process `H`, whose start `HS` leads to
@@ -52,7 +52,7 @@ const program = admitted(withFlows(append(replace(base(), "T", activity("T", use
   flow("h1", "HS", "HT"), flow("h2", "HT", "HE")));
 
 test("a start that binds a name twice installs the last binding at the root", () => {
-  assert.deepEqual(frame(run(program, [begin(twice("outcome"))]), 0), [["outcome", { tag: "string", value: "second" }]]);
+  assert.deepEqual(frame(run(program, [begin(twice("outcome"))]), rootScope), [["outcome", { tag: "string", value: "second" }]]);
 });
 
 test("an Event Sub-Process start whose delivered variables bind a name twice leaves the last binding at the root", () => {
@@ -63,5 +63,5 @@ test("an Event Sub-Process start whose delivered variables bind a name twice lea
   const handler = state.scopes.find((entry) => entry.element === "H");
   assert.ok(handler !== undefined, "the Event Sub-Process has begun");
   assert.deepEqual(frame(state, handler.id), []);
-  assert.deepEqual(frame(state, 0), [["outcome", { tag: "string", value: "second" }]]);
+  assert.deepEqual(frame(state, rootScope), [["outcome", { tag: "string", value: "second" }]]);
 });

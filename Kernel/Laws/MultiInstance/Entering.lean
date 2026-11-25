@@ -6,9 +6,9 @@ public import Kernel.Laws.MultiInstance.Rules
 
 What a running body keeps while `Kernel.Feature.MultiInstance` enters and queues its instances (`Entering`), the
 left-fold lemma the entering runs on (`foldl_prefix`), the begins it queues (`Requested`, `QueuedAs`, `QueueKeeps`),
-what an instance's completion records and a body's completion writes (`recorded`, `OutputFits`, `WritesCollection`),
-and the facts about the waiting slots `MultiInstance.opening` picks from, stated without naming the feature so that they
-stay outside its rebuild cone (guard 15); `Kernel.Laws.MultiInstance` proves what the hooks keep and do of them. Nothing
+and what an instance's completion records and a body's completion writes (`recorded`, `OutputFits`,
+`WritesCollection`), stated without naming the feature so that they stay outside its rebuild cone (guard 15);
+`Kernel.Laws.MultiInstance` proves what the hooks keep and do of them. Nothing
 executable imports this module.
 -/
 
@@ -18,7 +18,7 @@ namespace Kernel.Laws.MultiInstance
 
 open Kernel
 
-variable {inv : State → Prop} {settled : State → Nat → Prop}
+variable {inv : State → Prop} {settled : State → OccurrenceId → Prop}
 
 /-- A property of the members folded so far, which each step of a left fold over `whole` extends by its member, holds
 of the fold with all of `whole`. -/
@@ -36,7 +36,7 @@ theorem foldl_prefix {α β : Type} (P : List β → α → Prop) (f : α → β
 occurrence has settled, its scope occurrence, its instances' placement, the scope occurrences the queued begins name,
 each entered for the begin's element and calling no instance, and where its element lies: it is held, or its scope
 occurrence was entered for its element and calls no instance. -/
-def Entering (inv : State → Prop) (settled : State → Nat → Prop) (run : MultiInstanceRun) (state : State)
+def Entering (inv : State → Prop) (settled : State → OccurrenceId → Prop) (run : MultiInstanceRun) (state : State)
     (instances : List Iteration) (requests : List BeginRequest) : Prop :=
   inv state ∧ settled state run.occurrence ∧ run.scope ∈ Laws.State.scopeIds state ∧
     Laws.State.Placed state { run with instances } ∧
@@ -46,18 +46,18 @@ def Entering (inv : State → Prop) (settled : State → Nat → Prop) (run : Mu
     (run ∈ state.slots.multiInstances ∨ ∃ entry ∈ state.scopes, entry.id = run.scope ∧
       entry.element = some run.element ∧ entry.calledInstance = none)
 
-/-- A change that keeps the scope occurrences, the counter and the bodies' slot records keeps what a body keeps while
-it enters. -/
+/-- A change that keeps the scope occurrences, issues no fewer scope keys and keeps the bodies' slot records keeps what
+a body keeps while it enters. -/
 theorem Entering.frame {run : MultiInstanceRun}
     {state after : State} {instances : List Iteration} {requests : List BeginRequest}
     (entering : Entering inv settled run state instances requests) (holds : inv after)
     (carried : settled after run.occurrence) (scopes : after.scopes = state.scopes)
-    (issued : after.nextIssue = state.nextIssue) (runs : after.slots.multiInstances = state.slots.multiInstances) :
+    (grows : Laws.State.ScopeGrows state after) (runs : after.slots.multiInstances = state.slots.multiInstances) :
     Entering inv settled run after instances requests := by
   obtain ⟨_, _, stands, rest⟩ := entering
   obtain ⟨placed, queued, held⟩ := rest
   have same : Laws.State.scopeIds after = Laws.State.scopeIds state := by simp [Laws.State.scopeIds, scopes]
-  exact ⟨holds, carried, same ▸ stands, placed.transport (Nat.le_of_eq issued.symm)
+  exact ⟨holds, carried, same ▸ stands, placed.transport grows
     (fun _ member => .inl (scopes ▸ member)), fun request member =>
       have ⟨bare, standing, rest⟩ := queued request member
       ⟨bare, same ▸ standing, rest.1, scopes ▸ rest.2⟩, held.imp (fun inside => runs ▸ inside) fun entered => scopes ▸ entered⟩
@@ -91,7 +91,7 @@ def recorded (run : MultiInstanceRun) (index : Nat) (output : Option Value) (res
 an output when the loop names an output data item, a String in a String List body (`MultiInstance.submitted`). -/
 def OutputFits (program : Program) (run : MultiInstanceRun) (output : Option Value) : Prop :=
   (∀ loop, LoopOf program run.element loop → loop.outputDataItem.isSome → output.isSome) ∧
-    ∀ value, output = some value → ∀ items, run.collection = .stringList items → ∃ text, value = .string text
+    ∀ value, output = some value → run.strings = true → ∃ text, value = .string text
 
 /-- A scope occurrence entered for an instance of the body `base`: it stands, directly below the body's scope
 occurrence, owned by no occurrence, holding no compensation handler, and no slot of `base` is active in it. -/
@@ -118,17 +118,20 @@ in order, or, under `declarationDepthFirst` for a parallel body, on the closure'
 (`MultiInstance.queueInstances`). -/
 def QueuedAs (program : Program) (mode : MultiInstanceMode) (state queued : State) (requests : List BeginRequest) :
     Prop :=
-  (queued.signals = state.signals ++ requests.map .begin ∧ queued.tokens = state.tokens) ∨
-    (program.options.branchSchedule = .declarationDepthFirst ∧ mode = .parallel ∧ queued.signals = state.signals ∧
-      queued.tokens = state.tokens ++ (requests.map Token.begin).reverse)
+  (queued.batchSignals = state.batchSignals ++ requests.map .begin ∧ queued.batchTokens = state.batchTokens) ∨
+    (program.options.branchSchedule = .declarationDepthFirst ∧ mode = .parallel ∧ queued.batchSignals = state.batchSignals ∧
+      queued.batchTokens = state.batchTokens ++ (requests.map Token.begin).reverse)
 
-/-- What queuing begins keeps of `state`: everything but the queued signals and tokens (`MultiInstance.queueInstances`). -/
+/-- What queuing begins keeps of `state`: everything but the running batch's signals and tokens
+(`MultiInstance.queueInstances`). -/
 structure QueueKeeps (state queued : State) : Prop where
+  queuedSignals : queued.queuedSignals = state.queuedSignals
+  queuedTokens : queued.queuedTokens = state.queuedTokens
   scopes : queued.scopes = state.scopes
   occurrences : queued.occurrences = state.occurrences
   variables : queued.variables = state.variables
   slots : queued.slots = state.slots
-  nextIssue : queued.nextIssue = state.nextIssue
+  occurrenceOrdinals : queued.occurrenceOrdinals = state.occurrenceOrdinals
 
 /-- `value` lists `outputs` as an output collection does: as a List, or as a String List of their texts. -/
 def ListsOutputs (value : Value) (outputs : List Value) : Prop :=
@@ -142,62 +145,6 @@ def WritesCollection (program : Program) (loop : MultiInstance) (run : MultiInst
   ∀ name value, (name, value) ∈ writes → program.options.multiInstanceOutputs = .aggregates ∧
     (∀ slot ∈ run.instances, ∃ output, slot = .completed output) ∧
     (loop.outputDataItem.isSome → OutputsFit run loop → ∃ outputs, ListsOutputs value outputs ∧ Collects run (some outputs))
-
-/-- The slots of `instances` whose index the waiting-slot list `MultiInstance.opening` picks from lists are the waiting
-ones. -/
-theorem waiting_mem {instances : List Iteration} {index : Nat} :
-    index ∈ (instances.zipIdx.filterMap fun (slot, index) =>
-      match slot with
-      | .waiting => some index
-      | .active _ => none
-      | .completed _ => none) ↔ instances[index]? = some .waiting := by
-  constructor
-  · intro member
-    obtain ⟨⟨slot, at_⟩, inside, picked⟩ := List.mem_filterMap.mp member
-    have found := List.mem_zipIdx_iff_getElem?.mp inside
-    cases slot <;> simp at picked
-    subst picked
-    exact found
-  · intro found
-    exact List.mem_filterMap.mpr ⟨(.waiting, index), List.mem_zipIdx_iff_getElem?.mpr found, rfl⟩
-
-/-- The waiting-slot list `MultiInstance.opening` picks from is in increasing index order. -/
-theorem waiting_ordered (instances : List Iteration) :
-    (instances.zipIdx.filterMap fun (slot, index) =>
-      match slot with
-      | .waiting => some index
-      | .active _ => none
-      | .completed _ => none).Pairwise (· < ·) := by
-  refine List.Pairwise.filterMap (R := fun a b : Iteration × Nat => a.2 < b.2) _ ?_ ?_
-  · intro first second lower one picked two picked'
-    obtain ⟨slot, at_⟩ := first
-    obtain ⟨slot', at'⟩ := second
-    cases slot <;> cases slot' <;> simp at picked picked'
-    subst picked picked'
-    exact lower
-  · have := List.pairwise_map (R := (· < ·)) (f := Prod.snd) (l := instances.zipIdx) |>.mp
-    apply this
-    rw [List.zipIdx_map_snd]
-    exact List.pairwise_lt_range'
-
-/-- The first member of a list in increasing order is its member no smaller member precedes. -/
-theorem take_one_ordered {l : List Nat} (ordered : l.Pairwise (· < ·)) {x : Nat} :
-    x ∈ l.take 1 ↔ x ∈ l ∧ ∀ y < x, y ∉ l := by
-  cases l with
-  | nil => simp
-  | cons first rest =>
-    have later := (List.pairwise_cons.mp ordered).1
-    rw [List.take_succ_cons, List.take_zero, List.mem_singleton]
-    constructor
-    · rintro rfl
-      refine ⟨List.mem_cons_self .., fun y lower member => ?_⟩
-      rcases List.mem_cons.mp member with rfl | inside
-      · exact Nat.lt_irrefl _ lower
-      · exact Nat.lt_asymm lower (later y inside)
-    · rintro ⟨member, least⟩
-      rcases List.mem_cons.mp member with same | inside
-      · exact same
-      · exact absurd (List.mem_cons_self ..) (least first (later x inside))
 
 /-- The slot an instance's completion finds active in its scope occurrence. -/
 theorem slot_found {run : MultiInstanceRun} {scope : ScopeOccurrenceId} {index : Nat}

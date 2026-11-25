@@ -1,6 +1,6 @@
 import { asElement, asElementArray } from "../moddle-graph.js";
 import type { ElementRecord } from "../moddle-graph.js";
-import { envelopeFor, headerOf } from "./build.js";
+import { envelopeFor, formRef, headerOf } from "./build.js";
 import { activityProtocol, declaredImplementation, effectBinding, handlerKey, operation } from "./binding.js";
 import {
   associationMappings, associationSourceId, associationSourceItem, associationTargetId, associationTargetItem, dataOutputDecl, inputOutputParameters, javaTrim, valueSource,
@@ -78,6 +78,7 @@ function userWork(ctx: ReadContext, element: ElementRecord): KernelJson {
     dueDate: optionalSource(ctx.attribute(element, "dueDate")),
     followUpDate: optionalSource(ctx.attribute(element, "followUpDate")),
     priority: optionalSource(ctx.attribute(element, "priority")),
+    formRef: formRef(ctx, element),
   } });
 }
 
@@ -245,7 +246,8 @@ type ActivityKind = FlowElementKind.Task | FlowElementKind.ManualTask | FlowElem
 const configuredSendHandler = (ctx: ReadContext, element: ElementRecord): boolean =>
   declaredImplementation(ctx, element)?.name === "delegateExpression" &&
   reference(element, "messageRef", "bpmn:Message") === null && reference(element, "operationRef", "bpmn:Operation") === null &&
-  inputOutputParameters(ctx, element).outputs.length === 0 && ctx.attribute(element, "resultVariable") === null;
+  inputOutputParameters(ctx, element).outputs.length === 0 && inputOutputParameters(ctx, element).structuredOutputs.length === 0 &&
+  ctx.attribute(element, "resultVariable") === null;
 
 /**
  * The work of an Activity and the type recorded for it. A Business Rule Task with `camunda:decisionRef` is a decision
@@ -290,9 +292,18 @@ export function readActivityData(ctx: ReadContext, element: ElementRecord, withA
   const loop = readMultiInstance(ctx, element);
   const parameters = inputOutputParameters(ctx, element);
   const open = (key: string): ElementRecord[] => withAssociations ? list(element, key).filter((association) => !loop.folded.has(association)) : [];
+  const inputs = associationMappings(ctx, open("dataInputAssociations"));
+  const outputs = associationMappings(ctx, open("dataOutputAssociations"));
+  // A structured parameter's position counts the Data Associations, which run before the parameters.
+  const after = (associations: readonly KernelJson[]) => (parameter: KernelJson): KernelJson => {
+    const record = parameter as Readonly<{ position: number }>;
+    return { ...(parameter as Record<string, KernelJson>), position: associations.length + record.position };
+  };
   return {
-    inputs: [...associationMappings(ctx, open("dataInputAssociations")), ...parameters.inputs],
-    outputs: [...associationMappings(ctx, open("dataOutputAssociations")), ...parameters.outputs],
+    inputs: [...inputs, ...parameters.inputs],
+    outputs: [...outputs, ...parameters.outputs],
+    structuredInputs: parameters.structuredInputs.map(after(inputs)),
+    structuredOutputs: parameters.structuredOutputs.map(after(outputs)),
     multiInstance: loop.multiInstance,
   };
 }

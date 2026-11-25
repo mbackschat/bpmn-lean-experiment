@@ -114,7 +114,10 @@ def loopLocals (loop : MultiInstance) : List String :=
 literal positive cardinality, since a collection may be empty and a computed count zero. -/
 def mayRunNone (loop : MultiInstance) : Bool :=
   match loop.count with
-  | .cardinality (.literal (.int count)) => count ≤ 0
+  | .cardinality (.literal value) =>
+    match value with
+    | .int count => count ≤ 0
+    | .null | .bool _ | .decimal _ _ | .double _ | .date _ | .string _ | .stringList _ | .list _ | .map _ => true
   | .cardinality _ => true
   | .collection _ => true
   | .countAndCollection _ _ => true

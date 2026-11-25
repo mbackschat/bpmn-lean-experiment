@@ -53,11 +53,9 @@ def collectionItems : Value → Option (List Value)
   | .null => none
   | .bool _ => none
   | .int _ => none
-  | .decimal _ _ => none
+  | .decimal _ _ | .double _ | .date _ => none
   | .string _ => none
   | .map _ => none
-
-def MultiInstanceRun.items (run : MultiInstanceRun) : Option (List Value) := collectionItems run.collection
 
 /-! ## The portable value domain
 
@@ -89,7 +87,7 @@ def valueBytes : Value → Option Nat
     some ("{\"kind\":\"decimal\",\"coefficient\":,\"scale\":}".utf8ByteSize + stringBytes (toString coefficient) +
       (toString scale).utf8ByteSize)
   | .string value => some ("{\"kind\":\"string\",\"value\":}".utf8ByteSize + stringBytes value)
-  | .stringList _ => none
+  | .double _ | .date _ | .stringList _ => none
   | .list items => do some ("{\"kind\":\"list\",\"value\":}".utf8ByteSize + arrayBytes (← itemsBytes items))
   | .map entries => do some ("{\"kind\":\"map\",\"value\":}".utf8ByteSize + arrayBytes (← entriesBytes entries))
 
@@ -111,57 +109,59 @@ def canonicalDecimal (coefficient scale : Int) : Bool :=
   else 0 ≤ scale && scale ≤ 6 && -9223372036854775808 ≤ coefficient && coefficient ≤ 9223372036854775807 &&
     (scale == 0 || coefficient % 10 != 0)
 
-/-- The UTF-8 bytes of a portable String or Map key, the one owner of that bound. -/
-def textBytes : Nat := 1024
-
 /-- The largest portable Integer, 2^53 − 1, the one owner of that bound. -/
 def integerBound : Int := 9007199254740991
 
-/-- Map keys of at most `textBytes` UTF-8 bytes, in strictly increasing Unicode-scalar order. -/
-def keysInDomain (entries : List (String × Value)) : Bool :=
-  entries.all (·.1.utf8ByteSize ≤ textBytes) && (entries.zip entries.tail).all fun (left, right) => decide (left.1 < right.1)
+/-- Map keys of at most `bounds.textBytes` UTF-8 bytes, in strictly increasing Unicode-scalar order. -/
+def keysInDomain (bounds : Bounds) (entries : List (String × Value)) : Bool :=
+  entries.all (·.1.utf8ByteSize ≤ bounds.textBytes) &&
+    (entries.zip entries.tail).all fun (left, right) => decide (left.1 < right.1)
 
-/- The bounds below are project policy, not CIB limits (the portable-values contract's "Finite limits"): four
-container levels, 32 members per container, 256 value nodes, 16,384 canonical bytes, 1,024-byte Strings and keys,
-Integers up to 2^53 − 1. -/
 mutual
-/-- The value nodes of `value`, the root included, when every node lies in the portable domain and no container is
-nested deeper than four levels counting from `depth` containers above it; `none` otherwise. A String List is
-outside the portable arms at every depth. -/
-def domainNodes (depth : Nat) : Value → Option Nat
+/-- The value nodes of `value`, the root included, when every node lies in the portable domain under `bounds` and no
+container is nested deeper than `bounds.containerLevels` counting from `depth` containers above it; `none` otherwise.
+Integers stay within 2^53 − 1. A String List is outside the portable arms at every depth, and so are a Double and a Date
+until A3 admits them, so every input carrying one is rejected (`value-outside-domain`). -/
+def domainNodes (bounds : Bounds) (depth : Nat) : Value → Option Nat
   | .null => some 1
   | .bool _ => some 1
   | .int value => if 0 ≤ value && value ≤ integerBound then some 1 else none
   | .decimal coefficient scale => if canonicalDecimal coefficient scale then some 1 else none
-  | .string value => if value.utf8ByteSize ≤ textBytes then some 1 else none
-  | .stringList _ => none
-  | .list items => if depth < 4 && items.length ≤ 32 then (memberNodes (depth + 1) items).map (· + 1) else none
+  | .string value => if value.utf8ByteSize ≤ bounds.textBytes then some 1 else none
+  | .double _ | .date _ | .stringList _ => none
+  | .list items =>
+    if depth < bounds.containerLevels && items.length ≤ bounds.containerMembers then
+      (memberNodes bounds (depth + 1) items).map (· + 1)
+    else none
   | .map entries =>
-    if depth < 4 && entries.length ≤ 32 && keysInDomain entries then (entryNodes (depth + 1) entries).map (· + 1)
+    if depth < bounds.containerLevels && entries.length ≤ bounds.containerMembers && keysInDomain bounds entries then
+      (entryNodes bounds (depth + 1) entries).map (· + 1)
     else none
 
-def memberNodes (depth : Nat) : List Value → Option Nat
+def memberNodes (bounds : Bounds) (depth : Nat) : List Value → Option Nat
   | [] => some 0
-  | item :: items => do some ((← domainNodes depth item) + (← memberNodes depth items))
+  | item :: items => do some ((← domainNodes bounds depth item) + (← memberNodes bounds depth items))
 
-def entryNodes (depth : Nat) : List (String × Value) → Option Nat
+def entryNodes (bounds : Bounds) (depth : Nat) : List (String × Value) → Option Nat
   | [] => some 0
-  | (_, value) :: entries => do some ((← domainNodes depth value) + (← entryNodes depth entries))
+  | (_, value) :: entries => do some ((← domainNodes bounds depth value) + (← entryNodes bounds depth entries))
 end
 
-/-- Whether `value` may be a variable's value: a portable value within every bound, or a `stringList` as a whole
-variable value with at most 32 Strings of at most 1,024 bytes, the bounds its wire form has (DATA-SEMANTICS-SPEC
-"Values"). -/
-def inValueDomain : Value → Bool
-  | .stringList items => items.length ≤ 32 && items.all (·.utf8ByteSize ≤ textBytes)
-  | value =>
-    match domainNodes 0 value, valueBytes value with
-    | some nodes, some bytes => nodes ≤ 256 && bytes ≤ 16384
+/-- Whether `value` may be a variable's value under `bounds`: a portable value within every bound, or a `stringList` as
+a whole variable value with at most `containerMembers` Strings of at most `textBytes` bytes, the bounds its wire form
+has (DATA-SEMANTICS-SPEC "Values"). -/
+def inValueDomain (bounds : Bounds) (value : Value) : Bool :=
+  match value with
+  | .stringList items => items.length ≤ bounds.containerMembers && items.all (·.utf8ByteSize ≤ bounds.textBytes)
+  | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .string _ | .list _ | .map _ =>
+    match domainNodes bounds 0 value, valueBytes value with
+    | some nodes, some bytes => nodes ≤ bounds.valueNodes && bytes ≤ bounds.canonicalBytes
     | _, _ => false
 
-/-- Refuse an input whose values leave the domain, before its transition: rejected whole, never truncated. -/
-def admitValues (values : List Value) : Except Failure Unit :=
-  if values.all inValueDomain then .ok () else .error (.rejected "value-outside-domain")
+/-- Refuse an input whose values leave the domain `bounds` sets, before its transition: rejected whole, never
+truncated. -/
+def admitValues (bounds : Bounds) (values : List Value) : Except Failure Unit :=
+  if values.all (inValueDomain bounds) then .ok () else .error (.rejected "value-outside-domain")
 
 /-- The start Event a start input starts among the starts its trigger fired (`Hooks.startsFired`): the one it names,
 else the only one; several unnamed are `start-ambiguous`, since one input starts one instance at one start. -/
@@ -172,17 +172,17 @@ def chooseStart (named : Option ElementId) (fired : List ElementId) : Except Fai
   | none, [] => .error (.rejected "no-start-event")
   | none, _ :: _ :: _ => .error (.rejected "start-ambiguous")
 
-/-- Hold an occurrence whose InputSet is unavailable (`FeatureSlots.held`). -/
-def State.hold (state : State) (held : Held) : State :=
-  { state with slots := { state.slots with held := state.slots.held ++ [held] } }
+/-- Hold an occurrence whose InputSet is unavailable (`FeatureSlots.held`), and record it in the micro-step's Ready
+list: the one writer of `Transition.ready`, so the list names exactly the occurrences the micro-step holds. -/
+def State.hold (state : State) (occurrence : Occurrence) : State :=
+  { state with
+    slots := { state.slots with
+      heldMap := state.slots.heldMap.insert occurrence.id occurrence.scope }
+    draft := { state.draft with ready := state.draft.ready ++ [state.keyOf occurrence] } }
 
 /-- What an expression evaluated from `scope` reads. -/
 def State.evalContext (state : State) (program : Program) (scope : ScopeOccurrenceId) : EvalContext :=
-  { variables := state.visible program scope, nowMs := state.logicalTimeMs }
-
-/-- The variables `scope` itself holds, without the chain behind it. -/
-def State.ownVariables (state : State) (scope : ScopeOccurrenceId) : List (String × Value) :=
-  ((state.variables.find? (·.scope == scope)).map (·.entries)).getD []
+  { variables := state.visible program scope, nowMs := state.logicalTimeMs, bounds := program.options.bounds }
 
 /-- How a catch trigger catches a raised event: its precedence, lower first, and the variables it writes. -/
 structure Catch where
@@ -209,6 +209,31 @@ structure Ctx where
   /-- `Step`: the running input's ranking of competing Conditional items (`ConditionChoice`), which only
   `Feature.Subscriptions` reads. -/
   conditionChoices : List ConditionChoice := []
+  /-- `Step`: the closure's order of units, which orders the pending positions its units issued (DC13, `Issue.notAfter`):
+  breadth-first by default, the run log's under `declarationDepthFirst` (`unitCtx`). Read only through
+  `positionLe`. -/
+  issuerOrder : UnitKey → UnitKey → Ordering := UnitKey.breadth.val
+
+/-- Whether the order position `a` comes no later than `b` in the closure in progress (DC13): every site that orders
+open items or other positions reads this. -/
+def Ctx.positionLe (ctx : Ctx) : Issue → Issue → Bool := Issue.notAfter ctx.issuerOrder
+
+/-- The number the commit gives `activation` if no unit yet to run issues another of its counter before it: the
+counter's count, which no step of a closure writes (`Step.advanceCounters` does at commit), plus the issues of its
+counter the closure made so far that `positionLe` places no later, itself included. Exact under
+`declarationDepthFirst`, whose issue order is the run order; under `orderInvariant` a lower bound, which a unit yet to
+run may raise. A committed activation is its number; a fresh issue tabled under another slot, which no well-formed
+issuer holds as an activation (`Laws.State.IssuerFresh`), its index. -/
+def Ctx.provisional (ctx : Ctx) (state : State) : Issue → Nat
+  | .committed ordinal => ordinal
+  | activation@(.fresh _ index) =>
+    match state.issued[activation]? with
+    | some (.activation slot) => state.activationCount slot + state.issued.foldl (init := 0) fun count issue claimed =>
+        if claimed == .activation slot && ctx.positionLe issue activation then count + 1 else count
+    | some (.scope _) | some (.occurrence _) | some (.item _) | some .position | none => index
+
+/-- The identifier `name` denotes in the closure in progress, its pending activations numbered `provisional`ly. -/
+def Ctx.nameText (ctx : Ctx) (state : State) (name : InstanceName) : String := name.textWith (ctx.provisional state)
 
 /-- Whether `element`, running in the scope occurrence `scope`, is an instance of its own Multi-Instance Activity:
 `scope` is a Multi-Instance instance's and belongs to `element`. An element inside an instance of an enclosing
@@ -262,10 +287,10 @@ later write of the same name replaces it, so it stands behind the written output
 def Ctx.outputReads (ctx : Ctx) (nowMs : Nat) (own installed outer : List (String × Value))
     (written : List (String × Value)) : EvalContext :=
   match ctx.program.options.outputContext with
-  | .submission => { variables := installed ++ own ++ outer, nowMs }
+  | .submission => { variables := installed ++ own ++ outer, nowMs, bounds := ctx.program.options.bounds }
   | .activityScope =>
     let (held, outward) := installed.partition fun (name, _) => own.any (·.1 == name)
-    { variables := held ++ own ++ written.reverse ++ outward ++ outer, nowMs }
+    { variables := held ++ own ++ written.reverse ++ outward ++ outer, nowMs, bounds := ctx.program.options.bounds }
 
 /-- The bindings of `mappings` where an unavailable source has no state to wait in, a semantic failure. -/
 def Ctx.requireMappingsWith (ctx : Ctx) (reads : List (String × Value) → EvalContext) (mappings : List Mapping) :
@@ -282,10 +307,10 @@ def Ctx.requireMappings (ctx : Ctx) (context : EvalContext) (mappings : List Map
 /-- The open item with the public identity `occurrence` whose view has the detail `detail` reads, with that detail. -/
 def itemDetail? {α : Type} (ctx : Ctx) (state : State) (occurrence : OccurrenceRef) (detail : WaitView → Option α) :
     Option (OpenItem × α) :=
-  state.openItems.findSome? fun item =>
+  (itemsInOrder ctx.positionLe state.openItems).findSome? fun item =>
     if ctx.program.publicId item.element == occurrence.element &&
-        ((state.occurrence? item.occurrence).map (·.activation)) == some occurrence.activation &&
-        state.instanceOf item.scope == occurrence.processInstanceId
+        ((state.occurrence? item.id.occurrence).map (·.activation)) == some (.committed occurrence.activation) &&
+        (state.instanceOf item.scope).text == occurrence.processInstanceId
     then (detail item.kind.view).map (item, ·) else none
 
 /-- The open item with the public identity `occurrence` whose view has the detail `detail` reads. -/
@@ -310,7 +335,7 @@ def subscription? (ctx : Ctx) (id : ElementId) : Option Subscription :=
 /-- The one way a boundary fires: an interrupting boundary first cancels the occurrence `host` it hangs on, if any; then
 the boundary's occurrence, the reservation `reserved` or a fresh one, begins and leaves on its flows in `scope`
 (BPMN 2.0.2 §13.5.3, §10.5.6). -/
-def Boundary.fire (boundary : Boundary) (host reserved : Option Nat) (scope : ScopeOccurrenceId)
+def Boundary.fire (boundary : Boundary) (host reserved : Option OccurrenceId) (scope : ScopeOccurrenceId)
     (writes : List (String × Value)) (state : State) : State :=
   let interrupted := match boundary.interrupting, host with
     | true, some owner => state.signal (.cancel owner)
@@ -324,7 +349,7 @@ def Boundary.fire (boundary : Boundary) (host reserved : Option Nat) (scope : Sc
 /-- What a Scope begins with besides its evaluated inputs. `inner` is the reservation of an Event Sub-Process's start
 Event, when a subscription triggered it. -/
 structure ScopeEntry where
-  inner : Option Nat := none
+  inner : Option OccurrenceId := none
   deriving Repr
 
 /-- The default of every lifecycle hook: the mechanism is not registered, a wiring defect `Registry.hooks` excludes. -/
@@ -371,6 +396,8 @@ structure Hooks where
   retryIncident : Ctx → OpenItem → IncidentDetail → Nat → State → Outcome := fun _ _ _ _ => refuse "retryIncident"
   /-- Work: cancel the process of the open incident whose detail is given, for the generation the command names. -/
   cancelIncidentProcess : Ctx → IncidentDetail → Nat → State → Outcome := fun _ _ _ => refuse "cancelIncidentProcess"
+  /-- Work: the open job item, whose detail is given, failed (`Step.jobFailure`). -/
+  failJob : Ctx → OpenItem → JobDetail → State → Outcome := fun _ _ _ => refuse "failJob"
   /-- Work: a message or timer subscription an Activity opened itself (a Receive Task) fired. -/
   triggerActivity : Ctx → Header → ActivityPayload → OpenItem → Fired → State → Outcome :=
     fun _ _ _ _ _ => refuse "triggerActivity"
@@ -378,16 +405,19 @@ structure Hooks where
   starts, Event-Based Gateway arms). -/
   trigger : Ctx → OpenItem → Fired → State → Outcome := fun _ _ _ => refuse "trigger"
   /-- Subscriptions: `Signal.arm`. -/
-  arm : Ctx → Nat → ElementId → ScopeOccurrenceId → State → Outcome := fun _ _ _ _ => refuse "arm"
+  arm : Ctx → OccurrenceId → ElementId → ScopeOccurrenceId → State → Outcome := fun _ _ _ _ => refuse "arm"
   /-- Subscriptions: `Signal.armScope`. -/
   armScope : Ctx → ScopeOccurrenceId → State → Outcome := fun _ _ => refuse "armScope"
   /-- Subscriptions: `Signal.armGateway`. -/
-  armGateway : Ctx → Nat → ElementId → ScopeOccurrenceId → State → Outcome := fun _ _ _ _ => refuse "armGateway"
+  armGateway : Ctx → OccurrenceId → ElementId → ScopeOccurrenceId → State → Outcome := fun _ _ _ _ => refuse "armGateway"
   /-- Propagation: `Signal.raise`. -/
   raise : Ctx → Raised → Origin → State → Outcome := fun _ _ _ => refuse "raise"
   /-- Compensation: `Signal.compensate`. -/
-  compensate : Ctx → ScopeOccurrenceId → Option ElementId → OccurrenceRef → Option Nat → Option Resume → State → Outcome :=
+  compensate : Ctx → ScopeOccurrenceId → Option ElementId → OccurrenceName → Option OccurrenceId → Option Resume → State → Outcome :=
     fun _ _ _ _ _ _ => refuse "compensate"
+  /-- Compensation: `Signal.compensationReady`. -/
+  compensationReady : Ctx → ScopeOccurrenceId → ScopeOccurrenceId → State → Outcome :=
+    fun _ _ _ => refuse "compensationReady"
   /-- Compensation: `Signal.compensationFailed`. -/
   failCompensation : Ctx → ScopeOccurrenceId → String → Option String → Origin → State → Outcome :=
     fun _ _ _ _ _ => refuse "failCompensation"
@@ -408,14 +438,14 @@ structure Hooks where
   /-- Flow: leave through flows. -/
   outflow : Ctx → Occurrence → Leave → State → Outcome := fun _ _ _ => refuse "outflow"
   /-- MultiInstance: one instance of the body occurrence completed. -/
-  instanceCompleted : Ctx → Nat → Occurrence → List (String × Value) → State → Outcome :=
+  instanceCompleted : Ctx → OccurrenceId → Occurrence → List (String × Value) → State → Outcome :=
     fun _ _ _ _ => refuse "instanceCompleted"
-  /-- Compensation: a handler of the run in that scope occurrence completed. -/
-  handlerCompleted : Ctx → ScopeOccurrenceId → Occurrence → State → Outcome :=
-    fun _ _ _ => refuse "handlerCompleted"
-  /-- Compensation: a handler of the run in that scope occurrence left without completing, raised by an event. -/
-  handlerEnded : Ctx → ScopeOccurrenceId → Occurrence → State → Outcome :=
-    fun _ _ _ => refuse "handlerEnded"
+  /-- Compensation: a compensation handler's occurrence completed. -/
+  handlerCompleted : Ctx → Occurrence → State → Outcome :=
+    fun _ _ => refuse "handlerCompleted"
+  /-- Compensation: a compensation handler's occurrence left without completing, raised by an event. -/
+  handlerEnded : Ctx → Occurrence → State → Outcome :=
+    fun _ _ => refuse "handlerEnded"
   -- Notifications
   /-- A generic cancellation removed the occurrence; a feature that must react has this one place. -/
   cancelled : Ctx → Occurrence → State → Outcome := fun _ _ state => .ok state

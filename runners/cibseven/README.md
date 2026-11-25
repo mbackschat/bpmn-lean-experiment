@@ -30,6 +30,8 @@ The script uses Java 21 and the repository Maven wrapper. `BPMN_JAVA_HOME`, `BPM
 
 Ordinary verification never rewrites retained evidence. Use `./scripts/pnpm.sh run replace:cib-evidence` only for the explicit verifier-checked replacement operation; the hosted Verify workflow runs it as parallel shards (`--shard <i>/<n>`) when dispatched with `replace_cib_evidence`. A scenario CIB cannot answer is declared in [`cib-declared-harness-failures.ts`](../../scripts/cib-declared-harness-failures.ts) with its register entry, protocol rule or resource bound; the replacement still runs it and fails when a declared scenario is answered or fails another way, or an undeclared one fails.
 
+To probe one scenario without the full gate or any evidence write, run `./scripts/pnpm.sh run probe:cibseven --out <directory outside the repository> [--effect-schedule <schedule>] <scenario.json>`, or `node scripts/probe-cibseven-scenario.ts` with the same arguments. It builds the same Maven invocation and kill deadline as the replacement, runs a preparing call and then the one scenario, and leaves the bridge's result lines, `probe-answer.json` and `probe.log` in the directory; it exits 0 when CIB answered the scenario, 2 on a usage refusal and 3 on a harness failure (deadline, heap, Maven). Run it locally one at a time, under a timeout.
+
 ## Learn more
 
 - [Source map](SOURCE-MAP.md) maps the runner, projectors, protocols, probes, and replacement tool to their source owners.

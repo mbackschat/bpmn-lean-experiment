@@ -23,6 +23,8 @@ no body. Nothing executable imports it.
 
 namespace Kernel.Laws.Step
 
+variable {le : Issue → Issue → Bool}
+
 open Kernel Kernel.Step
 open Kernel.Laws.State (WellFormed key Counted CountsGrow occurrenceIds)
 
@@ -30,10 +32,10 @@ open Kernel.Laws.State (WellFormed key Counted CountsGrow occurrenceIds)
 while its completion's continuation runs: `b`'s begun occurrences keep their records and keys while held; the end
 facts are distinct and name no held occurrence and only issued activations; each begun occurrence of `b` no longer held
 has ended under its key in `b`, but `x`, which has not ended, under a key no held occurrence has. -/
-structure EndsKept (b : State) (x : Option (Nat × OccurrenceKey)) (s : State) : Prop where
-  below : ∀ o ∈ b.occurrences, o.id < b.nextIssue
+structure EndsKept (b : State) (x : Option (OccurrenceId × OccurrenceKey)) (s : State) : Prop where
+  below : ∀ o ∈ b.occurrences, Laws.State.OccurrenceIssued b o.id
   instanceId : s.instanceId = b.instanceId
-  issued : b.nextIssue ≤ s.nextIssue
+  issued : Laws.State.OccurrenceGrows b s
   records : ∀ o ∈ b.occurrences, o.begun = true → ∀ o' ∈ s.occurrences, o'.id = o.id → o' = o
   keys : ∀ o ∈ b.occurrences, o.begun = true → o ∈ s.occurrences → key s o = key b o
   nodup : (endKeys s).Nodup
@@ -41,11 +43,11 @@ structure EndsKept (b : State) (x : Option (Nat × OccurrenceKey)) (s : State) :
   counted : ∀ k ∈ endKeys s, Counted s k
   removed : ∀ o ∈ b.occurrences, o.begun = true → o.id ∉ occurrenceIds s → (∀ y, x = some y → y.1 ≠ o.id) →
     key b o ∈ endKeys s
-  pending : ∀ y, x = some y → y.1 < s.nextIssue ∧ y.1 ∉ occurrenceIds s ∧ y.2 ∉ endKeys s ∧
+  pending : ∀ y, x = some y → Laws.State.OccurrenceIssued s y.1 ∧ y.1 ∉ occurrenceIds s ∧ y.2 ∉ endKeys s ∧
     (∀ o ∈ s.occurrences, key s o ≠ y.2) ∧ Counted s y.2 ∧ ∀ o ∈ b.occurrences, o.begun = true → o.id = y.1 → key b o = y.2
 
 /-- An input's invariant of its end facts beside `WellFormed`. -/
-def EndsInv (b : State) (x : Option (Nat × OccurrenceKey)) (program : Program) (s : State) : Prop :=
+def EndsInv (b : State) (x : Option (OccurrenceId × OccurrenceKey)) (program : Program) (s : State) : Prop :=
   WellFormed program s ∧ EndsKept b x s
 
 /-- A well-formed state that has ended nothing keeps its own end facts. -/
@@ -53,7 +55,7 @@ theorem EndsKept.start {program : Program} {b : State} (formed : WellFormed prog
     EndsKept b none b where
   below := formed.issued.occurrences
   instanceId := rfl
-  issued := Nat.le_refl _
+  issued := .refl _
   records _ member _ _ inside same := Laws.State.nodup_map_eq formed.distinct.occurrences inside member same
   keys _ _ _ _ := rfl
   nodup := by rw [empty]; exact .nil
@@ -66,7 +68,7 @@ theorem EndsKept.start {program : Program} {b : State} (formed : WellFormed prog
 
 section Step
 
-variable {program : Program} {b s t : State} {x : Option (Nat × OccurrenceKey)} {spare : Option Nat}
+variable {program : Program} {b s t : State} {x : Option (OccurrenceId × OccurrenceKey)} {spare : Option OccurrenceId}
 
 /-- The keys in `s` of distinct occurrences of a well-formed `s` are distinct. -/
 private theorem keys_nodup (formed : WellFormed program s) {gone : List Occurrence} (ids : (gone.map (·.id)).Nodup)
@@ -79,18 +81,18 @@ private theorem keys_nodup (formed : WellFormed program s) {gone : List Occurren
 private theorem held_record (kept : EndsKept b x s) (step : EndsStep s t spare) {o : Occurrence}
     (member : o ∈ b.occurrences) (begun : o.begun = true) {o' : Occurrence} (inside : o' ∈ t.occurrences)
     (same : o'.id = o.id) : o' = o ∧ o ∈ s.occurrences ∧ key t o' = key s o := by
-  rcases step.held o' inside with ⟨old, held, named, ⟨keyed, unchanged⟩⟩ | ⟨fresh, _⟩
+  rcases step.held o' inside with ⟨old, held, named, ⟨keyed, unchanged⟩⟩ | ⟨fresh, _⟩ | ⟨_, _, takes⟩
   · obtain rfl := kept.records o member begun old held (named.symm.trans same)
     obtain rfl := unchanged begun
     exact ⟨rfl, held, keyed⟩
-  · have := kept.below o member
-    have := kept.issued
-    omega
+  · exact absurd (by rw [same]; exact kept.issued _ (kept.below o member)) fresh
+  · exact absurd (by rw [same]; exact kept.issued _ (kept.below o member)) takes.fresh
 
 /-- The parts of `EndsKept` that no exemption reads pass through an operation that frames the end facts. -/
 private theorem advance_common (formed : WellFormed program s) (kept : EndsKept b x s) (step : EndsStep s t spare)
     {gone : List Occurrence} (perm : (endKeys t).Perm (endKeys s ++ gone.map (key s)))
-    (ids : (gone.map (·.id)).Nodup) (within : ∀ o ∈ gone, o ∈ s.occurrences ∧ spare ≠ some o.id ∧ o.id ∉ occurrenceIds t) :
+    (ids : (gone.map (·.id)).Nodup)
+    (within : ∀ o ∈ gone, o ∈ s.occurrences ∧ spare ≠ some o.id ∧ o.id ∉ occurrenceIds t ∧ o.begun = true) :
     (∀ o ∈ b.occurrences, o.begun = true → ∀ o' ∈ t.occurrences, o'.id = o.id → o' = o) ∧
     (∀ o ∈ b.occurrences, o.begun = true → o ∈ t.occurrences → key t o = key b o) ∧
     (endKeys t).Nodup ∧ (∀ o ∈ t.occurrences, key t o ∉ endKeys t) ∧ ∀ k ∈ endKeys t, Counted t k := by
@@ -104,18 +106,21 @@ private theorem advance_common (formed : WellFormed program s) (kept : EndsKept 
     obtain ⟨o, inside, rfl⟩ := List.mem_map.mp new
     exact kept.present o (within o inside).1 (same ▸ old)
   · rcases List.mem_append.mp (perm.mem_iff.mp ended) with old | new
-    · rcases step.held o' inside with ⟨o, held, _, ⟨keyed, _⟩⟩ | ⟨_, uncounted⟩
+    · rcases step.held o' inside with ⟨o, held, _, ⟨keyed, _⟩⟩ | ⟨_, uncounted⟩ | ⟨o, held, takes⟩
       · exact kept.present o held (keyed ▸ old)
       · exact uncounted (kept.counted _ old)
+      · exact kept.present o held (takes.keyed ▸ old)
     · obtain ⟨g, inGone, keyed⟩ := List.mem_map.mp new
-      rcases step.held o' inside with ⟨o, held, named, ⟨keyedHeld, _⟩⟩ | ⟨_, uncounted⟩
+      rcases step.held o' inside with ⟨o, held, named, ⟨keyedHeld, _⟩⟩ | ⟨_, uncounted⟩ | ⟨o, held, takes⟩
       · obtain rfl := Laws.State.nodup_map_eq formed.distinct.keys (within g inGone).1 held (keyed.trans keyedHeld)
-        exact (within g inGone).2.2 (named ▸ List.mem_map.mpr ⟨o', inside, rfl⟩)
+        exact (within g inGone).2.2.1 (named ▸ List.mem_map.mpr ⟨o', inside, rfl⟩)
       · exact uncounted (keyed ▸ goneCounted g inGone)
+      · obtain rfl := Laws.State.nodup_map_eq formed.distinct.keys (within g inGone).1 held (keyed.trans takes.keyed)
+        exact absurd (within g inGone).2.2.2 (by simp [takes.unbegun])
   · rcases List.mem_append.mp (perm.mem_iff.mp ended) with old | new
-    · exact counted_grow step.grow (kept.counted k old)
+    · exact counted_grow step.grow step.table (kept.counted k old)
     · obtain ⟨g, inGone, rfl⟩ := List.mem_map.mp new
-      exact counted_grow step.grow (goneCounted g inGone)
+      exact counted_grow step.grow step.table (goneCounted g inGone)
 
 /-- An end fact of `s` stays one of `t`. -/
 private theorem ended_kept {gone : List Occurrence} (perm : (endKeys t).Perm (endKeys s ++ gone.map (key s)))
@@ -141,23 +146,25 @@ theorem EndsKept.step (formed : WellFormed program s) (kept : EndsKept b x s) (s
     EndsKept b x t := by
   obtain ⟨gone, perm, ids, ⟨within, complete⟩⟩ := step.ends
   obtain ⟨records, keys, nodup, ⟨present, counted⟩⟩ := advance_common formed kept step perm ids within
-  refine ⟨kept.below, step.instanceId.trans kept.instanceId, Nat.le_trans kept.issued step.issued, records, keys, nodup,
+  refine ⟨kept.below, step.instanceId.trans kept.instanceId, kept.issued.trans step.issued, records, keys, nodup,
     present, counted, fun o member begun absent exempt =>
       removed_advance kept perm complete member begun absent (by simp) exempt, fun y named => ?_⟩
   obtain ⟨issued, absent, unended, ⟨unheld, countedY, keyed⟩⟩ := kept.pending y named
-  refine ⟨Nat.lt_of_lt_of_le issued step.issued, fun held => ?_, fun ended => ?_, fun o' inside same => ?_,
-    counted_grow step.grow countedY, keyed⟩
+  refine ⟨step.issued _ issued, fun held => ?_, fun ended => ?_, fun o' inside same => ?_,
+    counted_grow step.grow step.table countedY, keyed⟩
   · obtain ⟨o', inside, same⟩ := List.mem_map.mp held
-    rcases step.held o' inside with ⟨o, old, named, ⟨_, _⟩⟩ | ⟨fresh, _⟩
+    rcases step.held o' inside with ⟨o, old, named, ⟨_, _⟩⟩ | ⟨fresh, _⟩ | ⟨_, _, takes⟩
     · exact absent (List.mem_map.mpr ⟨o, old, named.symm.trans same⟩)
-    · omega
+    · exact fresh (by rw [same]; exact issued)
+    · exact takes.fresh (by rw [same]; exact issued)
   · rcases List.mem_append.mp (perm.mem_iff.mp ended) with old | new
     · exact unended old
     · obtain ⟨g, inGone, keyed⟩ := List.mem_map.mp new
       exact unheld g (within g inGone).1 keyed
-  · rcases step.held o' inside with ⟨o, old, _, ⟨keyedHeld, _⟩⟩ | ⟨_, uncounted⟩
+  · rcases step.held o' inside with ⟨o, old, _, ⟨keyedHeld, _⟩⟩ | ⟨_, uncounted⟩ | ⟨o, old, takes⟩
     · exact unheld o old (keyedHeld ▸ same)
     · exact uncounted (same ▸ countedY)
+    · exact unheld o old (takes.keyed ▸ same)
 
 /-- Removing the begun occurrence `occurrence` without journalling its end exempts it: it is gone, and its key is
 neither ended nor held. -/
@@ -166,30 +173,32 @@ theorem EndsKept.remove (formed : WellFormed program s) (kept : EndsKept b none 
     (gone : occurrence.id ∉ occurrenceIds t) : EndsKept b (some (occurrence.id, key s occurrence)) t := by
   obtain ⟨removedList, perm, ids, ⟨within, complete⟩⟩ := step.ends
   obtain ⟨records, keys, nodup, ⟨present, counted⟩⟩ := advance_common formed kept step perm ids within
-  refine ⟨kept.below, step.instanceId.trans kept.instanceId, Nat.le_trans kept.issued step.issued, records, keys, nodup,
+  refine ⟨kept.below, step.instanceId.trans kept.instanceId, kept.issued.trans step.issued, records, keys, nodup,
     present, counted, fun o inB begun absent exempt =>
       removed_advance kept perm complete inB begun absent (fun same => exempt _ rfl (Option.some.inj same))
         (by simp), fun y named => ?_⟩
   obtain rfl := Option.some.inj named
-  refine ⟨Nat.lt_of_lt_of_le (formed.issued.occurrences occurrence member) step.issued, gone, fun ended => ?_,
-    fun o' inside same => ?_, counted_grow step.grow (formed.occurrencesCounted occurrence member),
+  refine ⟨step.issued _ (formed.issued.occurrences occurrence member), gone, fun ended => ?_,
+    fun o' inside same => ?_, counted_grow step.grow step.table (formed.occurrencesCounted occurrence member),
     fun o inB begun named => ?_⟩
   · rcases List.mem_append.mp (perm.mem_iff.mp ended) with old | new
     · exact kept.present occurrence member old
     · obtain ⟨g, inGone, keyed⟩ := List.mem_map.mp new
       obtain rfl := Laws.State.nodup_map_eq formed.distinct.keys (within g inGone).1 member keyed
       exact (within g inGone).2.1 rfl
-  · rcases step.held o' inside with ⟨o, old, sameId, ⟨keyedHeld, _⟩⟩ | ⟨_, uncounted⟩
+  · rcases step.held o' inside with ⟨o, old, sameId, ⟨keyedHeld, _⟩⟩ | ⟨_, uncounted⟩ | ⟨o, old, takes⟩
     · obtain rfl := Laws.State.nodup_map_eq formed.distinct.keys old member (keyedHeld.symm.trans same)
       exact gone (sameId ▸ List.mem_map.mpr ⟨o', inside, rfl⟩)
     · exact uncounted (same ▸ formed.occurrencesCounted occurrence member)
+    · obtain rfl := Laws.State.nodup_map_eq formed.distinct.keys old member (takes.keyed.symm.trans same)
+      exact takes.spared rfl
   · obtain rfl := kept.records o inB begun occurrence member named.symm
     exact (kept.keys occurrence inB begun member).symm
 
 end Step
 
 /-- Journalling the exempt occurrence's end lifts the exemption. -/
-theorem EndsKept.record {b s : State} {id : Nat} {k : OccurrenceKey} (kept : EndsKept b (some (id, k)) s)
+theorem EndsKept.record {b s : State} {id : OccurrenceId} {k : OccurrenceKey} (kept : EndsKept b (some (id, k)) s)
     (terminal : Terminal) : EndsKept b none (s.recordEnd k terminal) := by
   obtain ⟨issued, absent, unended, ⟨unheld, countedK, keyed⟩⟩ := kept.pending _ rfl
   have ends : endKeys (s.recordEnd k terminal) = endKeys s ++ [k] := by
@@ -217,8 +226,8 @@ theorem EndsKept.record {b s : State} {id : Nat} {k : OccurrenceKey} (kept : End
   · intro k' ended
     rw [ends] at ended
     rcases List.mem_append.mp ended with old | new
-    · exact Laws.State.Counted.congr counters (kept.counted k' old)
-    · exact (List.mem_singleton.mp new) ▸ Laws.State.Counted.congr counters countedK
+    · exact Laws.State.Counted.congr counters (.of_eq (by rw [Laws.State.recordEnd_eq])) (kept.counted k' old)
+    · exact (List.mem_singleton.mp new) ▸ Laws.State.Counted.congr counters (.of_eq (by rw [Laws.State.recordEnd_eq])) countedK
   · intro o member begun absent _
     rw [ends, occurrenceIds, occurrences] at *
     by_cases named : o.id = id
@@ -227,27 +236,33 @@ theorem EndsKept.record {b s : State} {id : Nat} {k : OccurrenceKey} (kept : End
         obtain rfl := Option.some.inj same
         exact fun equal => named equal.symm)
 
-/-- An operation that moves nothing `EndsKept` reads but the issue counter, which it may raise, and the order of the
-end facts keeps it: journalling the draft (`Step.conclude`) and ordering the journal (`Step.orderJournal`) only
+/-- An operation that moves nothing `EndsKept` reads but the keys it issues and the order of the end facts keeps
+it: journalling the draft (`Step.conclude`) and ordering the journal (`Step.orderJournal`) only
 permute them. -/
-theorem EndsKept.unmoved {b s t : State} {x : Option (Nat × OccurrenceKey)} (kept : EndsKept b x s)
+theorem EndsKept.unmoved {b s t : State} {x : Option (OccurrenceId × OccurrenceKey)} (kept : EndsKept b x s)
     (occurrences : t.occurrences = s.occurrences) (counters : t.activations = s.activations)
-    (tree : t.scopes = s.scopes ∧ t.instanceId = s.instanceId) (issued : s.nextIssue ≤ t.nextIssue)
-    (ends : (endKeys t).Perm (endKeys s)) : EndsKept b x t := by
+    (tree : t.scopes = s.scopes ∧ t.instanceId = s.instanceId) (issued : Laws.State.OccurrenceGrows s t)
+    (ends : (endKeys t).Perm (endKeys s)) (table : Laws.State.TableGrows s t := by exact fun _ _ held => held) :
+    EndsKept b x t := by
   have same : ∀ o, key t o = key s o := fun o =>
     Laws.State.key_congr (Laws.State.instanceOf_congr tree.1 tree.2 o.scope)
   have ids : occurrenceIds t = occurrenceIds s := by rw [occurrenceIds, occurrences]; rfl
-  refine ⟨kept.below, tree.2.trans kept.instanceId, Nat.le_trans kept.issued issued, occurrences ▸ kept.records,
+  refine ⟨kept.below, tree.2.trans kept.instanceId, kept.issued.trans issued, occurrences ▸ kept.records,
     fun o member begun inside => (same o).trans (kept.keys o member begun (occurrences ▸ inside)),
     ends.nodup_iff.mpr kept.nodup, fun o inside => ?_,
-    fun k ended => Laws.State.Counted.congr counters (kept.counted k (ends.mem_iff.mp ended)), ?_, fun y named => ?_⟩
+    fun k ended => Laws.State.Counted.congr counters table (kept.counted k (ends.mem_iff.mp ended)), ?_, fun y named => ?_⟩
   · rw [same, ends.mem_iff]
     exact kept.present o (occurrences ▸ inside)
   · intro o member begun absent exempt
     exact ends.mem_iff.mpr (kept.removed o member begun (ids ▸ absent) exempt)
   · obtain ⟨below, absent, unended, ⟨unheld, countedY, keyed⟩⟩ := kept.pending y named
-    exact ⟨Nat.lt_of_lt_of_le below issued, ids ▸ absent, fun ended => unended (ends.mem_iff.mp ended),
-      fun o inside => (same o) ▸ unheld o (occurrences ▸ inside), Laws.State.Counted.congr counters countedY, keyed⟩
+    exact ⟨issued _ below, ids ▸ absent, fun ended => unended (ends.mem_iff.mp ended),
+      fun o inside => (same o) ▸ unheld o (occurrences ▸ inside), Laws.State.Counted.congr counters table countedY, keyed⟩
+
+/-- Moving the issuer keeps `EndsKept`. -/
+theorem EndsKept.reissue {b : State} {x : Option (OccurrenceId × OccurrenceKey)} (s : State) (unit : UnitKey)
+    (kept : EndsKept b x s) : EndsKept b x { s with issuing := unit, issueNext := 0 } :=
+  kept.unmoved rfl rfl ⟨rfl, rfl⟩ (.refl _) (.refl _)
 
 /-! ### The completion pipeline -/
 
@@ -273,7 +288,7 @@ theorem complete_ends {hooks : Hooks} {b : State} {src : Program → State → P
   have startedKept := holds.2.step holds.1 (startReserved_frame holds.1 member sourceType)
   have closedKept : EndsKept b none ((state.startReserved occurrence sourceType).1.closeOwnItems id) := by
     rw [Laws.State.closeOwnItems_eq]
-    exact startedKept.unmoved rfl rfl ⟨rfl, rfl⟩ (Nat.le_refl _) (.refl _)
+    exact startedKept.unmoved rfl rfl ⟨rfl, rfl⟩ (.refl _) (.refl _)
   obtain ⟨closedFrame, closedFree⟩ := facts.closeOwnItems (state.startReserved occurrence sourceType).1 id
   subst made
   have inClosed := closedFrame.begun _ begunMember begunFlag
@@ -285,8 +300,8 @@ theorem complete_ends {hooks : Hooks} {b : State} {src : Program → State → P
     exact inside
   obtain ⟨writtenHolds, writtenFrame⟩ := (contract none).writeOutputs _ _ _ _ _ _ leftHolds stands writing
   have identity : (state.startReserved occurrence sourceType).2.id = id := begunId.trans named
-  have free : ∀ (frame : State), (∀ item ∈ frame.openItems, item ∈ left.openItems) →
-      ∀ item ∈ frame.openItems, item.occurrence ≠ (state.startReserved occurrence sourceType).2.id ∧
+  have free : ∀ (frame : State), (∀ item ∈ itemList frame.openItems, item ∈ itemList left.openItems) →
+      ∀ item ∈ itemList frame.openItems, item.id.occurrence ≠ (state.startReserved occurrence sourceType).2.id ∧
         item.attachedTo ≠ some (state.startReserved occurrence sourceType).2.id := fun frame within item member => by
     rw [identity]
     have inLeft := within item member
@@ -307,14 +322,14 @@ theorem complete_ends {hooks : Hooks} {b : State} {src : Program → State → P
       begunId begunElement begunScope).mono (sourced ctx.program)
   cases finishes with
   | raised continuing =>
-    obtain ⟨removedFormed, removedStands⟩ := pipeline.removeOccurrence _ written _ writtenHolds.1 inWritten
+    obtain ⟨removedFormed, removedStands⟩ := pipeline.removeOccurrence _ ctx.positionLe written _ writtenHolds.1 inWritten
       (free written writtenFrame.items)
     obtain ⟨removing, gone, _⟩ := removeOccurrence_frame writtenHolds.1 inWritten
     have recorded := (writtenHolds.2.remove writtenHolds.1 inWritten removing gone).record .cancelled
     rw [identity] at removedFormed removedStands recorded
     obtain ⟨entry, inside, entryNamed⟩ := removedStands
-    obtain ⟨removedScopes, removedInstances⟩ := facts.removeOccurrence written id
-    obtain ⟨endedScopes, endedInstances⟩ := facts.recordEnd (written.removeOccurrence id) (written.keyOf
+    obtain ⟨removedScopes, removedInstances⟩ := facts.removeOccurrence written ctx.positionLe id
+    obtain ⟨endedScopes, endedInstances⟩ := facts.recordEnd (written.removeOccurrence ctx.positionLe id) (written.keyOf
       (state.startReserved occurrence sourceType).2) .cancelled
     rw [Laws.State.keyOf_eq] at continuing endedScopes endedInstances
     exact continueAfter_keeps (contract none) ⟨pipeline.recordEnd _ _ _ _ removedFormed, recorded⟩
@@ -325,11 +340,11 @@ theorem complete_ends {hooks : Hooks} {b : State} {src : Program → State → P
     obtain ⟨retainedHolds, retainedFrame⟩ := (contract none).completed _ _ _ _ writtenHolds inWritten retaining
     have inRetained := retainedFrame.begun _ inWritten begunFlag
     have unhung := free _ fun item member => writtenFrame.items item (retainedFrame.items item member)
-    obtain ⟨removedFormed, removedStands⟩ := pipeline.removeOccurrence _ _ _ retainedHolds.1 inRetained unhung
+    obtain ⟨removedFormed, removedStands⟩ := pipeline.removeOccurrence _ ctx.positionLe _ _ retainedHolds.1 inRetained unhung
     obtain ⟨removing, gone, _⟩ := removeOccurrence_frame retainedHolds.1 inRetained
     have exempt := retainedHolds.2.remove retainedHolds.1 inRetained removing gone
     rw [identity] at removedFormed removedStands exempt
-    obtain ⟨removedScopes, removedInstances⟩ := facts.removeOccurrence retained id
+    obtain ⟨removedScopes, removedInstances⟩ := facts.removeOccurrence retained ctx.positionLe id
     obtain ⟨continuedFormed, continuedKept⟩ := continueAfter_keeps (contract _) ⟨removedFormed, exempt⟩ removedStands
       (toWritten _ (fun entry member => retainedFrame.instances _ (removedInstances entry member))
         (fun entry member => retainedFrame.scopes ▸ removedScopes entry member)) continuing
@@ -342,18 +357,57 @@ theorem complete_ends {hooks : Hooks} {b : State} {src : Program → State → P
 
 /-! ### The draft a micro-step leaves -/
 
+/-- A moved token's micro-step is its arrival's or its deferred begin's. -/
+theorem moveToken_microStep {hooks : Hooks} {ctx : Ctx} {unit : UnitKey} {token : Token} {state after : State}
+    (ran : moveToken hooks ctx unit token state = .ok after) :
+    ∃ cause element owner body, microStep hooks ctx unit cause element owner body state = .ok after := by
+  cases token with
+  | flow => exact ⟨_, _, _, _, moveToken_flow ran⟩
+  | begin => exact ⟨_, _, _, _, moveToken_begin ran⟩
+
 /-- Every closure micro-step is a micro-step: a moved token's is its arrival's or its deferred begin's. -/
-theorem ClosureStep.microStep {hooks : Hooks} {ctx : Ctx} {state after : State} (step : ClosureStep hooks ctx state after) :
-    ∃ cause element owner body start, microStep hooks ctx cause element owner body start = .ok after := by
+theorem ClosureStep.microStep {hooks : Hooks} {ctx : Ctx} {log : RunLog} {unit : UnitKey} {state after : State}
+    (step : ClosureStep hooks ctx log unit state after) :
+    ∃ cause element owner body start,
+      microStep hooks (unitCtx ctx log) unit cause element owner body start = .ok after := by
   cases step with
   | signal _ _ ran => exact ⟨_, _, _, _, _, ran⟩
-  | @token token _ _ _ _ ran =>
-    cases token with
-    | flow => exact ⟨_, _, _, _, _, moveToken_flow ran⟩
-    | begin => exact ⟨_, _, _, _, _, moveToken_begin ran⟩
-  | idle _ _ _ _ ran => exact ⟨_, _, _, _, _, ran⟩
-  | reoffer _ _ _ _ _ ran => exact ⟨_, _, _, _, _, ran⟩
-  | finish _ _ _ _ _ _ ran => exact ⟨_, _, _, _, _, ran⟩
+  | token _ _ _ ran =>
+    obtain ⟨cause, element, owner, rest₁⟩ := moveToken_microStep ran
+    obtain ⟨body, moved⟩ := rest₁
+    exact ⟨cause, element, owner, body, _, moved⟩
+  | idle _ _ _ _ _ ran => exact ⟨_, _, _, _, _, ran⟩
+  | reoffer _ _ _ _ _ _ ran => exact ⟨_, _, _, _, _, ran⟩
+  | finish _ _ _ _ _ _ _ ran => exact ⟨_, _, _, _, _, ran⟩
+
+/-- A committed micro-step leaves a draft `keeps` holds of when it holds of the empty draft and the hooks
+`Step.conclude` runs once it has journalled the draft, `Hooks.cancelled` and `Hooks.written`, keep it. -/
+theorem microStep_draft {hooks : Hooks} {keeps : Draft → Prop} (empty : keeps {})
+    (cancelled : ∀ ctx occurrence state after, keeps state.draft → hooks.cancelled ctx occurrence state = .ok after →
+      keeps after.draft)
+    (written : ∀ ctx writes state after, keeps state.draft → hooks.written ctx writes state = .ok after →
+      keeps after.draft)
+    {ctx : Ctx} {unit : UnitKey} {cause : Cause} {element : Option ElementId} {owner : ScopeOccurrenceId}
+    {body : State → Outcome} {state after : State} (ran : microStep hooks ctx unit cause element owner body state = .ok after) : keeps after.draft := by
+  obtain ⟨_, _, _, ⟨_, _, _, concluded⟩⟩ := microStep_ok ran
+  obtain ⟨notified, written', grouped, rest₁⟩ := conclude_ok concluded
+  obtain ⟨notifying, writing, _, rfl⟩ := rest₁
+  have fold : ∀ (occurrences : List Occurrence) (start finish : State), keeps start.draft →
+      occurrences.foldlM (fun state occurrence => hooks.cancelled ctx occurrence state) start = .ok finish →
+      keeps finish.draft := by
+    intro occurrences
+    induction occurrences with
+    | nil =>
+      intro start finish kept folded
+      simp only [List.foldlM_nil] at folded
+      exact (Except.ok.inj folded) ▸ kept
+    | cons occurrence rest ih =>
+      intro start finish kept folded
+      simp only [List.foldlM_cons] at folded
+      obtain ⟨mid, told, folded⟩ := bind_ok folded
+      exact ih mid finish (cancelled _ _ _ _ kept told) folded
+  rw [Laws.State.queueBatch_grouped_eq]
+  exact (show keeps written'.draft from written _ _ _ _ (fold _ _ _ empty notifying) writing)
 
 /-- A committed micro-step leaves no end fact in the draft when the hooks `Step.conclude` runs once it has journalled the
 draft, `Hooks.cancelled` and `Hooks.written`, add none to a draft without any. -/
@@ -362,24 +416,20 @@ theorem microStep_drafts {hooks : Hooks}
       after.draft.ended = [])
     (written : ∀ ctx writes state after, state.draft.ended = [] → hooks.written ctx writes state = .ok after →
       after.draft.ended = [])
-    {ctx : Ctx} {cause : Cause} {element : Option ElementId} {owner : ScopeOccurrenceId} {body : State → Outcome}
-    {state after : State} (ran : microStep hooks ctx cause element owner body state = .ok after) : after.draft.ended = [] := by
-  obtain ⟨_, _, _, ⟨_, concluded⟩⟩ := microStep_ok ran
-  obtain ⟨notified, notifying, writing⟩ := conclude_ok concluded
-  have fold : ∀ (occurrences : List Occurrence) (start finish : State), start.draft.ended = [] →
-      occurrences.foldlM (fun state occurrence => hooks.cancelled ctx occurrence state) start = .ok finish →
-      finish.draft.ended = [] := by
-    intro occurrences
-    induction occurrences with
-    | nil =>
-      intro start finish empty folded
-      simp only [List.foldlM_nil] at folded
-      exact (Except.ok.inj folded) ▸ empty
-    | cons occurrence rest ih =>
-      intro start finish empty folded
-      simp only [List.foldlM_cons] at folded
-      obtain ⟨mid, told, folded⟩ := bind_ok folded
-      exact ih mid finish (cancelled _ _ _ _ empty told) folded
-  exact written _ _ _ _ (fold _ _ _ rfl notifying) writing
+    {ctx : Ctx} {unit : UnitKey} {cause : Cause} {element : Option ElementId} {owner : ScopeOccurrenceId}
+    {body : State → Outcome} {state after : State} (ran : microStep hooks ctx unit cause element owner body state = .ok after) : after.draft.ended = [] :=
+  microStep_draft (keeps := (·.ended = [])) rfl cancelled written ran
+
+/-- PD2: a committed micro-step leaves the draft's Ready list empty when `Hooks.cancelled` and `Hooks.written` hold
+nothing, so the next micro-step's Ready list (`Laws.Hooks.hold_ready`) names only the occurrences that micro-step
+holds. -/
+theorem microStep_ready {hooks : Hooks}
+    (cancelled : ∀ ctx occurrence state after, state.draft.ready = [] → hooks.cancelled ctx occurrence state = .ok after →
+      after.draft.ready = [])
+    (written : ∀ ctx writes state after, state.draft.ready = [] → hooks.written ctx writes state = .ok after →
+      after.draft.ready = [])
+    {ctx : Ctx} {unit : UnitKey} {cause : Cause} {element : Option ElementId} {owner : ScopeOccurrenceId}
+    {body : State → Outcome} {state after : State} (ran : microStep hooks ctx unit cause element owner body state = .ok after) : after.draft.ready = [] :=
+  microStep_draft (keeps := (·.ready = [])) rfl cancelled written ran
 
 end Kernel.Laws.Step

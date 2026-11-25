@@ -42,8 +42,7 @@ the scope that holds it: CIB starts the catcher's handler and only then leaves t
 does not interrupt (`ThrowEscalationEventActivityBehavior.java:44-48`). Only an Escalation's search calls this;
 `arriveThrow` leaves an Error or a Cancel throw before raising it. -/
 def throwerLeaves (ctx : Ctx) (origin : Origin) (state : State) : State :=
-  let standing := state.occurrences.find? fun occurrence =>
-    occurrence.element == origin.element && occurrence.scope == origin.scope && occurrence.activation == origin.activation
+  let standing := state.occurrences.find? (·.id == origin.thrower)
   match standing, (ctx.program.element? origin.element).bind (·.event?) with
   | some occurrence, some (_, payload) => state.signal (.complete occurrence.id (throwLeave payload) [] .outward)
   | _, _ => state
@@ -91,7 +90,7 @@ nothing but the thrower, whose leave is queued (`hostLeaves`), remains there. CI
 def endsInstanceWithOutputs (ctx : Ctx) (origin : Origin) (state : State) : Bool :=
   let outputs := (((ctx.program.element? origin.element).bind (·.envelope?)).map (·.outputs)).getD []
   let left := match origin.host with
-    | some host => state.idleWithout origin.scope host
+    | some host => state.idleWithout ctx.positionLe origin.scope host
     | none => state.idle origin.scope
   !outputs.isEmpty && state.instanceRoot origin.scope == origin.scope && left
 
@@ -215,7 +214,7 @@ def leaveOccurrence (hooks : PropagationHooks) (ctx : Ctx) (raised : Raised) (or
     let terminating := match occurrence.occurrence with
       | some activity => if rolledBack == occurrence.id then state.disarm activity else state
       | none => state
-    .ok ((terminating.clearInside rolledBack).signal (.compensate rolledBack none thrown occurrence.occurrence
+    .ok ((terminating.clearInside ctx.positionLe rolledBack).signal (.compensate rolledBack none thrown occurrence.occurrence
       (some (.occur boundary.id parent (.flows boundary.outgoing)))))
   else if boundary.interrupting then
     let host := if state.calledRoot occurrence.id then parent else occurrence.id
@@ -238,10 +237,8 @@ still stand and are no other path. -/
 def busyCalledRoot (ctx : Ctx) (origin : Origin) (occurrence : ScopeOccurrence) (state : State) : Bool :=
   let mapsOutputs := (((occurrence.element.bind ctx.program.element?).bind (·.activity?)).bind (·.2.work.call?)).any
     fun work => !work.outputs.isEmpty || work.propagateAllOutputs
-  let thrower (standing : Occurrence) : Bool :=
-    standing.element == origin.element && standing.activation == origin.activation
-  let otherPath := state.occurrences.any (fun standing => standing.scope == occurrence.id && !thrower standing) ||
-    state.tokens.any (·.busyScope == occurrence.id)
+  let otherPath := state.occurrences.any (fun standing => standing.scope == occurrence.id && standing.id != origin.thrower) ||
+    state.allTokens.any (·.busyScope == occurrence.id)
   origin.scope == occurrence.id && mapsOutputs && otherPath
 
 /-- Under `RaisedCallOutputs.atCalledRoot` (CIB-EXT-0034) a called root the search visits passes its Call's outputs.

@@ -13,7 +13,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
+import { decodeProgram, rootScope, step, stimulusFromJson } from "./lean-paired.ts";
 import type { Outcome, State } from "@bpmn-lean/kernel";
 
 import { activity, base, catchEvent, mapping, message, replace, serviceWork, start, task, userWork, variable, withOptions, wired } from "./admission-refusal-support.ts";
@@ -106,6 +106,15 @@ test("a Start value outside a scalar domain is rejected at any depth", () => {
   }
 });
 
+test("a Start value carrying a Double or a Date is rejected at any depth until A3 admits them", () => {
+  // 1.0 as IEEE 754 binary64 bits, and the Unix epoch.
+  for (const value of [{ kind: "double", bits: "4607182418800017408" }, { kind: "date", epochMs: "0" }]) {
+    assert.deepEqual(run(userTask(), startWith(value)), outside);
+    assert.deepEqual(run(userTask(), startWith(list(value))), outside);
+  }
+  assert.ok(committed(run(userTask(), startWith(list(decimal("1", 0))))), "the control value is accepted");
+});
+
 test("the legacy String List is admitted as a whole variable value only", () => {
   const strings: Json = { kind: "stringList", value: ["a", "b"] };
   assert.ok(committed(run(userTask(), startWith(strings))));
@@ -119,7 +128,7 @@ test("a completion with one value over a bound is rejected whole, and the task t
   assert.ok(committed(started!));
   assert.deepEqual(overflow, outside);
   assert.ok(completed !== undefined && completed.ok);
-  assert.deepEqual(completed.value.variables.find((entry) => entry.scope === 0)?.entries.map(([name]) => name).sort(), ["accepted", "payload"]);
+  assert.deepEqual(new Map(completed.value.variables).get(rootScope)?.map(([name]) => name).sort(), ["accepted", "payload"]);
 });
 
 test("a variable update and an effect result outside the domain are rejected", () => {

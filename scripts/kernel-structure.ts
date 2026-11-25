@@ -33,7 +33,8 @@ export type Module = Readonly<{ name: string; layer: Layer; family: string; file
 
 /** Which layers a layer may import; a feature, admission or dispatch module may also import its own family's modules,
  * so a family splits into paired parts instead of outgrowing the size target, and the runner its own parts. A `Laws`
- * module may also import the executable family it states laws for, and a `Proofs` module reaches `Step` besides the
+ * module may also import the executable family it states laws for (`Laws.Admission` the admission modules,
+ * `Laws.AdmissionRegistry` the admission registry), and a `Proofs` module reaches `Step` besides the
  * `Laws` it composes; no executable layer imports `Laws` or `Proofs`. */
 const mayImport: Readonly<Record<Layer, readonly Layer[]>> = {
   [Layer.Il]: [Layer.Il],
@@ -53,6 +54,10 @@ const mayImport: Readonly<Record<Layer, readonly Layer[]>> = {
 
 /** Only these layers may import outside the kernel: Lean's JSON in the codec and the runner's IO. */
 const foreignImports: ReadonlySet<Layer> = new Set([Layer.Codec, Layer.Run]);
+
+/** The one container import outside the kernel: the state's ordered map, admitted only in the alias module that names
+ * it for the rest of the kernel (KD1, owner decision 2026-11-17). */
+const admittedForeignImport = { file: "Kernel/State/Map.lean", imported: "Std.Data.ExtTreeMap" } as const;
 
 /** `[layer, family]` of a path segment list under `Kernel/` or `packages/kernel/src/`, normalized to kebab-free
  * lower case so that `Feature/Work.lean` and `feature/work.ts` classify alike. */
@@ -126,7 +131,8 @@ export function layeringFindings(modules: readonly Module[], isKernel: (name: st
     const target = byName.get(imported);
     if (target === undefined) {
       if (isKernel(imported)) return [`${module.file}: imports unknown kernel module ${imported}`];
-      return foreignImports.has(module.layer) || module.layer === Layer.Root ? [] : [`${module.file}: imports ${imported} outside the kernel`];
+      const admitted = module.file === admittedForeignImport.file && imported === admittedForeignImport.imported;
+      return admitted || foreignImports.has(module.layer) || module.layer === Layer.Root ? [] : [`${module.file}: imports ${imported} outside the kernel`];
     }
     const sameFamily = target.layer === module.layer && target.family === module.family &&
       (module.layer === Layer.Feature || module.layer === Layer.Admission || module.layer === Layer.Dispatch);
@@ -137,7 +143,9 @@ export function layeringFindings(modules: readonly Module[], isKernel: (name: st
     // registry (proposal, module table).
     const ownLaws = module.layer === Layer.Laws && (target.family === module.family &&
       (target.layer === Layer.Feature || target.layer === Layer.Dispatch) ||
-      target.layer === Layer.Registry && module.family === "registry");
+      target.layer === Layer.Registry && module.family === "registry" ||
+      target.layer === Layer.Admission && module.family === "admission" ||
+      target.layer === Layer.AdmissionRegistry && module.family === "admissionregistry");
     // `Kernel.Proofs.*` reaches `Step` itself, and no other dispatch module (proposal, module table).
     const proofsStep = module.layer === Layer.Proofs && target.layer === Layer.Dispatch && target.family === "step";
     const typeScriptRootLaws = module.layer === Layer.Root && (target.layer === Layer.Laws || target.layer === Layer.Proofs) &&
@@ -189,8 +197,8 @@ function within(inner: string, outer: string): boolean {
  * or `Kernel.<X>` (`…<X>.<Sub>` for a submodule), or one of that module's submodules; a body a deeper namesake `Laws`
  * module opens is opened by no other. An executable module's body is seen only by its own `Laws` module, so a body
  * edit is never an interface edit for anything else. Ownership follows the opener rather than the file's existence:
- * `Laws.State.Removal` and `Laws.Population.Timers` share an executable submodule's name yet read no body, and leave
- * it to `Laws.State` and `Laws.Population`. */
+ * `Laws.Population.Timers` shares an executable submodule's name yet reads no body, and leaves it to
+ * `Laws.Population`. */
 function importAllFindings(relative: string, source: string, openers: ReadonlyMap<string, readonly string[]>): string[] {
   const own = lawsPath(relative);
   return importsAll(source).flatMap((imported) => {

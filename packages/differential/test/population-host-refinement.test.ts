@@ -145,7 +145,11 @@ function hosted(sources: readonly unknown[], document: PopulationScenarioDocumen
     }
   }
   const processStates = [...chains.entries()].sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
-    .map(([, chain]) => observationJson(chain.program, chain.state) as JsonValue);
+    .map(([, chain]) => {
+      const observed = observationJson(chain.program, chain.state);
+      if (!observed.ok) throw new Error(`a chain's observation failed: ${failureCode(observed.failure)}`);
+      return observed.value as JsonValue;
+    });
   return {
     ...(inputFailures.length === 0 ? {} : { inputFailures }),
     ...(inputCascades.length === 0 ? {} : { inputCascades }),

@@ -1,11 +1,13 @@
 module
 
+public import Kernel.State.Key
 public import Kernel.State.Wait
 
 /-! # Kernel inputs
 
-The inputs a host submits, the occurrence identities they name and the start triggers and deliveries they carry.
-Part of `Kernel.State`, which re-exports it.
+The inputs a host submits, the occurrence identities they name and the start triggers and deliveries they carry, and
+the Signal broadcasts an instance hands the host to deliver to the population. Part of `Kernel.State`, which re-exports
+it.
 -/
 
 public section
@@ -18,6 +20,14 @@ structure OccurrenceRef where
   element : ElementId
   activation : Nat
   deriving DecidableEq, Repr
+
+/-- The public identity of the occurrence `name` names in a committed state, whose names are its identifiers. -/
+def OccurrenceName.toRef (name : OccurrenceName) : OccurrenceRef :=
+  { processInstanceId := name.processInstanceId.text, element := name.element, activation := name.activation.number }
+
+/-- The name of the occurrence a public identity names in a committed state. -/
+def OccurrenceRef.toName (ref : OccurrenceRef) : OccurrenceName :=
+  { processInstanceId := .named ref.processInstanceId, element := ref.element, activation := .committed ref.activation }
 
 inductive StartTrigger where
   -- guard-exception(3): the start input's own statement of how it fired, not a second dispatch over `Trigger`.
@@ -75,6 +85,15 @@ structure DeliveryInput where
   atMs : Option Nat := none
   /-- The input's ranking of competing Conditional items (`Input.conditionChoices`). -/
   conditionChoices : List ConditionChoice := []
+  deriving Repr
+
+/-- What a Signal firing hands the item it fires: the delivery's trigger, payload and variables. The item is the
+firing's own (`Signal.fire`), so the firing names no occurrence, and a throw within a closure stores no number its commit
+may still change (KD5). -/
+structure SignalFiring where
+  trigger : DeliveryTrigger
+  payload : Option Value := none
+  variables : List (String × Value) := []
   deriving Repr
 
 /-! ## Inputs -/
@@ -140,6 +159,17 @@ structure EffectInput where
   conditionChoices : List ConditionChoice := []
   deriving Repr
 
+/-- General cancellation of the process instance `processInstanceId` names (HD4): an input of its own, since an
+instance holding no published wait has no occurrence a command could address. `Kernel.Step` refuses it until the
+cancellation's stage fills it. -/
+structure CancelInstanceInput where
+  processInstanceId : String
+  /-- The input's logical time (`Input.atMs`). -/
+  atMs : Option Nat := none
+  /-- The input's ranking of competing Conditional items (`Input.conditionChoices`). -/
+  conditionChoices : List ConditionChoice := []
+  deriving Repr
+
 /-- Guarded type: `Kernel.Step` owns matching on it. Every payload carries `atMs`, the input's logical time in
 milliseconds: the clock advances to it before the input's transition, so a timer armed by the input counts from it, and
 `none` leaves the clock where it is. Logical time is an explicit input, never a wall clock.
@@ -154,14 +184,25 @@ inductive Input where
   | deliver (payload : DeliveryInput)
   | timerFire (payload : TimerInput)
   | effectResult (payload : EffectInput)
+  | cancelInstance (payload : CancelInstanceInput)
   deriving Repr
 
 /-- What an expression reads: the variables in view and the logical time, never a wall clock. -/
 structure EvalContext where
   variables : List (String × Value)
   nowMs : Nat
+  /-- The program's value bounds (`ProfileOptions.bounds`), which a JUEL result's portable-domain check reads. -/
+  bounds : Bounds
   /-- Whether a JUEL result passes the portable-domain check before the site sees it; the Multi-Instance count and
   collection sites read it first (EXPRESSION-SEMANTICS-SPEC "Multi-Instance level", Results). -/
   domainChecked : Bool := true
+
+/-- A Signal thrown to the population, which the host publishes after the input commits (PC-SIGNAL-01, PC-SIGNAL-04). -/
+structure BroadcastIntent where
+  address : SignalAddress
+  variables : List (String × Value) := []
+  businessKey : Option String := none
+  origin : OccurrenceName
+  deriving Repr
 
 end Kernel

@@ -205,6 +205,9 @@ ascend: completing the Scope that holds the split waits for every branch. -/
 structure Walk where
   stop : Element → Bool
   ascends : Bool
+  /-- The Scopes and Calls whose completion an ascent may visit: every one, unless a pairwise comparison stops below the
+  Scopes its two units share (`Concurrency.signalFanOut`). -/
+  ascendsInto : ElementId → Bool := fun _ => true
 
 /-- The visits a token leaving `element` makes on its own way: its flows and Link, and under `ascends` its parent's
 completion or, at a called process's level, its Calls'; a handler completes no parent. -/
@@ -212,8 +215,9 @@ def onwardVisits (reading : Reading) (program : Program) (walk : Walk) (element 
   let next := (continuing program element).map Visit.enters
   let ascent := if walk.ascends && next.isEmpty && !handler reading element then
       match element.header.parent with
-      | some parent => ((program.element? parent).map Visit.completes).toList
-      | none => ((program.processOf element.header).map fun process => (callers program process).map Visit.completes).getD []
+      | some parent => if walk.ascendsInto parent then ((program.element? parent).map Visit.completes).toList else []
+      | none => ((program.processOf element.header).map fun process =>
+          ((callers program process).filter (walk.ascendsInto ·.header.id)).map Visit.completes).getD []
     else []
   next ++ ascent
 
@@ -231,7 +235,7 @@ def entering (reading : Reading) (program : Program) (element : Element) : List 
         if (arm.event?.bind (·.2.catch?)).any conditional then [Visit.completes arm] else []
     else []
   let nested := ((element.scope?).map fun (header, _) =>
-    (enteredChildren program header.id).map Visit.enters ++
+    (program.enteredChildren header.id).map Visit.enters ++
       (startingSubProcesses (program.children (some header.id)) conditional).map Visit.enters).getD []
   conditions ++ arms ++ nested ++ (if reading.mayRunNone element then [Visit.completes element] else [])
 
@@ -291,7 +295,7 @@ structure Contribution where
   locals : List String
   withdraws : List Withdrawal
 
-def runs (reading : Reading) (program : Program) (element : Element) : Contribution :=
+def contribution (reading : Reading) (program : Program) (element : Element) : Contribution :=
   { footprint := { reads := (footprint program element).reads
                    writes := (footprint program element).writes.union (reading.writes element) }
     locals := reading.locals element
@@ -361,6 +365,62 @@ def opened (program : Program) (element : Element) (stops : Bool) : List Visit :
     (startingSubProcesses (program.children (some header.id)) signalled).map Visit.enters).getD []
   caught ++ attached ++ arms ++ started
 
+/-- Whether `withdrawal` removes the element `id`: `id` lies in its region, or in a called process a Call in it
+calls. -/
+def removesElement (program : Program) (withdrawal : Withdrawal) : Nat → ElementId → Bool
+  | 0, _ => false
+  | fuel + 1, id =>
+    withdrawal.everything || match program.element? id with
+    | none => false
+    | some element =>
+      let enclosing := ancestors program program.elements.length element.header.parent
+      let top := (enclosing.getLast?).getD element
+      let inside := match withdrawal.root with
+        | some root => (withdrawal.inclusive && id == root) || enclosing.any (·.header.id == root)
+        | none => (program.element? withdrawal.source).any fun source =>
+          (program.processOf source.header).map (·.definition) == (program.processOf top.header).map (·.definition)
+      inside || ((program.processOf top.header).map fun process =>
+        (callers program process).any fun call => removesElement program withdrawal fuel call.header.id).getD false
+
+/-- The names of `subscriptions`' conditions (`conditionNames`). -/
+def subscriptionNames (program : Program) (opening : Bool) (subscriptions : List Subscription) : NameSet :=
+  subscriptions.foldl (fun found subscription =>
+    found.union (((subscription.trigger.condition?).map
+      (conditionNames program.options.conditionalRetrigger opening)).getD {})) {}
+
+/-- The Conditional subscriptions `element` opens as it begins (`opening`) or ends as it completes: its boundaries, its
+catch, the Event Sub-Process starts of the level its entry opens (a Scope's children, a Call's called processes'), an
+Event-Based Gateway's arms, and at the opening of a root start Event the root level's starts. -/
+def heldSubscriptions (program : Program) (opening : Bool) (element : Element) : List Subscription :=
+  let boundaries := ((element.envelope?.map (·.boundaries)).getD []).map (·.subscription)
+  let caught := (element.event?.bind (·.2.catch?)).toList
+  let starts (level : List Element) : List Subscription :=
+    level.filterMap fun child => (child.scope?).bind fun (_, payload) => payload.kind.start?
+  let called := ((element.activity?.bind fun (_, payload) => payload.work.call?).map fun work =>
+    (program.calledProcessFor program.options.calledElementResolution (program.callerDeployment element.header)
+      work).flatMap program.processChildren).getD []
+  let inner := match element.scope? with
+    | some (header, _) => starts (program.children (some header.id))
+    | none => starts called ++
+      if opening && element.start?.isSome && element.header.parent.isNone && !program.inCalledProcess element.header.id then
+        starts (program.siblings element.header)
+      else []
+  let arms := if (element.gateway?.any fun (_, payload) => (routing payload).waits) then
+      (flowTargets program element.outgoing).filterMap fun arm => arm.event?.bind (·.2.catch?)
+    else []
+  (boundaries ++ caught ++ inner ++ arms).filter conditional
+
+/-- The names of the Conditional subscriptions that `withdrawals` end by removing what carries them: a boundary's host,
+a catch, an Event Sub-Process. -/
+def endedBy (program : Program) (withdrawals : List Withdrawal) : NameSet :=
+  if withdrawals.isEmpty then {}
+  else program.elements.foldl (fun found element =>
+    if withdrawals.any (removesElement program · (program.elements.length + 1) element.header.id) then
+      let own := ((element.envelope?.map (·.boundaries)).getD []).map (·.subscription) ++
+        (element.event?.bind (·.2.catch?)).toList ++ ((element.scope?).bind fun (_, payload) => payload.kind.start?).toList
+      found.union (subscriptionNames program false (own.filter conditional))
+    else found) {}
+
 /-- A visit's identity: its kind and the element or boundary it visits. -/
 def visitKey : Visit → Nat × ElementId
   | .enters element => (0, element.header.id)
@@ -369,7 +429,14 @@ def visitKey : Visit → Nat × ElementId
   | .passes element => (3, element.header.id)
 
 /-- Walk one closure from `begun`. Every element, boundary and passed host is taken at most once per kind of visit; a
-write arms every Conditional of the program once, since it may resume one in the same closure (CIB-EXT-0035). -/
+write arms every Conditional of the program once, since it may resume one in the same closure (CIB-EXT-0035). A visit
+that opens or ends a Conditional subscription, by beginning or completing the element that holds it (`heldSubscriptions`) or by
+removing its carrier (`endedBy`), reads the names through which a write ordered against it changes what it fires
+(`conditionNames`), so `Footprint.races` refuses a concurrent unit's write either side of a subscription's lifetime
+(CIB-OP-0016). Subscriptions one arming may find true together, a contest the input's ranking settles where writes after
+the opening fire one at a time, are read in full: the Conditional arms of an Event-Based Gateway and an interrupting
+boundary or Event Sub-Process start may fire on entry (`entering`), so their completion or removal reads every name a
+write may make them true through. -/
 def closureWalk (reading : Reading) (program : Program) (walk : Walk) (begun : List Visit) : Closure :=
   let key := visitKey
   let rec go (fuel : Nat) (frontier : List Visit) (seen : List (Nat × ElementId)) (found : Closure) (armed : Bool) :
@@ -383,6 +450,8 @@ def closureWalk (reading : Reading) (program : Program) (walk : Walk) (begun : L
       if seen.contains (key visit) then go fuel rest seen found armed
       else
         let seen := key visit :: seen
+        let withdrawn := found.withdraws.length
+        let stopsAt (element : Element) : Bool := walk.stop element && !runsThrough reading element
         let reach (id : ElementId) (found : Closure) : Closure := { found with reached := id :: found.reached }
         let add (part : Contribution) (found : Closure) : Closure :=
           { found with footprint := found.footprint.union part.footprint, locals := part.locals ++ found.locals
@@ -401,22 +470,33 @@ def closureWalk (reading : Reading) (program : Program) (walk : Walk) (begun : L
             (add { footprint := { reads := (footprint program element).reads
                                   writes := (footprint program element).writes.union (reading.writes element) }
                    locals := [], withdraws := [] } (reach element.header.id found), [])
-          | .completes element => (acts element (add (runs reading program element) (reach element.header.id found)),
+          | .completes element => (acts element (add (contribution reading program element) (reach element.header.id found)),
               after reading program walk element ++
                 if walk.ascends && reading.nextInstance element then [Visit.enters element] else [])
           | .enters element =>
-            let stops := walk.stop element && !runsThrough reading element
+            let stops := stopsAt element
             let found := { reach element.header.id found with
               begun := element.header.id :: found.begun, withdraws := removal reading element ++ found.withdraws
               wakes := found.wakes ++ opened program element stops }
             if stops then
-              ({ found with footprint := found.footprint.union { reads := beginReads element } },
+              ({ found with footprint := found.footprint.union { reads := beginReads program element } },
                 entering reading program element)
             else
               let onward := continuing program element ++
-                ((element.scope?).map fun (header, _) => enteredChildren program header.id).getD []
-              ({ acts element (add (runs reading program element) found) with ends := found.ends || onward.isEmpty },
+                ((element.scope?).map fun (header, _) => program.enteredChildren header.id).getD []
+              ({ acts element (add (contribution reading program element) found) with ends := found.ends || onward.isEmpty },
                 entering reading program element ++ after reading program walk element)
+        -- Opening or ending a Conditional subscription, by beginning or completing its carrier or by removing it, reads
+        -- its condition's names (`conditionNames`), so a concurrent unit's write in either order is a race.
+        let lifetime : NameSet := match visit with
+          | .enters element =>
+            (subscriptionNames program true (heldSubscriptions program true element)).union
+              (if stopsAt element then {} else subscriptionNames program false (heldSubscriptions program false element))
+          | .completes element => subscriptionNames program false (heldSubscriptions program false element)
+          | .fires _ => {}
+          | .passes _ => {}
+        let removed := endedBy program (found.withdraws.take (found.withdraws.length - withdrawn))
+        let found := { found with footprint := found.footprint.union { reads := lifetime.union removed } }
         let arms := !armed && (!found.footprint.writes.names.isEmpty || found.footprint.writes.all)
         let next := if arms then next ++ conditionalCatches program else next
         go fuel (rest ++ next) seen found (armed || arms)

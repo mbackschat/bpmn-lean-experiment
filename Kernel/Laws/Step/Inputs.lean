@@ -17,15 +17,15 @@ namespace Kernel.Laws.Step
 open Kernel Kernel.Step
 
 /-- A committed input on a running instance ran its transition as one micro-step, from the instance's state with an
-empty journal and outbox and the clock advanced to the input's time; then the closure settled, and the journal was put
+empty journal and intents and the clock advanced to the input's time; then the closure settled, and the journal was put
 in run order. -/
 theorem onRunning_ok {hooks : Hooks} {ctx : Ctx} {input : Input} {before : Option State}
     {transition : State → Outcome} {after : State} (ran : onRunning hooks ctx input before transition = .ok after) :
     ∃ state start moved settled, before = some state ∧ state.status = .running ∧
-      advanceClock (inputHead input).2.1 { state with journal := [], outbox := [], draft := {}, writes := [] } = .ok start ∧
-      microStep hooks ctx (.input (inputHead input).1) none State.root transition start = .ok moved ∧
-      settle hooks ctx closureBound closureWorkBound moved = .ok settled ∧
-      after = { settled with journal := settled.journal.reverse } := by
+      advanceClock (inputHead input).2.1 { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := state.nextCompletion } = .ok start ∧
+      microStep hooks ctx (.ofRoot .input) (.input (inputHead input).1) none State.root transition start = .ok moved ∧
+      settle hooks ctx closureBound closureWorkBound (RunLog.record {} (.ofRoot .input)) moved = .ok settled ∧
+      orderJournal ctx.program.options.branchSchedule start (.ok settled) = .ok after := by
   rw [onRunning_eq] at ran
   split at ran
   · simp at ran
@@ -38,7 +38,7 @@ theorem onRunning_ok {hooks : Hooks} {ctx : Ctx} {input : Input} {before : Optio
       obtain ⟨start, clocked, ran⟩ := bind_ok ran
       obtain ⟨_, _, ran⟩ := bind_ok ran
       obtain ⟨moved, stepped, ran⟩ := bind_ok ran
-      obtain ⟨final, settled, made⟩ := orderJournal_ok ran
+      obtain ⟨final, settled, made⟩ := orderJournal_settled (bounded_ok ran)
       exact ⟨state, start, moved, final, by simp, by simpa using running, by simpa [head] using clocked,
         by simpa [head] using stepped, settled, made⟩
 
@@ -59,34 +59,32 @@ theorem step_ok {hooks : Hooks} {program : Program} {before : Option State} {inp
       obtain ⟨initial, clocked, ran⟩ := bind_ok ran
       obtain ⟨_, _, ran⟩ := bind_ok ran
       obtain ⟨moved, stepped, ran⟩ := bind_ok ran
-      obtain ⟨final, settled, made⟩ := orderJournal_ok ran
+      obtain ⟨final, settled, made⟩ := orderJournal_settled (bounded_ok ran)
       exact ⟨payload, by simp, by simp, ⟨start, initial, moved, final, clocked, stepped, settled, made, fired, admitted,
         chosen⟩⟩
   · exact .inr ⟨_, _, .inl ⟨_, rfl⟩, ran⟩
-  · refine .inr ⟨_, _, .inr (.inr fun state after transition => ?_), ran⟩
+  · refine .inr ⟨_, _, .inr (.inr (.inr fun state after transition => ?_)), ran⟩
     obtain ⟨⟨item, fired⟩, picked, fire⟩ := bind_ok transition
     exact ⟨item, fired, .inr ⟨_, picked⟩, fire⟩
-  · refine .inr ⟨_, _, .inr (.inr fun state after transition => ?_), timerJob_ok ran⟩
+  · refine .inr ⟨_, _, .inr (.inr (.inr fun state after transition => ?_)), timerJob_ok ran⟩
     split at transition
     · simp at transition
     · exact ⟨_, _, .inl (Laws.Hooks.item?_mem ‹_›), transition⟩
   · obtain ⟨reported, ran⟩ := effectContinuation_ok ran
     exact .inr ⟨_, _, .inr (.inl ⟨reported, rfl⟩), ran⟩
-
-theorem nextToken_rest {ctx : Ctx} {state : State} {token : Token} {rest : List Token}
-    (next : nextToken ctx state = some (token, rest)) : rest.Sublist state.tokens := by
-  rcases nextToken_shape next with ⟨_, queued⟩ | queued <;> rw [queued]
-  · exact List.sublist_cons_self token rest
-  · exact List.sublist_append_left rest [token]
+  · simp at ran
 
 /-- Queued work whose scope occurrence is gone fails its closure micro-step with `queued-work-scope-gone`, after a
-transaction boundary too: the input's outcome is that invariant failure, never `unsupported` (#121, #148). -/
-theorem microStep_scope_gone {hooks : Hooks} {ctx : Ctx} {signal : Signal} {state : State}
-    (fresh : stale state (signalWork hooks ctx signal) = false)
-    (absent : gone state (signalWork hooks ctx signal) = some "queued-work-scope-gone") :
-    microStep hooks ctx (.signal (signalName signal)) none State.root (dispatchSignal hooks ctx signal) state =
+transaction boundary too: the input's outcome is that invariant failure, never `unsupported` (#121, #148), for a unit
+the closure has not run. The body reads the state under the micro-step's unit as issuer (DC12). -/
+theorem microStep_scope_gone {hooks : Hooks} {ctx : Ctx} {unit : UnitKey} {signal : Signal} {state : State}
+    (unrun : state.transitions.contains unit = false) (unseeded : unit ≠ .ofRoot .seed)
+    (fresh : stale { state with issuing := unit, issueNext := 0 } (signalWork hooks ctx signal) = false)
+    (absent : gone { state with issuing := unit, issueNext := 0 } (signalWork hooks ctx signal) =
+      some "queued-work-scope-gone") :
+    microStep hooks ctx unit (.signal (signalName signal)) none State.root (dispatchSignal hooks ctx signal) state =
       .error (.semanticFailure .invariant "queued-work-scope-gone") :=
-  microStep_invariant (dispatchSignal_eq ▸ perform_gone fresh absent)
+  microStep_invariant unrun unseeded (dispatchSignal_eq ▸ perform_gone fresh absent)
 
 /-! ### Inputs no lookup addresses
 
@@ -95,7 +93,7 @@ transition's start state, so the premise speaks of every state agreeing with the
 
 /-- The fields an addressed lookup reads agree with `state`'s. -/
 def Agrees (state s : State) : Prop :=
-  s.occurrences = state.occurrences ∧ s.openItems = state.openItems ∧ s.scopes = state.scopes ∧
+  s.occurrences = state.occurrences ∧ itemList s.openItems = itemList state.openItems ∧ s.scopes = state.scopes ∧
     s.instanceId = state.instanceId
 
 theorem onRunning_rejects {hooks : Hooks} {ctx : Ctx} {input : Input} {state : State} {transition : State → Outcome}
@@ -104,20 +102,21 @@ theorem onRunning_rejects {hooks : Hooks} {ctx : Ctx} {input : Input} {state : S
   simp only [onRunning_eq]
   split
   · exact ⟨_, rfl⟩
-  · cases clock : advanceClock (inputHead input).2.1 { state with journal := [], outbox := [], draft := {}, writes := [] } with
+  · cases clock : advanceClock (inputHead input).2.1 { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := state.nextCompletion } with
     | error failure =>
       obtain ⟨code, rfl⟩ := advanceClock_error clock
       exact ⟨code, by simp [bind, Except.bind]⟩
     | ok start =>
       have agrees : Agrees state start := by
-        rcases advanceClock_ok clock with rfl | ⟨_, rfl⟩ <;> exact ⟨rfl, rfl, rfl, rfl⟩
+        rcases advanceClock_ok clock with rfl | ⟨_, rfl⟩ <;> exact ⟨rfl, Laws.State.items_congr rfl, rfl, rfl⟩
       cases chose : admitChoices hooks ctx with
       | error failure =>
         obtain ⟨code, rfl⟩ := admitChoices_error chose
         exact ⟨code, by simp [bind, Except.bind]⟩
       | ok _ =>
-        obtain ⟨code, rejected⟩ := rejects start agrees
-        exact ⟨code, by simp [bind, Except.bind, microStep_rejected rejected]⟩
+        obtain ⟨code, rejected⟩ := rejects { start with issuing := .ofRoot .input, issueNext := 0 } agrees
+        have empty : start.transitions = ∅ := by rcases advanceClock_ok clock with rfl | ⟨_, rfl⟩ <;> rfl
+        exact ⟨code, by simp [bind, Except.bind, microStep_rejected (by simp [empty]) (by simp) rejected]⟩
 
 /-- An addressed input whose occurrence reference neither `occurrenceOf?` nor `itemDetail?` finds, on any state that
 agrees with the before-state on what they read, is rejected. -/
@@ -126,7 +125,7 @@ theorem step_unknown {hooks : Hooks} {program : Program} {state : State} {input 
       (∃ data : TimerInput, input = .timerFire data ∧ data.occurrence = ref) ∨
       ∃ data : EffectInput, input = .effectResult data ∧ data.occurrence = ref)
     (unknown : ∀ (ctx : Ctx) (s : State), ctx.program = program → s.occurrences = state.occurrences →
-      s.openItems = state.openItems → s.scopes = state.scopes → s.instanceId = state.instanceId →
+      itemList s.openItems = itemList state.openItems → s.scopes = state.scopes → s.instanceId = state.instanceId →
       occurrenceOf? ctx s ref = none ∧ ∀ {α : Type} (detail : WaitView → Option α), itemDetail? ctx s ref detail = none) :
     ∃ code, step hooks program (some state) input = .error (.rejected code) := by
   have lookups : ∀ s, Agrees state s → occurrenceOf? (inputCtx hooks program input) s ref = none ∧
@@ -180,7 +179,7 @@ theorem step_refusesValues {hooks : Hooks} {program : Program} {before : Option 
     {values : List (String × Value)} {failure : Failure}
     (submits : (∃ payload : StartInput, input = .start payload ∧ payload.variables = values) ∨
       ∃ payload : CommandInput, input = .command payload ∧ payload.action = .setVariables values)
-    (refused : admitValues (values.map (·.2)) = .error failure) :
+    (refused : admitValues program.options.bounds (values.map (·.2)) = .error failure) :
     ∃ code, step hooks program before input = .error (.rejected code) := by
   have rejected := Laws.Hooks.admitValues_error refused
   subst rejected
@@ -188,15 +187,15 @@ theorem step_refusesValues {hooks : Hooks} {program : Program} {before : Option 
   · rw [step_eq]
     cases before with
     | some _ => exact ⟨_, rfl⟩
-    | none => exact ⟨"value-outside-domain", by simp [admittedStartsFired_eq, refused, SeqRight.seqRight, bind,
-        Except.bind]⟩
+    | none => exact ⟨"value-outside-domain", by simp [admittedStartsFired_eq, context_program, refused,
+        SeqRight.seqRight, bind, Except.bind]⟩
   · rw [step_eq]
     cases before with
     | none => exact ⟨_, by dsimp only; rw [onRunning_eq]⟩
     | some state =>
       refine onRunning_rejects fun s _ => ⟨"value-outside-domain", ?_⟩
       rw [command_eq]
-      simp [action, refused, SeqRight.seqRight, Except.bind]
+      simp [action, context_program, refused, SeqRight.seqRight, Except.bind]
 
 theorem command_ok {hooks : Hooks} {ctx : Ctx} {data : CommandInput} {state after : State}
     (ran : command hooks ctx data state = .ok after) : Commands hooks ctx state after := by
@@ -235,7 +234,7 @@ theorem command_ok {hooks : Hooks} {ctx : Ctx} {data : CommandInput} {state afte
 
 theorem deliverEffectResult_ok {hooks : Hooks} {ctx : Ctx} {data : EffectInput} {state after : State}
     (ran : deliverEffectResult hooks ctx data state = .ok after) :
-    ∃ item ∈ state.openItems, item.kind.view.effect.isSome = true ∧
+    ∃ item ∈ itemList state.openItems, item.kind.view.effect.isSome = true ∧
       hooks.effectResult ctx item data.outcome state = .ok after := by
   rw [deliverEffectResult_eq] at ran
   split at ran

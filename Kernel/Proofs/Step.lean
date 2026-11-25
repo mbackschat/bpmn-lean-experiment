@@ -34,53 +34,62 @@ from `Laws.Step.Operations` and `Laws.Step.StateFacts`. Nothing executable impor
 
 namespace Kernel.Proofs.Step
 
+variable {le : Issue → Issue → Bool}
+
+variable {program : Program}
+
 open Kernel
 
 /-- A flow token moved into an Exclusive Gateway leaves exactly the flows `Laws.Flow.ExclusiveTakes` allows (BPMN 2.0.2
 §13.4.2, Table 13.2): the micro-step's body begins a fresh occurrence of the Gateway on that flow in the token's scope
 occurrence and enqueues its completion, and nothing else, on the first candidate whose condition holds, else the default.
 Each condition reads the variables visible from the token's scope occurrence and the logical time of the state the token
-arrived in, so beginning the occurrence changes nothing a condition reads. -/
+arrived in, so beginning the occurrence changes nothing a condition reads. The body runs under the micro-step's unit as
+the issuer (DC12), which no condition reads. -/
 def ExclusiveArrival : Prop :=
-  ∀ (ctx : Ctx) (flow : FlowId) (scope : ScopeOccurrenceId) (gateway : ElementId) (header : Header)
+  ∀ (ctx : Ctx) (unit : UnitKey) (flow : FlowId) (scope : ScopeOccurrenceId) (gateway : ElementId) (header : Header)
     (payload : GatewayPayload) (candidates : List FlowId) (default : Option FlowId) (state after : State),
     ctx.program.target? flow = some gateway →
     ctx.program.element? gateway = some (.gateway header payload) →
     payload.kind = .exclusive candidates default →
-    Step.moveToken Registry.hooks ctx (.flow flow scope) state = .ok after →
+    Step.moveToken Registry.hooks ctx unit (.flow flow scope) state = .ok after →
     ∃ next sourceType begun occurrence taken evaluated,
-      Step.arrive Registry.hooks ctx flow scope state = .ok next ∧
-      state.beginOccurrence { element := gateway, scope, incoming := some flow }
+      Step.arrive Registry.hooks ctx flow scope { state with issuing := unit, issueNext := 0 } = .ok next ∧
+      { state with issuing := unit, issueNext := 0 }.beginOccurrence { element := gateway, scope, incoming := some flow }
         (Step.roleOf ctx.program { element := gateway, scope, incoming := some flow }) sourceType = (begun, occurrence) ∧
       occurrence.element = gateway ∧ occurrence.scope = scope ∧ occurrence.incoming = some flow ∧
       next = begun.signal (.complete occurrence.id (.flows taken) [] .outward) ∧
       Laws.Flow.ExclusiveTakes candidates default
-        (Laws.Flow.candidateHolds ctx { variables := state.visible ctx.program scope, nowMs := state.logicalTimeMs })
+        (Laws.Flow.candidateHolds ctx
+          { variables := state.visible ctx.program scope, nowMs := state.logicalTimeMs, bounds := ctx.program.options.bounds })
         evaluated (some taken)
 
 /-- The representative theorem of P0: `Step`'s token routing and dispatch (`Laws.Step`), the registered Gateway hook
 (`Laws.Registry`), Flow's Exclusive Gateway lemma (`Laws.Flow`) and what a condition reads (`Laws.Hooks`,
 `Laws.State`), composed without opening a body. -/
 theorem exclusiveArrival : ExclusiveArrival := by
-  intro ctx flow scope gateway header payload candidates default state after target element kind ran
-  obtain ⟨next, _, arrived, _⟩ := Laws.Step.microStep_ok (Laws.Step.moveToken_flow ran)
+  intro ctx unit flow scope gateway header payload candidates default state after target element kind ran
+  obtain ⟨_, _, next, ⟨_, arrived, _⟩⟩ := Laws.Step.microStep_ok (Laws.Step.moveToken_flow ran)
   obtain ⟨reached, reachedTarget, begun_⟩ := Laws.Step.arrive_ok arrived
   have same : reached = gateway := Option.some.inj (reachedTarget.symm.trans target)
   subst same
   obtain ⟨sourceType, begun, occurrence, ⟨entered, ⟨_, made, ⟨dispatched, written⟩⟩⟩⟩ := Laws.Step.begin_ok begun_
   obtain ⟨_, unwritten⟩ := (Laws.Step.writeStart_ok written).resolve_right fun ⟨nonempty, _⟩ => nonempty (by simp)
   subst unwritten
-  have fresh := Laws.State.beginOccurrence_fresh (state := state) (sourceType := sourceType)
+  have fresh := Laws.State.beginOccurrence_fresh (state := { state with issuing := unit, issueNext := 0 })
+    (sourceType := sourceType)
     (role := Step.roleOf ctx.program { element := reached, scope, incoming := some flow })
     (request := { element := reached, scope, incoming := some flow }) (by simp)
-  have keeps := Laws.State.beginOccurrence_keeps state { element := reached, scope, incoming := some flow }
+  have keeps := Laws.State.beginOccurrence_keeps { state with issuing := unit, issueNext := 0 }
+    { element := reached, scope, incoming := some flow }
     (Step.roleOf ctx.program { element := reached, scope, incoming := some flow }) sourceType
   simp only [made] at fresh keeps
   obtain ⟨isGateway, inScope, onFlow, _⟩ := fresh
   obtain ⟨scopes, variables, time⟩ := keeps
   rw [Laws.Step.dispatch_gateway (isGateway ▸ element), Laws.Registry.hooks_arriveGateway] at dispatched
   obtain ⟨taken, evaluated, signalled, takes⟩ := Laws.Flow.arriveGateway_exclusive kind dispatched
-  rw [inScope, Laws.Hooks.evalContext_eq, Laws.State.visible_congr scopes variables, time] at takes
+  rw [inScope, Laws.Hooks.evalContext_eq, Laws.State.visible_congr (s := state) (Laws.State.scopes_congr scopes) variables,
+    time] at takes
   exact ⟨next, sourceType, begun, occurrence, taken, evaluated, arrived, made, isGateway, inScope, onFlow, signalled,
     takes⟩
 
@@ -94,16 +103,15 @@ theorem initial_wellFormed (program : Program) (instanceId : String) (variables 
   queue_wellFormed (Laws.State.initial_wellFormed instanceId variables businessKey)
     (Laws.State.initial_rootIssued instanceId variables businessKey)
 
-/-- The phases `Step` runs itself keep `Laws.State.WellFormed` (`Laws.Step.Phases`), from what `Laws.State` shows
-each state operation keeps. -/
-theorem phases : Laws.Step.Phases Laws.State.WellFormed :=
+/-- The phases a micro-step's body runs keep `Laws.State.WellFormed` (`Laws.Step.BodyPhases`), from what `Laws.State`
+shows each state operation keeps. -/
+theorem bodyPhases : Laws.Step.BodyPhases Laws.State.WellFormed :=
   have mem : ∀ {state : State} {scope : ScopeOccurrenceId}, Laws.Step.ScopeStands state scope →
       scope ∈ Laws.State.scopeIds state := fun ⟨entry, inside, named⟩ => List.mem_map.mpr ⟨entry, inside, named⟩
   { clock := fun _ _ atMs formed => Laws.State.clock_wellFormed formed atMs
-    journal := fun _ _ _ formed started _ => Laws.State.journal_wellFormed formed started
-    runOrder := fun _ _ formed => Laws.State.runOrder_wellFormed formed
     dequeue := fun _ _ _ formed fewer => Laws.State.dequeue_wellFormed formed fewer
-    untoken := fun _ _ _ formed fewer => Laws.State.untoken_wellFormed formed fewer
+    unqueue := fun _ _ unit formed => Laws.State.unqueue_wellFormed formed unit
+    untoken := fun _ _ unit formed => Laws.State.untoken_wellFormed formed unit
     queueWrite := fun _ _ scope writes rule formed => queueWrite_wellFormed formed scope writes rule
     queueRemove := fun _ _ scope names formed => queueRemove_wellFormed formed scope names
     armIssued := fun _ _ host element scope formed queued => formed.queue.arm host element scope queued
@@ -111,45 +119,61 @@ theorem phases : Laws.Step.Phases Laws.State.WellFormed :=
     armGatewayIssued := fun _ _ occurrence gateway scope formed queued =>
       formed.queue.armGateway occurrence gateway scope queued
     endRecorded := fun _ _ status failure formed queued => formed.queue.ends status failure queued
-    admittedSignal := fun _ _ _ _ formed head => Laws.State.admitted_signal formed head
-    admittedToken := fun _ _ _ _ formed taken => Laws.State.admitted_token formed taken
+    admittedSignal := fun _ _ _ _ formed first => Laws.State.admitted_signal formed (Laws.Step.firstBreadth_mem first)
+    admittedToken := fun _ _ _ _ formed taken => by
+      obtain ⟨_, found, rfl⟩ := taken.found
+      exact Laws.State.admitted_token formed found
     completeQueued := fun _ _ _ _ _ _ formed completed => Laws.State.complete_unnamed formed completed
-    resumable := fun _ _ _ _ _ _ _ _ formed head => Laws.State.resumable_signal formed head
-    raisable := fun _ _ _ _ _ formed head => Laws.State.raisable_signal formed head
+    resumable := fun _ _ _ _ _ _ _ _ formed first => Laws.State.resumable_signal formed (Laws.Step.firstBreadth_mem first)
+    raisable := fun _ _ _ _ _ formed first => Laws.State.raisable_signal formed (Laws.Step.firstBreadth_mem first)
     housed := fun _ _ _ formed member => Laws.State.housed_wellFormed formed member
     issued := fun _ _ _ formed member => formed.issued.occurrences _ member
     bodied := fun _ _ occurrence formed member => formed.bodyRoles occurrence member
     newest := fun _ _ request role sourceType formed => by
       rw [(Laws.State.beginOccurrence_begins formed.activations request role sourceType).started]
       simp
-    unrun := fun _ _ request role sourceType formed admitted run member same => by
+    unrun := fun _ _ request role sourceType formed stands admitted run member same => by
       have begins := Laws.State.beginOccurrence_begins formed.activations request role sourceType
       rw [begins.slots] at member
-      rcases begins.source with ⟨reserved, facts⟩ | fresh
+      have below := (formed.settled.bodies run member).1
+      rw [same] at below
+      rcases begins.source with ⟨reserved, facts⟩ | ⟨_, rekeyed⟩ | fresh
       · exact (admitted.2.1 reserved.id (by simp [Laws.State.names, facts.named])).2.2.2
           (.inr (.inl ⟨run, member, same.trans facts.id⟩))
-      · have below := (formed.settled.bodies run member).1
-        rw [same, fresh.id] at below
-        exact Nat.lt_irrefl _ below
-    unowned := fun _ _ request role sourceType formed admitted =>
-      Laws.State.begin_unowned formed request role sourceType admitted.2.1
+      · exact rekeyed.fresh formed.issuer (mem stands) below
+      · exact fresh.fresh formed.issuer (mem stands) below
+    unowned := fun _ _ request role sourceType formed stands admitted =>
+      Laws.State.begin_unowned formed request role sourceType (mem stands) admitted.2.1
     parkedBegun := fun _ _ waiting _ formed parked member named =>
       (formed.settled.parked waiting parked).2.1 _ member named
-    endInstance := fun _ _ _ _ formed recorded => by
+    endInstance := fun _ le _ _ _ formed recorded => by
       rw [Laws.Step.endInstance_eq]
       exact Laws.State.endInstance_wellFormed formed recorded
     begin := fun _ _ request role sourceType formed stands admitted roled bodied _ _ =>
       ⟨Laws.State.begin_wellFormed formed request role sourceType (mem stands) admitted.2.1 roled bodied,
-        Laws.State.begin_entry formed request role sourceType admitted.1 admitted.2.1 admitted.2.2⟩
+        Laws.State.begin_entry formed request role sourceType (mem stands) admitted.1 admitted.2.1
+          admitted.2.2⟩
     reserve := fun _ _ element scope formed stands _ _ =>
       Laws.State.reserve_wellFormed formed element scope (mem stands)
-    cancel := fun _ _ id formed => Laws.State.cancel_wellFormed formed id }
+    cancel := fun _ le _ id formed => Laws.State.cancel_wellFormed formed id
+    issuer := fun _ _ formed => formed.issuer }
+
+/-- The phases `Step` runs itself keep `Laws.State.WellFormed` (`Laws.Step.Phases`): the body's (`bodyPhases`),
+journalling the draft, moving the batches under the unit key and ordering the journal at the commit. -/
+theorem phases : Laws.Step.Phases Laws.State.WellFormed :=
+  { bodyPhases with
+    journal := fun _ _ _ _ formed fresh started _ => Laws.State.journal_wellFormed formed fresh started
+    queueBatch := fun _ _ unit grouped _ formed => Laws.State.queueBatch_wellFormed formed unit grouped
+    enterUnit := fun _ _ _ formed unrun _ untabled => Laws.State.enterUnit_wellFormed formed unrun untabled
+    leaveUnit := fun _ _ formed ran seed => Laws.State.leaveUnit_wellFormed formed ran seed
+    runOrder := fun _ _ _ _ formed counted batches keys _ made =>
+      Laws.Step.orderJournal_wellFormed formed counted batches keys made }
 
 /-- The completion pipeline's own phases keep `Laws.State.WellFormed` (`Laws.Step.PipelinePhases`). -/
 theorem pipelinePhases : Laws.Step.PipelinePhases Laws.State.WellFormed where
   startReserved _ _ _ sourceType formed member unnamed :=
     Laws.State.startReserved_closeOwnItems_wellFormed formed sourceType member unnamed
-  removeOccurrence _ _ _ formed member free :=
+  removeOccurrence _ _ _ _ formed member free :=
     ⟨(Laws.State.removeOccurrence_wellFormed formed member free).1,
       List.mem_map.mp (Laws.State.removeOccurrence_wellFormed formed member free).2⟩
   recordEnd _ _ key terminal formed := Laws.State.recordEnd_wellFormed formed key terminal
@@ -165,8 +189,8 @@ theorem workOps : Laws.Work.WorkOps program (Laws.State.WellFormed program) wher
   complete _ _ leave writes rule formed member unstarted _ := waited_wellFormed formed member unstarted leave writes rule
   completeOwner _ _ _ leave writes rule formed member owned link _ :=
     complete_wellFormed formed owned (owner_begun formed member owned link) leave writes rule
-  raise _ _ code message patch formed member effect :=
-    effectRaise_wellFormed formed member effect (.error code message) patch
+  raise _ _ _ code message patch formed member effect found :=
+    effectRaise_wellFormed formed member effect (.error code message) patch found
   cancel _ formed := queue_wellFormed formed (by simp [Queueable])
   rekind _ change formed kept only := by
     have still : ∀ item ∈ _, Laws.State.AwaitsTrigger item.kind → Laws.State.AwaitsTrigger (change item).kind :=
@@ -180,7 +204,7 @@ theorem workOps : Laws.Work.WorkOps program (Laws.State.WellFormed program) wher
     cases start : (program.element? item.element).bind (·.start?) with
     | none => rfl
     | some _ =>
-      obtain ⟨_, _, _, ⟨effect, incident⟩⟩ := formed.typed item member (by rw [start]; rfl)
+      obtain ⟨_, _, _, ⟨effect, incident, _⟩⟩ := formed.typed item member (by rw [start]; rfl)
       rw [effect, incident] at waits
       simp at waits
   activity element _ _ typed := by
@@ -195,7 +219,7 @@ theorem workOps : Laws.Work.WorkOps program (Laws.State.WellFormed program) wher
       | gateway header payload => exact Laws.IL.start?_gateway header payload
       | start header payload => simp [Laws.IL.activity?_start] at typed
   distinct _ formed item member other inside same :=
-    Laws.State.nodup_map_eq formed.distinct.items member inside same
+    formed.distinct.items.eq_of_id (member) (inside) same
   queued state signal := by rw [Laws.State.signal_eq]
   kept _ _ := ⟨by rw [Laws.State.signal_eq], by rw [Laws.State.signal_eq]⟩
   completeBegun _ _ leave writes rule formed member begun _ := complete_wellFormed formed member begun leave writes rule
@@ -206,17 +230,16 @@ theorem workOps : Laws.Work.WorkOps program (Laws.State.WellFormed program) wher
       fun _ named => ⟨occurrence, member, Option.some.inj named, begun, rfl⟩, by rw [Laws.State.enterScope_eq],
       fun root inside called => by
         rw [Laws.State.enterScope_eq] at inside
-        rcases List.mem_append.mp inside with old | new
+        rcases Laws.State.mem_scopeList_insert_cases inside with old | rfl
         · exact old
-        · rw [List.mem_singleton.mp new] at called
-          cases called⟩
+        · cases called⟩
   openItem _ kind _ formed member begun unstarted role :=
     ⟨Laws.State.openItem_wellFormed formed kind member begun unstarted role, by rw [Laws.State.openItem_eq]⟩
   arm _ _ element formed member begun _ := queueArm_wellFormed formed member begun element
   enterCalled _ _ variables definition formed member begun _ _ _ := by
     refine ⟨Laws.State.enterCalled_wellFormed formed program member begun variables definition, ?_, ?_⟩ <;>
-      rw [Laws.State.enterCalled_eq _ _ _ _ _ (Laws.State.scopes_fresh formed)]
-    simp
+      rw [Laws.State.enterCalled_eq _ _ _ _ _]
+    exact ⟨_, Laws.State.mem_scopeList_insert_self, rfl⟩
   armScope _ _ formed stands := armScope_wellFormed formed stands
   begin _ _ _ formed stands _ := by
     obtain ⟨entry, inside, named⟩ := stands
@@ -264,7 +287,7 @@ theorem enterBody_wellFormed {state : State} {occurrence : Occurrence} (formed :
       ∀ id, Laws.State.Settled state id →
         Laws.State.Settled (state.enterScope element occurrence.scope locals (some occurrence.id)).1 id :=
   ⟨Laws.State.enterScope_wellFormed formed element (formed.owned.occurrenceScopes occurrence member) locals
-    fun _ same => ⟨occurrence, member, Option.some.inj same, begun, rfl⟩, fun _ settled => settled.enter _ _ _ _⟩
+    fun _ same => ⟨occurrence, member, Option.some.inj same, begun, rfl⟩, fun _ settled => settled.enter formed.historic formed.issuer _ (formed.owned.occurrenceScopes occurrence member) _ _⟩
 
 /-- The Multi-Instance operations record (`Laws.MultiInstance.MultiInstanceOps`) of `WellFormed`. -/
 theorem multiInstanceOps : Laws.MultiInstance.MultiInstanceOps program (Laws.State.WellFormed program)
@@ -275,30 +298,30 @@ theorem multiInstanceOps : Laws.MultiInstance.MultiInstanceOps program (Laws.Sta
   begun _ _ formed member begun := Laws.State.begun_settled formed member begun
   housed _ occurrence formed member := formed.owned.occurrenceScopes occurrence member
   issued _ formed := formed.issued.scopes
+  keyed _ formed := formed.distinct.scopesKeyed
   contexts _ formed run member context inside := ((formed.settled.runsPlaced run member).2 context inside).1
   hold _ held formed := hold_wellFormed formed held
   enter _ element parent locals owner formed stands owned _ :=
     ⟨Laws.State.enterScope_wellFormed formed element stands locals owned,
-      fun _ settled => settled.enter element parent locals owner, by
-        rw [Laws.State.enterScope_eq]
-        exact Laws.State.scopes_fresh formed⟩
+      fun _ settled => settled.enter formed.historic formed.issuer element stands locals owner, Laws.State.enterScope_fresh formed.historic formed.issuer element stands
+        locals owner⟩
   arm _ _ element formed member begun _ :=
     ⟨queueArm_wellFormed formed member begun element, fun _ settled => settled.signal fun _ same => by simp at same⟩
   begin _ _ formed bare stands _ := ⟨bareBegin_wellFormed formed bare stands, fun _ settled => settled.begin bare⟩
   defer _ _ formed bare _ := ⟨Laws.State.deferBegins_wellFormed formed bare,
     fun _ settled => settled.defer fun request member => (bare request member).1⟩
-  record state run index scope output results formed member slot stands _ := by
+  record le state run index scope output results formed member slot stands _ := by
     obtain ⟨below, parentOf⟩ := formed.settled.placed run member _ (List.mem_of_getElem? slot)
     obtain ⟨entry, inside, named⟩ := List.mem_map.mp stands
     subst named
     obtain ⟨left, standing, frame⟩ := Laws.State.leaveChild_wellFormed formed inside (parentOf entry inside rfl)
-    have body : Laws.State.Settled (state.leaveScope entry.id) run.occurrence :=
-      (formed.settled.bodies run member).transport (Nat.le_of_eq frame.nextIssue.symm)
+    have body : Laws.State.Settled (state.leaveScope le entry.id) run.occurrence :=
+      (formed.settled.bodies run member).transport frame.occurrenceGrows
         (fun _ present _ => .inl (frame.occurrencesSublist.subset present))
-        (fun _ queued => queued.shrink (by rw [frame.signals]; exact .refl _) frame.tokensSublist)
-    have placed : Laws.State.Placed (state.leaveScope entry.id) (Laws.MultiInstance.recorded run index output results) :=
-      fun inner active => (formed.settled.placed run member).transport (Nat.le_of_eq frame.nextIssue.symm)
-        (fun _ present => .inl (frame.scopesSublist.subset present)) inner
+        (fun _ queued => queued.shrink (fun _ member => frame.signals ▸ member) (fun _ member => frame.tokensSublist.subset member))
+    have placed : Laws.State.Placed (state.leaveScope le entry.id) (Laws.MultiInstance.recorded run index output results) :=
+      fun inner active => (formed.settled.placed run member).transport (Laws.State.leaveScope_grows state entry.id)
+        (fun _ present => .inl (frame.scopesSubset present)) inner
         ((List.mem_or_eq_of_mem_set active).resolve_right (by simp))
     rw [Laws.MultiInstance.leftWith, Laws.MultiInstance.setRun_eq]
     refine ⟨Laws.State.slots_wellFormed left ⟨left.settled.parked, fun other present => ?_, left.settled.resumed,
@@ -333,7 +356,7 @@ theorem startsOps : Laws.Starts.StartsOps (Laws.State.WellFormed program) where
 theorem scopesOps : Laws.Scopes.ScopesOps program (Laws.State.WellFormed program) where
   owner _ _ _ formed member owned link := owner_begun formed member owned link
   complete _ _ leave writes rule formed member begun _ := complete_wellFormed formed member begun leave writes rule
-  clear _ _ _ formed member begun ready := Laws.State.clearInside_inner formed member begun ready
+  clear le _ _ _ formed member begun ready := Laws.State.clearInside_inner formed member begun ready
   enter _ element locals _ _ formed member begun _ claimable :=
     Laws.State.enterScope_inner formed element locals member begun claimable
   arm _ _ element formed member begun _ := queueArm_wellFormed formed member begun element
@@ -356,12 +379,14 @@ theorem propagationOps : Laws.Propagation.PropagationOps program (Laws.State.Wel
   complete _ _ leave writes rule formed member begun _ := complete_wellFormed formed member begun leave writes rule
   raise _ event _ formed member begun _ := raiseFrom_wellFormed formed member begun event (fun _ same => by cases same) []
   fire _ _ _ formed := queue_wellFormed formed trivial
-  outbox _ _ formed := formed.narrow ⟨rfl, rfl, rfl, rfl, fun _ => by apply Laws.State.instanceOf_congr <;> rfl, id,
-    .refl _, .refl _, .refl _, fun _ => id, .same rfl⟩ rfl formed.startedOnce
+  batchIntents _ _ formed := formed.narrow {
+      scopeMap := rfl, scopeOrdinals := rfl, occurrenceMap := rfl, activations := rfl, occurrenceOrdinals := rfl,
+      instances := fun _ => by apply Laws.State.instanceOf_congr <;> rfl, recorded := id, items := .refl _,
+      tokens := .refl _, signals := .refl _, starts := fun _ => id, slots := .same rfl, issued := rfl, issuing := rfl, issueNext := rfl } rfl formed.startedOnce
   compensate _ _ _ _ _ _ formed member begun _ _ _ := queue_wellFormed formed fun _ same => by
     cases same
-    exact ⟨fun _ _ same => by cases same; exact begun_settled formed member begun, fun _ _ same => by simp at same⟩
-  terminate _ _ formed member begun :=
+    exact ⟨fun _ _ same => by cases same; exact begun_settled formed member begun, fun _ same => by simp at same⟩
+  terminate le _ _ formed member begun :=
     have cleared := Laws.State.clearInside_inner formed member begun (inner := none) (by simp)
     ⟨cleared.1, cleared.2.1⟩
   openItem _ kind _ formed member begun unstarted role :=
@@ -377,14 +402,14 @@ theorem propagationOps : Laws.Propagation.PropagationOps program (Laws.State.Wel
   failCompensation _ _ _ _ _ formed := queue_wellFormed formed trivial
   fail _ _ formed := queue_wellFormed formed (by simp [Queueable])
   disarm _ host formed := ⟨Laws.State.disarm_wellFormed formed host, by rw [Laws.State.disarm_eq]⟩
-  rollBack _ _ _ _ _ _ _ formed stands _ _ _ _ := queue_wellFormed
+  rollBack le _ _ _ _ _ _ _ formed stands _ _ _ _ := queue_wellFormed
     (Laws.State.clearAll_wellFormed formed (List.mem_map.mpr stands)) fun _ same => by
       cases same
-      exact ⟨fun _ _ wrong => (by cases wrong), fun _ _ wrong => by cases wrong⟩
+      exact ⟨fun _ _ wrong => (by cases wrong), fun _ wrong => by cases wrong⟩
 
 /-- A fired item's scope occurrence stands, and so does its host, if any, begun there. -/
 theorem fired_hangs {state : State} (formed : Laws.State.WellFormed program state) {item : OpenItem}
-    (member : item ∈ state.openItems) : ∀ id, item.attachedTo = some id → ∃ occurrence ∈ (state.closeItem item.id).occurrences,
+    (member : item ∈ itemList state.openItems) : ∀ id, item.attachedTo = some id → ∃ occurrence ∈ (state.closeItem item.id).occurrences,
       occurrence.id = id ∧ occurrence.begun = true ∧ occurrence.scope = item.scope := by
   rw [Laws.State.closeItem_eq]
   exact formed.owned.attachments item member
@@ -405,9 +430,7 @@ theorem subscriptionsOps : Laws.Subscriptions.SubscriptionsOps program (Laws.Sta
   subscribed state kind element scope host passive _ := by
     have reserves := Laws.State.reserve_reserves state element scope
     rw [Laws.State.openSubscription_eq]
-    exact ⟨reserves.scopes, fun occurrence member => by
-      rw [reserves.occurrences]
-      exact List.mem_append_left _ member, by rw [Laws.State.reserve_slots]⟩
+    exact ⟨reserves.scopes, fun occurrence member => reserves.mem_of member, by rw [Laws.State.reserve_slots]⟩
   closeComplete _ _ leave writes formed member _ :=
     have ⟨closed, fired⟩ := Laws.State.closeItem_fired formed member
     fired_complete closed fired leave writes .outward
@@ -417,7 +440,7 @@ theorem subscriptionsOps : Laws.Subscriptions.SubscriptionsOps program (Laws.Sta
     have disarmed := Laws.State.disarm_wellFormed closed gateway
     have kept : host ∈ ((state.closeItem item.id).disarm gateway).occurrences := by
       rw [Laws.State.disarm_eq, Laws.State.closeItem_eq]
-      exact List.mem_filter.mpr ⟨present, by simp [begun]⟩
+      exact Laws.State.mem_occurrenceList_filter_val.mpr ⟨present, by simp [begun]⟩
     refine fired_complete (named ▸ complete_wellFormed disarmed kept begun _ _ _)
       ((Laws.State.disarm_fired fired gateway).signal (fun _ same => by simp at same) (fun _ _ _ same => ?_)
         (fun _ _ _ _ _ same => by simp at same) fun _ _ same => by simp at same) leave writes .outward
@@ -454,8 +477,8 @@ theorem subscriptionsOps : Laws.Subscriptions.SubscriptionsOps program (Laws.Sta
 /-- The compensation hooks' operations record (`Laws.Compensation.CompensationOps`) of `WellFormed`. -/
 theorem compensationOps : Laws.Compensation.CompensationOps program (Laws.State.WellFormed program) where
   store _ _ formed runs _ := Laws.State.compensation_wellFormed formed runs
-  issue _ formed := Laws.State.issue_wellFormed formed
-  issued state := by rw [Laws.State.issue_eq]; exact ⟨rfl, rfl, rfl, rfl⟩
+  takeCompletion _ formed := Laws.State.takeCompletion_wellFormed formed
+  issued state := by rw [Laws.State.takeCompletion_eq]; exact ⟨rfl, rfl, rfl, rfl⟩
   fail _ _ formed := queue_wellFormed formed (by simp [Queueable])
 
 /-- The compensation runs' operations record (`Laws.Compensation.RunsOps`) of `WellFormed`. -/
@@ -463,26 +486,31 @@ theorem runsOps : Laws.Compensation.RunsOps program (Laws.State.WellFormed progr
   fits _ run formed member :=
     ⟨formed.settled.resumed run member, (formed.settled.runsPlaced run member).1, (formed.settled.runsPlaced run member).2⟩
   issued _ formed := formed.issued.scopes
+  keyed _ formed := formed.distinct.scopesKeyed
   slotsIssued _ formed body member scope active := (formed.settled.placed body member scope active).1
   store _ _ formed kept _ _ _ := ⟨Laws.State.slots_wellFormed formed ⟨formed.settled.parked, formed.settled.bodies,
     fun run member => (kept run member).elim (formed.settled.resumed run) (·.1), formed.settled.queued,
     formed.settled.placed, fun run member => (kept run member).elim (formed.settled.runsPlaced run) (·.2),
     formed.settled.grouped, formed.settled.raised⟩, fun _ settled => settled⟩
   enter _ element parent locals formed stands _ := ⟨Laws.State.enterScope_wellFormed formed element stands locals
-    (fun _ same => by cases same), fun _ settled => settled.enter element parent locals none⟩
-  entered _ _ _ _ := by rw [Laws.State.enterScope_eq]; exact ⟨rfl, rfl, rfl, rfl⟩
-  signalled _ _ := by rw [Laws.State.signal_eq]; exact ⟨rfl, rfl, rfl⟩
+    (fun _ same => by cases same), fun _ settled => settled.enter formed.historic formed.issuer element stands locals none⟩
+  entered _ _ _ _ := by rw [Laws.State.enterScope_eq]; exact ⟨Laws.State.ScopeOccurrenceId.parent?_child _ _ _, rfl, rfl, rfl⟩
+  fresh _ element _ locals formed stands := ⟨Laws.State.enterScope_fresh formed.historic formed.issuer element stands locals none,
+    Laws.State.enterScope_table formed.issuer element _ locals none⟩
+  signalled _ _ := by rw [Laws.State.signal_eq]; exact ⟨rfl, .refl _, rfl⟩
+  signalGrows _ _ := by rw [Laws.State.signal_eq]; exact .refl _
   cancel _ _ formed := ⟨queue_wellFormed formed trivial, fun _ settled => settled.signal fun _ same => by simp at same⟩
+  ready _ _ _ formed := ⟨queue_wellFormed formed trivial, fun _ settled => settled.signal fun _ same => by simp at same⟩
   complete _ _ leave writes rule formed settled _ := ⟨settled_wellFormed formed settled leave writes rule,
     fun _ settled => settled.signal fun _ same => by simp at same⟩
   occur _ _ _ _ _ _ formed _ _ := ⟨queue_wellFormed formed trivial, fun _ settled => settled.signal fun _ same => by simp at same⟩
   begin _ _ _ _ formed stands _ := ⟨bareBegin_wellFormed formed (by simp [Laws.State.names]) stands,
     fun _ settled => settled.begin (by simp [Laws.State.names])⟩
-  leave _ _ _ formed member link _ := by
+  leave le _ _ _ formed member link _ := by
     obtain ⟨left, standing, frame⟩ := Laws.State.leaveChild_wellFormed formed member link
-    exact ⟨left, standing, frame.nextIssue, fun _ kept => frame.scopesSublist.subset kept, frame.slots.bodies, fun _ settled =>
-      settled.transport (Nat.le_of_eq frame.nextIssue.symm) (fun _ present _ => .inl (frame.occurrencesSublist.subset present))
-        fun _ queued => queued.shrink (by rw [frame.signals]; exact .refl _) frame.tokensSublist⟩
+    exact ⟨left, standing, frame.occurrenceGrows, frame.scopeGrows, fun _ kept => frame.scopesSubset kept, frame.slots.bodies, fun _ settled =>
+      settled.transport frame.occurrenceGrows (fun _ present _ => .inl (frame.occurrencesSublist.subset present))
+        fun _ queued => queued.shrink (fun _ member => frame.signals ▸ member) (fun _ member => frame.tokensSublist.subset member)⟩
 
 /-- Data's share of the state invariant, measured at P0 (P2's budget rests on it): the registered write and removal
 hooks keep `Laws.State.WellFormed`. -/
@@ -505,6 +533,7 @@ proved (`registered_contract`), and the state-invariant lane's statements follow
 /-- The feature records of `WellFormed`. -/
 theorem registeredOps_wellFormed : RegisteredOps Laws.State.WellFormed where
   operations := Proofs.State.operations
+  issuer _ _ formed := formed.issuer
   work _ := workOps
   flow _ := flowOps
   join _ := joinOps
@@ -516,15 +545,23 @@ theorem registeredOps_wellFormed : RegisteredOps Laws.State.WellFormed where
   propagation _ := propagationOps
   runs _ := runsOps
 
+/-- The registered hooks and `Step`'s phases keep the issuer resets of every micro-step beside `WellFormed` (DC12). -/
+theorem registered_framing : Laws.Step.Framing Registry.hooks Laws.State.WellFormed :=
+  Cancellation.framing_registered registeredOps_wellFormed phases.toClosurePhases pipelinePhases
+
+/-- The registered hooks and `Step`'s phases keep what the commit compacts under relative to every closure's start. -/
+theorem registered_keysAux : Laws.Step.StartKeeps Registry.hooks Proofs.State.KeysAux :=
+  Cancellation.keysAux_registered registeredOps_wellFormed phases.toClosurePhases pipelinePhases
+
 /-- A committed input keeps the registered hooks' state well-formed. -/
 theorem registered_stepKeeps : Proofs.State.StepKeepsWellFormed Registry.hooks :=
   Proofs.State.stepKeepsWellFormed (registered_contract registeredOps_wellFormed Proofs.State.stateFacts) phases
-    pipelinePhases
+    pipelinePhases registered_framing registered_keysAux
 
 /-- A committed start makes a well-formed state under the registered hooks. -/
 theorem registered_startIs : Proofs.State.StartIsWellFormed Registry.hooks :=
   Proofs.State.startIsWellFormed (registered_contract registeredOps_wellFormed Proofs.State.stateFacts) phases
-    pipelinePhases initial_wellFormed
+    pipelinePhases registered_framing registered_keysAux initial_wellFormed
 
 /-- Every instance a committed population run holds is well-formed under the registered hooks. -/
 theorem registered_populationKeeps : Proofs.State.PopulationKeepsWellFormed Registry.hooks :=
@@ -568,8 +605,8 @@ theorem registered_countersEntered : MultiInstance.CountersEntered Registry.hook
         simp at same⟩) cib
       (Laws.MultiInstance.itemName_ne apart.1 apart.2.1 apart.2.2) ran with ⟨held, same⟩ | counted
     · subst same
-      exact MultiInstance.nothingCounted multiInstanceOps (multiInstanceOps.hold _ _ formed)
-        (by rw [Laws.Hooks.hold_eq]; exact Nat.le_refl _)
+      exact MultiInstance.nothingCounted fun other inside scope active =>
+        (multiInstanceOps.placed _ other formed (by rwa [Laws.Hooks.hold_eq] at inside) scope active).1
     · exact counted
   · rw [Laws.Registry.hooks_instanceCompleted] at ran
     exact MultiInstance.instanceCompleted_counted multiInstanceOps formed stands cib
@@ -612,7 +649,7 @@ theorem registered_collectsOnCompletion : MultiInstance.CollectsOnCompletion Reg
     subst finished one
     obtain ⟨written, same, writes⟩ := Laws.MultiInstance.finish_spec ctx loop found state
     refine ⟨[.complete found.occurrence .outgoing written .outward],
-      by rw [same, Laws.State.signal_eq, Laws.State.Queues], ?_⟩
+      by rw [same, Laws.State.signal_eq, Laws.State.Queues, Laws.State.allSignals_append], ?_⟩
     intro queued inside _ value present shape
     have one := List.mem_singleton.mp inside
     subst one
@@ -647,7 +684,7 @@ theorem registered_collectionWritten : MultiInstance.CollectionWritten Registry.
     subst finished one
     obtain ⟨written, value, same, present⟩ := Laws.MultiInstance.finish_collects ctx found state aggregates named filled
     refine ⟨[.complete found.occurrence .outgoing written .outward],
-      by rw [same, Laws.State.signal_eq, Laws.State.Queues], written, value, ?_, present⟩
+      by rw [same, Laws.State.signal_eq, Laws.State.Queues, Laws.State.allSignals_append], written, value, ?_, present⟩
     rw [owns]
     exact List.mem_singleton_self _
   · rw [Laws.Registry.hooks_instanceCompleted] at ran
@@ -721,28 +758,29 @@ theorem formed_contract : Laws.Step.HookContract Registry.hooks Former.Formed :=
 
 /-- A committed input or start under the registered hooks keeps `Former.Formed`, from a before-state that keeps it. -/
 theorem registered_formed {program : Program} {before : Option State} {input : Input} {after : State}
-    (entry : ∀ state, before = some state → Former.Formed program state)
-    (ran : Step.step Registry.hooks program before input = .ok after) : Former.Formed program after :=
-  Laws.Step.step_keeps formed_contract (Former.formed_phases phases) Proofs.State.stateFacts
-    (Laws.Step.complete_keeps formed_contract (Former.formed_phases phases).toClosurePhases
+    (entry : ∀ state, before = some state → Former.Formed program state ∧ Laws.State.Committed state)
+    (ran : Step.step Registry.hooks program before input = .ok after) :
+    Former.Formed program after ∧ Laws.State.Committed after :=
+  Proofs.State.step_keeps formed_contract (Former.formed_phases phases)
+    (Laws.Step.complete_keeps formed_contract (Former.formed_phases phases).toBodyPhases
       (Former.callsFormed_pipelinePhases pipelinePhases) Proofs.State.stateFacts)
-    (fun _ _ holds => Former.formed_reset holds)
+    registered_framing registered_keysAux (fun _ _ holds => holds.1) (fun _ _ holds => Former.formed_reset holds)
     (fun instanceId variables businessKey => ⟨initial_wellFormed program instanceId variables businessKey,
       Former.callsFormed_initial program instanceId variables businessKey⟩)
     entry ran
 
 /-- A committed start keeps the lane invariant of called instances under the registered hooks. -/
 theorem registered_callsFormedAtStart : Former.CallsFormedAtStart Registry.hooks := fun _ _ _ ran =>
-  (registered_formed (fun _ given => by cases given) ran).2
+  (registered_formed (fun _ given => by cases given) ran).1.2
 
 /-- Every instance a committed population run holds keeps the lane invariant of called instances under the registered
 hooks. -/
 theorem registered_callsFormedInPopulation : Former.CallsFormedInPopulation Registry.hooks :=
   fun _ _ _ ran member inside =>
-    (Laws.Population.runStimuli_held (good := Former.Formed)
+    (Laws.Population.runStimuli_held (good := fun program s => Former.Formed program s ∧ Laws.State.Committed s)
       ⟨fun _ _ _ _ holds stepped => registered_formed (fun _ given => by cases given; exact holds) stepped,
         fun _ _ _ stepped => registered_formed (fun _ given => by cases given) stepped⟩
-      ran member inside).2
+      ran member inside).1.2
 
 /-- The registered hooks keep `WellFormed` and the placement lane under its premise (`Former.PlacedForm`): the feature
 records follow from `WellFormed`'s and the lane's frames. -/
@@ -759,13 +797,14 @@ theorem placed_contract : Laws.Step.HookContract Registry.hooks Former.PlacedFor
 /-- A committed input or start under the registered hooks keeps `Former.PlacedForm`, from a before-state that keeps
 it. -/
 theorem registered_placedForm {program : Program} {before : Option State} {input : Input} {after : State}
-    (entry : ∀ state, before = some state → Former.PlacedForm program state)
-    (ran : Step.step Registry.hooks program before input = .ok after) : Former.PlacedForm program after :=
-  have phases := Proofs.Frame.phases_alongside phases Former.placedStepAlongside
-  Laws.Step.step_keeps placed_contract phases Proofs.State.stateFacts
-    (Laws.Step.complete_keeps placed_contract phases.toClosurePhases (Former.placed_pipelinePhases pipelinePhases)
+    (entry : ∀ state, before = some state → Former.PlacedForm program state ∧ Laws.State.Committed state)
+    (ran : Step.step Registry.hooks program before input = .ok after) :
+    Former.PlacedForm program after ∧ Laws.State.Committed after :=
+  have phases := Proofs.Frame.phases_alongside phases Former.placedStepAlongside Former.placing_reissue
+  Proofs.State.step_keeps placed_contract phases
+    (Laws.Step.complete_keeps placed_contract phases.toBodyPhases (Former.placed_pipelinePhases pipelinePhases)
       Proofs.State.stateFacts)
-    (fun _ _ holds => Former.placed_reset holds)
+    registered_framing registered_keysAux (fun _ _ holds => holds.1) (fun _ _ holds => Former.placed_reset holds)
     (fun instanceId variables businessKey => ⟨initial_wellFormed program instanceId variables businessKey,
       fun _ => Former.placedLane_initial program instanceId variables businessKey⟩)
     entry ran
@@ -774,28 +813,29 @@ theorem registered_placedForm {program : Program} {before : Option State} {input
 references stay in one process. -/
 theorem registered_placed {program : Program} {before after : State} {input : Input}
     (references : Former.ReferencesPlaced program) (formed : Laws.State.WellFormed program before)
-    (placed : Former.PlacedLane program before)
+    (committed : Laws.State.Committed before) (placed : Former.PlacedLane program before)
     (ran : Step.step Registry.hooks program (some before) input = .ok after) : Former.PlacedLane program after :=
-  (registered_placedForm (fun _ given => by cases given; exact ⟨formed, fun _ => placed⟩) ran).2 references
+  (registered_placedForm (fun _ given => by cases given; exact ⟨⟨formed, fun _ => placed⟩, committed⟩) ran).1.2 references
 
 /-- A committed start keeps the placement lane under the registered hooks. -/
 theorem registered_placedAtStart : Former.PlacedAtStart Registry.hooks := fun _ _ _ references ran =>
-  (registered_placedForm (fun _ given => by cases given) ran).2 references
+  (registered_placedForm (fun _ given => by cases given) ran).1.2 references
 
 /-- Every instance a committed population run holds keeps the placement lane under the registered hooks. -/
 theorem registered_placedInPopulation : Former.PlacedInPopulation Registry.hooks :=
   fun _ _ _ ran member inside references =>
-    (Laws.Population.runStimuli_held (good := Former.PlacedForm)
+    (Laws.Population.runStimuli_held (good := fun program s => Former.PlacedForm program s ∧ Laws.State.Committed s)
       ⟨fun _ _ _ _ holds stepped => registered_placedForm (fun _ given => by cases given; exact holds) stepped,
         fun _ _ _ stepped => registered_placedForm (fun _ given => by cases given) stepped⟩
-      ran member inside).2 references
+      ran member inside).1.2 references
 
 /-- A committed input under the registered hooks names every called root it creates by its Call, keeps the lane
 invariant of called instances and the placement lane, and leaves each called identity naming one instance. -/
 theorem registered_calledIdentityUnique : Former.CalledIdentityUnique Registry.hooks :=
-  fun _ _ before _ apart references formed calls placed ran =>
-    have after := registered_formed (before := some before) (fun _ given => by cases given; exact ⟨formed, calls⟩) ran
-    have placedAfter := registered_placed references formed placed ran
+  fun _ _ before _ apart references formed committed calls placed ran =>
+    have after := (registered_formed (before := some before) (fun _ given => by cases given; exact ⟨⟨formed, calls⟩, committed⟩)
+      ran).1
+    have placedAfter := registered_placed references formed committed placed ran
     ⟨fun _ member _ called => after.2.named.owner after.1 member called, after.2, placedAfter,
       Former.identitiesApart_of after.1 after.2 (Former.ownersPlaced_of after.1 after.2 placedAfter.placed apart)⟩
 

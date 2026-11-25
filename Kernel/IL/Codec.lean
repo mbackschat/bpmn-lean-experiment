@@ -36,10 +36,11 @@ instance : ToJson JuelCall where
     | .other name => toJson name
 
 deriving instance FromJson, ToJson for JuelFunctionNode, JuelCallNode, JuelComputedCallNode, JuelBinaryNode,
-  JuelChoiceNode, JuelNode, Expression, ValueSource, MappingDialect, Mapping, QName, CycleDialect,
+  JuelChoiceNode, JuelNode, Expression, ValueSource, MappingDialect, Mapping, ParameterScript, ParameterEntry, ParameterNode,
+  StructuredParameter, QName, CycleDialect,
   TimerSchedule, TimerTrigger, CorrelationCriterion, MessageTrigger, DataOutputDecl, SignalTrigger, ConditionTrigger, ErrorTrigger,
   EscalationTrigger, Trigger, Subscription, Boundary, EffectBinding, MessageThrow, SignalThrow, ErrorThrow,
-  EscalationThrow, CompensationThrow, Throw, UserWork, ReceiveWork, ServiceWork, SendWork, ScriptWork, CallBinding,
+  EscalationThrow, CompensationThrow, Throw, FormRef, UserWork, ReceiveWork, ServiceWork, SendWork, ScriptWork, CallBinding,
   DecisionResultMapping, RuleWork, CallWork, Work, MultiInstanceMode, InstanceCount, MultiInstance,
   Envelope, ActivityPayload, TransactionMethod, TransactionScope, ScopeKind, ScopePayload, Placement, EventRole,
   EventPayload, EventGatewayInstantiation, GatewayKind, GatewayPayload, StartPayload, DefinitionRef, ElementOrigin, Header, Element,
@@ -49,8 +50,9 @@ deriving instance FromJson, ToJson for JuelFunctionNode, JuelCallNode, JuelCompu
   CompensationReferenceScope, AbnormalScopeEnd, UnhandledError, ErrorCatchVariables, CallBindingTime, Evaluator, ConditionOrder,
   MultiInstanceBinding, ResultValues, OutputContext, MultiInstanceCounters, MultiInstanceInputFailure, MultiInstanceCount, CollectionRead,
   BusinessRuleTask, ScriptTask, ConfiguredTask, InclusiveJoinReach, BranchSchedule, ConditionalRetrigger, MalformedTimer, MessageNames, ScopeStart,
-  SignalNames, SignalPayload, SignalDelivery, ConditionalStart, CalledElementResolution, MessageThrowForms, ProfileOptions,
-  CalledProcess, Program
+  SignalNames, SignalPayload, SignalDelivery, ConditionalStart, CalledElementResolution, MessageThrowForms, DeploymentErrors,
+  HandlerEscalation, InertExtension, Bounds, ProfileOptions,
+  CalledProcess, RetainedExtension, Program
 
 /-- `[{name, value}]`, the scenario contract's variable bindings. -/
 def bindingsFromJson (json : Json) : Except String (List (String × Value)) := do

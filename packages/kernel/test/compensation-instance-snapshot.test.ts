@@ -20,7 +20,7 @@ const held = (value: string): Json => ({ tag: "string", value });
 const counter = (value: number): Json => ({ tag: "int", value });
 
 const standards: Json = {};
-const cib: Json = { multiInstanceBinding: "loopReferences", multiInstanceCounters: "cibLocals", evaluator: "juel" };
+const cib: Json = { multiInstanceBinding: "loopReferences", multiInstanceCounters: "cibLocals", branchSchedule: "declarationDepthFirst", evaluator: "juel" };
 const common: Json = { submission: "installsVariables", undeclaredWrite: "atInstanceRoot" };
 
 /** The loop over `items` binding each item to `item` under `binding`'s profile. */
@@ -68,9 +68,9 @@ const ran: Json[] = [complete("T", 1), complete("T", 2), complete("U", 1, [["ite
 
 /** The inputs the waiting handler Task captured. */
 function seen(outcome: Outcome, input: string): unknown {
-  const scoped = committedState(outcome).variables.find((vars) => vars.entries.some(([name]) => name === input));
+  const scoped = committedState(outcome).variables.find(([, entries]) => entries.some(([name]) => name === input));
   assert.ok(scoped !== undefined, `the handler Task holds ${input}: ${JSON.stringify(outcome)}`);
-  return Object.fromEntries(scoped.entries)[input];
+  return Object.fromEntries(scoped[1])[input];
 }
 
 /** What each of the two handler runs captured as `input`, the first run first. */
@@ -86,7 +86,8 @@ function snapshotNames(json: Json): string[][] {
   const state = committedState(driveFrom(json, items, complete("T", 1), complete("T", 2)));
   const body = state.slots.compensation.retained.find((record) => record.subject === "A" && record.handler === null);
   assert.ok(body !== undefined, "the body retains its instance records");
-  return body.children.map((record) => record.snapshot.map(([name]) => name).sort());
+  // The body keeps its instance records directly (an empty group key) and their own records one group deeper.
+  return body.children.filter((record) => record.group.length === 0).map((record) => record.snapshot.map(([name]) => name).sort());
 }
 
 for (const mode of ["parallel", "sequential"]) {
@@ -115,7 +116,7 @@ for (const mode of ["parallel", "sequential"]) {
     assert.deepEqual(readsOf(json, "seenItem"), [held("late"), held("late")]);
     const state = committedState(driveFrom(json, items, complete("T", 1), complete("T", 2)));
     const body = state.slots.compensation.retained.find((record) => record.subject === "A" && record.handler === null);
-    assert.deepEqual(body?.children.map((record) => record.snapshot), [[], []]);
+    assert.deepEqual(body?.children.filter((record) => record.group.length === 0).map((record) => record.snapshot), [[], []]);
   });
 }
 

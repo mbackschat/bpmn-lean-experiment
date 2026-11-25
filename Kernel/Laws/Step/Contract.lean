@@ -1,9 +1,12 @@
 module
 
 public import Kernel.Step
+public import Kernel.State.Variables
 public import Kernel.Laws.State.Frames
 public import Kernel.Laws.IL
 public import Kernel.Laws.Flow.Sources
+public import Kernel.Laws.Step.Order
+public import Kernel.Laws.Step.Triggers
 
 /-! # Laws of the step function: the preservation contract
 
@@ -29,8 +32,12 @@ open Kernel Kernel.Step
 /-- The scope occurrence `scope` stands in `state`. -/
 def ScopeStands (state : State) (scope : ScopeOccurrenceId) : Prop := ∃ entry ∈ state.scopes, entry.id = scope
 
+theorem ScopeStands.mem {state : State} {scope : ScopeOccurrenceId} (stands : ScopeStands state scope) :
+    scope ∈ Laws.State.standingKeys state :=
+  let ⟨entry, inside, named⟩ := stands; List.mem_map.mpr ⟨entry, inside, named⟩
+
 /-- The occurrence `id` stands in `state`. -/
-def OccurrenceStands (state : State) (id : Nat) : Prop := ∃ occurrence ∈ state.occurrences, occurrence.id = id
+def OccurrenceStands (state : State) (id : OccurrenceId) : Prop := ∃ occurrence ∈ state.occurrences, occurrence.id = id
 
 /-- A begin request `Step` may begin in `state`: the reservations it names are distinct, each beginnable in the
 request's scope occurrence and claimed by nothing queued or slotted (`Laws.State.ReservationsClaimed`), and its Event
@@ -51,7 +58,7 @@ def beginsOf (signals : List Signal) : List BeginRequest :=
     | .begin request => some request
     | .arm _ _ _ | .armScope _ | .armGateway _ _ _ | .raise _ _ | .complete _ _ _ _ | .write _ _ _ | .remove _ _
     | .occur _ _ _ _ _ | .cancel _ | .fire _ _ | .endInstance _ _ | .compensate _ _ _ _ _
-    | .compensationFailed _ _ _ _ => none
+    | .compensationFailed _ _ _ _ | .compensationReady _ _ => none
 
 /-- The requests of the deferred begins of `tokens`, in stack order. -/
 def deferredOf (tokens : List Token) : List BeginRequest :=
@@ -158,9 +165,9 @@ compensations that resume by one, each in queue order, which with the compensati
 /-- A reservation of `element` still to be made: a queued `Signal.occur`, or the resume of a queued compensation or of a
 compensation run that ends by reserving it (`Compensation.advance`). -/
 def OccurPending (s : State) (element : ElementId) : Prop :=
-  (∃ scope leave writes rule, Signal.occur element scope leave writes rule ∈ s.signals) ∨
+  (∃ scope leave writes rule, Signal.occur element scope leave writes rule ∈ Laws.State.allSignals s) ∨
     (∃ scope activity trigger leave at_ resumed,
-      Signal.compensate scope activity trigger leave (some (.occur element at_ resumed)) ∈ s.signals) ∨
+      Signal.compensate scope activity trigger leave (some (.occur element at_ resumed)) ∈ Laws.State.allSignals s) ∨
     ∃ run ∈ s.slots.compensation.runs, ∃ at_ leave, run.resume = some (.occur element at_ leave)
 
 /-- `element` is a reservation still to be made in a state that keeps `rel`: where a queued `Signal.occur`, a queued
@@ -173,9 +180,9 @@ def occursOf (signals : List Signal) : List ElementId :=
   signals.filterMap fun
     | .occur element _ _ _ _ => some element
     | .compensate _ _ _ _ (some (.occur element _ _)) => some element
-    | .compensate _ _ _ _ (some (.complete _ _)) | .compensate _ _ _ _ (some (.group _ _)) | .compensate _ _ _ _ none
+    | .compensate _ _ _ _ (some (.complete _ _)) | .compensate _ _ _ _ (some (.group _)) | .compensate _ _ _ _ none
     | .arm _ _ _ | .armScope _ | .armGateway _ _ _ | .raise _ _ | .begin _ | .complete _ _ _ _ | .write _ _ _
-    | .remove _ _ | .cancel _ | .fire _ _ | .endInstance _ _ | .compensationFailed _ _ _ _ => none
+    | .remove _ _ | .cancel _ | .fire _ _ | .endInstance _ _ | .compensationFailed _ _ _ _ | .compensationReady _ _ => none
 
 /-- An element is among the queued reservations exactly when an `occur` signal or a compensation that resumes by
 one reserves it. -/
@@ -207,7 +214,8 @@ theorem occursOf_append (signals more : List Signal) : occursOf (signals ++ more
 
 /-- A reservation pending in `t` is pending in `s` when `t`'s queued reservations and compensation runs are among
 `s`'s. -/
-theorem occurPending_of {s t : State} (occurs : ∀ element ∈ occursOf t.signals, element ∈ occursOf s.signals)
+theorem occurPending_of {s t : State}
+    (occurs : ∀ element ∈ occursOf (Laws.State.allSignals t), element ∈ occursOf (Laws.State.allSignals s))
     (runs : ∀ run ∈ t.slots.compensation.runs, run ∈ s.slots.compensation.runs) {element : ElementId}
     (pending : OccurPending t element) : OccurPending s element := by
   rcases pending with queued | resumed | ⟨run, member, rest⟩
@@ -222,10 +230,10 @@ def placing : Signal → Bool
   | .arm _ _ _ | .armGateway _ _ _ | .occur _ _ _ _ _ | .raise _ _ => true
   | .complete _ (.flows selected) _ _ => !selected.isEmpty
   | .complete _ .outgoing _ _ | .complete _ .raised _ _ | .armScope _ | .begin _ | .write _ _ _
-  | .remove _ _ | .cancel _ | .fire _ _ | .endInstance _ _ | .compensate _ _ _ _ _ | .compensationFailed _ _ _ _ => false
+  | .remove _ _ | .cancel _ | .fire _ _ | .endInstance _ _ | .compensate _ _ _ _ _ | .compensationFailed _ _ _ _ | .compensationReady _ _ => false
 
 /-- A completion by no named flow places nothing. -/
-theorem placing_complete {occurrence : Nat} {leave : Leave} {writes : List (String × Value)} {rule : WriteRule}
+theorem placing_complete {occurrence : OccurrenceId} {leave : Leave} {writes : List (String × Value)} {rule : WriteRule}
     (unnamed : ∀ selected, leave = .flows selected → selected = []) :
     placing (.complete occurrence leave writes rule) = false := by
   cases leave with
@@ -233,7 +241,7 @@ theorem placing_complete {occurrence : Nat} {leave : Leave} {writes : List (Stri
   | outgoing | raised => rfl
 
 /-- A completion by named flows places work. -/
-theorem placing_named {occurrence : Nat} {selected : List FlowId} {writes : List (String × Value)} {rule : WriteRule}
+theorem placing_named {occurrence : OccurrenceId} {selected : List FlowId} {writes : List (String × Value)} {rule : WriteRule}
     (named : selected ≠ []) : placing (.complete occurrence (.flows selected) writes rule) = true := by
   simpa [placing] using named
 
@@ -258,119 +266,6 @@ theorem mem_flowsOf {tokens : List Token} {flow : FlowId} {scope : ScopeOccurren
 theorem flowsOf_append (tokens more : List Token) : flowsOf (tokens ++ more) = flowsOf tokens ++ flowsOf more :=
   List.filterMap_append
 
-/-! ## Queued triggers
-
-What the closure reads of the compensation triggers its queue carries: a queued compensation's trigger, and a queued
-Cancel raise's origin, whose thrower the compensation its catch queues takes as trigger
-(`Feature.Propagation.leaveOccurrence`). An invariant that keeps the keys of compensation runs apart reads them. -/
-
-/-- The triggers of the queued compensations of `signals` and the origins of its queued Cancel raises, in queue order;
-a raise is read by `Raised.isCancel`, its owner's query. -/
-def triggersOf (signals : List Signal) : List (OccurrenceRef ⊕ Origin) :=
-  signals.filterMap fun
-    | .compensate _ _ trigger _ _ => some (.inl trigger)
-    | .raise event origin => if event.isCancel then some (.inr origin) else none
-    | .arm _ _ _ | .armScope _ | .armGateway _ _ _ | .begin _ | .complete _ _ _ _ | .write _ _ _ | .remove _ _
-    | .occur _ _ _ _ _ | .cancel _ | .fire _ _ | .endInstance _ _ | .compensationFailed _ _ _ _ => none
-
-/-- An empty queue carries no trigger. -/
-theorem triggersOf_nil : triggersOf [] = [] := rfl
-
-/-- Queuing signals adds the triggers they carry to the queued ones. -/
-theorem triggersOf_append (signals more : List Signal) :
-    triggersOf (signals ++ more) = triggersOf signals ++ triggersOf more :=
-  List.filterMap_append
-
-/-- A queued compensation carries its trigger. -/
-theorem triggersOf_compensate (scope : ScopeOccurrenceId) (activity : Option ElementId) (trigger : OccurrenceRef)
-    (leave : Option Nat) (resume : Option Resume) :
-    triggersOf [.compensate scope activity trigger leave resume] = [.inl trigger] := rfl
-
-/-- A queued Cancel raise carries its origin, and any other raise nothing. -/
-theorem triggersOf_raise (event : Raised) (origin : Origin) :
-    triggersOf [.raise event origin] = if event.isCancel then [.inr origin] else [] := by
-  cases cancels : event.isCancel <;> simp [triggersOf, cancels]
-
-/-- The resumes of the queued compensations of `signals`, in queue order: what an invariant that reads how a queued
-compensation ends reads, which `triggersOf` drops. -/
-def resumesOf (signals : List Signal) : List (Option Resume) :=
-  signals.filterMap fun
-    | .compensate _ _ _ _ resume => some resume
-    | .raise _ _ | .arm _ _ _ | .armScope _ | .armGateway _ _ _ | .begin _ | .complete _ _ _ _ | .write _ _ _
-    | .remove _ _ | .occur _ _ _ _ _ | .cancel _ | .fire _ _ | .endInstance _ _ | .compensationFailed _ _ _ _ => none
-
-/-- Queuing signals adds the resumes they carry to the queued ones. -/
-theorem resumesOf_append (signals more : List Signal) :
-    resumesOf (signals ++ more) = resumesOf signals ++ resumesOf more :=
-  List.filterMap_append
-
-/-- A sublist of a queue carries a sublist of its triggers. -/
-theorem triggersOf_sublist {signals more : List Signal} (fewer : signals.Sublist more) :
-    (triggersOf signals).Sublist (triggersOf more) :=
-  fewer.filterMap _
-
-/-- A sublist of a queue carries a sublist of its resumes. -/
-theorem resumesOf_sublist {signals more : List Signal} (fewer : signals.Sublist more) :
-    (resumesOf signals).Sublist (resumesOf more) :=
-  fewer.filterMap _
-
-/-- A resume is queued exactly when a queued compensation carries it. -/
-theorem mem_resumesOf {signals : List Signal} {resume : Option Resume} :
-    resume ∈ resumesOf signals ↔
-      ∃ scope activity trigger leave, Signal.compensate scope activity trigger leave resume ∈ signals := by
-  unfold resumesOf
-  constructor
-  · intro member
-    obtain ⟨signal, inside, carried⟩ := List.mem_filterMap.mp member
-    cases signal with
-    | compensate scope activity trigger leave carriedResume =>
-      cases carried
-      exact ⟨scope, activity, trigger, leave, inside⟩
-    | raise | arm | armScope | armGateway | begin | complete | write | remove | occur | cancel | fire | endInstance
-    | compensationFailed => cases carried
-  · intro queued
-    obtain ⟨scope, activity, trigger, rest⟩ := queued
-    obtain ⟨leave, inside⟩ := rest
-    exact List.mem_filterMap.mpr ⟨_, inside, rfl⟩
-
-/-- Signals that carry no trigger (`Laws.State.Untriggered`) carry no resume. -/
-theorem resumesOf_untriggered {signals : List Signal} (quiet : ∀ signal ∈ signals, Laws.State.Untriggered signal) :
-    resumesOf signals = [] := by
-  refine List.filterMap_eq_nil_iff.mpr fun signal inside => ?_
-  cases signal with
-  | compensate scope activity trigger leave resume => exact absurd rfl ((quiet _ inside).1 scope activity trigger leave resume)
-  | raise | arm | armScope | armGateway | begin | complete | write | remove | occur | cancel | fire | endInstance
-  | compensationFailed => rfl
-
-/-- Signals that carry no trigger (`Laws.State.Untriggered`) queue none. -/
-theorem triggersOf_untriggered {signals : List Signal} (quiet : ∀ signal ∈ signals, Laws.State.Untriggered signal) :
-    triggersOf signals = [] := by
-  refine List.filterMap_eq_nil_iff.mpr fun signal inside => ?_
-  obtain ⟨uncompensated, uncancelled⟩ := quiet signal inside
-  cases signal with
-  | compensate scope activity trigger leave resume => exact absurd rfl (uncompensated scope activity trigger leave resume)
-  | raise event origin => simp [uncancelled event origin rfl]
-  | arm | armScope | armGateway | begin | complete | write | remove | occur | cancel | fire | endInstance
-  | compensationFailed => rfl
-
-/-- The signals a compensation run's begin and end queue, and an instance's end, carry no trigger: a handler's begin,
-a cancellation, a completion and an occurrence. -/
-theorem untriggered_begin (request : BeginRequest) : Laws.State.Untriggered (.begin request) :=
-  ⟨fun _ _ _ _ _ => nofun, fun _ _ => nofun⟩
-
-theorem untriggered_cancel (occurrence : Nat) : Laws.State.Untriggered (.cancel occurrence) :=
-  ⟨fun _ _ _ _ _ => nofun, fun _ _ => nofun⟩
-
-theorem untriggered_complete (occurrence : Nat) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule) :
-    Laws.State.Untriggered (.complete occurrence leave writes rule) := ⟨fun _ _ _ _ _ => nofun, fun _ _ => nofun⟩
-
-theorem untriggered_occur (element : ElementId) (scope : ScopeOccurrenceId) (leave : Leave)
-    (writes : List (String × Value)) (rule : WriteRule) : Laws.State.Untriggered (.occur element scope leave writes rule) :=
-  ⟨fun _ _ _ _ _ => nofun, fun _ _ => nofun⟩
-
-theorem untriggered_endInstance (status : InstanceStatus) (failure : Option InstanceFailure) :
-    Laws.State.Untriggered (.endInstance status failure) := ⟨fun _ _ _ _ _ => nofun, fun _ _ => nofun⟩
-
 /-- An Event carries its element's header and no envelope. -/
 theorem event?_bare {element : Element} {header : Header} {payload : EventPayload}
     (typed : element.event? = some (header, payload)) : element.header = header ∧ element.envelope? = none := by
@@ -384,28 +279,52 @@ theorem start?_bare {element : Element} {header : Header} {payload : StartPayloa
     Laws.IL.start?_activity, Laws.IL.start?_event, Laws.IL.start?_scope, Laws.IL.start?_gateway]
 
 /-- An occurrence that continues by its flows is no Multi-Instance instance. -/
-theorem flow_ne_multiInstance (body : Nat) : Continuation.flow ≠ .multiInstance body := nofun
+theorem flow_ne_multiInstance (body : OccurrenceId) : Continuation.flow ≠ .multiInstance body := nofun
 
 /-- A compensation handler is no Multi-Instance instance. -/
-theorem compensation_ne_multiInstance (run : ScopeOccurrenceId) (body : Nat) :
+theorem compensation_ne_multiInstance (run : ScopeOccurrenceId) (body : OccurrenceId) :
     Continuation.compensation run ≠ .multiInstance body := nofun
 
 /-- An instance continues into one body. -/
-theorem multiInstance_inj {body other : Nat} (same : Continuation.multiInstance body = .multiInstance other) :
+theorem multiInstance_inj {body other : OccurrenceId} (same : Continuation.multiInstance body = .multiInstance other) :
     body = other := by
   injection same
 
-/-- With no signal queued, the closure took `token` off `queue`'s work stack, leaving `popped`: the oldest under
-`orderInvariant` and the newest otherwise (`Step.nextToken`). -/
+/-- With no signal queued, the closure took the queued `token` off `queue`, leaving `popped`: the one queued first under
+`orderInvariant` and the one queued last otherwise, by the closure's run log (`Step.nextToken`). -/
 def TokenTaken (program : Program) (queue : State) (token : Token) (popped : State) : Prop :=
-  queue.signals = [] ∧ ∃ rest, ((program.options.branchSchedule = .orderInvariant ∧ queue.tokens = token :: rest) ∨
-    queue.tokens = rest ++ [token]) ∧ popped = { queue with tokens := rest }
+  firstBreadth queue.queuedSignals = none ∧ ∃ unit log,
+    ((program.options.branchSchedule = .orderInvariant ∧ earliest log queue.queuedTokens = some (unit, token)) ∨
+      latest log queue.queuedTokens = some (unit, token)) ∧
+    popped = { queue with queuedTokens := queue.queuedTokens.erase unit }
 
 /-- The closure took the queued begin `request` off `queue`, leaving `popped`: the head `begin` signal, or the deferred
 begin it took off the work stack (`TokenTaken`). -/
 def Dequeued (program : Program) (queue : State) (request : BeginRequest) (popped : State) : Prop :=
-  (∃ rest, queue.signals = .begin request :: rest ∧ popped = { queue with signals := rest }) ∨
+  (∃ unit, firstBreadth queue.queuedSignals = some (unit, .begin request) ∧
+    popped = { queue with queuedSignals := queue.queuedSignals.erase unit }) ∨
     TokenTaken program queue (.begin request) popped
+
+/-- A token the closure took was queued under the unit it erased. -/
+theorem TokenTaken.found {program : Program} {queue : State} {token : Token} {popped : State}
+    (taken : TokenTaken program queue token popped) :
+    ∃ unit, queue.queuedTokens[unit]? = some token ∧ popped = { queue with queuedTokens := queue.queuedTokens.erase unit } := by
+  obtain ⟨-, unit, _, rest₁⟩ := taken
+  obtain ⟨chosen, same⟩ := rest₁
+  rcases chosen with ⟨-, first⟩ | last
+  · exact ⟨unit, earliest_mem first, same⟩
+  · exact ⟨unit, latest_mem last, same⟩
+
+/-- A begin the closure took off a queue was queued there: as a signal or as a deferred token. -/
+theorem Dequeued.queued {program : Program} {queue : State} {request : BeginRequest} {popped : State}
+    (dequeued : Dequeued program queue request popped) :
+    (∃ unit, queue.queuedSignals[unit]? = some (.begin request) ∧
+      popped = { queue with queuedSignals := queue.queuedSignals.erase unit }) ∨
+    ∃ unit, queue.queuedTokens[unit]? = some (.begin request) ∧
+      popped = { queue with queuedTokens := queue.queuedTokens.erase unit } := by
+  rcases dequeued with ⟨unit, first, same⟩ | taken
+  · exact .inl ⟨unit, firstBreadth_mem first, same⟩
+  · exact .inr taken.found
 
 /-- Where a fresh begin's request comes from: the arrival of a flow token the closure took off a queue that keeps `inv`,
 which begins the element the token's flow ends at in the token's scope occurrence, arriving by that flow
@@ -440,7 +359,7 @@ so the record goes with nothing left waiting for it or hanging on it. -/
 structure PipelineFrame (before after : State) : Prop where
   scopes : after.scopes = before.scopes
   begun : ∀ occurrence ∈ before.occurrences, occurrence.begun = true → occurrence ∈ after.occurrences
-  items : ∀ item ∈ after.openItems, item ∈ before.openItems
+  items : ∀ item ∈ itemList after.openItems, item ∈ itemList before.openItems
   instances : ∀ entry ∈ after.slots.instances, entry ∈ before.slots.instances
 
 /-- What each hook must keep of `inv`, given what `Step` establishes before it calls the hook: the occurrence it hands
@@ -518,17 +437,19 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) (src :
     hooks.completeBody ctx header envelope loop occurrence state = .ok after → inv ctx.program after
   /-- A task command, effect result, incident retry or Activity delivery addresses an item of an Activity, or one that
   waits for an effect or an incident, as `Step` finds it. -/
-  completeUserTask : ∀ ctx header payload item values state after, inv ctx.program state → item ∈ state.openItems →
+  completeUserTask : ∀ ctx header payload item values state after, inv ctx.program state → item ∈ itemList state.openItems →
     (ctx.program.element? item.element).bind (·.activity?) = some (header, payload) → hooks.completeUserTask ctx header payload item values state = .ok after → inv ctx.program after
-  effectResult : ∀ ctx item outcome state after, inv ctx.program state → item ∈ state.openItems →
+  effectResult : ∀ ctx item outcome state after, inv ctx.program state → item ∈ itemList state.openItems →
     item.kind.view.effect.isSome = true → hooks.effectResult ctx item outcome state = .ok after → inv ctx.program after
-  retryIncident : ∀ ctx item detail generation state after, inv ctx.program state → item ∈ state.openItems →
+  retryIncident : ∀ ctx item detail generation state after, inv ctx.program state → item ∈ itemList state.openItems →
     item.kind.view.incident = some detail → hooks.retryIncident ctx item detail generation state = .ok after → inv ctx.program after
   cancelIncidentProcess : ∀ ctx detail generation state after, inv ctx.program state →
     hooks.cancelIncidentProcess ctx detail generation state = .ok after → inv ctx.program after
-  triggerActivity : ∀ ctx header payload item fired state after, inv ctx.program state → item ∈ state.openItems →
+  failJob : ∀ ctx item job state after, inv ctx.program state → item ∈ itemList state.openItems →
+    item.kind.view.job = some job → hooks.failJob ctx item job state = .ok after → inv ctx.program after
+  triggerActivity : ∀ ctx header payload item fired state after, inv ctx.program state → item ∈ itemList state.openItems →
     (ctx.program.element? item.element).bind (·.activity?) = some (header, payload) → hooks.triggerActivity ctx header payload item fired state = .ok after → inv ctx.program after
-  trigger : ∀ ctx item fired state after, inv ctx.program state → item ∈ state.openItems →
+  trigger : ∀ ctx item fired state after, inv ctx.program state → item ∈ itemList state.openItems →
     hooks.trigger ctx item fired state = .ok after → inv ctx.program after
   /-- An arming is taken off a queue that kept `inv`. -/
   arm : ∀ ctx host element scope state after, inv ctx.program state → OccurrenceStands state host →
@@ -558,9 +479,11 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) (src :
     hooks.compensate ctx scope activity trigger leave resume state = .ok after → inv ctx.program after
   failCompensation : ∀ ctx handler code message origin state after, inv ctx.program state → ScopeStands state handler →
     hooks.failCompensation ctx handler code message origin state = .ok after → inv ctx.program after
+  compensationReady : ∀ ctx scope context state after, inv ctx.program state → ScopeStands state scope →
+    hooks.compensationReady ctx scope context state = .ok after → inv ctx.program after
   leave : ∀ ctx occurrence state after, inv ctx.program state → occurrence ∈ state.occurrences →
     hooks.leave ctx occurrence state = .ok after →
-    inv ctx.program after ∧ PipelineFrame state after ∧ ∀ item ∈ after.openItems, item.attachedTo ≠ some occurrence.id
+    inv ctx.program after ∧ PipelineFrame state after ∧ ∀ item ∈ itemList after.openItems, item.attachedTo ≠ some occurrence.id
   writeOutputs : ∀ ctx scope writes rule state after, inv ctx.program state → ScopeStands state scope →
     hooks.writeOutputs ctx scope writes rule state = .ok after → inv ctx.program after ∧ PipelineFrame state after
   removeVariables : ∀ ctx scope names state after, inv ctx.program state → ScopeStands state scope →
@@ -573,15 +496,15 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) (src :
   instanceCompleted : ∀ ctx body occurrence writes state after, inv ctx.program state →
     ScopeStands state occurrence.scope →
     hooks.instanceCompleted ctx body occurrence writes state = .ok after → inv ctx.program after
-  handlerCompleted : ∀ ctx run occurrence state after, inv ctx.program state → ScopeStands state occurrence.scope →
-    hooks.handlerCompleted ctx run occurrence state = .ok after → inv ctx.program after
-  handlerEnded : ∀ ctx run occurrence state after, inv ctx.program state → ScopeStands state occurrence.scope →
-    hooks.handlerEnded ctx run occurrence state = .ok after → inv ctx.program after
+  handlerCompleted : ∀ ctx occurrence state after, inv ctx.program state → ScopeStands state occurrence.scope →
+    hooks.handlerCompleted ctx occurrence state = .ok after → inv ctx.program after
+  handlerEnded : ∀ ctx occurrence state after, inv ctx.program state → ScopeStands state occurrence.scope →
+    hooks.handlerEnded ctx occurrence state = .ok after → inv ctx.program after
   cancelled : ∀ ctx occurrence state after, inv ctx.program state →
     hooks.cancelled ctx occurrence state = .ok after → inv ctx.program after
   written : ∀ ctx writes state after, inv ctx.program state → hooks.written ctx writes state = .ok after →
     inv ctx.program after
-  delivered : ∀ ctx data state item fired, hooks.delivered ctx data state = .ok (item, fired) → item ∈ state.openItems
+  delivered : ∀ ctx data state item fired, hooks.delivered ctx data state = .ok (item, fired) → item ∈ itemList state.openItems
   /-- `Hooks.select`, a query, keeps a completion's leave or picks flows the occurrence's element lists. -/
   select : ∀ ctx occurrence leave state chosen, hooks.select ctx occurrence leave state = .ok chosen →
     chosen = leave ∨ ∃ flows, chosen = .flows flows ∧ ∀ flow ∈ flows, Laws.Flow.Lists ctx.program occurrence.element flow
@@ -589,65 +512,67 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) (src :
   startsFired : ∀ ctx input fired, hooks.startsFired ctx input = .ok fired →
     ∀ id ∈ fired, ∃ element ∈ ctx.program.children none, element.header.id = id
 
-/-- What each phase `Step` runs itself must keep of `inv`, and what the closure reads of `inv`: the arming a queued
-signal asks for names issued identities, so one that `Step.stale` lets run finds them standing, and a host that stands
-begun in the scope occurrence it names; a queued begin is
-`Admitted` once it leaves the queue, and a queued completion completes no reservation a queued begin names; and a queued
-instance end records a failure exactly when it fails. The state operations' obligations are `Laws.State`'s. The phases
-only the completion pipeline runs are apart (`PipelinePhases`), and so is the reset that starts an input
+/-- What each phase `Step` runs itself in a micro-step's body, before `Step.conclude`, must keep of `inv`, and what the
+closure reads of `inv`: the arming a queued signal asks for names issued identities, so one that `Step.stale` lets run
+finds them standing, and a host that stands begun in the scope occurrence it names; a queued begin is `Admitted` once it
+leaves the queue, and a queued completion completes no reservation a queued begin names; and a queued instance end
+records a failure exactly when it fails. The state operations' obligations are `Laws.State`'s. The phases only the
+completion pipeline runs are apart (`PipelinePhases`), and so is the reset that starts an input
 (`Laws.Step.running_keeps`): an invariant that counts an input's end facts holds across the pipeline only as a unit and
-from the input's start only (`Kernel.Laws.Step.Ends`), and so is ordering the journal at the input's end (`Phases`):
-an invariant that reads the order of the journal's facts cannot hold both before and after it. -/
-structure ClosurePhases (inv : Program → State → Prop) : Prop where
+from the input's start only (`Kernel.Laws.Step.Ends`), and so is ordering the journal at the input's end (`Phases`): an
+invariant that reads the order of the journal's facts cannot hold both before and after it. -/
+structure BodyPhases (inv : Program → State → Prop) : Prop where
   clock : ∀ program state atMs, inv program state → inv program { state with logicalTimeMs := atMs }
-  /-- `Step.conclude` journals the draft and empties it and the write log. -/
-  journal : ∀ program state (transition : Transition), inv program state → transition.started = state.draft.started →
-    transition.ended = state.draft.ended →
-    inv program { state with journal := transition :: state.journal, draft := {}, writes := [] }
-  /-- Signals leave the queue: the closure's next, or a micro-step's sole completion that `Step.absorb` runs. -/
-  dequeue : ∀ program state signals, inv program state → signals.Sublist state.signals →
-    inv program { state with signals := signals }
-  /-- The closure's next token leaves the work stack. -/
-  untoken : ∀ program state tokens, inv program state → tokens.Sublist state.tokens →
-    inv program { state with tokens := tokens }
+  /-- Signals leave the running batch: a micro-step's sole completion that `Step.absorb` runs. -/
+  dequeue : ∀ program state signals, inv program state → signals.Sublist state.batchSignals →
+    inv program { state with batchSignals := signals }
+  /-- The closure's next signal leaves the queue. -/
+  unqueue : ∀ program state unit, inv program state →
+    inv program { state with queuedSignals := state.queuedSignals.erase unit }
+  /-- The closure's next token leaves the queue. -/
+  untoken : ∀ program state unit, inv program state →
+    inv program { state with queuedTokens := state.queuedTokens.erase unit }
   /-- A variable command queues its write or its removal. -/
   queueWrite : ∀ program state scope writes rule, inv program state →
     inv program (state.signal (.write scope writes rule))
   queueRemove : ∀ program state scope names, inv program state → inv program (state.signal (.remove scope names))
-  armIssued : ∀ program state host element scope, inv program state → Signal.arm host element scope ∈ state.signals →
-    host < state.nextIssue ∧ scope.value < state.nextIssue ∧
+  armIssued : ∀ program state host element scope, inv program state → Signal.arm host element scope ∈ Laws.State.allSignals state →
+    Laws.State.OccurrenceIssued state host ∧ Laws.State.ScopeIssued state scope ∧
       ∀ occurrence ∈ state.occurrences, occurrence.id = host → occurrence.begun = true ∧ occurrence.scope = scope
-  armScopeIssued : ∀ program state scope, inv program state → Signal.armScope scope ∈ state.signals →
-    scope.value < state.nextIssue
+  armScopeIssued : ∀ program state scope, inv program state → Signal.armScope scope ∈ Laws.State.allSignals state →
+    Laws.State.ScopeIssued state scope
   armGatewayIssued : ∀ program state occurrence gateway scope, inv program state →
-    Signal.armGateway occurrence gateway scope ∈ state.signals →
-    occurrence < state.nextIssue ∧ scope.value < state.nextIssue ∧
+    Signal.armGateway occurrence gateway scope ∈ Laws.State.allSignals state →
+    Laws.State.OccurrenceIssued state occurrence ∧ Laws.State.ScopeIssued state scope ∧
       ∀ found ∈ state.occurrences, found.id = occurrence → found.begun = true ∧ found.scope = scope
-  endRecorded : ∀ program state status failure, inv program state → Signal.endInstance status failure ∈ state.signals →
+  endRecorded : ∀ program state status failure, inv program state → Signal.endInstance status failure ∈ Laws.State.allSignals state →
     (failure.isSome = true ↔ status = .failed)
   /-- The closure's next signal or token, a begin, may begin once it leaves the queue. -/
-  admittedSignal : ∀ program state request rest, inv program state → state.signals = .begin request :: rest →
-    Admitted { state with signals := rest } request
-  admittedToken : ∀ program state request rest, inv program state →
-    (state.tokens = .begin request :: rest ∨ state.tokens = rest ++ [.begin request]) →
-    Admitted { state with tokens := rest } request
+  admittedSignal : ∀ program state unit request, inv program state →
+    firstBreadth state.queuedSignals = some (unit, .begin request) →
+    Admitted { state with queuedSignals := state.queuedSignals.erase unit } request
+  admittedToken : ∀ program state request popped, inv program state → TokenTaken program state (.begin request) popped →
+    Admitted popped request
   completeQueued : ∀ program state id leave writes rule, inv program state →
-    Signal.complete id leave writes rule ∈ state.signals →
+    Signal.complete id leave writes rule ∈ Laws.State.allSignals state →
     ∀ request, Laws.State.Queued state request → id ∉ Laws.State.names request
   /-- The closure's next signal, a compensation, may end as it asks once it leaves the queue. -/
-  resumable : ∀ program state scope activity trigger leave resume rest, inv program state →
-    state.signals = .compensate scope activity trigger leave (some resume) :: rest →
-    Laws.State.Resumable { state with signals := rest } scope resume
+  resumable : ∀ program state scope activity trigger leave resume unit, inv program state →
+    firstBreadth state.queuedSignals = some (unit, .compensate scope activity trigger leave (some resume)) →
+    Laws.State.Resumable { state with queuedSignals := state.queuedSignals.erase unit } scope resume
   /-- The closure's next signal, a raise, finds what its origin names and a settled host once it leaves the queue. -/
-  raisable : ∀ program state raised origin rest, inv program state → state.signals = .raise raised origin :: rest →
-    Laws.State.Raisable program { state with signals := rest } origin ∧
-      ∀ host, origin.host = some host → Laws.State.Settled { state with signals := rest } host
+  raisable : ∀ program state raised origin unit, inv program state →
+    firstBreadth state.queuedSignals = some (unit, .raise raised origin) →
+    Laws.State.Raisable program { state with queuedSignals := state.queuedSignals.erase unit } origin ∧
+      ∀ host, origin.host = some host → Laws.State.Settled { state with queuedSignals := state.queuedSignals.erase unit } host
   /-- An occurrence's scope occurrence stands. -/
   housed : ∀ program state occurrence, inv program state → occurrence ∈ state.occurrences →
     ScopeStands state occurrence.scope
-  /-- Every occurrence was issued, so a reservation's number names it alone. -/
+  /-- Every occurrence was issued, so a reservation's key names it alone. -/
   issued : ∀ program state occurrence, inv program state → occurrence ∈ state.occurrences →
-    occurrence.id < state.nextIssue
+    Laws.State.OccurrenceIssued state occurrence.id
+  /-- The issue table holds none of the running unit's next issues (DC12), so a reservation's fresh key is unissued. -/
+  issuer : ∀ program state, inv program state → Laws.State.IssuerFresh state
   /-- An occurrence numbered as a Multi-Instance body is of an element with a Multi-Instance envelope, so a dispatch
   hands every other hook an occurrence of the element role (`Laws.Step.dispatch_unstarted`). -/
   bodied : ∀ program state occurrence, inv program state → occurrence ∈ state.occurrences →
@@ -658,24 +583,27 @@ structure ClosurePhases (inv : Program → State → Prop) : Prop where
   newest : ∀ program state request role sourceType, inv program state →
     (state.beginOccurrence request role sourceType).1.draft.started.getLast?.map (·.occurrence) =
       some (Laws.State.key (state.beginOccurrence request role sourceType).1 (state.beginOccurrence request role sourceType).2)
-  /-- `State.beginOccurrence` of an admitted request begins an occurrence no running Multi-Instance body is keyed by:
-  a fresh one is issued at the counter, above every body's, and a reservation is one no slot completes
-  (`Laws.State.Unclaimed`). -/
-  unrun : ∀ program state request role sourceType, inv program state → Admitted state request →
+  /-- `State.beginOccurrence` of an admitted request in a scope occurrence that stands begins an occurrence no running
+  Multi-Instance body is keyed by: a fresh one is issued there under a key never issued, and a reservation is one no
+  slot completes (`Laws.State.Unclaimed`). -/
+  unrun : ∀ program state request role sourceType, inv program state → ScopeStands state request.scope →
+    Admitted state request →
     ∀ run ∈ (state.beginOccurrence request role sourceType).1.slots.multiInstances,
       run.occurrence ≠ (state.beginOccurrence request role sourceType).2.id
-  /-- `State.beginOccurrence` of an admitted request begins an occurrence that owns no scope occurrence: a fresh one is
-  issued at the counter, and a reservation is unbegun, while only a begun occurrence owns one (`Laws.State.Owned`). -/
-  unowned : ∀ program state request role sourceType, inv program state → Admitted state request →
+  /-- `State.beginOccurrence` of an admitted request in a scope occurrence that stands begins an occurrence that owns no
+  scope occurrence: a fresh one is issued there under a key never issued, and a reservation is unbegun, while only a
+  begun occurrence owns one (`Laws.State.Owned`). -/
+  unowned : ∀ program state request role sourceType, inv program state → ScopeStands state request.scope →
+    Admitted state request →
     ∀ scope ∈ (state.beginOccurrence request role sourceType).1.scopes,
       scope.occurrence ≠ some (state.beginOccurrence request role sourceType).2.id
   /-- An occurrence parked at a join is begun while it stands, so a join offered again hands over a begun one. -/
   parkedBegun : ∀ program state waiting occurrence, inv program state → waiting ∈ state.slots.parked →
     occurrence ∈ state.occurrences →
     occurrence.id = waiting.occurrence → occurrence.begun = true
-  /-- `Step.endInstance`, with a failure exactly when the instance fails. -/
-  endInstance : ∀ program state status failure, inv program state → (failure.isSome = true ↔ status = .failed) →
-    inv program (endInstance status failure state)
+  /-- `Step.endInstance` under any position order, with a failure exactly when the instance fails. -/
+  endInstance : ∀ program le state status failure, inv program state → (failure.isSome = true ↔ status = .failed) →
+    inv program (endInstance le status failure state)
   /-- `State.beginOccurrence` of an admitted request, in a scope occurrence that stands (`Step.requireScope`); the
   request's start Event reservation stays beginnable, unclaimed and placed in the scope occurrence its begun occurrence
   runs in. The role is the request's (`Step.roleOf`): an Event's occurrence numbers under its element's counter
@@ -700,13 +628,41 @@ structure ClosurePhases (inv : Program → State → Prop) : Prop where
     inv program (state.reserve element scope).1 ∧
     ∀ request, Laws.State.Queued (state.reserve element scope).1 request →
       (state.reserve element scope).2.id ∉ Laws.State.names request
-  cancel : ∀ program state id, inv program state → inv program (state.cancelOccurrence id)
+  cancel : ∀ program le state id, inv program state → inv program (state.cancelOccurrence le id)
+
+/-- `BodyPhases` and what `Step.conclude` does once a micro-step's body has run: journal the draft and move the batches.
+Apart, so a micro-step's body is known to journal nothing (`Laws.Step.closureStep_concludes`), which an invariant that
+reads which unit journalled a transition needs (`Kernel.Proofs.MultiInstance.Begins`). -/
+structure ClosurePhases (inv : Program → State → Prop) : Prop extends BodyPhases inv where
+  /-- `Step.conclude` journals the draft as the transition of a unit the closure has not run (DC4), and empties it
+  and the write log. -/
+  journal : ∀ program state unit (transition : Transition), inv program state → state.transitions[unit]? = none →
+    transition.started = state.draft.started → transition.ended = state.draft.ended →
+    inv program { state with transitions := state.transitions.insert unit transition, draft := {}, writes := [] }
+  /-- `Step.conclude` moves the micro-step's batches under its unit key, a body's finish or a run's readiness under its
+  root (`queueBatch`). -/
+  queueBatch : ∀ program state unit grouped, GroupsRoots state grouped → inv program state →
+    inv program (state.queueBatch unit grouped)
+  /-- `Step.microStep` makes its unit the issuer before the body runs (DC12): a unit the closure has not run and not the
+  seed's, while the issue table holds no issue of the issuer it replaces. -/
+  enterUnit : ∀ program state unit, inv program state → state.transitions.contains unit = false →
+    unit ≠ .ofRoot .seed → (∀ index, state.issued[Issue.fresh state.issuing index]? = none) →
+    inv program { state with issuing := unit, issueNext := 0 }
+  /-- `Step.conclude` makes the seed the issuer again once the issuer's transition is journalled (DC12), while the issue
+  table holds no issue of the seed's. -/
+  leaveUnit : ∀ program state, inv program state → state.transitions.contains state.issuing = true →
+    (∀ index, state.issued[Issue.fresh (.ofRoot .seed) index]? = none) →
+    inv program { state with issuing := .ofRoot .seed, issueNext := 0 }
 
 /-- The phases of `ClosurePhases` and ordering the journal once the closure has settled (`Step.orderJournal`): what
 `Laws.Step.running_keeps` needs for an invariant of the committed state, while `Laws.Step.running_settles` gives the
-settled state before the ordering. -/
+settled state before the ordering. The ordering compacts the closure's issues onto the counters of the state the
+closure started from (`start`, DC12), which the settled state's counters never exceed (`CountersFrom`). -/
 structure Phases (inv : Program → State → Prop) : Prop extends ClosurePhases inv where
-  runOrder : ∀ program state, inv program state → inv program { state with journal := state.journal.reverse }
+  runOrder : ∀ program start state log, inv program state → Laws.State.CountersFrom start state →
+    state.batchSignals = [] ∧ state.batchTokens = [] ∧ state.batchIntents = [] →
+    (keys : ∀ occurrence ∈ state.occurrences, occurrence.id.scope = occurrence.scope) → ∀ after,
+    orderJournal program.options.branchSchedule start (.ok (state, log)) = .ok after → inv program after
 
 /-- What the completion pipeline's own phases must keep of `inv` (`Step.complete`): starting the completing reservation
 and closing its items, removing its record and journalling its end. -/
@@ -717,9 +673,9 @@ structure PipelinePhases (inv : Program → State → Prop) : Prop where
     (∀ request, Laws.State.Queued state request → occurrence.id ∉ Laws.State.names request) →
     inv program ((state.startReserved occurrence sourceType).1.closeOwnItems occurrence.id)
   /-- `State.removeOccurrence` of an occurrence on which nothing waits or hangs; its scope occurrence stays. -/
-  removeOccurrence : ∀ program state occurrence, inv program state → occurrence ∈ state.occurrences →
-    (∀ item ∈ state.openItems, item.occurrence ≠ occurrence.id ∧ item.attachedTo ≠ some occurrence.id) →
-    inv program (state.removeOccurrence occurrence.id) ∧ ScopeStands (state.removeOccurrence occurrence.id) occurrence.scope
+  removeOccurrence : ∀ program le state occurrence, inv program state → occurrence ∈ state.occurrences →
+    (∀ item ∈ itemList state.openItems, item.id.occurrence ≠ occurrence.id ∧ item.attachedTo ≠ some occurrence.id) →
+    inv program (state.removeOccurrence le occurrence.id) ∧ ScopeStands (state.removeOccurrence le occurrence.id) occurrence.scope
   recordEnd : ∀ program state key terminal, inv program state → inv program (state.recordEnd key terminal)
 
 /-- The completion pipeline keeps `inv`, from a state in which no queued begin names the completing occurrence and
@@ -727,7 +683,7 @@ which says where it comes from (`Laws.Flow.LeavesFrom`):
 `Laws.Step.complete_keeps` gives it from the hook contract, `Phases` and `PipelinePhases`, and the walk of
 `Laws.Step.Keeps` takes it as a premise. -/
 def PipelineKeeps (hooks : Hooks) (inv : Program → State → Prop) : Prop :=
-  ∀ (ctx : Ctx) (id : Nat) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule) (state after : State),
+  ∀ (ctx : Ctx) (id : OccurrenceId) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule) (state after : State),
     inv ctx.program state → (∀ request, Laws.State.Queued state request → id ∉ Laws.State.names request) →
     (∀ occurrence ∈ state.occurrences, occurrence.id = id →
       Laws.Flow.LeavesFrom (inv ctx.program) ctx.program state occurrence leave) →
@@ -749,18 +705,21 @@ structure StateFacts : Prop where
     (state.startReserved occurrence sourceType).2.element = occurrence.element ∧
     (state.startReserved occurrence sourceType).1.slots.instances = state.slots.instances
   closeOwnItems : ∀ (state : State) id,
-    PipelineFrame state (state.closeOwnItems id) ∧ ∀ item ∈ (state.closeOwnItems id).openItems, item.occurrence ≠ id
+    PipelineFrame state (state.closeOwnItems id) ∧ ∀ item ∈ itemList (state.closeOwnItems id).openItems, item.id.occurrence ≠ id
   recordEnd : ∀ (state : State) key terminal, (state.recordEnd key terminal).scopes = state.scopes ∧
     (state.recordEnd key terminal).slots.instances = state.slots.instances
-  /-- A reservation adds one occurrence, of its element in its scope occurrence and numbered by the next issue. -/
+  /-- A reservation adds one occurrence, of its element in its scope occurrence, under a key not issued while that scope
+  occurrence stands, when the issue table holds none of the running unit's next issues (DC12). -/
   reserve : ∀ (state : State) element scope,
-    (state.reserve element scope).1.occurrences = state.occurrences ++ [(state.reserve element scope).2] ∧
+    (∀ o ∈ (state.reserve element scope).1.occurrences, o ∈ state.occurrences ∨ o = (state.reserve element scope).2) ∧
     (state.reserve element scope).2.element = element ∧ (state.reserve element scope).2.scope = scope ∧
-    (state.reserve element scope).2.id = state.nextIssue ∧ (state.reserve element scope).1.scopes = state.scopes ∧
+    (Laws.State.IssuerFresh state → scope ∈ Laws.State.standingKeys state →
+      ¬ Laws.State.OccurrenceIssued state (state.reserve element scope).2.id) ∧
+    (state.reserve element scope).1.scopes = state.scopes ∧
     (state.reserve element scope).1.slots.instances = state.slots.instances
   /-- Removing an occurrence keeps no scope occurrence and no instance entry it did not have. -/
-  removeOccurrence : ∀ (state : State) id, (∀ entry ∈ (state.removeOccurrence id).scopes, entry ∈ state.scopes) ∧
-    ∀ entry ∈ (state.removeOccurrence id).slots.instances, entry ∈ state.slots.instances
+  removeOccurrence : ∀ (state : State) le id, (∀ entry ∈ (state.removeOccurrence le id).scopes, entry ∈ state.scopes) ∧
+    ∀ entry ∈ (state.removeOccurrence le id).slots.instances, entry ∈ state.slots.instances
   /-- A variable write or removal changes no scope occurrence, occurrence or open item. -/
   setVariable : ∀ (state : State) target name value, (state.setVariable target name value).scopes = state.scopes ∧
     (state.setVariable target name value).occurrences = state.occurrences ∧
@@ -771,8 +730,7 @@ structure StateFacts : Prop where
   /-- A scope occurrence a lookup finds stands, or, for `State.owner?`, holds a variable set. -/
   declaring : ∀ (state : State) scope element found, state.declaring? scope element = some found →
     ScopeStands state found
-  owner : ∀ (state : State) scope name found, state.owner? scope name = some found →
-    ∃ variables ∈ state.variables, variables.scope = found
+  owner : ∀ (state : State) scope name found, state.owner? scope name = some found → found ∈ state.variables
   /-- The scope occurrence an occurrence owns stands. -/
   localScope : ∀ (state : State) host scope, state.localScope? host = some scope → ScopeStands state scope
   /-- An instance root is the process root or a scope occurrence that stands. -/
@@ -787,7 +745,7 @@ module documentation). An operation enters when a feature proof first needs it. 
 structure Operations (inv : Program → State → Prop) : Prop where
   /-- Every variable set belongs to a scope occurrence that stands. -/
   variablesHoused : ∀ program state, inv program state →
-    ∀ variables ∈ state.variables, ScopeStands state variables.scope
+    ∀ scope ∈ state.variables, ScopeStands state scope
   /-- The process root stands. -/
   rootStands : ∀ program state, inv program state → ScopeStands state State.root
   /-- A write to a scope occurrence that stands. -/

@@ -55,7 +55,7 @@ def Emission.startedId (emission : Emission) (commandId : String) (deploymentId 
 /-- The emission of an intent a committed step of the instance `emitter` left, its origin by public identifier. -/
 def intentEmission (emitter : String) (intent : BroadcastIntent) : Emission :=
   { address := intent.address, variables := intent.variables, businessKey := intent.businessKey
-    origin := some intent.origin, emitter := some emitter }
+    origin := some intent.origin.toRef, emitter := some emitter }
 
 /-- The open Signal items of `address` in one instance's `state` of `program`, by process instance identifier (a called
 instance's own), then arming order: none unless the instance is running, and none for the `emitter`'s own State. A
@@ -63,10 +63,11 @@ host asks it of each instance a delivery may reach. -/
 def signalReceiversOf (program : Program) (state : State) (address : SignalAddress)
     (emitter : Option String) : List OccurrenceRef :=
   if state.status != .running || emitter == some state.instanceId then [] else
-    let waiting := (state.openItems.filter fun item => item.kind.view.signal.any (address.matches ·.address)).map
-      fun item => (state.instanceOf item.scope, item.id, occurrence program state item)
+    let waiting := ((itemList state.openItems).filter fun item => item.kind.view.signal.any (address.matches ·.address)).map
+      fun item => ((state.instanceOf item.scope).text, item.position, occurrence program state item)
     let ordered := waiting.mergeSort fun (leftInstance, leftItem, _) (rightInstance, rightItem, _) =>
-      decide (leftInstance < rightInstance) || (leftInstance == rightInstance && decide (leftItem ≤ rightItem))
+      -- A committed state holds committed positions only, which every unit order orders alike.
+      decide (leftInstance < rightInstance) || (leftInstance == rightInstance && Issue.notAfter UnitKey.breadth.val leftItem rightItem)
     ordered.map (·.2.2)
 
 /-- The root Signal starts of `program`, deployed as `deploymentId`, that a delivery of `address` carrying `variables`
@@ -219,7 +220,7 @@ def Fanning.entries (fanning : Fanning) : List FanOutEntry :=
 
 /-- The intents a committed step of `state`, an instance of `program`, left, origins by public identifier. -/
 def publicIntents (program : Program) (state : State) : List BroadcastIntent :=
-  state.outbox.map fun intent => { intent with origin := { intent.origin with element := program.publicId intent.origin.element } }
+  state.intents.map fun intent => { intent with origin := { intent.origin with element := program.publicId intent.origin.element } }
 
 /-- What reaching one receiver did: the instances, the receiver's entry, none when it records nothing, and, when it
 committed, its State and program, whose intents cascade. -/

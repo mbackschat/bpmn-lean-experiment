@@ -19,7 +19,7 @@ const header = (id: string, sourceType: string): Json => ({ id, origin: { defini
 
 const cib: Json = {
   evaluator: "juel", multiInstanceBinding: "loopReferences", effectResultValues: "activityLocals",
-  multiInstanceCounters: "cibLocals", multiInstanceInputFailure: "rollback", multiInstanceCount: "javaInt",
+  multiInstanceCounters: "cibLocals", branchSchedule: "declarationDepthFirst", multiInstanceInputFailure: "rollback", multiInstanceCount: "javaInt",
 };
 
 /** `Start → T → End`, `T` a Service Task looping over `items` with the item local `item`. */
@@ -28,15 +28,15 @@ function program(mode: string, options: Json = cib): Json {
     ...slice,
     options: { ...(slice["options"] as Json), ...options },
     elements: [
-      { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["To_T"] } } },
+      { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["To_T"], initiator: null, formRef: null } } },
       { activity: { header: header("T", "serviceTask"), payload: {
         work: { service: { payload: { protocol: "urn:p", operation: "urn:o", handlerKey: null, taskDefinition: false } } },
         envelope: { incoming: ["To_T"], outgoing: ["To_End"], inputs: [], outputs: [], boundaries: [], multiInstance: {
           mode, count: { collection: { items: { variable: { name: "items" } } } }, elementVariable: null,
           completionCondition: null, inputDataItem: "DataInput_Item", outputDataItem: null, outputCollection: null,
-          asyncBefore: false, asyncAfter: false, loopDataInputRef: null,
+          asyncBefore: false, asyncAfter: false, exclusive: null, retryCycle: null, loopDataInputRef: null,
           inputDataItemName: "item",
-        }, compensationHandlers: [], forCompensation: false, defaultFlow: null, asyncBefore: false, asyncAfter: false } } } },
+        }, compensationHandlers: [], forCompensation: false, defaultFlow: null, asyncBefore: false, asyncAfter: false, exclusive: null, retryCycle: null, structuredInputs: [], structuredOutputs: [] } } } },
       { event: { header: header("End", "endEvent"), payload: { role: { throw: { record: "none" } }, placement: "finish",
         incoming: ["To_End"], outgoing: [], alternativeThrows: [] } } },
     ],

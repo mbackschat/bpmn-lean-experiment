@@ -79,6 +79,13 @@ test("a read of a variable the profile leaves out is unsupported, even when the 
   assert.deepEqual(run("price", "result", context), written({ kind: "integer", value: 3 }));
 });
 
+// A kind no contract defines, so the witness stays a kind the context has no form for when the value domain widens.
+test("a read of a value of a kind the context has no form for is unsupported, like a Decimal's, rather than a host fault", () => {
+  const context: Binding[] = [price, { name: "ratio", value: { kind: "notAContractKind", value: 1.5 } }];
+  assert.deepEqual(run("ratio * 2", "result", context), unsupported("script-value-unrepresentable"));
+  assert.deepEqual(run("price", "result", context), written({ kind: "integer", value: 3 }));
+});
+
 test("a reference to execution or Java is unsupported", () => {
   for (const source of ["execution.getVariable('price')", "Java.type('java.lang.Integer')", "typeof execution"]) {
     assert.deepEqual(run(source), unsupported("script-host-object"), source);

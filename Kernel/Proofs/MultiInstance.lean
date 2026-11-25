@@ -2,6 +2,7 @@ module
 
 public import Kernel.Proofs.MultiInstance.Occurs
 public import Kernel.Laws.Population
+public import Kernel.Laws.State.Keeps
 
 /-! # Proofs: Multi-Instance (P4)
 
@@ -64,6 +65,16 @@ structure RunFormed (program : Program) (s : State) (run : MultiInstanceRun) : P
   unheld : InstancesUnheld s run
   placed : InstancesPlaced s run
 
+/-- Every occurrence and every queued begin that continues into a Multi-Instance body names a body occurrence key that
+was issued (`Laws.State.OccurrenceIssued`, which reads issue histories, counters and the issue table, not the occurrences
+that stand), so the commit renames a continuation onto a body's key only when it is that body's
+(`Laws.Step.renamed_apart`). `queued` is its inductive strengthening: an instance begun from a queued request takes the
+request's continuation (`State.beginOccurrence`); a commit leaves nothing queued. -/
+structure Continued (s : State) : Prop where
+  occurrences : ∀ o ∈ s.occurrences, ∀ body, o.continuation = .multiInstance body → Laws.State.OccurrenceIssued s body
+  queued : ∀ request, Laws.State.Queued s request → ∀ body, request.continuation = .multiInstance body →
+    Laws.State.OccurrenceIssued s body
+
 /-- The lane's slot invariant: one running body per body occurrence (`RunsKeyed`), each `RunFormed`, and the instance
 begins still queued in the order the numbering needs (`BeginsQueued`). It is a lane
 premise beside `WellFormed`, not a clause of it, since feature slot entries are each feature's own laws; the lane
@@ -74,16 +85,20 @@ body whose occurrence is no Multi-Instance element's would outlive its occurrenc
 let a completion fill one and finish the other (root decision, 2026-11-14), without `BeginsQueued` a before-state
 whose queues hold begins out of slot order would number its instances out of order (root decision, 2026-11-14), and
 without `UnbegunUnlooped` a reservation of a looping element begun after a fresh instance would journal its lower
-activation last (root decision, 2026-11-14). -/
+activation last (root decision, 2026-11-14), and without `Continued` a commit could rename an instance's
+continuation onto another body's key (F9). -/
 structure RunsFormed (program : Program) (s : State) : Prop where
   keyed : RunsKeyed s
   formed : ∀ run ∈ s.slots.multiInstances, RunFormed program s run
   queued : BeginsQueued program s
   unbegun : UnbegunUnlooped program s
+  continued : Continued s
 
-/-- A committed input from `before` to `after`, from a well-formed before-state that keeps the lane's slot invariant. -/
+/-- A committed input from `before` to `after`, from a well-formed committed before-state that keeps the lane's slot
+invariant. -/
 def Commits (hooks : Hooks) (program : Program) (before after : State) : Prop :=
-  WellFormed program before ∧ RunsFormed program before ∧ ∃ input, Step.step hooks program (some before) input = .ok after
+  WellFormed program before ∧ Laws.State.Committed before ∧ RunsFormed program before ∧
+    ∃ input, Step.step hooks program (some before) input = .ok after
 
 /-- A committed start keeps the lane's slot invariant, under a program whose identifiers are unique. -/
 def RunsFormedAtStart (hooks : Hooks) : Prop :=
@@ -114,12 +129,13 @@ def RunsGenerated (hooks : Hooks) : Prop :=
       ∀ earlier ∈ before.slots.multiInstances, earlier.occurrence = run.occurrence → SnapshotFixed earlier run
 
 /-- Within the input's journal, the instances of a Multi-Instance element begin in generation order, under a program
-whose identifiers are unique: the IL contract (`Boundary.id`, `Kernel/IL/Types.lean:118`) keeps every reservation off a
-looping element, and a reservation of one keeps its lower activation when it begins after a fresh instance. -/
+whose identifiers are unique and under `declarationDepthFirst`: the IL contract (`Boundary.id`,
+`Kernel/IL/Types.lean:118`) keeps every reservation off a looping element, and the commit numbers pending activations in
+the order their units ran (KD1). It is stated for `declarationDepthFirst` only, whose commit order is run order. -/
 def BeginOrder (hooks : Hooks) : Prop :=
-  ∀ (program : Program) (before after : State) (element : ElementId) (loop : MultiInstance) (processInstance : String),
-    IdsUnique program → Commits hooks program before after → LoopOf program element loop →
-    BeginsInOrder (after.journal.flatMap (·.started)) processInstance element
+  ∀ (program : Program) (before after : State) (element : ElementId) (loop : MultiInstance) (processInstance : InstanceName),
+    IdsUnique program → program.options.branchSchedule = .declarationDepthFirst → Commits hooks program before after →
+    LoopOf program element loop → BeginsInOrder (after.journal.flatMap (·.started)) processInstance element
 
 /-- Instances stay isolated: the instances of every running body after a committed input lie `Apart`. -/
 def InstancesApart (hooks : Hooks) : Prop :=
@@ -165,7 +181,7 @@ def CountersEntered (hooks : Hooks) : Prop :=
       WellFormed ctx.program state → occurrence ∈ state.occurrences → occurrence.begun = true →
       ctx.program.options.multiInstanceCounters = .cibLocals → ItemApart loop →
       hooks.arriveMultiInstance ctx header envelope loop occurrence state = .ok after → SlotsCounted state after) ∧
-    ∀ (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes : List (String × Value)) (state after : State),
+    ∀ (ctx : Ctx) (body : OccurrenceId) (occurrence : Occurrence) (writes : List (String × Value)) (state after : State),
       WellFormed ctx.program state → occurrence.scope ∈ scopeIds state →
       ctx.program.options.multiInstanceCounters = .cibLocals →
       (∀ element loop, LoopOf ctx.program element loop → ItemApart loop) →
@@ -175,7 +191,7 @@ def CountersEntered (hooks : Hooks) : Prop :=
 `loopCounter` and its body's counts (`CountersHeld`), which `Hooks.instanceCompleted` checks before it reads them, failing
 as `unsupported` (`multiInstance.resultShadowsInstance`) when a write admission cannot see reached one (CIB-INT-0018). -/
 def CountersRead (hooks : Hooks) : Prop :=
-  ∀ (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes : List (String × Value)) (state after : State)
+  ∀ (ctx : Ctx) (body : OccurrenceId) (occurrence : Occurrence) (writes : List (String × Value)) (state after : State)
     (run : MultiInstanceRun) (loop : MultiInstance) (index : Nat),
     RunsFormed ctx.program state → ctx.program.options.multiInstanceCounters = .cibLocals →
     hooks.instanceCompleted ctx body occurrence writes state = .ok after → run ∈ state.slots.multiInstances →
@@ -196,7 +212,7 @@ def CollectsOnCompletion (hooks : Hooks) : Prop :=
       ∃ new, Queues state after new ∧ ∀ queued ∈ new, ∀ writes value, (name, value) ∈ writes →
         ((∃ id leave rule, queued = .complete id leave writes rule) ∨ ∃ scope rule, queued = .write scope writes rule) →
         ∃ outputs, collectionItems value = some outputs ∧ Collects run (some outputs)) ∧
-    ∀ (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes : List (String × Value)) (state after : State)
+    ∀ (ctx : Ctx) (body : OccurrenceId) (occurrence : Occurrence) (writes : List (String × Value)) (state after : State)
       (run : MultiInstanceRun) (loop : MultiInstance) (name : String),
       RunsFormed ctx.program state → OutputsNamed ctx.program loop → LoopOf ctx.program run.element loop →
       run ∈ after.slots.multiInstances → run.occurrence = body → loop.outputCollection = some name →
@@ -218,7 +234,7 @@ def CollectionWritten (hooks : Hooks) : Prop :=
       hooks.completeBody ctx header envelope loop occurrence state = .ok after →
       ∃ new, Queues state after new ∧
         ∃ written value, Signal.complete occurrence.id .outgoing written .outward ∈ new ∧ (name, value) ∈ written) ∧
-    ∀ (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes : List (String × Value)) (state after : State)
+    ∀ (ctx : Ctx) (body : OccurrenceId) (occurrence : Occurrence) (writes : List (String × Value)) (state after : State)
       (run : MultiInstanceRun) (loop : MultiInstance) (index : Nat) (name : String),
       RunsFormed ctx.program state → LoopOf ctx.program run.element loop → run ∈ state.slots.multiInstances →
       run.occurrence = body → run.instances[index]? = some (.active occurrence.scope) →
@@ -234,7 +250,7 @@ collection (`PMI-EARLY-01`; BPMN 2.0.2 §13.3.7, whose output collection is comp
 completed). Stated of `Hooks.instanceCompleted` and the body's slot record as its after-state leaves it; it replaces a
 state clause that a value another write left under the collection's name falsifies. -/
 def StopsUncollected (hooks : Hooks) : Prop :=
-  ∀ (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes : List (String × Value)) (state after : State)
+  ∀ (ctx : Ctx) (body : OccurrenceId) (occurrence : Occurrence) (writes : List (String × Value)) (state after : State)
     (run : MultiInstanceRun) (loop : MultiInstance) (name : String),
     hooks.instanceCompleted ctx body occurrence writes state = .ok after → run ∈ after.slots.multiInstances →
     run.occurrence = body → (∃ slot ∈ run.instances, ∀ output, slot ≠ .completed output) →

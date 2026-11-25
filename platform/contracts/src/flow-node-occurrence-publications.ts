@@ -38,10 +38,9 @@ export type FlowNodeOccurrenceKey = DeepReadonly<{
   role: FlowNodeOccurrenceRole;
 }>;
 
-/** An occurrence began: its key, the scope occurrence that owns it and its element's BPMN source type. */
+/** An occurrence began: its key and its element's BPMN source type; the kernel's scope ordinal is not published. */
 export type FlowNodeOccurrenceStart = DeepReadonly<{
   occurrence: FlowNodeOccurrenceKey;
-  owner: number;
   sourceType: string;
 }>;
 
@@ -50,11 +49,16 @@ export type FlowNodeOccurrenceEnd = DeepReadonly<{
   terminal: FlowNodeOccurrenceTerminalKind;
 }>;
 
-/** The occurrences one micro-step began and ended; `revision` positions it in the publication. */
+/**
+ * The occurrences one micro-step began and ended, and those it leaves in BPMN's Ready state (`ready`, absent when none):
+ * begun, their InputSet unavailable, so no work is offered (PD2). A started occurrence neither Ready nor ended is
+ * Active; a Ready one ends only by removal, as cancelled. `revision` positions the transition in the publication.
+ */
 export type FlowNodeOccurrenceTransition = DeepReadonly<{
   revision: number;
   started: FlowNodeOccurrenceStart[];
   ended: FlowNodeOccurrenceEnd[];
+  ready?: FlowNodeOccurrenceKey[];
 }>;
 
 /**

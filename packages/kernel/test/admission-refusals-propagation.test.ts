@@ -138,8 +138,8 @@ export const rows: readonly Row[] = [
   {
     code: "signal.unnamed",
     description: "a Signal throw without a name, where names address Signals",
-    mutate: (program) => throwing(signalThrow({ name: null }))(withOptions(program, { signalNames: "addresses" })),
-    control: (program) => throwing(signalThrow({}))(withOptions(program, { signalNames: "addresses" })),
+    mutate: (program) => throwing(signalThrow({ name: null }))(withOptions(program, { signalNames: "addresses", branchSchedule: "declarationDepthFirst" })),
+    control: (program) => throwing(signalThrow({}))(withOptions(program, { signalNames: "addresses", branchSchedule: "declarationDepthFirst" })),
   },
   {
     // BPMN 2.0.2 Table 10.94 types `activityRef` as an Activity; CIB-EXT-0046 compensates nothing for any other element.

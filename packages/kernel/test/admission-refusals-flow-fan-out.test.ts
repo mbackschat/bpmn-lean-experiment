@@ -12,7 +12,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  activity, append, base, boundary, callWork, catchEvent, compensationTrigger, definitionRef, elementId, end, errorTrigger,
+  activity, append, scriptWork, base, boundary, callWork, catchEvent, compensationTrigger, definitionRef, elementId, end, errorTrigger,
   escalationTrigger, eventSubProcess, flow, gateway, loop, mapping, model, refusalOf, refusalTests, replace, scope, signal,
   signalThrow, simpleBoolean, start, terminateThrow, text, throwing, userWork, variable, withOptions, writer,
 } from "./admission-refusal-support.ts";
@@ -540,10 +540,15 @@ test("flow fan-out: CIB's declaration-order schedule admits every fan-out (CIB-O
   for (const row of rows) assert.equal(refusalOf(cib(row.mutate)(base())), null, row.description);
 });
 
-test("flow fan-out: an uncaught Error ends the instance only under the profile that fails it", () => {
-  const ends = (shape: (program: Json) => Json) => (program: Json): Json => withOptions(shape(program), { unhandledError: "endsThrowingPath" });
-  assert.equal(refusalOf(ends(forkBeside([end("A", raiseError)], [], "A"))(base())), null);
-  assert.equal(refusalOf(ends(callBeside(false))(base())), null);
+// DC28: an uncaught Error that ends only its path reads whether its scope is idle, which the other branches decide, so
+// the profile refuses it under the order-invariant schedule before any fan-out is checked, and CIB's schedule admits it.
+test("flow fan-out: an uncaught Error that ends only its path is refused by the profile, never held against a sibling", () => {
+  const ends = (schedule: string, shape: (program: Json) => Json) => (program: Json): Json =>
+    withOptions(shape(program), { unhandledError: "endsThrowingPath", branchSchedule: schedule });
+  for (const shape of [forkBeside([end("A", raiseError)], [], "A"), callBeside(false)]) {
+    assert.equal(refusalOf(ends("orderInvariant", shape)(base())), "profile.unhandledError.endsThrowingPath.orderInvariant");
+    assert.equal(refusalOf(ends("declarationDepthFirst", shape)(base())), null);
+  }
 });
 
 test("flow fan-out: an arming's interrupting firing that removes the entry's begun work first is not held against it", () => {
@@ -567,4 +572,17 @@ test("flow fan-out: an Inclusive join a level entered twice at once parks twice 
   };
   assert.equal(refusalOf(shape(false)(base())), null);
   assert.equal(refusalOf(shape(true)(base())), "flow.concurrentWrite");
+});
+
+// Probe P14: a Script Task's effect opens with every visible variable, so the IL's account reads every name there and a
+// branch writing a name beside it races under the standards schedule; CIB's schedule admits the split.
+test("flow fan-out: a Script Task reads every name, so a branch beside it that writes one is held against it", () => {
+  const shape = (schedule: string) => (program: Json): Json => {
+    const [written, inner] = writer("W", "outcome", "branch");
+    return withOptions(model([start("S"), gateway("F", "parallel"), activity("X", scriptWork()), end("XE"), ...written, end("WD")],
+      [flow("f1", "S", "F"), flow("fx", "F", "X"), flow("x", "X", "XE"), flow("fw", "F", "W"), flow("w", "W", "WD"), ...inner])(program),
+    { scriptTask: "javascript", branchSchedule: schedule });
+  };
+  assert.equal(refusalOf(shape("orderInvariant")(base())), "flow.concurrentWrite");
+  assert.equal(refusalOf(shape("declarationDepthFirst")(base())), null);
 });

@@ -29,7 +29,7 @@
 import {
   CompensationHandlerFailureTag,
   ImplicitCompensation,
-  SubmissionRule,
+  BranchSchedule,
   assertNever,
   elementActivity,
   elementEnvelope,
@@ -37,16 +37,13 @@ import {
   elementScope,
   mergeSort,
   programElement,
-  workCall,
-  workIsService,
-  workIsUser,
-  workReceive,
-  type Element,
   type ElementId,
+  type Program,
 } from "../il/types.js";
-import { catchWrites, footprint, joined, meets, noNames, union, writes, type Footprint } from "../il/footprint.js";
-import { flowReaches } from "../il/paths.js";
+import { meets, subjectData } from "../il/footprint.js";
+import { flowReaches, structurallyBefore } from "../il/paths.js";
 import {
+  scopeOccurrenceParent,
   ContinuationTag,
   FailureTag,
   InstanceStatus,
@@ -55,19 +52,20 @@ import {
   WriteRule,
   beginRequest,
   committed,
+  compensationsRestoredIn,
   completeSignal,
   enterScope,
   failed,
   instanceOf,
-  issue,
+  keyOf,
+  takeCompletion,
   signal,
-  subtree,
   type Compensable,
   type CompensationRun,
   type Compensations,
   type InstanceFailure,
   type Occurrence,
-  type OccurrenceRef,
+  type OccurrenceName,
   type Origin,
   type Outcome,
   type Result,
@@ -75,10 +73,15 @@ import {
   type ScopeOccurrence,
   type ScopeOccurrenceId,
   type State,
+  putRun,
+  runHolds,
   SemanticCause,
-  semanticFailure,
+  semanticFailure, type OccurrenceId, ownVariables, insertVariableIfNew,
+  ActivationRole,
+  compareOccurrenceName,
 } from "../state.js";
-import { ScopeRole, ctxRunsAsInstance, leaveScope, type Ctx } from "../hooks.js";
+import { ScopeRole, ctxPositionLe, ctxRunsAsInstance, inside, leaveScope, type Ctx } from "../hooks.js";
+import { begunChildren, keptRecords } from "./compensation/kept.js";
 
 function store(state: State, compensation: Compensations): State {
   return { ...state, slots: { ...state.slots, compensation } };
@@ -116,7 +119,7 @@ function placement(ctx: Ctx, occurrence: Occurrence, state: State): readonly [El
   const isScope = element !== null && elementScope(element) !== null;
   if (isInstance(ctx, occurrence, state)) {
     if (!isScope) return null;
-    return [handler, state.scopes.find((scope) => scope.id === occurrence.scope)?.parent ?? occurrence.scope];
+    return [handler, scopeOccurrenceParent(state.scopes.find((scope) => scope.id === occurrence.scope)) ?? occurrence.scope];
   }
   if (looping && isScope) return [null, occurrence.scope];
   return [handler, occurrence.scope];
@@ -132,6 +135,20 @@ function placement(ctx: Ctx, occurrence: Occurrence, state: State): readonly [El
  * (§13.5.5: "for each instance the dedicated snapshot is restored"; §10.3.8 assigns both to each inner instance); a
  * boundary handler restores none (§13.5.5: it "can only perform black-box compensation"), so it reads the item live.
  */
+/** Lean's `retainedBefore`: the order the readers of the retained records take them in, never their storage order. */
+function retainedBefore(ctx: Ctx): (record: Compensable, other: Compensable) => boolean {
+  switch (ctx.program.options.branchSchedule) {
+    case BranchSchedule.DeclarationDepthFirst:
+      return (record, other) => record.completion <= other.completion;
+    case BranchSchedule.OrderInvariant:
+      return (record, other) => {
+        const order = compareOccurrenceName(record.occurrence, other.occurrence);
+        return order < 0 || (order === 0 && (record.occurrence.role === ActivationRole.Element || other.occurrence.role === ActivationRole.MultiInstanceBody));
+      };
+  }
+  return assertNever(ctx.program.options.branchSchedule);
+}
+
 export function completed(ctx: Ctx, occurrence: Occurrence, state: State): Outcome {
   const placed = placement(ctx, occurrence, state);
   if (placed === null) return committed(state);
@@ -139,7 +156,7 @@ export function completed(ctx: Ctx, occurrence: Occurrence, state: State): Outco
   const owned = ownedScope(ctx, occurrence, state);
   const compensation = state.slots.compensation;
   const isInner = (record: Compensable): boolean => owned !== null && owned.id === record.scope;
-  const inner = compensation.retained.filter(isInner);
+  const inner = mergeSort(compensation.retained.filter(isInner), retainedBefore(ctx));
   const outer = compensation.retained.filter((record) => !isInner(record));
   const element = programElement(ctx.program, occurrence.element);
   const body = ((element === null ? null : elementEnvelope(element))?.multiInstance ?? null) !== null;
@@ -147,75 +164,53 @@ export function completed(ctx: Ctx, occurrence: Occurrence, state: State): Outco
   if (handler === null && !grouped) {
     return committed(store(state, { ...compensation, retained: [...outer, ...inner.map((record) => ({ ...record, scope: target }))] }));
   }
-  const [issued, completion] = issue(state);
+  const [issued, completion] = takeCompletion(state);
   const handlerElement = handler === null ? null : programElement(ctx.program, handler);
   const inside = handler === null || (handlerElement !== null && elementHeader(handlerElement).parent === occurrence.element);
   const locals = (scope: ScopeOccurrenceId): Compensable["snapshot"] =>
-    issued.variables.find((scoped) => scoped.scope === scope)?.entries ?? [];
+    ownVariables(issued, scope);
   const own = owned === null ? [] : locals(owned.id);
   const iteration = isInstance(ctx, occurrence, issued) ? locals(occurrence.scope) : [];
-  const snapshot = !inside ? [] : [...own, ...iteration.filter(([name]) => !own.some(([held]) => held === name))];
-  const reference: OccurrenceRef = {
-    processInstanceId: instanceOf(issued, occurrence.scope),
-    element: occurrence.element,
-    activation: occurrence.activation,
+  const snapshot = !inside ? [] : iteration.reduce((kept, [name, value]) => insertVariableIfNew(kept, name, value), own);
+  const record: Compensable = {
+    subject: occurrence.element, handler, scope: target, occurrence: keyOf(issued, occurrence), completion, closure: issued.completionBase, snapshot,
+    children: inner.flatMap(keptRecords),
   };
-  const record: Compensable = { subject: occurrence.element, handler, scope: target, occurrence: reference, completion, snapshot, children: inner };
   return committed(store(issued, { ...compensation, retained: [...outer, record] }));
 }
 
-/** Every element declared inside `element`, at any depth. */
-function interior(ctx: Ctx, element: Element): Element[] {
-  const go = (fuel: number, ids: readonly ElementId[]): Element[] =>
-    fuel === 0 ? [] : ids.flatMap((id) => {
-      const inner = programElement(ctx.program, id);
-      return inner === null ? [] : [inner, ...go(fuel - 1, elementScope(inner)?.[1].children ?? [])];
-    });
-  return go(ctx.program.elements.length, elementScope(element)?.[1].children ?? []);
-}
-
 /**
- * What `element` itself reads and writes over its whole run, over-approximated: its envelope and outgoing conditions
- * (`footprint`), what it writes when it runs (`writes`) and what its boundaries write when they fire (`catchWrites`), a
- * Multi-Instance element's output data item, every name a User Task installs under `SubmissionRule.InstallsVariables`,
- * and every name for a task kind this feature cannot inspect (none of User, Service, Call or Receive work).
+ * Whether `record` completed before `other` in the order §13.5.5 reads: under `BranchSchedule.OrderInvariant` a record of
+ * an earlier closure first, and of one closure the one whose subject the other's structurally follows
+ * (`structurallyBefore`, DC15 (c), candidate (iii)), so no schedule changes it, and two records the structural order
+ * leaves unordered, one subject's included, have no order (I1 (d)); under `DeclarationDepthFirst` in the order they
+ * completed, as CIB numbers them.
  */
-function ownData(ctx: Ctx, element: Element): Footprint {
-  const boundaries = (elementEnvelope(element)?.boundaries ?? []).flatMap((boundary) => catchWrites(boundary.subscription));
-  const item = elementEnvelope(element)?.multiInstance?.outputDataItem ?? null;
-  const caught: Footprint = { reads: noNames, writes: union(writes(element), { names: [...boundaries, ...(item === null ? [] : [item])], all: false }) };
-  const activity = elementActivity(element);
-  let work: Footprint = { reads: noNames, writes: noNames };
-  if (activity !== null) {
-    const kind = activity[1].work;
-    const uninspected = !(workIsUser(kind) || workIsService(kind) || workCall(kind) !== null || workReceive(kind) !== null);
-    const installs = workIsUser(kind) && ctx.program.options.submission === SubmissionRule.InstallsVariables;
-    work = { reads: { names: [], all: uninspected }, writes: { names: [], all: uninspected || installs } };
+function completedBefore(program: Program, record: Compensable, other: Compensable): boolean {
+  switch (program.options.branchSchedule) {
+    case BranchSchedule.OrderInvariant:
+      return record.closure < other.closure ||
+        (record.closure === other.closure && structurallyBefore(program, record.subject, other.subject));
+    case BranchSchedule.DeclarationDepthFirst:
+      return record.completion < other.completion;
   }
-  return joined(joined(footprint(ctx.program, element), caught), work);
-}
-
-/** What a run of `subject` reads and writes: its own and, for a Scope, its interior's. */
-function data(ctx: Ctx, subject: ElementId): Footprint {
-  const element = programElement(ctx.program, subject);
-  return element === null ? { reads: noNames, writes: noNames }
-    : [element, ...interior(ctx, element)].reduce((found, inner) => joined(found, ownData(ctx, inner)), { reads: noNames, writes: noNames });
+  return assertNever(program.options.branchSchedule);
 }
 
 /**
  * `record`'s subject ran before `other`'s in a way §13.5.5 orders, so `other`'s handler completes before `record`'s
  * starts: (b) a Sequence Flow path (`flowReaches`) leads from a boundary Event attached to `record`'s subject to
- * `other`'s, a different one, whose record may complete while the subject still runs; or `record` completed first and
- * (a) a Sequence Flow path leads from its subject to `other`'s, (c) `other`'s subject reads a name `record`'s can write
- * (`data`), or (d) both are records of one subject, run in reverse completion order.
+ * `other`'s, a different one, whose record may complete while the subject still runs; or `record` completed first
+ * (`completedBefore`) and (a) a Sequence Flow path leads from its subject to `other`'s, (c) `other`'s subject reads a
+ * name `record`'s can write (`subjectData`), or (d) both are records of one subject.
  */
 function precedes(ctx: Ctx, record: Compensable, other: Compensable): boolean {
   const subject = programElement(ctx.program, record.subject);
   const boundaries = ((subject === null ? null : elementEnvelope(subject))?.boundaries ?? []).map((boundary) => boundary.id);
   return (record.subject !== other.subject && flowReaches(ctx.program, boundaries, other.subject)) ||
-    (record.completion < other.completion &&
+    (completedBefore(ctx.program, record, other) &&
       (record.subject === other.subject || flowReaches(ctx.program, [record.subject], other.subject) ||
-        meets(data(ctx, other.subject).reads, data(ctx, record.subject).writes)));
+        meets(subjectData(ctx.program, other.subject).reads, subjectData(ctx.program, record.subject).writes)));
 }
 
 function position(ctx: Ctx, element: ElementId): number {
@@ -235,9 +230,32 @@ function runBound(ctx: Ctx, state: State): number {
  * Whether `run` is the one `trigger` started in `scope`. Two runs may share a scope occurrence (#103), never a trigger
  * there: a nested group run has a context of its own.
  */
-function isRun(scope: ScopeOccurrenceId, trigger: OccurrenceRef): (run: CompensationRun) => boolean {
-  return (run) => run.scope === scope && run.trigger.processInstanceId === trigger.processInstanceId &&
-    run.trigger.element === trigger.element && run.trigger.activation === trigger.activation;
+function isRun(scope: ScopeOccurrenceId, trigger: OccurrenceName): (run: CompensationRun) => boolean {
+  return (run) => run.scope === scope && compareOccurrenceName(run.trigger, trigger) === 0;
+}
+
+/**
+ * Lean's `joinsOf`: the completion numbers of `records` whose handler waits for two or more of the others (`precedes`),
+ * whose start is readiness work under `orderInvariant` (DC30, `CompensationRun.joins`).
+ */
+function joinsOf(ctx: Ctx, records: readonly Compensable[]): readonly number[] {
+  return records.filter((record) => records.filter((other) => precedes(ctx, record, other)).length >= 2)
+    .map((record) => record.completion);
+}
+
+/** Lean's `unhold`: `state` with the handler context `context` no longer running in `owner`. */
+function unhold(context: ScopeOccurrenceId, owner: CompensationRun, state: State): State {
+  const compensation = state.slots.compensation;
+  const matches = isRun(owner.scope, owner.trigger);
+  const runs = compensation.runs.map((candidate) => matches(candidate)
+    ? { ...candidate, running: candidate.running.filter(([running]) => running !== context) }
+    : candidate);
+  return store(state, { ...compensation, runs });
+}
+
+/** Lean's `leaveContext`: `state` with the handler context `context` left and no longer running in `owner`. */
+function leaveContext(ctx: Ctx, context: ScopeOccurrenceId, owner: CompensationRun, state: State): State {
+  return unhold(context, owner, leaveScope(state, ctxPositionLe(ctx, state), context));
 }
 
 /**
@@ -246,18 +264,19 @@ function isRun(scope: ScopeOccurrenceId, trigger: OccurrenceRef): (run: Compensa
  * context, which resumes the run in `scope` once they all completed (`Resume.group`).
  */
 function beginHandler(
-  ctx: Ctx, trigger: OccurrenceRef, scope: ScopeOccurrenceId, state: State, record: Compensable, fuel: number,
+  ctx: Ctx, trigger: OccurrenceName, scope: ScopeOccurrenceId, state: State, record: Compensable, fuel: number,
 ): Result<readonly [State, ScopeOccurrenceId]> {
   if (fuel === 0) return semanticFailure(SemanticCause.Invariant, "compensation-run-depth");
   const handler = record.handler;
   if (handler === null) {
     const [entered, context] = enterScope(state, record.subject, scope, record.snapshot, null);
-    const pending = record.children.map((child) => ({ ...child, scope: context }));
+    const pending = begunChildren(record, context);
     const compensation = entered.slots.compensation;
     const nested: CompensationRun = {
-      trigger, scope: context, pending, running: [], leave: null, resume: { tag: ResumeTag.Group, outer: scope, context },
+      trigger, scope: context, pending, running: [], leave: null, resume: { tag: ResumeTag.Group, context },
+      joins: joinsOf(ctx, pending),
     };
-    const advanced = advance(ctx, context, trigger, store(entered, { ...compensation, runs: [...compensation.runs, nested] }), fuel - 1);
+    const advanced = advance(ctx, context, trigger, store(entered, { ...compensation, runs: putRun(compensation.runs, nested) }), fuel - 1);
     return advanced.ok ? committed([advanced.value, context]) : advanced;
   }
   const element = programElement(ctx.program, handler);
@@ -267,7 +286,7 @@ function beginHandler(
   }
   const [entered, context] = enterScope(state, handler, scope, record.snapshot, null);
   const compensation = entered.slots.compensation;
-  const children = record.children.map((child) => ({ ...child, scope: context }));
+  const children = begunChildren(record, context);
   const stored = store(entered, { ...compensation, retained: [...compensation.retained, ...children] });
   return committed([signal(stored, {
     tag: SignalTag.Begin,
@@ -300,7 +319,7 @@ function resumeRun(ctx: Ctx, state: State, resume: Resume | null, fuel: number):
  * succeeds; once none is pending or running, end the run: cancel the occurrence it leaves, if any, then complete its
  * `resume`. Another run in the same scope neither delays nor ends it.
  */
-function advance(ctx: Ctx, scope: ScopeOccurrenceId, trigger: OccurrenceRef, state: State, fuel: number): Outcome {
+function advance(ctx: Ctx, scope: ScopeOccurrenceId, trigger: OccurrenceName, state: State, fuel: number): Outcome {
   if (fuel === 0) return semanticFailure(SemanticCause.Invariant, "compensation-run-depth");
   const compensation = state.slots.compensation;
   const matches = isRun(scope, trigger);
@@ -330,8 +349,7 @@ function advance(ctx: Ctx, scope: ScopeOccurrenceId, trigger: OccurrenceRef, sta
   }
   // A group's nested run joined the runs while its handlers began.
   const updated: CompensationRun = { ...run, pending: waiting, running: [...run.running, ...started] };
-  const runs = current.slots.compensation.runs.filter((candidate) => !matches(candidate));
-  return committed(store(current, { ...current.slots.compensation, runs: [...runs, updated] }));
+  return committed(store(current, { ...current.slots.compensation, runs: putRun(current.slots.compensation.runs, updated) }));
 }
 
 /**
@@ -342,13 +360,7 @@ function release(ctx: Ctx, context: ScopeOccurrenceId, state: State, fuel: numbe
   if (fuel === 0) return semanticFailure(SemanticCause.Invariant, "compensation-run-depth");
   const owner = state.slots.compensation.runs.find((candidate) => candidate.running.some(([running]) => running === context));
   if (owner === undefined) return semanticFailure(SemanticCause.Invariant, "compensation-run-missing");
-  const left = leaveScope(state, context);
-  const compensation = left.slots.compensation;
-  const matches = isRun(owner.scope, owner.trigger);
-  const runs = compensation.runs.map((candidate) => matches(candidate)
-    ? { ...candidate, running: candidate.running.filter(([running]) => running !== context) }
-    : candidate);
-  return advance(ctx, owner.scope, owner.trigger, store(left, { ...compensation, runs }), fuel - 1);
+  return advance(ctx, owner.scope, owner.trigger, leaveContext(ctx, context, owner, state), fuel - 1);
 }
 
 /**
@@ -365,7 +377,7 @@ function visibleScopes(ctx: Ctx, state: State, scope: ScopeOccurrenceId): ScopeO
     const element = entry?.element == null ? null : programElement(ctx.program, entry.element);
     const payload = element === null ? null : elementScope(element);
     const eventSubProcess = payload !== null && ctx.eventStart(payload[1]) !== null;
-    const parent = entry?.parent ?? null;
+    const parent = scopeOccurrenceParent(entry);
     if (parent === null) return [id];
     return ctx.scopeRole(state, id) !== ScopeRole.CompensationHandler && eventSubProcess ? [id, ...go(fuel - 1, parent)] : [id];
   };
@@ -382,28 +394,71 @@ export function compensate(
   ctx: Ctx,
   scope: ScopeOccurrenceId,
   activity: ElementId | null,
-  trigger: OccurrenceRef,
-  leave: number | null,
+  trigger: OccurrenceName,
+  leave: OccurrenceId | null,
   resume: Resume | null,
   state: State,
 ): Outcome {
   const compensation = state.slots.compensation;
   const covered = visibleScopes(ctx, state, scope);
   const selects = (record: Compensable): boolean => covered.includes(record.scope) && (activity === null || activity === record.subject);
-  const selected = compensation.retained.filter(selects);
+  const selected = mergeSort(compensation.retained.filter(selects), retainedBefore(ctx));
   const kept = compensation.retained.filter((record) => !selects(record));
   return advance(ctx, scope, trigger, store(state, {
     retained: kept,
-    runs: [...compensation.runs, { trigger, scope, pending: selected, running: [], leave, resume }],
+    runs: putRun(compensation.runs, { trigger, scope, pending: selected, running: [], leave, resume, joins: joinsOf(ctx, selected) }),
   }), runBound(ctx, state));
 }
 
 /**
- * `Hooks.handlerCompleted`: the handler's context, the scope occurrence it began in, is left and the run holding that
- * context starts what that releases; the run's scope `_run` cannot tell two runs of one scope apart.
+ * Lean's `readied?`: under `orderInvariant`, the run holding the handler context `context` when leaving it releases
+ * readiness work (DC30), its end or the start of a pending handler that waited for two or more others
+ * (`CompensationRun.joins`) and waits for none still running; either lands in whichever of the handlers it waited for
+ * the closure completed last (probe P17 W2, W3), so it runs as a unit of its own (`Signal.compensationReady`). `null`
+ * under `declarationDepthFirst`, where CIB goes on in the operation that ends the last handler
+ * (`PvmExecutionImpl.java:415-426`, `CompensationEventActivityBehavior.java:66-77`).
  */
-export function handlerCompleted(ctx: Ctx, _run: ScopeOccurrenceId, occurrence: Occurrence, state: State): Outcome {
-  return release(ctx, occurrence.scope, state, runBound(ctx, state));
+function readied(ctx: Ctx, context: ScopeOccurrenceId, state: State): CompensationRun | null {
+  switch (ctx.program.options.branchSchedule) {
+    case BranchSchedule.DeclarationDepthFirst:
+      return null;
+    case BranchSchedule.OrderInvariant: {
+      const owner = state.slots.compensation.runs.find((candidate) => candidate.running.some(([running]) => running === context));
+      if (owner === undefined) return null;
+      const running = owner.running.filter(([running]) => running !== context);
+      const remaining = [...owner.pending, ...running.map(([, record]) => record)];
+      return (owner.pending.length === 0 && running.length === 0) || owner.pending.some((record) =>
+        owner.joins.includes(record.completion) && !remaining.some((other) => precedes(ctx, record, other)))
+        ? owner : null;
+    }
+  }
+  return assertNever(ctx.program.options.branchSchedule);
+}
+
+/**
+ * `Hooks.handlerCompleted`: the handler's context, the scope occurrence it began in, is left and the run holding that
+ * context starts what that releases; the context, not a run's scope, names the run, since two runs of one scope share it.
+ * Readiness work (`readied`) is queued as `Signal.compensationReady` instead of run in place, the run holding the left
+ * context as running until then, so between the two it is neither ready nor ended.
+ */
+export function handlerCompleted(ctx: Ctx, occurrence: Occurrence, state: State): Outcome {
+  const owner = readied(ctx, occurrence.scope, state);
+  return owner === null
+    ? release(ctx, occurrence.scope, state, runBound(ctx, state))
+    : committed(signal(leaveScope(state, ctxPositionLe(ctx, state), occurrence.scope),
+      { tag: SignalTag.CompensationReady, scope: owner.scope, context: occurrence.scope }));
+}
+
+/**
+ * `Signal.compensationReady`: the run in `scope` that holds the left handler context `context` releases it and starts
+ * what that releases, as `release` would have in place. A run that went meanwhile, dropped by a catcher that interrupts
+ * `scope` (`dropWithin`), begins nothing.
+ */
+export function ready(ctx: Ctx, scope: ScopeOccurrenceId, context: ScopeOccurrenceId, state: State): Outcome {
+  const owner = state.slots.compensation.runs.find(runHolds(scope, context));
+  return owner === undefined
+    ? committed(state)
+    : advance(ctx, scope, owner.trigger, unhold(context, owner, state), runBound(ctx, state));
 }
 
 /**
@@ -412,9 +467,9 @@ export function handlerCompleted(ctx: Ctx, _run: ScopeOccurrenceId, occurrence: 
  * then.
  */
 export function dropWithin(_ctx: Ctx, scope: ScopeOccurrenceId, state: State): State {
-  const inside = subtree(state, scope);
+  const within = inside(state, scope);
   const compensation = state.slots.compensation;
-  return store(state, { ...compensation, runs: compensation.runs.filter((run) => !inside.includes(run.scope)) });
+  return store(state, { ...compensation, runs: compensation.runs.filter((run) => !within.includes(run.scope)) });
 }
 
 /**
@@ -423,11 +478,7 @@ export function dropWithin(_ctx: Ctx, scope: ScopeOccurrenceId, state: State): S
  * as the group's context.
  */
 export function runningRecord(_ctx: Ctx, context: ScopeOccurrenceId, state: State): Compensable | null {
-  for (const run of state.slots.compensation.runs) {
-    const running = run.running.find(([held]) => held === context);
-    if (running !== undefined) return running[1];
-  }
-  return null;
+  return compensationsRestoredIn(state.slots.compensation, context);
 }
 
 /**
@@ -437,12 +488,12 @@ export function runningRecord(_ctx: Ctx, context: ScopeOccurrenceId, state: Stat
  * does not interrupt, the run goes on. Under `FailsInstance` the failure that follows ends the instance, so nothing
  * changes.
  */
-export function handlerEnded(ctx: Ctx, run: ScopeOccurrenceId, occurrence: Occurrence, state: State): Outcome {
+export function handlerEnded(ctx: Ctx, occurrence: Occurrence, state: State): Outcome {
   const failure = ctx.program.options.compensationHandlerFailure;
   switch (failure.tag) {
     case CompensationHandlerFailureTag.PropagatesFromHandler:
       return state.slots.compensation.runs.some((candidate) => candidate.running.some(([context]) => context === occurrence.scope))
-        ? handlerCompleted(ctx, run, occurrence, state)
+        ? handlerCompleted(ctx, occurrence, state)
         : committed(state);
     case CompensationHandlerFailureTag.FailsInstance:
     case CompensationHandlerFailureTag.Selected:

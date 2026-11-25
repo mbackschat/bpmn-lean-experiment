@@ -162,15 +162,17 @@ def decimalText (text : String) : Eval (Int × Int) :=
 /-! ## Values -/
 
 /-- A context value as Java sees it: Integers of unknown class, a `stringList` as the ArrayList of Strings it is in CIB. -/
-def fromValue : Value → JVal
-  | .null => .null
-  | .bool value => .bool value
-  | .int value => .int value .unknown
-  | .decimal coefficient scale => .decimal coefficient scale
-  | .string value => .string value
-  | .stringList items => .list (items.map Value.string)
-  | .list items => .list items
-  | .map entries => .map entries
+def fromValue : Value → Eval JVal
+  | .null => .ok .null
+  | .bool value => .ok (.bool value)
+  | .int value => .ok (.int value .unknown)
+  | .decimal coefficient scale => .ok (.decimal coefficient scale)
+  -- dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+  | .double _ | .date _ => limit "value-kind"
+  | .string value => .ok (.string value)
+  | .stringList items => .ok (.list (items.map Value.string))
+  | .list items => .ok (.list items)
+  | .map entries => .ok (.map entries)
 
 /-- A result as the Multi-Instance count and collection sites read it, before the domain predicate: any Integer within
 ±(2^53−1), the bound the TypeScript kernel's numbers share, and a Decimal at any scale, a negative one rescaled to 0. -/
@@ -185,20 +187,20 @@ def siteValue : JVal → Option Value
   | .map entries => some (.map entries)
 
 /-- The portable value of a result, or `none` outside the domain (DATA-SEMANTICS-SPEC "Values"). -/
-def portable : JVal → Option Value
+def portable (bounds : Bounds) : JVal → Option Value
   | .null => some .null
   | .bool value => some (.bool value)
   | .int value _ => if 0 ≤ value && value ≤ integerBound then some (.int value) else none
   | .decimal coefficient scale =>
     if canonicalDecimal coefficient scale then some (.decimal coefficient scale.toNat) else none
-  | .string value => if value.utf8ByteSize ≤ textBytes then some (.string value) else none
+  | .string value => if value.utf8ByteSize ≤ bounds.textBytes then some (.string value) else none
   | .list items => some (.list items)
   | .map entries => some (.map entries)
 
 def isBlank : JVal → Bool
   | .null => true
   | .string value => value.isEmpty
-  | _ => false
+  | .bool _ | .int _ _ | .decimal _ _ | .list _ | .map _ => false
 
 /-! ## Coercions (`TypeConverterImpl`; EL §1.18) -/
 
@@ -279,6 +281,98 @@ def toText : JVal → Eval String
 /-- A String with `.`, `e` or `E` (`NumberOperations.isDotEe`). -/
 def dotEe : JVal → Bool
   | .string value => value.any fun char => char == '.' || char == 'e' || char == 'E'
-  | _ => false
+  | .null | .bool _ | .int _ _ | .decimal _ _ | .list _ | .map _ => false
+
+/-! ## Operand classes
+
+Java's binary operators test their operands' classes in a fixed order, and the first class either operand has decides
+the rule. Each order below is a class per kind, named after the Java class the rule tests, with its rank in that order:
+the kind of an operand is read once, exhaustively, so a new kind decides where it ranks. -/
+
+/-- Of two operand classes, the one that decides: the higher ranked, the right one on a tie. -/
+def deciding {α : Type} (rank : α → Nat) (left right : α) : α := if rank left > rank right then left else right
+
+def isNull : JVal → Bool
+  | .null => true
+  | .bool _ | .int _ _ | .decimal _ _ | .string _ | .list _ | .map _ => false
+
+def isList : JVal → Bool
+  | .list _ => true
+  | .null | .bool _ | .int _ _ | .decimal _ _ | .string _ | .map _ => false
+
+def isMap : JVal → Bool
+  | .map _ => true
+  | .null | .bool _ | .int _ _ | .decimal _ _ | .string _ | .list _ => false
+
+/-- What decides `NumberOperations.add`, `sub`, `mul` and `mod`: a BigDecimal, then a String in floating notation (a
+Double, `isDotEe`), then a Long; two nulls make 0. -/
+inductive NumberClass where
+  | absent
+  | long
+  | double
+  | bigDecimal
+
+def NumberClass.rank : NumberClass → Nat
+  | .absent => 0
+  | .long => 1
+  | .double => 2
+  | .bigDecimal => 3
+
+def numberClass (value : JVal) : NumberClass :=
+  match value with
+  | .null => .absent
+  | .decimal _ _ => .bigDecimal
+  | .string _ => if dotEe value then .double else .long
+  | .bool _ | .int _ _ | .list _ | .map _ => .long
+
+/-- What decides `BooleanOperations.lt0`: a BigDecimal, then a Long, then a String; two Booleans compare, and anything
+else is no `Comparable`. -/
+inductive OrderClass where
+  | incomparable
+  | boolean (value : Bool)
+  | text
+  | long
+  | bigDecimal
+
+def OrderClass.rank : OrderClass → Nat
+  | .incomparable => 0
+  | .boolean _ => 1
+  | .text => 2
+  | .long => 3
+  | .bigDecimal => 4
+
+def orderClass : JVal → OrderClass
+  | .decimal _ _ => .bigDecimal
+  | .int _ _ => .long
+  | .string _ => .text
+  | .bool value => .boolean value
+  | .null | .list _ | .map _ => .incomparable
+
+/-- What decides `BooleanOperations.eq`: a null, then a BigDecimal, a Long, a Boolean and a String; two collections
+are compared by `equals`, which reads the right one as the context value it is. -/
+inductive EqualClass where
+  | collection (value : Value)
+  | text
+  | boolean
+  | long
+  | bigDecimal
+  | absent
+
+def EqualClass.rank : EqualClass → Nat
+  | .collection _ => 0
+  | .text => 1
+  | .boolean => 2
+  | .long => 3
+  | .bigDecimal => 4
+  | .absent => 5
+
+def equalClass : JVal → EqualClass
+  | .null => .absent
+  | .decimal _ _ => .bigDecimal
+  | .int _ _ => .long
+  | .bool _ => .boolean
+  | .string _ => .text
+  | .list items => .collection (.list items)
+  | .map entries => .collection (.map entries)
 
 end Kernel.Feature.Data.Juel

@@ -55,11 +55,18 @@ export const tsSiteBudget: Readonly<Record<string, number>> = {
   JuelUnary: 1, // evaluator `unary`
   JuelCallTag: 2, // admission, evaluator
   JuelMethod: 4, // the String, List and Map methods, and the argument-count table
+  // owner decision 2026-11-17: the sites measured once its catch-alls were gone; one above Lean's 22, because the
+  // method-argument readers switch over a `JVal` where Lean matches an `Option JVal`.
+  JValTag: 23,
 };
 
 export type GuardedType = Readonly<{ lean: string; enumName: string | null; owners: readonly string[]; leanOwners: readonly string[] }>;
 
-/** `Kernel.Element` and the owners the Lean guard lists, read from that guard's own table. */
+/**
+ * `Kernel.Element` and the owners the Lean guard lists, read from that guard's own table. A type nested in a namespace
+ * (`Kernel.Feature.Data.Juel.JVal`) is read by its last component, the name its inductive and enum carry; an entry the
+ * pattern cannot read is a finding, never dropped.
+ */
 export function guardedTypes(tree: KernelTree): { types: GuardedType[]; findings: string[] } {
   let text = "";
   try {
@@ -67,17 +74,20 @@ export function guardedTypes(tree: KernelTree): { types: GuardedType[]; findings
   } catch {
     return { types: [], findings: [emptyInputFinding(1, "guarded types (scripts/kernel-dispatch.lean)")] };
   }
-  const entries = [...text.matchAll(/\(`Kernel\.(\w+),\s*\[([^\]]*)\]\)/gu)];
+  const table = /^def owners\b[\s\S]*?\]\)\]$/mu.exec(text)?.[0] ?? "";
+  const entries = [...table.matchAll(/\(`Kernel\.([\w.]+),\s*\[([^\]]*)\]\)/gu)];
   if (entries.length === 0) return { types: [], findings: [emptyInputFinding(1, "guarded types in kernel-dispatch.lean's owners table")] };
+  const opened = [...table.matchAll(/\(`Kernel\./gu)].length;
+  const unread = opened === entries.length ? [] : [`G1: ${opened - entries.length} owners-table entries in kernel-dispatch.lean are unreadable`];
   const enums = typeScriptEnums(tree.typeScript);
   const types = entries.map((entry) => {
-    const lean = entry[1] ?? "";
+    const lean = (entry[1] ?? "").split(".").at(-1) ?? "";
     const leanOwners = [...(entry[2] ?? "").matchAll(/`([\w.]+)/gu)].map((owner) => owner[1] ?? "");
     const owners = leanOwners.map(leanModuleToTypeScriptPath);
     const enumName = enums.has(`${lean}Tag`) ? `${lean}Tag` : enums.has(lean) ? lean : null;
     return { lean, enumName, owners, leanOwners };
   });
-  return { types, findings: [] };
+  return { types, findings: unread };
 }
 
 function moduleKey(source: Source): string {
@@ -204,7 +214,51 @@ export function noCatchAllFindings(tree: KernelTree): string[] {
     }
   }
   if (!sawEnumSwitch) findings.push(emptyInputFinding(2, "switch over a kernel enum"));
-  return [...findings, ...ownerEqualityFindings(tree)];
+  return [...findings, ...ownerEqualityFindings(tree), ...unownedEqualityFindings(tree)];
+}
+
+/**
+ * The enums of the types no catch-all may cover although no module owns their dispatch (`Value`, owner decision
+ * 2026-11-17), read from `unowned` in `scripts/kernel-dispatch.lean`, the Lean scan's one copy of the list; a type maps
+ * to its enum as an owned type does. A missing list or a type without an enum is a finding, never an empty guard.
+ */
+export function unownedEnums(tree: KernelTree): { enumNames: string[]; findings: string[] } {
+  let text = "";
+  try {
+    text = readFileSync(path.join(tree.root, "scripts", "kernel-dispatch.lean"), "utf8");
+  } catch {
+    return { enumNames: [], findings: [emptyInputFinding(2, "unowned types (scripts/kernel-dispatch.lean)")] };
+  }
+  const list = /^def unowned : List Name := \[([^\]]*)\]$/mu.exec(text)?.[1];
+  const names = [...(list ?? "").matchAll(/`Kernel\.([\w.]+)/gu)].map((entry) => (entry[1] ?? "").split(".").at(-1) ?? "");
+  if (names.length === 0) return { enumNames: [], findings: ["G2: kernel-dispatch.lean has no readable `unowned` list"] };
+  const enums = typeScriptEnums(tree.typeScript);
+  const findings: string[] = [];
+  const enumNames = names.flatMap((name) => {
+    const enumName = enums.has(`${name}Tag`) ? `${name}Tag` : enums.has(name) ? name : null;
+    if (enumName === null) findings.push(`G2: unowned type ${name} has no TypeScript enum`);
+    return enumName === null ? [] : [enumName];
+  });
+  return { enumNames, findings };
+}
+
+/** Guard 2 for an unowned type: with no owner, every module decides its own meaning, so an equality test on one of its
+ * members, a hidden catch-all for every member it leaves out, fails anywhere outside a codec. */
+function unownedEqualityFindings(tree: KernelTree): string[] {
+  const { enumNames, findings } = unownedEnums(tree);
+  const comparison = new Set(["===", "!==", "==", "!="]);
+  for (const source of [...tree.typeScript, ...tree.reader]) {
+    if (allowedByOwner(moduleKey(source), ["il/codec"])) continue;
+    const { tokens } = source;
+    for (let i = 0; i < tokens.length; i += 1) {
+      const token = tokens[i];
+      if (token === undefined || !enumNames.includes(token.text) || tokens[i + 1]?.text !== "." || tokens[i + 2]?.kind !== TokenKind.Word) continue;
+      if ((comparison.has(tokens[i - 1]?.text ?? "") || comparison.has(tokens[i + 3]?.text ?? "")) && !isJustified(source, token.line, 2)) {
+        findings.push(finding(2, source, token.line, `equality test on ${token.text} member, a catch-all over the members it leaves out`));
+      }
+    }
+  }
+  return findings;
 }
 
 /** Guard 2's owner clause: an equality test on a guarded member is a hidden catch-all for every member it leaves out,

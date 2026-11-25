@@ -18,6 +18,10 @@ namespace Kernel.Laws.Step
 
 open Kernel Kernel.Step
 
+/-- A committed outcome passes a transaction boundary unchanged. -/
+theorem deferred_pass {program : Program} {state after : State} : deferred program state (.ok after) = .ok after := by
+  simp [deferred]
+
 /-- A transaction boundary changes only a failure: a committed outcome passes through it. -/
 theorem deferred_ok {program : Program} {state after : State} {outcome : Outcome}
     (ran : deferred program state outcome = .ok after) : outcome = .ok after := by
@@ -64,5 +68,15 @@ theorem rejected_effectContinuation {ctx : Ctx} {data : EffectInput} {run : Effe
   refine ⟨code, ?_⟩
   unfold effectContinuation
   split <;> simp_all
+
+/-- A committed job failure failed the job item the firing addresses (`Hooks.failJob`). -/
+theorem jobFailure_ok {hooks : Hooks} {ctx : Ctx} {data : TimerInput} {state after : State}
+    (ran : jobFailure hooks ctx data state = .ok after) :
+    ∃ item job, itemDetail? ctx state data.occurrence (·.job) = some (item, job) ∧
+      hooks.failJob ctx item job state = .ok after := by
+  unfold jobFailure at ran
+  split at ran
+  · simp at ran
+  · exact ⟨_, _, ‹_›, ran⟩
 
 end Kernel.Laws.Step

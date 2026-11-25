@@ -1,7 +1,7 @@
 /**
  * A JavaScript Script Task is an effect ([script semantics](../../../docs/kernel/semantics/SCRIPT-SEMANTICS-SPEC.md),
  * items 3 and 5): its occurrence opens one effect item whose arguments are the snapshot of every variable visible from
- * its scope occurrence, nearest owner first, one entry per name, and the result patch names at most its result
+ * its scope occurrence, one entry per name, its nearest owner's, in name order, and the result patch names at most its result
  * variable, which is written to the nearest scope holding the name. A result for an occurrence its scope's
  * cancellation removed is stale, which no schedule can author since the host never evaluates a cancelled script.
  *
@@ -58,20 +58,20 @@ const result = (outputs: [string, Json][]): Json => ({
 
 /** The variables `state` holds, by owning scope element (`null` for the instance root). */
 function holdings(state: State): Record<string, Record<string, unknown>> {
-  return Object.fromEntries(state.variables.map(({ scope: id, entries }) => {
+  return Object.fromEntries(state.variables.map(([id, entries]) => {
     const element = state.scopes.find((entry) => entry.id === id)?.element ?? null;
     return [String(element), Object.fromEntries(entries)];
   }));
 }
 
-test("a Script Task opens one effect whose arguments are the visible variables, nearest owner first, one per name", () => {
+test("a Script Task opens one effect whose arguments are the visible variables, nearest owner's, one per name, in name order", () => {
   const current = program("total");
   const waits = hostView(current, started(current)).openWaits;
   assert.equal(waits.length, 1, JSON.stringify(waits));
   const effect = waits[0]?.view.effect ?? null;
   assert.deepEqual(effect === null ? null : [effect.protocol, effect.operation, effect.arguments], [
     "urn:bpmn-lean:effect-protocol:script-v1", "javascript",
-    [["b", { tag: "string", value: "inner" }], ["a", { tag: "int", value: 1 }]],
+    [["a", { tag: "int", value: 1 }], ["b", { tag: "string", value: "inner" }]],
   ]);
 });
 

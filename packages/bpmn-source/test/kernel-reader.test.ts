@@ -177,7 +177,7 @@ test("a Multi-Instance loop carries its own asynchronous continuations and the l
   assert.deepEqual(u.multiInstance, {
     mode: "parallel", count: { collection: { items: { variable: { name: "O" } } } }, elementVariable: null,
     completionCondition: null, inputDataItem: "In", outputDataItem: null, outputCollection: null,
-    asyncBefore: true, asyncAfter: true, loopDataInputRef: "Ins", inputDataItemName: "item",
+    asyncBefore: true, asyncAfter: true, exclusive: null, retryCycle: null, loopDataInputRef: "Ins", inputDataItemName: "item",
   });
   const v = element(p, "V").activity.payload.envelope;
   assert.deepEqual([v.asyncBefore, v.asyncAfter], [false, false]);
@@ -290,6 +290,7 @@ test("the profile options are the full record, each non-default selected by the 
     evaluator: "simpleBoolean",
     submission: "outputSet",
     scopeChainSubmissionBytes: null,
+    bounds: { containerLevels: 4, containerMembers: 32, valueNodes: 256, canonicalBytes: 16384, textBytes: 1024, instanceIdentityBytes: 1024 },
     undeclaredWrite: "refused",
     errorPathOutputs: "none",
     raisedCallOutputs: "none",
@@ -335,6 +336,10 @@ test("the profile options are the full record, each non-default selected by the 
     conditionalStart: "refused",
     calledElementResolution: "qualifiedName",
     messageThrowForms: "refused",
+    deploymentErrors: "bpmnValidity",
+    handlerEscalation: "passesHandler",
+    defaultRetryCycle: null,
+    inertExtensions: [],
   });
   const relations = ["CIB-EXT-0010", "CIB-EXT-0020", "CIB-EXT-0016", "CIB-CFG-0008", "CIB-OP-0009", "CIB-EXT-0026",
     "CIB-INT-0011", "CIB-EXT-0025", "CIB-INT-0009", "CIB-LIM-0001", "CIB-INT-0007", "CIB-INT-0013", "CIB-EXT-0028"];
@@ -343,6 +348,7 @@ test("the profile options are the full record, each non-default selected by the 
     evaluator: "simpleBoolean",
     submission: "installsVariables",
     scopeChainSubmissionBytes: 16_384,
+    bounds: { containerLevels: 4, containerMembers: 32, valueNodes: 256, canonicalBytes: 16384, textBytes: 1024, instanceIdentityBytes: 1024 },
     undeclaredWrite: "atInstanceRoot",
     errorPathOutputs: "mapped",
     raisedCallOutputs: "none",
@@ -388,6 +394,10 @@ test("the profile options are the full record, each non-default selected by the 
     conditionalStart: "refused",
     calledElementResolution: "qualifiedName",
     messageThrowForms: "refused",
+    deploymentErrors: "bpmnValidity",
+    handlerEscalation: "passesHandler",
+    defaultRetryCycle: null,
+    inertExtensions: [],
   });
   assert.equal(kernelProfileOptions(["CIB-EXT-0031"]).outputContext, "activityScope");
   assert.equal(kernelProfileOptions(["CIB-EXT-0039"]).messageThrowForms, "cibForms");
@@ -421,6 +431,42 @@ test("the profile options are the full record, each non-default selected by the 
   assert.equal(kernelProfileOptions(["CIB-OP-0008"]).technicalFailure, "incident");
 });
 
+type CatalogProfile = Readonly<{ id: string; relationships: readonly string[] }>;
+
+/** The profiles of the catalog under `profiles/`, read as data so no profile identifier is named here. */
+async function catalogProfiles(): Promise<CatalogProfile[]> {
+  const catalog = new URL("../../../profiles/", import.meta.url);
+  const entries = (await readdir(catalog, { withFileTypes: true })).filter((entry) => entry.isDirectory());
+  return Promise.all(entries.map(async (entry) => {
+    const profile = JSON.parse(await readFile(new URL(`${entry.name}/profile.json`, catalog), "utf8")) as
+      { id: string; bpmn: { relationships: string[] } };
+    return { id: profile.id, relationships: profile.bpmn.relationships };
+  }));
+}
+
+/** The premise the order-invariance proof takes (docs/REWRITE-2-PROPOSAL.md, KD3): an Inclusive join is confluent only
+ * when its reach follows Boundary Events, since a boundary token outside an `outgoingOnly` reach fires it again. */
+function profilePremiseFindings(profiles: readonly CatalogProfile[]): string[] {
+  if (profiles.length === 0) return ["the profile catalog is empty, so the premise read nothing"];
+  return profiles.flatMap(({ id, relationships }) => {
+    const options = kernelProfileOptions(relationships);
+    return options.branchSchedule === "orderInvariant" && options.inclusiveJoinReach !== "withBoundaries"
+      ? [`${id}: branchSchedule orderInvariant with inclusiveJoinReach ${options.inclusiveJoinReach}`]
+      : [];
+  });
+}
+
+test("every catalog profile with an order-invariant branch schedule keeps the standards inclusive-join reach", async () => {
+  assert.deepEqual(profilePremiseFindings(await catalogProfiles()), []);
+});
+
+test("the profile premise reports a planted profile that narrows the reach under an order-invariant schedule", () => {
+  assert.deepEqual(profilePremiseFindings([{ id: "planted", relationships: ["CIB-INT-0020"] }]),
+    ["planted: branchSchedule orderInvariant with inclusiveJoinReach outgoingOnly"]);
+  assert.deepEqual(profilePremiseFindings([{ id: "planted", relationships: ["CIB-INT-0020", "CIB-OP-0016"] }]), []);
+  assert.deepEqual(profilePremiseFindings([]), ["the profile catalog is empty, so the premise read nothing"]);
+});
+
 test("every User Task assignment and date attribute the BPMN sets is populated", async () => {
   const p = await program(model(`<bpmn:userTask id="U" name="N" camunda:assignee="\${who}" camunda:candidateUsers="a, b" camunda:candidateGroups="g"
     camunda:formKey="form" camunda:dueDate="2030-01-01" camunda:followUpDate="\${later}" camunda:priority="7"/>`));
@@ -434,7 +480,44 @@ test("every User Task assignment and date attribute the BPMN sets is populated",
     dueDate: { literal: { value: "2030-01-01" } },
     followUpDate: { expression: { body: { variable: { name: "later" } } } },
     priority: { literal: { value: "7" } },
+    formRef: null,
   });
+});
+
+test("the breadth facts are carried for admission to refuse: initiator, form reference, job settings, structured parameters, a catch's Data Outputs", async () => {
+  const p = await program(model(`<bpmn:startEvent id="S" camunda:initiator="starter" camunda:formRef="request" camunda:formRefBinding="version" camunda:formRefVersion="3"/>
+    <bpmn:userTask id="U" camunda:formRef="invoice" camunda:formRefBinding="latest" camunda:asyncBefore="true" camunda:exclusive="false">
+      <bpmn:extensionElements><camunda:failedJobRetryTimeCycle>R3/PT10S</camunda:failedJobRetryTimeCycle>
+        <camunda:inputOutput><camunda:inputParameter name="a">x</camunda:inputParameter>
+          <camunda:inputParameter name="items"><camunda:list><camunda:value>one</camunda:value><camunda:value>\${two}</camunda:value></camunda:list></camunda:inputParameter>
+          <camunda:outputParameter name="totals"><camunda:map><camunda:entry key="sum"><camunda:script scriptFormat="javascript">1</camunda:script></camunda:entry></camunda:map></camunda:outputParameter>
+        </camunda:inputOutput></bpmn:extensionElements>
+      <bpmn:multiInstanceLoopCharacteristics camunda:asyncAfter="true" camunda:exclusive="true" camunda:collection="xs">
+        <bpmn:extensionElements><camunda:failedJobRetryTimeCycle>PT1M,PT5M</camunda:failedJobRetryTimeCycle></bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics></bpmn:userTask>
+    <bpmn:intermediateCatchEvent id="W"><bpmn:extensionElements><camunda:failedJobRetryTimeCycle>R5/PT1M</camunda:failedJobRetryTimeCycle></bpmn:extensionElements>
+      <bpmn:timerEventDefinition camunda:exclusive="true"><bpmn:timeDuration>PT1S</bpmn:timeDuration></bpmn:timerEventDefinition></bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="C"><bpmn:dataOutput id="Out" itemSubjectRef="Order"/><bpmn:messageEventDefinition messageRef="M"/></bpmn:intermediateCatchEvent>`,
+  `<bpmn:itemDefinition id="Order"/><bpmn:message id="M" name="M" itemRef="Order"/>`));
+  const started = element(p, "S").start.payload;
+  assert.deepEqual([started.initiator, started.formRef], ["starter", { key: "request", binding: "version", version: "3" }]);
+  const user = element(p, "U").activity.payload;
+  assert.deepEqual(user.work.user.payload.formRef, { key: "invoice", binding: "latest", version: null });
+  assert.deepEqual([user.envelope.exclusive, user.envelope.retryCycle], [false, "R3/PT10S"]);
+  assert.deepEqual([user.envelope.multiInstance.exclusive, user.envelope.multiInstance.retryCycle], [true, "PT1M,PT5M"]);
+  assert.deepEqual(user.envelope.inputs.map((entry: Json) => entry.target), ["a"]);
+  assert.deepEqual(user.envelope.structuredInputs, [{ target: "items", position: 1, nodes: [
+    { value: { body: { literal: { value: { kind: "string", value: "one" } } } } },
+    { value: { body: { variable: { name: "two" } } } },
+    { list: { items: [0, 1] } },
+  ] }]);
+  assert.deepEqual(user.envelope.structuredOutputs, [{ target: "totals", position: 0, nodes: [
+    { script: { payload: { format: "javascript", source: "1", resource: null } } },
+    { map: { entries: [{ key: "sum", value: 0 }] } },
+  ] }]);
+  const timer = element(p, "W").event.payload.role.catch.subscription;
+  assert.deepEqual([timer.trigger.timer.payload.exclusive, timer.retryCycle], [true, "R5/PT1M"]);
+  assert.deepEqual(element(p, "C").event.payload.role.catch.subscription.dataOutputs, [{ id: "Out", itemRef: "Order" }]);
 });
 
 test("a candidate list's entries are trimmed as Java's String.trim trims them, and a bare last comma ends the list", async () => {

@@ -16,6 +16,8 @@ import {
   completeOccurrenceBatch,
   emptyOccurrenceBatch,
   endEvent,
+  heldOccurrenceBatch,
+  heldOccurrencePage,
   occurrencePage,
   positiveCursorPage,
   reviewTask,
@@ -69,7 +71,7 @@ function pageWithTransitions(transitions: readonly unknown[]) {
   };
 }
 
-const start = (occurrence: unknown) => ({ occurrence, owner: 0, sourceType: "task" });
+const start = (occurrence: unknown) => ({ occurrence, sourceType: "task" });
 const end = (occurrence: unknown, terminal = "completed") => ({ occurrence, terminal });
 
 test("decodes the exact occurrence page, request, and every closed result arm", () => {
@@ -210,18 +212,17 @@ test("keeps each step's revision inside its batch and in increasing order", () =
 });
 
 test("requires every step to begin or end an occurrence and every fact to be exact", () => {
-  rejectPage(singleStepPage([], []), /must start or end at least one occurrence/u);
-  rejectPage(singleStepPage("none", []), /must start or end at least one occurrence/u);
-  rejectPage(singleStepPage([], new Array<unknown>(1)), /must start or end at least one occurrence/u);
+  rejectPage(singleStepPage([], []), /must start, end or make Ready at least one occurrence/u);
+  rejectPage(singleStepPage("none", []), /must start, end or make Ready at least one occurrence/u);
+  rejectPage(singleStepPage([], new Array<unknown>(1)), /must start, end or make Ready at least one occurrence/u);
 
   const rejectedStarts: Array<[unknown, RegExp]> = [
-    [{ ...start(startEvent), owner: -1 }, /nonnegative safe integer/u],
-    [{ ...start(startEvent), owner: 1.5 }, /nonnegative safe integer/u],
+    [{ ...start(startEvent), owner: 0 }, /public fields/u],
     [{ ...start(startEvent), sourceType: "" }, /must not be empty/u],
     [{ ...start(startEvent), sourceType: null }, /must be a string/u],
     [{ ...start(startEvent), terminal: "completed" }, /public fields/u],
-    [{ occurrence: startEvent, owner: 0 }, /public fields/u],
-    [{ owner: 0, sourceType: "task" }, /public fields/u],
+    [{ occurrence: startEvent }, /public fields/u],
+    [{ sourceType: "task" }, /public fields/u],
   ];
   for (const [fact, message] of rejectedStarts) rejectPage(singleStepPage([fact], []), message);
 
@@ -306,6 +307,27 @@ test("shows no occurrence starting or ending twice in a page, but lets a page en
     start({ ...startEvent, role: "multiInstanceBody" }),
   ], []);
   assert.deepEqual(decodePage(distinct), distinct);
+});
+
+test("decodes a held occurrence's Ready list and refuses an empty, repeated, ended or inexact one", () => {
+  const held = heldOccurrencePage();
+  assert.deepEqual(decodePage(held), held);
+  const readyOnly = singleStepPage([], []);
+  const onlyReady = { ...readyOnly, batches: [{ ...readyOnly.batches[0]!, transitions: [{ revision: 1, started: [], ended: [], ready: [reviewTask] }] }] };
+  assert.deepEqual(decodePage(onlyReady), onlyReady, "a step that only holds an occurrence begun earlier is a step");
+
+  const withReady = (ready: unknown) => {
+    const page = singleStepPage([start(reviewTask)], []);
+    return { ...page, batches: [{ ...page.batches[0]!, transitions: [{ revision: 1, started: [start(reviewTask)], ended: [], ready }] }] };
+  };
+  rejectPage(withReady([]), /ready must be a nonempty dense array/u);
+  rejectPage(withReady(null), /ready must be a nonempty dense array/u);
+  rejectPage(withReady([reviewTask, reviewTask]), /makes an occurrence Ready again/u);
+  rejectPage(withReady([{ ...reviewTask, owner: 0 }]), /public fields/u);
+  rejectPage(pageWithTransitions([
+    { revision: 1, started: [start(reviewTask)], ended: [end(reviewTask, "cancelled")] },
+    { revision: 2, started: [], ended: [], ready: [reviewTask] },
+  ]), /makes an occurrence Ready again/u);
 });
 
 test("binds the page to the requested cursor and batch limit", () => {
@@ -393,7 +415,7 @@ test("keeps role, terminal and member names synchronized with the producer schem
   const [first, second] = startOccurrenceBatch.transitions;
   assert.deepEqual(keys(schema.flowNodeOccurrencePage), Object.keys(occurrencePage()).toSorted());
   assert.deepEqual(keys(schema.flowNodeOccurrenceBatch), Object.keys(startOccurrenceBatch).toSorted());
-  assert.deepEqual(keys(schema.flowNodeOccurrenceTransition), Object.keys(first).toSorted());
+  assert.deepEqual(keys(schema.flowNodeOccurrenceTransition), Object.keys(heldOccurrenceBatch.transitions[1]).toSorted());
   assert.deepEqual(keys(schema.flowNodeOccurrenceStart), Object.keys(first.started[0]).toSorted());
   assert.deepEqual(keys(schema.flowNodeOccurrenceEnd), Object.keys(second.ended[0]).toSorted());
   assert.deepEqual(keys(schema.occurrenceKey), Object.keys(startEvent).toSorted());

@@ -4,7 +4,7 @@
  */
 import assert from "node:assert/strict";
 
-import { admit, decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
+import { admit, decodeProgram, rootScope, step, stimulusFromJson } from "./lean-paired.ts";
 import type { Outcome, State } from "@bpmn-lean/kernel";
 
 import { activity, base, ruleWork, task, text, wired, withOptions } from "./admission-refusal-support.ts";
@@ -81,5 +81,5 @@ export function started(program: Json, variables: Record<string, Json>): Outcome
 /** The root variable `name` after a committed start, `undefined` when absent. */
 export function rootValue(outcome: Outcome, name: string): unknown {
   assert.ok(outcome.ok, outcome.ok ? "" : JSON.stringify(outcome));
-  return outcome.value.variables.find((entry) => entry.scope === 0)?.entries.find(([key]) => key === name)?.[1];
+  return new Map(outcome.value.variables).get(rootScope)?.find(([key]) => key === name)?.[1];
 }

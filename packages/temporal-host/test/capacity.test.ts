@@ -129,7 +129,7 @@ test("a reader joining pages of an answer that changed reads it again from the s
 test("a publication page holds the largest prefix of whole input batches within the Query bound", () => {
   let log = publication.openLog(publication.initialCursor);
   const journal = (index: number) => Array.from({ length: 200 }, () =>
-    ({ cause: { kind: "arrive", flow: `Flow_${"f".repeat(100)}${String(index)}` }, element: "Task", owner: 0, started: [], ended: [] }));
+    ({ cause: { kind: "arrive", flow: `Flow_${"f".repeat(100)}${String(index)}` }, element: "Task", started: [], ended: [] }));
   for (let index = 0; index < 40; index += 1) log = publication.appendJournal(log, `c${String(index)}`, journal(index));
   assert.equal(log.retainedBytes, log.batchBytes.reduce((sum, bytes) => sum + bytes, 0));
   const page = publication.readPage(log, 0, 100);

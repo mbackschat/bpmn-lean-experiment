@@ -74,7 +74,7 @@ theorem arriveThrow_keeps {inv : State → Prop} {ctx : Ctx} (ops : PropagationO
   | none => cases ran; exact complete
   | terminate =>
     cases ran
-    obtain ⟨cleared, stays⟩ := ops.terminate state occurrence holds member begun
+    obtain ⟨cleared, stays⟩ := ops.terminate ctx.positionLe state occurrence holds member begun
     exact ops.complete _ _ _ _ _ cleared stays begun fun _ same => by cases same; rfl
   | error record => cases ran; rw [named]; exact ops.raise _ _ _ complete left begun ⟨state, begunFrom, .inr ⟨_, rfl⟩⟩
   | escalation record => cases ran; rw [named]; exact ops.raise _ _ _ holds member begun ⟨state, begunFrom, .inl rfl⟩
@@ -90,8 +90,8 @@ theorem arriveThrow_keeps {inv : State → Prop} {ctx : Ctx} (ops : PropagationO
     simp only [bind, Except.bind] at ran
     repeat' split at ran
     all_goals try cases ran
-    obtain ⟨fired, same⟩ := fireAll_keeps ops _ (Feature.Propagation.ownReceivers state _) state holds
-    exact ops.complete _ _ _ _ _ (ops.outbox _ _ fired) (same ▸ member) begun (throwLeave_unnamed payload)
+    obtain ⟨fired, same⟩ := fireAll_keeps ops _ (Feature.Propagation.ownReceivers ctx state _) state holds
+    exact ops.complete _ _ _ _ _ (ops.batchIntents _ _ fired) (same ▸ member) begun (throwLeave_unnamed payload)
   | compensation record =>
     dsimp only at ran
     unfold Feature.Propagation.throwCompensation at ran
@@ -109,17 +109,16 @@ theorem throwerLeaves_keeps {inv : State → Prop} {ctx : Ctx} (ops : Propagatio
     inv (Feature.Propagation.throwerLeaves ctx origin state) := by
   unfold Feature.Propagation.throwerLeaves
   dsimp only
-  cases found : state.occurrences.find? fun occurrence => occurrence.element == origin.element &&
-      occurrence.scope == origin.scope && occurrence.activation == origin.activation with
+  cases found : state.occurrences.find? (·.id == origin.thrower) with
   | none => exact holds
   | some occurrence =>
     cases event : (ctx.program.element? origin.element).bind (·.event?) with
     | none => exact holds
     | some pair =>
       have same := List.find?_some found
-      simp only [Bool.and_eq_true, beq_iff_eq] at same
+      simp only [beq_iff_eq] at same
       exact ops.complete _ _ _ _ _ holds (List.mem_of_find?_eq_some found)
-        (thrown (by rw [event]; rfl) occurrence (List.mem_of_find?_eq_some found) same.1.1 same.1.2 same.2) (throwLeave_unnamed _)
+        (thrown (by rw [event]; rfl) occurrence (List.mem_of_find?_eq_some found) same) (throwLeave_unnamed _)
 
 theorem hostLeaves_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.Propagation.PropagationHooks}
     (search : SearchHooks ctx inv hooks) {origin : Origin} {state after : State} (holds : inv state)
@@ -249,9 +248,9 @@ theorem leaveOccurrence_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Featur
     obtain ⟨entry, inside, same⟩ := cancelledScope_stands (origin := origin) present
     repeat' split
     all_goals first
-      | exact ops.rollBack _ _ _ _ _ _ _ holds ⟨entry, inside, same⟩ bounded
+      | exact ops.rollBack _ _ _ _ _ _ _ _ holds ⟨entry, inside, same⟩ bounded
           ⟨base, raised, origin, state, popped, standing, cancels, steady, .inl rfl, rfl⟩ (entered _ present) flows
-      | exact ops.rollBack _ _ _ _ _ _ _ (ops.disarm _ _ holds).1 ⟨entry, (ops.disarm _ _ holds).2 ▸ inside, same⟩
+      | exact ops.rollBack _ _ _ _ _ _ _ _ (ops.disarm _ _ holds).1 ⟨entry, (ops.disarm _ _ holds).2 ▸ inside, same⟩
           bounded ⟨base, raised, origin, state, popped, standing, cancels, steady, .inr ⟨_, rfl⟩, rfl⟩
           (entered _ ((ops.disarm _ _ holds).2 ▸ present)) flows
   · split at ran
@@ -283,7 +282,7 @@ theorem contextFires_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.P
   obtain ⟨kept, steady, instances⟩ := catchDecided_keeps search holds settled decision
   obtain ⟨linked, listed⟩ := boundariesOf_sourced member
   have anchored : Laws.Flow.Anchored inv ctx.program decided boundary.id scope :=
-    Laws.Flow.Anchored.held holds steady.issued (fun _ inside => steady.scopes ▸ inside)
+    Laws.Flow.Anchored.held holds steady.grows (fun _ inside => steady.scopes ▸ inside)
       (fun _ inside => instances ▸ inside) linked (.inl (.inr (.inr (.inl ⟨stands, declared⟩))))
   obtain ⟨fired, same⟩ := boundaryFire_keeps ops boundary none scope [] kept (boundariesOf_boundaryOf member) anchored listed
   exact throwerLeaves_keeps ops fired (thrown.steady (same.trans steady.occurrences))
@@ -341,7 +340,7 @@ theorem searchScopes_keeps {inv : State → Prop} {ctx : Ctx} {hooks : Feature.P
           have chain := (steady.trans dropped.2.1).trans decidedSteady
           have instances := (decidedInstances.trans dropped.2.2).trans passedInstances
           have begun := ops.begin _ element occurrence.id decidedKept ⟨occurrence, chain.scopes ▸ present, rfl⟩
-            (Laws.Flow.Anchored.held holds chain.issued (fun _ inside => chain.scopes ▸ inside)
+            (Laws.Flow.Anchored.held holds chain.grows (fun _ inside => chain.scopes ▸ inside)
               (fun _ inside => instances ▸ inside) (.inl rfl) (.inl (.inr (.inr (.inl
                 ⟨⟨occurrence, present, rfl⟩, levelCandidates_children candidates _ (best?_mem handled)⟩)))))
           split
@@ -386,7 +385,7 @@ The cancellation lane's (P3) share: what a Terminate End's arrival does, from wh
 flow. -/
 theorem arriveThrow_terminate (ctx : Ctx) (header : Header) (payload : EventPayload) (occurrence : Occurrence)
     (state : State) : Feature.Propagation.arriveThrow ctx header payload .terminate occurrence state =
-      .ok ((state.clearInside occurrence.scope [occurrence.id]).signal
+      .ok ((state.clearInside ctx.positionLe occurrence.scope [occurrence.id]).signal
         (.complete occurrence.id (.flows []) [] .outward)) := by
   unfold Feature.Propagation.arriveThrow
   rfl
@@ -420,7 +419,9 @@ changes nothing else. -/
 theorem arriveThrow_cancel (ctx : Ctx) (header : Header) (payload : EventPayload) (occurrence : Occurrence)
     (state : State) : Feature.Propagation.arriveThrow ctx header payload .cancel occurrence state =
       .ok ((state.signal (.complete occurrence.id (Feature.Propagation.throwLeave payload) [] .outward)).signal
-        (.raise .cancel { element := header.id, scope := occurrence.scope, activation := occurrence.activation })) := by
+        (.raise .cancel {
+          element := header.id, scope := occurrence.scope, activation := occurrence.activation,
+          thrower := occurrence.id })) := by
   unfold Feature.Propagation.arriveThrow
   rfl
 
@@ -433,7 +434,7 @@ theorem leaveOccurrence_cancel {ctx : Ctx} {hooks : Feature.Propagation.Propagat
     (ran : Feature.Propagation.leaveOccurrence hooks ctx raised origin occurrence parent boundary writes state = .ok after) :
     ∃ terminating, (terminating = state ∨ ∃ activity, occurrence.occurrence = some activity ∧
         terminating = state.disarm activity) ∧
-      after = (terminating.clearInside (Feature.Propagation.cancelledScope origin occurrence state)).signal
+      after = (terminating.clearInside ctx.positionLe (Feature.Propagation.cancelledScope origin occurrence state)).signal
         (.compensate (Feature.Propagation.cancelledScope origin occurrence state) none
           { processInstanceId := state.instanceOf origin.scope, element := origin.element, activation := origin.activation }
           occurrence.occurrence (some (.occur boundary.id parent (.flows boundary.outgoing)))) := by
@@ -597,7 +598,7 @@ structure QuietHooks (ctx : Ctx) (quiet : Signal → Prop) (hooks : Feature.Prop
   writeCaught : ∀ scope writes state after,
     hooks.writeCaught ctx scope writes state = .ok after → Appends quiet state after
   callOutputs : ∀ root state after, hooks.callOutputs ctx root state = .ok after → Appends quiet state after
-  dropRuns : ∀ scope state, (hooks.dropRuns ctx scope state).signals = state.signals
+  dropRuns : ∀ scope state, Laws.State.allSignals (hooks.dropRuns ctx scope state) = Laws.State.allSignals state
 
 /-- `signal` is the failure of a compensation handler's context that a search stopping there queues: only when the
 profile does not select `propagatesFromHandler`, and only at a scope occurrence `ctx.scopeRole` calls a compensation
@@ -622,7 +623,7 @@ theorem throwerLeaves_quiet (origin : Origin) (state : State) :
   · exact .refl _
 
 include facts steps in
-theorem fire_quiet (boundary : Boundary) (host : Option Nat) (scope : ScopeOccurrenceId)
+theorem fire_quiet (boundary : Boundary) (host : Option OccurrenceId) (scope : ScopeOccurrenceId)
     (writes : List (String × Value)) (state : State) : Appends quiet state (boundary.fire host none scope writes state) := by
   rw [Laws.Hooks.fire_eq]
   have interrupted : Appends quiet state

@@ -140,15 +140,11 @@
       "additionalProperties": false,
       "required": [
         "occurrence",
-        "owner",
         "sourceType"
       ],
       "properties": {
         "occurrence": {
           "$ref": "#/$defs/occurrenceKey"
-        },
-        "owner": {
-          "$ref": "#/$defs/nonnegativeSafeInteger"
         },
         "sourceType": {
           "$ref": "#/$defs/nonemptyString"
@@ -196,6 +192,14 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/flowNodeOccurrenceEnd"
+          }
+        },
+        "ready": {
+          "description": "The occurrences this micro-step leaves in BPMN's Ready state (BPMN 2.0.2 §13.3.2, Fig. 13.2): begun, their InputSet unavailable (§10.4.2), so no work is offered. Absent when the micro-step holds none. A started occurrence not named Ready and not ended is Active; a Ready one ends only by removal, as cancelled.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/occurrenceKey"
           }
         }
       }

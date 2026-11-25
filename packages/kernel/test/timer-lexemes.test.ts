@@ -23,7 +23,7 @@ const catchEvent = (id: string, schedule: Json, incoming: string, outgoing: stri
   event: {
     header: header(id, "intermediateCatchEvent"),
     payload: {
-      role: { catch: { subscription: { trigger: { timer: { payload: { schedule } } }, outputs: [], alternatives: [], parallelMultiple: false } } },
+      role: { catch: { subscription: { trigger: { timer: { payload: { schedule, exclusive: null } } }, outputs: [], alternatives: [], parallelMultiple: false, dataOutputs: [], retryCycle: null } } },
       placement: "intermediate", incoming: [incoming], outgoing: [outgoing], alternativeThrows: [],
     },
   },
@@ -32,7 +32,7 @@ const catchEvent = (id: string, schedule: Json, incoming: string, outgoing: stri
 /** `Start → [Delay →] Wait → End`; `Delay` waits `delay` first, so `Wait` arms at a later logical time. */
 function programJson(schedule: Json, delay: string | null): Json {
   const elements: Json[] = [
-    { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["f0"] } } },
+    { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["f0"], initiator: null, formRef: null } } },
     catchEvent("Wait", schedule, delay === null ? "f0" : "f1", "f2"),
     { event: { header: header("End", "endEvent"), payload: { role: { throw: { record: "none" } }, placement: "finish", incoming: ["f2"], outgoing: [], alternativeThrows: [] } } },
   ];

@@ -31,12 +31,12 @@ const read = (name: string): Json => ({ variable: { name } });
 const io = (target: string, source: Json): Json => ({ target, source, dialect: "ioParameter" });
 const envelope = (incoming: string[], outgoing: string[], over: Json = {}): Json => ({
   incoming, outgoing, inputs: [], outputs: [], boundaries: [], multiInstance: null, compensationHandlers: [], forCompensation: false,
-  defaultFlow: null, asyncBefore: false, asyncAfter: false, ...over,
+  defaultFlow: null, asyncBefore: false, asyncAfter: false, exclusive: null, retryCycle: null, structuredInputs: [], structuredOutputs: [], ...over,
 });
 const user = { user: { payload: { name: null, assignee: null, candidateUsers: [], candidateGroups: [], formKey: null,
-  formFields: [], dueDate: null, followUpDate: null, priority: null } } };
+  formFields: [], dueDate: null, followUpDate: null, priority: null, formRef: null } } };
 const start = (id: string, outgoing: string, parent: string | null = null): Json =>
-  ({ start: { header: header(id, "startEvent", parent), payload: { subscription: null, outgoing: [outgoing] } } });
+  ({ start: { header: header(id, "startEvent", parent), payload: { subscription: null, outgoing: [outgoing], initiator: null, formRef: null } } });
 const end = (id: string, incoming: string, parent: string | null = null): Json =>
   ({ event: { header: header(id, "endEvent", parent), payload: { role: { throw: { record: "none" } }, placement: "finish",
     incoming: [incoming], outgoing: [], alternativeThrows: [] } } });
@@ -59,7 +59,7 @@ function lot(incoming: string, outgoing: string, entry: string, waits: boolean, 
       items: [], envelope: envelope([incoming], [outgoing], { inputs: [io("prior", read(entry))], multiInstance: {
         mode: "parallel", count: { collection: { items: read("items") } }, elementVariable: "item", completionCondition,
         inputDataItem: null, outputDataItem: null, outputCollection: null,
-        asyncBefore: false, asyncAfter: false, loopDataInputRef: null, inputDataItemName: null,
+        asyncBefore: false, asyncAfter: false, exclusive: null, retryCycle: null, loopDataInputRef: null, inputDataItemName: null,
       } }) } } },
     start("Lot_Start", "To_Mark", "Lot"),
     task("Mark", "To_Mark", waits ? "To_Check" : "To_LotEnd", [io("last", read("item"))], "Lot"),

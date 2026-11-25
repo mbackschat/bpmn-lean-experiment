@@ -4,9 +4,10 @@
  * tests read the real repository and are the guards themselves. Guard 21's decoders need the built kernels and run in
  * packages/differential/test/row-fixtures.integration-test.ts; its fast half runs here.
  */
+// size-exception: every guard's clean, seeded and empty-tree tests share this file's fixture tree and its builders (cleanFiles, fixture, seeded, holdsItsGround), which no other test file can reach
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { after, test } from "node:test";
@@ -18,11 +19,19 @@ import {
   closedDispatchFindings,
   commitScopeFindings,
   fanOutFindings,
+  guardedTypes,
   mirrorEnumerationFindings,
   noCatchAllFindings,
   tsMatchSiteCounts,
 } from "./kernel-guards-dispatch.ts";
-import { effectWriterFindings, fieldLivenessFindings } from "./kernel-guards-effects.ts";
+import { boundAgreementFindings, boundCopies, strayBoundLiteralFindings } from "./kernel-guards-bounds.ts";
+import {
+  effectWriterFindings,
+  fieldLivenessFindings,
+  hookDefaultFindings,
+  runLogFindings,
+  unitKeyFindings,
+} from "./kernel-guards-effects.ts";
 import {
   boundedNumberFindings,
   discoveryFindings,
@@ -35,6 +44,8 @@ import {
 } from "./kernel-guards-placement.ts";
 import {
   coverageRows,
+  orderClassFindings,
+  orderTableFiles,
   refusalParityFindings,
   refusalTestFindings,
   rowFixtureFindings,
@@ -50,9 +61,11 @@ after(() => { for (const root of roots) rmSync(root, { recursive: true, force: t
 const dispatchTable = `def owners : List (Name × List Name) := [
   (\`Kernel.Element, [\`Kernel.Step]),
   (\`Kernel.Work, [\`Kernel.Feature.Work, \`Kernel.Admission.Work])]
+
+def unowned : List Name := [\`Kernel.Value]
 `;
 
-const stateTs = `export function emit(state, flows) { return { ...state, tokens: flows }; }
+const stateTs = `export function emit(state, flows) { return { ...state, batchTokens: flows }; }
 export function setVariable(state, name) { return { ...state, variables: [name] }; }
 export function beginOccurrence(state) { return { ...state, occurrences: [1] }; }
 export function removeOccurrence(state) { return { ...state, occurrences: [] }; }
@@ -90,6 +103,7 @@ def work (value : Nat) : Option String := if value == 0 then some "work.user.ass
 `,
   "packages/kernel/src/il/types.ts": `export enum ElementTag { Task = "task", Gateway = "gateway" }
 export enum WorkTag { None = "none", User = "user" }
+export enum ValueTag { Null = "null", Bool = "bool" }
 export function assertNever(value: never): never { throw new Error(String(value)); }
 export interface Payload { readonly assignee: string; }
 export type Work = { readonly tag: WorkTag };
@@ -222,6 +236,16 @@ export const isUser = (work) => work.tag === WorkTag.User;
 `,
 }, /switch over WorkTag has a default arm[\s\S]*does not end in assertNever[\s\S]*equality test on guarded WorkTag member inside its owner/u);
 
+test("guard 2 rejects an equality test on an unowned type's member in any module, and an unreadable unowned list", () => {
+  seeded(noCatchAllFindings, { "packages/kernel/src/feature/data.ts": `import { ValueTag } from "../il/types.js";
+export const isNull = (value) => value.tag === ValueTag.Null;
+` }, /G2 packages\/kernel\/src\/feature\/data\.ts:2: equality test on ValueTag member/u);
+  assert.deepEqual(noCatchAllFindings(fixture({ "packages/kernel/src/il/codec.ts": `import { ValueTag } from "./types.js";
+export const isNull = (value) => value.tag === ValueTag.Null;
+` })), []);
+  seeded(noCatchAllFindings, { "scripts/kernel-dispatch.lean": dispatchTable.replace(/def unowned[^\n]*\n/u, "") }, /no readable `unowned` list/u);
+});
+
 holdsItsGround("guard 3 (mirror enumerations)", mirrorEnumerationFindings, {
   "packages/kernel/src/feature/flow.ts": `import { ElementTag } from "../il/types.js";
 import { emit } from "../state.js";
@@ -238,6 +262,21 @@ def Kernel.Feature.Mirror.isGate (x : Element) : Bool := true
 def allow : List Element := [.task, .gateway]
 `,
 }, /allowlist of 2 ElementTag members[\s\S]*classifier isTask[\s\S]*inductive MyWork mirrors guarded Work[\s\S]*classifier Kernel\.Feature\.Mirror\.isGate|allowlist of 2 ElementTag members/u);
+
+test("guard 1 reads a guarded type nested in a namespace by its own name and reports an entry it cannot read", () => {
+  const nested = `def owners : List (Name × List Name) := [
+  (\`Kernel.Element, [\`Kernel.Step]),
+  (\`Kernel.Feature.Data.Juel.JVal, [\`Kernel.Feature.Data, \`Kernel.Laws.Data])]
+`;
+  const read = guardedTypes(fixture({ "scripts/kernel-dispatch.lean": nested }));
+  assert.deepEqual(read.findings, []);
+  assert.deepEqual(read.types.map((type) => [type.lean, type.leanOwners]), [
+    ["Element", ["Kernel.Step"]],
+    ["JVal", ["Kernel.Feature.Data", "Kernel.Laws.Data"]],
+  ]);
+  const broken = guardedTypes(fixture({ "scripts/kernel-dispatch.lean": nested.replace("JVal, [", "JVal [") }));
+  assert.deepEqual(broken.findings, ["G1: 1 owners-table entries in kernel-dispatch.lean are unreadable"]);
+});
 
 test("guard 3 reports each of its second-enumeration shapes", () => {
   const findings = mirrorEnumerationFindings(fixture({
@@ -413,6 +452,19 @@ test("guard 15 puts the registry's Laws module and the proofs importing it or La
     /G15 Lean: editing Kernel\.Feature\.Flow rebuilds Kernel\.Proofs\.Later, outside its cone/u);
 });
 
+test("guard 15 puts an admission's own laws and the admission registry's laws in its cone, and no other admission's laws", () => {
+  const laws = {
+    "Kernel/Admission/Profile.lean": "module\npublic import Kernel.IL.Types\n",
+    "Kernel/Admission/Flow.lean": "module\npublic import Kernel.IL.Types\n",
+    "Kernel/AdmissionRegistry.lean": "module\npublic import Kernel.Admission.Profile\npublic import Kernel.Admission.Flow\n",
+    "Kernel/Laws/Admission/Profile.lean": "module\npublic import Kernel.Admission.Profile\nimport all Kernel.Admission.Profile\n",
+    "Kernel/Laws/AdmissionRegistry.lean": "module\npublic import Kernel.AdmissionRegistry\nimport all Kernel.AdmissionRegistry\n",
+  };
+  assert.deepEqual(rebuildFindings(fixture(laws)), []);
+  seeded(rebuildFindings, { ...laws, "Kernel/Laws/Admission/Flow.lean": "module\npublic import Kernel.Laws.Admission.Profile\n" },
+    /G15 Lean: editing Kernel\.Admission\.Profile rebuilds Kernel\.Laws\.Admission\.Flow, outside its cone/u);
+});
+
 test("guard 15 puts a feature's namesake laws submodule in its cone, and no other laws submodule", () => {
   const laws = {
     "Kernel/Feature/Flow/Gates.lean": "module\npublic import Kernel.Hooks\n",
@@ -464,7 +516,7 @@ export function leak(state) { return emit(state, []); }
 }, /spread update writes State\.occurrences[\s\S]*pipeline hook outflow[\s\S]*emit called outside its writer|emit called outside its writer/u);
 
 test("guard 17 gives each Token case one writer: deferred begins are stacked only by MultiInstance", () => {
-  const deferring = `${stateTs}export function deferBegins(state, requests) { return { ...state, tokens: requests }; }\n`;
+  const deferring = `${stateTs}export function deferBegins(state, requests) { return { ...state, batchTokens: requests }; }\n`;
   assert.deepEqual(effectWriterFindings(fixture({
     "packages/kernel/src/state.ts": deferring,
     "packages/kernel/src/feature/multi-instance.ts": `import { deferBegins } from "../state.js";\nexport function begin(state) { return deferBegins(state, []); }\n`,
@@ -474,6 +526,12 @@ test("guard 17 gives each Token case one writer: deferred begins are stacked onl
     "packages/kernel/src/feature/flow.ts": `import { emit, deferBegins } from "../state.js";\nexport function gateway(state, flows) { return deferBegins(emit(state, flows), []); }\n`,
   }, /deferBegins called outside its writer \(deferred begins are stacked only by MultiInstance\)/u);
 });
+
+test("guard 17 spells a called instance's identifier only at commit, in publication and in readers of committed names", () => seeded(
+  effectWriterFindings, {
+    "packages/kernel/src/state/key.ts": "export function instanceText(name) { return name; }\n",
+    "packages/kernel/src/feature/work.ts": `import { instanceText } from "../state.js";\nexport function id(name) { return instanceText(name); }\n`,
+  }, /instanceText called outside its writer \(a called instance's identifier is spelled only at commit/u));
 
 // The Lean twin admits a writer's sub-modules by name prefix (`allowedFor` in scripts/kernel-effects.lean), so a State
 // sub-module such as `state/removal.ts` is State here too, while a feature stays outside.
@@ -490,6 +548,68 @@ export function cancelOccurrence(state, id) { return removeOccurrence(state, id)
     "packages/kernel/src/state/removal.ts": removal,
     "packages/kernel/src/feature/scopes.ts": `import { cancelOccurrence } from "../state/removal.js";\nexport function leave(state) { return cancelOccurrence(state, 1); }\n`,
   }, /cancelOccurrence called outside its writer/u);
+});
+
+const hookFiles = (leanRegistry: string, tsRegistry: string): Readonly<Record<string, string>> => ({
+  "Kernel/Hooks.lean": `module
+public import Kernel.State
+def refuse (code : String) : Nat → Nat := fun _ => 0
+structure Hooks where
+  /-- A transition hook. -/
+  arriveGateway : Nat → Nat := fun _ => refuse "gateway"
+  select : Nat → Except String Nat := fun _ => .error (.semanticFailure .invariant "select")
+  -- A notification and a query keep their own defaults.
+  cancelled : Nat → Nat := fun state => state
+  catches : Nat → Option Nat := fun _ => none
+`,
+  "Kernel/Registry.lean": `module\npublic import Kernel.Feature.Flow\nnamespace Kernel.Registry\ndef hooks : Hooks :=\n  { ${leanRegistry} }\nend Kernel.Registry\n`,
+  "packages/kernel/src/hooks.ts": `function refuse(code) { return code; }
+export const defaultHooks: Hooks = {
+  arriveGateway: () => refuse("gateway"),
+  select: () => semanticFailure(SemanticCause.Invariant, "select"),
+  cancelled: (_ctx, state) => state,
+  catches: () => null,
+};
+`,
+  "packages/kernel/src/registry.ts": `import { gateway } from "./feature/flow.js";\nexport const hooks: Hooks = {\n  ...defaultHooks,\n  ${tsRegistry}\n};\n`,
+});
+
+test("the hook-defaults guard (KD7) needs every failing default filled, in both languages, and fails on an empty tree", () => {
+  const lean = "arriveGateway := Feature.Flow.gateway\n    select := fun state => .ok state";
+  const typeScript = "arriveGateway: gateway,\n  select: (state) => state,";
+  assert.deepEqual(hookDefaultFindings(fixture(hookFiles(lean, typeScript))), []);
+  assert.deepEqual(hookDefaultFindings(fixture(hookFiles("arriveGateway := Feature.Flow.gateway", "select: (state) => state,"))), [
+    "KD7 hook defaults Kernel/Registry.lean: the registry leaves select to its failing default, which would run in production",
+    "KD7 hook defaults packages/kernel/src/registry.ts: the registry leaves arriveGateway to its failing default, which would run in production",
+  ]);
+  assert.equal(hookDefaultFindings(emptyFixture()).length, 2, "an empty tree must fail in both languages");
+});
+
+test("the unit-key guard (KD7) holds a node to its two builders and each comparator to its cached reads, and fails on an empty tree", () => {
+  const file = "packages/kernel/src/state/key.ts";
+  const keys = readFileSync(path.join(tree.root, file), "utf8");
+  assert.deepEqual(unitKeyFindings(fixture({ [file]: keys })), []);
+  seeded(unitKeyFindings, { [file]: keys, "packages/kernel/src/step/forge.ts": "export const forge = (key) => ({ ...key, fingerprint: 0n });\n" },
+    /KD7 unit keys packages\/kernel\/src\/step\/forge\.ts:1: builds a unit key node outside unitRoot and pushUnit/u);
+  const header = "export function compareUnitKey(left: UnitKey, right: UnitKey): number {\n";
+  assert.ok(keys.includes(header));
+  seeded(unitKeyFindings, { [file]: keys.replace(header, `${header}  const roots = compareUnitRoot(left.root, right.root);\n  if (roots !== 0) return roots;\n`) },
+    /KD7 unit keys compareUnitKey: reads compareUnitRoot, depth, fingerprint, comparePath, not its cached fields depth, fingerprint first/u);
+  assert.notDeepEqual(unitKeyFindings(emptyFixture()), [], "an empty tree must fail");
+});
+
+test("the run-log guard (KD7) holds the log to its one reader and a unit-keyed map's order to its owners, and fails on an empty tree", () => {
+  const owners = ["packages/kernel/src/step/order.ts", "packages/kernel/src/step/commit.ts", "packages/kernel/src/state.ts"];
+  const real: Record<string, string> = Object.fromEntries(owners.map((file) => [file, readFileSync(path.join(tree.root, file), "utf8")]));
+  assert.deepEqual(runLogFindings(fixture({ ...real, "packages/kernel/src/step/issues.ts": "export const issues = (state) => orderedEntries(state.issued);\n" })), [], "the issue table is keyed by issue");
+  for (const [module, text, pattern] of [
+    ["feature/work", "export function peek(log, key) { return runPosition(log, key); }", /KD7 run log packages\/kernel\/src\/feature\/work\.ts:1: reads the run log through runPosition outside orderKey and byRun/u],
+    ["step/peek", "export function size(log) { return log.positions; }", /KD7 run log packages\/kernel\/src\/step\/peek\.ts:1: reads the run log's positions outside runRecord and runPosition/u],
+    ["step/first", "export function first(state) { return orderedEntries(state.queuedSignals)[0]; }", /KD7 run log packages\/kernel\/src\/step\/first\.ts:1: reads the iteration order of a unit-keyed map/u],
+    ["step/last", "export const last = (q: OrderedMap<UnitKey, T>) => orderedEntries(q);", /last\.ts:1: reads the iteration order of a unit-keyed map/u],
+    ["step/alias", "type Queue = OrderedMap<UnitKey, T>;\ntype Keyed<K, V> = OrderedMap<K, V>;", /alias\.ts:1: aliases a map keyed by unit \(Queue\)[^]*alias\.ts:2: aliases a map keyed by unit \(Keyed\)/u],
+  ] as const) seeded(runLogFindings, { ...real, [`packages/kernel/src/${module}.ts`]: `${text}\n` }, pattern);
+  assert.notDeepEqual(runLogFindings(emptyFixture()), [], "an empty tree must fail");
 });
 
 holdsItsGround("guard 19 (field liveness)", fieldLivenessFindings, {
@@ -659,15 +779,64 @@ for (const [name, guard] of [
   ["guard 15 (options)", kernelOptionFindings],
   ["guard 15 (rebuild model)", rebuildFindings],
   ["guard 17", effectWriterFindings],
+  ["the hook-defaults guard (KD7)", hookDefaultFindings],
+  ["the unit-key guard (KD7)", unitKeyFindings],
+  ["the run-log guard (KD7)", runLogFindings],
   ["guard 19", fieldLivenessFindings],
   ["guard 20", refusalParityFindings],
+  ["the run-order table guard (DC28)", orderClassFindings],
   ["guard 23 (structural inputs)", structureInputFindings],
   ["guard 11 (bounded wire numbers)", boundedNumberFindings],
   ["guard 24", justifiedRuleFindings],
+  ["the bound-agreement guard (HD7)", boundAgreementFindings],
+  ["the stray-bound-literal guard (HD7)", strayBoundLiteralFindings],
   ["guard 16 (unit cases through the Lean-paired helper)", unitPairingFindings],
 ] as const) {
   test(`the tree passes ${name}`, () => assert.deepEqual(guard(tree), []));
 }
+
+test("the bound guards fail a copy that disagrees with Lean's Bounds defaults and a bound's figure written in the kernel", () => {
+  const real = (file: string): string => readFileSync(path.join(tree.root, file), "utf8");
+  const owners = ["Kernel/IL/Types/Options.lean", "packages/kernel/src/il/types/options.ts", ...boundCopies.map((copy) => copy.file)];
+  const copies: Record<string, string> = Object.fromEntries(owners.map((file) => [file, real(file)]));
+  assert.deepEqual(boundAgreementFindings(fixture(copies)), []);
+  const decoder = "platform/contracts/src/work-task-form-decoders.ts";
+  seeded(boundAgreementFindings, { ...copies, [decoder]: (copies[decoder] ?? "").replace(/maximumTaggedValueBytes = [\d_]+/u, "maximumTaggedValueBytes = 20_000") },
+    /work-task-form-decoders\.ts: canonicalBytes is 20000, Lean's Bounds default is 16384/u);
+  const lean = "Kernel/IL/Types/Options.lean";
+  seeded(boundAgreementFindings, { ...copies, [lean]: (copies[lean] ?? "").replace("textBytes : Nat := 1024", "textBytes : Nat := 2048") },
+    /options\.ts: textBytes is 1024, Lean's Bounds default is 2048/u);
+  assert.notDeepEqual(boundAgreementFindings(emptyFixture()), [], "an empty tree must fail");
+  const owner = { [lean]: copies[lean] ?? "" };
+  assert.deepEqual(strayBoundLiteralFindings(fixture(owner)), []);
+  seeded(strayBoundLiteralFindings, { ...owner, "packages/kernel/src/feature/data.ts": "export const limit = 16_384;\n",
+    "Kernel/Feature/Flow.lean": "module\ndef limit : Nat := 1024 -- 256 in a comment is no literal\n" },
+    /G8 Kernel\/Feature\/Flow\.lean:2: literal 1024 restates the textBytes or instanceIdentityBytes bound[\s\S]*G8 packages\/kernel\/src\/feature\/data\.ts:1: literal 16_384 restates the canonicalBytes bound/u);
+  assert.notDeepEqual(strayBoundLiteralFindings(emptyFixture()), [], "an empty tree must fail");
+});
+
+test("the run-order table guard (DC28) needs every non-default option value classified once, in both kernels alike", () => {
+  const real = (file: string): string => readFileSync(path.join(tree.root, file), "utf8");
+  const owners = ["Kernel/IL/Types/Options.lean", ...orderTableFiles, "packages/kernel/src/il/types/options.ts"];
+  const copies: Record<string, string> = Object.fromEntries(owners.map((file) => [file, real(file)]));
+  assert.deepEqual(orderClassFindings(fixture(copies)), []);
+  const [options = "", lean = "", typeScript = ""] = owners;
+  const edit = (file: string, from: string, to: string): Record<string, string> => {
+    assert.ok((copies[file] ?? "").includes(from), `${file} holds ${from}`);
+    return { ...copies, [file]: (copies[file] ?? "").replace(from, to) };
+  };
+  seeded(orderClassFindings, edit(options, "  | eachWrite\n", "  | eachWrite\n  | eachRead\n"),
+    /ProfileOptions\.conditionalRetrigger value eachRead is not classified by run-order dependence/u);
+  seeded(orderClassFindings, edit(lean, "  ⟨(·.signalPayload == .variables), none⟩,\n", ""),
+    /signalPayload value variables is not classified[\s\S]*entry 42 is signalPayload\.variables order-free, Lean's is signalDelivery/u);
+  seeded(orderClassFindings, edit(lean, "(·.scopeStart == .required)", "(·.scopeStart == .implicit)"),
+    /classifies scopeStart\.implicit, the standards reading/u);
+  seeded(orderClassFindings, edit(lean, "\"profile.signalNames.addresses.orderInvariant\"", "\"profile.signalNames.addresses\""),
+    /refuses signalNames\.addresses as profile\.signalNames\.addresses, not profile\.signalNames\.addresses\.orderInvariant/u);
+  seeded(orderClassFindings, edit(typeScript, "needs: { schedule: BranchSchedule.DeclarationDepthFirst, code: \"profile.messageNames.addresses.orderInvariant\" }", "needs: null"),
+    /entry 39 is messageNames\.addresses order-free, Lean's is messageNames\.addresses profile\.messageNames\.addresses\.orderInvariant/u);
+  assert.notDeepEqual(orderClassFindings(emptyFixture()), [], "an empty tree must fail");
+});
 
 test("the tree stays within the guard 18 site budgets and the commit-scope rule", () => {
   assert.deepEqual([...fanOutFindings(tsMatchSiteCounts(tree)), ...commitScopeFindings(branchCommits())], []);

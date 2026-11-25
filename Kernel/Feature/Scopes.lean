@@ -76,7 +76,7 @@ def arriveScope (ctx : Ctx) (header : Header) (payload : ScopePayload) (occurren
       | none => .error (.semanticFailure .invariant "event-subprocess-without-start-reading")
       | some (_, interrupting) =>
         let cleared :=
-          if interrupting then state.clearInside occurrence.scope (occurrence.id :: entry.inner.toList) else state
+          if interrupting then state.clearInside ctx.positionLe occurrence.scope (occurrence.id :: entry.inner.toList) else state
         enter ctx header payload occurrence entry cleared
 
 /-- An idle Scope's outputs read its own variables, then the parent's chain they are written into

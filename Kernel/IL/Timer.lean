@@ -582,7 +582,7 @@ def cronMatches (fields : CronFields) : Nat → Nat → List Nat
 `originMs`, among those due at or after `fromMs`: exactly the instants `occurs originMs` accepts, so a host offers no
 occurrence a firing would refuse as `timer-occurrence-unknown`. A Cron schedule starts its matches after `fromMs - 1`,
 since every match strictly after the origin is one `successor` reaches. -/
-def occurrences (originMs fromMs limit : Nat) : Resolved → List Nat
+def dueInstants (originMs fromMs limit : Nat) : Resolved → List Nat
   | .duration ms => if limit > 0 && originMs + ms ≥ fromMs then [originMs + ms] else []
   | .date instantMs => if limit > 0 && instantMs ≥ fromMs then [instantMs] else []
   | .cycle periodMs repetitions =>

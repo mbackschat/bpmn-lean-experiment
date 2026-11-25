@@ -1,14 +1,28 @@
 /**
- * Feature slots, transcribed from `Kernel/State/Slots.lean`: the scope occurrence identity every slot entry keys on,
- * and the feature-owned data of `FeatureSlots`, always present and empty by default, with the records a compensation
- * run resumes by. Part of `state.ts`, which re-exports it.
+ * Feature slots, transcribed from `Kernel/State/Slots.lean`: the feature-owned data of `FeatureSlots`, always present
+ * and empty by default, with the records a compensation run resumes by. Part of `state.ts`, which re-exports it.
  */
-import { type DefinitionRef, type ElementId, type FlowId, type Value } from "../il/types.js";
+import { assertNever, compareStrings, type DefinitionRef, type ElementId, type FlowId, type Value } from "../il/types.js";
 import { type OccurrenceRef } from "./input.js";
 import { type Binding } from "./wait.js";
+/** Re-exported for `raise.ts`, as Lean's `Kernel.State.Raise` sees `Kernel.State.Wait` only through this module. */
+export { type Binding };
+import {
+  ActivationRole, compareIssue, compareOccurrenceId, compareOccurrenceName, type InstanceName, type Issue, issueText, type OccurrenceId,
+  occurrenceIdParts, type OccurrenceKey, type OccurrenceName, orientKeyOrder, type ScopeOccurrenceId, compareScopeOccurrenceId,
+} from "./key.js";
+/** Re-exported for `items.ts`, `raise.ts` and `journal.ts`, as Lean's `Kernel.State.Items`, `Kernel.State.Raise` and
+ * `Kernel.State.Journal` see `Kernel.State.Key` only through this module. */
+export {
+  ActivationRole, compareIssue, compareOccurrenceId, type InstanceName, type Issue, issueText, type OccurrenceId, type OccurrenceKey,
+  type OccurrenceName, orientKeyOrder, type ScopeOccurrenceId,
+};
 
-/** Lean's `ScopeOccurrenceId`, a structure around one `Nat`. */
-export type ScopeOccurrenceId = number;
+/**
+ * Lean's `Variables`, one variable set keyed by name (DC21), written as its list view: its bindings in name order
+ * (`compareStrings`, Lean's `String` order), the form the state codec writes (T75); no reader takes another order from it.
+ */
+export type Variables = readonly Binding[];
 
 /**
  * How an occurrence leaves: its element's own outgoing selection, the flows given (`flows []` consumes the token), or
@@ -28,14 +42,14 @@ export function leaveFlows(selected: readonly FlowId[]): Leave { return { tag: L
 /**
  * What a compensation run does once its handlers have completed: complete an existing occurrence, begin and complete
  * a fresh one (a caught Cancel's boundary, which `Step` numbers when the run ends), or, for a group's nested run, leave
- * the group's `context` and advance the run in `outer` as a completed handler does.
+ * the group's `context` and advance the run holding it as a completed handler does.
  */
 export enum ResumeTag { Complete = "complete", Occur = "occur", Group = "group" }
 
 export type Resume =
-  | { readonly tag: ResumeTag.Complete; readonly occurrence: number; readonly leave: Leave }
+  | { readonly tag: ResumeTag.Complete; readonly occurrence: OccurrenceId; readonly leave: Leave }
   | { readonly tag: ResumeTag.Occur; readonly element: ElementId; readonly scope: ScopeOccurrenceId; readonly leave: Leave }
-  | { readonly tag: ResumeTag.Group; readonly outer: ScopeOccurrenceId; readonly context: ScopeOccurrenceId };
+  | { readonly tag: ResumeTag.Group; readonly context: ScopeOccurrenceId };
 
 /**
  * One instance of a Multi-Instance Activity: waiting to start, running in its instance scope occurrence, or completed
@@ -48,15 +62,30 @@ export type Iteration =
   | { readonly tag: IterationTag.Active; readonly scope: ScopeOccurrenceId }
   | { readonly tag: IterationTag.Completed; readonly output: Value | null };
 
+/** `Iteration.holds`: whether this instance runs in the scope occurrence `scope`. */
+export function iterationHolds(iteration: Iteration, scope: ScopeOccurrenceId): boolean {
+  switch (iteration.tag) {
+    case IterationTag.Active:
+      return iteration.scope === scope;
+    case IterationTag.Waiting:
+    case IterationTag.Completed:
+      return false;
+  }
+  return assertNever(iteration);
+}
+
 /**
  * A running Multi-Instance Activity: the scope occurrence it holds its instances in, its element and body occurrence,
- * the input collection as evaluated once on entry, and one instance per item in collection order.
+ * the input collection's members as evaluated once on entry, indexed by item (probe P11), and whether it is a String
+ * List, whose instances submit Strings and whose output collection is one, and one instance per item in collection
+ * order.
  */
 export interface MultiInstanceRun {
   readonly scope: ScopeOccurrenceId;
   readonly element: ElementId;
-  readonly occurrence: number;
-  readonly collection: Value;
+  readonly occurrence: OccurrenceId;
+  readonly members: readonly Value[];
+  readonly strings: boolean;
   readonly instances: readonly Iteration[];
   /**
    * The effect-result names earlier sequential instances left, which CIB keeps on the body until it ends
@@ -66,19 +95,41 @@ export interface MultiInstanceRun {
 }
 
 /**
+ * A record a completed Sub-Process's record keeps (`Compensable.children`), flat: the `Compensable` it was, without a
+ * scope occurrence, which it takes only when its holder's handler or group begins, and its group key `group`, the
+ * completion numbers of the kept records it lies within, outermost first, `[]` for one its holder keeps directly. The
+ * key, not a nested list, says which records a begun record keeps in turn, so no state type nests.
+ */
+export interface CompensableChild {
+  readonly subject: ElementId;
+  readonly handler: ElementId | null;
+  readonly occurrence: OccurrenceKey;
+  readonly completion: number;
+  readonly closure: number;
+  readonly snapshot: Variables;
+  readonly group: readonly number[];
+}
+
+/**
  * A completed Activity or Scope whose compensation handler may still run: it completed in `scope`, and its handler
- * restores `snapshot` (BPMN 2.0.2 §13.5.5). `completion` orders the records of one scope. `children` keeps the records
- * of a completed Sub-Process, for its handler to trigger recursively (§13.5.5). A record without a `handler` is a group
- * whose compensation runs its `children`.
+ * restores `snapshot` (BPMN 2.0.2 §13.5.5). `completion` numbers the records in the order they completed, a kept
+ * record's key (`CompensableChild.group`) and the order under `BranchSchedule.DeclarationDepthFirst`; `closure` stamps
+ * the closure it completed in (`State.completionBase`), which under `OrderInvariant` orders records of different
+ * closures (`feature/compensation.ts`'s `completedBefore`). `children` keeps the records
+ * of a completed Sub-Process at every depth, each under its group key, for its handler to trigger recursively
+ * (§13.5.5). A record without a `handler` is a group whose compensation runs its children. `occurrence` is the subject
+ * occurrence's complete key, its role included, since a Multi-Instance body and its first instance share element and
+ * activation: the context its handler or group restores publishes it (`publish.ts`'s `publishedScopes`).
  */
 export interface Compensable {
   readonly subject: ElementId;
   readonly handler: ElementId | null;
   readonly scope: ScopeOccurrenceId;
-  readonly occurrence: OccurrenceRef | null;
+  readonly occurrence: OccurrenceKey;
   readonly completion: number;
-  readonly snapshot: readonly Binding[];
-  readonly children: readonly Compensable[];
+  readonly closure: number;
+  readonly snapshot: Variables;
+  readonly children: readonly CompensableChild[];
 }
 
 /**
@@ -87,25 +138,98 @@ export interface Compensable {
  * `resume`'s occurrence completes.
  */
 export interface CompensationRun {
-  readonly trigger: OccurrenceRef;
+  readonly trigger: OccurrenceName;
   readonly scope: ScopeOccurrenceId;
   readonly pending: readonly Compensable[];
   readonly running: readonly (readonly [ScopeOccurrenceId, Compensable])[];
-  readonly leave: number | null;
+  readonly leave: OccurrenceId | null;
   readonly resume: Resume | null;
+  /**
+   * The completion numbers of the run's records whose handler waits for two or more of the run's other handlers, whose
+   * start is readiness work under `orderInvariant` (DC30).
+   */
+  readonly joins: readonly number[];
 }
 
-/** `feature/compensation.ts`'s data: the retained records and the triggers in progress. */
+/** Lean's `CompensationRun.holds`: whether a run is the one in `scope` that holds the handler context `context` running. */
+export function runHolds(scope: ScopeOccurrenceId, context: ScopeOccurrenceId): (run: CompensationRun) => boolean {
+  return (run) => run.scope === scope && run.running.some(([running]) => running === context);
+}
+
+/**
+ * Lean's `CompensationRun.anchor?`: the occurrence a run's readiness key names beside its scope occurrence (DC30), its
+ * trigger's, the Compensation throw the run resumes, or for a caught Cancel the Transaction occurrence it leaves; `null`
+ * for a group's nested run, whose context scope occurrence its trigger's run holds once.
+ */
+export function runAnchor(run: CompensationRun): OccurrenceId | null {
+  const resume = run.resume;
+  if (resume === null) return run.leave;
+  switch (resume.tag) {
+    case ResumeTag.Complete:
+      return resume.occurrence;
+    case ResumeTag.Occur:
+      return run.leave;
+    case ResumeTag.Group:
+      return null;
+  }
+  return assertNever(resume);
+}
+
+/**
+ * Lean's `Ord RunKey` on two runs' keys: the scope occurrence's key, then the trigger's (`compareOccurrenceName`),
+ * oriented (`orientKeyOrder`).
+ */
+export function compareRunKey(left: CompensationRun, right: CompensationRun): number {
+  return compareScopeOccurrenceId(left.scope, right.scope) || orientKeyOrder(compareOccurrenceName(left.trigger, right.trigger));
+}
+
+/**
+ * `feature/compensation.ts`'s data: the retained records and the triggers in progress, `runs` Lean's `runMap` through
+ * its list view `Compensations.runs`, in key order (`state.ts`' `putRun`), the form the state codec writes (T75); no reader takes an
+ * order from it.
+ */
 export interface Compensations { readonly retained: readonly Compensable[]; readonly runs: readonly CompensationRun[]; }
 
+/**
+ * The record whose handler or group runs in the context scope occurrence `context`, of the first run holding it: the
+ * one record a context restores, since a run begins each record it takes in a context of its own.
+ */
+export function compensationsRestoredIn(compensation: Compensations, context: ScopeOccurrenceId): Compensable | null {
+  for (const run of compensation.runs) {
+    const running = run.running.find(([held]) => held === context);
+    if (running !== undefined) return running[1];
+  }
+  return null;
+}
+
 /** An occurrence waiting at a join, with the flow its token arrived on. */
-export interface Parked { readonly occurrence: number; readonly flow: FlowId; readonly scope: ScopeOccurrenceId; }
+export interface Parked { readonly occurrence: OccurrenceId; readonly flow: FlowId; readonly scope: ScopeOccurrenceId; }
 
 /**
  * An occurrence waiting for an unavailable InputSet in its scope occurrence. It records no flow: it waits whether or not
  * a token began it, and only its scope occurrence's clearing ends the wait.
  */
-export interface Held { readonly occurrence: number; readonly scope: ScopeOccurrenceId; }
+export interface Held { readonly occurrence: OccurrenceId; readonly scope: ScopeOccurrenceId; }
+
+/**
+ * Lean's `HeldMap`, the held occurrences keyed by occurrence (DC21), written as its list view (`heldList`): a value's
+ * `occurrence` is its key, so the map is its values in key order, the form the state codec writes (T75). No reader
+ * takes an order from it.
+ */
+export type HeldMap = readonly Held[];
+
+/**
+ * Lean's `Parked.leastBy`: the parked arrival of `entries` whose occurrence's issue comes first under `le`, the first of
+ * those tied. The arrivals at one join in one scope occurrence are occurrences of one element there, so their issues are
+ * their order positions (DC13).
+ */
+export function parkedLeastBy(le: (left: Issue, right: Issue) => boolean, entries: readonly Parked[]): Parked | null {
+  let found: Parked | null = null;
+  for (const waiting of entries) {
+    if (found === null || !le(occurrenceIdParts(found.occurrence).ordinal, occurrenceIdParts(waiting.occurrence).ordinal)) found = waiting;
+  }
+  return found;
+}
 
 export function parkedEquals(left: Parked, right: Parked): boolean {
   return left.occurrence === right.occurrence && left.flow === right.flow && left.scope === right.scope;
@@ -124,11 +248,14 @@ export interface InstanceData {
 /**
  * Feature-owned data. `parked` holds the occurrences that reached a join and wait for its other incoming flows
  * (`feature/flow.ts`); `held` holds those at an Activity whose InputSet is unavailable (BPMN 2.0.2 §10.4.2,
- * `feature/work.ts`).
+ * `feature/work.ts`), by occurrence: Lean's `heldMap` through its list view `FeatureSlots.held`. `multiInstances` holds
+ * the running Multi-Instance Activities keyed by body occurrence: Lean's `multiInstanceMap` through its list view
+ * `FeatureSlots.multiInstances`, the runs in key order (`insertRun`), the form the state codec writes (T75); no reader
+ * takes an order from it.
  */
 export interface FeatureSlots {
   readonly parked: readonly Parked[];
-  readonly held: readonly Held[];
+  readonly held: HeldMap;
   readonly multiInstances: readonly MultiInstanceRun[];
   readonly compensation: Compensations;
   readonly instances: readonly InstanceData[];
@@ -136,13 +263,16 @@ export interface FeatureSlots {
 
 /**
  * The scope occurrences a slot keeps alive. Every slot's own entry is an open occurrence or a child occurrence already,
- * so only the join and held waits count here. One of the two places that enumerate the slots.
+ * so only the join and held waits count here. One of the three places that enumerate the slots.
  */
 export function featureSlotsKeptAlive(slots: FeatureSlots): readonly ScopeOccurrenceId[] {
   return [...slots.parked.map((entry) => entry.scope), ...slots.held.map((entry) => entry.scope)];
 }
 
-/** The slot entries that survive removing the scope occurrences `inside`, of which `nested` are the children. The other place that enumerates the slots. */
+/**
+ * The slot entries that survive removing the scope occurrences `inside`, of which `nested` are the children. One of the
+ * three places that enumerate the slots.
+ */
 export function featureSlotsClear(
   slots: FeatureSlots,
   inside: readonly ScopeOccurrenceId[],
@@ -158,4 +288,36 @@ export function featureSlotsClear(
     },
     instances: slots.instances.filter((instance) => !nested.includes(instance.root)),
   };
+}
+
+/**
+ * An occurrence a slot holds suspended: neither an open item nor a token, yet it continues in scope occurrence `scope`
+ * once its wait ends, leaving as `leave` says.
+ */
+export interface Suspended { readonly element: ElementId; readonly scope: ScopeOccurrenceId; readonly leave: Leave; }
+
+/**
+ * The suspended occurrences the slots hold, which an Inclusive join's waiting rule counts (`positions` in
+ * `feature/flow.ts`, CIB-INT-0016): each held occurrence and each compensation run's resume; a group's nested run resumes
+ * the run holding it, whose own resume counts. The third place that enumerates the slots.
+ */
+export function featureSlotsSuspended(slots: FeatureSlots): readonly Suspended[] {
+  const resumed = slots.compensation.runs.flatMap((run): Suspended[] => {
+    const resume = run.resume;
+    if (resume === null) return [];
+    switch (resume.tag) {
+      case ResumeTag.Complete: {
+        const { element, scope } = occurrenceIdParts(resume.occurrence);
+        return [{ element, scope, leave: resume.leave }];
+      }
+      case ResumeTag.Occur:
+        return [{ element: resume.element, scope: resume.scope, leave: resume.leave }];
+      case ResumeTag.Group:
+        return [];
+    }
+    return assertNever(resume);
+  });
+  const held = slots.held.map((entry): Suspended =>
+    ({ element: occurrenceIdParts(entry.occurrence).element, scope: entry.scope, leave: leaveOutgoing }));
+  return [...held, ...resumed];
 }

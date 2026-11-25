@@ -10,7 +10,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import { decodeProgram, runScenario, step, stimulusFromJson } from "./lean-paired.ts";
+import { decodeProgram, rootScope, runScenario, step, stimulusFromJson } from "./lean-paired.ts";
 import type { State } from "@bpmn-lean/kernel";
 
 type Json = Record<string, unknown>;
@@ -43,7 +43,7 @@ function program(shape: Shape = {}): Json {
     mode: shape.mode ?? "parallel",
     count: { collection: { items: { variable: { name: "DataObject_Items" } } } },
     elementVariable: null, completionCondition: null, inputDataItem: "DataInput_Item", outputDataItem: null,
-    outputCollection: null, asyncBefore: false, asyncAfter: false,
+    outputCollection: null, asyncBefore: false, asyncAfter: false, exclusive: null, retryCycle: null,
     loopDataInputRef: "DataInput_Items", inputDataItemName: "item", ...shape.loop,
   };
   const into = shape.failingSibling === true ? "To_Fork" : "To_T";
@@ -55,7 +55,7 @@ function program(shape: Shape = {}): Json {
         work: { service: { payload: { protocol: "urn:p", operation: "urn:o", handlerKey: null, taskDefinition: false } } },
         envelope: {
           incoming: ["To_T"], outgoing: [outOf], inputs: [], outputs: [], boundaries: [], multiInstance: shape.plain === true ? null : loop,
-          compensationHandlers: [], forCompensation: false, defaultFlow: null, asyncBefore: false, asyncAfter: false, ...shape.envelope,
+          compensationHandlers: [], forCompensation: false, defaultFlow: null, asyncBefore: false, asyncAfter: false, exclusive: null, retryCycle: null, structuredInputs: [], structuredOutputs: [], ...shape.envelope,
         },
       },
     },
@@ -68,7 +68,7 @@ function program(shape: Shape = {}): Json {
   });
   const never = { simpleBoolean: { body: { literal: { value: false } } } };
   const elements: Json[] = [
-    { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: [into] } } },
+    { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: [into], initiator: null, formRef: null } } },
     task,
     { event: { header: header("End", "endEvent"), payload: { role: { throw: { record: "none" } }, placement: "finish",
       incoming: [...(shape.failingAfter === true ? [] : [outOf]), ...(shape.failingSibling === true || shape.failingAfter === true ? ["Never", "Nor"] : [])],
@@ -183,7 +183,7 @@ function stateAfterStart(json: Json, collection: Json): State {
 }
 
 const locals = (state: State): unknown[] =>
-  state.variables.filter((entry) => entry.scope !== 0).map((entry) => entry.entries).filter((entries) => entries.length > 0);
+  state.variables.filter(([scope]) => scope !== rootScope).map(([, entries]) => entries).filter((entries) => entries.length > 0);
 
 test("the loop-reference binding reads the loop's collection variable and gives each instance its item by name", () => {
   const state = stateAfterStart(program(), items("same", "other"));

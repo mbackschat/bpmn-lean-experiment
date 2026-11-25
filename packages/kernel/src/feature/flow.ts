@@ -20,7 +20,9 @@
  * Scope's may condition. A diverging gateway or an Activity that finds no outgoing flow rolls the command back.
  *
  * A parked Inclusive join also fires when no token arrives at it: Table 13.3 activates it by the state, and `settle`
- * offers the parked joins again once the closure is otherwise quiescent (`reoffer` in `step.ts`).
+ * offers the parked joins again once the closure is otherwise quiescent (`reoffer` in `step.ts`). Under
+ * `BranchSchedule.orderInvariant` every join, Parallel and Inclusive, fires only there, as the join slot's own unit
+ * (DC16): an arrival only parks, so which arrivals a firing consumes never depends on the order the closure ran them in.
  */
 import {
   BranchSchedule,
@@ -47,6 +49,7 @@ import {
   type Program,
 } from "../il/types.js";
 import {
+  scopeOccurrenceParent,
   FailureTag,
   LeaveTag,
   SignalTag,
@@ -56,6 +59,7 @@ import {
   emit,
   failed,
   failedWith,
+  featureSlotsSuspended,
   leaveFlows,
   leaveOutgoing,
   parkedEquals,
@@ -69,12 +73,13 @@ import {
   type Result,
   type ScopeOccurrenceId,
   type State,
+  type Suspended,
   SemanticCause,
-  semanticFailure,
+  semanticFailure, type OccurrenceId, allTokens, parkedLeastBy,
 } from "../state.js";
-import { EvaluationTag, evalContext, type Ctx } from "../hooks.js";
+import { EvaluationTag, ctxPositionLe, evalContext, type Ctx } from "../hooks.js";
 
-function signalComplete(state: State, id: number, leave: Leave): State {
+function signalComplete(state: State, id: OccurrenceId, leave: Leave): State {
   return signal(state, completeSignal(id, leave, [], WriteRule.Outward));
 }
 
@@ -88,10 +93,26 @@ function condition(ctx: Ctx, context: EvalContext, candidate: FlowId): Result<bo
   if (flow.condition === null) return committed(true);
   const evaluation = ctx.evaluate(context, flow.condition);
   switch (evaluation.tag) {
-    case EvaluationTag.Value:
-      return evaluation.result.tag === ValueTag.Bool
-        ? committed(evaluation.result.value)
-        : failed(FailureTag.RolledBack, "condition-not-boolean");
+    case EvaluationTag.Value: {
+      const result = evaluation.result;
+      switch (result.tag) {
+        case ValueTag.Bool:
+          return committed(result.value);
+        case ValueTag.Double:
+        case ValueTag.Date:
+          // dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+          return failed(FailureTag.Unsupported, "value-kind");
+        case ValueTag.Null:
+        case ValueTag.Int:
+        case ValueTag.Decimal:
+        case ValueTag.String:
+        case ValueTag.StringList:
+        case ValueTag.List:
+        case ValueTag.Map:
+          return failed(FailureTag.RolledBack, "condition-not-boolean");
+      }
+      return assertNever(result);
+    }
     case EvaluationTag.Failure:
       return failed(FailureTag.RolledBack, evaluation.code);
     case EvaluationTag.Unsupported:
@@ -267,34 +288,56 @@ function successors(ctx: Ctx, element: Element): readonly FlowId[] {
   return linkCatches(ctx.program, event[0], name).flatMap(([, payload]) => payload.outgoing);
 }
 
-/** Whether a token on one of `start` can reach one of `targets` without passing through `gateway`. */
+/**
+ * The flows a token on `flow` continues on in the reach query: none past the join `gateway`, and none after a flow the
+ * program does not declare.
+ */
+function reachNext(ctx: Ctx, gateway: ElementId, flow: FlowId): readonly FlowId[] {
+  const target = programTarget(ctx.program, flow);
+  const element = target === null || target === gateway ? null : programElement(ctx.program, target);
+  return element === null ? [] : successors(ctx, element);
+}
+
+/**
+ * Whether a token on one of `start` can reach one of `targets` without passing through `gateway`: the search of
+ * `Feature.Flow.reachSearch`, which expands each declared flow once and needs no fuel, so a duplicate start entry costs
+ * one membership test and the answer depends only on the members of `start` (DC3).
+ */
 function reaches(ctx: Ctx, gateway: ElementId, targets: readonly FlowId[], start: readonly FlowId[]): boolean {
-  const program = ctx.program;
-  let frontier = [...start];
-  const seen: FlowId[] = [];
-  // The fuel bounds every visit of every flow by every edge into it, so it is never exhausted; running out answers
-  // "reachable", which only keeps the join waiting.
-  for (let fuel = (program.flows.length + 1) * (program.flows.length + 1); ; fuel -= 1) {
-    const [flow, ...rest] = frontier;
-    if (flow === undefined) return false;
-    if (fuel === 0) return true;
+  const declared = new Set(ctx.program.flows.map((flow) => flow.id));
+  const seen = new Set<FlowId>();
+  const frontier = [...start];
+  for (let index = 0; index < frontier.length; index += 1) {
+    const flow = frontier[index] as FlowId;
     if (targets.includes(flow)) return true;
-    if (seen.includes(flow)) {
-      frontier = rest;
-      continue;
-    }
-    const target = programTarget(program, flow);
-    const element = target === null || target === gateway ? null : programElement(program, target);
-    frontier = [...rest, ...(element === null ? [] : successors(ctx, element))];
-    seen.unshift(flow);
+    if (seen.has(flow) || !declared.has(flow)) continue;
+    seen.add(flow);
+    frontier.push(...reachNext(ctx, gateway, flow));
   }
+  return false;
+}
+
+/** The flows a suspended occurrence leaves on once its wait ends. */
+function suspendedFlows(ctx: Ctx, waiting: Suspended): readonly FlowId[] {
+  switch (waiting.leave.tag) {
+    case LeaveTag.Outgoing: {
+      const element = programElement(ctx.program, waiting.element);
+      return element === null ? [] : successors(ctx, element);
+    }
+    case LeaveTag.Flows:
+      return waiting.leave.selected;
+    case LeaveTag.Raised:
+      return [];
+  }
+  return assertNever(waiting.leave);
 }
 
 /**
  * The flows from which the remaining work of scope occurrence `scope` continues, excluding the tokens parked at
- * `gateway`: queued tokens, the elements of open items and child scope occurrences, and tokens parked at other joins.
- * A passive item keeps nothing alive and is no position; a boundary item is no element, and its host's position covers
- * the boundary's flows as far as `leaving` follows them.
+ * `gateway`: queued tokens, the elements of open items and child scope occurrences, tokens parked at other joins, and
+ * the suspended occurrences of the slots (`featureSlotsSuspended`), by the flows each leaves on. A passive item keeps
+ * nothing alive and is no position; a boundary item is no element, and its host's position covers the boundary's flows
+ * as far as `leaving` follows them.
  */
 function positions(ctx: Ctx, state: State, gateway: ElementId, scope: ScopeOccurrenceId): readonly FlowId[] {
   const program = ctx.program;
@@ -302,9 +345,9 @@ function positions(ctx: Ctx, state: State, gateway: ElementId, scope: ScopeOccur
     const found = programElement(program, element);
     return found === null ? [] : successors(ctx, found);
   };
-  const queued = state.tokens.filter((token) => token.scope === scope).flatMap((token) => tokenArrivalFlow(token) ?? []);
+  const queued = allTokens(state).filter((token) => token.scope === scope).flatMap((token) => tokenArrivalFlow(token) ?? []);
   const items = state.openItems.filter((item) => item.scope === scope && !item.passive).flatMap((item) => continuing(item.element));
-  const children = state.scopes.filter((child) => child.parent === scope)
+  const children = state.scopes.filter((child) => scopeOccurrenceParent(child) === scope)
     .flatMap((child) => (child.element === null ? [] : continuing(child.element)));
   const parked = state.slots.parked
     .filter((waiting) => waiting.scope === scope && programTarget(program, waiting.flow) !== gateway)
@@ -312,7 +355,9 @@ function positions(ctx: Ctx, state: State, gateway: ElementId, scope: ScopeOccur
       const target = programTarget(program, waiting.flow);
       return target === null ? [] : continuing(target);
     });
-  return [...queued, ...items, ...children, ...parked];
+  const suspended = featureSlotsSuspended(state.slots).filter((waiting) => waiting.scope === scope)
+    .flatMap((waiting) => suspendedFlows(ctx, waiting));
+  return [...queued, ...items, ...children, ...parked, ...suspended];
 }
 
 function park(state: State, waiting: Parked): State {
@@ -323,12 +368,64 @@ function filled(state: State, incoming: readonly FlowId[], scope: ScopeOccurrenc
   return incoming.filter((flow) => state.slots.parked.some((waiting) => waiting.flow === flow && waiting.scope === scope));
 }
 
-/** The occurrences a firing join consumes: the first parked on each filled flow. */
-function consumedAt(state: State, incoming: readonly FlowId[], scope: ScopeOccurrenceId): readonly Parked[] {
-  return incoming.flatMap((flow) => {
-    const waiting = state.slots.parked.find((candidate) => candidate.flow === flow && candidate.scope === scope);
-    return waiting === undefined ? [] : [waiting];
-  });
+/**
+ * Lean's `consumed`: the occurrences a firing join consumes, one on each filled flow: under `declarationDepthFirst` the
+ * first parked, as CIB takes them; under `orderInvariant` the one of least order position (`parkedLeastBy`, DC15 (b)),
+ * since parking order is the order the closure ran the arrivals in.
+ */
+function consumedAt(ctx: Ctx, state: State, incoming: readonly FlowId[], scope: ScopeOccurrenceId): readonly Parked[] {
+  const parkedOn = (flow: FlowId) => (waiting: Parked): boolean => waiting.flow === flow && waiting.scope === scope;
+  const schedule = ctx.program.options.branchSchedule;
+  switch (schedule) {
+    case BranchSchedule.DeclarationDepthFirst:
+      return incoming.flatMap((flow) => {
+        const waiting = state.slots.parked.find(parkedOn(flow));
+        return waiting === undefined ? [] : [waiting];
+      });
+    case BranchSchedule.OrderInvariant: {
+      const le = ctxPositionLe(ctx, state);
+      return incoming.flatMap((flow) => {
+        const waiting = parkedLeastBy(le, state.slots.parked.filter(parkedOn(flow)));
+        return waiting === null ? [] : [waiting];
+      });
+    }
+  }
+  return assertNever(schedule);
+}
+
+/**
+ * Lean's `continuing`: the consumed occurrence a firing join continues with, the others ending with none: under
+ * `declarationDepthFirst` the offered `occurrence` when consumed, else the last consumed; under `orderInvariant` the
+ * consumed one of greatest order position (DC16), which no arrival order decides.
+ */
+function continuing(ctx: Ctx, state: State, occurrence: OccurrenceId, consumed: readonly Parked[]): OccurrenceId {
+  const schedule = ctx.program.options.branchSchedule;
+  switch (schedule) {
+    case BranchSchedule.DeclarationDepthFirst:
+      return consumed.some((entry) => entry.occurrence === occurrence) ? occurrence : consumed.at(-1)?.occurrence ?? occurrence;
+    case BranchSchedule.OrderInvariant: {
+      const le = ctxPositionLe(ctx, state);
+      return parkedLeastBy((left, right) => le(right, left), consumed)?.occurrence ?? occurrence;
+    }
+  }
+  return assertNever(schedule);
+}
+
+/**
+ * Lean's `parksOnly`: whether an arrival at a join only parks (DC16): under `orderInvariant` every join fires as its
+ * slot's own unit, which `reoffer` in `step.ts` runs once the closure is otherwise quiescent; under
+ * `declarationDepthFirst` the arrival that makes the join ready fires it in place, as CIB continues the arriving
+ * execution in its own operation.
+ */
+function parksOnly(ctx: Ctx): boolean {
+  const schedule = ctx.program.options.branchSchedule;
+  switch (schedule) {
+    case BranchSchedule.OrderInvariant:
+      return true;
+    case BranchSchedule.DeclarationDepthFirst:
+      return false;
+  }
+  return assertNever(schedule);
 }
 
 function unpark(state: State, consumed: readonly Parked[]): State {
@@ -337,11 +434,12 @@ function unpark(state: State, consumed: readonly Parked[]): State {
 }
 
 /**
- * Park the occurrence at a join, unless `reoffer` in `step.ts` offers one already parked, and fire when `ready` holds; a gateway with
- * one incoming flow passes it on. When the join fires, the offered occurrence, if consumed, is the one that leaves with
- * the flows and the others end with none.
+ * Park the occurrence at a join, unless `reoffer` in `step.ts` offers one already parked, and fire when `ready` holds
+ * and the arrival may fire it (`parksOnly`); a gateway with one incoming flow passes it on. When the join fires, the
+ * continuing occurrence (`continuing`) leaves with the flows and the other consumed ones end with none.
  */
 function join(
+  ctx: Ctx,
   occurrence: Occurrence,
   incoming: readonly FlowId[],
   state: State,
@@ -354,17 +452,14 @@ function join(
     const selected = flows(state);
     return selected.ok ? committed(signalComplete(state, occurrence.id, leaveFlows(selected.value))) : failedWith(selected.failure);
   }
-  const parked = state.slots.parked.some((waiting) => waiting.occurrence === occurrence.id)
-    ? state
-    : park(state, { occurrence: occurrence.id, flow, scope: occurrence.scope });
-  if (!ready(parked)) return committed(parked);
-  const consumed = consumedAt(parked, incoming, occurrence.scope);
+  const offered = state.slots.parked.some((waiting) => waiting.occurrence === occurrence.id);
+  const parked = offered ? state : park(state, { occurrence: occurrence.id, flow, scope: occurrence.scope });
+  if ((!offered && parksOnly(ctx)) || !ready(parked)) return committed(parked);
+  const consumed = consumedAt(ctx, parked, incoming, occurrence.scope);
   const unparked = unpark(parked, consumed);
   const selected = flows(unparked);
   if (!selected.ok) return failedWith(selected.failure);
-  const firing = consumed.some((entry) => entry.occurrence === occurrence.id)
-    ? occurrence.id
-    : consumed.at(-1)?.occurrence ?? occurrence.id;
+  const firing = continuing(ctx, parked, occurrence.id, consumed);
   const others = consumed.map((entry) => entry.occurrence).filter((id) => id !== firing);
   const ended = others.reduce((current, id) => signalComplete(current, id, leaveFlows([])), unparked);
   return committed(signalComplete(ended, firing, leaveFlows(selected.value)));
@@ -377,11 +472,11 @@ export function arriveGateway(ctx: Ctx, header: Header, payload: GatewayPayload,
     case GatewayKindTag.Exclusive:
       return exclusive(ctx, kind.candidates, kind.default, occurrence, state);
     case GatewayKindTag.Parallel:
-      return join(occurrence, payload.incoming, state,
+      return join(ctx, occurrence, payload.incoming, state,
         (parked) => filled(parked, payload.incoming, scope).length === payload.incoming.length,
         () => committed(payload.outgoing));
     case GatewayKindTag.Inclusive:
-      return join(occurrence, payload.incoming, state,
+      return join(ctx, occurrence, payload.incoming, state,
         (parked) => {
           const full = filled(parked, payload.incoming, scope);
           const empty = payload.incoming.filter((flow) => !full.includes(flow));

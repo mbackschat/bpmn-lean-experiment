@@ -4,28 +4,14 @@ public import Kernel.State.Raise
 
 /-! # The occurrence journal
 
-An occurrence's public key, the facts each micro-step records about the occurrences it began and ended, and the
-transaction-boundary marks an occurrence carries. Part of `Kernel.State`, which re-exports it.
+The facts each micro-step records about the occurrences it began and ended, each named by its public key
+(`Kernel.State.Key`'s `OccurrenceKey`), the transaction-boundary marks an occurrence carries and the activation counter
+that numbers a key's activation. Part of `Kernel.State`, which re-exports it.
 -/
 
 public section
 
 namespace Kernel
-
-/-- Which counter numbers an occurrence: a Multi-Instance body and its instances number apart, as CIB gives the body
-an activity id of its own (`BpmnParse:185`). -/
-inductive ActivationRole where
-  | element
-  | multiInstanceBody
-  deriving DecidableEq, Repr
-
-/-- An occurrence's public key in the journal. -/
-structure OccurrenceKey where
-  processInstanceId : String
-  element : ElementId
-  activation : Nat
-  role : ActivationRole := .element
-  deriving DecidableEq, Repr
 
 inductive Terminal where
   | completed
@@ -48,13 +34,16 @@ structure StartedFact where
   sourceType : String
   deriving Repr
 
-/-- One micro-step's occurrence facts. -/
+/-- One micro-step's occurrence facts. `ready` names the occurrences the micro-step leaves in BPMN's Ready state
+([BPMN 2.0.2 §13.3.2](../../docs/reference/bpmn-2.0.2/README.md), Fig. 13.2): begun, their InputSet unavailable
+(§10.4.2); `State.hold` is its only writer. -/
 structure Transition where
   cause : Cause
   element : Option ElementId
   owner : ScopeOccurrenceId
   started : List StartedFact := []
   ended : List (OccurrenceKey × Terminal) := []
+  ready : List OccurrenceKey := []
   deriving Repr
 
 /-- The `asyncBefore` and `asyncAfter` marks of the occurrence `key`: a Multi-Instance Activity's envelope marks its
@@ -69,5 +58,13 @@ def marks (program : Program) (key : OccurrenceKey) : Bool × Bool :=
     -- handler (`compensation.handlerMultiInstance`).
     | .element, some loop => (loop.asyncBefore, loop.asyncAfter)
     | .element, none => (envelope.asyncBefore, envelope.asyncAfter)
+
+/-- One activation counter (R8: per process instance, element and role). -/
+structure ActivationCount where
+  processInstance : InstanceName
+  element : ElementId
+  role : ActivationRole
+  count : Nat
+  deriving Repr
 
 end Kernel

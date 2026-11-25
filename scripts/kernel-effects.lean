@@ -8,12 +8,25 @@ passed guards 1 and 2 (hence guard 17), so this scan reads calls and writes rath
 
 - One writer per effect (17): one writer per `Token` case, flow tokens emitted only by `Feature.Flow` and deferred begins
   stacked only by `Feature.MultiInstance`; variables are written only by `Feature.Data`; occurrences and activations are created and removed only by `Step` and `State`; the completion pipeline's hooks are
-  called only by `Step`. A rule that sees no permitted caller fails, so a renamed primitive cannot read as clean.
+  called only by `Step`; a called instance's identifier is spelled only by the commit, publication and the readers of
+  committed names (KD5). A rule that sees no permitted caller fails, so a renamed primitive cannot read as clean.
 - Field liveness (19): every field of a structure in `Kernel.IL.Types` is read by a non-codec declaration or refused by
   `Kernel.Admission`, which reads it. A matcher over a structure counts as reading all of its fields, because the
   binder cap of guard 9 keeps such patterns exhaustive.
 - Fan-out (18): match sites per guarded type, codecs excluded, against `budgets` below; a new mechanism that needs
   another site changes the seam, not the budget, and the budget moves only by owner decision.
+- The spine (KD7 and DC20 of [the rewrite-2 proposal](../docs/REWRITE-2-PROPOSAL.md)): a `Spine` node is built only by
+  `Spine.push`, so its cached depth and fingerprint are its path's by the laws of `push` alone; and the key-order
+  contract: each comparator in `orderContracts` reads its key's fixed-size cached fields, in the listed order, before any
+  variable-length component, and reads one of those last, so the full path decides. A `DecidableEq`, `Ord` or `BEq`
+  instance of a type holding a `Spine` must reach a contracted comparator, so a new key type cannot skip the contract.
+- The run log (KD7, DC4 of [the rewrite-2 proposal](../docs/REWRITE-2-PROPOSAL.md)): its position is read only through
+  its one reader, which only the token order and the commit call, and its positions only by its reader and writer, so
+  no unit's body reads when another ran. No iteration-order read of a unit-keyed map: an operation that reads a map's
+  iteration order, which is its key order and no order of entry, applied at the unit key, only in the choices that break
+  every tie by the key itself, the commit's sort by position then key, and the queued tokens' multiset view.
+- No pairwise proof estate (KD8 of [the rewrite-2 proposal](../docs/REWRITE-2-PROPOSAL.md)): no theorem, in any kernel
+  module, states one claim about two distinct `QueuingMechanism` constructors or two distinct wait kinds (`OpenKind`).
 
 Usage, after `./scripts/lake.sh build Kernel kernelRun`: `./scripts/lake.sh run scripts/kernel-effects.lean`.
 Prints one line per finding and exits 1 when it prints any. `--self-test` elaborates the fixture below with violations
@@ -37,6 +50,11 @@ def callRules : List CallRule :=
   let tokens := "flow tokens are emitted only by Flow"
   let variables := "variables are written only by Data"
   let occurrences := "occurrences are created and removed only by Step and State"
+  -- KD5: a pending name is spelled only where its activations are numbered (the commit) or once they are: publication
+  -- and the readers of an input's committed names; `Hooks` also spells the prospective identifier (`Ctx.nameText`).
+  let spellers := [`Kernel.Step.Commit, `Kernel.Publish, `Kernel.Host, `Kernel.Run, `Kernel.Population, `Kernel.Hooks,
+    `Kernel.Step.Inputs, `Kernel.Feature.Correlation, `Kernel.State]
+  let spelling := "a called instance's identifier is spelled only at commit, in publication and by readers of committed names"
   [ ⟨`Kernel.State.emit, flow, tokens⟩,
     ⟨`Kernel.State.deferBegins, [`Kernel.Feature.MultiInstance], "deferred begins are stacked only by MultiInstance"⟩,
     ⟨`Kernel.State.setVariable, data, variables⟩,
@@ -46,7 +64,10 @@ def callRules : List CallRule :=
     ⟨`Kernel.State.removeOccurrence, lifecycle, occurrences⟩,
     ⟨`Kernel.State.cancelOccurrence, lifecycle, occurrences⟩,
     ⟨`Kernel.State.activate, lifecycle, occurrences⟩,
-    ⟨`Kernel.Step.complete, [`Kernel.Step], "an Activity completes only through Step's one pipeline"⟩ ]
+    ⟨`Kernel.Step.complete, [`Kernel.Step], "an Activity completes only through Step's one pipeline"⟩,
+    ⟨`Kernel.InstanceName.textWith, spellers, spelling⟩,
+    ⟨`Kernel.InstanceName.text, spellers, spelling⟩,
+    ⟨`Kernel.State.calledInstanceId, spellers, spelling⟩ ]
 
 /-- The completion pipeline's hooks, idle completion and the lifecycle notifications, which only `Kernel.Step` calls
 (guard 17). Each must have a caller there, so a renamed hook fails rather than leaving its rule empty. -/
@@ -59,8 +80,8 @@ def pipelineHooks : List Name :=
 /-- The `State` fields whose writes are ruled, and the modules that may write them through a structure update. -/
 def fieldWriters : List (Name × List Name) :=
   let lifecycle := [`Kernel.State, `Kernel.Step]
-  [(`tokens, lifecycle), (`occurrences, lifecycle), (`activations, lifecycle), (`variables, [`Kernel.State]),
-   (`writes, lifecycle)]
+  [(`batchTokens, lifecycle), (`occurrenceMap, lifecycle), (`activations, lifecycle), (`variables, [`Kernel.State]),
+   (`writes, lifecycle), (`draft, [`Kernel.State, `Kernel.Step, `Kernel.Hooks])]
 
 /-- Maximum match sites per guarded type across the kernel, codecs excluded (guard 18). Values measured 2026-11-08 on
 the mid-rewrite tree; the owner sets them once the W0.1 shape lands, and only by owner decision after. -/
@@ -75,7 +96,8 @@ def budgets : List (Name × Nat) := [
   (`Kernel.JuelBinary, 3), -- Admission.Data.juelOperator, Feature.Data.Juel.operate, Repr (2026-11-10: guard 2's owner clause)
   (`Kernel.JuelUnary, 2), -- Feature.Data.Juel.unary, Repr
   (`Kernel.JuelCall, 3), -- Admission.Data.juelCall, Feature.Data.Juel.methodCall, Repr
-  (`Kernel.JuelMethod, 5)] -- the String, List and Map methods, JuelMethod.admits, Repr
+  (`Kernel.JuelMethod, 5), -- the String, List and Map methods, JuelMethod.admits, Repr
+  (`Kernel.Feature.Data.Juel.JVal, 22)] -- owner decision 2026-11-17: the sites measured once its catch-alls were gone
 
 structure Uses where
   constants : NameSet := {}
@@ -125,20 +147,134 @@ def matcherTypes (matcher : Name) (info : Match.MatcherInfo) : MetaM (List Name)
     discriminants.filterMapM fun discriminant => do
       pure (← whnf (← inferType discriminant)).getAppFn.constName?
 
-/-- Compiler-generated declarations (derived instances, recursors, match helpers) are not readers: a derived `Repr`
+/-- Compiler-generated declarations (derived instances, recursors and their helpers, match helpers) are not readers: a derived `Repr`
 touches every field, so counting one would mark every field live. -/
 def isGenerated (env : Environment) (declaration : Name) : Bool :=
   declaration.isInternal || declaration.hasMacroScopes || isAuxRecursor env declaration ||
+    isAuxRecursor env declaration.getPrefix ||
     isNoConfusion env declaration || env.isProjectionFn declaration ||
     (Match.Extension.getMatcherInfo? env declaration).isSome ||
     (match declaration with
-     | .str _ last => ["sizeOf", "ctorIdx", "toCtorIdx", "injEq", "inj", "sizeOf_spec", "noConfusionType"].contains last
+     | .str _ last => ["sizeOf", "ctorIdx", "toCtorIdx", "injEq", "inj", "sizeOf_spec", "noConfusionType", "ctorElimType"].contains last
      | _ => false)
+
+/-- The spine node constructor and the one declaration that may call it (KD7). -/
+def spineNode : Name := `Kernel.Spine.node
+def spineBuilder : Name := `Kernel.Spine.push
+
+/-- One comparator of the key-order contract: the fixed-size cached reads it makes first, in this order, and the
+variable-length reads (the path, or a comparator over it) that may only follow them. -/
+structure OrderContract where
+  comparator : Name
+  cached : List Name
+  decisive : List Name
+
+/-- The kernel's key comparators (KD7, DC20). Equality rejects on depth and fingerprint before it compares paths; the
+outermost-first order branches on depth before it compares, climbs or meets. -/
+def orderContracts : List OrderContract :=
+  let depth := `Kernel.Spine.level
+  let fingerprint := `Kernel.Spine.fingerprint
+  [ ⟨`Kernel.Spine.sameNode, [depth, fingerprint], [`Kernel.Spine.path]⟩,
+    ⟨`Kernel.instDecidableEqScopeOccurrenceId, [depth, fingerprint], [`Kernel.ScopeOccurrenceId.segments]⟩,
+    ⟨`Kernel.Spine.compareOuter, [depth],
+      [`Kernel.Spine.sameNode, `Kernel.Spine.meet, `Kernel.Spine.climb, `Kernel.Spine.stepOrder, `Kernel.Spine.path]⟩,
+    ⟨`Kernel.instDecidableEqUnitKey, [depth, fingerprint], [`Kernel.UnitKey.path]⟩,
+    ⟨`Kernel.UnitKey.comparePath, [], [`Kernel.UnitKey.path]⟩,
+    ⟨`Kernel.UnitKey.unitOrder, [depth, fingerprint], [`Kernel.UnitKey.comparePath]⟩,
+    ⟨`Kernel.UnitKey.breadth, [depth], [`Kernel.Spine.outer]⟩ ]
+
+/-- The listed constants in the order a value first reads them: left to right, a function before its arguments, so
+the condition of an `if` comes before its branches. -/
+partial def firstReads (names : List Name) (root : Expr) : List Name := Id.run do
+  let mut seen : Array Name := #[]
+  let mut visited : Std.HashSet Expr := {}
+  let mut stack := [root]
+  while !stack.isEmpty do
+    let expr := stack.head!
+    stack := stack.tail!
+    if visited.contains expr then continue
+    visited := visited.insert expr
+    match expr with
+    | .const name _ => if names.contains name && !seen.contains name then seen := seen.push name
+    | .app .. => stack := expr.getAppFn :: expr.getAppArgs.toList ++ stack
+    | .lam _ type body _ | .forallE _ type body _ => stack := type :: body :: stack
+    | .letE _ type value body _ => stack := type :: value :: body :: stack
+    | .mdata _ body | .proj _ _ body => stack := body :: stack
+    | _ => pure ()
+  return seen.toList
+
+/-- Key-order contract findings for one comparator. -/
+def contractFindings (env : Environment) (contract : OrderContract) : List String :=
+  match (env.find? contract.comparator).bind (·.value? (allowOpaque := true)) with
+  | none => [s!"KD7: {contract.comparator} is not defined, so its key-order contract read nothing"]
+  | some value =>
+    let reads := firstReads (contract.cached ++ contract.decisive) value
+    if reads.take contract.cached.length != contract.cached then
+      [s!"KD7 {contract.comparator}: reads {reads}, not its cached fields {contract.cached} first"]
+    else if reads.length == contract.cached.length then
+      [s!"KD7 {contract.comparator}: reads no variable-length component of {contract.decisive} last"]
+    else []
+
+/-- The run log's one reader (KD7, DC4): `reader` is called only by `readers`, and the log structure's fields are read only
+by `fieldOwners`, its reader and its writer. -/
+structure RunLogRule where
+  reader : Name
+  readers : List Name
+  log : Name
+  fieldOwners : List Name
+
+def runLogRule : RunLogRule :=
+  ⟨`Kernel.Step.RunLog.runPosition, [`Kernel.Step.orderKey, `Kernel.Step.byRun],
+    `Kernel.Step.RunLog, [`Kernel.Step.RunLog.record, `Kernel.Step.RunLog.runPosition]⟩
+
+/-- No iteration-order read of a unit-keyed map (KD7): an operation of `map` applied at the key type `key` that is not
+in `orderFree` reads the map's iteration order, which is its key order and no order of entry, so only `owners` may
+apply one, each ordering by an explicit key or reading the result as a multiset. -/
+structure KeyedMapRule where
+  map : Name
+  key : Name
+  orderFree : List String
+  owners : List Name
+
+def keyedMapRule : KeyedMapRule :=
+  ⟨`Std.ExtTreeMap, `Kernel.UnitKey,
+    ["insert", "insertIfNew", "erase", "get?", "getD", "get!", "get", "getKey?", "contains", "size", "isEmpty", "filter",
+      "any", "all", "alter", "modify", "empty", "emptyc"],
+    [`Kernel.Step.earliest, `Kernel.Step.latest, `Kernel.Step.firstBreadth, `Kernel.Step.byRun, `Kernel.State.allTokens]⟩
+
+/-- The operations of `rule.map` that `root` applies at `rule.key` and that read the map's iteration order. -/
+partial def keyedOrderReads (rule : KeyedMapRule) (root : Expr) : NameSet := Id.run do
+  let mut reads : NameSet := {}
+  let mut visited : Std.HashSet Expr := {}
+  let mut stack := [root]
+  while !stack.isEmpty do
+    let expr := stack.head!
+    stack := stack.tail!
+    if visited.contains expr then continue
+    visited := visited.insert expr
+    match expr with
+    | .app .. =>
+      let function := expr.getAppFn
+      let arguments := expr.getAppArgs
+      if let .const name _ := function then
+        if let .str parent last := name then
+          if parent == rule.map && !rule.orderFree.contains last && !last.startsWith "inst" &&
+              arguments[0]?.any (·.isConstOf rule.key) then
+            reads := reads.insert name
+      stack := function :: arguments.toList ++ stack
+    | .lam _ type body _ | .forallE _ type body _ => stack := type :: body :: stack
+    | .letE _ type value body _ => stack := type :: value :: body :: stack
+    | .mdata _ body | .proj _ _ body => stack := body :: stack
+    | _ => pure ()
+  return reads
 
 structure Config where
   /-- The module a declaration belongs to; the fixture maps by namespace, a real scan by the module table. -/
   moduleOf : Name → Option Name
   budgets : List (Name × Nat)
+  orderContracts : List OrderContract
+  runLog : RunLogRule := runLogRule
+  keyedMaps : KeyedMapRule := keyedMapRule
   /-- A real scan requires each guarded type to have at least one site, so a renamed type empties no budget silently. -/
   requireEveryGuardedType : Bool
 
@@ -175,10 +311,36 @@ def scan (config : Config) : MetaM Report := do
   let mut matched : NameSet := {}
   let mut matcherCache : Std.HashMap Name (List Name) := {}
   let mut siteCounts : Std.HashMap Name Nat := {}
+  let mut sawSpineBuilder := false
+  let mut sawLogReader := false
+  let mut sawLogField := false
+  let mut sawKeyedOwner := false
+  let mut usesOf : Std.HashMap Name NameSet := {}
   for (declaration, module, info) in declarations do
     if (Match.Extension.getMatcherInfo? env declaration).isSome then continue
     let some value := info.value? (allowOpaque := true) | continue
     let uses := collect stateFields value
+    usesOf := usesOf.insert declaration uses.constants
+    if uses.constants.contains spineNode then
+      if declaration == spineBuilder then sawSpineBuilder := true
+      else if !isGenerated env declaration then
+        findings := findings.push s!"KD7 {module} {declaration}: builds a {spineNode} outside {spineBuilder}"
+    let log := config.runLog
+    if uses.constants.contains log.reader && declaration != log.reader then
+      if log.readers.any (·.isPrefixOf declaration) then sawLogReader := true
+      else findings := findings.push s!"KD7 {module} {declaration}: reads the run log through {log.reader} outside {log.readers}"
+    let fields := if isStructure env log.log then getStructureFields env log.log else #[]
+    let readsField := fields.any (fun field => uses.constants.contains (log.log ++ field)) ||
+      uses.projections.toList.any (·.1 == log.log)
+    if readsField && !isGenerated env declaration && !(log.log.isPrefixOf declaration && (← isInstance declaration)) then
+      if log.fieldOwners.contains declaration then sawLogField := true
+      else findings := findings.push s!"KD7 {module} {declaration}: reads the run log's positions outside {log.fieldOwners}"
+    let keyedReads := keyedOrderReads config.keyedMaps value
+    unless keyedReads.isEmpty do
+      if config.keyedMaps.owners.any (·.isPrefixOf declaration) then sawKeyedOwner := true
+      else if !isGenerated env declaration then
+        findings := findings.push
+          s!"KD7 {module} {declaration}: reads the iteration order of a unit-keyed map ({keyedReads.toList})"
     for rule in callRules do
       if uses.constants.contains rule.primitive && declaration != rule.primitive then
         if allowedFor config module rule.writers rule.primitive then
@@ -228,6 +390,41 @@ def scan (config : Config) : MetaM Report := do
   for (field, _) in fieldWriters do
     unless sawFieldWriter.contains field do
       findings := findings.push s!"G17: State.{field} has no permitted writer, so its rule read nothing"
+  unless sawSpineBuilder do
+    findings := findings.push s!"KD7: {spineBuilder} builds no {spineNode}, so its rule read nothing"
+  unless sawLogReader do
+    findings := findings.push s!"KD7: {config.runLog.reader} has no permitted caller, so the run-log rule read nothing"
+  unless sawLogField do
+    findings := findings.push s!"KD7: {config.runLog.log} is read by none of its owners, so the run-log rule read nothing"
+  unless sawKeyedOwner do
+    findings := findings.push "KD7: no owner reads a unit-keyed map's order, so the keyed-map rule read nothing"
+  for contract in config.orderContracts do
+    findings := findings ++ (contractFindings env contract).toArray
+  -- A type holding a spine is a key: each of its equality and order instances reaches a contracted comparator through
+  -- declarations of its own module.
+  let contracted := config.orderContracts.map (·.comparator)
+  for (declaration, module, info) in declarations do
+    unless (← isInstance declaration) do continue
+    let type := info.type
+    unless [``DecidableEq, ``Ord, ``BEq].any type.getAppFn.isConstOf do continue
+    let some key := type.getAppArgs[0]?.bind (·.getAppFn.constName?) | continue
+    unless isStructure env key do continue
+    let holdsSpine := (getStructureFieldsFlattened env key (includeSubobjectFields := false)).any fun field =>
+      match (env.find? (key ++ field)) with
+      | some projection => projection.type.getForallBody.getAppFn.isConstOf `Kernel.Spine
+      | none => false
+    unless holdsSpine do continue
+    let mut reached : NameSet := {}
+    let mut pending := [declaration]
+    while !pending.isEmpty do
+      let next := pending.head!
+      pending := pending.tail!
+      if reached.contains next then continue
+      reached := reached.insert next
+      for used in (usesOf.getD next {}).toList do
+        if config.moduleOf used == some module then pending := used :: pending
+    unless contracted.any reached.contains do
+      findings := findings.push s!"KD7 {module} {declaration}: an instance on the spine key {key} reaches no key-order contract"
   let mut structures : Array Name := #[]
   for (declaration, module, info) in declarations do
     if (`Kernel.IL.Types).isPrefixOf module && isStructure env declaration && (info matches .inductInfo _) then
@@ -249,15 +446,57 @@ def scan (config : Config) : MetaM Report := do
       findings := findings.push s!"G18: {count} match sites on {type}, above its budget of {budget}"
   pure { findings, sites }
 
+/-- The families KD8 keeps out of pairwise statements: the mechanisms that queue more than one unit in a closure, and
+the wait kinds. Commutation is proved once over footprints (`docs/kernel/ARCHITECTURE-SPEC.md#modules-and-build-shape`),
+so a theorem relating two members of one of them is the per-pair estate the first rewrite grew. -/
+def pairFamilies : List Name := [`Kernel.QueuingMechanism, `Kernel.OpenKind]
+
+/-- The separate claims a statement makes: a conjunction's conjuncts, each under the binders and hypotheses above it,
+whose constants every claim below them shares. `∀ d, P (.timer d)) ∧ ∀ d, P (.message d)` is two claims, each about
+one wait kind, and proves no more than two theorems would; `P .timer → Q .message` is one claim relating both. -/
+partial def claims (statement : Expr) : List (Array Name) :=
+  match statement.consumeMData with
+  | .forallE _ domain body _ => (claims body).map (domain.getUsedConstants ++ ·)
+  | claim =>
+    if claim.isAppOfArity ``And 2 then claims claim.appFn!.appArg! ++ claims claim.appArg!
+    else [claim.getUsedConstants]
+
+/-- KD8: every kernel theorem one of whose claims names two distinct constructors of one `pairFamilies` type. A family
+missing from the environment fails, so a renamed type cannot read as clean. -/
+def pairwiseFindings (env : Environment) (moduleOf : Name → Option Name) : Array String := Id.run do
+  let mut findings : Array String := #[]
+  let mut families : Array (Name × List Name) := #[]
+  for family in pairFamilies do
+    match env.find? family with
+    | some (.inductInfo info) => families := families.push (family, info.ctors)
+    | _ => findings := findings.push s!"KD8: {family} is not in the environment, so the pairwise scan read nothing"
+  let theorems := env.constants.fold (init := #[]) fun found declaration info =>
+    match info, moduleOf declaration with
+    | .thmInfo statement, some module => if (`Kernel).isPrefixOf module then found.push (declaration, module, statement.type) else found
+    | _, _ => found
+  for (declaration, module, statement) in theorems do
+    for claim in claims statement do
+      for (_, constructors) in families do
+        let named := constructors.filter claim.contains
+        if named.length ≥ 2 then
+          findings := findings.push s!"KD8 {module} {declaration}: one claim names {named}"
+  return findings
+
 def run (env : Environment) (config : Config) : IO Report :=
   Prod.fst <$> (scan config).run'.toIO { fileName := "kernel-effects", fileMap := default } { env }
 
 /-- A self-contained kernel that keeps every rule's permitted caller and seeds each violation once. -/
 def fixture : String := "
 namespace Kernel
+structure UnitKey where
+  index : Nat
+structure KeyMap (α β : Type) where
+  entries : List (α × β)
+def KeyMap.toList {α β : Type} (map : KeyMap α β) : List (α × β) := map.entries
+def KeyMap.size {α β : Type} (map : KeyMap α β) : Nat := map.entries.length
 structure State where
-  tokens : List Nat := []
-  occurrences : List Nat := []
+  batchTokens : List Nat := []
+  occurrenceMap : List Nat := []
   activations : List Nat := []
   variables : List Nat := []
   writes : List Nat := []
@@ -275,13 +514,13 @@ structure Hooks where
   cancelled : State → State := id
   written : State → State := id
 namespace State
-def emit (state : State) : State := { state with tokens := 1 :: state.tokens }
-def deferBegins (state : State) : State := { state with tokens := 2 :: state.tokens }
+def emit (state : State) : State := { state with batchTokens := 1 :: state.batchTokens }
+def deferBegins (state : State) : State := { state with batchTokens := 2 :: state.batchTokens }
 def setVariable (state : State) : State := { state with variables := 1 :: state.variables, writes := [1] }
-def beginOccurrence (state : State) : State := { state with occurrences := 1 :: state.occurrences }
+def beginOccurrence (state : State) : State := { state with occurrenceMap := 1 :: state.occurrenceMap }
 def startReserved (state : State) : State := beginOccurrence state
 def reserve (state : State) : State := beginOccurrence state
-def removeOccurrence (state : State) : State := { state with occurrences := [] }
+def removeOccurrence (state : State) : State := { state with occurrenceMap := [] }
 def cancelOccurrence (state : State) : State := removeOccurrence state
 def activate (state : State) : State := { state with activations := 1 :: state.activations }
 end State
@@ -294,6 +533,17 @@ def idle (hooks : Hooks) (state : State) : State :=
 def lifecycle (state : State) : State :=
   state.beginOccurrence.startReserved.reserve.removeOccurrence.cancelOccurrence.activate
 def run (hooks : Hooks) (state : State) : State := complete hooks state
+structure RunLog where
+  positions : List Nat := []
+def RunLog.record (log : RunLog) (unit : Nat) : RunLog := ⟨log.positions ++ [unit]⟩
+def RunLog.runPosition (log : RunLog) (unit : Nat) : Nat := log.positions.getD unit 0
+def orderKey (log : RunLog) (unit : Nat) : Nat := log.runPosition unit
+def seededPosition (log : RunLog) : Nat := log.runPosition 0
+def seededPositions (log : RunLog) : Nat := log.positions.length
+def byRun (map : KeyMap UnitKey Nat) : List Nat := map.toList.map (·.2)
+def seededKeyOrder (map : KeyMap UnitKey Nat) : Option Nat := (map.toList.map (·.2)).head?
+def keyFree (map : KeyMap UnitKey Nat) : Nat := map.size
+def otherKeyOrder (map : KeyMap Nat Nat) : List Nat := map.toList.map (·.2)
 end Step
 namespace Feature.Flow
 def good (state : State) : State := state.emit
@@ -304,10 +554,17 @@ end Feature.Data
 namespace Feature.MultiInstance
 def good (state : State) : State := state.deferBegins
 end Feature.MultiInstance
+namespace InstanceName
+def textWith (number : Nat) : Nat := number
+def text (number : Nat) : Nat := textWith number
+end InstanceName
+def State.calledInstanceId (number : Nat) : Nat := number
+def Hooks.spelled (number : Nat) : Nat := InstanceName.textWith (InstanceName.text (State.calledInstanceId number))
 namespace Feature.Work
+def seededSpell (number : Nat) : Nat := InstanceName.textWith number
 def seededEmit (state : State) : State := state.emit
 def seededDefer (state : State) : State := state.deferBegins
-def seededWrite (state : State) : State := { state with tokens := [] }
+def seededWrite (state : State) : State := { state with batchTokens := [] }
 def seededHook (hooks : Hooks) (state : State) : State := hooks.outflow state
 end Feature.Work
 inductive Element where
@@ -323,10 +580,50 @@ namespace IL.Codec
 def codecOnly (used : Used) : Nat := used.unread
 end IL.Codec
 namespace Laws.State
-def lawWrite (state : State) : State := { state with tokens := [], occurrences := [] }
+def lawWrite (state : State) : State := { state with batchTokens := [], occurrenceMap := [] }
 def lawRead (used : Used) : Nat := used.unread
 def lawLifecycle (state : State) : State := state.emit.beginOccurrence
 end Laws.State
+inductive QueuingMechanism where
+  | split
+  | instances
+inductive OpenKind where
+  | timer (detail : Nat)
+  | message (detail : Nat)
+def Awaits (_ : OpenKind) : Prop := True
+namespace Laws.State
+theorem bundledKinds : (∀ detail, Awaits (.timer detail)) ∧ ∀ detail, Awaits (.message detail) :=
+  ⟨fun _ => trivial, fun _ => trivial⟩
+theorem seededKindPair (detail : Nat) (_ : Awaits (.timer detail)) : Awaits (.message detail) := trivial
+theorem seededMechanismPair (queued : QueuingMechanism → Prop) (_ : queued .split) : queued .instances ∨ True :=
+  .inr trivial
+end Laws.State
+inductive Spine where
+  | root
+  | node (step : Nat) (path : List Nat) (depth : Nat) (fingerprint : UInt64) (parent : Spine)
+namespace Spine
+def depth : Spine → Nat
+  | .root => 0
+  | .node _ _ depth _ _ => depth
+def fingerprint : Spine → UInt64
+  | .root => 0
+  | .node _ _ _ fingerprint _ => fingerprint
+def path : Spine → List Nat
+  | .root => []
+  | .node _ path _ _ _ => path
+def push (step : Nat) (parent : Spine) : Spine :=
+  .node step (step :: parent.path) (parent.depth + 1) (parent.fingerprint + 1) parent
+def seededNode (parent : Spine) : Spine := .node 0 parent.path parent.depth parent.fingerprint parent
+def same (a b : Spine) : Bool := a.depth == b.depth && a.fingerprint == b.fingerprint && a.path == b.path
+def seededPathFirst (a b : Spine) : Bool := a.path == b.path && a.depth == b.depth && a.fingerprint == b.fingerprint
+def seededCachedOnly (a b : Spine) : Bool := a.depth == b.depth && a.fingerprint == b.fingerprint
+end Spine
+structure Keyed where
+  spine : Spine
+instance : BEq Keyed := ⟨fun a b => Spine.same a.spine b.spine⟩
+structure Unkeyed where
+  spine : Spine
+instance seededUncontracted : BEq Unkeyed := ⟨fun a b => a.spine.path == b.spine.path⟩
 namespace Step
 def firstMatch (element : Element) : Nat := match element with
   | .task => 1
@@ -349,10 +646,32 @@ def fixtureModuleOf (declaration : Name) : Option Name :=
 def expectedInFixture : List String := [
   "calls Kernel.State.emit (flow tokens are emitted only by Flow)",
   "calls Kernel.State.deferBegins (deferred begins are stacked only by MultiInstance)",
-  "writes State.tokens through a structure update",
+  "writes State.batchTokens through a structure update",
   "calls pipeline hook Kernel.Hooks.outflow outside Step",
+  "calls Kernel.InstanceName.textWith (a called instance's identifier is spelled only at commit",
   "Kernel.Used.unread: read by no non-codec declaration",
-  "2 match sites on Kernel.Element, above its budget of 1"]
+  "2 match sites on Kernel.Element, above its budget of 1",
+  "Kernel.Spine.seededNode: builds a Kernel.Spine.node outside Kernel.Spine.push",
+  "KD7 Kernel.Spine.seededPathFirst: reads [Kernel.Spine.path, Kernel.Spine.depth, Kernel.Spine.fingerprint]",
+  "KD7 Kernel.Spine.seededCachedOnly: reads no variable-length component",
+  "Kernel.seededUncontracted: an instance on the spine key Kernel.Unkeyed reaches no key-order contract",
+  "Kernel.Step.seededPosition: reads the run log through Kernel.Step.RunLog.runPosition outside",
+  "Kernel.Step.seededPositions: reads the run log's positions outside",
+  "Kernel.Step.seededKeyOrder: reads the iteration order of a unit-keyed map ([Kernel.KeyMap.toList])"]
+
+/-- The fixture's unit-keyed map: its own stand-in for `Std.ExtTreeMap`, which the fixture does not import. -/
+def fixtureKeyedMaps : KeyedMapRule :=
+  { keyedMapRule with map := `Kernel.KeyMap, owners := [`Kernel.Step.byRun] }
+
+/-- The fixture's comparators: one keeps the contract and two break it. -/
+def fixtureContracts : List OrderContract :=
+  let cached := [`Kernel.Spine.depth, `Kernel.Spine.fingerprint]
+  [⟨`Kernel.Spine.same, cached, [`Kernel.Spine.path]⟩, ⟨`Kernel.Spine.seededPathFirst, cached, [`Kernel.Spine.path]⟩,
+   ⟨`Kernel.Spine.seededCachedOnly, cached, [`Kernel.Spine.path]⟩]
+
+def expectedPairs : List String := [
+  "Kernel.Laws.State.seededKindPair: one claim names [Kernel.OpenKind.timer, Kernel.OpenKind.message]",
+  "Kernel.Laws.State.seededMechanismPair: one claim names [Kernel.QueuingMechanism.split, Kernel.QueuingMechanism.instances]"]
 
 def selfTest : IO UInt32 := do
   let base ← importModules #[{ module := `Init }] {} (loadExts := true)
@@ -361,7 +680,9 @@ def selfTest : IO UInt32 := do
     for message in messages.toList do IO.eprintln (← message.toString)
     IO.eprintln "the self-test fixture did not elaborate"
     return 1
-  let config : Config := { moduleOf := fixtureModuleOf, budgets := [(`Kernel.Element, 1)], requireEveryGuardedType := false }
+  let config : Config :=
+    { moduleOf := fixtureModuleOf, budgets := [(`Kernel.Element, 1)], orderContracts := fixtureContracts
+      keyedMaps := fixtureKeyedMaps, requireEveryGuardedType := false }
   let report ← run env config
   let joined := "\n".intercalate report.findings.toList
   let mut failed := false
@@ -369,16 +690,33 @@ def selfTest : IO UInt32 := do
     unless (joined.splitOn expected).length > 1 do
       IO.eprintln s!"self-test: the seeded violation was not reported: {expected}"
       failed := true
+  for clean in ["Kernel.Spine.same", "Kernel.instBEqKeyed", "Kernel.Spine.push", "Kernel.Step.orderKey",
+      "Kernel.Step.RunLog.record", "Kernel.Step.byRun", "Kernel.Step.keyFree", "Kernel.Step.otherKeyOrder"] do
+    if (joined.splitOn (clean ++ ":")).length > 1 then
+      IO.eprintln s!"self-test: {clean}, which keeps the spine rules, was reported"
+      failed := true
   -- A law builds states and reads fields without being an executable effect or reader (`lawWrite`, `lawRead`).
   if (joined.splitOn "Kernel.Laws").length > 1 then
     IO.eprintln "self-test: a Laws declaration was scanned as executable"
     failed := true
-  let empty ← run base { moduleOf := fixtureModuleOf, budgets := [], requireEveryGuardedType := false }
+  let pairs := "\n".intercalate (pairwiseFindings env fixtureModuleOf).toList
+  for expected in expectedPairs do
+    unless (pairs.splitOn expected).length > 1 do
+      IO.eprintln s!"self-test: the seeded pairwise statement was not reported: {expected}"
+      failed := true
+  if (pairs.splitOn "bundledKinds").length > 1 then
+    IO.eprintln "self-test: a conjunction of one-kind claims was reported as pairwise"
+    failed := true
+  unless (pairwiseFindings base fixtureModuleOf).any (fun line => (line.splitOn "read nothing").length > 1) do
+    IO.eprintln "self-test: a pairwise scan of an environment with no kernel did not fail"
+    failed := true
+  let empty ← run base { moduleOf := fixtureModuleOf, budgets := [], orderContracts, requireEveryGuardedType := false }
   unless empty.findings.any (fun line => (line.splitOn "read nothing").length > 1 || (line.splitOn "read no ").length > 1) do
     IO.eprintln "self-test: a scan of an environment with no kernel did not fail"
     failed := true
   if failed then
     IO.eprintln joined
+    IO.eprintln pairs
     return 1
   IO.println "kernel-effects self-test: every seeded violation was reported and the empty input failed"
   return 0
@@ -395,8 +733,8 @@ unsafe def main (arguments : List String) : IO UInt32 := do
     {} (loadExts := true)
   let moduleOf (declaration : Name) : Option Name :=
     (env.getModuleIdxFor? declaration).bind fun idx => env.header.moduleNames[idx.toNat]?
-  let report ← run env { moduleOf, budgets, requireEveryGuardedType := true }
+  let report ← run env { moduleOf, budgets, orderContracts, requireEveryGuardedType := true }
   for (type, count) in report.sites do IO.println s!"G18 sites {type}: {count}"
-  let lines := report.findings.toList.eraseDups.toArray.qsort (· < ·)
+  let lines := (report.findings ++ pairwiseFindings env moduleOf).toList.eraseDups.toArray.qsort (· < ·)
   for line in lines do IO.println line
   return if lines.isEmpty then 0 else 1

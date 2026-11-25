@@ -26,7 +26,7 @@ def throwLeave (payload : EventPayload) : Leave :=
   | .intermediate => .outgoing
 
 /-- The public identity of a trigger: the thrower's occurrence, as `origin` names it. -/
-def throwerRef (state : State) (origin : Origin) : OccurrenceRef :=
+def throwerRef (state : State) (origin : Origin) : OccurrenceName :=
   { processInstanceId := state.instanceOf origin.scope, element := origin.element, activation := origin.activation }
 
 /-- A Compensation throw compensates the Activities retained in its scope occurrence, or only its `activityRef`'s, and
@@ -36,7 +36,8 @@ def throwCompensation (header : Header) (payload : EventPayload) (thrown : Compe
     (state : State) : Outcome :=
   if !thrown.waitForCompletion then .error (.unsupported "throw-compensation-asynchronous")
   else
-    let triggered := throwerRef state { element := header.id, scope := occurrence.scope, activation := occurrence.activation }
+    let triggered := throwerRef state
+      { element := header.id, scope := occurrence.scope, activation := occurrence.activation, thrower := occurrence.id }
     .ok (state.signal (.compensate occurrence.scope thrown.activity triggered none
       (some (.complete occurrence.id (throwLeave payload)))))
 
@@ -53,21 +54,29 @@ def signalBusinessKey (ctx : Ctx) (context : EvalContext) : Option Expression �
   | none => .ok none
   | some expression =>
     match ctx.evaluate context expression with
-    | .value (.string key) => .ok (some key)
-    | .value .null => .ok none
-    -- dynamic-only: a key's value type is the run's data.
-    | .value _ => .error (.rolledBack "signal-business-key-type")
+    | .value value =>
+      match value with
+      | .string key => .ok (some key)
+      | .null => .ok none
+      -- dynamic-only: a key's value type is the run's data.
+      -- dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+      | .double _ | .date _ => .error (.unsupported "value-kind")
+      | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ =>
+        .error (.rolledBack "signal-business-key-type")
     | .failure code => .error (.rolledBack code)
     | .unsupported code => .error (.unsupported code)
 
 /-- The payload (CIB-EXT-0040): the `camunda:in` copies in document order, `variables="all"` copying every variable
-`visible` from the throw at its position, a later target replacing an earlier (`VariableMap.put`). -/
+`visible` from the throw at its position, a later target replacing an earlier (`VariableMap.put`). `visible` lists the
+innermost frame first, and CIB collects a name from the nearest frame that holds it
+(`AbstractVariableScope.java:110-125`), so the copy is reversed: a shadowed name's innermost binding comes last and
+`lastWrites` keeps it. -/
 def signalPayload (ctx : Ctx) (context : EvalContext) (visible : List (String × Value)) (record : SignalThrow) :
     Except Failure (List (String × Value)) := do
   let position := record.propagateAll.getD record.payload.length
   let before ← ctx.requireMappings context (record.payload.take position)
   let after ← ctx.requireMappings context (record.payload.drop position)
-  pure (lastWrites (before ++ (if record.propagateAll.isSome then visible else []) ++ after))
+  pure (lastWrites (before ++ (if record.propagateAll.isSome then visible.reverse else []) ++ after))
 
 /-- The address a throw broadcasts to: its `signalRef` under `SignalNames.identifier`, else its name (CIB-INT-0028),
 an expression's evaluated at the throw (CIB-EXT-0041). A `null` name matches nothing in CIB or fails on an earlier
@@ -78,10 +87,14 @@ def thrownAddress (ctx : Ctx) (context : EvalContext) (record : SignalThrow) : E
   | .addresses, _, some (.literal text) => .ok (.named text)
   | .addresses, _, some (.expression body) =>
     match ctx.evaluate context body with
-    | .value (.string text) => .ok (.named text)
-    -- dynamic-only: the evaluated name is the run's data.
-    | .value .null => .error (.unsupported "signal-name-null")
-    | .value _ => .error (.rolledBack "signal-name-type")
+    | .value value =>
+      match value with
+      | .string text => .ok (.named text)
+      -- dynamic-only: the evaluated name is the run's data.
+      | .null => .error (.unsupported "signal-name-null")
+      -- dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+      | .double _ | .date _ => .error (.unsupported "value-kind")
+      | .bool _ | .int _ | .decimal _ _ | .stringList _ | .list _ | .map _ => .error (.rolledBack "signal-name-type")
     | .failure code => .error (.rolledBack code)
     | .unsupported code => .error (.unsupported code)
   -- Admission refuses both (`signal.unspecified`, `signal.unnamed`).
@@ -89,18 +102,24 @@ def thrownAddress (ctx : Ctx) (context : EvalContext) (record : SignalThrow) : E
   | .addresses, _, none => .error (.unsupported "signal-unnamed")
 
 /-- The open items of `address` in the thrower's own State, by process instance, then in arming order, the order the
-linearization of the population fixes for CIB's unordered `HashSet` (`EventSubscriptionManager.java:111-126`). -/
-def ownReceivers (state : State) (address : SignalAddress) : List OpenItem :=
-  (state.openItems.filter fun item => item.kind.view.signal.any (address.matches ·.address)).mergeSort fun left right =>
+linearization of the population fixes for CIB's unordered `HashSet` (`EventSubscriptionManager.java:111-126`). Under
+`declarationDepthFirst` an instance is ordered by its identifier, the prospective one (`Ctx.nameText`) for an instance a
+Call of the closure entered, which is exact there; under `orderInvariant` by its name (KD1's structural key, P09), which
+no schedule changes, where a prospective identifier is only a lower bound a unit yet to run may raise. -/
+def ownReceivers (ctx : Ctx) (state : State) (address : SignalAddress) : List OpenItem :=
+  let reached := (itemList state.openItems).filter fun item => item.kind.view.signal.any (address.matches ·.address)
+  let (before, same) : (InstanceName → InstanceName → Bool) × (InstanceName → InstanceName → Bool) :=
+    match ctx.program.options.branchSchedule with
+    | .declarationDepthFirst =>
+      (fun l r => decide (ctx.nameText state l < ctx.nameText state r), fun l r => ctx.nameText state l == ctx.nameText state r)
+    | .orderInvariant => (fun l r => compare l r == .lt, fun l r => l == r)
+  reached.mergeSort fun left right =>
     let (l, r) := (state.instanceOf left.scope, state.instanceOf right.scope)
-    decide (l < r) || (l == r && left.id ≤ right.id)
+    before l r || (same l r && ctx.positionLe left.position right.position)
 
-/-- The delivery that fires `item` from a throw. -/
-def thrownDelivery (ctx : Ctx) (state : State) (address : SignalAddress) (variables : List (String × Value))
-    (item : OpenItem) : DeliveryInput :=
-  { occurrence := { processInstanceId := state.instanceOf item.scope, element := ctx.program.publicId item.element
-                    activation := ((state.occurrence? item.occurrence).map (·.activation)).getD 0 }
-    trigger := .signal address .broadcast, variables }
+/-- The firing a throw hands each receiver: a broadcast of `address` with the thrown variables. -/
+def thrownFiring (address : SignalAddress) (variables : List (String × Value)) : SignalFiring :=
+  { trigger := .signal address .broadcast, variables }
 
 def throwSignal (ctx : Ctx) (payload : EventPayload) (record : SignalThrow) (origin : Origin) (occurrence : Occurrence)
     (state : State) : Outcome := do
@@ -108,10 +127,10 @@ def throwSignal (ctx : Ctx) (payload : EventPayload) (record : SignalThrow) (ori
   let businessKey ← signalBusinessKey ctx context record.businessKey
   let variables ← signalPayload ctx context (state.visible ctx.program occurrence.scope) record
   let address ← thrownAddress ctx context record
-  let fired := (ownReceivers state address).foldl (fun state item =>
-    state.signal (.fire item.id (.signal (thrownDelivery ctx state address variables item)))) state
+  let fired := (ownReceivers ctx state address).foldl (fun state item =>
+    state.signal (.fire item.id (.signal (thrownFiring address variables)))) state
   let intent : BroadcastIntent := { address, variables, businessKey, origin := throwerRef state origin }
-  .ok ({ fired with outbox := fired.outbox ++ [intent] }.signal (.complete occurrence.id (throwLeave payload) [] .outward))
+  .ok ({ fired with batchIntents := fired.batchIntents ++ [intent] }.signal (.complete occurrence.id (throwLeave payload) [] .outward))
 
 /-- A Message throw under `MessageThrowForms.cibForms` (PC-MESSAGE-09): unbound, it passes its token on, as CIB's
 `IntermediateThrowNoneEventActivityBehavior` does (CIB-INT-0027); bound, it opens one effect item, as CIB runs its
@@ -124,11 +143,12 @@ def throwMessage (record : MessageThrow) (occurrence : Occurrence) (leave : Stat
 
 def arriveThrow (ctx : Ctx) (header : Header) (payload : EventPayload) (thrown : Throw) (occurrence : Occurrence)
     (state : State) : Outcome :=
-  let origin : Origin := { element := header.id, scope := occurrence.scope, activation := occurrence.activation }
+  let origin : Origin :=
+    { element := header.id, scope := occurrence.scope, activation := occurrence.activation, thrower := occurrence.id }
   let leave (state : State) : State := state.signal (.complete occurrence.id (throwLeave payload) [] .outward)
   match thrown with
   | .none => .ok (leave state)
-  | .terminate => .ok ((state.clearInside occurrence.scope [occurrence.id]).signal
+  | .terminate => .ok ((state.clearInside ctx.positionLe occurrence.scope [occurrence.id]).signal
       (.complete occurrence.id (.flows []) [] .outward))
   | .error record =>
     -- `throw.error.message` at admission refuses an expression, the only message the kernel cannot read.

@@ -43,6 +43,7 @@ export const ExecutionInputKind = {
   Deliver: "deliver",
   TimerFire: "timerFire",
   EffectResult: "effectResult",
+  CancelInstance: "cancelInstance",
 } as const;
 
 export type ExecutionInputKind = typeof ExecutionInputKind[keyof typeof ExecutionInputKind];
@@ -59,19 +60,18 @@ export type ExecutionRole = DeepReadonly<
   | { kind: typeof ExecutionRoleKind.Input; input: ExecutionInputKind }
   | { kind: typeof ExecutionRoleKind.Signal; signal: string }
   | { kind: typeof ExecutionRoleKind.Arrive; flow: string }
-  | { kind: typeof ExecutionRoleKind.Idle; scope: number }
+  | { kind: typeof ExecutionRoleKind.Idle }
 >;
 
 /**
- * One committed kernel micro-step: the element it acted on with the source type that element began with, and the
- * scope occurrence that owns it. `element` and `sourceType` are `null` for a step that acts on no element.
+ * One committed kernel micro-step: the element it acted on with the source type that element began with. `element` and
+ * `sourceType` are `null` for a step that acts on no element; the kernel's scope-occurrence ordinals are not published.
  */
 export type CommittedTransitionRecord = DeepReadonly<{
   revision: number;
   role: ExecutionRole;
   element: string | null;
   sourceType: string | null;
-  owner: number;
 }>;
 
 /** The micro-steps of one committed input, numbered as consecutive revisions. */

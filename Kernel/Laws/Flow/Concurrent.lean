@@ -166,29 +166,15 @@ def BoundaryLeads (program : Program) (first second : ElementId) : Prop :=
     boundary ∈ envelope.boundaries ∧ TransitPath program boundary.id second
 
 /-- Every record of `first` precedes a later one of `second` and a record of `first` after one of `second` is ordered
-too or cannot exist: a path leads from `first` to `second`, and either one leads back, so completion orders the pair
-the same way, or `first` runs once along one token's path and no way out of `second` returns to it. -/
+too or cannot exist: a path leads from `first` to `second`, and either one leads back, so the order of completion
+(`Laws.Compensation.CompletedBefore`) orders the pair the same way, or `first` runs once along one token's path and no
+way out of `second` returns to it. Two records of one closure are ordered by the program's structure
+(`Kernel.structurallyBefore`), which admission holds to the closure's own order wherever such a dependency needs it
+(`compensation.unorderedDependency`). -/
 def Follows (program : Program) (first second : ElementId) : Prop :=
   TransitPath program first second ∧
     (TransitPath program second first ∨
       (¬ Goes program second first ∧ ∃ element, program.element? first = some element ∧ RunsOnce program element))
-
-/-- Two subjects whose records `Kernel.Feature.Compensation.precedes` orders in every run (BPMN 2.0.2 §13.5.5): one
-subject, ordered by completion; a path from one's boundary Events to the other, ordered whatever the completion; or
-one follows the other. -/
-def OrderedSubjects (program : Program) (first second : ElementId) : Prop :=
-  first = second ∨ BoundaryLeads program first second ∨ BoundaryLeads program second first ∨
-    Follows program first second ∨ Follows program second first
-
-/-- Every pair of the two handlers' subjects is ordered. -/
-def Ordered (program : Program) (left right : Element) : Prop :=
-  ∀ first second, SubjectOf program left first → SubjectOf program right second → OrderedSubjects program first second
-
-/-- Two handler runs one throw may begin together: §13.5.5 compensates records, one per completed subject, so besides
-two handlers one handler serving two subjects runs twice (#155). One subject's records `Ordered` orders by completion. -/
-def TwoRuns (program : Program) (left right : Element) : Prop :=
-  left.header.id ≠ right.header.id ∨
-    (left = right ∧ ∃ subject, SubjectOf program left subject ∧ ∃ other, SubjectOf program left other ∧ subject ≠ other)
 
 /-! ## Units -/
 
@@ -216,13 +202,102 @@ def continuationOf (program : Program) (element : Element) : WorkUnit :=
 def enteredFrom (program : Program) (scope : ElementId) (walk : Walk) : WorkUnit :=
   { walk, start := fun visit => ∃ child, EnteredChildren program scope child ∧ visit = .enters child }
 
-/-- A path from `visit` against a second occurrence of itself that the elements `held` tell apart: a removal reaches it
-only through a holder, and only names and removals are compared. -/
-def itselfHeld (program : Program) (visit : Visit) (held : ElementId → Prop) : Account :=
-  { (pathFrom (· = visit)).account program with exposed := held, resumes := fun _ => False, compensates := fun _ => False }
+/-- A token leaving `source`, or one of its boundary Events, may reach the element `id`, or `source` is it. -/
+def Arrives (program : Program) (source : Element) (id : ElementId) : Prop :=
+  source.header.id = id ∨ Goes program source.header.id id ∨
+    ∃ envelope boundary, source.envelope? = some envelope ∧ boundary ∈ envelope.boundaries ∧ Goes program boundary.id id
 
-/-- A resumption against a second open occurrence of its own subscription. -/
-def itselfAt (program : Program) (visit : Visit) : Account := itselfHeld program visit (Holder program visit)
+/-- `flow` leads to the element `id`. -/
+def LeadsTo (program : Program) (flow : FlowId) (id : ElementId) : Prop :=
+  ∃ target, Targets program flow target ∧ Arrives program target id
+
+/-- Two tokens may arrive at `element` within one occurrence of its level: two flows of one split, a boundary that does
+not interrupt, a boundary's two flows, or two of the level's starts or implicitly begun children lead to it
+(`Kernel.Admission.Flow.Concurrency.arrivesTwice`). -/
+def ArrivesTwice (program : Program) (element : Element) : Prop :=
+  let level := program.siblings element.header
+  let begun (child : Element) : Prop :=
+    child.start?.isSome = true ∨ (level.any (·.start?.isSome) = false ∧ child.beginsImplicitly = true)
+  (∃ first ∈ level, ∃ second ∈ level, first.header.id ≠ second.header.id ∧ begun first ∧ begun second ∧
+      Arrives program first element.header.id ∧ Arrives program second element.header.id) ∨
+    ∃ other ∈ level,
+      ((∀ header payload, other.gateway? = some (header, payload) → Forking payload.kind) ∧
+        ∃ first ∈ other.outgoing, ∃ second ∈ other.outgoing, first ≠ second ∧
+          LeadsTo program first element.header.id ∧ LeadsTo program second element.header.id) ∨
+      ∃ envelope boundary, other.envelope? = some envelope ∧ boundary ∈ envelope.boundaries ∧
+        ((boundary.interrupting = false ∧ ∃ flow ∈ boundary.outgoing, LeadsTo program flow element.header.id) ∨
+          ∃ first ∈ boundary.outgoing, ∃ second ∈ boundary.outgoing, first ≠ second ∧
+            LeadsTo program first element.header.id ∧ LeadsTo program second element.header.id)
+
+/-- Two occurrences of `element` may be open at once (`Kernel.Admission.Flow.Concurrency.runsTwice`): a parallel
+loop's instances, a compensation handler, an Event Sub-Process that does not interrupt, two tokens arriving in one
+occurrence of its level, or that level open twice, its Scope's or a called process's with two Calls or a Call that runs
+twice. -/
+inductive RunsTwice (program : Program) : Element → Prop where
+  | loop {element : Element} {loop : MultiInstance} : Loop element loop → ¬ NextInstance program element →
+      RunsTwice program element
+  | handler {element : Element} : Handler element → RunsTwice program element
+  | started {element : Element} : EventSubProcess element → ¬ Interrupts element → RunsTwice program element
+  | arrives {element : Element} : ArrivesTwice program element → RunsTwice program element
+  | within {element scope : Element} {parent : ElementId} : element.header.parent = some parent →
+      program.element? parent = some scope → RunsTwice program scope → RunsTwice program element
+  | caller {element call : Element} {process : CalledProcess} : element.header.parent = none →
+      program.processOf element.header = some process → call ∈ program.elements → Calls program call process →
+      RunsTwice program call → RunsTwice program element
+  | callers {element first second : Element} {process : CalledProcess} : element.header.parent = none →
+      program.processOf element.header = some process → first ∈ program.elements → second ∈ program.elements →
+      first.header.id ≠ second.header.id → Calls program first process → Calls program second process →
+      RunsTwice program element
+
+/-- Two open occurrences of a subscription inside the Scope or Call `id` may lie in distinct occurrences of it: it runs
+twice, or a process it calls has two Calls (`Kernel.Admission.Flow.Concurrency.heldTwice`). -/
+def HeldTwice (program : Program) (id : ElementId) : Prop :=
+  ∃ holder, program.element? id = some holder ∧ (RunsTwice program holder ∨
+    ∃ process, Calls program holder process ∧ ∃ first ∈ program.elements, ∃ second ∈ program.elements,
+      first.header.id ≠ second.header.id ∧ Calls program first process ∧ Calls program second process)
+
+/-- A path of `walk` from `visit` against a second occurrence of itself that the elements `held` tell apart: a removal
+reaches it only through a holder, and only names and removals are compared. -/
+def itselfHeld (program : Program) (walk : Walk) (visit : Visit) (held : ElementId → Prop) : Account :=
+  { ({ walk, start := (· = visit) } : WorkUnit).account program with
+      exposed := held, resumes := fun _ => False, compensates := fun _ => False }
+
+/-- A resumption against a second open occurrence of its own subscription, ascending into the completions of the Scopes
+and Calls that may hold the two occurrences apart (`HeldTwice`, #194); one holding both completes only after both. -/
+def itselfAt (program : Program) (visit : Visit) : Account :=
+  itselfHeld program { stop := AwaitsStimulus, ascends := true, ascendsInto := HeldTwice program } visit
+    (Holder program visit)
+
+/-- `subject` may complete twice in one closure, so its records there have no order and their handlers run together
+(COMPENSATION-SEMANTICS-SPEC I1 (d), DC15 (c); `Kernel.Admission.Flow.Concurrency.completesTwice`): it completes
+without waiting for an input and does not run once along one token's path, or it is a Multi-Instance Sub-Process whose
+instances may complete in the closure that begins them or in the one a broadcast resumes them in. -/
+def CompletesTwice (program : Program) (subject : ElementId) : Prop :=
+  ∃ element, program.element? subject = some element ∧
+    ((¬ AwaitsStimulus element ∧ ¬ RunsOnce program element) ∨
+      (∃ header payload loop, element.scope? = some (header, payload) ∧ (element.envelope?).bind (·.multiInstance) = some loop ∧
+        (Ends program (enteredFrom program header.id branchWalk) ∨
+          Ends program (wake program (enteredFrom program header.id branchWalk)))))
+
+/-- Two subjects whose records `Kernel.Feature.Compensation.precedes` orders in every run (BPMN 2.0.2 §13.5.5): one
+subject that never completes twice in one closure, ordered by completion; a path from one's boundary Events to the
+other, ordered whatever the completion; or one follows the other. -/
+def OrderedSubjects (program : Program) (first second : ElementId) : Prop :=
+  (first = second ∧ ¬ CompletesTwice program first) ∨ BoundaryLeads program first second ∨ BoundaryLeads program second first ∨
+    Follows program first second ∨ Follows program second first
+
+/-- Every pair of the two handlers' subjects is ordered. -/
+def Ordered (program : Program) (left right : Element) : Prop :=
+  ∀ first second, SubjectOf program left first → SubjectOf program right second → OrderedSubjects program first second
+
+/-- Two handler runs one throw may begin together: §13.5.5 compensates records, one per completed subject, so besides
+two handlers one handler serving two subjects runs twice (#155), and so does one whose subject may complete twice in
+one closure, whose records there have no order. Other records of one subject `Ordered` orders by completion. -/
+def TwoRuns (program : Program) (left right : Element) : Prop :=
+  left.header.id ≠ right.header.id ∨
+    (left = right ∧
+      ((∃ subject, SubjectOf program left subject ∧ ∃ other, SubjectOf program left other ∧ subject ≠ other) ∨
+        ∃ subject, SubjectOf program left subject ∧ CompletesTwice program subject))
 
 /-- The body with every instance in it, which an instance's completion removes once the completion condition holds
 (BPMN 2.0.2 §13.3.7). -/
@@ -293,15 +368,38 @@ inductive InstancePair (program : Program) (body : Element) (loop : MultiInstanc
 def SignalWake (program : Program) (thrower : Element) (visit : Visit) : Prop :=
   ProgramCatching program Signalled visit ∧ ¬ ClosedAt program thrower visit
 
+/-- `outer` encloses `inner` across Call boundaries: along the parent chain, or as a Call of the process whose level
+holds `inner`, and what encloses that Call. -/
+inductive Encloses (program : Program) : ElementId → ElementId → Prop where
+  | within {inner outer : ElementId} : Within program inner outer → Encloses program inner outer
+  | call {inner : ElementId} {element top call : Element} {process : CalledProcess} :
+      program.element? inner = some element → Top program element top → program.processOf top.header = some process → call ∈ program.elements →
+      Calls program call process → Encloses program inner call.header.id
+  | trans {inner middle outer : ElementId} : Encloses program inner middle → Encloses program middle outer →
+      Encloses program inner outer
+
+/-- An element enclosing the anchor of the subscription `visit` resumes, across Call boundaries. -/
+def Around (program : Program) (visit : Visit) (id : ElementId) : Prop :=
+  ∃ anchor, AnchorOf program visit anchor ∧ Encloses program anchor.header.id id
+
+/-- A resumption's path against another unit whose enclosing elements are `other`, ascending into the completions of
+the Scopes and Calls that do not enclose both: one holding only the resumption's anchor may complete beside the other
+unit, one holding both only after both, so a shared completion is not held against itself. -/
+def ascending (program : Program) (visit : Visit) (other : ElementId → Prop) : WorkUnit :=
+  { walk := { stop := AwaitsStimulus, ascends := true,
+              ascendsInto := fun id => ¬ (Around program visit id ∧ other id) }
+    start := (· = visit) }
+
 /-- The units a Signal throw starts together: its continuation and each resumption whose first visit does not remove
-it, two resumptions, and a resumption against a second open occurrence of its own subscription. -/
+it, two resumptions, a resumption ascending below the Scopes and Calls it shares with the other unit (`ascending`),
+and a resumption against a second open occurrence of its own subscription. -/
 inductive SignalPair (program : Program) (thrower : Element) : Account → Account → Prop where
   | continuation {visit : Visit} : SignalWake program thrower visit → ¬ Preempts program visit thrower →
       SignalPair program thrower ((continuationOf program thrower).account program)
-        ((pathFrom (· = visit)).account program)
-  | resumptions {visit other : Visit} : SignalWake program thrower visit → SignalWake program thrower other →
-      visit ≠ other →
-      SignalPair program thrower ((pathFrom (· = visit)).account program) ((pathFrom (· = other)).account program)
+        ((ascending program visit (Encloses program thrower.header.id)).account program)
+  | ascended {visit other : Visit} : SignalWake program thrower visit → SignalWake program thrower other →
+      visit ≠ other → SignalPair program thrower ((ascending program visit (Around program other)).account program)
+        ((ascending program other (Around program visit)).account program)
   | itself {visit : Visit} {holder : ElementId} : SignalWake program thrower visit → Holder program visit holder →
       SignalPair program thrower (itselfAt program visit) (itselfAt program visit)
 
@@ -348,17 +446,6 @@ inductive WritePair (program : Program) (writer : Element) : Account → Account
   | rivals {visit other : Visit} : Catching Conditional writer visit → ProgramCatching program Conditional other →
       Together program visit other →
       WritePair program writer ((pathFrom (· = visit)).account program) ((pathFrom (· = other)).account program)
-
-/-- The level the entry of `element` opens: a Scope's children, or a called process's for a Call. -/
-def OpensLevel (program : Program) (element : Element) (level : List Element) : Prop :=
-  (∃ header payload, element.scope? = some (header, payload) ∧ level = program.children (some header.id)) ∨
-    ∃ header payload work process, element.activity? = some (header, payload) ∧ payload.work.call? = some work ∧
-      process ∈ program.calledProcessFor program.options.calledElementResolution (program.callerDeployment element.header)
-        work ∧ level = program.processChildren process
-
-/-- A start Event of the root process, whose start arms the root's Event Sub-Process starts. -/
-def RootStart (program : Program) (element : Element) : Prop :=
-  element.start?.isSome = true ∧ element.header.parent = none ∧ program.inCalledProcess element.header.id = false
 
 /-- The Conditional resumptions the arming on entering `element` evaluates together
 (`Kernel.Feature.Subscriptions.subscribeAll`): its Conditional boundaries and the Conditional Event Sub-Process starts of
@@ -458,7 +545,7 @@ inductive Concurrent (program : Program) : QueuingMechanism → Account → Acco
   `flow.concurrentInterference` (`Kernel.Admission.Flow.Concurrency.armingFanOut`). -/
   | armed {element : Element} {left right : Account} : element ∈ program.elements → ArmPair program element left right →
       Concurrent program .armed left right
-  /-- The continuations of two Inclusive joins one quiescent closure offers again, in parking order: Table 13.3 activates
+  /-- The continuations of two Inclusive joins one quiescent closure offers again, one after the other: Table 13.3 activates
   a join by the state, giving two activated at once no order (P1 census, G4); `flow.concurrentWrite` and
   `flow.concurrentInterference` (`Kernel.Admission.Flow.Concurrency.rejoinFanOut`). -/
   | rejoined {first second : Element} : first ∈ program.elements → second ∈ program.elements → InclusiveJoin first →
@@ -468,8 +555,8 @@ inductive Concurrent (program : Program) : QueuingMechanism → Account → Acco
   /-- Two occurrences of one Inclusive join that two occurrences of its holder park at once (`JoinHolder`). -/
   | rejoinedItself {join : Element} {holder : ElementId} : join ∈ program.elements → InclusiveJoin join →
       JoinHolder program join holder →
-      Concurrent program .rejoined (itselfHeld program (.completes join) (JoinHolder program join))
-        (itselfHeld program (.completes join) (JoinHolder program join))
+      Concurrent program .rejoined (itselfHeld program branchWalk (.completes join) (JoinHolder program join))
+        (itselfHeld program branchWalk (.completes join) (JoinHolder program join))
 
 /-- P6's order-invariance premise: no two units one closure may hold together race on a name or act on each other's
 work, so the order `Step.settle` runs them in is immaterial. An Error no catcher takes ends every unit (Table 10.88),
@@ -513,8 +600,8 @@ theorem split_race_not_apart {program : Program} {flow : Flow} {other : FlowId} 
     (runsLeft : ¬ Stops branchWalk left) (runsRight : ¬ Stops branchWalk right)
     (race : (runFootprint program left).races (runFootprint program right) = true) : ¬ Apart program := fun apart =>
   (apart _ (mechanism_mem_all _) _ _ (.split member forks leaving distinct .paths)).1
-    ⟨_, _, ⟨.enters left, .start ⟨left, toLeft, rfl⟩, .inr ⟨runsLeft, rfl⟩⟩,
-      ⟨.enters right, .start ⟨right, toRight, rfl⟩, .inr ⟨runsRight, rfl⟩⟩, race⟩
+    ⟨_, _, ⟨.enters left, .start ⟨left, toLeft, rfl⟩, .inl (.inr ⟨runsLeft, rfl⟩)⟩,
+      ⟨.enters right, .start ⟨right, toRight, rfl⟩, .inl (.inr ⟨runsRight, rfl⟩)⟩, race⟩
 
 theorem shared_handler_not_apart {program : Program} {thrower handler : Element} {first second : ElementId}
     (member : thrower ∈ program.elements) (compensates : Compensates thrower) (handles : HandlersOf program thrower handler)
@@ -522,6 +609,6 @@ theorem shared_handler_not_apart {program : Program} {thrower handler : Element}
     (unordered : ¬ Ordered program handler handler) (runs : ¬ AwaitsStimulus handler)
     (race : (runFootprint program handler).races (runFootprint program handler) = true) : ¬ Apart program := fun apart =>
   (apart _ (mechanism_mem_all _) _ _ (.compensating member compensates handles handles
-    (.inr ⟨rfl, first, ofFirst, ⟨second, ofSecond, distinct⟩⟩) unordered)).1 ⟨_, _, .inr ⟨runs, rfl⟩, .inr ⟨runs, rfl⟩, race⟩
+    (.inr ⟨rfl, .inl ⟨first, ofFirst, ⟨second, ofSecond, distinct⟩⟩⟩) unordered)).1 ⟨_, _, .inr ⟨runs, rfl⟩, .inr ⟨runs, rfl⟩, race⟩
 
 end Kernel.Laws.Flow

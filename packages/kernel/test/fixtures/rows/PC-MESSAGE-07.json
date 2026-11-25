@@ -146,6 +146,14 @@
     "evaluator": "juel",
     "submission": "installsVariables",
     "scopeChainSubmissionBytes": null,
+    "bounds": {
+      "containerLevels": 4,
+      "containerMembers": 32,
+      "valueNodes": 256,
+      "canonicalBytes": 16384,
+      "textBytes": 1024,
+      "instanceIdentityBytes": 1024
+    },
     "undeclaredWrite": "atInstanceRoot",
     "errorPathOutputs": "mapped",
     "raisedCallOutputs": "atCalledRoot",
@@ -190,7 +198,11 @@
     "signalDelivery": "occurrenceTargeted",
     "conditionalStart": "submittedContext",
     "calledElementResolution": "cibKey",
-    "messageThrowForms": "cibForms"
+    "messageThrowForms": "cibForms",
+    "deploymentErrors": "bpmnValidity",
+    "handlerEscalation": "passesHandler",
+    "defaultRetryCycle": null,
+    "inertExtensions": []
   },
   "elements": [
     {
@@ -208,7 +220,9 @@
           "subscription": null,
           "outgoing": [
             "Flow_Start_Handlers_Fork_Handlers"
-          ]
+          ],
+          "initiator": null,
+          "formRef": null
         }
       }
     },
@@ -260,7 +274,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -279,7 +294,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -307,7 +326,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -326,7 +346,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -393,7 +417,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -413,7 +441,9 @@
           "subscription": null,
           "outgoing": [
             "Flow_Start_Inner_Inner"
-          ]
+          ],
+          "initiator": null,
+          "formRef": null
         }
       }
     },
@@ -440,7 +470,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -459,7 +490,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -523,7 +558,9 @@
                 },
                 "outputs": [],
                 "alternatives": [],
-                "parallelMultiple": false
+                "parallelMultiple": false,
+                "dataOutputs": [],
+                "retryCycle": null
               },
               "interrupting": false
             }
@@ -546,7 +583,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -582,11 +623,15 @@
             },
             "outputs": [],
             "alternatives": [],
-            "parallelMultiple": false
+            "parallelMultiple": false,
+            "dataOutputs": [],
+            "retryCycle": null
           },
           "outgoing": [
             "Flow_Start_RegionNotice_Handle_RegionNotice"
-          ]
+          ],
+          "initiator": null,
+          "formRef": null
         }
       }
     },
@@ -613,7 +658,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -632,7 +678,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -738,6 +788,8 @@
               "outputCollection": null,
               "asyncBefore": false,
               "asyncAfter": false,
+              "exclusive": null,
+              "retryCycle": null,
               "loopDataInputRef": null,
               "inputDataItemName": null
             },
@@ -745,7 +797,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -765,7 +821,9 @@
           "subscription": null,
           "outgoing": [
             "Flow_Start_Par_Inner_Par"
-          ]
+          ],
+          "initiator": null,
+          "formRef": null
         }
       }
     },
@@ -792,7 +850,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -811,7 +870,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -875,7 +938,9 @@
                 },
                 "outputs": [],
                 "alternatives": [],
-                "parallelMultiple": false
+                "parallelMultiple": false,
+                "dataOutputs": [],
+                "retryCycle": null
               },
               "interrupting": false
             }
@@ -898,7 +963,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -934,11 +1003,15 @@
             },
             "outputs": [],
             "alternatives": [],
-            "parallelMultiple": false
+            "parallelMultiple": false,
+            "dataOutputs": [],
+            "retryCycle": null
           },
           "outgoing": [
             "Flow_Start_ParNotice_Handle_ParNotice"
-          ]
+          ],
+          "initiator": null,
+          "formRef": null
         }
       }
     },
@@ -965,7 +1038,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -984,7 +1058,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -1090,6 +1168,8 @@
               "outputCollection": null,
               "asyncBefore": false,
               "asyncAfter": false,
+              "exclusive": null,
+              "retryCycle": null,
               "loopDataInputRef": null,
               "inputDataItemName": null
             },
@@ -1097,7 +1177,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -1117,7 +1201,9 @@
           "subscription": null,
           "outgoing": [
             "Flow_Start_Seq_Inner_Seq"
-          ]
+          ],
+          "initiator": null,
+          "formRef": null
         }
       }
     },
@@ -1144,7 +1230,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -1163,7 +1250,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -1227,7 +1318,9 @@
                 },
                 "outputs": [],
                 "alternatives": [],
-                "parallelMultiple": false
+                "parallelMultiple": false,
+                "dataOutputs": [],
+                "retryCycle": null
               },
               "interrupting": false
             }
@@ -1250,7 +1343,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -1286,11 +1383,15 @@
             },
             "outputs": [],
             "alternatives": [],
-            "parallelMultiple": false
+            "parallelMultiple": false,
+            "dataOutputs": [],
+            "retryCycle": null
           },
           "outgoing": [
             "Flow_Start_SeqNotice_Handle_SeqNotice"
-          ]
+          ],
+          "initiator": null,
+          "formRef": null
         }
       }
     },
@@ -1317,7 +1418,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -1336,7 +1438,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -1426,7 +1532,9 @@
                 },
                 "outputs": [],
                 "alternatives": [],
-                "parallelMultiple": false
+                "parallelMultiple": false,
+                "dataOutputs": [],
+                "retryCycle": null
               },
               "interrupting": false
             }
@@ -1453,7 +1561,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -1489,11 +1601,15 @@
             },
             "outputs": [],
             "alternatives": [],
-            "parallelMultiple": false
+            "parallelMultiple": false,
+            "dataOutputs": [],
+            "retryCycle": null
           },
           "outgoing": [
             "Flow_Start_Notice_Handle_Notice"
-          ]
+          ],
+          "initiator": null,
+          "formRef": null
         }
       }
     },
@@ -1520,7 +1636,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -1539,7 +1656,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -1602,13 +1723,16 @@
                               }
                             }
                           }
-                        }
+                        },
+                        "exclusive": null
                       }
                     }
                   },
                   "outputs": [],
                   "alternatives": [],
-                  "parallelMultiple": false
+                  "parallelMultiple": false,
+                  "dataOutputs": [],
+                  "retryCycle": null
                 },
                 "interrupting": true,
                 "outgoing": [
@@ -1621,7 +1745,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -1649,7 +1777,8 @@
                 "formFields": [],
                 "dueDate": null,
                 "followUpDate": null,
-                "priority": null
+                "priority": null,
+                "formRef": null
               }
             }
           },
@@ -1668,7 +1797,11 @@
             "forCompensation": false,
             "defaultFlow": null,
             "asyncBefore": false,
-            "asyncAfter": false
+            "asyncAfter": false,
+            "exclusive": null,
+            "retryCycle": null,
+            "structuredInputs": [],
+            "structuredOutputs": []
           }
         }
       }
@@ -1893,5 +2026,6 @@
   "variables": [],
   "processes": [],
   "executable": true,
-  "decisionResources": []
+  "decisionResources": [],
+  "retainedExtensions": []
 }

@@ -1,17 +1,32 @@
 /**
  * TypeScript halves of one writer per effect (guard 17) and field liveness (guard 19) of
  * docs/kernel/ARCHITECTURE-SPEC.md#guardrails-against-degradation; `scripts/kernel-effects.lean` is the Lean half.
+ * Also the hook-defaults guard of KD7 (docs/REWRITE-2-PROPOSAL.md), in both languages.
  *
  * Dispatch guards see matches and miss effects: nine completers passed guards 1 and 2. So this scan reads who calls the
  * effect primitives, and which state fields a spread update writes. Liveness is by field name, which is coarser than the
  * Lean scan's per-structure reading, because a TypeScript property name is shared across interfaces.
  */
-import { closeOf, emptyInputFinding, finding, isJustified, TokenKind, type KernelTree, type Source } from "./kernel-guard-scan.ts";
+import {
+  closeOf,
+  emptyInputFinding,
+  finding,
+  isJustified,
+  leanDeclarations,
+  TokenKind,
+  type KernelTree,
+  type Source,
+  type Token,
+} from "./kernel-guard-scan.ts";
 
 const kernelPrefix = "packages/kernel/src/";
 
 /** An effect primitive and the modules that may call it (`state` always may, because it defines them). */
 type CallRule = Readonly<{ name: string; callers: readonly string[]; label: string }>;
+
+/** KD5: the modules that spell a called instance's identifier, as `spellers` in scripts/kernel-effects.lean, State included. */
+const spellers = ["state", "step/commit", "publish", "host", "run", "population", "hooks", "step/inputs", "feature/correlation"];
+const spelling = "a called instance's identifier is spelled only at commit, in publication and by readers of committed names";
 
 const callRules: readonly CallRule[] = [
   { name: "emit", callers: ["feature/flow"], label: "flow tokens are emitted only by Flow" },
@@ -25,6 +40,7 @@ const callRules: readonly CallRule[] = [
   // `Kernel.State.activate` lists State among its callers too (scripts/kernel-effects.lean): only State's own
   // `reserve` and `beginOccurrence` count activations, so a State call is what keeps the rule from reading nothing.
   { name: "activate", callers: ["step", "state"], label: "activations are counted only by Step and State" },
+  ...["instanceTextWith", "instanceText", "calledInstanceId"].map((name) => ({ name, callers: spellers, label: spelling })),
 ];
 
 /** The completion pipeline, idle completion and the lifecycle notifications: only `Step` calls these hooks. */
@@ -32,11 +48,12 @@ const pipelineHooks = new Set(["leave", "writeOutputs", "completed", "outflow", 
   "completeScope", "completeCall", "completeBody", "cancelled", "written"]);
 
 const stateFieldWriters: Readonly<Record<string, readonly string[]>> = {
-  tokens: ["state", "step"],
+  batchTokens: ["state", "step"],
   occurrences: ["state", "step"],
   activations: ["state", "step"],
   variables: ["state"],
   writes: ["state", "step"],
+  draft: ["state", "step", "hooks"],
 };
 
 function moduleOf(source: Source): string {
@@ -156,4 +173,297 @@ export function fieldLivenessFindings(tree: KernelTree): string[] {
   return fields.flatMap(([field, il, line]) => read.has(field) || isJustified(il, line, 19)
     ? []
     : [finding(19, il, line, `IL field ${field} is read by no non-codec module and refused by no admission module`)]);
+}
+
+type Field = Readonly<{ name: string; line: number; value: readonly Token[] }>;
+
+/**
+ * The fields of the record the bracket at `open` opens: each name at depth one that starts a line or follows `{` or `,`
+ * and is followed by `separator` (`:` in a TypeScript object, `:=` in a Lean structure instance), with its value's tokens.
+ */
+function recordFields(tokens: readonly Token[], open: number, separator: string): Field[] {
+  const close = closeOf(tokens, open);
+  const starts: number[] = [];
+  let depth = 0;
+  for (let k = open + 1; k < close - 1; k += 1) {
+    const token = tokens[k];
+    if (token === undefined) break;
+    const previous = tokens[k - 1];
+    const leads = previous?.text === "{" || previous?.text === "," || previous?.line !== token.line;
+    if (depth === 0 && token.kind === TokenKind.Word && tokens[k + 1]?.text === separator && leads) starts.push(k);
+    if (token.kind === TokenKind.Punct && ["(", "[", "{", "⟨"].includes(token.text)) depth += 1;
+    if (token.kind === TokenKind.Punct && [")", "]", "}", "⟩"].includes(token.text)) depth -= 1;
+  }
+  return starts.map((start, index) => ({
+    name: tokens[start]?.text ?? "",
+    line: tokens[start]?.line ?? 0,
+    value: tokens.slice(start + 2, starts[index + 1] ?? close - 1),
+  }));
+}
+
+/** The fields of the Lean `structure Hooks where` block: each name in the field column followed by `:`, with its
+ * type and default value. */
+function leanStructureFields(source: Source, name: string): Field[] | null {
+  const declaration = leanDeclarations(source.tokens).find((candidate) => candidate.kind === "structure" && candidate.name === name);
+  if (declaration === undefined) return null;
+  const tokens = source.tokens.slice(declaration.tokenStart, declaration.tokenEnd);
+  const column = tokens.find((token, index) => index > 0 && token.line > (tokens[0]?.line ?? 0))?.column;
+  const starts = tokens.flatMap((token, index) =>
+    token.column === column && token.kind === TokenKind.Word && tokens[index + 1]?.text === ":" ? [index] : []);
+  return starts.map((start, index) => ({
+    name: tokens[start]?.text ?? "",
+    line: tokens[start]?.line ?? 0,
+    value: tokens.slice(start + 2, starts[index + 1] ?? tokens.length),
+  }));
+}
+
+/** The record a declaration binds: the first `{` after `binder` in `source`, read as a record literal. */
+function boundRecord(source: Source, binder: (tokens: readonly Token[], index: number) => boolean, separator: string): Field[] | null {
+  const { tokens } = source;
+  const at = tokens.findIndex((_, index) => binder(tokens, index));
+  if (at === -1) return null;
+  const open = tokens.findIndex((token, index) => index > at && token.text === "{");
+  return open === -1 ? null : recordFields(tokens, open, separator);
+}
+
+/** Whether a default fails as an unregistered mechanism: `refuse`, or the invariant failure `select`, `correlates` and
+ * `delivered` return directly (`.invariant` in Lean, `SemanticCause.Invariant` in TypeScript). */
+const fails = (field: Field): boolean => field.value.some((token, index, value) =>
+  token.text === "refuse" || token.text === ".invariant" ||
+  (token.text === "SemanticCause" && value[index + 1]?.text === "." && value[index + 2]?.text === "Invariant"));
+
+/**
+ * KD7's hook defaults: the registry fills every `Hooks` field whose default fails, the 34 transition and input hooks,
+ * so no failing default runs in production. The notifications' no-op and the queries' absent-feature answers are
+ * outside this guard; which defaults the architecture promises is owner item OD2 (1).
+ */
+export function hookDefaultFindings(tree: KernelTree): string[] {
+  const label = "KD7 hook defaults";
+  const lean = (file: string) => tree.lean.find((source) => source.file === file);
+  const typeScript = (file: string) => tree.typeScript.find((source) => source.file === file);
+  const leanHooks = lean("Kernel/Hooks.lean");
+  const leanRegistry = lean("Kernel/Registry.lean");
+  const tsHooks = typeScript(`${kernelPrefix}hooks.ts`);
+  const tsRegistry = typeScript(`${kernelPrefix}registry.ts`);
+  const pairs: ReadonlyArray<Readonly<{ defaults: Field[] | null; filled: Field[] | null; registry: Source | undefined; what: string }>> = [
+    {
+      defaults: leanHooks === undefined ? null : leanStructureFields(leanHooks, "Hooks"),
+      filled: leanRegistry === undefined ? null : boundRecord(leanRegistry,
+        (tokens, index) => tokens[index]?.text === "def" && tokens[index + 1]?.text === "hooks" && tokens[index]?.column === 0, ":="),
+      registry: leanRegistry,
+      what: "Lean `structure Hooks` and `Registry.hooks`",
+    },
+    {
+      defaults: tsHooks === undefined ? null : boundRecord(tsHooks,
+        (tokens, index) => tokens[index]?.text === "const" && tokens[index + 1]?.text === "defaultHooks", ":"),
+      filled: tsRegistry === undefined ? null : boundRecord(tsRegistry,
+        (tokens, index) => tokens[index]?.text === "const" && tokens[index + 1]?.text === "hooks", ":"),
+      registry: tsRegistry,
+      what: "TypeScript `defaultHooks` and `registry.ts#hooks`",
+    },
+  ];
+  return pairs.flatMap(({ defaults, filled, registry, what }) => {
+    const failing = (defaults ?? []).filter(fails);
+    if (failing.length === 0 || filled === null || registry === undefined) return [`${label}: read no ${what}, so the guard read nothing`];
+    const names = new Set(filled.map((field) => field.name));
+    return failing.flatMap((field) => names.has(field.name)
+      ? []
+      : [`${label} ${registry.file}: the registry leaves ${field.name} to its failing default, which would run in production`]);
+  });
+}
+
+/** The body of each top-level `function NAME` of `source`, as token ranges `[open, close)`. */
+function functionBodies(source: Source): Map<string, readonly [number, number]> {
+  const bodies = new Map<string, readonly [number, number]>();
+  const { tokens } = source;
+  for (let i = 0; i + 1 < tokens.length; i += 1) {
+    if (tokens[i]?.text !== "function" || tokens[i + 1]?.kind !== TokenKind.Word) continue;
+    let open = closeOf(tokens, i + 2);
+    while (open < tokens.length && tokens[open]?.text !== "{") open += 1;
+    bodies.set(tokens[i + 1]?.text ?? "", [open, closeOf(tokens, open)]);
+  }
+  return bodies;
+}
+
+/** The member names `names` in the order `tokens[from, to)` first reads them, as `.name` or as a call `name(`. */
+function firstReads(tokens: readonly Token[], [from, to]: readonly [number, number], names: readonly string[]): string[] {
+  const seen: string[] = [];
+  for (let i = from; i < to; i += 1) {
+    const text = tokens[i]?.text ?? "";
+    const read = tokens[i - 1]?.text === "." || tokens[i + 1]?.text === "(";
+    if (read && names.includes(text) && !seen.includes(text)) seen.push(text);
+  }
+  return seen;
+}
+
+const unitKeyFile = `${kernelPrefix}state/key.ts`;
+
+/** A unit key comparator of KD7's key-order contract: the cached reads it makes first, then the decisive ones. */
+const unitKeyContracts: ReadonlyArray<Readonly<{ comparator: string; cached: readonly string[]; decisive: readonly string[] }>> = [
+  { comparator: "compareUnitKey", cached: ["depth", "fingerprint"], decisive: ["compareUnitRoot", "comparePath"] },
+  { comparator: "sameUnitKey", cached: [], decisive: ["compareUnitKey"] },
+  { comparator: "breadthUnitKey", cached: ["depth"], decisive: ["compareUnitRoot", "sameNode", "meet"] },
+];
+
+/**
+ * The TypeScript halves of KD7's spine rules for the closure's unit keys (DC4, DC20; `scripts/kernel-effects.lean` holds
+ * the Lean halves): a unit key node, the only kernel value with a `jump` or a `fingerprint`, is built only by
+ * `unitRoot` and `pushUnit`, so its cached depth and fingerprint are its path's by those two alone; and each unit key
+ * comparator reads the fixed-size cached fields, in order, before the root or the path, which decide last.
+ */
+export function unitKeyFindings(tree: KernelTree): string[] {
+  const label = "KD7 unit keys";
+  const keys = tree.typeScript.find((source) => source.file === unitKeyFile);
+  if (keys === undefined) return [`${label}: read no ${unitKeyFile}, so the guard read nothing`];
+  const findings: string[] = [];
+  const builders = functionBodies(keys);
+  let built = 0;
+  for (const source of tree.typeScript) {
+    const { tokens } = source;
+    for (let i = 1; i + 1 < tokens.length; i += 1) {
+      const text = tokens[i]?.text;
+      if ((text !== "jump" && text !== "fingerprint") || tokens[i + 1]?.text !== ":") continue;
+      if (tokens[i - 1]?.text !== "{" && tokens[i - 1]?.text !== ",") continue;
+      const inBuilder = source === keys && ["unitRoot", "pushUnit"].some((name) => {
+        const body = builders.get(name);
+        return body !== undefined && body[0] < i && i < body[1];
+      });
+      if (inBuilder) built += 1;
+      else findings.push(`${label} ${source.file}:${tokens[i]?.line}: builds a unit key node outside unitRoot and pushUnit`);
+    }
+  }
+  if (built === 0) findings.push(`${label}: unitRoot and pushUnit build no unit key node, so the builder rule read nothing`);
+  for (const { comparator, cached, decisive } of unitKeyContracts) {
+    const body = builders.get(comparator);
+    if (body === undefined) {
+      findings.push(`${label}: ${comparator} is not defined in ${unitKeyFile}, so its key-order contract read nothing`);
+      continue;
+    }
+    const reads = firstReads(keys.tokens, body, [...cached, ...decisive]);
+    if (cached.some((name, index) => reads[index] !== name)) {
+      findings.push(`${label} ${comparator}: reads ${reads.join(", ")}, not its cached fields ${cached.join(", ")} first`);
+    } else if (reads.length === cached.length) {
+      findings.push(`${label} ${comparator}: reads none of ${decisive.join(", ")} last`);
+    }
+  }
+  return findings;
+}
+
+/**
+ * A use of the run log or of a unit-keyed map's order that only the named functions of one module may make; `unitKeyed`
+ * holds the names the kernel declares as maps keyed by unit (`unitKeyedNames`).
+ */
+type OwnedUse = Readonly<{
+  what: string;
+  owners: Readonly<Record<string, readonly string[]>>;
+  at: (tokens: readonly Token[], index: number, unitKeyed: ReadonlySet<string>) => boolean;
+}>;
+
+/** The last identifier of the call argument opening at token `open`, the map an `orderedEntries` call reads. */
+function argumentName(tokens: readonly Token[], open: number): string {
+  let name = "";
+  for (let depth = 0, k = open; k < tokens.length; k += 1) {
+    const text = tokens[k]?.text ?? "";
+    if (text === "(") depth += 1;
+    else if (text === ")" && --depth === 0) return name;
+    else if (tokens[k]?.kind === TokenKind.Word) name = text;
+  }
+  return name;
+}
+
+/**
+ * The names the kernel declares as maps keyed by unit (`OrderedMap<UnitKey, …>`: a field, a parameter or a type's
+ * member), the maps whose iteration order the third rule holds, as Lean's rule holds `TreeMap UnitKey` alone: a map
+ * keyed otherwise, such as the issue table (DC12), is in its key order, which is no order of entry.
+ */
+function unitKeyedNames(tree: KernelTree): ReadonlySet<string> {
+  const names = new Set<string>();
+  for (const source of tree.typeScript) {
+    for (const match of source.text.matchAll(/\b(\w+)\??\s*:\s*OrderedMap<\s*UnitKey\b/gu)) names.add(match[1] ?? "");
+  }
+  return names;
+}
+
+const ownedUses: readonly OwnedUse[] = [
+  {
+    what: "reads the run log through runPosition outside orderKey and byRun",
+    owners: { "step/order": ["orderKey"], "step/commit": ["byRun"] },
+    at: (tokens, index) => tokens[index]?.text === "runPosition" && tokens[index + 1]?.text === "(" &&
+      tokens[index - 1]?.text !== "function",
+  },
+  {
+    what: "reads the run log's positions outside runRecord and runPosition",
+    owners: { "step/order": ["runRecord", "runPosition"] },
+    at: (tokens, index) => tokens[index]?.text === "positions" && tokens[index - 1]?.text === ".",
+  },
+  {
+    what: "reads the iteration order of a unit-keyed map outside the choices, the commit and allTokens",
+    owners: { "step/order": ["earliest", "latest", "firstBreadth"], "step/commit": ["byRun"], state: ["allTokens"] },
+    at: (tokens, index, unitKeyed) => tokens[index]?.text === "orderedEntries" && tokens[index + 1]?.text === "(" &&
+      tokens[index - 1]?.text !== "function" && unitKeyed.has(argumentName(tokens, index + 1)),
+  },
+];
+
+/**
+ * The type aliases of a map keyed by unit (`type Q = OrderedMap<UnitKey, …>`, or an alias generic in the key, which a use
+ * can instantiate at `UnitKey`): `unitKeyedNames` reads declarations by their text, so a name declared through an alias
+ * would escape the third rule, while Lean's rule reads the type. Line and alias name of each.
+ */
+function unitKeyedAliases(text: string): (readonly [number, string])[] {
+  const found: (readonly [number, string])[] = [];
+  for (const match of text.matchAll(/\btype\s+(\w+)\s*(?:<([^>=]*)>)?\s*=\s*OrderedMap<\s*(\w+)/gu)) {
+    const parameters = (match[2] ?? "").split(",").map((parameter) => parameter.trim().split(/\s/u)[0]);
+    if (match[3] === "UnitKey" || parameters.includes(match[3])) {
+      found.push([text.slice(0, match.index).split("\n").length, match[1] ?? ""]);
+    }
+  }
+  return found;
+}
+
+/** The innermost top-level function of `bodies` whose body holds token `index`. */
+function enclosing(bodies: Map<string, readonly [number, number]>, index: number): string | undefined {
+  let found: string | undefined;
+  let width = Number.POSITIVE_INFINITY;
+  for (const [name, [open, close]] of bodies) {
+    if (open < index && index < close && close - open < width) {
+      found = name;
+      width = close - open;
+    }
+  }
+  return found;
+}
+
+/**
+ * The TypeScript halves of KD7's run-log rules (DC4; `scripts/kernel-effects.lean` holds the Lean halves): the run log is
+ * read only through `runPosition`, which only the token order (`orderKey`) and the commit (`byRun`) call,
+ * and its positions only by its reader and writer, so no unit's body reads when another ran; and no function but the
+ * choices that break every tie by the key, the commit's sort by position then key and the queued tokens' multiset view
+ * reads the iteration order of a map keyed by unit, and no type alias names such a map (`unitKeyedAliases`).
+ */
+export function runLogFindings(tree: KernelTree): string[] {
+  const label = "KD7 run log";
+  const findings: string[] = [];
+  const owned = ownedUses.map(() => 0);
+  const unitKeyed = unitKeyedNames(tree);
+  for (const source of tree.typeScript) {
+    if (!source.file.startsWith(kernelPrefix) || source.file === `${kernelPrefix}state/map.ts`) continue;
+    for (const [line, alias] of unitKeyedAliases(source.text)) {
+      findings.push(`${label} ${source.file}:${line}: aliases a map keyed by unit (${alias}), which the unit-keyed map rule reads by declaration`);
+    }
+    const module = moduleOf(source);
+    const bodies = functionBodies(source);
+    const { tokens } = source;
+    for (let i = 0; i < tokens.length; i += 1) {
+      ownedUses.forEach((use, rule) => {
+        if (!use.at(tokens, i, unitKeyed)) return;
+        const within = enclosing(bodies, i);
+        if (within !== undefined && (use.owners[module] ?? []).includes(within)) owned[rule] = (owned[rule] ?? 0) + 1;
+        else findings.push(`${label} ${source.file}:${tokens[i]?.line}: ${use.what}`);
+      });
+    }
+  }
+  ownedUses.forEach((use, rule) => {
+    if (owned[rule] === 0) findings.push(`${label}: no owner ${use.what.replace(/ outside .*$/u, "")}, so the rule read nothing`);
+  });
+  return findings;
 }

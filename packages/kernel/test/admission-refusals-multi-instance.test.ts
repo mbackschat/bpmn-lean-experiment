@@ -23,7 +23,7 @@ const admitted = looping();
 
 /** The options the Multi-Instance level reads under CIB; `over` replaces some. */
 const cibLoop = (over: Json = {}) => (program: Json): Json => withOptions(program, {
-  evaluator: "juel", multiInstanceBinding: "loopReferences", multiInstanceCounters: "cibLocals",
+  evaluator: "juel", multiInstanceBinding: "loopReferences", multiInstanceCounters: "cibLocals", branchSchedule: "declarationDepthFirst",
   multiInstanceInputFailure: "rollback", multiInstanceCount: "javaInt", ...over,
 });
 /** `T` loops under the CIB options. */
@@ -278,7 +278,7 @@ export const rows: readonly Row[] = [
   {
     code: "profile.multiInstanceCounters.cibLocals",
     description: "a Simple Boolean profile selecting CIB's counters, for a program with a loop",
-    mutate: (program: Json) => withOptions(looping()(program), { multiInstanceCounters: "cibLocals" }),
+    mutate: (program: Json) => withOptions(looping()(program), { multiInstanceCounters: "cibLocals", branchSchedule: "declarationDepthFirst" }),
     control: admitted,
   },
   {

@@ -2,8 +2,8 @@
  * Data: Java's carriers for portable values and the EL coercions between them (`TypeConverterImpl`, EL §1.18), for
  * the Core JUEL evaluator; transcribed from `Kernel/Feature/Data/Juel/Coercion.lean`.
  */
-import { ValueTag, assertNever, isAscii, parseJavaLong, utf8ByteSize, type Value } from "../../../il/types.js";
-import { canonicalDecimal, integerBound, textBytes } from "../../../hooks.js";
+import { ValueTag, assertNever, isAscii, parseJavaLong, utf8ByteSize, type Bounds, type Value } from "../../../il/types.js";
+import { canonicalDecimal, integerBound } from "../../../hooks.js";
 
 /** Which Java class carries an Integer during one evaluation; only Java `equals` observes it. */
 export enum Carrier {
@@ -53,7 +53,7 @@ const scaleBound = 4096n;
 const maxSafe = BigInt(integerBound);
 
 /** The portable value of a result, or `null` outside the domain (DATA-SEMANTICS-SPEC "Values"). */
-export function portable(value: JVal): Value | null {
+export function portable(bounds: Bounds, value: JVal): Value | null {
   switch (value.tag) {
     case JValTag.Null:
       return { tag: ValueTag.Null };
@@ -66,7 +66,7 @@ export function portable(value: JVal): Value | null {
         ? { tag: ValueTag.Decimal, coefficient: value.coefficient, scale: Number(value.scale) }
         : null;
     case JValTag.String:
-      return utf8ByteSize(value.value) <= textBytes ? { tag: ValueTag.String, value: value.value } : null;
+      return utf8ByteSize(value.value) <= bounds.textBytes ? { tag: ValueTag.String, value: value.value } : null;
     case JValTag.List:
       return { tag: ValueTag.List, items: value.items };
     case JValTag.Map:
@@ -77,24 +77,28 @@ export function portable(value: JVal): Value | null {
 
 
 /** A context value as Java sees it: Integers of unknown class, a `stringList` as the ArrayList of Strings it is in CIB. */
-export function fromValue(value: Value): JVal {
+export function fromValue(value: Value): Eval<JVal> {
   switch (value.tag) {
     case ValueTag.Null:
-      return nullValue;
+      return ok(nullValue);
     case ValueTag.Bool:
-      return bool(value.value);
+      return ok(bool(value.value));
     case ValueTag.Int:
-      return { tag: JValTag.Int, value: BigInt(value.value), carrier: Carrier.Unknown };
+      return ok({ tag: JValTag.Int, value: BigInt(value.value), carrier: Carrier.Unknown });
     case ValueTag.Decimal:
-      return { tag: JValTag.Decimal, coefficient: value.coefficient, scale: BigInt(value.scale) };
+      return ok({ tag: JValTag.Decimal, coefficient: value.coefficient, scale: BigInt(value.scale) });
+    case ValueTag.Double:
+    case ValueTag.Date:
+      // dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+      return unsupported("value-kind");
     case ValueTag.String:
-      return text(value.value);
+      return ok(text(value.value));
     case ValueTag.StringList:
-      return { tag: JValTag.List, items: value.items.map((item) => ({ tag: ValueTag.String, value: item })) };
+      return ok({ tag: JValTag.List, items: value.items.map((item) => ({ tag: ValueTag.String, value: item })) });
     case ValueTag.List:
-      return { tag: JValTag.List, items: value.items };
+      return ok({ tag: JValTag.List, items: value.items });
     case ValueTag.Map:
-      return { tag: JValTag.Map, entries: value.entries };
+      return ok({ tag: JValTag.Map, entries: value.entries });
   }
   return assertNever(value);
 }
@@ -124,8 +128,21 @@ export function siteValue(value: JVal): Value | null {
   }
   return assertNever(value);
 }
-const isBlank = (value: JVal): boolean =>
-  value.tag === JValTag.Null || (value.tag === JValTag.String && value.value === "");
+function isBlank(value: JVal): boolean {
+  switch (value.tag) {
+    case JValTag.Null:
+      return true;
+    case JValTag.String:
+      return value.value === "";
+    case JValTag.Bool:
+    case JValTag.Int:
+    case JValTag.Decimal:
+    case JValTag.List:
+    case JValTag.Map:
+      return false;
+  }
+  return assertNever(value);
+}
 
 export function toBool(value: JVal): Eval<boolean> {
   if (isBlank(value)) return ok(false);
@@ -276,7 +293,20 @@ function decimalString(coefficient: bigint, scale: bigint): string {
 }
 
 /** A String with `.`, `e` or `E` (`NumberOperations.isDotEe`). */
-export const dotEe = (value: JVal): boolean => value.tag === JValTag.String && /[.eE]/u.test(value.value);
+export function dotEe(value: JVal): boolean {
+  switch (value.tag) {
+    case JValTag.String:
+      return /[.eE]/u.test(value.value);
+    case JValTag.Null:
+    case JValTag.Bool:
+    case JValTag.Int:
+    case JValTag.Decimal:
+    case JValTag.List:
+    case JValTag.Map:
+      return false;
+  }
+  return assertNever(value);
+}
 
 /** Java `String.trim`: strip characters up to U+0020 at both ends. */
 export function javaTrim(value: string): string {
@@ -285,4 +315,214 @@ export function javaTrim(value: string): string {
   while (start < end && value.charCodeAt(start) <= 0x20) start += 1;
   while (end > start && value.charCodeAt(end - 1) <= 0x20) end -= 1;
   return value.slice(start, end);
+}
+
+// Operand classes (NumberOperations, BooleanOperations; EL §1.7 to §1.11)
+//
+// Java's binary operators test their operands' classes in a fixed order, and the first class either operand has decides
+// the rule. Each order below is a class per kind, named after the Java class the rule tests, with its rank in that order:
+// the kind of an operand is read once, exhaustively, so a new kind decides where it ranks.
+
+/** Of two operand classes, the one that decides: the higher ranked, the right one on a tie. */
+export function deciding<T>(rank: (value: T) => number, left: T, right: T): T {
+  return rank(left) > rank(right) ? left : right;
+}
+
+export function isNull(value: JVal): boolean {
+  switch (value.tag) {
+    case JValTag.Null:
+      return true;
+    case JValTag.Bool:
+    case JValTag.Int:
+    case JValTag.Decimal:
+    case JValTag.String:
+    case JValTag.List:
+    case JValTag.Map:
+      return false;
+  }
+  return assertNever(value);
+}
+
+export function isList(value: JVal): boolean {
+  switch (value.tag) {
+    case JValTag.List:
+      return true;
+    case JValTag.Null:
+    case JValTag.Bool:
+    case JValTag.Int:
+    case JValTag.Decimal:
+    case JValTag.String:
+    case JValTag.Map:
+      return false;
+  }
+  return assertNever(value);
+}
+
+export function isMap(value: JVal): boolean {
+  switch (value.tag) {
+    case JValTag.Map:
+      return true;
+    case JValTag.Null:
+    case JValTag.Bool:
+    case JValTag.Int:
+    case JValTag.Decimal:
+    case JValTag.String:
+    case JValTag.List:
+      return false;
+  }
+  return assertNever(value);
+}
+
+/**
+ * What decides `NumberOperations.add`, `sub`, `mul` and `mod`: a BigDecimal, then a String in floating notation (a
+ * Double, `isDotEe`), then a Long; two nulls make 0.
+ */
+export enum NumberClass {
+  Absent = "absent",
+  Long = "long",
+  Double = "double",
+  BigDecimal = "bigDecimal",
+}
+
+export function numberRank(value: NumberClass): number {
+  switch (value) {
+    case NumberClass.Absent:
+      return 0;
+    case NumberClass.Long:
+      return 1;
+    case NumberClass.Double:
+      return 2;
+    case NumberClass.BigDecimal:
+      return 3;
+  }
+  return assertNever(value);
+}
+
+export function numberClass(value: JVal): NumberClass {
+  switch (value.tag) {
+    case JValTag.Null:
+      return NumberClass.Absent;
+    case JValTag.Decimal:
+      return NumberClass.BigDecimal;
+    case JValTag.String:
+      return dotEe(value) ? NumberClass.Double : NumberClass.Long;
+    case JValTag.Bool:
+    case JValTag.Int:
+    case JValTag.List:
+    case JValTag.Map:
+      return NumberClass.Long;
+  }
+  return assertNever(value);
+}
+
+export enum OrderClassTag {
+  Incomparable = "incomparable",
+  Boolean = "boolean",
+  Text = "text",
+  Long = "long",
+  BigDecimal = "bigDecimal",
+}
+
+/**
+ * What decides `BooleanOperations.lt0`: a BigDecimal, then a Long, then a String; two Booleans compare, and anything
+ * else is no `Comparable`.
+ */
+export type OrderClass =
+  | { readonly tag: OrderClassTag.Incomparable }
+  | { readonly tag: OrderClassTag.Boolean; readonly value: boolean }
+  | { readonly tag: OrderClassTag.Text }
+  | { readonly tag: OrderClassTag.Long }
+  | { readonly tag: OrderClassTag.BigDecimal };
+
+export function orderRank(value: OrderClass): number {
+  switch (value.tag) {
+    case OrderClassTag.Incomparable:
+      return 0;
+    case OrderClassTag.Boolean:
+      return 1;
+    case OrderClassTag.Text:
+      return 2;
+    case OrderClassTag.Long:
+      return 3;
+    case OrderClassTag.BigDecimal:
+      return 4;
+  }
+  return assertNever(value);
+}
+
+export function orderClass(value: JVal): OrderClass {
+  switch (value.tag) {
+    case JValTag.Decimal:
+      return { tag: OrderClassTag.BigDecimal };
+    case JValTag.Int:
+      return { tag: OrderClassTag.Long };
+    case JValTag.String:
+      return { tag: OrderClassTag.Text };
+    case JValTag.Bool:
+      return { tag: OrderClassTag.Boolean, value: value.value };
+    case JValTag.Null:
+    case JValTag.List:
+    case JValTag.Map:
+      return { tag: OrderClassTag.Incomparable };
+  }
+  return assertNever(value);
+}
+
+export enum EqualClassTag {
+  Collection = "collection",
+  Text = "text",
+  Boolean = "boolean",
+  Long = "long",
+  BigDecimal = "bigDecimal",
+  Absent = "absent",
+}
+
+/**
+ * What decides `BooleanOperations.eq`: a null, then a BigDecimal, a Long, a Boolean and a String; two collections are
+ * compared by `equals`, which reads the right one as the context value it is.
+ */
+export type EqualClass =
+  | { readonly tag: EqualClassTag.Collection; readonly value: Value }
+  | { readonly tag: EqualClassTag.Text }
+  | { readonly tag: EqualClassTag.Boolean }
+  | { readonly tag: EqualClassTag.Long }
+  | { readonly tag: EqualClassTag.BigDecimal }
+  | { readonly tag: EqualClassTag.Absent };
+
+export function equalRank(value: EqualClass): number {
+  switch (value.tag) {
+    case EqualClassTag.Collection:
+      return 0;
+    case EqualClassTag.Text:
+      return 1;
+    case EqualClassTag.Boolean:
+      return 2;
+    case EqualClassTag.Long:
+      return 3;
+    case EqualClassTag.BigDecimal:
+      return 4;
+    case EqualClassTag.Absent:
+      return 5;
+  }
+  return assertNever(value);
+}
+
+export function equalClass(value: JVal): EqualClass {
+  switch (value.tag) {
+    case JValTag.Null:
+      return { tag: EqualClassTag.Absent };
+    case JValTag.Decimal:
+      return { tag: EqualClassTag.BigDecimal };
+    case JValTag.Int:
+      return { tag: EqualClassTag.Long };
+    case JValTag.Bool:
+      return { tag: EqualClassTag.Boolean };
+    case JValTag.String:
+      return { tag: EqualClassTag.Text };
+    case JValTag.List:
+      return { tag: EqualClassTag.Collection, value: { tag: ValueTag.List, items: value.items } };
+    case JValTag.Map:
+      return { tag: EqualClassTag.Collection, value: { tag: ValueTag.Map, entries: value.entries } };
+  }
+  return assertNever(value);
 }

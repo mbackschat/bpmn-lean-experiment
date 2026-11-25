@@ -101,6 +101,18 @@ export const rows: readonly Row[] = [
     control: underJuel(userTaskMapping(admittedJuel)),
   },
   {
+    code: "value.double",
+    description: "a literal Double inside a List",
+    mutate: userTaskMapping(literalValue({ kind: "list", value: [{ kind: "double", bits: "4607182418800017408" }] })),
+    control: userTaskMapping(literalValue({ kind: "list", value: [{ kind: "decimal", coefficient: "1", scale: 0 }] })),
+  },
+  {
+    code: "value.date",
+    description: "a literal Date",
+    mutate: userTaskMapping(literalValue({ kind: "date", epochMs: "0" })),
+    control: userTaskMapping(literalValue({ kind: "integer", value: 0 })),
+  },
+  {
     code: "expression.juel.floatLiteral",
     description: "a floating literal",
     mutate: juelInput({ float: { lexeme: "1.5" } }),
@@ -243,6 +255,22 @@ export const rows: readonly Row[] = [
       definition: { key: "Q", namespace: null, version: null, versionTag: null, deployment: null, tenant: null, sourceSha256: null },
       sourceId: "T",
     })),
+  },
+  // A structured parameter value is carried and refused (AD3, E12).
+  {
+    code: "mapping.structuredParameter",
+    description: "an input parameter whose value is a camunda:list",
+    mutate: task(activity("T", userWork(), { structuredInputs: [{ target: "items", position: 0, nodes: [
+      { value: { body: literalValue(bool(true)) } }, { list: { items: [0] } },
+    ] }] })),
+    control: task(activity("T", userWork(), { inputs: [mapping("items", literalValue(bool(true)))] })),
+  },
+  {
+    code: "mapping.structuredParameter",
+    description: "an output parameter whose value is a camunda:map holding a camunda:script",
+    mutate: task(activity("T", userWork(), { structuredOutputs: [{ target: "totals", position: 0, nodes: [
+      { script: { payload: { format: "javascript", source: "1", resource: null } } }, { map: { entries: [{ key: "sum", value: 0 }] } },
+    ] }] })),
   },
 ];
 

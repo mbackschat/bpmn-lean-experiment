@@ -19,7 +19,7 @@ import {
 import type { Json } from "./admission-refusal-support.ts";
 
 const cib = {
-  errorCatchVariables: "eventScope", errorPathOutputs: "mapped", raisedCallOutputs: "atCalledRoot", undeclaredWrite: "atInstanceRoot",
+  errorCatchVariables: "eventScope", errorPathOutputs: "mapped", raisedCallOutputs: "atCalledRoot", branchSchedule: "declarationDepthFirst", undeclaredWrite: "atInstanceRoot",
   outputContext: "activityScope", unhandledError: "endsThrowingPath", effectResultValues: "activityLocals",
 };
 const text = (value: string): Json => literalValue({ kind: "string", value });
@@ -75,7 +75,7 @@ function nested({ hostInputs = [], hostOutputs = [], middleInputs = null, taskOu
 }
 
 const root = (state: ReturnType<typeof failed>): Record<string, unknown> =>
-  Object.fromEntries(state.variables.flatMap((entry) => entry.entries));
+  Object.fromEntries(state.variables.flatMap(([, entries]) => entries));
 
 test("the task's output named like an ancestor catcher's variable is written after it", () => {
   assert.deepEqual(root(failed(nested({ taskOutputs: [mapping("label", text("mapped"))] }), "PT", "FAIL")), { label: held("mapped") });
@@ -132,7 +132,7 @@ const toVerdict = [mapping("verdict", variable("result"))];
 
 test("an uncaught Error in a called instance passes the Call's outputs before the task's outputs run", () => {
   const state = failed(calling(false, true, toVerdict), "CA", "UNLISTED", called, seed);
-  const scopes = state.variables.map((entry) => Object.fromEntries(entry.entries));
+  const scopes = state.variables.map(([, entries]) => Object.fromEntries(entries));
   assert.deepEqual(scopes, [{ seed: held("pending"), checkVerdict: held("pending") }, { verdict: held("rejected") }]);
   assert.deepEqual(state.openItems.map((item) => item.element), ["CW"]);
 });

@@ -26,6 +26,8 @@ partial def valueToJson : Value → Json
   | .int value => Json.mkObj [("kind", "integer"), ("value", toJson value)]
   | .decimal coefficient scale =>
     Json.mkObj [("kind", "decimal"), ("coefficient", toString coefficient), ("scale", toJson scale)]
+  | .double bits => Json.mkObj [("kind", "double"), ("bits", toString bits)]
+  | .date epochMs => Json.mkObj [("kind", "date"), ("epochMs", toString epochMs)]
   | .string value => Json.mkObj [("kind", "string"), ("value", Json.str value)]
   | .stringList items => Json.mkObj [("kind", "stringList"), ("value", toJson items)]
   | .list items => Json.mkObj [("kind", "list"), ("value", Json.arr (items.map valueToJson).toArray)]
@@ -59,6 +61,17 @@ partial def valueFromJson (json : Json) : Except String Value := do
     match coefficient.toInt? with
     | some value => .decimal value <$> json.getObjValAs? Nat "scale"
     | none => throw s!"invalid decimal coefficient {coefficient}"
+  | "double" =>
+    let bits ← json.getObjValAs? String "bits"
+    match bits.toInt? with
+    | some value => if 0 ≤ value && value < 2 ^ 64 then pure (.double value.toNat.toUInt64) else
+        throw s!"invalid double bits {bits}"
+    | none => throw s!"invalid double bits {bits}"
+  | "date" =>
+    let epochMs ← json.getObjValAs? String "epochMs"
+    match epochMs.toInt? with
+    | some value => if -2 ^ 63 ≤ value && value < 2 ^ 63 then pure (.date value) else throw s!"invalid date {epochMs}"
+    | none => throw s!"invalid date {epochMs}"
   | "string" => .string <$> json.getObjValAs? String "value"
   | "stringList" => .stringList <$> json.getObjValAs? (List String) "value"
   | "list" => do

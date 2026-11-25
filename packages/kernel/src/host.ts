@@ -35,11 +35,11 @@ import {
   type Subscription,
   type Throw,
   type Work,
+  programPublishesOccurrences,
 } from "./il/types.js";
-import { programPublishesOccurrences } from "./il/paths.js";
 import { resolve, type Resolved } from "./il/timer.js";
 import {
-  instanceOf,
+  instanceOf, instanceText,
   instanceRoot,
   messageChannelEquals,
   occurrenceOf,
@@ -56,8 +56,10 @@ import {
   type State,
   type Transition,
   type WaitView,
+  breadthUnitKey, issueNotAfter, itemsInOrder, ownVariables, type OccurrenceName,
+  issueNumber,
 } from "./state.js";
-import { messageTriggerChannel, ownVariables } from "./hooks.js";
+import { messageTriggerChannel } from "./hooks.js";
 
 /**
  * What a program needs from its host. `maxConcurrentWaits` is `null` when the shape bounds nothing, which is every
@@ -249,7 +251,7 @@ export function addressesOf(waits: readonly OpenWait[]): readonly WaitAddress[] 
 }
 
 /**
- * `broadcasts` are the Signals the input threw to the population (`State.outbox`), which the host publishes once the
+ * `broadcasts` are the Signals the input threw to the population (`State.intents`), which the host publishes once the
  * input commits (PC-SIGNAL-01); `addresses` are the open waits' addresses (`addressesOf`).
  */
 export interface View {
@@ -265,6 +267,11 @@ function publicRef(program: Program, ref: OccurrenceRef): OccurrenceRef {
   return { ...ref, element: programPublicId(program, ref.element) };
 }
 
+/** Lean's `Host.publicName`. */
+function publicName(program: Program, name: OccurrenceName): OccurrenceName {
+  return { ...name, element: programPublicId(program, name.element) };
+}
+
 function publicKey(program: Program, key: OccurrenceKey): OccurrenceKey {
   return { ...key, element: programPublicId(program, key.element) };
 }
@@ -275,14 +282,15 @@ function publicTransition(program: Program, transition: Transition): Transition 
     element: transition.element === null ? null : programPublicId(program, transition.element),
     started: transition.started.map((fact) => ({ ...fact, occurrence: publicKey(program, fact.occurrence) })),
     ended: transition.ended.map(([key, terminal]) => [publicKey(program, key), terminal] as const),
+    ready: transition.ready.map((key) => publicKey(program, key)),
   };
 }
 
 function publicFailure(program: Program, failure: InstanceFailure): InstanceFailure {
   return {
     ...failure,
-    occurrence: publicRef(program, failure.occurrence),
-    related: failure.related.map(([name, ref]) => [name, publicRef(program, ref)] as const),
+    occurrence: publicName(program, failure.occurrence),
+    related: failure.related.map(([role, name]) => [role, publicName(program, name)] as const),
   };
 }
 
@@ -293,7 +301,7 @@ function publicFailure(program: Program, failure: InstanceFailure): InstanceFail
  */
 function currentInputs(state: State, item: OpenItem, view: WaitView): WaitView {
   if (view.userTask === null) return view;
-  const own = ownVariables(state, ownScope(state, item.occurrence, item.scope));
+  const own = ownVariables(state, ownScope(state, item.id.occurrence, item.scope));
   const inputs = view.userTask.inputs.flatMap(([name]) => own.filter(([key]) => key === name));
   return { ...view, userTask: { ...view.userTask, inputs } };
 }
@@ -302,9 +310,9 @@ function openWait(program: Program, state: State, item: OpenItem): OpenWait {
   const root = instanceRoot(state, item.scope);
   return {
     id: publicRef(program, {
-      processInstanceId: instanceOf(state, item.scope),
+      processInstanceId: instanceText(instanceOf(state, item.scope)),
       element: item.element,
-      activation: occurrenceOf(state, item.occurrence)?.activation ?? 0,
+      activation: issueNumber(occurrenceOf(state, item.id.occurrence)?.activation ?? 0),
     }),
     definition: state.slots.instances.find((instance) => instance.root === root)?.definition ?? null,
     view: currentInputs(state, item, openKindView(item.kind)),
@@ -319,20 +327,23 @@ function publicJournal(program: Program, journal: readonly Transition[]): Transi
   return journal.flatMap((transition) => {
     const started = transition.started.filter((fact) => programPublishesOccurrences(program, fact.occurrence.element));
     const ended = transition.ended.filter(([key]) => programPublishesOccurrences(program, key.element));
+    const ready = transition.ready.filter((key) => programPublishesOccurrences(program, key.element));
     const kept = transition.element === null || programPublishesOccurrences(program, transition.element) ||
-      started.length > 0 || ended.length > 0;
-    return kept ? [publicTransition(program, { ...transition, started, ended })] : [];
+      started.length > 0 || ended.length > 0 || ready.length > 0;
+    return kept ? [publicTransition(program, { ...transition, started, ended, ready })] : [];
   });
 }
 
 export function hostView(program: Program, state: State): View {
-  const openWaits = state.openItems.map((item) => openWait(program, state, item));
+  // A committed state holds committed positions only, which every unit order orders alike.
+  const openWaits = itemsInOrder((left, right) => issueNotAfter(breadthUnitKey, state.issued, left, right), state.openItems)
+    .map((item) => openWait(program, state, item));
   return {
     status: state.status,
     failure: state.failure === null ? null : publicFailure(program, state.failure),
     openWaits,
     addresses: addressesOf(openWaits),
     journal: publicJournal(program, state.journal),
-    broadcasts: state.outbox.map((intent) => ({ ...intent, origin: publicRef(program, intent.origin) })),
+    broadcasts: state.intents.map((intent) => ({ ...intent, origin: publicName(program, intent.origin) })),
   };
 }

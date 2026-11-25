@@ -11,7 +11,8 @@
  * builds a `State` or an `Input` by hand reaches no Lean answer and must state its documents instead. A step of a program
  * admission refuses records an `ungated` case, which runs without the admission gate and reports the refusal beside it.
  *
- * Kernel enums are re-exported for building and reading values; they carry no behavior.
+ * Kernel enums are re-exported for building and reading values; they carry no behavior. `rootScope` is the process
+ * root's scope occurrence key, the empty key of `Kernel/State/Key.lean`, held as the kernel holds a key.
  */
 import { appendFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
@@ -20,7 +21,7 @@ import { beforeEach } from "node:test";
 import * as kernel from "@bpmn-lean/kernel";
 import * as kernelTesting from "@bpmn-lean/kernel/testing";
 import type {
-  Decoded, Input, JsonValue, Outcome, Program, State, TimerFiring,
+  Decoded, Input, JsonValue, Outcome, Program, ScopeOccurrenceId, State, TimerFiring,
 } from "@bpmn-lean/kernel";
 
 export {
@@ -28,6 +29,8 @@ export {
   FailureTag, FanOutEntryTag, FanOutNextTag, InputTag, MessageAddressTag, PendingTag, PublishMode, ReceiverTag,
   ResolutionTag, ScopeKindTag, SignalAddressTag, SignalReach, StartTriggerTag, StimulusTag, ThrowTag, VisitTag, WorkTag,
 } from "@bpmn-lean/kernel";
+
+export const rootScope = "" as ScopeOccurrenceId;
 
 type Json = Record<string, unknown>;
 
@@ -96,6 +99,12 @@ export function encodeProgram(program: Program): JsonValue {
 export function admit(program: Program): string | null {
   record(run(program, []));
   return kernel.admit(program);
+}
+
+/** The admission registry's located verdict, replayed as the `admitLocated` fixture. */
+export function admitLocated(program: Program): ReturnType<typeof kernel.admitLocated> {
+  record({ entry: "fixture", fixture: { entry: "admitLocated", programs: [wireOf(programJson, program, "program")], input: {} } });
+  return kernel.admitLocated(program);
 }
 
 /** The stimulus codec over `json`, remembering the stimulus and the Timer firing it states. */

@@ -1,11 +1,14 @@
 /**
  * How the failure of an input's closure becomes the input's outcome where CIB runs the work in a job rather than in
  * the command, transcribed from `Kernel/Step/Jobs.lean`: past a transaction boundary (`deferred`), in a timer firing
- * (`timerJob`) and in the continuation an effect result reaches (`effectContinuation`). `step.ts` applies them.
+ * (`timerJob`) and in the continuation an effect result reaches (`effectContinuation`); and the transition a failed job
+ * item commits (`jobFailure`). `step.ts` applies them.
  */
 import { ContinuationFailure, assertNever, type Program } from "../il/types.js";
-import { EffectOutcomeTag, FailureTag, SemanticCause, crossed, failed, type EffectInput, type Outcome, type State } from "../state.js";
-import type { Ctx } from "../hooks.js";
+import {
+  EffectOutcomeTag, FailureTag, SemanticCause, crossed, failed, type EffectInput, type Outcome, type State, type TimerInput,
+} from "../state.js";
+import { itemDetailOf, type Ctx, type Hooks } from "../hooks.js";
 
 /**
  * `outcome`, unless it rolls back or fails with a `Model` cause after `state` crossed a transaction boundary: CIB commits
@@ -55,4 +58,13 @@ export function effectContinuation(ctx: Ctx, data: EffectInput, run: (data: Effe
     ctx.program.options.continuationFailure === ContinuationFailure.Incident &&
     (data.outcome.tag === EffectOutcomeTag.Success || data.outcome.tag === EffectOutcomeTag.BusinessFailure);
   return retried ? run({ ...data, outcome: { tag: EffectOutcomeTag.TechnicalFailure } }) : result;
+}
+
+/**
+ * The transition that fails the job item a Timer firing addresses (`Hooks.failJob`). `step.ts` runs it on no input
+ * until the job model's stage (AD8) makes a job's failure an outcome of its firing.
+ */
+export function jobFailure(hooks: Hooks, ctx: Ctx, data: TimerInput, state: State): Outcome {
+  const found = itemDetailOf(ctx, state, data.occurrence, (view) => view.job);
+  return found === null ? failed(FailureTag.Rejected, "unknown-job") : hooks.failJob(ctx, found[0], found[1], state);
 }

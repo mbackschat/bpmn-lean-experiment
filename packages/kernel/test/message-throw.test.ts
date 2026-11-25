@@ -96,7 +96,7 @@ test("a technical failure opens an incident whose retry reopens the same send oc
   assert.deepEqual(items(failed), ["T:incident"]);
   const retried = run(program, answer("T", { kind: "technicalFailure" }),
     { kind: "command", occurrence: at("T"), action: { kind: "retryIncident", generation: 1 } });
-  assert.deepEqual(retried.openItems.map((item) => [item.element, item.occurrence]), failed.openItems.map((item) => [item.element, item.occurrence]));
+  assert.deepEqual(retried.openItems.map((item) => [item.element, item.id.occurrence]), failed.openItems.map((item) => [item.element, item.id.occurrence]));
   assert.deepEqual(items(retried), ["T:effect"]);
   const ended = run(program, answer("T", { kind: "technicalFailure" }),
     { kind: "command", occurrence: at("T"), action: { kind: "retryIncident", generation: 1 } }, success("T"), success("E"));

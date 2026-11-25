@@ -43,6 +43,7 @@ import {
   type ElementId,
 } from "../il/types.js";
 import {
+  scopeOccurrenceParent,
   FailureTag,
   InstanceStatus,
   RaisedTag,
@@ -53,7 +54,6 @@ import {
   calledRoot,
   committed,
   completeSignal,
-  disarm,
   failed,
   failedWith,
   idle,
@@ -72,10 +72,11 @@ import {
   type State,
   SemanticCause,
   semanticFailure,
+  allTokens, ownVariables,
 } from "../state.js";
 import {
-  ScopeRole, boundaryFire, clearInside, ctxOutputReads, ctxRequireMappingsWith, ctxRunsAsInstance, idleWithout, lastWrites,
-  ownVariables, type Ctx,
+  ScopeRole, boundaryFire, clearInside, disarm, ctxOutputReads, ctxPositionLe, ctxRequireMappingsWith, ctxRunsAsInstance, idleWithout, lastWrites,
+  type Ctx,
 } from "../hooks.js";
 import { best, boundariesOf, contextCatcher, levelCandidates } from "./propagation/candidates.js";
 import { throwLeave, throwerRef } from "./propagation/throws.js";
@@ -89,8 +90,7 @@ export { arriveThrow } from "./propagation/throws.js";
  * `arriveThrow` leaves an Error or a Cancel throw before raising it.
  */
 function throwerLeaves(ctx: Ctx, origin: Origin, state: State): State {
-  const standing = state.occurrences.find((occurrence) =>
-    occurrence.element === origin.element && occurrence.scope === origin.scope && occurrence.activation === origin.activation);
+  const standing = state.occurrences.find((occurrence) => occurrence.id === origin.thrower);
   const element = programElement(ctx.program, origin.element);
   const event = element === null ? null : elementEvent(element);
   return standing === undefined || event === null
@@ -154,7 +154,7 @@ function hostLeaves(hooks: PropagationHooks, ctx: Ctx, origin: Origin, state: St
 function endsInstanceWithOutputs(ctx: Ctx, origin: Origin, state: State): boolean {
   const thrower = programElement(ctx.program, origin.element);
   const outputs = (thrower === null ? null : elementEnvelope(thrower))?.outputs ?? [];
-  const left = origin.host === null ? idle(state, origin.scope) : idleWithout(state, origin.scope, origin.host);
+  const left = origin.host === null ? idle(state, origin.scope) : idleWithout(state, ctxPositionLe(ctx, state), origin.scope, origin.host);
   return outputs.length > 0 && instanceRoot(state, origin.scope) === origin.scope && left;
 }
 
@@ -175,7 +175,7 @@ function enclosingInstances(ctx: Ctx, state: State, start: ScopeOccurrenceId): O
       return failed(FailureTag.Unsupported, "unhandled-error-leaves-multi-instance-instance"); // dynamic-only: where its thrower runs
     }
     const id: ScopeOccurrenceId = current;
-    current = state.scopes.find((scope) => scope.id === id)?.parent ?? null;
+    current = scopeOccurrenceParent(state.scopes.find((scope) => scope.id === id));
   }
   return committed(state);
 }
@@ -266,7 +266,8 @@ function interruptedOutputs(ctx: Ctx, occurrence: ScopeOccurrence, parent: Scope
   switch (selected) {
     case ErrorPathOutputs.Mapped: {
       if (mappings.length === 0) return committed(state);
-      const outer = occurrence.parent === null ? [] : visible(state, ctx.program, occurrence.parent);
+      const above = scopeOccurrenceParent(occurrence);
+      const outer = above === null ? [] : visible(state, ctx.program, above);
       const reads = ctxOutputReads(ctx, state.logicalTimeMs, ownVariables(state, occurrence.id), [], outer);
       const outputs = ctxRequireMappingsWith(ctx, reads, mappings);
       if (!outputs.ok) return outputs;
@@ -292,7 +293,7 @@ function cancelledScope(origin: Origin, occurrence: ScopeOccurrence, state: Stat
     const entry = state.scopes.find((scope) => scope.id === at);
     if (entry === undefined) return occurrence.id;
     if (entry.element === occurrence.element) return entry.id;
-    current = entry.parent;
+    current = scopeOccurrenceParent(entry);
   }
   return occurrence.id;
 }
@@ -328,7 +329,7 @@ function leaveOccurrence(
   if (raisedIsCancel(raised)) {
     const rolledBack = cancelledScope(origin, occurrence, state);
     const terminating = occurrence.occurrence !== null && rolledBack === occurrence.id ? disarm(state, occurrence.occurrence) : state;
-    return committed(signal(clearInside(terminating, rolledBack), {
+    return committed(signal(clearInside(terminating, ctxPositionLe(ctx, terminating), rolledBack), {
       tag: SignalTag.Compensate,
       scope: rolledBack,
       activity: null,
@@ -368,9 +369,8 @@ function busyCalledRoot(ctx: Ctx, origin: Origin, occurrence: ScopeOccurrence, s
   const activity = element === null ? null : elementActivity(element);
   const work = activity === null ? null : workCall(activity[1].work);
   const mapsOutputs = work !== null && (work.outputs.length > 0 || work.propagateAllOutputs);
-  const otherPath = state.occurrences.some((standing) => standing.scope === occurrence.id &&
-    !(standing.element === origin.element && standing.activation === origin.activation)) ||
-    state.tokens.some((token) => token.scope === occurrence.id);
+  const otherPath = state.occurrences.some((standing) => standing.scope === occurrence.id && standing.id !== origin.thrower) ||
+    allTokens(state).some((token) => token.scope === occurrence.id);
   return origin.scope === occurrence.id && mapsOutputs && otherPath;
 }
 
@@ -476,7 +476,7 @@ function searchScopes(
     const handlers = levelCandidates(ctx, raised, origin, state, occurrence, jumped);
     if (!handlers.ok) return failedWith(handlers.failure);
     const handled = best(ctx, raised, ([, subscription]) => subscription.trigger, handlers.value);
-    const attached = occurrence.element === null || occurrence.parent === null || role === ScopeRole.MultiInstanceInstance
+    const attached = occurrence.element === null || scopeOccurrenceParent(occurrence) === null || role === ScopeRole.MultiInstanceInstance
       ? []
       : boundariesOf(ctx, occurrence.element);
     const caught = best(ctx, raised, (boundary) => boundary.subscription.trigger, attached);
@@ -491,11 +491,12 @@ function searchScopes(
       const begun = signal(decided.value, { tag: SignalTag.Begin, request: beginRequest({ element, scope: occurrence.id }) });
       return committed(interrupting ? begun : throwerLeaves(ctx, origin, begun));
     }
-    if (caught !== null && occurrence.parent !== null) {
-      return leaveOccurrence(hooks, ctx, raised, origin, occurrence, occurrence.parent, caught[0], caught[1], state);
+    const parent = scopeOccurrenceParent(occurrence);
+    if (caught !== null && parent !== null) {
+      return leaveOccurrence(hooks, ctx, raised, origin, occurrence, parent, caught[0], caught[1], state);
     }
     jumped = false;
-    current = occurrence.parent;
+    current = scopeOccurrenceParent(occurrence);
   }
   return exhausted(hooks, ctx, raised, origin, null, state);
 }

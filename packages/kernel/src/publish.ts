@@ -7,14 +7,21 @@
 import { assertNever, compareStrings, mergeSort, programPublicId, type ElementId, type Program } from "./il/types.js";
 import {
   ActivationRole,
+  committed,
+  compensationsRestoredIn,
   InstanceStatus,
-  instanceOf,
+  instanceOf, instanceText,
   occurrenceOf,
   root,
+  scopeOccurrenceParent,
+  SemanticCause,
+  semanticFailure,
   type Binding,
+  type Result,
   type ScopeOccurrence,
   type ScopeOccurrenceId,
-  type State,
+  type State, ownVariables,
+  issueNumber,
 } from "./state.js";
 
 export function statusName(status: InstanceStatus): string {
@@ -31,26 +38,26 @@ export function statusName(status: InstanceStatus): string {
   return assertNever(status);
 }
 
-function byName(entries: readonly Binding[]): readonly Binding[] {
-  return mergeSort(entries, (left, right) => compareStrings(left[0], right[0]) <= 0);
-}
-
-/** The instance root's variables, ordered by name. */
+/** The instance root's variables, in name order (`ownVariables`). */
 export function variables(state: State): readonly Binding[] {
-  return byName(state.variables.find((vars) => vars.scope === root)?.entries ?? []);
+  return ownVariables(state, root);
 }
 
 /**
  * What a published variable scope is. A scope is named by the occurrence it belongs to: `activity` is an Activity
  * occurrence's own scope (a Sub-Process's, or an Activity's local variables), `multiInstanceBody` a Multi-Instance
- * body's; a `multiInstanceInstance` and a `compensationContext` (the restored context a compensation handler runs in)
- * have no occurrence of their own and are named by the one they host. A called instance's root is a `processInstance`.
+ * body's; a `multiInstanceInstance` has no occurrence of its own and is named by the instance occurrence it hosts. A
+ * restored compensation context, a handler's or a group's, is named by the subject occurrence whose snapshot it restores
+ * (its record's `occurrence`): `compensationContext` for an Activity's or a Multi-Instance instance's,
+ * `multiInstanceBodyCompensationContext` for a Multi-Instance body's, whose first instance shares its element and
+ * activation. A called instance's root is a `processInstance`.
  */
 export enum ScopeRole {
   ProcessInstance = "processInstance",
   Activity = "activity",
   MultiInstanceBody = "multiInstanceBody",
   MultiInstanceInstance = "multiInstanceInstance",
+  MultiInstanceBodyCompensationContext = "multiInstanceBodyCompensationContext",
   CompensationContext = "compensationContext",
 }
 
@@ -64,6 +71,8 @@ export function scopeRoleName(role: ScopeRole): string {
       return "multiInstanceBody";
     case ScopeRole.MultiInstanceInstance:
       return "multiInstanceInstance";
+    case ScopeRole.MultiInstanceBodyCompensationContext:
+      return "multiInstanceBodyCompensationContext";
     case ScopeRole.CompensationContext:
       return "compensationContext";
   }
@@ -80,8 +89,21 @@ function scopeRoleRank(role: ScopeRole): number {
       return 2;
     case ScopeRole.MultiInstanceInstance:
       return 3;
-    case ScopeRole.CompensationContext:
+    case ScopeRole.MultiInstanceBodyCompensationContext:
       return 4;
+    case ScopeRole.CompensationContext:
+      return 5;
+  }
+  return assertNever(role);
+}
+
+/** The role of a restored context whose subject occurrence the counter `role` numbered. */
+function contextRole(role: ActivationRole): ScopeRole {
+  switch (role) {
+    case ActivationRole.Element:
+      return ScopeRole.CompensationContext;
+    case ActivationRole.MultiInstanceBody:
+      return ScopeRole.MultiInstanceBodyCompensationContext;
   }
   return assertNever(role);
 }
@@ -96,13 +118,23 @@ export interface PublishedScope {
   readonly variables: readonly Binding[];
 }
 
-/** Canonical order: process instance, element (none first), activation, role. */
-function publishedScopeLe(left: PublishedScope, right: PublishedScope): boolean {
+/**
+ * Canonical order: process instance, element (none first), activation, role. The four are the scope's identity, which
+ * no two published scopes share (`publishedScopes` fails otherwise), so the order is total and never reads the order
+ * the state stores scopes in (KD7).
+ */
+function publishedScopeLe(a: PublishedScope, b: PublishedScope): boolean {
   const name = (scope: PublishedScope): string => scope.element ?? "";
-  if (left.processInstanceId !== right.processInstanceId) return compareStrings(left.processInstanceId, right.processInstanceId) < 0;
-  if (name(left) !== name(right)) return compareStrings(name(left), name(right)) < 0;
-  if (left.activation !== right.activation) return left.activation < right.activation;
-  return scopeRoleRank(left.role) <= scopeRoleRank(right.role);
+  if (a.processInstanceId !== b.processInstanceId) return compareStrings(a.processInstanceId, b.processInstanceId) < 0;
+  if (name(a) !== name(b)) return compareStrings(name(a), name(b)) < 0;
+  if (a.activation !== b.activation) return a.activation < b.activation;
+  return scopeRoleRank(a.role) <= scopeRoleRank(b.role);
+}
+
+/** Whether `a` and `b` publish one identity. */
+function sameIdentity(a: PublishedScope, b: PublishedScope): boolean {
+  return a.processInstanceId === b.processInstanceId && a.element === b.element && a.activation === b.activation &&
+    scopeRoleRank(a.role) === scopeRoleRank(b.role);
 }
 
 function ownedByBody(state: State, scope: ScopeOccurrenceId): boolean {
@@ -110,36 +142,73 @@ function ownedByBody(state: State, scope: ScopeOccurrenceId): boolean {
   return owner !== null && occurrenceOf(state, owner)?.role === ActivationRole.MultiInstanceBody;
 }
 
-/** `scope` as published, `null` for the instance root, which `variables` publishes. */
-function publishedScope(state: State, scope: ScopeOccurrence, entries: readonly Binding[]): PublishedScope | null {
-  const processInstanceId = instanceOf(state, scope.id);
+/** A scope's published name, or the invariant code that says it is not there (Lean's `Except String`). */
+type Named = Readonly<{ ok: true; value: PublishedScope | null }> | Readonly<{ ok: false; code: string }>;
+
+const named = (value: PublishedScope | null): Named => ({ ok: true, value });
+const unnamed = (code: string): Named => ({ ok: false, code });
+
+/**
+ * `scope` as published, `null` for the instance root, which `variables` publishes, or the invariant code that says its
+ * name is not there. A scope occurrence with an element and no occurrence of its own is a restored compensation context
+ * while a run holds it (`compensationsRestoredIn`), and otherwise a Multi-Instance instance's, whose parent belongs to
+ * the body occurrence and which hosts its instance occurrence once begun. A name that is not there is never published
+ * as an activation 0, which names no occurrence, nor as another role.
+ */
+function publishedScope(state: State, scope: ScopeOccurrence, entries: readonly Binding[]): Named {
+  const processInstanceId = instanceText(instanceOf(state, scope.id));
   if (scope.calledInstance !== null) {
-    return { processInstanceId, element: null, activation: 0, role: ScopeRole.ProcessInstance, variables: entries };
+    return named({ processInstanceId, element: null, activation: 0, role: ScopeRole.ProcessInstance, variables: entries });
   }
   const element = scope.element;
-  if (element === null) return null;
+  if (element === null) return named(null);
   if (scope.occurrence !== null) {
     const owner = occurrenceOf(state, scope.occurrence);
-    return {
+    if (owner === null) return unnamed("published-scope-owner-gone");
+    return named({
       processInstanceId,
-      element: owner?.element ?? element,
-      activation: owner?.activation ?? 0,
-      role: owner?.role === ActivationRole.MultiInstanceBody ? ScopeRole.MultiInstanceBody : ScopeRole.Activity,
+      element: owner.element,
+      activation: issueNumber(owner.activation),
+      role: owner.role === ActivationRole.MultiInstanceBody ? ScopeRole.MultiInstanceBody : ScopeRole.Activity,
       variables: entries,
-    };
+    });
   }
+  const record = compensationsRestoredIn(state.slots.compensation, scope.id);
+  if (record !== null) {
+    const subject = record.occurrence;
+    return named({
+      processInstanceId: instanceText(subject.processInstanceId), element: subject.element, activation: issueNumber(subject.activation),
+      role: contextRole(subject.role), variables: entries,
+    });
+  }
+  const parent = scopeOccurrenceParent(scope);
+  if (parent === null || !ownedByBody(state, parent)) return unnamed("published-scope-unnamed");
   const hosted = state.occurrences.find((occurrence) => occurrence.scope === scope.id && occurrence.element === element);
-  const role = scope.parent !== null && ownedByBody(state, scope.parent) ? ScopeRole.MultiInstanceInstance : ScopeRole.CompensationContext;
-  return { processInstanceId, element, activation: hosted?.activation ?? 0, role, variables: entries };
+  if (hosted === undefined) return unnamed("published-instance-not-begun");
+  return named({ processInstanceId, element, activation: issueNumber(hosted.activation), role: ScopeRole.MultiInstanceInstance, variables: entries });
 }
 
-/** Every variable scope other than the instance root that holds a variable, by public element identifiers, in
- * canonical order. */
-export function scopes(program: Program, state: State): readonly PublishedScope[] {
-  const published = state.scopes.flatMap((scope) => {
-    const entries = state.variables.find((vars) => vars.scope === scope.id)?.entries ?? [];
-    const found = entries.length === 0 ? null : publishedScope(state, scope, byName(entries));
-    return found === null ? [] : [{ ...found, element: found.element === null ? null : programPublicId(program, found.element) }];
+/**
+ * Every variable scope other than the instance root that holds a variable, by public element identifiers, in canonical
+ * order. When a scope's name is not there the least of the invariant codes is the failure, and otherwise two scopes
+ * publishing one identity is, so a failure too reads no storage order (KD7).
+ */
+export function publishedScopes(program: Program, state: State): Result<readonly PublishedScope[]> {
+  const names = state.scopes.flatMap((scope): Named[] => {
+    const entries = ownVariables(state, scope.id);
+    return entries.length === 0 ? [] : [publishedScope(state, scope, entries)];
   });
-  return mergeSort(published, publishedScopeLe);
+  const codes = names.flatMap((name) => (name.ok ? [] : [name.code]));
+  const [first, ...rest] = codes;
+  if (first !== undefined) {
+    return semanticFailure(SemanticCause.Invariant, rest.reduce((least, code) => (compareStrings(code, least) < 0 ? code : least), first));
+  }
+  const published = names.flatMap((name): PublishedScope[] => (!name.ok || name.value === null ? [] : [{
+    ...name.value, element: name.value.element === null ? null : programPublicId(program, name.value.element),
+  }]));
+  const ordered = mergeSort(published, publishedScopeLe);
+  if (ordered.some((scope, index) => index > 0 && sameIdentity(ordered[index - 1] as PublishedScope, scope))) {
+    return semanticFailure(SemanticCause.Invariant, "published-scope-identity-twice");
+  }
+  return committed(ordered);
 }

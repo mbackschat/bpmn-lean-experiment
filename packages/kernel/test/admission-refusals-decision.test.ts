@@ -96,6 +96,9 @@ const rows: Row[] = [
     mutate: withLogic(table("unique", [input("score", { foreign: { name: "Integer" } })], [output("grade")], [])) },
   { code: "decision.typeRef", description: "an output typeRef double",
     mutate: withLogic(table("unique", [input("score")], [output("grade", { foreign: { name: "double" } })], [])) },
+  // A3 fills the `double` typeRef the IL carries; until then admission refuses it as it refuses the unread spelling.
+  { code: "decision.typeRef", description: "an input typeRef double",
+    mutate: withLogic(table("unique", [input("score", "double")], [output("grade")], [])) },
   { code: "decision.outputName", description: "a nameless output", mutate: withLogic(table("unique", [input("score")], [output(null)], [])) },
   { code: "decision.outputName", description: "two outputs of one name",
     mutate: withLogic(table("unique", [input("score")], [output("grade"), output("grade")], [])),

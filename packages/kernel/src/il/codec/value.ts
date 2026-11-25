@@ -286,6 +286,34 @@ const valueKinds: ReadonlyMap<string, (json: unknown) => Decoded<Value>> = new M
       }));
     },
   ],
+  [
+    "double",
+    (json) => {
+      const bits = string.decode(objValD(json, "bits"));
+      if (!bits.ok) {
+        return bits;
+      }
+      const parsed = leanToInt(bits.value);
+      if (parsed === null || parsed < 0n || parsed >= 1n << 64n) {
+        return refuseDecoding(`invalid double bits ${bits.value}`);
+      }
+      return accept<Value>({ tag: ValueTag.Double, bits: parsed });
+    },
+  ],
+  [
+    "date",
+    (json) => {
+      const epochMs = string.decode(objValD(json, "epochMs"));
+      if (!epochMs.ok) {
+        return epochMs;
+      }
+      const parsed = leanToInt(epochMs.value);
+      if (parsed === null || parsed < -(1n << 63n) || parsed >= 1n << 63n) {
+        return refuseDecoding(`invalid date ${epochMs.value}`);
+      }
+      return accept<Value>({ tag: ValueTag.Date, epochMs: parsed });
+    },
+  ],
   ["string", (json) => mapDecoded(string.decode(objValD(json, "value")), (value) => ({ tag: ValueTag.String, value }))],
   [
     "stringList",
@@ -308,6 +336,10 @@ function valueToJson(value: Value): JsonValue {
       return { kind: "integer", value: value.value };
     case ValueTag.Decimal:
       return { kind: "decimal", coefficient: value.coefficient.toString(), scale: value.scale };
+    case ValueTag.Double:
+      return { kind: "double", bits: value.bits.toString() };
+    case ValueTag.Date:
+      return { kind: "date", epochMs: value.epochMs.toString() };
     case ValueTag.String:
       return { kind: "string", value: value.value };
     case ValueTag.StringList:

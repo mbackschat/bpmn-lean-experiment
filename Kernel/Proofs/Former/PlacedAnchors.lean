@@ -19,7 +19,7 @@ namespace Kernel.Proofs.Former
 
 open Kernel
 open Kernel.Laws.State (WellFormed scopeIds InstanceIn)
-open Kernel.Laws.Compensation (recordElements recordsElements InstanceLinked RecordHeld RecordFrom Uncalled)
+open Kernel.Laws.Compensation (recordElements InstanceLinked RecordHeld RecordFrom Uncalled)
 
 /-! ## Instance roots -/
 
@@ -86,10 +86,10 @@ theorem instanceLinked_present {program : Program} {s : State} (formed : WellFor
 
 /-- A called root is its own instance root. -/
 theorem instanceRoot_called {program : Program} {s : State} (formed : WellFormed program s) {root : ScopeOccurrence}
-    (member : root ∈ s.scopes) {name : String} (called : root.calledInstance = some name) :
+    (member : root ∈ s.scopes) {name : InstanceName} (called : root.calledInstance = some name) :
     s.instanceRoot root.id = root.id := by
   have reading := InstanceIn.called root name member called
-  rw [instanceRoot_chain reading (by simp) formed.distinct.scopes reading.mem]
+  rw [instanceRoot_chain reading formed.distinct.scopes reading.mem]
   simp [chainRoot, called]
 
 /-- The process root is its own instance root. -/
@@ -102,7 +102,7 @@ theorem instanceRoot_root {program : Program} {s : State} (formed : WellFormed p
   | some name => exact instanceRoot_called formed member called
   | none =>
     have reading := InstanceIn.root entry member called parentless
-    rw [instanceRoot_chain reading (by simp) formed.distinct.scopes reading.mem]
+    rw [instanceRoot_chain reading formed.distinct.scopes reading.mem]
     simp [chainRoot, called, named]
 
 /-- Two members of a list whose images are pairwise distinct are one when their images are. -/
@@ -125,7 +125,7 @@ theorem element?_member {program : Program} (ids : Laws.MultiInstance.IdsUnique 
 
 /-- An element of the process an instance entry of a called root records is placed in that called root. -/
 theorem placed_called {program : Program} {s : State} (formed : WellFormed program s) (lane : PlacedLane program s)
-    {root : ScopeOccurrence} (member : root ∈ s.scopes) {name : String} (called : root.calledInstance = some name)
+    {root : ScopeOccurrence} (member : root ∈ s.scopes) {name : InstanceName} (called : root.calledInstance = some name)
     {entry : InstanceData} (inside : entry ∈ s.slots.instances) (rooted : entry.root = root.id) {element : ElementId}
     (same : definitionAt program element = entry.definition) : PlacedIn program s element root.id :=
   fun other otherIn otherRoot => by
@@ -293,10 +293,11 @@ theorem anchored_placed {program : Program} {s : State} (refs : ReferencesPlaced
 
 /-! ## Stored records -/
 
-/-- A record a lane state holds where `Laws.Compensation.RecordHeld` says is placed where it is linked to. -/
+/-- Elements a record a lane state holds names, where `Laws.Compensation.RecordHeld` says, are placed where it is
+linked to. -/
 theorem recordHeld_placed {program : Program} {s : State} (formed : WellFormed program s) (lane : PlacedLane program s)
-    {record : Compensable} {scope : ScopeOccurrenceId} (held : RecordHeld program s record scope)
-    (stands : scope ∈ scopeIds s) : ∀ element ∈ recordElements record, PlacedIn program s element scope := by
+    {elements : List ElementId} {scope : ScopeOccurrenceId} (held : RecordHeld program s elements scope)
+    (stands : scope ∈ scopeIds s) : ∀ element ∈ elements, PlacedIn program s element scope := by
   obtain ⟨source, at_, holding, rest⟩ := held
   obtain ⟨linked, names⟩ := rest
   intro element named
@@ -329,7 +330,7 @@ theorem recordFrom_placed {program : Program} {s : State} (refs : ReferencesPlac
   · obtain ⟨host, inside, header, rest⟩ := handled element (by simpa using handler)
     obtain ⟨envelope, has, listed⟩ := rest
     exact here.alike (by rw [refs.handlers host inside envelope has element listed, header, subject])
-  · obtain ⟨child, inside, named⟩ := Laws.Compensation.recordsElements_cases child
+  · obtain ⟨child, inside, named⟩ := List.mem_flatMap.mp child
     exact recordHeld_placed formed lane (children child inside) stands element named
 
 end Kernel.Proofs.Former

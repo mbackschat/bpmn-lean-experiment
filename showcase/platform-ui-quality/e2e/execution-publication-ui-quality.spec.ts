@@ -96,13 +96,12 @@ test("History preserves exact revision order, labels, and repeated occurrence id
   expect(await history.locator("[data-revision]").evaluateAll((rows) =>
     rows.map((row) => Number(row.getAttribute("data-revision")))
   )).toEqual([1, 2, 3, 4, 5]);
-  // The repeated element is told apart by the scope occurrence that owns each arrival.
+  // The repeated element is told apart by revision; the kernel's scope-occurrence ordinal is not published (PD2).
   const firstRepeated = history.locator('[data-revision="4"]');
   const secondRepeated = history.locator('[data-revision="5"]');
   await expect(historyFact(firstRepeated, "Element")).toHaveText(executionPublicationLabels.repeatedElementId);
   await expect(historyFact(secondRepeated, "Element")).toHaveText(executionPublicationLabels.repeatedElementId);
-  await expect(historyFact(firstRepeated, "Owner scope")).toHaveText("1");
-  await expect(historyFact(secondRepeated, "Owner scope")).toHaveText("2");
+  await expect(history.getByText("Owner scope", { exact: true })).toHaveCount(0);
   await assertNoOverflow(history, "execution History");
 });
 

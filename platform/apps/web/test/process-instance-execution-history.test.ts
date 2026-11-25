@@ -38,19 +38,16 @@ const batches = [{
     role: { kind: "input", input: "start" },
     element: "StartEvent_1",
     sourceType: "startEvent",
-    owner: 0,
   }, {
     revision: 2,
     role: { kind: "arrive", flow: "Flow_1" },
     element: "Task_Review",
     sourceType: "userTask",
-    owner: 0,
   }, {
     revision: 3,
-    role: { kind: "idle", scope: 4 },
+    role: { kind: "idle" },
     element: null,
     sourceType: null,
-    owner: 4,
   }],
 }, {
   commandId: "command-timer",
@@ -61,17 +58,16 @@ const batches = [{
     role: { kind: "input", input: "timerFire" },
     element: "Timer_Deadline",
     sourceType: "boundaryEvent",
-    owner: 0,
   }],
 }] as const satisfies readonly CommittedTransitionBatch[];
 
-test("shows each record's role, element, element type and owner in revision order", () => {
+test("shows each record's role, element and element type in revision order, and no scope ordinal", () => {
   const markup = renderToStaticMarkup(createElement(historyModule.ProcessInstanceExecutionHistory, { batches }));
 
   assert.deepEqual([...markup.matchAll(/data-revision="(\d+)"/gu)].map((match) => match[1]), ["1", "2", "3", "4"]);
   assert.match(markup, /<strong>Start<\/strong>/u);
   assert.match(markup, /<strong>Sequence Flow arrival<\/strong>[\s\S]*<code>Flow_1<\/code>[\s\S]*<code>Task_Review<\/code>[\s\S]*<code>userTask<\/code>/u);
-  assert.match(markup, /<strong>Scope idle<\/strong>[\s\S]*<dt>Element<\/dt><dd>None<\/dd>[\s\S]*<dt>Owner scope<\/dt><dd><code>4<\/code>/u);
+  assert.match(markup, /<strong>Scope idle<\/strong>[\s\S]*<dt>Element<\/dt><dd>None<\/dd>/u);
   assert.match(markup, /<strong>Timer firing<\/strong>[\s\S]*<code>command-timer<\/code>/u);
-  assert.doesNotMatch(markup, /Logical time|Stimulus|Operation/u);
+  assert.doesNotMatch(markup, /Logical time|Stimulus|Operation|Owner scope|Idle scope/u);
 });

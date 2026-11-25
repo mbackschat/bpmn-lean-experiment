@@ -1,21 +1,27 @@
 module
 
 public import Kernel.State.Input
+public import Kernel.State.Key
+public import Kernel.State.Map
 
 /-! # Feature slots
 
-The scope occurrence identity every slot entry keys on, and the feature-owned data of `FeatureSlots`, which is
-always present and empty by default, with the records a compensation run resumes by. Part of `Kernel.State`, which
-re-exports it.
+The feature-owned data of `FeatureSlots`, which is always present and empty by default, with the records a compensation
+run resumes by. Part of `Kernel.State`, which re-exports it.
 -/
 
 public section
 
 namespace Kernel
 
-structure ScopeOccurrenceId where
-  value : Nat
-  deriving DecidableEq, Repr, Inhabited
+/-- One variable set, keyed by name (DC21): one value per name, as a Data Association's copy replaces its target's value
+(BPMN 2.0.2 §10.4.2) and CIB keys a scope's variables by name (`VariableStore.java:39`). Its list view (`toList`) is
+in name order, the form the state codec writes (T75); no reader takes another order from it. -/
+abbrev Variables := TreeMap String Value compare
+
+/-- `bindings` as a variable set: a name bound twice keeps the value bound last (#147). -/
+def Variables.ofBindings (bindings : List (String × Value)) : Variables :=
+  bindings.foldl (fun set binding => set.insert binding.1 binding.2) ∅
 
 /-- How an occurrence leaves: its element's own outgoing selection, the flows given (`flows []` consumes the
 token), or `raised` by an event, which runs no retention, outflow or continuation. -/
@@ -27,11 +33,11 @@ inductive Leave where
 
 /-- What a compensation run does once its handlers have completed: complete an existing occurrence, begin and complete
 a fresh one (a caught Cancel's boundary, which `Step` numbers when the run ends), or, for a group's nested run, leave
-the group's `context` and advance the run in `outer` as a completed handler does. -/
+the group's `context` and advance the run holding it as a completed handler does. -/
 inductive Resume where
-  | complete (occurrence : Nat) (leave : Leave)
+  | complete (occurrence : OccurrenceId) (leave : Leave)
   | occur (element : ElementId) (scope : ScopeOccurrenceId) (leave : Leave)
-  | group (outer context : ScopeOccurrenceId)
+  | group (context : ScopeOccurrenceId)
   deriving Repr
 
 /-- One instance of a Multi-Instance Activity: waiting to start, running in its instance scope occurrence, or
@@ -42,66 +48,233 @@ inductive Iteration where
   | completed (output : Option Value)
   deriving Repr
 
+/-- Whether this instance runs in the scope occurrence `scope`. -/
+def Iteration.holds (iteration : Iteration) (scope : ScopeOccurrenceId) : Bool :=
+  match iteration with
+  | .active held => held == scope
+  | .waiting => false
+  | .completed _ => false
+
 /-- A running Multi-Instance Activity (`Kernel.Feature.MultiInstance`): the scope occurrence it holds its instances
-in, its element and body occurrence, the input collection as evaluated once on entry, and one instance per item in
-collection order. -/
+in, its element and body occurrence, the input collection's members as evaluated once on entry and its form, and one
+instance per item in collection order. -/
 structure MultiInstanceRun where
   scope : ScopeOccurrenceId
   element : ElementId
-  occurrence : Nat
-  collection : Value
+  occurrence : OccurrenceId
+  /-- The input collection's members as evaluated once on entry, indexed by item, so an instance reads its item without
+  a walk along the collection (probe P11: a sequential loop's list read made it quadratic); none for a cardinality
+  loop. -/
+  members : Array Value
+  /-- Whether the input collection is a String List, whose instances submit Strings and whose output collection is
+  one. -/
+  strings : Bool
   instances : List Iteration
   /-- The effect-result names earlier sequential instances left, which CIB keeps on the body until it ends
   (EXPRESSION-SEMANTICS-SPEC "Multi-Instance level", result locals). -/
   results : List String := []
   deriving Repr
 
+/-- A running Multi-Instance Activity's record under its body occurrence's key (`MultiInstanceMap`): the
+`MultiInstanceRun` without the body occurrence, which the key holds, so one record per body occurrence holds by
+type. -/
+structure MultiInstanceRecord where
+  scope : ScopeOccurrenceId
+  element : ElementId
+  members : Array Value
+  strings : Bool
+  instances : List Iteration
+  /-- The effect-result names earlier sequential instances left (`MultiInstanceRun.results`). -/
+  results : List String := []
+  deriving Repr
+
+/-- The run of the body occurrence `occurrence` whose record is `record`. -/
+def MultiInstanceRecord.toRun (record : MultiInstanceRecord) (occurrence : OccurrenceId) : MultiInstanceRun :=
+  { scope := record.scope, element := record.element, occurrence, members := record.members, strings := record.strings
+    instances := record.instances, results := record.results }
+
+/-- A run's record under its body occurrence's key. -/
+def MultiInstanceRun.toRecord (run : MultiInstanceRun) : MultiInstanceRecord :=
+  { scope := run.scope, element := run.element, members := run.members, strings := run.strings
+    instances := run.instances, results := run.results }
+
+/-- A record a completed Sub-Process's record keeps (`Compensable.children`), flat: the `Compensable` it was, without a
+scope occurrence, which it takes only when its holder's handler or group begins, and its group key `group`, the
+completion numbers of the kept records it lies within, outermost first, `[]` for one its holder keeps directly. The
+key, not a nested list, says which records a begun record keeps in turn, so no state type nests. -/
+structure CompensableChild where
+  subject : ElementId
+  handler : Option ElementId
+  occurrence : OccurrenceKey
+  completion : Nat := 0
+  closure : Nat := 0
+  snapshot : Variables := ∅
+  group : List Nat := []
+  deriving Repr
+
 /-- A completed Activity or Scope whose compensation handler may still run: it completed in `scope`, and its
-handler restores `snapshot` ([BPMN 2.0.2 §13.5.5](../docs/reference/bpmn-2.0.2/README.md)). `completion` orders the
-records of one scope. `children` keeps the records of a completed Sub-Process, for its handler to trigger recursively
-(§13.5.5; CIB moves them into an event-scope tree, `CompensationUtil.createEventScopeExecution`). A record without a
-`handler` is a group whose compensation runs its `children`. -/
+handler restores `snapshot` ([BPMN 2.0.2 §13.5.5](../docs/reference/bpmn-2.0.2/README.md)). `completion` numbers the
+records in the order they completed, a kept record's key (`CompensableChild.group`) and the order under
+`BranchSchedule.declarationDepthFirst`; `closure` stamps the closure it completed in (`State.completionBase`), which
+under `orderInvariant` orders records of different closures (`Feature.Compensation.completedBefore`). `children` keeps the records of a completed Sub-Process at every depth, each under its group key,
+for its handler to trigger recursively (§13.5.5; CIB moves them into an event-scope tree,
+`CompensationUtil.createEventScopeExecution`). A record without a `handler` is a group whose compensation runs its
+children. `occurrence` is the subject occurrence's complete key, its role included, since a Multi-Instance body and its
+first instance share element and activation: the context its handler or group restores publishes it
+(`Publish.publishedScopes`). -/
 structure Compensable where
   subject : ElementId
   handler : Option ElementId
   scope : ScopeOccurrenceId
-  occurrence : Option OccurrenceRef := none
+  occurrence : OccurrenceKey
   completion : Nat := 0
-  snapshot : List (String × Value) := []
-  children : List Compensable := []
+  closure : Nat := 0
+  snapshot : Variables := ∅
+  children : List CompensableChild := []
   deriving Repr
 
 /-- One compensation trigger in progress for the records retained in `scope`: handlers still `pending`, and those
 `running` in their own context scope occurrence. Once all completed, the occurrence `leave` is cancelled and
-`resume`'s occurrence completes. -/
+`resume`'s occurrence completes. `joins` holds the completion numbers of the run's records whose handler waits for two
+or more of the run's other handlers, whose start is readiness work under `BranchSchedule.orderInvariant` (DC30). -/
 structure CompensationRun where
-  trigger : OccurrenceRef
+  trigger : OccurrenceName
   scope : ScopeOccurrenceId
   pending : List Compensable
   running : List (ScopeOccurrenceId × Compensable) := []
-  leave : Option Nat
+  leave : Option OccurrenceId
   resume : Option Resume
+  joins : List Nat := []
   deriving Repr
+
+/-- The occurrence a run's readiness key names beside its scope occurrence (DC30): its trigger's, the Compensation
+throw the run resumes, or for a caught Cancel the Transaction occurrence it leaves, the one occurrence whose rollback the
+Cancel triggered, since the Cancel End's own occurrence is gone; none for a group's nested run, whose context scope
+occurrence its trigger's run holds once. -/
+def CompensationRun.anchor? (run : CompensationRun) : Option OccurrenceId :=
+  match run.resume with
+  | some (.complete occurrence _) => some occurrence
+  | some (.occur _ _ _) => run.leave
+  | some (.group _) => none
+  | none => run.leave
+
+/-- Whether `run` is the one in `scope` that holds the handler context `context` running. -/
+def CompensationRun.holds (scope context : ScopeOccurrenceId) (run : CompensationRun) : Bool :=
+  run.scope == scope && run.running.any (·.1 == context)
+
+/-- A compensation run's key, the scope occurrence it runs in and its trigger, which `Feature.Compensation.isRun`
+finds it by: two runs may share a scope occurrence (#103), never a trigger there, since a group's nested run has a
+context of its own. -/
+structure RunKey where
+  scope : ScopeOccurrenceId
+  trigger : OccurrenceName
+  deriving DecidableEq, Repr
+
+/-- The scope occurrence's key, then the trigger's key, oriented (`orientCmp`). -/
+instance : Ord RunKey where
+  compare := compareLex (compareOn (·.scope)) (orientCmp (compareOn (·.trigger))).val
+
+instance : Std.TransOrd RunKey := inferInstanceAs <| Std.TransCmp (compareLex _ (orientCmp _).val)
+
+instance : Std.LawfulEqOrd RunKey where
+  eq_of_compare {a b} h := by
+    have h : compareLex (compareOn fun key : RunKey => key.scope)
+        (orientCmp (compareOn fun key : RunKey => key.trigger)).val a b = .eq := h
+    rw [compareLex_eq_eq] at h
+    have triggers := ((orientCmp (compareOn fun key : RunKey => key.trigger)).property a b).mp h.2
+    obtain ⟨scope, trigger⟩ := a
+    obtain ⟨scope', trigger'⟩ := b
+    have scopes : scope = scope' := Std.LawfulEqOrd.eq_of_compare h.1
+    have same : trigger = trigger' := Std.LawfulEqOrd.eq_of_compare triggers
+    subst scopes same
+    rfl
+
+/-- A compensation run's record under its key (`RunMap`): the `CompensationRun` without its scope occurrence and
+trigger, which the key holds, so one run per key holds by type. -/
+structure RunRecord where
+  pending : List Compensable
+  running : List (ScopeOccurrenceId × Compensable) := []
+  leave : Option OccurrenceId
+  resume : Option Resume
+  joins : List Nat := []
+  deriving Repr
+
+/-- The run of key `key` whose record is `record`. -/
+def RunRecord.toRun (record : RunRecord) (key : RunKey) : CompensationRun :=
+  { trigger := key.trigger, scope := key.scope, pending := record.pending, running := record.running
+    leave := record.leave, resume := record.resume, joins := record.joins }
+
+/-- A run's key. -/
+def CompensationRun.key (run : CompensationRun) : RunKey := { scope := run.scope, trigger := run.trigger }
+
+/-- A run's record under its key. -/
+def CompensationRun.toRecord (run : CompensationRun) : RunRecord :=
+  { pending := run.pending, running := run.running, leave := run.leave, resume := run.resume, joins := run.joins }
+
+/-- The compensation runs in progress, each its record under its key. Every reader looks a run up by its key
+(`Feature.Compensation.advance`) or by a context it runs, or filters or searches all of them; none takes an order from
+the map. -/
+abbrev RunMap := TreeMap RunKey RunRecord compare
+
+/-- The runs of `runs` in key order, the list view the state codec writes; no reader takes an order from it. -/
+def runList (runs : RunMap) : List CompensationRun := runs.toList.map fun (key, record) => record.toRun key
+
+/-- `runs` with `run` under its key, in place of the run there. -/
+def RunMap.put (runs : RunMap) (run : CompensationRun) : RunMap := runs.insert run.key run.toRecord
 
 /-- `Kernel.Feature.Compensation`'s data: the retained records and the triggers in progress. -/
 structure Compensations where
   retained : List Compensable := []
-  runs : List CompensationRun := []
+  runMap : RunMap := ∅
   deriving Repr
+
+/-- The runs in key order (`runList`). -/
+abbrev Compensations.runs (compensation : Compensations) : List CompensationRun := runList compensation.runMap
+
+/-- The record whose handler or group runs in the context scope occurrence `context`, of the first run holding it: the
+one record a context restores, since a run begins each record it takes in a context of its own. -/
+def Compensations.restoredIn? (compensation : Compensations) (context : ScopeOccurrenceId) : Option Compensable :=
+  compensation.runs.findSome? fun run => (run.running.find? (·.1 == context)).map (·.2)
 
 /-- An occurrence waiting at a join, with the flow its token arrived on. -/
 structure Parked where
-  occurrence : Nat
+  occurrence : OccurrenceId
   flow : FlowId
   scope : ScopeOccurrenceId
   deriving DecidableEq, Repr
 
+/-- The parked arrival of `entries` whose occurrence's issue comes first under `le`, the first of those tied. The
+arrivals at one join in one scope occurrence are occurrences of one element there, so their issues are their order
+positions (DC13): committed ordinals in the order the commit numbered them, then the closure's issues in its unit order. -/
+def Parked.leastBy (le : Issue → Issue → Bool) (entries : List Parked) : Option Parked :=
+  entries.foldl (init := none) fun found waiting =>
+    match found with
+    | some best => if le best.occurrence.ordinal waiting.occurrence.ordinal then found else some waiting
+    | none => some waiting
+
 /-- An occurrence waiting for an unavailable InputSet in its scope occurrence. It records no flow: it waits whether or
 not a token began it, and only its scope occurrence's clearing ends the wait. -/
 structure Held where
-  occurrence : Nat
+  occurrence : OccurrenceId
   scope : ScopeOccurrenceId
   deriving Repr
+
+/-- The held occurrences, each its scope occurrence under its occurrence's key (DC21), so one entry per occurrence
+holds by type. The Ready list a micro-step journals stays per occurrence (PD2). -/
+abbrev HeldMap := TreeMap OccurrenceId ScopeOccurrenceId compare
+
+/-- The held occurrences of `held` in key order, the list view the state codec writes; no reader takes an order from
+it. -/
+def heldList (held : HeldMap) : List Held := held.toList.map fun (occurrence, scope) => { occurrence, scope }
+
+/-- The running Multi-Instance Activities, each its record under its body occurrence's key (DC21). Every reader looks
+a run up by its body occurrence (`MultiInstance.runOf?`, `Step.finishOf?`), filters or searches all of them; none
+takes an order from the map. -/
+abbrev MultiInstanceMap := TreeMap OccurrenceId MultiInstanceRecord compare
+
+/-- The runs of `runs` in key order, the list view the state codec writes; no reader takes an order from it. -/
+def multiInstanceList (runs : MultiInstanceMap) : List MultiInstanceRun :=
+  runs.toList.map fun (occurrence, record) => record.toRun occurrence
 
 /-- A process instance's own facts: its root scope occurrence, its business key and, for a called instance, the
 definition its Call bound, kept per instance so recovery never re-resolves it (PC-SCOPE-03, PC-MESSAGE-08). -/
@@ -112,30 +285,60 @@ structure InstanceData where
   deriving Repr
 
 /-- Feature-owned data. `parked` holds the occurrences that reached a join and wait for its other incoming flows
-(`Kernel.Feature.Flow`); `held` holds those at an Activity whose InputSet is unavailable
-([BPMN 2.0.2 §10.4.2](../docs/reference/bpmn-2.0.2/README.md), `Kernel.Feature.Work`). -/
+(`Kernel.Feature.Flow`); `heldMap` holds those at an Activity whose InputSet is unavailable
+([BPMN 2.0.2 §10.4.2](../docs/reference/bpmn-2.0.2/README.md), `Kernel.Feature.Work`), by occurrence;
+`FeatureSlots.held` is its list view. -/
 structure FeatureSlots where
   parked : List Parked := []
-  held : List Held := []
-  multiInstances : List MultiInstanceRun := []
+  heldMap : HeldMap := ∅
+  multiInstanceMap : MultiInstanceMap := ∅
   compensation : Compensations := {}
   instances : List InstanceData := []
   deriving Repr
 
+/-- The held occurrences in key order (`heldList`). -/
+abbrev FeatureSlots.held (slots : FeatureSlots) : List Held := heldList slots.heldMap
+
+/-- The running Multi-Instance Activities in key order (`multiInstanceList`). -/
+abbrev FeatureSlots.multiInstances (slots : FeatureSlots) : List MultiInstanceRun :=
+  multiInstanceList slots.multiInstanceMap
+
 /-- The scope occurrences a slot keeps alive. Every slot's own entry is an open occurrence or a child occurrence
-already, so only the join and held waits count here. One of the two places that enumerate the slots. -/
+already, so only the join and held waits count here. One of the three places that enumerate the slots. -/
 def FeatureSlots.keptAlive (slots : FeatureSlots) : List ScopeOccurrenceId :=
   slots.parked.map (·.scope) ++ slots.held.map (·.scope)
 
-/-- The slot entries that survive removing the scope occurrences `inside`, of which `nested` are the children. The
-other place that enumerates the slots. -/
+/-- The slot entries that survive removing the scope occurrences `inside`, of which `nested` are the children. One of
+the three places that enumerate the slots. -/
 def FeatureSlots.clear (slots : FeatureSlots) (inside nested : List ScopeOccurrenceId) : FeatureSlots :=
   { parked := slots.parked.filter (!inside.contains ·.scope)
-    held := slots.held.filter (!inside.contains ·.scope)
-    multiInstances := slots.multiInstances.filter (!inside.contains ·.scope)
+    heldMap := slots.heldMap.filter fun _ scope => !inside.contains scope
+    multiInstanceMap := slots.multiInstanceMap.filter fun _ record => !inside.contains record.scope
     compensation := {
       retained := slots.compensation.retained.filter (!nested.contains ·.scope)
-      runs := slots.compensation.runs.filter (!inside.contains ·.scope) }
+      runMap := slots.compensation.runMap.filter fun key _ => !inside.contains key.scope }
     instances := slots.instances.filter (!nested.contains ·.root) }
+
+/-- An occurrence a slot holds suspended: neither an open item nor a token, yet it continues in scope occurrence
+`scope` once its wait ends, leaving as `leave` says. -/
+structure Suspended where
+  element : ElementId
+  scope : ScopeOccurrenceId
+  leave : Leave
+  deriving Repr
+
+/-- The suspended occurrences the slots hold, which an Inclusive join's waiting rule counts (`Feature.Flow.positions`,
+CIB-INT-0016): each held occurrence, which leaves by its outgoing flows once its InputSet is available, and each
+compensation run's resume, a waiting Compensation throw or a caught Cancel's boundary, which continues once its handlers
+have completed. A group's nested run resumes the run holding it, whose own resume counts. The third place that
+enumerates the slots. -/
+def FeatureSlots.suspended (slots : FeatureSlots) : List Suspended :=
+  slots.held.map (fun held => { element := held.occurrence.element, scope := held.scope, leave := .outgoing }) ++
+    slots.compensation.runs.filterMap fun run =>
+      match run.resume with
+      | some (.complete occurrence leave) => some { element := occurrence.element, scope := occurrence.scope, leave }
+      | some (.occur element scope leave) => some ({ element, scope, leave } : Suspended)
+      | some (.group _) => none
+      | none => none
 
 end Kernel

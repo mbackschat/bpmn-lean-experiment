@@ -1,7 +1,8 @@
 /**
  * The wire forms of references between definitions and of Signal addresses: a program carrying a QName on a Call and on
- * a Signal, a namespaced and deployed identity and definition, a `propagateAll` position and every profile option at its
- * non-default value encodes back to the JSON it decoded from; a stimulus addresses a Signal by exactly one of `name` and
+ * a Signal, a namespaced and deployed identity and definition, a `propagateAll` position, every profile option at its
+ * non-default value, a retained extension attribute and a literal Double and Date (the largest bit pattern, a negative
+ * epoch) encodes back to the JSON it decoded from; a stimulus addresses a Signal by exactly one of `name` and
  * `signalRef`.
  */
 import assert from "node:assert/strict";
@@ -10,7 +11,7 @@ import { test } from "node:test";
 import { decodeProgram, encodeProgram, fixture, stimulusFromJson } from "./lean-paired.ts";
 
 import {
-  activity, append, base, callWork, catchEvent, definitionRef, end, qName, start, text, withOptions, wired,
+  activity, append, base, callWork, catchEvent, definitionRef, end, literalValue, mapping, qName, start, text, withOptions, wired,
 } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
 
@@ -29,14 +30,21 @@ const signalThrow: Json = {
 /** The base program with every new field away from its default. */
 function referencing(): Json {
   const program = withOptions(base(), {
-    signalNames: "addresses", signalPayload: "variables", signalDelivery: "occurrenceTargeted",
+    signalNames: "addresses", branchSchedule: "declarationDepthFirst", signalPayload: "variables", signalDelivery: "occurrenceTargeted",
     conditionalStart: "submittedContext", calledElementResolution: "cibKey", messageThrowForms: "cibForms",
+    deploymentErrors: "cibDeployment", handlerEscalation: "reentersHandler", defaultRetryCycle: "R3/PT5M",
+    inertExtensions: [{ elementType: "bpmn:Process", name: qName("historyTimeToLive", "http://camunda.org/schema/1.0/bpmn") }],
   });
   const called = append(program, start("CS"), catchEvent("CC", signalTrigger), end("CE", signalThrow),
-    activity("CT", callWork({ calledQName: qName("Called", namespace) }), { incoming: [], outgoing: [] }));
+    activity("CT", callWork({ calledQName: qName("Called", namespace) }), { incoming: [], outgoing: [], inputs: [
+      mapping("x", literalValue({ kind: "list", value: [{ kind: "double", bits: "18446744073709551615" }, { kind: "date", epochMs: "-1" }] })),
+    ] }));
   return wired({
     ...called,
     identity: { ...(called.identity as Json), namespace: "urn:example:root", deployment: 3 },
+    retainedExtensions: [{
+      name: qName("historyTimeToLive", "http://camunda.org/schema/1.0/bpmn"), elementType: "bpmn:Process", element: "P", value: "P180D",
+    }],
     processes: [{
       definition: definitionRef("Called", { namespace, deployment: 2 }), children: ["CS", "CC", "CE", "CT"], variables: [],
       executable: true,

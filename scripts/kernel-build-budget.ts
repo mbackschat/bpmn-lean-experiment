@@ -114,19 +114,43 @@ function cleanBuild(lean: Lean, label: string): string[] {
 
 /** Guard 23: the dispatch scan rejects a match on a guarded type in a module that does not own it, a `Laws` module
  * matching another family's type included, and a hand-written match in the `Laws` module of the type's defining
- * module, whose exemption covers only the lemmas the compiler generates there. */
+ * module, whose exemption covers only the lemmas the compiler generates there, and a guarded type matched inside an
+ * `Option` outside its owner; it accepts one in a codec submodule. It rejects a catch-all nested over a guarded type in
+ * its owner and over the unowned `Value`, and accepts an exhaustive `Value` match in any module. Its guard 9 part
+ * rejects a nested and a mutual inductive in an IL module, the OD2 (4) mark on a type other than `Value` with a field
+ * nesting outside the admitted arms, and `Value` once its mark is gone, which it reads from the source, so that seed
+ * needs no rebuild. */
 function proveDispatchScan(lean: Lean, directory: string): string[] {
   const file = path.join(directory, "Kernel", "Feature", "Data.lean");
   // Fully qualified: the seed lands outside the module's namespace, where an unqualified `Element` auto-binds.
-  const seeded = "def seededDispatchViolation : Kernel.Element → Nat\n  | .activity .. => 1\n  | _ => 0";
+  const seeded = "def seededDispatchViolation : Kernel.Element → Nat\n  | .activity .. => 1\n  | _ => 0\n" +
+    // `Value` has no owner, so any module may match it, but never with a catch-all, a nested one included.
+    "def seededValueMatch : Kernel.Value → Nat\n  | .null => 0\n  | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .string _ | .stringList _ | .list _ | .map _ => 1\n" +
+    "def seededValueCatchAll : Option Kernel.Value → Nat\n  | some (.string _) => 1\n  | _ => 0\n" +
+    // `Kernel.Feature.Data` owns `JuelUnary`, so only the catch-all nested inside the `Option` is a violation.
+    "def seededGuardedCatchAll : Option Kernel.JuelUnary → Nat\n  | some .not => 1\n  | _ => 0\n" +
+    // Exhaustive, so its only violation is matching `ScopeKind`, which `Kernel.Feature.Scopes` owns, below the top level.
+    "def seededNestedDispatchViolation : Option Kernel.ScopeKind → Nat\n  | some .embedded => 1\n  | some (.transaction _) => 2\n" +
+    "  | some (.eventSubProcess _ _) => 3\n  | none => 0";
   // A `Laws` module matches only its own family's guarded types: Flow's laws may match `GatewayKind`, never `ScopeKind`.
   const lawsFile = path.join(directory, "Kernel", "Laws", "Flow.lean");
   const seededLaws = "def seededLawsDispatchViolation : Kernel.ScopeKind → Nat\n  | .embedded => 1\n  | .transaction _ => 2\n  | .eventSubProcess _ _ => 3";
   // The IL defines `ScopeKind`, yet its `Laws` module may not match it by hand.
   const ilLawsFile = path.join(directory, "Kernel", "Laws", "IL.lean");
   const seededIlLaws = "def seededIlLawsDispatchViolation : Kernel.ScopeKind → Nat\n  | .embedded => 1\n  | .transaction _ => 2\n  | .eventSubProcess _ _ => 3";
+  // Every codec module may match a guarded type, `Kernel.IL.Codec`'s submodules included.
+  const codecFile = path.join(directory, "Kernel", "IL", "Codec", "Decision.lean");
+  const seededCodec = "def seededCodecSubmoduleMatch : Kernel.ScopeKind → Nat\n  | .embedded => 1\n  | .transaction _ => 2\n  | .eventSubProcess _ _ => 3";
+  // Guard 9's nesting rule covers every IL module, a codec's included: a nested, a marked non-`Value` and a mutual type.
+  const seededNesting = [
+    "inductive SeededNestedTree where\n  | leaf\n  | node (children : List SeededNestedTree)",
+    "-- guard-exception(9): OD2 (4) seeded on a type the owner did not admit",
+    "inductive SeededMarkedValue where\n  | list (items : List SeededMarkedValue)\n  | wrapped (inner : Option SeededMarkedValue)",
+    "mutual\ninductive SeededEven where\n  | zero\n  | next (odd : SeededOdd)\ninductive SeededOdd where\n  | next (even : SeededEven)\nend",
+  ].join("\n");
+  const valueFile = path.join(directory, "Kernel", "IL", "Types", "Expression.lean");
   let findings: string[] = [];
-  edited(file, seeded, () => edited(lawsFile, seededLaws, () => edited(ilLawsFile, seededIlLaws, () => {
+  edited(file, seeded, () => edited(lawsFile, seededLaws, () => edited(ilLawsFile, seededIlLaws, () => edited(codecFile, `${seededCodec}\n${seededNesting}`, () => {
     const build = lean(kernelTargets);
     if (build.status !== 0) {
       findings = [`G23: the seeded dispatch violation did not compile\n${build.output}`];
@@ -140,7 +164,40 @@ function proveDispatchScan(lean: Lean, directory: string): string[] {
     if (!/Kernel\.Laws\.IL \S+: matches guarded Kernel\.ScopeKind/u.test(scan.output)) {
       findings.push(`G23: kernel-dispatch.lean did not reject the seeded IL Laws violation\n${scan.output}`);
     }
-  })));
+    if (!/seededValueCatchAll: catch-all alternative over Kernel\.Value/u.test(scan.output)) {
+      findings.push(`G23: kernel-dispatch.lean did not reject the seeded nested catch-all over Value\n${scan.output}`);
+    }
+    if (!/seededNestedDispatchViolation: matches guarded Kernel\.ScopeKind outside its owner/u.test(scan.output)) {
+      findings.push(`G23: kernel-dispatch.lean did not reject a guarded type matched inside an Option outside its owner\n${scan.output}`);
+    }
+    if (!/seededGuardedCatchAll: catch-all alternative over guarded Kernel\.JuelUnary/u.test(scan.output)) {
+      findings.push(`G23: kernel-dispatch.lean did not reject the seeded nested catch-all over a guarded type\n${scan.output}`);
+    }
+    if (scan.output.includes("seededValueMatch")) {
+      findings.push(`G23: kernel-dispatch.lean rejected an exhaustive match on the unowned Value\n${scan.output}`);
+    }
+    if (scan.output.includes("seededCodecSubmoduleMatch")) {
+      findings.push(`G23: kernel-dispatch.lean rejected a match in a codec submodule\n${scan.output}`);
+    }
+    for (const expected of [/SeededNestedTree: is a nested inductive/u, /SeededMarkedValue: carries the guard-exception\(9\): OD2 \(4\) mark/u,
+      /SeededMarkedValue: SeededMarkedValue\.wrapped nests it through Option/u, /SeededEven: is a mutual inductive/u]) {
+      if (!expected.test(scan.output)) findings.push(`G23: kernel-dispatch.lean did not report ${expected.source}\n${scan.output}`);
+    }
+    if (scan.output.includes("SeededMarkedValue.list")) {
+      findings.push(`G23: kernel-dispatch.lean rejected a marked type's admitted list arm\n${scan.output}`);
+    }
+    // The mark is read from the source at scan time, so editing it needs no rebuild.
+    const valueSource = readFileSync(valueFile, "utf8");
+    try {
+      writeFileSync(valueFile, valueSource.replace("guard-exception(9): OD2 (4)", "guard-exception(9): seeded removal"));
+      const unmarked = lean(["run", "scripts/kernel-dispatch.lean"]);
+      if (!/Kernel\.Value: is a nested inductive/u.test(unmarked.output)) {
+        findings.push(`G23: kernel-dispatch.lean admitted Value without its OD2 (4) mark\n${unmarked.output}`);
+      }
+    } finally {
+      writeFileSync(valueFile, valueSource);
+    }
+  }))));
   return findings;
 }
 

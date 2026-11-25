@@ -61,7 +61,7 @@ def Generated (run : MultiInstanceRun) (count : Nat) : Prop :=
 /-- While a body runs, its snapshot, slot count and identity never change, and a filled slot keeps its output whatever
 the completion order (`SMI-ITERATE-01`, `PMI-COMPLETE-01`). -/
 structure SnapshotFixed (before after : MultiInstanceRun) : Prop where
-  collection : after.collection = before.collection
+  collection : (after.members, after.strings) = (before.members, before.strings)
   count : after.instances.length = before.instances.length
   scope : after.scope = before.scope
   element : after.element = before.element
@@ -96,12 +96,25 @@ occurrence entered afresh for its handler (`Compensation.beginHandler`), so rele
 def InstancesUnheld (s : State) (run : MultiInstanceRun) : Prop :=
   ∀ scope, Iteration.active scope ∈ run.instances → ∀ other ∈ s.slots.compensation.runs, scope ∉ other.running.map (·.1)
 
-/-- One running body per body occurrence: the slot record of an occurrence is the one `MultiInstance.runOf?` finds. -/
+/-- One running body per body occurrence: the slot record of an occurrence is the one `MultiInstance.runOf?` finds. It
+holds of every state (`runsKeyed`), since the records are keyed by their body occurrence. -/
 def RunsKeyed (s : State) : Prop :=
   (s.slots.multiInstances.map (·.occurrence)).Nodup
 
+/-- The list view's body occurrences are its map's keys, which are distinct. -/
+theorem runsKeyed (s : State) : RunsKeyed s :=
+  Laws.State.multiInstanceList_nodup _
+
+/-- `earlier` is numbered below `later` once `later` is: a committed `later` has a committed `earlier` below it, and a
+pending `later` (`Issue.fresh`) is still to be numbered, which the commit does above every committed activation of its
+slot, in item order among one body's instances (`Step.activationPlace`, KD5). -/
+def CommittedBelow (earlier later : Issue) : Prop :=
+  ∀ m, later = .committed m → ∃ n, earlier = .committed n ∧ n < m
+
 /-- The instances of one body are numbered in item order: of two active slots, the instance in the earlier slot's scope
-occurrence has the lower activation. An instance is an occurrence carrying the continuation `.multiInstance` of the
+occurrence has the lower activation, once both are committed, and a later slot's instance is committed only after the
+earlier one's (`CommittedBelow`); in a committed state, which holds no pending activation, that is the order of their
+numbers. An instance is an occurrence carrying the continuation `.multiInstance` of the
 body occurrence, which its begin carries (`MultiInstance.beginInstances`); that an occurrence of the Activity in an
 instance's scope occurrence is its instance is `InstancesPlaced`, and the two together number every occurrence of the
 Activity in the slots' scope occurrences (`numbered_of_placed`). The activation counter runs across the whole Process
@@ -114,7 +127,7 @@ def NumberedInOrder (s : State) (run : MultiInstanceRun) : Prop :=
     run.instances[first]? = some (.active firstScope) → run.instances[second]? = some (.active secondScope) →
     ∀ earlier ∈ s.occurrences, ∀ later ∈ s.occurrences, earlier.scope = firstScope → later.scope = secondScope →
       earlier.continuation = .multiInstance run.occurrence → later.continuation = .multiInstance run.occurrence →
-      earlier.activation < later.activation
+      CommittedBelow earlier.activation later.activation
 
 /-- Instance identity: an occurrence of the body's element under the element role in an active instance's scope
 occurrence is that instance, continuing into the body (§13.3.7; CIB runs each instance in an execution of its own below
@@ -132,7 +145,7 @@ theorem numbered_of_placed {s : State} {run : MultiInstanceRun} (numbered : Numb
       run.instances[first]? = some (.active firstScope) → run.instances[second]? = some (.active secondScope) →
       ∀ earlier ∈ s.occurrences, ∀ later ∈ s.occurrences, earlier.scope = firstScope → later.scope = secondScope →
         earlier.element = run.element → later.element = run.element → earlier.role = .element →
-        later.role = .element → earlier.activation < later.activation :=
+        later.role = .element → CommittedBelow earlier.activation later.activation :=
   fun first second firstScope secondScope lower one two earlier earlierIn later laterIn atFirst atSecond earlierElement
       laterElement earlierRole laterRole =>
     numbered first second firstScope secondScope lower one two earlier earlierIn later laterIn atFirst atSecond
@@ -149,6 +162,37 @@ running state queues nothing, so these are inductive strengthening (root decisio
 def QueuedFor (run : MultiInstanceRun) (index : Nat) (request : BeginRequest) : Prop :=
   request.continuation = .multiInstance run.occurrence ∧ run.instances[index]? = some (.active request.scope)
 
+/-- The order of the begins of `run` still queued (DC4, root decision 2026-11-19), which reads no run log: the
+Multi-Instance feature queues a body's begins in one micro-step, as one batch (`deferBegins` is the one queuer of deferred
+begins, guard 17), so the running batch lists them in slot order, signals in increasing slots and deferred begins in
+decreasing ones (`signals`, `tokens`, `queues`, facts of the batch alone); a body's begins are never both in the running
+batch and keyed (`apart`); and once keyed they are siblings under the unit that queued them, so their keys order them:
+begin signals in breadth-first key order (`keyedSignals`), which is their index order, deferred begins by their index in
+the batch, the higher first (`keyedTokens`), and every keyed begin signal below every keyed deferred begin
+(`keyedQueues`). The closure takes queued begins in that order: signals breadth-first (`Step.firstBreadth`) and deferred
+begins last queued first (`Step.latest`). -/
+structure BeginsOrdered (s : State) (run : MultiInstanceRun) : Prop where
+  signals : ∀ first second first' second', Laws.State.Precedes s.batchSignals (.begin first) (.begin second) →
+    QueuedFor run first' first → QueuedFor run second' second → first' < second'
+  tokens : ∀ first second first' second', Laws.State.Precedes s.batchTokens (.begin first) (.begin second) →
+    QueuedFor run first' first → QueuedFor run second' second → second' < first'
+  queues : ∀ first second first' second', Signal.begin first ∈ s.batchSignals → Token.begin second ∈ s.batchTokens →
+    QueuedFor run first' first → QueuedFor run second' second → first' < second'
+  apart : ∀ first second first' second', (Signal.begin first ∈ s.batchSignals ∨ Token.begin first ∈ s.batchTokens) →
+    QueuedFor run first' first → ∀ unit : UnitKey,
+    (s.queuedSignals[unit]? = some (Signal.begin second) ∨ s.queuedTokens[unit]? = some (Token.begin second)) →
+    QueuedFor run second' second → False
+  keyedSignals : ∀ (one two : UnitKey) first second first' second',
+    s.queuedSignals[one]? = some (Signal.begin first) → s.queuedSignals[two]? = some (Signal.begin second) →
+    QueuedFor run first' first → QueuedFor run second' second → UnitKey.breadth.val one two = .lt → first' < second'
+  keyedTokens : ∀ (one two : UnitKey) first second first' second',
+    s.queuedTokens[one]? = some (Token.begin first) → s.queuedTokens[two]? = some (Token.begin second) →
+    QueuedFor run first' first → QueuedFor run second' second →
+    ∃ (unit : UnitKey) (a b : Nat), one = unit.tokenUnit a ∧ two = unit.tokenUnit b ∧ (a < b → second' < first')
+  keyedQueues : ∀ (one two : UnitKey) first second first' second',
+    s.queuedSignals[one]? = some (Signal.begin first) → s.queuedTokens[two]? = some (Token.begin second) →
+    QueuedFor run first' first → QueuedFor run second' second → first' < second'
+
 /-- What the instances' begins still queued need for the numbering: every body's element loops, and its instances'
 scope occurrences belong to no called instance, so they share one activation counter; an occurrence continuing into a
 body in one of its active instances' scope occurrences is an occurrence of the body's element under the element role
@@ -157,9 +201,9 @@ in yet and so needs no fact of occurrences elsewhere; a queued instance begin ta
 while that slot's scope occurrence stands, with the body's element and no reservation (`targets`); no queued begin into
 an instance's scope occurrence begins a reservation of the body's element under the element role, and every reservation
 continues by its flows (`reserved`, `reservations`), and no reservation still to be made names a looping element, as a
-boundary's or an Event's never does under `IdsUnique` (`occurs`); the closure takes queued begins in slot order: begin signals first
-in, first out, deferred begins last in, first out, and only under `declarationDepthFirst` (`Step.nextToken`); and every
-instance that has begun lies in a slot below every one still queued (`above`). -/
+boundary's or an Event's never does under `IdsUnique` (`occurs`); each body's queued begins are in slot order
+(`ordered`), and begins are deferred only under `declarationDepthFirst` (`deferred`); and every instance that has begun
+lies in a slot below every one still queued (`above`). -/
 structure BeginsQueued (program : Program) (s : State) : Prop where
   looped : ∀ run ∈ s.slots.multiInstances, ∃ loop, LoopOf program run.element loop
   uncalled : ∀ run ∈ s.slots.multiInstances, ∀ scope, Iteration.active scope ∈ run.instances →
@@ -174,15 +218,8 @@ structure BeginsQueued (program : Program) (s : State) : Prop where
       o.id = id → o.element = run.element → o.role = .element → False
   reservations : ∀ o ∈ s.occurrences, o.begun = false → o.continuation = .flow
   occurs : ∀ element, OccurPending s element → ∀ loop, ¬ LoopOf program element loop
-  signalsOrdered : ∀ run ∈ s.slots.multiInstances, ∀ first second first' second',
-    Laws.State.Precedes s.signals (.begin first) (.begin second) → QueuedFor run first' first →
-    QueuedFor run second' second → first' < second'
-  tokensOrdered : ∀ run ∈ s.slots.multiInstances, ∀ first second first' second',
-    Laws.State.Precedes s.tokens (.begin first) (.begin second) → QueuedFor run first' first →
-    QueuedFor run second' second → second' < first'
-  queuesOrdered : ∀ run ∈ s.slots.multiInstances, ∀ first second first' second', Signal.begin first ∈ s.signals →
-    Token.begin second ∈ s.tokens → QueuedFor run first' first → QueuedFor run second' second → first' < second'
-  deferred : program.options.branchSchedule = .orderInvariant → ∀ request, Token.begin request ∉ s.tokens
+  ordered : ∀ run ∈ s.slots.multiInstances, BeginsOrdered s run
+  deferred : program.options.branchSchedule = .orderInvariant → ∀ request, Token.begin request ∉ Laws.State.allQueuedTokens s
   above : ∀ run ∈ s.slots.multiInstances, ∀ request (index queued : Nat) scope, Laws.State.Queued s request →
     QueuedFor run queued request → run.instances[index]? = some (.active scope) →
     (∃ o ∈ s.occurrences, o.scope = scope ∧ o.continuation = .multiInstance run.occurrence) → index < queued
@@ -200,8 +237,8 @@ zero-based index (CIB-INT-0018, `MultiInstanceActivityBehavior:76-78`): every ac
 occurrence was issued since `before` has a variable set there binding it. -/
 def SlotsCounted (before after : State) : Prop :=
   ∀ run ∈ after.slots.multiInstances, ∀ (index : Nat) (scope : ScopeOccurrenceId),
-    run.instances[index]? = some (.active scope) → before.nextIssue ≤ scope.value →
-    ∃ locals ∈ after.variables, locals.scope = scope ∧ ("loopCounter", Value.int index) ∈ locals.entries
+    run.instances[index]? = some (.active scope) → ¬ Laws.State.ScopeIssued before scope →
+    ∃ entries, after.variables[scope]? = some entries ∧ entries["loopCounter"]? = some (Value.int index)
 
 /-- The number of a body's filled slots. -/
 def filledCount (run : MultiInstanceRun) : Nat :=
@@ -232,10 +269,10 @@ def CountersHeld (instanceLocals bodyLocals : List (String × Value)) (run : Mul
 /-- Instances begin in generation order: within one input's journal the start facts of `element` in the process
 instance `processInstance` carry increasing activations, so with `NumberedInOrder` the instance of item `k` begins before
 the instance of item `k + 1`, in both modes and under both branch schedules. -/
-def BeginsInOrder (facts : List StartedFact) (processInstance : String) (element : ElementId) : Prop :=
+def BeginsInOrder (facts : List StartedFact) (processInstance : InstanceName) (element : ElementId) : Prop :=
   ((facts.filter fun fact => fact.occurrence.processInstanceId == processInstance &&
       fact.occurrence.element == element && fact.occurrence.role == .element).map
-    (·.occurrence.activation)).Pairwise (· < ·)
+    (·.occurrence.activation)).Pairwise (compare · · = .lt)
 
 /-! ## Slot shapes -/
 
@@ -255,7 +292,7 @@ names an output data item, and a String when the input collection is a String Li
 Strings only (`MultiInstance.submitted`). -/
 def OutputsFit (run : MultiInstanceRun) (loop : MultiInstance) : Prop :=
   ∀ output, Iteration.completed output ∈ run.instances → (loop.outputDataItem.isSome → output.isSome) ∧
-    ∀ value, output = some value → ∀ items, run.collection = .stringList items → ∃ text, value = .string text
+    ∀ value, output = some value → run.strings = true → ∃ text, value = .string text
 
 /-! ## Completion and output -/
 
@@ -267,12 +304,18 @@ def Collects (run : MultiInstanceRun) : Option (List Value) → Prop
 
 /-- The output collection keeps the form of the input: a String List stays a String List. -/
 def FormKept : Value → Value → Prop
-  | .stringList _, .stringList _ => True
-  | .list _, .list _ => True
-  | _, _ => False
+  | .stringList _, right =>
+    match right with
+    | .stringList _ => True
+    | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .string _ | .list _ | .map _ => False
+  | .list _, right =>
+    match right with
+    | .list _ => True
+    | .null | .bool _ | .int _ | .decimal _ _ | .double _ | .date _ | .string _ | .stringList _ | .map _ => False
+  | .null, _ | .bool _, _ | .int _, _ | .decimal _ _, _ | .double _, _ | .date _, _ | .string _, _ | .map _, _ => False
 
 /-- Under `CollectionRead.sequentialReread` a later sequential instance holds the item at its index in the collection
-`current` read as it is generated, while the slot count stays the entry count and `run.collection` the entry value
+`current` read as it is generated, while the slot count stays the entry count and `run.members` the entry members
 (`SnapshotFixed`): a grown collection adds no instance, and one shorter than the index generates none (CIB-INT-0043). -/
 def RereadItem (run : MultiInstanceRun) (current : List Value) (index : Nat) (item : Value) : Prop :=
   index < run.instances.length ∧ current[index]? = some item

@@ -19,6 +19,8 @@ namespace Kernel
 spelling but the three lower-case names as `foreign`, which admission refuses (`decision.typeRef`). -/
 inductive TypeRef where
   | string | integer | boolean
+  /-- DMN `double`: carried for A3, which converts to `Value.double`; admission refuses it (`decision.typeRef`). -/
+  | double
   | foreign (name : String)
   deriving Repr
 
@@ -28,7 +30,7 @@ inductive Comparison where
   deriving Repr
 
 /-- A FEEL literal of the unary-test subset. A number is `coefficient × 10^-scale`, exactly as written. -/
-inductive FeelLiteral where
+inductive FeelLiteral where -- guard-exception(3): FEEL unary-test literals (decision semantics item 4), a separate expression language from JUEL's values.
   | null
   | bool (value : Bool)
   | number (coefficient : Int) (scale : Nat)

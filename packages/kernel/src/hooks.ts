@@ -10,6 +10,7 @@
 import {
   MappingDialect,
   OutputContext,
+  type Bounds,
   ValueTag,
   assertNever,
   compareStrings,
@@ -49,7 +50,8 @@ import {
   committed,
   failed,
   failedWith,
-  instanceOf,
+  instanceOf, instanceText,
+  keyOf,
   keyed,
   leaveFlows,
   occurrenceOf,
@@ -58,6 +60,7 @@ import {
   visible,
   type Binding,
   type IncidentDetail,
+  type JobDetail,
   type ConditionChoice,
   type CorrelationMatch,
   type DeliveryInput,
@@ -70,6 +73,7 @@ import {
   type MessageChannel,
   type MultiInstanceRun,
   type Occurrence,
+  type OccurrenceName,
   type OccurrenceRef,
   type OpenItem,
   type Origin,
@@ -86,12 +90,15 @@ import {
   type WriteEvent,
   SemanticCause,
   semanticFailure,
+  insertHeld, issueNotAfter, type Issue, itemsInOrder, type OccurrenceId, type UnitKey, activationCount, ClaimSlotTag,
+  compareClaimSlot, compareIssue, compareIssuePlace, freshIssue, type InstanceName, instanceTextWith, orderedEntries, orderedGet,
 } from "./state.js";
 // Lean's `Kernel.Hooks` re-exports `Kernel.State.Removal` to the features and `Kernel.Step`; so does this module, which
 // keeps the removal module's direct importers to this hub (guard 15).
 export {
-  cancelOccurrence, clearInside, idleWithout, leaveScope, removeOccurrence, withdrawInside, withdrawOccurrence,
+  cancelOccurrence, clearInside, disarm, idleWithout, leaveScope, removeOccurrence, withdrawInside, withdrawOccurrence,
 } from "./state/removal.js";
+export { inside } from "./state/tree.js";
 
 /**
  * An in-kernel evaluation. A failure is an absent reference (`unknown-variable`), which `Mapping.dialect` reads, or a
@@ -149,14 +156,14 @@ export function collectionItems(collection: Value): readonly Value[] | null {
     case ValueTag.Bool:
     case ValueTag.Int:
     case ValueTag.Decimal:
+    case ValueTag.Double:
+    case ValueTag.Date:
     case ValueTag.String:
     case ValueTag.Map:
       return null;
   }
   return assertNever(collection);
 }
-
-export const multiInstanceRunItems = (run: MultiInstanceRun): readonly Value[] | null => collectionItems(run.collection);
 
 // The portable value domain (docs/kernel/semantics/DATA-SEMANTICS-SPEC.md#values). Step checks every input's values
 // against it and features measure submissions by it; they share it here because they never import each other.
@@ -201,6 +208,8 @@ export function valueBytes(value: Value): number | null {
         utf8ByteSize(String(value.scale));
     case ValueTag.String:
       return shellBytes("{\"kind\":\"string\",\"value\":}") + stringBytes(value.value);
+    case ValueTag.Double:
+    case ValueTag.Date:
     case ValueTag.StringList:
       return null;
     case ValueTag.List: {
@@ -242,28 +251,22 @@ export function canonicalDecimal(coefficient: bigint, scale: bigint): boolean {
   return scale >= 0n && scale <= 6n && BigInt.asIntN(64, coefficient) === coefficient && (scale === 0n || coefficient % 10n !== 0n);
 }
 
-/** Map keys of at most `textBytes` UTF-8 bytes, in strictly increasing Unicode-scalar order. */
-function keysInDomain(entries: readonly Binding[]): boolean {
-  return entries.every(([key], index) => utf8ByteSize(key) <= textBytes &&
+/** Map keys of at most `bounds.textBytes` UTF-8 bytes, in strictly increasing Unicode-scalar order. */
+function keysInDomain(bounds: Bounds, entries: readonly Binding[]): boolean {
+  return entries.every(([key], index) => utf8ByteSize(key) <= bounds.textBytes &&
     (index === 0 || compareStrings(entries[index - 1]?.[0] ?? "", key) < 0));
 }
 
-/** The portable domain's bounds: project policy, not CIB limits (the portable-values contract's "Finite limits"). */
-const containerLevels = 4;
-const containerMembers = 32;
-const valueNodes = 256;
-const valueJsonBytes = 16384;
-/** The UTF-8 bytes of a portable String or Map key, the one owner of that bound. */
-export const textBytes = 1024;
 /** The largest portable Integer, 2^53 − 1, the one owner of that bound. */
 export const integerBound = 9007199254740991;
 
 /**
- * The value nodes of `value`, the root included, when every node lies in the portable domain and no container is
- * nested deeper than `containerLevels` counting from `depth` containers above it; `null` otherwise. A String List is
- * outside the portable arms at every depth.
+ * The value nodes of `value`, the root included, when every node lies in the portable domain under `bounds` and no
+ * container is nested deeper than `bounds.containerLevels` counting from `depth` containers above it; `null` otherwise.
+ * A String List is outside the portable arms at every depth, and so are a Double and a Date until A3 admits them, so
+ * every input carrying one is rejected (`value-outside-domain`).
  */
-function domainNodes(value: Value, depth: number): number | null {
+function domainNodes(bounds: Bounds, value: Value, depth: number): number | null {
   switch (value.tag) {
     case ValueTag.Null:
     case ValueTag.Bool:
@@ -273,23 +276,27 @@ function domainNodes(value: Value, depth: number): number | null {
     case ValueTag.Decimal:
       return canonicalDecimal(value.coefficient, BigInt(value.scale)) ? 1 : null;
     case ValueTag.String:
-      return utf8ByteSize(value.value) <= textBytes ? 1 : null;
+      return utf8ByteSize(value.value) <= bounds.textBytes ? 1 : null;
+    case ValueTag.Double:
+    case ValueTag.Date:
     case ValueTag.StringList:
       return null;
     case ValueTag.List:
-      return depth < containerLevels && value.items.length <= containerMembers ? memberNodes(value.items, depth + 1) : null;
+      return depth < bounds.containerLevels && value.items.length <= bounds.containerMembers
+        ? memberNodes(bounds, value.items, depth + 1)
+        : null;
     case ValueTag.Map:
-      return depth < containerLevels && value.entries.length <= containerMembers && keysInDomain(value.entries)
-        ? memberNodes(value.entries.map(([, member]) => member), depth + 1)
+      return depth < bounds.containerLevels && value.entries.length <= bounds.containerMembers && keysInDomain(bounds, value.entries)
+        ? memberNodes(bounds, value.entries.map(([, member]) => member), depth + 1)
         : null;
   }
   return assertNever(value);
 }
 
-function memberNodes(members: readonly Value[], depth: number): number | null {
+function memberNodes(bounds: Bounds, members: readonly Value[], depth: number): number | null {
   let total = 1;
   for (const member of members) {
-    const nodes = domainNodes(member, depth);
+    const nodes = domainNodes(bounds, member, depth);
     if (nodes === null) return null;
     total += nodes;
   }
@@ -297,27 +304,39 @@ function memberNodes(members: readonly Value[], depth: number): number | null {
 }
 
 /**
- * Whether `value` may be a variable's value: a portable value within every bound, or a `stringList` as a whole variable
- * value with at most `containerMembers` Strings of at most `textBytes` bytes, the bounds its wire form has
- * (DATA-SEMANTICS-SPEC "Values").
+ * Whether `value` may be a variable's value under `bounds`: a portable value within every bound, or a `stringList` as a
+ * whole variable value with at most `containerMembers` Strings of at most `textBytes` bytes, the bounds its wire form
+ * has (DATA-SEMANTICS-SPEC "Values").
  */
-export function inValueDomain(value: Value): boolean {
-  if (value.tag === ValueTag.StringList) {
-    return value.items.length <= containerMembers && value.items.every((item) => utf8ByteSize(item) <= textBytes);
+export function inValueDomain(bounds: Bounds, value: Value): boolean {
+  switch (value.tag) {
+    case ValueTag.StringList:
+      return value.items.length <= bounds.containerMembers && value.items.every((item) => utf8ByteSize(item) <= bounds.textBytes);
+    case ValueTag.Null:
+    case ValueTag.Bool:
+    case ValueTag.Int:
+    case ValueTag.Decimal:
+    case ValueTag.Double:
+    case ValueTag.Date:
+    case ValueTag.String:
+    case ValueTag.List:
+    case ValueTag.Map: {
+      const nodes = domainNodes(bounds, value, 0);
+      const bytes = valueBytes(value);
+      return nodes !== null && nodes <= bounds.valueNodes && bytes !== null && bytes <= bounds.canonicalBytes;
+    }
   }
-  const nodes = domainNodes(value, 0);
-  const bytes = valueBytes(value);
-  return nodes !== null && nodes <= valueNodes && bytes !== null && bytes <= valueJsonBytes;
+  return assertNever(value);
 }
 
-/** Refuse an input whose values leave the domain, before its transition: rejected whole, never truncated. */
-export function admitValues(values: readonly Value[]): Result<null> {
-  return values.every(inValueDomain) ? committed(null) : failed(FailureTag.Rejected, "value-outside-domain");
+/** Refuse an input whose values leave the domain `bounds` sets, before its transition: rejected whole, never truncated. */
+export function admitValues(bounds: Bounds, values: readonly Value[]): Result<null> {
+  return values.every((value) => inValueDomain(bounds, value)) ? committed(null) : failed(FailureTag.Rejected, "value-outside-domain");
 }
 
-/** Lean's `admitValues values *> next`, as `Kernel.Step` writes it: `next` runs only on values inside the domain. */
-export function admitThen<T>(values: readonly Value[], next: () => Result<T>): Result<T> {
-  const admitted = admitValues(values);
+/** Lean's `admitValues bounds values *> next`, as `Kernel.Step` writes it: `next` runs only on values inside the domain. */
+export function admitThen<T>(bounds: Bounds, values: readonly Value[], next: () => Result<T>): Result<T> {
+  const admitted = admitValues(bounds, values);
   return admitted.ok ? next() : failedWith(admitted.failure);
 }
 
@@ -332,19 +351,22 @@ export function chooseStart(named: ElementId | null, fired: readonly ElementId[]
   return others.length === 0 ? committed(only) : failed(FailureTag.Rejected, "start-ambiguous");
 }
 
-/** Hold an occurrence whose InputSet is unavailable (`FeatureSlots.held`). */
-export function hold(state: State, held: Held): State {
-  return { ...state, slots: { ...state.slots, held: [...state.slots.held, held] } };
+/**
+ * Hold an occurrence whose InputSet is unavailable (`FeatureSlots.held`), and record it in the micro-step's Ready list:
+ * the one writer of `Transition.ready`, so the list names exactly the occurrences the micro-step holds.
+ */
+export function hold(state: State, occurrence: Occurrence): State {
+  const held: Held = { occurrence: occurrence.id, scope: occurrence.scope };
+  return {
+    ...state,
+    slots: { ...state.slots, held: insertHeld(state.slots.held, held) },
+    draft: { ...state.draft, ready: [...state.draft.ready, keyOf(state, occurrence)] },
+  };
 }
 
 /** What an expression evaluated from `scope` reads. */
 export function evalContext(state: State, program: Program, scope: ScopeOccurrenceId): EvalContext {
-  return { variables: visible(state, program, scope), nowMs: state.logicalTimeMs };
-}
-
-/** The variables `scope` itself holds, without the chain behind it. */
-export function ownVariables(state: State, scope: ScopeOccurrenceId): readonly Binding[] {
-  return state.variables.find((entry) => entry.scope === scope)?.entries ?? [];
+  return { variables: visible(state, program, scope), nowMs: state.logicalTimeMs, bounds: program.options.bounds };
 }
 
 /** How a catch trigger catches a raised event: its precedence, lower first, and the variables it writes. */
@@ -377,6 +399,48 @@ export interface Ctx {
    * `feature/subscriptions` reads.
    */
   readonly conditionChoices: readonly ConditionChoice[];
+  /**
+   * `step.ts`: the closure's order of units, which orders the pending positions its units issued (DC13,
+   * `issueNotAfter`): breadth-first by default, the run log's under `declarationDepthFirst` (`unitCtx`). Read only
+   * through `ctxPositionLe`.
+   */
+  readonly issuerOrder: (a: UnitKey, b: UnitKey) => number;
+}
+
+/**
+ * Lean's `Ctx.positionLe`: whether the order position `left` comes no later than `right` in the closure in progress
+ * (DC13), reading the units of pending positions from `state`'s issue table; every site that orders open items or other
+ * positions reads this.
+ */
+export function ctxPositionLe(ctx: Ctx, state: State): (left: Issue, right: Issue) => boolean {
+  return (left, right) => issueNotAfter(ctx.issuerOrder, state.issued, left, right);
+}
+
+/**
+ * Lean's `Ctx.provisional`: the number the commit gives `activation` if no unit yet to run issues another of its counter
+ * before it: the counter's count, which no step of a closure writes, plus the issues of its counter the closure made so
+ * far that `ctxPositionLe` places no later, itself included. Exact under `declarationDepthFirst`; under
+ * `orderInvariant` a lower bound. A committed activation is its number; a fresh issue tabled under another slot, which
+ * no well-formed issuer holds as an activation, its index.
+ */
+export function ctxProvisional(ctx: Ctx, state: State): (activation: Issue) => number {
+  return (activation) => {
+    const fresh = freshIssue(activation);
+    if (fresh === null) return activation as number;
+    const own = orderedGet(state.issued, activation, compareIssue);
+    if (own === undefined || own.slot.tag !== ClaimSlotTag.Activation) return fresh.index;
+    let count = activationCount(state, own.slot.slot);
+    for (const [issue, { slot, unit }] of orderedEntries(state.issued)) {
+      const unitOf = (key: unknown) => (key === freshIssue(issue) ? unit : own.unit);
+      if (compareClaimSlot(slot, own.slot) === 0 && compareIssuePlace(ctx.issuerOrder, unitOf, issue, activation) <= 0) count += 1;
+    }
+    return count;
+  };
+}
+
+/** Lean's `Ctx.nameText`: the identifier `name` denotes in the closure in progress, its pending activations numbered `ctxProvisional`ly. */
+export function ctxNameText(ctx: Ctx, state: State, name: InstanceName): string {
+  return instanceTextWith(name, ctxProvisional(ctx, state));
 }
 
 /**
@@ -471,12 +535,14 @@ export function ctxOutputReads(
 ): (written: readonly Binding[]) => EvalContext {
   switch (ctx.program.options.outputContext) {
     case OutputContext.Submission:
-      return () => ({ variables: [...installed, ...own, ...outer], nowMs });
+      return () => ({ variables: [...installed, ...own, ...outer], nowMs, bounds: ctx.program.options.bounds });
     case OutputContext.ActivityScope: {
       const owned = (name: string): boolean => own.some(([other]) => other === name);
       const held = installed.filter(([name]) => owned(name));
       const outward = installed.filter(([name]) => !owned(name));
-      return (written) => ({ variables: [...held, ...own, ...[...written].reverse(), ...outward, ...outer], nowMs });
+      return (written) => ({
+        variables: [...held, ...own, ...[...written].reverse(), ...outward, ...outer], nowMs, bounds: ctx.program.options.bounds,
+      });
     }
   }
   return assertNever(ctx.program.options.outputContext);
@@ -502,10 +568,10 @@ export function ctxRequireMappings(ctx: Ctx, context: EvalContext, mappings: rea
 export function itemDetailOf<T>(
   ctx: Ctx, state: State, occurrence: OccurrenceRef, detail: (view: WaitView) => T | null,
 ): readonly [OpenItem, T] | null {
-  for (const item of state.openItems) {
+  for (const item of itemsInOrder(ctxPositionLe(ctx, state), state.openItems)) {
     if (programPublicId(ctx.program, item.element) !== occurrence.element ||
-      occurrenceOf(state, item.occurrence)?.activation !== occurrence.activation ||
-      instanceOf(state, item.scope) !== occurrence.processInstanceId) continue;
+      occurrenceOf(state, item.id.occurrence)?.activation !== occurrence.activation || // a committed activation is its number
+      instanceText(instanceOf(state, item.scope)) !== occurrence.processInstanceId) continue;
     const found = detail(openKindView(item.kind));
     if (found !== null) return [item, found];
   }
@@ -543,8 +609,8 @@ export function subscriptionOf(ctx: Ctx, id: ElementId): Subscription | null {
  */
 export function boundaryFire(
   boundary: Boundary,
-  host: number | null,
-  reserved: number | null,
+  host: OccurrenceId | null,
+  reserved: OccurrenceId | null,
   scope: ScopeOccurrenceId,
   writes: readonly Binding[],
   state: State,
@@ -563,7 +629,7 @@ export function boundaryFire(
  * Event, when a subscription triggered it.
  */
 export interface ScopeEntry {
-  readonly inner: number | null;
+  readonly inner: OccurrenceId | null;
 }
 
 /** The default of every lifecycle hook: the mechanism is not registered, a wiring defect `registry.ts#hooks` excludes. */
@@ -610,17 +676,19 @@ export interface Hooks {
   readonly retryIncident: (ctx: Ctx, item: OpenItem, incident: IncidentDetail, generation: number, state: State) => Outcome;
   /** Work: cancel the process of the open incident whose detail is given, for the generation the command names. */
   readonly cancelIncidentProcess: (ctx: Ctx, incident: IncidentDetail, generation: number, state: State) => Outcome;
+  /** Work: the open job item, whose detail is given, failed (`step/jobs.ts#jobFailure`). */
+  readonly failJob: (ctx: Ctx, item: OpenItem, job: JobDetail, state: State) => Outcome;
   /** Work: a message or timer subscription an Activity opened itself (a Receive Task) fired. */
   readonly triggerActivity: (
     ctx: Ctx, header: Header, payload: ActivityPayload, item: OpenItem, fired: Fired, state: State) => Outcome;
   /** Subscriptions: any other message or timer subscription fired. */
   readonly trigger: (ctx: Ctx, item: OpenItem, fired: Fired, state: State) => Outcome;
   /** Subscriptions: `Signal.arm`. */
-  readonly arm: (ctx: Ctx, host: number, element: ElementId, scope: ScopeOccurrenceId, state: State) => Outcome;
+  readonly arm: (ctx: Ctx, host: OccurrenceId, element: ElementId, scope: ScopeOccurrenceId, state: State) => Outcome;
   /** Subscriptions: `Signal.armScope`. */
   readonly armScope: (ctx: Ctx, scope: ScopeOccurrenceId, state: State) => Outcome;
   /** Subscriptions: `Signal.armGateway`. */
-  readonly armGateway: (ctx: Ctx, occurrence: number, gateway: ElementId, scope: ScopeOccurrenceId, state: State) => Outcome;
+  readonly armGateway: (ctx: Ctx, occurrence: OccurrenceId, gateway: ElementId, scope: ScopeOccurrenceId, state: State) => Outcome;
   /** Propagation: `Signal.raise`. */
   readonly raise: (ctx: Ctx, raised: Raised, origin: Origin, state: State) => Outcome;
   /** Compensation: `Signal.compensate`. */
@@ -628,11 +696,13 @@ export interface Hooks {
     ctx: Ctx,
     scope: ScopeOccurrenceId,
     activity: ElementId | null,
-    trigger: OccurrenceRef,
-    leave: number | null,
+    trigger: OccurrenceName,
+    leave: OccurrenceId | null,
     resume: Resume | null,
     state: State,
   ) => Outcome;
+  /** Compensation: `Signal.compensationReady`. */
+  readonly compensationReady: (ctx: Ctx, scope: ScopeOccurrenceId, context: ScopeOccurrenceId, state: State) => Outcome;
   /** Compensation: `Signal.compensationFailed`. */
   readonly failCompensation: (
     ctx: Ctx, handler: ScopeOccurrenceId, code: string, message: string | null, origin: Origin, state: State) => Outcome;
@@ -653,11 +723,11 @@ export interface Hooks {
   /** Flow: leave through flows. */
   readonly outflow: (ctx: Ctx, occurrence: Occurrence, leave: Leave, state: State) => Outcome;
   /** MultiInstance: one instance of the body occurrence completed. */
-  readonly instanceCompleted: (ctx: Ctx, body: number, occurrence: Occurrence, writes: readonly Binding[], state: State) => Outcome;
-  /** Compensation: a handler of the run in that scope occurrence completed. */
-  readonly handlerCompleted: (ctx: Ctx, run: ScopeOccurrenceId, occurrence: Occurrence, state: State) => Outcome;
-  /** Compensation: a handler of the run in that scope occurrence left without completing, raised by an event. */
-  readonly handlerEnded: (ctx: Ctx, run: ScopeOccurrenceId, occurrence: Occurrence, state: State) => Outcome;
+  readonly instanceCompleted: (ctx: Ctx, body: OccurrenceId, occurrence: Occurrence, writes: readonly Binding[], state: State) => Outcome;
+  /** Compensation: a compensation handler's occurrence completed. */
+  readonly handlerCompleted: (ctx: Ctx, occurrence: Occurrence, state: State) => Outcome;
+  /** Compensation: a compensation handler's occurrence left without completing, raised by an event. */
+  readonly handlerEnded: (ctx: Ctx, occurrence: Occurrence, state: State) => Outcome;
   // Notifications
   /** A generic cancellation removed the occurrence; a feature that must react has this one place. */
   readonly cancelled: (ctx: Ctx, occurrence: Occurrence, state: State) => Outcome;
@@ -707,6 +777,7 @@ export const defaultHooks: Hooks = {
   effectResult: () => refuse("effectResult"),
   retryIncident: () => refuse("retryIncident"),
   cancelIncidentProcess: () => refuse("cancelIncidentProcess"),
+  failJob: () => refuse("failJob"),
   triggerActivity: () => refuse("triggerActivity"),
   trigger: () => refuse("trigger"),
   arm: () => refuse("arm"),
@@ -714,6 +785,7 @@ export const defaultHooks: Hooks = {
   armGateway: () => refuse("armGateway"),
   raise: () => refuse("raise"),
   compensate: () => refuse("compensate"),
+  compensationReady: () => refuse("compensationReady"),
   failCompensation: () => refuse("failCompensation"),
   leave: () => refuse("leave"),
   select: () => semanticFailure(SemanticCause.Invariant, "select"), // a registry without the hook

@@ -66,7 +66,7 @@ const open = (outcome: Outcome): string[] => {
 };
 const seen = (outcome: Outcome): unknown => {
   assert.ok(outcome.ok, JSON.stringify(outcome));
-  return outcome.value.variables.flatMap((frame) => frame.entries.filter(([name]) => name === "seen").map(([, value]) => value));
+  return outcome.value.variables.flatMap(([, entries]) => entries.filter(([name]) => name === "seen").map(([, value]) => value));
 };
 
 test("a process-level delivery cancels the ordinary work and runs the handler over the parent's data", () => {

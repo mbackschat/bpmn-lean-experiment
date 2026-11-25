@@ -43,7 +43,7 @@ function run(mode: "parallel" | "sequential", activations: readonly number[]): u
   }));
   assert.ok(started.ok, JSON.stringify(started));
   const waiting = (state: State): unknown =>
-    state.status === "running" ? state.openItems.map((item) => state.occurrences.find((entry) => entry.id === item.occurrence)?.activation) : state.status;
+    state.status === "running" ? state.openItems.map((item) => state.occurrences.find((entry) => entry.id === item.id.occurrence)?.activation) : state.status;
   const seen: unknown[] = [waiting(started.value)];
   let state = started.value;
   for (const activation of activations) {

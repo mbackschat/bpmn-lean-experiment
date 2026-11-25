@@ -43,6 +43,8 @@ export function queryable(value: Value): boolean {
     case ValueTag.String:
       return true;
     case ValueTag.Decimal:
+    case ValueTag.Double:
+    case ValueTag.Date:
     case ValueTag.StringList:
     case ValueTag.List:
     case ValueTag.Map:

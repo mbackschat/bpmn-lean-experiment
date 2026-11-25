@@ -42,6 +42,17 @@ const eventSubProcessOn = (trigger: Json | string, interrupting: boolean) => (pr
 
 const named = message({ messageRef: "M", name: text("M") });
 
+/** `program` with `over` merged into every subscription its elements and boundaries carry. */
+const subscribed = (program: Json, over: Json): Json => {
+  const merge = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(merge);
+    if (value === null || typeof value !== "object") return value;
+    const object = Object.fromEntries(Object.entries(value).map(([name, item]) => [name, merge(item)]));
+    return "trigger" in object && "parallelMultiple" in object ? { ...object, ...over } : object;
+  };
+  return merge(program) as Json;
+};
+
 /** A Signal trigger with `over` replacing its `signalRef` or name. */
 const signalWith = (over: Json): Json => {
   const base = signal() as { signal: { payload: Json } };
@@ -50,11 +61,11 @@ const signalWith = (over: Json): Json => {
 
 /** The profile selection under which a Signal's name addresses it, read at the Events level (CIB-INT-0028, CIB-EXT-0041). */
 const signalAddresses = (placed: (program: Json) => Json) => (program: Json): Json =>
-  placed(withOptions(program, { signalNames: "addresses", evaluator: "juel" }));
+  placed(withOptions(program, { signalNames: "addresses", branchSchedule: "declarationDepthFirst", evaluator: "juel" }));
 
 /** The profile selection under which a Message's name addresses its subscriptions (CIB-LIM-0022). */
 const addresses = (placed: (program: Json) => Json) => (program: Json): Json =>
-  placed(withOptions(program, { messageNames: "addresses", evaluator: "juel" }));
+  placed(withOptions(program, { messageNames: "addresses", branchSchedule: "declarationDepthFirst", evaluator: "juel" }));
 
 /** A Conditional trigger with `over` replacing its predicate or filters. */
 const conditionWith = (over: Json): Json => {
@@ -65,7 +76,7 @@ const conditionWith = (over: Json): Json => {
 /** `addresses` with the options a Multi-Instance loop reads under JUEL. */
 const addressesLooping = (placed: (program: Json) => Json) => (program: Json): Json =>
   placed(withOptions(program, {
-    messageNames: "addresses", evaluator: "juel", multiInstanceBinding: "loopReferences", multiInstanceCounters: "cibLocals",
+    messageNames: "addresses", branchSchedule: "declarationDepthFirst", evaluator: "juel", multiInstanceBinding: "loopReferences", multiInstanceCounters: "cibLocals",
     multiInstanceInputFailure: "rollback", multiInstanceCount: "javaInt",
   }));
 
@@ -411,7 +422,7 @@ export const rows: readonly Row[] = [
   {
     code: "signal.nameExpression",
     description: "a catch Signal name expression outside the Events level, where names address Signals",
-    mutate: (program) => catching(signalWith({ name: computed(variable("x")) }))(withOptions(program, { signalNames: "addresses" })),
+    mutate: (program) => catching(signalWith({ name: computed(variable("x")) }))(withOptions(program, { signalNames: "addresses", branchSchedule: "declarationDepthFirst" })),
     control: signalAddresses(catching(signalWith({ name: computed(variable("x")) }))),
   },
   // One Signal name per document and per CIB event scope (CIB-LIM-0026): each refused pair's control drops `addresses`,
@@ -699,6 +710,39 @@ export const rows: readonly Row[] = [
       { boundaries: [boundary("B", cancelTrigger), boundary("B2", cancelTrigger)] })),
     control: task(scope("T", { transaction: { payload: { method: "compensate" } } }, {},
       { boundaries: [boundary("B", cancelTrigger), boundary("B2", duration("PT1S"))] })),
+  },
+  // Carried and refused (AD3, E12, #114).
+  {
+    code: "job.exclusive",
+    description: "a catch Timer whose definition declares camunda:exclusive",
+    mutate: catching({ timer: { payload: { schedule: { duration: { value: text("PT1S") } }, exclusive: true } } }),
+    control: catching(duration("PT1S")),
+  },
+  {
+    code: "job.retryCycle",
+    description: "a catch Timer with a camunda:failedJobRetryTimeCycle",
+    mutate: (program) => subscribed(catching(duration("PT1S"))(program), { retryCycle: "R5/PT1M" }),
+    control: catching(duration("PT1S")),
+  },
+  {
+    code: "job.retryCycle",
+    description: "a boundary Timer with a camunda:failedJobRetryTimeCycle",
+    mutate: (program) => subscribed(bounded(duration("PT1S"))(program), { retryCycle: "R5/PT1M" }),
+    control: bounded(duration("PT1S")),
+  },
+  {
+    code: "job.retryCycle",
+    description: "an Event Sub-Process Timer start with a camunda:failedJobRetryTimeCycle",
+    mutate: (program) => subscribed(eventSubProcessOn(duration("PT1S"), false)(program), { retryCycle: "R5/PT1M" }),
+    control: eventSubProcessOn(duration("PT1S"), false),
+  },
+  {
+    code: "event.dataOutputItem",
+    description: "a catch Message whose Data Output's ItemDefinition differs from the Message's",
+    mutate: (program) => subscribed(catching(message({ messageRef: "M", name: text("M"), itemRef: "Order" }), output)(program),
+      { dataOutputs: [{ id: "y", itemRef: "Invoice" }] }),
+    control: (program) => subscribed(catching(message({ messageRef: "M", name: text("M"), itemRef: "Order" }), output)(program),
+      { dataOutputs: [{ id: "y", itemRef: "Order" }] }),
   },
 ];
 

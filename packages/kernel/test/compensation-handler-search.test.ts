@@ -115,7 +115,7 @@ test("a subject's interrupting boundary that would catch at the handler's contex
 });
 
 test("a subject's boundary that would write catch variables at the handler's context is refused", () => {
-  const bx = { subscription: { trigger: escalationTrigger({ code: "UNDO", codeVariable: "caught" }), outputs: [], alternatives: [], parallelMultiple: false } };
+  const bx = { subscription: { trigger: escalationTrigger({ code: "UNDO", codeVariable: "caught" }), outputs: [], alternatives: [], parallelMultiple: false, dataOutputs: [], retryCycle: null } };
   assert.deepEqual(failure(drive(subject({ bx }), complete("W"), complete("HR"))), unsupported("compensation-context-catch-variables"));
 });
 

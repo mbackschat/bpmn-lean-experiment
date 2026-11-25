@@ -1,6 +1,9 @@
 module
 
 public import Kernel.Laws.Compensation.Rules
+public import Kernel.Laws.Compensation.Runs
+public import Kernel.Laws.State.Key
+public import Kernel.Laws.State.Occurrence
 
 /-! # Laws of compensation and Transaction cancellation: the witnesses
 
@@ -21,20 +24,26 @@ Two records: `A` completed first and a Sequence Flow leads from `A` to `B`, so `
 
 def subjectA : ElementId := ⟨"A"⟩
 def subjectB : ElementId := ⟨"B"⟩
-def outer : ScopeOccurrenceId := ⟨0⟩
-def inner : ScopeOccurrenceId := ⟨1⟩
+def outer : ScopeOccurrenceId := .ofSegments []
+/-- The context entered in `outer` for `B`'s handler. -/
+def inner : ScopeOccurrenceId := .ofSegments [{ element := ⟨"UndoB"⟩, ordinal := 0 }]
 
-def recordA : Compensable := { subject := subjectA, handler := some ⟨"UndoA"⟩, scope := outer, completion := 1 }
-def recordB : Compensable := { subject := subjectB, handler := some ⟨"UndoB"⟩, scope := outer, completion := 2 }
+def recordA : Compensable :=
+  { subject := subjectA, handler := some ⟨"UndoA"⟩, scope := outer, completion := 1
+    occurrence := { processInstanceId := .named "I", element := subjectA, activation := 1 } }
+def recordB : Compensable :=
+  { subject := subjectB, handler := some ⟨"UndoB"⟩, scope := outer, completion := 2
+    occurrence := { processInstanceId := .named "I", element := subjectB, activation := 1 } }
 def innerRecord : Compensable := { recordB with scope := inner }
 
 def flowAB (sources : List ElementId) (target : ElementId) : Bool := sources.contains subjectA && target == subjectB
 def noBoundaries (_ : ElementId) : List ElementId := []
 def nothing (_ : ElementId) : List String := []
 
-def precedesAB : Compensable → Compensable → Prop := Precedes flowAB noBoundaries nothing nothing
+def precedesAB : Compensable → Compensable → Prop :=
+  Precedes flowAB noBoundaries (fun record other => record.completion < other.completion) nothing nothing
 
-def trigger : OccurrenceRef := { processInstanceId := "p", element := ⟨"Throw"⟩, activation := 1 }
+def trigger : OccurrenceName := { processInstanceId := .named "p", element := ⟨"Throw"⟩, activation := 1 }
 def both : CompensationRun := { trigger, scope := outer, pending := [recordA, recordB], leave := none, resume := none }
 def afterFirst : CompensationRun := { both with pending := [recordA], running := [(inner, recordB)] }
 
@@ -114,17 +123,20 @@ theorem keeps_taken_rejected :
     ¬ TakesOut (· = outer) none { retained := [recordA, recordB] } { retained := [recordA] } both := fun law =>
   law.once (record := recordA) (by simp [both]) (by simp)
 
-def begun : State := { instanceId := "p", slots := { compensation := { runs := [both] } } }
+def begun : State := { instanceId := "p", slots := { compensation := { runMap := (∅ : RunMap).put both } } }
 
 /-! A second trigger in `outer` while the first run waits for `B`'s handler and keeps `A`'s pending: `C` completed
 after the first trigger. -/
 
 def subjectC : ElementId := ⟨"C"⟩
-def recordC : Compensable := { subject := subjectC, handler := some ⟨"UndoC"⟩, scope := outer, completion := 3 }
-def secondTrigger : OccurrenceRef := { trigger with activation := 2 }
+def recordC : Compensable :=
+  { subject := subjectC, handler := some ⟨"UndoC"⟩, scope := outer, completion := 3
+    occurrence := { processInstanceId := .named "I", element := subjectC, activation := 1 } }
+def secondTrigger : OccurrenceName := { trigger with activation := 2 }
 def second : CompensationRun := { trigger := secondTrigger, scope := outer, pending := [recordC], leave := none, resume := none }
-def secondBegun : CompensationRun := { second with pending := [], running := [(⟨2⟩, recordC)] }
-def inProgress : Compensations := { retained := [recordC], runs := [afterFirst] }
+def secondBegun : CompensationRun :=
+  { second with pending := [], running := [(.ofSegments [{ element := ⟨"UndoC"⟩, ordinal := 0 }], recordC)] }
+def inProgress : Compensations := { retained := [recordC], runMap := (∅ : RunMap).put afterFirst }
 
 theorem in_progress_apart : ClaimsApart inProgress := by
   intro run mem record held kept
@@ -204,21 +216,26 @@ theorem drop_begins_nothing : DropBeginsNothing true (· = outer) begun { begun 
 
 /-- Beginning a handler's context while dropping the run is rejected. -/
 theorem drop_begins_rejected :
-    ¬ DropBeginsNothing true (· = outer) begun { begun with slots := {}, scopes := [{ id := inner, element := none, parent := some outer }] } :=
+    ¬ DropBeginsNothing true (· = outer) begun { begun with slots := {}, scopeMap := Laws.State.ofScopes [{ id := inner, element := none, position := 0 }] } :=
   fun law => by
-    have := (law rfl).2.1
-    simp [begun] at this
+    have same := (law rfl).2.1
+    simp [begun, Laws.State.scopes_eq] at same
+    have member := (Laws.State.mem_ofScopes (scopes := [{ id := inner, element := none, position := 0 }]) (by simp)).mpr
+      (List.mem_singleton_self _)
+    rw [same, Laws.State.scopeList_empty] at member
+    cases member
 
 def failedState : State :=
   { instanceId := "p", status := .failed, failure := some { code := "E", message := none, occurrence := trigger } }
 
-theorem failure_fails : FailsInstance .failsInstance false none failedState := fun _ _ => ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩
+theorem failure_fails : FailsInstance .failsInstance false none failedState := fun _ _ =>
+  ⟨rfl, rfl, rfl, rfl, rfl, Laws.State.occurrenceList_empty⟩
 
 /-- Under `failsInstance`, a handler failure that leaves the run's tokens is rejected. -/
 theorem failure_continues_rejected :
-    ¬ FailsInstance .failsInstance false none { failedState with tokens := [.flow ⟨"F"⟩ outer] } := fun law => by
+    ¬ FailsInstance .failsInstance false none { failedState with batchTokens := [.flow ⟨"F"⟩ outer] } := fun law => by
   have := (law rfl rfl).2.2.2.1
-  simp at this
+  simp [Laws.State.allQueuedTokens, failedState] at this
 
 /-- Under `failsInstance`, searching on from the trigger's scope occurrence is rejected. -/
 theorem failure_searches_on_rejected : ¬ FailsInstance .failsInstance false (some outer) failedState := fun law => by

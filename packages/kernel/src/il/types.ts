@@ -9,20 +9,21 @@
  * `ElementId`/`FlowId` are plain strings as on the wire. A Lean query `T.f` is exported as `tF`, `?` dropped.
  */
 
-import { CalledElementResolution, type ProfileOptions } from "./types/options.js";
+import { CalledElementResolution, type ProfileOptions, type QName } from "./types/options.js";
 import {
-  ExpressionTag, MappingDialect, SimpleBooleanTag, ValueSourceTag, ValueTag, type Expression, type Mapping,
-  type SimpleBoolean, type Value, type ValueSource,
+  ExpressionTag, MappingDialect, ParameterNodeTag, SimpleBooleanTag, ValueSourceTag, ValueTag, type Expression, type Mapping,
+  type ParameterEntry, type ParameterNode, type ParameterScript, type SimpleBoolean, type StructuredParameter, type Value,
+  type ValueSource,
 } from "./types/expression.js";
 import type { Decision, DecisionResource } from "./types/decision.js";
 import {
   type CallWork, callWorkSelects, callWorkNamesDefinition, type DefinitionRef, definitionRefEquals,
-  type ProgramIdentity, type QName,
+  type ProgramIdentity,
 } from "./types/reference.js";
 import type { MultiInstance } from "./types/multi-instance.js";
 import { assertNever } from "./types/expression.js";
-import type { EffectBinding, MessageTrigger } from "./types/message.js";
-import type { Work } from "./types/work.js";
+import type { DataOutputDecl, EffectBinding, MessageTrigger } from "./types/message.js";
+import { type FormRef, type Work, workIsService, workIsUser, workReader, workReceive } from "./types/work.js";
 export { integerLexeme, isAscii, parseJavaInt, parseJavaLong, signedDigits, withinJavaInt } from "./types/lexical.js";
 export {
   type InstanceCount, InstanceCountTag, type MultiInstance, MultiInstanceMode,
@@ -36,34 +37,53 @@ export {
   MultiInstanceBinding, ResultValues, OutputContext, MultiInstanceCounters, MultiInstanceInputFailure, MultiInstanceCount,
   CollectionRead, multiInstanceCounterNames, BusinessRuleTask, ScriptTask, ConfiguredTask, InclusiveJoinReach, BranchSchedule, ConditionalRetrigger, MalformedTimer, MessageNames,
   ScopeStart, SignalNames, SignalPayload, SignalDelivery, ConditionalStart, CalledElementResolution, MessageThrowForms,
+  DeploymentErrors, HandlerEscalation, defaultBounds, type Bounds, type InertExtension, type QName,
 } from "./types/options.js";
 export {
-  ExpressionTag, MappingDialect, SimpleBooleanTag, ValueSourceTag, ValueTag, type Expression, type Mapping,
-  type SimpleBoolean, type Value, type ValueSource,
+  ExpressionTag, MappingDialect, ParameterNodeTag, SimpleBooleanTag, ValueSourceTag, ValueTag, type Expression, type Mapping,
+  type ParameterEntry, type ParameterNode, type ParameterScript, type SimpleBoolean, type StructuredParameter, type Value,
+  type ValueSource,
 };
 export {
   type CallBinding, CallBindingTag, type CallWork, callWorkSelects, callWorkNamesDefinition, type DefinitionRef, definitionRefEquals,
-  definitionRefEligibleFor, type ProgramIdentity, type QName,
+  definitionRefEligibleFor, type ProgramIdentity,
 } from "./types/reference.js";
 export { assertNever };
 export type { CorrelationCriterion, DataOutputDecl, EffectBinding, MessageTrigger } from "./types/message.js";
 export {
-  DecisionResultMapping, type ReceiveWork, type RuleWork, type ScriptWork, type SendWork, type ServiceWork, type UserWork, type Work,
+  DecisionResultMapping, type FormRef, type ReceiveWork, type RuleWork, type ScriptWork, type SendWork, type ServiceWork, type UserWork, type Work,
   WorkTag, workCall, workIsService, workIsUser, workReceive, workResults,
 } from "./types/work.js";
 
 export type ElementId = string;
 export type FlowId = string;
 
-/** Lean's `String` order: lexicographic by Unicode scalar value, not by UTF-16 code unit. */
+/**
+ * Lean's `String` order: lexicographic by Unicode scalar value, not by UTF-16 code unit; the difference of the first
+ * differing scalars, else of the scalar counts. It walks both strings in place: every key comparison reaches it, and
+ * copying both into scalar arrays made it most of a long closure's time (`automatic-loop-tail-at-closure-bound`, 2026-11-24).
+ */
 export function compareStrings(left: string, right: string): number {
-  const a = Array.from(left, (char) => char.codePointAt(0) ?? 0);
-  const b = Array.from(right, (char) => char.codePointAt(0) ?? 0);
-  for (let index = 0; index < Math.min(a.length, b.length); index += 1) {
-    const difference = (a[index] ?? 0) - (b[index] ?? 0);
-    if (difference !== 0) return difference;
+  if (left === right) return 0;
+  let [at, rightAt] = [0, 0];
+  while (at < left.length && rightAt < right.length) {
+    const scalar = left.codePointAt(at) ?? 0;
+    const rightScalar = right.codePointAt(rightAt) ?? 0;
+    if (scalar !== rightScalar) return scalar - rightScalar;
+    at += scalarWidth(scalar);
+    rightAt += scalarWidth(rightScalar);
   }
-  return a.length - b.length;
+  return scalarCount(left, at) - scalarCount(right, rightAt);
+}
+
+/** The UTF-16 code units of `scalar`: a lone surrogate, as `codePointAt` reads one, takes one. */
+const scalarWidth = (scalar: number): number => (scalar > 0xffff ? 2 : 1);
+
+/** The scalars of `text` from code unit `from` on. */
+function scalarCount(text: string, from: number): number {
+  let count = 0;
+  for (let at = from; at < text.length; at += scalarWidth(text.codePointAt(at) ?? 0)) count += 1;
+  return count;
 }
 
 /**
@@ -127,7 +147,8 @@ export type TimerSchedule =
   | { readonly tag: TimerScheduleTag.Date; readonly value: ValueSource }
   | { readonly tag: TimerScheduleTag.Cycle; readonly value: ValueSource; readonly dialect: CycleDialect };
 
-export interface TimerTrigger { readonly schedule: TimerSchedule; }
+/** `exclusive` is the definition's `camunda:exclusive`, `null` when absent (`BpmnParse.java:3602`); admission refuses it (`job.exclusive`). */
+export interface TimerTrigger { readonly schedule: TimerSchedule; readonly exclusive: boolean | null; }
 
 /**
  * `signalRef` is the Signal the event references, `null` when the model names none; `name` is that Signal's `name`
@@ -186,13 +207,17 @@ export type Trigger =
 
 /**
  * `alternatives` are a Multiple Event's definitions after the first, in document order, and `parallelMultiple` its
- * Parallel Multiple mark (BPMN 2.0.2 §10.5.1); admission refuses both (CIB-LIM-0008).
+ * Parallel Multiple mark (BPMN 2.0.2 §10.5.1); admission refuses both (CIB-LIM-0008). `dataOutputs` are the catching
+ * Event's Data Outputs, which `outputs` read (#114), and `retryCycle` the text of its `camunda:failedJobRetryTimeCycle`
+ * (`DefaultFailedJobParseListener.java:49-80`), which admission refuses (`job.retryCycle`).
  */
 export interface Subscription {
   readonly trigger: Trigger;
   readonly outputs: readonly Mapping[];
   readonly alternatives: readonly Trigger[];
   readonly parallelMultiple: boolean;
+  readonly dataOutputs: readonly DataOutputDecl[];
+  readonly retryCycle: string | null;
 }
 
 /** `sourceId` as `ElementOrigin.sourceId`: the identifier the author wrote; `id` is unique in the program. */
@@ -276,6 +301,16 @@ export interface Envelope {
   /** A transaction boundary before the element begins and after it completes (CIB-EXT-0027). */
   readonly asyncBefore: boolean;
   readonly asyncAfter: boolean;
+  /**
+   * The `camunda:exclusive` of the element's jobs, `null` when absent (`BpmnParse.java:4750-4752`), and the text of its
+   * `camunda:failedJobRetryTimeCycle` (`DefaultFailedJobParseListener.java:158-178`); admission refuses both
+   * (`job.exclusive`, `job.retryCycle`).
+   */
+  readonly exclusive: boolean | null;
+  readonly retryCycle: string | null;
+  /** The parameters of `camunda:inputOutput` with a structured value, which `inputs` and `outputs` cannot hold. */
+  readonly structuredInputs: readonly StructuredParameter[];
+  readonly structuredOutputs: readonly StructuredParameter[];
 }
 
 // Elements
@@ -362,7 +397,16 @@ export interface GatewayPayload {
   readonly outgoing: readonly FlowId[];
 }
 
-export interface StartPayload { readonly subscription: Subscription | null; readonly outgoing: readonly FlowId[]; }
+/**
+ * `initiator` is the `camunda:initiator` variable name (`BpmnParse.java:1009-1012`) and `formRef` the start form's
+ * reference (`BpmnParse.java:1050-1075`); admission refuses both (`start.initiator`, `start.formRef`).
+ */
+export interface StartPayload {
+  readonly subscription: Subscription | null;
+  readonly outgoing: readonly FlowId[];
+  readonly initiator: string | null;
+  readonly formRef: FormRef | null;
+}
 
 /**
  * `sourceId` is the identifier the model's author wrote, which publication shows. `Header.id` is unique in the program,
@@ -412,6 +456,20 @@ export interface CalledProcess {
 }
 
 /**
+ * An extension attribute the reader retained without consuming it (AD1's inert tier): its expanded `name`, the BPMN
+ * `elementType` it sits on, the source identifier of that `element` (a process's own included) and its `value` text.
+ * Only an item whose register entry finds it without effect at the observation boundary may ever pass; the profile's
+ * inert table (`ProfileOptions.inertExtensions`) decides per element type and name, and admission refuses every other
+ * (`extension.retained`).
+ */
+export interface RetainedExtension {
+  readonly name: QName;
+  readonly elementType: string;
+  readonly element: string;
+  readonly value: string;
+}
+
+/**
  * `processes` lists the called processes; every other parentless element belongs to the root process, whose declared
  * item names are `variables` (as `CalledProcess.variables`).
  */
@@ -426,6 +484,7 @@ export interface Program {
   readonly executable: boolean;
   /** The DMN resources deployed with the source, which a Business Rule Task's `decisionRef` names. */
   readonly decisionResources: readonly DecisionResource[];
+  readonly retainedExtensions: readonly RetainedExtension[];
 }
 
 // Queries: read-only projections of a `Program`, in this module so that no module beyond the three hubs has more than
@@ -591,6 +650,21 @@ export function elementBeginsImplicitly(element: Element): boolean {
   const scope = elementScope(element);
   const eventSubProcess = scope !== null && scopeKindStart(scope[1].kind) !== null;
   return elementIncoming(element).length === 0 && elementStart(element) === null && !elementIsCompensationActivity(element) && !eventSubProcess;
+}
+
+/**
+ * Whether `element` waits for an input before it completes, so a token that reaches it stops in its closure: a User,
+ * Service or Receive Task, a Script or Business Rule Task whose result an external worker delivers, or a catching Event.
+ * An Event-Based Gateway passes on, since each element it leads to waits.
+ */
+export function elementWaitsForInput(element: Element): boolean {
+  const activity = elementActivity(element);
+  if (activity !== null) {
+    const work = activity[1].work;
+    return workIsUser(work) || workIsService(work) || workReceive(work) !== null || (workReader(work)?.script ?? null) !== null;
+  }
+  const event = elementEvent(element);
+  return event !== null && eventPayloadCatch(event[1]) !== null;
 }
 
 /**
@@ -774,4 +848,16 @@ export function programPublicId(program: Program, id: ElementId): ElementId {
   const element = programElement(program, id);
   if (element !== null) return elementHeader(element).origin.sourceId;
   return programBoundary(program, id)?.[1].sourceId ?? id;
+}
+
+/**
+ * Whether the element's occurrences are published: a Link Event, throw or catch, publishes none, since its token passes
+ * on as if the Sequence Flow connected the elements around it (`onward`), the observation contract's Link exception
+ * ([publication](../../../../docs/kernel/semantics/PUBLICATION-AND-OBSERVATION-SEMANTICS-SPEC.md#flow-node-occurrences),
+ * CIB-AGR-0018).
+ */
+export function programPublishesOccurrences(program: Program, id: ElementId): boolean {
+  const element = programElement(program, id);
+  const event = element === null ? null : elementEvent(element);
+  return event === null || (eventPayloadLinkThrow(event[1]) === null && eventPayloadLinkCatch(event[1]) === null);
 }

@@ -1,7 +1,7 @@
 module
 
 public import Kernel.Laws.MultiInstance
-public import Kernel.Proofs.MultiInstance.Numbered
+public import Kernel.Proofs.MultiInstance.Numbered.Frame
 public import Kernel.Proofs.MultiInstance.Hooks
 
 /-! # Proofs: the numbering through a body's instances
@@ -17,6 +17,8 @@ feature but Multi-Instance (guard 15). Nothing executable imports this module.
 @[expose] public section
 
 namespace Kernel.Proofs.MultiInstance
+
+variable {le : Issue → Issue → Bool}
 
 open Kernel
 open Kernel.Laws.State (WellFormed scopeIds Precedes)
@@ -109,16 +111,16 @@ theorem withInstances_fields (base : MultiInstanceRun) (instances : List Iterati
 slots active, it opens a slot only while none of its slots is active, and its element loops: an occurrence lies in a
 scope occurrence issued before, so in none of the slots it opens, and every begin queued before targets a slot it does
 not open, so the begins it queues, of the slots it opens in increasing order, follow every other of their body's. -/
-theorem Numbered.beginInstances {inv : State → Prop} {settled : State → Nat → Prop} {ctx : Ctx} {loop : MultiInstance}
+theorem NumberedBy.beginInstances {below : Issue → Issue → Prop} {inv : State → Prop} {settled : State → OccurrenceId → Prop} {ctx : Ctx} {loop : MultiInstance}
     {state queued : State} {base : MultiInstanceRun} {instances : List Iteration}
-    (formed : WellFormed ctx.program state) (owns : SlotsOwned state) (held : Numbered ctx.program state)
+    (formed : WellFormed ctx.program state) (owns : SlotsOwned state) (held : NumberedBy below ctx.program state)
     (begun : Begun inv settled ctx loop state base queued instances)
     (based : base ∈ state.slots.multiInstances ∨ (∀ run ∈ state.slots.multiInstances, run.occurrence ≠ base.occurrence) ∧
       ∀ scope, Iteration.active scope ∉ base.instances)
     (quiet : Feature.MultiInstance.opening loop.mode base.instances ≠ [] →
       ∀ scope, Iteration.active scope ∉ base.instances)
     (looped : LoopOf ctx.program base.element loop) :
-    Numbered ctx.program (Feature.MultiInstance.setRun queued { base with instances }) := by
+    NumberedBy below ctx.program (Feature.MultiInstance.setRun queued { base with instances }) := by
   obtain ⟨each, qs⟩ := held
   obtain ⟨requests, requested, queuedAs⟩ := begun.queues
   have fields := withInstances_fields base instances
@@ -134,34 +136,37 @@ theorem Numbered.beginInstances {inv : State → Prop} {settled : State → Nat 
   have aScopes : (Feature.MultiInstance.setRun queued { base with instances }).scopes = queued.scopes := by rw [aSame]
   have aOccs : (Feature.MultiInstance.setRun queued { base with instances }).occurrences = state.occurrences := by
     rw [aSame]; exact begun.occurrences
-  have aSignals : (Feature.MultiInstance.setRun queued { base with instances }).signals = queued.signals := by
+  have aSignals : (Feature.MultiInstance.setRun queued { base with instances }).batchSignals = queued.batchSignals := by
     rw [aSame]
-  have aTokens : (Feature.MultiInstance.setRun queued { base with instances }).tokens = queued.tokens := by rw [aSame]
+  have aTokens : (Feature.MultiInstance.setRun queued { base with instances }).batchTokens = queued.batchTokens := by rw [aSame]
+  have aKeyed : (Feature.MultiInstance.setRun queued { base with instances }).queuedSignals = state.queuedSignals ∧
+      (Feature.MultiInstance.setRun queued { base with instances }).queuedTokens = state.queuedTokens := by
+    rw [aSame]; exact begun.keyed
   have aComp : (Feature.MultiInstance.setRun queued { base with instances }).slots.compensation.runs =
       state.slots.compensation.runs := by
     rw [aSame]; exact congrArg (·.compensation.runs) begun.slots
   clear aSame
-  revert aRuns aNext aKeep aScopes aOccs aSignals aTokens aComp
+  revert aRuns aNext aKeep aScopes aOccs aSignals aTokens aKeyed aComp
   generalize Feature.MultiInstance.setRun queued { base with instances } = after
-  intro aRuns aNext aKeep aScopes aOccs aSignals aTokens aComp
+  intro aRuns aNext aKeep aScopes aOccs aSignals aTokens aKeyed aComp
   revert aRuns aNext fields opens
   generalize ({ base with instances } : MultiInstanceRun) = next
   intro fields opens aRuns aNext
   -- What lies below the counter of `state`.
-  have occBelow : ∀ o ∈ state.occurrences, o.scope.value < state.nextIssue := fun o member => by
+  have occBelow : ∀ o ∈ state.occurrences, Laws.State.ScopeIssued state o.scope := fun o member => by
     obtain ⟨entry, inside, named⟩ := List.mem_map.mp (formed.owned.occurrenceScopes o member)
     exact named ▸ formed.issued.scopes entry inside
-  have queuedBelow : ∀ request, Laws.State.Queued state request → request.scope.value < state.nextIssue :=
+  have queuedBelow : ∀ request, Laws.State.Queued state request → Laws.State.ScopeIssued state request.scope :=
     formed.claimed.scopesIssued
-  have oldSlot : ∀ (i : Nat) (scope : ScopeOccurrenceId), next.instances[i]? = some (.active scope) → scope.value < state.nextIssue →
+  have oldSlot : ∀ (i : Nat) (scope : ScopeOccurrenceId), next.instances[i]? = some (.active scope) → Laws.State.ScopeIssued state scope →
       base.instances[i]? = some (.active scope) := fun i scope slot below => by
     rcases begun.counted i scope (fields.2.2 ▸ slot) with old | fresh
     · exact old
-    · exact absurd below (Nat.not_lt.mpr fresh.1)
+    · exact absurd below fresh.1
   have baseIn : ∀ (i : Nat) (scope : ScopeOccurrenceId), base.instances[i]? = some (.active scope) → base ∈ state.slots.multiInstances :=
     fun i scope slot => based.elim id fun apart => absurd (List.mem_of_getElem? slot) (apart.2 scope)
-  have oldEntry : ∀ entry ∈ queued.scopes, entry.id.value < state.nextIssue → entry ∈ state.scopes :=
-    fun entry inside below => (begun.scopes entry inside).resolve_right (Nat.not_le.mpr below)
+  have oldEntry : ∀ entry ∈ queued.scopes, Laws.State.ScopeIssued state entry.id → entry ∈ state.scopes :=
+    fun entry inside below => (begun.scopes entry inside).resolve_right fun fresh => fresh below
   have newReq : ∀ request ∈ requests, request.continuation = .multiInstance base.occurrence ∧
       request.element = base.element ∧ request.reserved = none ∧
       (∃ i ∈ Feature.MultiInstance.opening loop.mode base.instances,
@@ -172,17 +177,17 @@ theorem Numbered.beginInstances {inv : State → Prop} {settled : State → Nat 
       rw [← same] at parts
       exact ⟨parts.1, parts.2.2.1, parts.2.2.2, ⟨i, opened, fields.2.2 ▸ slot⟩, quiet (List.ne_nil_of_mem opened)⟩
   -- Where the queued begins of `after` came from.
-  have queues : (Laws.Step.beginsOf after.signals = Laws.Step.beginsOf state.signals ++ requests ∧
-        Laws.Step.deferredOf after.tokens = Laws.Step.deferredOf state.tokens) ∨
+  have queues : (Laws.Step.beginsOf after.batchSignals = Laws.Step.beginsOf state.batchSignals ++ requests ∧
+        Laws.Step.deferredOf after.batchTokens = Laws.Step.deferredOf state.batchTokens) ∨
       (ctx.program.options.branchSchedule = .declarationDepthFirst ∧
-        Laws.Step.beginsOf after.signals = Laws.Step.beginsOf state.signals ∧
-        Laws.Step.deferredOf after.tokens = Laws.Step.deferredOf state.tokens ++ requests.reverse) := by
+        Laws.Step.beginsOf after.batchSignals = Laws.Step.beginsOf state.batchSignals ∧
+        Laws.Step.deferredOf after.batchTokens = Laws.Step.deferredOf state.batchTokens ++ requests.reverse) := by
     rw [aSignals, aTokens]
     rcases queuedAs with ⟨signals, tokens⟩ | ⟨schedule, _, signals, tokens⟩
     · exact .inl ⟨by rw [signals, Laws.Step.beginsOf_append, Laws.Step.beginsOf_map], by rw [tokens]⟩
     · exact .inr ⟨schedule, by rw [signals], by
         rw [tokens, Laws.Step.deferredOf_append, ← List.map_reverse, Laws.Step.deferredOf_map]⟩
-  have signalsIn : ∀ signal ∈ after.signals, signal ∈ state.signals ∨ ∃ request ∈ requests, signal = .begin request :=
+  have batchIn : ∀ signal ∈ after.batchSignals, signal ∈ state.batchSignals ∨ ∃ request ∈ requests, signal = .begin request :=
     fun signal member => by
       rw [aSignals] at member
       rcases queuedAs with ⟨signals, _⟩ | ⟨_, _, signals, _⟩
@@ -192,18 +197,28 @@ theorem Numbered.beginInstances {inv : State → Prop} {settled : State → Nat 
         · obtain ⟨request, inside, same⟩ := List.mem_map.mp new
           exact .inr ⟨request, inside, same.symm⟩
       · exact .inl (signals ▸ member)
+  have signalsIn : ∀ signal ∈ Laws.State.allSignals after,
+      signal ∈ Laws.State.allSignals state ∨ ∃ request ∈ requests, signal = .begin request := fun signal member => by
+    rcases List.mem_append.mp member with keyed | batch
+    · exact .inl (List.mem_append_left _ (aKeyed.1 ▸ keyed))
+    · exact (batchIn signal batch).imp_left (List.mem_append_right _)
   have queuedAfter : ∀ request, Laws.State.Queued after request → Laws.State.Queued state request ∨ request ∈ requests :=
     fun request inQueue => by
       rcases inQueue with signal | token
-      · have inside := Laws.Step.mem_beginsOf.mpr signal
-        rcases queues with ⟨begins, _⟩ | ⟨_, begins, _⟩ <;> rw [begins] at inside
-        · exact (List.mem_append.mp inside).imp_left fun old => .inl (Laws.Step.mem_beginsOf.mp old)
-        · exact .inl (.inl (Laws.Step.mem_beginsOf.mp inside))
-      · have inside := Laws.Step.mem_deferredOf.mpr token
-        rcases queues with ⟨_, deferred⟩ | ⟨_, _, deferred⟩ <;> rw [deferred] at inside
-        · exact .inl (.inr (Laws.Step.mem_deferredOf.mp inside))
-        · exact (List.mem_append.mp inside).imp (fun old => .inr (Laws.Step.mem_deferredOf.mp old))
-            List.mem_reverse.mp
+      · rcases List.mem_append.mp signal with keyed | batch
+        · exact .inl (.inl (List.mem_append_left _ (aKeyed.1 ▸ keyed)))
+        · have inside := Laws.Step.mem_beginsOf.mpr batch
+          rcases queues with ⟨begins, _⟩ | ⟨_, begins, _⟩ <;> rw [begins] at inside
+          · exact (List.mem_append.mp inside).imp_left fun old =>
+              .inl (List.mem_append_right _ (Laws.Step.mem_beginsOf.mp old))
+          · exact .inl (.inl (List.mem_append_right _ (Laws.Step.mem_beginsOf.mp inside)))
+      · rcases List.mem_append.mp token with keyed | batch
+        · exact .inl (.inr (List.mem_append_left _ (aKeyed.2 ▸ keyed)))
+        · have inside := Laws.Step.mem_deferredOf.mpr batch
+          rcases queues with ⟨_, deferred⟩ | ⟨_, _, deferred⟩ <;> rw [deferred] at inside
+          · exact .inl (.inr (List.mem_append_right _ (Laws.Step.mem_deferredOf.mp inside)))
+          · exact (List.mem_append.mp inside).imp
+              (fun old => .inr (List.mem_append_right _ (Laws.Step.mem_deferredOf.mp old))) List.mem_reverse.mp
   -- A run of `after` a begin queued before is for is one of `state`, or the body's, which ran in `state`.
   have back : ∀ r ∈ after.slots.multiInstances, ∀ i request, QueuedFor r i request → Laws.State.Queued state request →
       ∃ r' ∈ state.slots.multiInstances, ∀ j other, QueuedFor r j other → Laws.State.Queued state other →
@@ -241,7 +256,7 @@ theorem Numbered.beginInstances {inv : State → Prop} {settled : State → Nat 
     exact iSame ▸ jSame ▸ lower
   refine ⟨fun r member => ?_, ?_⟩
   · rcases aRuns r member with mine | same
-    · unfold Laws.MultiInstance.NumberedInOrder Laws.MultiInstance.InstancesPlaced
+    · unfold InOrderBy Laws.MultiInstance.InstancesPlaced
       rw [aOccs]
       exact each r mine.1
     · subst same
@@ -257,7 +272,7 @@ theorem Numbered.beginInstances {inv : State → Prop} {settled : State → Nat 
         have slot' := oldSlot i scope slot (at_ ▸ occBelow o inside)
         exact fields.1 ▸ (each base (baseIn _ _ slot')).2 scope (List.mem_of_getElem? slot') o inside at_
           (fields.2.1 ▸ named) role
-  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · exact fun r member => by
       rcases aRuns r member with mine | same
       · exact qs.looped r mine.1
@@ -265,7 +280,7 @@ theorem Numbered.beginInstances {inv : State → Prop} {settled : State → Nat 
         exact ⟨loop, fields.2.1 ▸ looped⟩
   · exact fun r member scope active entry inside named => by
       rw [aScopes] at inside
-      by_cases below : scope.value < state.nextIssue
+      by_cases below : Laws.State.ScopeIssued state scope
       · have old := oldEntry entry inside (named ▸ below)
         rcases aRuns r member with mine | same
         · exact qs.uncalled r mine.1 scope active entry old named
@@ -333,64 +348,124 @@ theorem Numbered.beginInstances {inv : State → Prop} {settled : State → Nat 
         · exact absurd same Laws.Step.compensate_ne_begin
       · obtain ⟨run, member, rest⟩ := resumed
         exact .inr (.inr ⟨run, aComp ▸ member, rest⟩))
-  · exact fun r member first second first' second' precedes one two => by
-      have inBegins := Laws.Step.precedes_beginsOf.mp precedes
-      have oldOrder : Precedes (Laws.Step.beginsOf state.signals) first second → first' < second' := fun old => by
-        have firstOld : Laws.State.Queued state first :=
-          .inl (Laws.Step.mem_beginsOf.mp (old.subset (List.mem_cons_self ..)))
-        obtain ⟨r', mine, conv⟩ := back r member first' first one firstOld
-        exact qs.signalsOrdered r' mine first second first' second' (Laws.Step.precedes_beginsOf.mpr old)
-          (conv _ _ one firstOld) (conv _ _ two
-            (.inl (Laws.Step.mem_beginsOf.mp (old.subset (List.mem_cons_of_mem _ (List.mem_singleton_self _))))))
-      rcases queues with ⟨begins, _⟩ | ⟨_, begins, _⟩ <;> rw [begins] at inBegins
-      · rcases precedes_split inBegins with old | ⟨firstOld, secondNew⟩ | new
-        · exact oldOrder old
-        · exact (mixed r member first' second' first second one (.inl (Laws.Step.mem_beginsOf.mp firstOld)) two
-            secondNew).elim
-        · exact pair r member first' second' first second one two new
-      · exact oldOrder inBegins
-  · exact fun r member first second first' second' precedes one two => by
-      have inDeferred := Laws.Step.precedes_deferredOf.mp precedes
-      have oldOrder : Precedes (Laws.Step.deferredOf state.tokens) first second → second' < first' := fun old => by
-        have firstOld : Laws.State.Queued state first :=
-          .inr (Laws.Step.mem_deferredOf.mp (old.subset (List.mem_cons_self ..)))
-        obtain ⟨r', mine, conv⟩ := back r member first' first one firstOld
-        exact qs.tokensOrdered r' mine first second first' second' (Laws.Step.precedes_deferredOf.mpr old)
-          (conv _ _ one firstOld) (conv _ _ two
-            (.inr (Laws.Step.mem_deferredOf.mp (old.subset (List.mem_cons_of_mem _ (List.mem_singleton_self _))))))
-      rcases queues with ⟨_, deferred⟩ | ⟨_, _, deferred⟩ <;> rw [deferred] at inDeferred
-      · exact oldOrder inDeferred
-      · rcases precedes_split inDeferred with old | ⟨firstOld, secondNew⟩ | new
-        · exact oldOrder old
-        · exact (mixed r member first' second' first second one (.inr (Laws.Step.mem_deferredOf.mp firstOld)) two
-            (List.mem_reverse.mp secondNew)).elim
-        · exact pair r member second' first' second first two one (precedes_reverse new)
-  · exact fun r member first second first' second' signal token one two => by
-      have firstIn := Laws.Step.mem_beginsOf.mpr signal
-      have secondIn := Laws.Step.mem_deferredOf.mpr token
-      have both : Laws.State.Queued state first → Laws.State.Queued state second →
-          Signal.begin first ∈ state.signals → Token.begin second ∈ state.tokens → first' < second' :=
-        fun firstOld _ signalOld tokenOld => by
+  · intro r member
+    have batchS : ∀ {request}, Signal.begin request ∈ state.batchSignals → Laws.State.Queued state request :=
+      fun member => .inl (List.mem_append_right _ member)
+    have batchT : ∀ {request}, Token.begin request ∈ state.batchTokens → Laws.State.Queued state request :=
+      fun member => .inr (List.mem_append_right _ member)
+    have keyedS : ∀ (unit : UnitKey) signal, after.queuedSignals[unit]? = some signal →
+        state.queuedSignals[unit]? = some signal := fun _ _ found => by rw [← aKeyed.1]; exact found
+    have keyedT : ∀ (unit : UnitKey) token, after.queuedTokens[unit]? = some token →
+        state.queuedTokens[unit]? = some token := fun _ _ found => by rw [← aKeyed.2]; exact found
+    -- A begin of `after`'s batch is one of `state`'s batch or new.
+    have batchOf : ∀ request, (Signal.begin request ∈ after.batchSignals ∨ Token.begin request ∈ after.batchTokens) →
+        (Signal.begin request ∈ state.batchSignals ∨ Token.begin request ∈ state.batchTokens) ∨ request ∈ requests := by
+      intro request batch
+      rcases batch with signal | token
+      · have inside := Laws.Step.mem_beginsOf.mpr signal
+        rcases queues with ⟨begins, _⟩ | ⟨_, begins, _⟩ <;> rw [begins] at inside
+        · exact (List.mem_append.mp inside).imp_left fun old => .inl (Laws.Step.mem_beginsOf.mp old)
+        · exact .inl (.inl (Laws.Step.mem_beginsOf.mp inside))
+      · have inside := Laws.Step.mem_deferredOf.mpr token
+        rcases queues with ⟨_, deferred⟩ | ⟨_, _, deferred⟩ <;> rw [deferred] at inside
+        · exact .inl (.inr (Laws.Step.mem_deferredOf.mp inside))
+        · exact (List.mem_append.mp inside).imp (fun old => .inr (Laws.Step.mem_deferredOf.mp old))
+            List.mem_reverse.mp
+    have batchQueued : ∀ {request}, Signal.begin request ∈ state.batchSignals ∨ Token.begin request ∈ state.batchTokens →
+        Laws.State.Queued state request := fun batch => batch.elim batchS batchT
+    refine ⟨?inSignals, ?inTokens, ?inQueues, ?inApart, ?inKeyedSignals, ?inKeyedTokens, ?inKeyedQueues⟩
+    case inSignals =>
+      exact fun first second first' second' precedes one two => by
+        have inBegins := Laws.Step.precedes_beginsOf.mp precedes
+        have oldOrder : Precedes (Laws.Step.beginsOf state.batchSignals) first second → first' < second' := fun old => by
+          have firstOld : Laws.State.Queued state first :=
+            batchS (Laws.Step.mem_beginsOf.mp (old.subset (List.mem_cons_self ..)))
           obtain ⟨r', mine, conv⟩ := back r member first' first one firstOld
-          exact qs.queuesOrdered r' mine first second first' second' signalOld tokenOld (conv _ _ one firstOld)
-            (conv _ _ two (.inr tokenOld))
-      rcases queues with ⟨begins, deferred⟩ | ⟨_, begins, deferred⟩ <;> rw [begins] at firstIn <;>
-        rw [deferred] at secondIn
-      · have tokenOld := Laws.Step.mem_deferredOf.mp secondIn
-        rcases List.mem_append.mp firstIn with old | new
-        · have signalOld := Laws.Step.mem_beginsOf.mp old
-          exact both (.inl signalOld) (.inr tokenOld) signalOld tokenOld
-        · exact (mixed r member second' first' second first two (.inr tokenOld) one new).elim
-      · have signalOld := Laws.Step.mem_beginsOf.mp firstIn
-        rcases List.mem_append.mp secondIn with old | new
-        · have tokenOld := Laws.Step.mem_deferredOf.mp old
-          exact both (.inl signalOld) (.inr tokenOld) signalOld tokenOld
-        · exact (mixed r member first' second' first second one (.inl signalOld) two (List.mem_reverse.mp new)).elim
+          exact (qs.ordered r' mine).signals first second first' second' (Laws.Step.precedes_beginsOf.mpr old)
+            (conv _ _ one firstOld) (conv _ _ two
+              (batchS (Laws.Step.mem_beginsOf.mp (old.subset (List.mem_cons_of_mem _ (List.mem_singleton_self _))))))
+        rcases queues with ⟨begins, _⟩ | ⟨_, begins, _⟩ <;> rw [begins] at inBegins
+        · rcases precedes_split inBegins with old | ⟨firstOld, secondNew⟩ | new
+          · exact oldOrder old
+          · exact (mixed r member first' second' first second one (batchS (Laws.Step.mem_beginsOf.mp firstOld)) two
+              secondNew).elim
+          · exact pair r member first' second' first second one two new
+        · exact oldOrder inBegins
+    case inTokens =>
+      exact fun first second first' second' precedes one two => by
+        have inDeferred := Laws.Step.precedes_deferredOf.mp precedes
+        have oldOrder : Precedes (Laws.Step.deferredOf state.batchTokens) first second → second' < first' := fun old => by
+          have firstOld : Laws.State.Queued state first :=
+            batchT (Laws.Step.mem_deferredOf.mp (old.subset (List.mem_cons_self ..)))
+          obtain ⟨r', mine, conv⟩ := back r member first' first one firstOld
+          exact (qs.ordered r' mine).tokens first second first' second' (Laws.Step.precedes_deferredOf.mpr old)
+            (conv _ _ one firstOld) (conv _ _ two
+              (batchT (Laws.Step.mem_deferredOf.mp (old.subset (List.mem_cons_of_mem _ (List.mem_singleton_self _))))))
+        rcases queues with ⟨_, deferred⟩ | ⟨_, _, deferred⟩ <;> rw [deferred] at inDeferred
+        · exact oldOrder inDeferred
+        · rcases precedes_split inDeferred with old | ⟨firstOld, secondNew⟩ | new
+          · exact oldOrder old
+          · exact (mixed r member first' second' first second one (batchT (Laws.Step.mem_deferredOf.mp firstOld)) two
+              (List.mem_reverse.mp secondNew)).elim
+          · exact pair r member second' first' second first two one (precedes_reverse new)
+    case inQueues =>
+      exact fun first second first' second' signal token one two => by
+        have firstIn := Laws.Step.mem_beginsOf.mpr signal
+        have secondIn := Laws.Step.mem_deferredOf.mpr token
+        have both : Signal.begin first ∈ state.batchSignals → Token.begin second ∈ state.batchTokens → first' < second' :=
+          fun signalOld tokenOld => by
+            obtain ⟨r', mine, conv⟩ := back r member first' first one (batchS signalOld)
+            exact (qs.ordered r' mine).queues first second first' second' signalOld tokenOld
+              (conv _ _ one (batchS signalOld)) (conv _ _ two (batchT tokenOld))
+        rcases queues with ⟨begins, deferred⟩ | ⟨_, begins, deferred⟩ <;> rw [begins] at firstIn <;>
+          rw [deferred] at secondIn
+        · have tokenOld := Laws.Step.mem_deferredOf.mp secondIn
+          rcases List.mem_append.mp firstIn with old | new
+          · exact both (Laws.Step.mem_beginsOf.mp old) tokenOld
+          · exact (mixed r member second' first' second first two (batchT tokenOld) one new).elim
+        · have signalOld := Laws.Step.mem_beginsOf.mp firstIn
+          rcases List.mem_append.mp secondIn with old | new
+          · exact both signalOld (Laws.Step.mem_deferredOf.mp old)
+          · exact (mixed r member first' second' first second one (batchS signalOld) two
+              (List.mem_reverse.mp new)).elim
+    case inApart =>
+      exact fun first second first' second' batch one unit keyed two => by
+        have secondOld : Laws.State.Queued state second := keyed.elim
+          (fun found => .inl (Laws.State.mem_allSignals_of (keyedS _ _ found)))
+          (fun found => .inr (Laws.State.mem_allQueuedTokens_of (keyedT _ _ found)))
+        rcases batchOf first batch with firstOld | firstNew
+        · obtain ⟨r', mine, conv⟩ := back r member first' first one (batchQueued firstOld)
+          exact (qs.ordered r' mine).apart first second first' second' firstOld (conv _ _ one (batchQueued firstOld))
+            unit (keyed.imp (keyedS _ _) (keyedT _ _)) (conv _ _ two secondOld)
+        · exact mixed r member second' first' second first two secondOld one firstNew
+    case inKeyedSignals =>
+      exact fun one two first second first' second' found found' a b order => by
+        have firstOld : Laws.State.Queued state first := .inl (Laws.State.mem_allSignals_of (keyedS _ _ found))
+        obtain ⟨r', mine, conv⟩ := back r member first' first a firstOld
+        exact (qs.ordered r' mine).keyedSignals one two first second first' second' (keyedS _ _ found)
+          (keyedS _ _ found') (conv _ _ a firstOld)
+          (conv _ _ b (.inl (Laws.State.mem_allSignals_of (keyedS _ _ found')))) order
+    case inKeyedTokens =>
+      exact fun one two first second first' second' found found' a b => by
+        have firstOld : Laws.State.Queued state first := .inr (Laws.State.mem_allQueuedTokens_of (keyedT _ _ found))
+        obtain ⟨r', mine, conv⟩ := back r member first' first a firstOld
+        exact (qs.ordered r' mine).keyedTokens one two first second first' second' (keyedT _ _ found)
+          (keyedT _ _ found') (conv _ _ a firstOld)
+          (conv _ _ b (.inr (Laws.State.mem_allQueuedTokens_of (keyedT _ _ found'))))
+    case inKeyedQueues =>
+      exact fun one two first second first' second' found found' a b => by
+        have firstOld : Laws.State.Queued state first := .inl (Laws.State.mem_allSignals_of (keyedS _ _ found))
+        obtain ⟨r', mine, conv⟩ := back r member first' first a firstOld
+        exact (qs.ordered r' mine).keyedQueues one two first second first' second' (keyedS _ _ found)
+          (keyedT _ _ found') (conv _ _ a firstOld)
+          (conv _ _ b (.inr (Laws.State.mem_allQueuedTokens_of (keyedT _ _ found'))))
   · exact fun schedule request token => by
-      have inside := Laws.Step.mem_deferredOf.mpr token
+      rcases List.mem_append.mp token with keyed | batch
+      · exact qs.deferred schedule request (List.mem_append_left _ (aKeyed.2 ▸ keyed))
+      have inside := Laws.Step.mem_deferredOf.mpr batch
       rcases queues with ⟨_, deferred⟩ | ⟨depthFirst, _, _⟩
       · rw [deferred] at inside
-        exact qs.deferred schedule request (Laws.Step.mem_deferredOf.mp inside)
+        exact qs.deferred schedule request (List.mem_append_right _ (Laws.Step.mem_deferredOf.mp inside))
       · exact schedule_ne (schedule.symm.trans depthFirst)
   · exact fun r member request index queued' scope inQueue for_ slot begun' => by
       obtain ⟨o, inside, at_, on⟩ := begun'
@@ -409,44 +484,46 @@ theorem Numbered.beginInstances {inv : State → Prop} {settled : State → Nat 
 /-! ## The other operations of the hooks -/
 
 /-- Queuing a signal that is no begin, reservation or compensation keeps `Numbered`. -/
-theorem Numbered.signalOther {program : Program} {s : State} {signal : Signal}
+theorem NumberedBy.signalOther {below : Issue → Issue → Prop} {program : Program} {s : State} {signal : Signal}
     (apart : (∀ request, Signal.begin request ≠ signal) ∧
       (∀ element scope leave writes rule, Signal.occur element scope leave writes rule ≠ signal) ∧
       ∀ scope activity trigger leave resume, Signal.compensate scope activity trigger leave resume ≠ signal)
-    (held : Numbered program s) : Numbered program (s.signal signal) := by
+    (held : NumberedBy below program s) : NumberedBy below program (s.signal signal) := by
   rw [Laws.State.signal_eq]
   have none : Laws.Step.beginsOf [signal] = [] := List.eq_nil_iff_forall_not_mem.mpr fun request inside =>
     apart.1 request (List.mem_singleton.mp (Laws.Step.mem_beginsOf.mp inside))
-  refine held.unmoved rfl rfl rfl (by rw [Laws.Step.beginsOf_append, none, List.append_nil]) rfl
+  refine held.unmoved rfl rfl rfl (by rw [Laws.Step.beginsOf_append, none, List.append_nil]) rfl rfl rfl
     fun element pending => .inl ?_
   rcases pending with occur | compensate | resumed
   · obtain ⟨scope, rest⟩ := occur
     obtain ⟨leave, writes, rule, member⟩ := rest
-    refine .inl ⟨scope, leave, writes, rule, (List.mem_append.mp member).resolve_right fun new => ?_⟩
+    refine .inl ⟨scope, leave, writes, rule,
+      (List.mem_append.mp (Laws.State.allSignals_append s _ ▸ member)).resolve_right fun new => ?_⟩
     exact apart.2.1 element scope leave writes rule (List.mem_singleton.mp new)
   · obtain ⟨scope, activity, trigger, rest⟩ := compensate
     obtain ⟨leave, at_, resumed, member⟩ := rest
     refine .inr (.inl ⟨scope, activity, trigger, leave, at_, resumed,
-      (List.mem_append.mp member).resolve_right fun new => ?_⟩)
+      (List.mem_append.mp (Laws.State.allSignals_append s _ ▸ member)).resolve_right fun new => ?_⟩)
     exact apart.2.2 scope activity trigger leave _ (List.mem_singleton.mp new)
   · exact .inr (.inr resumed)
 
 /-- Holding an occurrence keeps `Numbered`. -/
-theorem Numbered.hold {program : Program} {s : State} (kept : Held) (held : Numbered program s) :
-    Numbered program (s.hold kept) := by
+theorem NumberedBy.hold {below : Issue → Issue → Prop} {program : Program} {s : State} (kept : Occurrence) (held : NumberedBy below program s) :
+    NumberedBy below program (s.hold kept) := by
   rw [Laws.Hooks.hold_eq]
-  exact held.shrink (.same rfl (fun _ inside => inside) rfl rfl rfl fun _ pending => .inl pending)
+  exact held.shrink (.same rfl (fun _ inside => inside) rfl (.of_kept (.of_eq rfl rfl rfl rfl)) fun _ pending =>
+    .inl pending)
 
 /-- Setting a body's record to one of fewer active slots keeps `Numbered` when every active slot whose scope occurrence
 stands stays active. -/
-theorem Numbered.narrow {program : Program} {t : State} {run next : MultiInstanceRun}
+theorem NumberedBy.narrow {below : Issue → Issue → Prop} {program : Program} {t : State} {run next : MultiInstanceRun}
     (keyed : Laws.MultiInstance.RunsKeyed t) (member : run ∈ t.slots.multiInstances)
     (occurrence : next.occurrence = run.occurrence) (element : next.element = run.element)
     (kept : ∀ (i : Nat) (scope : ScopeOccurrenceId), next.instances[i]? = some (.active scope) →
       run.instances[i]? = some (.active scope))
     (stays : ∀ (i : Nat) (scope : ScopeOccurrenceId), run.instances[i]? = some (.active scope) → scope ∈ scopeIds t →
       next.instances[i]? = some (.active scope))
-    (held : Numbered program t) : Numbered program (Feature.MultiInstance.setRun t next) := by
+    (held : NumberedBy below program t) : NumberedBy below program (Feature.MultiInstance.setRun t next) := by
   obtain ⟨each, qs⟩ := held
   have toOld : ∀ r ∈ (Feature.MultiInstance.setRun t next).slots.multiInstances, ∃ r' ∈ t.slots.multiInstances,
       (∀ (i : Nat) (scope : ScopeOccurrenceId), r.instances[i]? = some (.active scope) →
@@ -498,21 +575,10 @@ theorem Numbered.narrow {program : Program} {t : State} {run next : MultiInstanc
       obtain ⟨r', mine, parts⟩ := toOld r inside
       obtain ⟨slots, _, same⟩ := parts
       exact qs.reserved request inQueue r' mine (act r r' slots _ active) id named o present xid (same ▸ xelement) xrole
-    signalsOrdered := fun r inside first second first' second' precedes one two => by
+    ordered := fun r inside => by
       obtain ⟨r', mine, parts⟩ := toOld r inside
       obtain ⟨slots, same, _⟩ := parts
-      exact qs.signalsOrdered r' mine first second first' second' precedes (forOf r r' slots same _ _ one)
-        (forOf r r' slots same _ _ two)
-    tokensOrdered := fun r inside first second first' second' precedes one two => by
-      obtain ⟨r', mine, parts⟩ := toOld r inside
-      obtain ⟨slots, same, _⟩ := parts
-      exact qs.tokensOrdered r' mine first second first' second' precedes (forOf r r' slots same _ _ one)
-        (forOf r r' slots same _ _ two)
-    queuesOrdered := fun r inside first second first' second' signal token one two => by
-      obtain ⟨r', mine, parts⟩ := toOld r inside
-      obtain ⟨slots, same, _⟩ := parts
-      exact qs.queuesOrdered r' mine first second first' second' signal token (forOf r r' slots same _ _ one)
-        (forOf r r' slots same _ _ two)
+      exact ordered_fewer (qs.ordered r' mine) (.of_kept (.of_eq rfl rfl rfl rfl)) (forOf r r' slots same)
     above := fun r inside request index queued' scope inQueue for_ slot begun => by
       obtain ⟨r', mine, parts⟩ := toOld r inside
       obtain ⟨slots, same, _⟩ := parts
@@ -536,23 +602,23 @@ theorem quiet_of_parallel {mode : MultiInstanceMode} {instances : List Iteration
 /-- A running body stays through leaving one of its instances' scope occurrences, which lies below the body's. -/
 theorem leaveScope_keeps_body {program : Program} {s : State} (formed : WellFormed program s) (owns : SlotsOwned s)
     {run : MultiInstanceRun} (member : run ∈ s.slots.multiInstances) {index : Nat} {scope : ScopeOccurrenceId}
-    (slot : run.instances[index]? = some (.active scope)) : run ∈ (s.leaveScope scope).slots.multiInstances := by
+    (slot : run.instances[index]? = some (.active scope)) : run ∈ (s.leaveScope le scope).slots.multiInstances := by
   obtain ⟨e, eIn, eNamed, eLink⟩ := (owns.owned run member).instanceScopes index scope slot
   have present : scope ∈ scopeIds s := List.mem_map.mpr ⟨e, eIn, eNamed⟩
   have away : ¬ Laws.State.Within s run.scope scope := eNamed ▸ Laws.State.parent_not_within formed eIn eLink
   rw [(Laws.State.leaveScope_slots s scope).2.1, (Laws.State.clearInside_cleared formed present []).bodies]
   refine List.mem_filter.mpr ⟨member, ?_⟩
-  cases contained : (s.subtree scope).contains run.scope
+  cases contained : (s.inside scope).contains run.scope
   · rfl
-  · exact absurd ((Laws.State.subtree_iff formed present _).mp (List.contains_iff_mem.mp contained)) away
+  · exact absurd ((Laws.State.inside_iff formed present _).mp (List.contains_iff_mem.mp contained)) away
 
 /-! ## The registered Multi-Instance hooks -/
 
 /-- `Hooks.completeBody` keeps `Numbered`: it queues the body's completion. -/
-theorem numbered_completeBody {ctx : Ctx} {header : Header} {envelope : Envelope} {loop : MultiInstance}
-    {occurrence : Occurrence} {state after : State} (held : Numbered ctx.program state)
+theorem numbered_completeBody {below : Issue → Issue → Prop} {ctx : Ctx} {header : Header} {envelope : Envelope} {loop : MultiInstance}
+    {occurrence : Occurrence} {state after : State} (held : NumberedBy below ctx.program state)
     (ran : Feature.MultiInstance.completeBody ctx header envelope loop occurrence state = .ok after) :
-    Numbered ctx.program after := by
+    NumberedBy below ctx.program after := by
   obtain ⟨run, _, rfl⟩ := Laws.MultiInstance.completeBody_spec ran
   obtain ⟨writes, same, _⟩ := Laws.MultiInstance.finish_spec ctx loop run state
   rw [same]
@@ -561,10 +627,10 @@ theorem numbered_completeBody {ctx : Ctx} {header : Header} {envelope : Envelope
 /-- `Hooks.arriveMultiInstance` keeps `Numbered`: it holds the occurrence, completes it, or enters the body's scope
 occurrence, arms its boundaries or not, and begins the instances of a body no running body is keyed by, every slot
 waiting. -/
-theorem numbered_arrive {ctx : Ctx} {header : Header} {envelope : Envelope} {loop : MultiInstance}
+theorem numbered_arrive {below : Issue → Issue → Prop} {ctx : Ctx} {header : Header} {envelope : Envelope} {loop : MultiInstance}
     {occurrence : Occurrence} {state after : State}
     (ops : Laws.MultiInstance.MultiInstanceOps ctx.program (WellFormed ctx.program) Laws.State.Settled)
-    (formed : WellFormed ctx.program state) (owns : SlotsOwned state) (held : Numbered ctx.program state)
+    (formed : WellFormed ctx.program state) (owns : SlotsOwned state) (held : NumberedBy below ctx.program state)
     (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true) (named : header.id = occurrence.element)
     (looped : LoopOf ctx.program header.id loop) (ownsEntered : ∀ locals (unarmed : Bool), SlotsOwned (if unarmed then
       (state.enterScope header.id occurrence.scope locals (some occurrence.id)).1
@@ -572,22 +638,22 @@ theorem numbered_arrive {ctx : Ctx} {header : Header} {envelope : Envelope} {loo
         (.arm occurrence.id header.id occurrence.scope)))
     (unrun : ∀ run ∈ state.slots.multiInstances, run.occurrence ≠ occurrence.id)
     (ran : Feature.MultiInstance.arriveMultiInstance ctx header envelope loop occurrence state = .ok after) :
-    Numbered ctx.program after := by
+    NumberedBy below ctx.program after := by
   rcases Laws.MultiInstance.arriveMultiInstance_spec ran with ⟨kept, rfl⟩ | ⟨writes, rfl⟩ | ⟨locals, unarmed, entered⟩
   · exact held.hold kept
   · exact held.signalOther Laws.Step.complete_apart
-  · obtain ⟨collection, count, items, ⟨_, rfl⟩⟩ := entered
+  · obtain ⟨strings, count, items, ⟨_, rfl⟩⟩ := entered
     have waiting : ∀ slot ∈ List.replicate count Iteration.waiting, slot = .waiting := fun _ inside =>
       List.eq_of_mem_replicate inside
     obtain ⟨entering, slots, _⟩ := enterBody_entering ops formed member begun header.id
       (enterBody_enters ops formed member begun named)
-      (fun current kept present => ops.arm current occurrence _ kept present begun named) locals unarmed collection _ waiting
-    have enteredHeld : Numbered ctx.program (if unarmed then
+      (fun current kept present => ops.arm current occurrence _ kept present begun named) locals unarmed items strings _ waiting
+    have enteredHeld : NumberedBy below ctx.program (if unarmed then
         (state.enterScope header.id occurrence.scope locals (some occurrence.id)).1
         else (state.enterScope header.id occurrence.scope locals (some occurrence.id)).1.signal
           (.arm occurrence.id header.id occurrence.scope)) := by
       have base := held.enterScope formed owns header.id occurrence.scope locals
-        (some occurrence.id)
+        (some occurrence.id) (formed.owned.occurrenceScopes occurrence member)
       cases unarmed <;> simp only [Bool.false_eq_true, ↓reduceIte]
       · exact base.signalOther Laws.Step.arm_apart
       · exact base
@@ -595,28 +661,28 @@ theorem numbered_arrive {ctx : Ctx} {header : Header} {envelope : Envelope} {loo
       cases List.eq_of_mem_replicate active
     obtain ⟨queued, instances, made, begunAt⟩ := Laws.MultiInstance.beginInstances_spec ops entering
     rw [made]
-    exact Numbered.beginInstances entering.1 (ownsEntered locals unarmed) enteredHeld begunAt
+    exact NumberedBy.beginInstances entering.1 (ownsEntered locals unarmed) enteredHeld begunAt
       (.inr ⟨fun run inside => unrun run (slots ▸ inside), idle⟩) (fun _ => idle) looped
 
 /-- `Hooks.instanceCompleted` keeps `Numbered` for an instance in a scope occurrence that stands: it records the
 instance's slot, leaving its scope occurrence, which takes nothing else of the numbering, writes the body's counters or
 not, then completes the body or begins its next instances. -/
-theorem numbered_instanceCompleted {ctx : Ctx} {body : Nat} {occurrence : Occurrence} {writes : List (String × Value)}
+theorem numbered_instanceCompleted {below : Issue → Issue → Prop} {ctx : Ctx} {body : OccurrenceId} {occurrence : Occurrence} {writes : List (String × Value)}
     {state after : State} (ops : Laws.MultiInstance.MultiInstanceOps ctx.program (WellFormed ctx.program) Laws.State.Settled)
-    (formed : WellFormed ctx.program state) (owns : SlotsOwned state) (held : Numbered ctx.program state)
+    (formed : WellFormed ctx.program state) (owns : SlotsOwned state) (held : NumberedBy below ctx.program state)
     (stands : occurrence.scope ∈ scopeIds state)
     (ownsLeft : ∀ run index output results, run ∈ state.slots.multiInstances →
       run.instances[index]? = some (.active occurrence.scope) → Laws.MultiInstance.OutputFits ctx.program run output →
-      SlotsOwned (Laws.MultiInstance.leftWith state occurrence.scope (Laws.MultiInstance.recorded run index output results)))
+      SlotsOwned (Laws.MultiInstance.leftWith ctx.positionLe state occurrence.scope (Laws.MultiInstance.recorded run index output results)))
     (parallel : ∀ run ∈ state.slots.multiInstances, ∀ loop, LoopOf ctx.program run.element loop →
       loop.mode = .parallel → ∀ slot ∈ run.instances, slot ≠ .waiting)
     (ran : Feature.MultiInstance.instanceCompleted ctx body occurrence writes state = .ok after) :
-    Numbered ctx.program after := by
+    NumberedBy below ctx.program after := by
   obtain ⟨run, loop, index, found⟩ := Laws.MultiInstance.instanceCompleted_spec ran
   obtain ⟨output, done⟩ := found
   obtain ⟨results, counted, left, ended⟩ := done.ends
   have member := Laws.MultiInstance.found_mem done.found
-  have leaves := Laws.State.leaveScope_left formed stands
+  have leaves := Laws.State.leaveScope_left (le := ctx.positionLe) formed stands
   have recordedSlot : ∀ (i : Nat) (scope : ScopeOccurrenceId),
       (Laws.MultiInstance.recorded run index output results).instances[i]? = some (.active scope) →
         i ≠ index ∧ run.instances[i]? = some (.active scope) := fun i scope slot => by
@@ -629,14 +695,14 @@ theorem numbered_instanceCompleted {ctx : Ctx} {body : Nat} {occurrence : Occurr
       rw [show (Laws.MultiInstance.recorded run index output results).instances =
         run.instances.set index (.completed output) from rfl, List.getElem?_set_ne (Ne.symm differs)] at slot
       exact slot⟩
-  have leftHeld : Numbered ctx.program
-      (Laws.MultiInstance.leftWith state occurrence.scope (Laws.MultiInstance.recorded run index output results)) := by
-    have keyedLeft : Laws.MultiInstance.RunsKeyed (state.leaveScope occurrence.scope) := by
+  have leftHeld : NumberedBy below ctx.program
+      (Laws.MultiInstance.leftWith ctx.positionLe state occurrence.scope (Laws.MultiInstance.recorded run index output results)) := by
+    have keyedLeft : Laws.MultiInstance.RunsKeyed (state.leaveScope ctx.positionLe occurrence.scope) := by
       unfold Laws.MultiInstance.RunsKeyed
       rw [(Laws.State.leaveScope_slots state occurrence.scope).2.1,
         (Laws.State.clearInside_cleared formed stands []).bodies]
       exact owns.keyed.sublist (List.filter_sublist.map _)
-    refine (held.leaveScope formed owns stands).narrow keyedLeft (leaveScope_keeps_body formed owns member done.slot)
+    refine (held.leaveScope ctx.positionLe formed owns stands).narrow keyedLeft (leaveScope_keeps_body formed owns member done.slot)
       rfl rfl (fun i scope slot => (recordedSlot i scope slot).2) fun i scope slot present => ?_
     have differs : i ≠ index := fun same => by
       rw [same, done.slot] at slot
@@ -647,7 +713,7 @@ theorem numbered_instanceCompleted {ctx : Ctx} {body : Nat} {occurrence : Occurr
       run.instances.set index (.completed output) from rfl, List.getElem?_set_ne (Ne.symm differs)]
     exact slot
   have leftOwned := ownsLeft run index output results member done.slot done.fits
-  have countedHeld : Numbered ctx.program counted ∧ SlotsOwned counted := by
+  have countedHeld : NumberedBy below ctx.program counted ∧ SlotsOwned counted := by
     rcases left with rfl | ⟨target, counts, rule, rfl⟩
     · exact ⟨leftHeld, leftOwned⟩
     · refine ⟨leftHeld.signalOther Laws.Step.write_apart, ?_⟩
@@ -663,7 +729,7 @@ theorem numbered_instanceCompleted {ctx : Ctx} {body : Nat} {occurrence : Occurr
   · obtain ⟨entering, _, present⟩ := counted_entering ops formed stands done left
     obtain ⟨queued, instances, made, begunAt⟩ := Laws.MultiInstance.beginInstances_spec ops entering
     rw [made]
-    refine Numbered.beginInstances entering.1 countedHeld.2 countedHeld.1 begunAt (.inl present)
+    refine NumberedBy.beginInstances entering.1 countedHeld.2 countedHeld.1 begunAt (.inl present)
       (quiet_of_parallel fun mode slot inside => ?_) done.looped
     rw [show (Laws.MultiInstance.recorded run index output results).instances =
       run.instances.set index (.completed output) from rfl] at inside

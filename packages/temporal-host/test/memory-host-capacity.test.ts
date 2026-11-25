@@ -19,11 +19,15 @@ const { createMemoryProcessHost } = await import(new URL("../dist/memory-host.js
 const { Scheduling } = await import(new URL("../dist/protocol.js", import.meta.url).href) as typeof import("../src/protocol.ts");
 const { canonicalBytes, chainCapacity } = await import(new URL("../dist/capacity.js", import.meta.url).href) as
   typeof import("../src/capacity.ts");
+const codec = await import(new URL("../dist/wire-codec.js", import.meta.url).href) as typeof import("../src/wire-codec.ts");
 const { planHost } = await import(new URL("../dist/host-machine.js", import.meta.url).href) as typeof import("../src/host-machine.ts");
 
 const durable: HostConfig = { scheduling: Scheduling.Durable, effectStartToCloseMs: 1_000, historyEventBudget: null };
 const external: HostConfig = { scheduling: Scheduling.External, effectStartToCloseMs: 1_000, historyEventBudget: null };
 const workflowId = "W";
+
+/** The state pad's variable count: each holds at most 15,000 characters, and a fixed count keeps one byte per character. */
+const padVariableCount = 4;
 
 const fresh = () => createMemoryProcessHost({ taskQueue: "capacity", now: () => 5_000 });
 
@@ -65,17 +69,6 @@ async function pair(setup: () => Promise<Readonly<{ host: MemoryProcessHost; pro
   return fitting.host;
 }
 
-/** The knob in [low, high] whose measure is `target`, the measure rising by one per unit of the knob. */
-async function exactly(target: number, measure: (knob: number) => Promise<number>, start: number): Promise<number> {
-  let knob = start;
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    const measured = await measure(knob);
-    if (measured === target) return knob;
-    knob += target - measured;
-  }
-  throw new Error(`no knob measures ${String(target)}`);
-}
-
 test("the realistic sixteen-body parallel journey fits every bound, with sixteen effects pending at once", async () => {
   const program = await fx.scenarioProgram(fx.parallelModel);
   const journey = fx.realisticJourney();
@@ -83,8 +76,13 @@ test("the realistic sixteen-body parallel journey fits every bound, with sixteen
   await drive(host, program, durable, [journey.start, ...journey.commercial, ...journey.compliance]);
   const snapshot = await host.hostView(workflowId);
   assert.equal(snapshot.view?.openWaits.filter((wait) => wait.effect !== undefined).length, 16);
-  const peak = canonicalBytes(await host.state(workflowId));
-  assert.ok(peak > 240_000 && peak <= chainCapacity.stateBytes, `peak state ${String(peak)}`);
+  const encoded = await host.state(workflowId);
+  const peak = canonicalBytes(encoded);
+  // The 240,000-byte floor is the journey's volume, which the codec's interning no longer writes: the state as the
+  // kernel holds it (every interned String expanded) keeps it, and the peak the Workflow bounds is the interned form.
+  const volume = canonicalBytes(codec.expandStrings(encoded as JsonValue));
+  assert.ok(volume > 240_000, `journey volume ${String(volume)}`);
+  assert.ok(peak < volume && peak <= chainCapacity.stateBytes, `peak state ${String(peak)}`);
   for (const result of journey.results) assert.equal((await host.arrive(workflowId, result)).outcome, "committed");
   assert.equal((await host.command(workflowId, journey.publish)).outcome, "committed");
   assert.equal((await host.hostView(workflowId)).view?.status, "completed");
@@ -92,14 +90,14 @@ test("the realistic sixteen-body parallel journey fits every bound, with sixteen
 
 test("committed state: exactly 256 KiB commits, one byte more refuses the sixteenth Compliance completion", async () => {
   const program = await fx.scenarioProgram(fx.parallelModel);
-  const journey = (knob: number) => fx.realisticJourney([{ name: "pad", value: fx.pad(fx.padLengths(knob)) }]);
+  const journey = (knob: number) => fx.realisticJourney(fx.padVariables("pad", knob, padVariableCount));
   const before = async (knob: number) => {
     const host = fresh();
     const phases = journey(knob);
     await drive(host, program, durable, [phases.start, ...phases.commercial, ...phases.compliance.slice(0, 15)]);
     return { host, program, config: durable };
   };
-  const knob = await exactly(chainCapacity.stateBytes, async (candidate) => {
+  const knob = await fx.exactly(chainCapacity.stateBytes, async (candidate) => {
     const { host } = await before(candidate);
     assert.equal((await host.command(workflowId, journey(candidate).compliance[15]!)).outcome, "committed");
     return canonicalBytes(await host.state(workflowId));
@@ -176,7 +174,7 @@ const sizingVariables = fx.sizingVariables;
 
 test("effect request: an Activity request of exactly 64 KiB is planned, one byte more refuses the input that opens it", async () => {
   const program = await fx.cibProgram(fx.sizingModel(2, ["a", "b", "c", "d", "e"], 0));
-  const filled = (knob: number) => fx.completeTask("fill-1", "Fill1", 1, [...sizingVariables(["d"], 13_000), { name: "e", value: fx.pad(fx.padLengths(knob)) }]);
+  const filled = (knob: number) => fx.completeTask("fill-1", "Fill1", 1, [...sizingVariables(["d"], 13_000), { name: "e", value: fx.pad(fx.padLengths(knob), "e") }]);
   const before = (knob: number) => async () => {
     const host = fresh();
     await drive(host, program, durable, [{ kind: "start", commandId: "s", instanceId: fx.instanceId, variables: sizingVariables(["a", "b", "c"], 13_000) },
@@ -184,7 +182,7 @@ test("effect request: an Activity request of exactly 64 KiB is planned, one byte
     return { host, program, config: durable };
   };
   const open = fx.completeTask("fill-2", "Fill2", 1);
-  const knob = await exactly(chainCapacity.effectRequestBytes, async (candidate) => {
+  const knob = await fx.exactly(chainCapacity.effectRequestBytes, async (candidate) => {
     const { host } = await before(candidate)();
     assert.equal((await host.command(workflowId, open)).outcome, "committed");
     const view = (await host.hostView(workflowId)).view;
@@ -236,7 +234,7 @@ test("caller stimulus, start stimulus and program: each exactly at its bound is 
   };
   // Values hold at most 16,384 bytes, so a stimulus at the bound spreads its characters over five variables.
   const spread = (characters: number): JsonValue[] => ["a", "b", "c", "d", "e"].map((name, index) =>
-    ({ name, value: fx.pad(fx.padLengths(Math.floor(characters / 5) + (index < characters % 5 ? 1 : 0))) }));
+    ({ name, value: fx.pad(fx.padLengths(Math.floor(characters / 5) + (index < characters % 5 ? 1 : 0)), name) }));
   const startOf = (characters: number): JsonValue => ({ kind: "start", commandId: "s", instanceId: fx.instanceId, variables: spread(characters) });
   const startFits = sizedTo(chainCapacity.startBytes, startOf);
   const startOver = sizedTo(chainCapacity.startBytes + 1, startOf);
@@ -290,7 +288,7 @@ test("a population refuses a deployment program or a command past its byte bound
     program: await programOf(chainCapacity.programBytes - base + 1) }), { refused: "host.capacity.program" });
   const broadcast = (characters: number, top: number) => ({
     kind: "broadcast", commandId: "b", address: { kind: "named", name: "S" },
-    variables: [...["v1", "v2", "v3", "v4"].map((name) => ({ name, value: fx.pad(fx.padLengths(characters)) })),
+    variables: [...["v1", "v2", "v3", "v4"].map((name) => ({ name, value: fx.pad(fx.padLengths(characters), name) })),
       { name: "v5", value: fx.str("t".repeat(top)) }],
   });
   const top = chainCapacity.stimulusBytes - canonicalBytes(broadcast(15_000, 0));

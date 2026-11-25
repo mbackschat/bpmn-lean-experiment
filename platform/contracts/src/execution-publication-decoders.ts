@@ -202,7 +202,7 @@ function requireBatch(value: unknown, expectedFrom: number, label: string): Comm
 
 function requireTransitionRecord(value: unknown, revision: number, label: string): void {
   requireObject(value, label);
-  exact(value, label, ["revision", "role", "element", "sourceType", "owner"]);
+  exact(value, label, ["revision", "role", "element", "sourceType"]);
   if (readOwn(value, "revision") !== revision) {
     throw new TypeError(`${label}.revision is not contiguous`);
   }
@@ -215,7 +215,6 @@ function requireTransitionRecord(value: unknown, revision: number, label: string
     requireNonemptyString(element, `${label}.element`);
     if (sourceType !== null) requireNonemptyString(sourceType, `${label}.sourceType`);
   }
-  requireNonnegativeSafeInteger(readOwn(value, "owner"), `${label}.owner`);
 }
 
 function requireRole(value: unknown, label: string): void {
@@ -234,8 +233,7 @@ function requireRole(value: unknown, label: string): void {
       requireNonemptyString(readOwn(value, "flow"), `${label}.flow`);
       return;
     case ExecutionRoleKind.Idle:
-      exact(value, label, ["kind", "scope"]);
-      requireNonnegativeSafeInteger(readOwn(value, "scope"), `${label}.scope`);
+      exact(value, label, ["kind"]);
       return;
     default:
       throw new TypeError(`${label} has an unknown kind`);

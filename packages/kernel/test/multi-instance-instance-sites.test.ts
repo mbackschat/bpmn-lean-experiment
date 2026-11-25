@@ -20,17 +20,17 @@ const header = (id: string, sourceType: string, parent: string | null): Json =>
   ({ id, origin: { definition: null, sourceId: id }, sourceType, parent });
 const envelope = (incoming: string[], outgoing: string[], over: Json = {}): Json => ({
   incoming, outgoing, inputs: [], outputs: [], boundaries: [], multiInstance: null, compensationHandlers: [], forCompensation: false,
-  defaultFlow: null, asyncBefore: false, asyncAfter: false, ...over,
+  defaultFlow: null, asyncBefore: false, asyncAfter: false, exclusive: null, retryCycle: null, structuredInputs: [], structuredOutputs: [], ...over,
 });
 const loop = (mode: string, collection: string, item: string): Json => ({
   mode, count: { collection: { items: { variable: { name: collection } } } }, elementVariable: null,
   completionCondition: null, inputDataItem: "DataInput_Item", outputDataItem: null, outputCollection: null,
-  asyncBefore: false, asyncAfter: false, loopDataInputRef: null, inputDataItemName: item,
+  asyncBefore: false, asyncAfter: false, exclusive: null, retryCycle: null, loopDataInputRef: null, inputDataItemName: item,
 });
 const read = (target: string, name: string): Json =>
   ({ target, source: { juel: { nodes: [{ identifier: { name } }] } }, dialect: "ioParameter" });
 const user = { user: { payload: { name: null, assignee: null, candidateUsers: [], candidateGroups: [], formKey: null,
-  formFields: [], dueDate: null, followUpDate: null, priority: null } } };
+  formFields: [], dueDate: null, followUpDate: null, priority: null, formRef: null } } };
 
 /** `<id>Start → inner → <id>End` inside the Scope `id`, which loops over `collection` with the item `item`. */
 function subProcess(id: string, parent: string | null, mode: string, collection: string, item: string, inner: Json[],
@@ -40,7 +40,7 @@ function subProcess(id: string, parent: string | null, mode: string, collection:
       { scope: { header: header(id, "subProcess", parent), payload: { kind: "embedded", children: [`${id}Start`, innerId, `${id}End`],
         localVariables: [], items: [],
         envelope: envelope([flowIn], [flowOut], { multiInstance: loop(mode, collection, item) }) } } },
-      { start: { header: header(`${id}Start`, "startEvent", id), payload: { subscription: null, outgoing: [`${id}_in`] } } },
+      { start: { header: header(`${id}Start`, "startEvent", id), payload: { subscription: null, outgoing: [`${id}_in`], initiator: null, formRef: null } } },
       ...inner,
       { event: { header: header(`${id}End`, "endEvent", id), payload: { role: { throw: { record: "none" } }, placement: "finish",
         incoming: [`${id}_out`], outgoing: [], alternativeThrows: [] } } },
@@ -65,9 +65,9 @@ function program(mode: string, nested = false): Json {
   return {
     ...slice,
     options: { ...(slice["options"] as Json), evaluator: "juel", multiInstanceBinding: "loopReferences",
-      multiInstanceCounters: "cibLocals", multiInstanceInputFailure: "rollback", multiInstanceCount: "javaInt" },
+      multiInstanceCounters: "cibLocals", branchSchedule: "declarationDepthFirst", multiInstanceInputFailure: "rollback", multiInstanceCount: "javaInt" },
     elements: [
-      { start: { header: header("Start", "startEvent", null), payload: { subscription: null, outgoing: ["To_S"] } } },
+      { start: { header: header("Start", "startEvent", null), payload: { subscription: null, outgoing: ["To_S"], initiator: null, formRef: null } } },
       ...outer.elements,
       { event: { header: header("End", "endEvent", null), payload: { role: { throw: { record: "none" } }, placement: "finish",
         incoming: ["To_End"], outgoing: [], alternativeThrows: [] } } },

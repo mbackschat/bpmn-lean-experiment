@@ -94,7 +94,7 @@ test("a start the start step refuses is the fan-out's failed entry and starts no
 });
 
 test("a Message name addresses a start only under Message name addressing", () => {
-  const addressed = starting("Order", { messageNames: "addresses", evaluator: "juel" });
+  const addressed = starting("Order", { messageNames: "addresses", branchSchedule: "declarationDepthFirst", evaluator: "juel" });
   const described = starting("Order");
   const byName = [publish("p1", { name: "Order" }, "any")];
   assert.deepEqual(resolutions(populate([definition("d1", addressed)], [addressed], byName)), [started("start:2:p1:1:1:1:S", 1, 1)]);

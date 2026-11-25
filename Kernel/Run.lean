@@ -60,6 +60,7 @@ def inputTagName : InputTag → String
   | .deliver => "deliver"
   | .timerFire => "timerFire"
   | .effectResult => "effectResult"
+  | .cancelInstance => "cancelInstance"
 
 def definitionRefJson (ref : DefinitionRef) : Json :=
   Json.mkObj [("key", Json.str ref.key), ("version", nullable ref.version toJson),
@@ -71,6 +72,23 @@ def effectFields (effect : EffectDetail) : List (String × Json) :=
     ("arguments", Codec.bindingsToJson effect.arguments), ("failures", toJson effect.failures),
     ("send", nullable effect.send fun send => Json.mkObj [("recipient", nullable send.recipient Json.str),
       ("correlation", Codec.bindingsToJson send.correlation)])]
+
+/-- A job publishes its due time, as CIB exposes a job's due date; its retries and failures are not observed (AD8). -/
+def jobFields (job : JobDetail) : List (String × Json) :=
+  [("dueMs", toJson job.dueMs)]
+
+/-- A Timer wait's due time and, for a cycle, its recurrence. -/
+def timerFields (deadlineMs : Nat) (recurrence : Option TimerRecurrence) : List (String × Json) :=
+  [("deadlineMs", toJson deadlineMs),
+    ("recurrence", nullable recurrence fun recurrence => Json.mkObj [
+      ("periodMs", nullable recurrence.periodMs toJson), ("cron", nullable recurrence.cron Json.str),
+      ("remaining", nullable recurrence.remaining toJson)])]
+
+/-- What an incident's failure belongs to, published under its own member: `effect`, `job` or `timer`. -/
+def subjectFields : IncidentSubject → List (String × Json)
+  | .effect effect => [("effect", Json.mkObj (effectFields effect))]
+  | .job (.continuation job) => [("job", Json.mkObj (jobFields job))]
+  | .job (.timer timer) => [("timer", Json.mkObj (timerFields timer.deadlineMs timer.recurrence))]
 
 def userTaskFields (task : UserTaskDetail) : List (String × Json) :=
   [("name", nullable task.name Json.str), ("assignee", nullable task.assignee Json.str),
@@ -84,16 +102,14 @@ def userTaskFields (task : UserTaskDetail) : List (String × Json) :=
 /-- A wait's detail kind and fields, read from the one view field its kind sets (`OpenKind.view`). -/
 def detail (view : WaitView) : Option (String × List (String × Json)) :=
   (view.userTask.map fun task => ("userTask", userTaskFields task)) <|>
-  (view.incident.map fun incident => ("incident", [("effect", Json.mkObj (effectFields incident.effect)),
-    ("generation", toJson incident.generation), ("cancellable", toJson incident.cancellable)])) <|>
+  (view.incident.map fun incident => ("incident", subjectFields incident.subject ++
+    [("generation", toJson incident.generation), ("cancellable", toJson incident.cancellable)])) <|>
+  (view.job.map fun job => ("job", jobFields job)) <|>
   (view.effect.map fun effect => ("effect", effectFields effect)) <|>
   (view.signal.map fun signal => ("signal", Codec.signalAddressToJson signal.address ++ [("payload", toJson signal.payload)])) <|>
   (view.conditional.map fun condition => ("conditional", [("variableName", nullable condition.variableName Json.str),
     ("variableEvents", toJson condition.variableEvents), ("lastValue", nullable condition.lastValue toJson)])) <|>
-  (view.deadlineMs.map fun deadline => ("timer", [("deadlineMs", toJson deadline),
-    ("recurrence", nullable view.recurrence fun recurrence => Json.mkObj [
-      ("periodMs", nullable recurrence.periodMs toJson), ("cron", nullable recurrence.cron Json.str),
-      ("remaining", nullable recurrence.remaining toJson)])])) <|>
+  (view.deadlineMs.map fun deadline => ("timer", timerFields deadline view.recurrence)) <|>
   (view.channel.map fun channel => ("message", [("channel", Codec.channelToJson channel),
     ("payload", toJson view.payload), ("criteria", toJson view.criteria)]))
 
@@ -122,7 +138,7 @@ def PublishedWait.canonicalLe (left right : PublishedWait) : Bool :=
 receivers (PC-SIGNAL-01). -/
 def broadcastJson (intent : BroadcastIntent) : Json :=
   Json.mkObj (Codec.signalAddressToJson intent.address ++ [("variables", Codec.bindingsToJson intent.variables)] ++
-    (intent.businessKey.map fun key => ("businessKey", Json.str key)).toList ++ [("origin", referenceJson intent.origin)])
+    (intent.businessKey.map fun key => ("businessKey", Json.str key)).toList ++ [("origin", referenceJson intent.origin.toRef)])
 
 /-- `broadcasts` when the input threw a Signal to the population, else nothing. -/
 def broadcastsJson (intents : List BroadcastIntent) : List (String × Json) :=
@@ -130,9 +146,9 @@ def broadcastsJson (intents : List BroadcastIntent) : List (String × Json) :=
 
 def failureJson (failure : InstanceFailure) : Json :=
   Json.mkObj [("code", Json.str failure.code), ("message", nullable failure.message Json.str),
-    ("occurrence", referenceJson failure.occurrence),
-    ("related", Json.arr (failure.related.map fun (name, ref) =>
-      Json.mkObj [("name", Json.str name), ("occurrence", referenceJson ref)]).toArray)]
+    ("occurrence", referenceJson failure.occurrence.toRef),
+    ("related", Json.arr (failure.related.map fun (role, name) =>
+      Json.mkObj [("name", Json.str role), ("occurrence", referenceJson name.toRef)]).toArray)]
 
 def scopeJson (scope : Publish.PublishedScope) : Json :=
   let place : List (String × Json) := match scope.element with
@@ -143,17 +159,19 @@ def scopeJson (scope : Publish.PublishedScope) : Json :=
     ("variables", Codec.bindingsToJson scope.variables)]
 
 /-- The state observation; `failure` appears only in a failed state, `broadcasts` only after an input that threw a
-Signal to the population. -/
-def observationJson (program : Program) (state : State) : Json :=
+Signal to the population. A state whose scopes cannot be published (`Publish.publishedScopes`) has none: its invariant
+failure is the answer. -/
+def observationJson (program : Program) (state : State) : Except Failure Json := do
+  let scopes ← Publish.publishedScopes program state
   let view := Host.hostView program state
   let waits := (view.openWaits.map renderWait).mergeSort PublishedWait.canonicalLe
   let fields : List (String × Json) := [("kind", "state"), ("instanceId", Json.str state.instanceId),
     ("status", Json.str (Publish.statusName view.status)), ("logicalTimeMs", toJson state.logicalTimeMs),
     ("variables", Codec.bindingsToJson (Publish.variables state)),
-    ("scopes", Json.arr ((Publish.scopes program state).map scopeJson).toArray),
+    ("scopes", Json.arr (scopes.map scopeJson).toArray),
     ("openWaits", Json.arr (waits.map (·.json)).toArray)]
-  Json.mkObj (fields ++
-    (view.failure.map fun failure => ("failure", failureJson failure)).toList ++ broadcastsJson view.broadcasts)
+  .ok (Json.mkObj (fields ++
+    (view.failure.map fun failure => ("failure", failureJson failure)).toList ++ broadcastsJson view.broadcasts))
 
 /-- `code` appears only on an input that did not commit. -/
 def commandJson (commandId outcome : String) (code : Option String) : Json :=
@@ -161,9 +179,6 @@ def commandJson (commandId outcome : String) (code : Option String) : Json :=
     ("outcome", Json.str outcome)]
   Json.mkObj (fields ++
     code.toList.map fun code => ("code", Json.str code))
-
-def snapshot (program : Program) (state : Option State) : List Json :=
-  state.toList.map (observationJson program)
 
 /-- The step of a single-instance run: a stimulus stating a Timer firing (`Codec.firingStimulusFromJson`) is refused
 before the step unless it is on time in the degenerate population (`Population.onTimeRefusal`). A host that serves one
@@ -178,20 +193,28 @@ def runStep (program : Program) (state : Option State) (input : Input) (firing :
 /-- A scenario stimulus: its command identifier, its input and the Timer firing it states. -/
 abbrev RunStimulus := String × Input × Option Codec.TimerFiring
 
-/-- The trace after deployment and the scenario outcome. -/
-def execute (program : Program) : Option State → List RunStimulus → List Json × String
-  | _, [] => ([], "committed")
-  | state, (commandId, input, firing) :: rest =>
-    match runStep program state input firing with
-    | .ok next =>
-      let (trace, outcome) := execute program (some next) rest
-      (commandJson commandId "committed" none :: snapshot program (some next) ++ trace, outcome)
+/-- `runStep`, then the committed state's observation, whose failure (`observationJson`) fails the input as the step's
+would. -/
+def observedStep (program : Program) (state : Option State) (input : Input) (firing : Option Codec.TimerFiring) :
+    Except Failure (State × Json) := do
+  let next ← runStep program state input firing
+  .ok (next, ← observationJson program next)
+
+/-- The trace after deployment and the scenario outcome; `shown` is the observation of the state reached so far, which a
+rejected input repeats. -/
+def execute (program : Program) : Option State → List Json → List RunStimulus → List Json × String
+  | _, _, [] => ([], "committed")
+  | state, shown, (commandId, input, firing) :: rest =>
+    match observedStep program state input firing with
+    | .ok (next, observed) =>
+      let (trace, outcome) := execute program (some next) [observed] rest
+      (commandJson commandId "committed" none :: observed :: trace, outcome)
     | .error failure =>
       let name := Codec.failureName failure
-      let observed := commandJson commandId name (some (Codec.failureCode failure)) :: snapshot program state
+      let observed := commandJson commandId name (some (Codec.failureCode failure)) :: shown
       match failure, rest with
-      | .rejected _, _ :: _ =>
-        let (trace, outcome) := execute program state rest
+      | .rejected _ _, _ :: _ =>
+        let (trace, outcome) := execute program state shown rest
         (observed ++ trace, outcome)
       | _, _ => (observed, name)
 
@@ -206,7 +229,7 @@ def result (program : Program) (stimuli : List RunStimulus) : Json :=
   | some code =>
     Json.mkObj [("outcome", semantic "unsupported"), ("trace", Json.arr #[deploymentJson "unsupported" (some code)])]
   | none =>
-    let (trace, outcome) := execute program none stimuli
+    let (trace, outcome) := execute program none [] stimuli
     Json.mkObj [("outcome", semantic outcome), ("trace", Json.arr (deploymentJson "committed" none :: trace).toArray)]
 
 /-- A scenario's stimuli, decoded by the stimulus codec with the Timer firing each states. -/
@@ -226,28 +249,30 @@ def roleName : ActivationRole → String
   | .multiInstanceBody => "multiInstanceBody"
 
 def keyJson (key : OccurrenceKey) : Json :=
-  Json.mkObj [("processInstanceId", Json.str key.processInstanceId), ("elementId", Json.str key.element.value),
-    ("activation", toJson key.activation), ("role", Json.str (roleName key.role))]
+  Json.mkObj [("processInstanceId", Json.str key.processInstanceId.text), ("elementId", Json.str key.element.value),
+    ("activation", toJson key.activation.number), ("role", Json.str (roleName key.role))]
 
 def terminalName : Terminal → String
   | .completed => "completed"
   | .cancelled => "cancelled"
 
+/-- A transition's cause and occurrence facts, public fields only (PD2): the kernel's scope-occurrence ordinals
+(`Transition.owner`, a started fact's `owner`, an idle cause's scope) are internal identities and never published. -/
 def causeJson : Cause → Json
   | .input tag => Json.mkObj [("kind", "input"), ("input", Json.str (inputTagName tag))]
   | .signal name => Json.mkObj [("kind", "signal"), ("signal", Json.str name)]
   | .arrive flow => Json.mkObj [("kind", "arrive"), ("flow", Json.str flow.value)]
-  | .idle scope => Json.mkObj [("kind", "idle"), ("scope", toJson scope.value)]
+  | .idle _ => Json.mkObj [("kind", "idle")]
 
+/-- `ready` is absent when empty, so a run that holds nothing publishes what it published before PD2. -/
 def transitionJson (transition : Transition) : Json :=
-  Json.mkObj [("cause", causeJson transition.cause),
+  Json.mkObj ([("cause", causeJson transition.cause),
     ("element", match transition.element with | some element => Json.str element.value | none => Json.null),
-    ("owner", toJson transition.owner.value),
     ("started", Json.arr (transition.started.map fun fact =>
-      Json.mkObj [("occurrence", keyJson fact.occurrence), ("owner", toJson fact.owner.value),
-        ("sourceType", Json.str fact.sourceType)]).toArray),
+      Json.mkObj [("occurrence", keyJson fact.occurrence), ("sourceType", Json.str fact.sourceType)]).toArray),
     ("ended", Json.arr (transition.ended.map fun (key, terminal) =>
-      Json.mkObj [("occurrence", keyJson key), ("terminal", Json.str (terminalName terminal))]).toArray)]
+      Json.mkObj [("occurrence", keyJson key), ("terminal", Json.str (terminalName terminal))]).toArray)] ++
+    (if transition.ready.isEmpty then [] else [("ready", Json.arr (transition.ready.map keyJson).toArray)]))
 
 def waitJson (wait : Host.OpenWait) : Json :=
   let view := wait.view
@@ -272,8 +297,8 @@ def waitJson (wait : Host.OpenWait) : Json :=
 def failureViewJson (failure : InstanceFailure) : Json :=
   Json.mkObj [("code", Json.str failure.code),
     ("message", match failure.message with | some message => Json.str message | none => Json.null),
-    ("occurrence", referenceJson failure.occurrence),
-    ("related", Json.mkObj (failure.related.map fun (name, ref) => (name, referenceJson ref)))]
+    ("occurrence", referenceJson failure.occurrence.toRef),
+    ("related", Json.mkObj (failure.related.map fun (role, name) => (role, referenceJson name.toRef)))]
 
 def addressJson (address : Host.WaitAddress) : Json :=
   Json.mkObj ([("occurrence", referenceJson address.occurrence)] ++
@@ -289,13 +314,14 @@ def hostViewJson (view : Host.View) : Json :=
     (view.failure.map fun failure => ("failure", failureViewJson failure)).toList ++ broadcastsJson view.broadcasts ++
     (if view.addresses.isEmpty then [] else [("addresses", Json.arr (view.addresses.map addressJson).toArray)]))
 
-/-- Every committed input's host view. -/
+/-- Every committed input's host view, up to where `execute`'s trace stops: the first input that neither commits nor is
+rejected, an input whose committed state's observation fails included (`observedStep`). -/
 def hostViews (program : Program) : Option State → List RunStimulus → List Host.View
   | _, [] => []
   | state, (_, input, firing) :: rest =>
-    match runStep program state input firing with
-    | .ok next => Host.hostView program next :: hostViews program (some next) rest
-    | .error (.rejected _) => hostViews program state rest
+    match observedStep program state input firing with
+    | .ok (next, _) => Host.hostView program next :: hostViews program (some next) rest
+    | .error (.rejected _ _) => hostViews program state rest
     | .error _ => []
 
 def requirementsJson (requirements : Host.Requirements) : Json :=
@@ -361,7 +387,9 @@ def populationRun (scenario : Json) (sources : List DeploymentSource) (digests :
             ref := ← definitionRefFromJson (← resource.getObjVal? "bpmn") profile } : Declared)
   let stimuli ← stimuliOfPopulation declared sources (← scenario.getObjValAs? (Array Json) "steps").toList digests
   let result ← Population.runStimuli Registry.hooks AdmissionRegistry.admit stimuli
-  pure (populationResultJson observationJson scenarioId result)
+  match populationResultJson observationJson scenarioId result with
+  | .ok rendered => pure rendered
+  | .error failure => throw s!"population scenario: {Codec.failureCode failure}"
 
 /-- `kernelRun --population <digests.json> <source.json>... <population-scenario.json>`: one deployment source per
 deployment, in deploy order, and one digest per step. A program the admission registry refuses is a refused
@@ -435,7 +463,16 @@ def occurrenceAnswers (programs : List Program) (input : Json) : Except String J
     Json.arr (startEvents.map fun startEvent =>
       toJson (Population.timerOccurrences summary startEvent fromMs limit)).toArray).toArray)
 
-/-- The answer of the host-facing function a fixture's `entry` names: `rootStarts`, `refusesSignalVariables`,
+/-- The located refusal (`AdmissionRegistry.admitLocated`) of a fixture's one program, decoded but not admitted, since
+the refusal is the answer: `null` when admitted, else its code, element and related elements. -/
+def admitLocatedAnswer (fixture : Json) : Except String Json := do
+  let programs ← (← fixture.getObjValAs? (Array Json) "programs").toList.mapM Codec.programFromJson
+  pure <| match AdmissionRegistry.admitLocated (← onlyProgram programs) with
+    | none => Json.null
+    | some refusal => Json.mkObj [("code", Json.str refusal.code), ("element", (refusal.element.map Json.str).getD Json.null),
+        ("related", Json.arr (refusal.related.map Json.str).toArray)]
+
+/-- The answer of the host-facing function a fixture's `entry` names: `admitLocated`, `rootStarts`, `refusesSignalVariables`,
 `registerSummary` or
 `definitionCapabilities` (as the host view renders it) or `timerOccurrences`, or one of the population functions of
 `Kernel.Run.Fixture`, the Signal address codec's round trip (`signalAddress`) and the ranking a stimulus decodes to
@@ -443,6 +480,7 @@ def occurrenceAnswers (programs : List Program) (input : Json) : Except String J
 def fixtureAnswer (fixture : Json) : Except String Json := do
   let input ← fixture.getObjVal? "input"
   match ← fixture.getObjValAs? String "entry" with
+  | "admitLocated" => admitLocatedAnswer fixture
   | "rootStarts" =>
     let starts := Host.rootStarts (← onlyProgram (← fixturePrograms fixture))
     pure (Json.arr (starts.map fun (publicId, own) => Json.arr #[Json.str publicId, Json.str own.value]).toArray)
@@ -488,7 +526,7 @@ def runFixtures (paths : List String) : IO Json := do
 only to pair the TypeScript kernel's unit cases that step a program admission refuses (a profile option admission does
 not admit yet); no product path runs a refused program. It steps through the one `runStep`. -/
 def ungatedRun (program : Program) (stimuli : List RunStimulus) : Json :=
-  let (trace, outcome) := execute program none stimuli
+  let (trace, outcome) := execute program none [] stimuli
   Json.mkObj [("admission", nullable (AdmissionRegistry.admit program) Json.str), ("outcome", Json.str outcome),
     ("trace", Json.arr trace.toArray),
     ("hostViews", Json.arr ((hostViews program none stimuli).map hostViewJson).toArray)]
@@ -497,7 +535,7 @@ def ungatedRun (program : Program) (stimuli : List RunStimulus) : Json :=
 def evaluationAnswer (case : Json) : Except String Json := do
   let expression ← Codec.strictly (Lean.fromJson? (α := Expression)) toJson (← case.getObjVal? "expression")
   let variables ← Codec.bindingsFromJson (← case.getObjVal? "variables")
-  let context : EvalContext := { variables, nowMs := ← case.getObjValAs? Nat "nowMs" }
+  let context : EvalContext := { variables, nowMs := ← case.getObjValAs? Nat "nowMs", bounds := {} }
   pure <| match Registry.hooks.evaluate context expression with
     | .value result => Json.mkObj [("value", Codec.valueToJson result)]
     | .failure code => Json.mkObj [("failure", Json.str code)]

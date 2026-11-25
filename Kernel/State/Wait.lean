@@ -101,9 +101,33 @@ structure EffectDetail where
   send : Option SendDescriptor := none
   deriving Repr
 
+/-- The job of an `asyncBefore` continuation no effect stands for, which the kernel runs as an input of its own (AD8):
+due at `dueMs`, with `retries` the executions left once one failed and `failures` its incidents. No feature opens a job
+item until the job model's stage fills `Hooks.failJob`; the shape is here so that stage changes no state shape. -/
+structure JobDetail where
+  dueMs : Nat
+  retries : Option Nat := none
+  failures : Nat := 0
+  deriving Repr
+
+/-- A failed job no effect stands for, which the kernel runs as an input of its own (AD8): an asynchronous continuation's
+(`JobDetail`), or a Timer's firing, which CIB runs as a job too (`TimerEntity` is a `JobEntity`; `timer-job-failure`).
+No feature opens an incident of either until the job model's stage does; the shapes are here so that stage changes no
+state shape. -/
+inductive JobSubject where
+  | continuation (detail : JobDetail)
+  | timer (detail : TimerDetail)
+  deriving Repr
+
+/-- What an incident's failure belongs to: an effect, or a job the kernel runs itself. -/
+inductive IncidentSubject where
+  | effect (detail : EffectDetail)
+  | job (job : JobSubject)
+  deriving Repr
+
 /-- `cancellable` publishes the `cancelIncidentProcess` interaction beside `retryIncident`. -/
 structure IncidentDetail where
-  effect : EffectDetail
+  subject : IncidentSubject
   generation : Nat := 1
   cancellable : Bool := false
   deriving Repr
@@ -118,6 +142,7 @@ inductive OpenKind where
   | timer (detail : TimerDetail)
   | effect (detail : EffectDetail)
   | incident (detail : IncidentDetail)
+  | job (detail : JobDetail)
   deriving Repr
 
 /-- The inputs a host can submit; `Kernel.Step.step` dispatches on `Input`, which has one constructor per tag. -/
@@ -127,6 +152,7 @@ inductive InputTag where
   | deliver
   | timerFire
   | effectResult
+  | cancelInstance
   deriving DecidableEq, Repr
 
 /-- One open wait, read uniformly: which input closes it, `none` for a wait a variable write closes, how publication
@@ -145,6 +171,7 @@ structure WaitView where
   userTask : Option UserTaskDetail := none
   effect : Option EffectDetail := none
   incident : Option IncidentDetail := none
+  job : Option JobDetail := none
   deriving Repr
 
 def OpenKind.view : OpenKind → WaitView
@@ -159,5 +186,7 @@ def OpenKind.view : OpenKind → WaitView
       recurrence := detail.recurrence }
   | .effect detail => { input := some .effectResult, published := some ("effect", 3), effect := some detail }
   | .incident detail => { input := some .command, published := some ("incident", 4), incident := some detail }
+  -- No `deadlineMs`: a Timer firing finds no job item until the job model's stage fills `Hooks.failJob` (AD8).
+  | .job detail => { input := some .timerFire, published := some ("job", 5), job := some detail }
 
 end Kernel

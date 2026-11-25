@@ -20,14 +20,21 @@ namespace Kernel.Laws.State
 
 open Kernel
 
-/-- Identities are never reused: the counter never decreases, and an identifier present after a transition but not
-before was issued at or above the counter's value before it
+/- The witnesses' states queue nothing under a unit key, so their queue views are their batches. -/
+attribute [local simp] allSignals allQueuedTokens
+
+/-- Identities are never reused: every key issued stays issued, and an identifier present after a transition but not
+before was never issued before it
 ([scopes, SRE-FRESH-01](../../../docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md#concurrent-activations-and-re-entry)). -/
 structure IssuesFresh (before after : State) : Prop where
-  monotone : before.nextIssue ≤ after.nextIssue
-  occurrences : ∀ id ∈ occurrenceIds after, id ∉ occurrenceIds before → before.nextIssue ≤ id
-  items : ∀ id ∈ after.openItems.map (·.id), id ∉ before.openItems.map (·.id) → before.nextIssue ≤ id
-  scopes : ∀ id ∈ scopeIds after, id ∉ scopeIds before → before.nextIssue ≤ id.value
+  monotone : OccurrenceGrows before after
+  occurrences : ∀ id ∈ occurrenceIds after, id ∉ occurrenceIds before → ¬ OccurrenceIssued before id
+  /-- A new item's committed ordinal is at or above its occurrence's counter before (KD1), and its fresh issue was not
+  in the table before (DC12). -/
+  items : ∀ item ∈ itemList after.openItems, item.id ∉ (itemList before.openItems).map (·.id) →
+    (∀ n, item.id.ordinal = .committed n → before.itemOrdinals.getD item.id.occurrence 0 ≤ n) ∧
+      ∀ unit index, item.id.ordinal = .fresh unit index → before.issued[Issue.fresh unit index]? = none
+  scopes : ∀ id ∈ scopeIds after, id ∉ scopeIds before → ¬ ScopeIssued before id
 
 /-- Activation counters only grow, so a re-entered element's next occurrence has a number no earlier one had (R8,
 [scopes, SRE-FRESH-01](../../../docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md#concurrent-activations-and-re-entry)). -/
@@ -45,34 +52,35 @@ it with its contents is a rejected account, a terminated scope completes through
 interrupted parent's context is preserved for the handler. Everything outside stays unchanged, a sibling Call and the
 caller's committed variables included; nothing is created and no identifier is issued. Feature slot entries are each
 feature's own laws. -/
-structure ClearsInside (before after : State) (scope : ScopeOccurrenceId) (keep : List Nat) : Prop where
+structure ClearsInside (before after : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) : Prop where
   scopeStays : ∀ cleared ∈ before.scopes, cleared.id = scope → cleared ∈ after.scopes
   scopesOutside : ∀ other ∈ before.scopes, ¬ StrictlyWithin before other.id scope → other ∈ after.scopes
   occurrencesOutside : ∀ occurrence ∈ before.occurrences, ¬ Within before occurrence.scope scope →
     occurrence ∈ after.occurrences
-  itemsOutside : ∀ item ∈ before.openItems, ¬ Within before item.scope scope → item ∈ after.openItems
-  variablesOutside : ∀ variables ∈ before.variables, ¬ Within before variables.scope scope →
-    variables ∈ after.variables
-  variablesOwn : ∀ variables ∈ before.variables, variables.scope = scope → variables ∈ after.variables
-  tokensOutside : ∀ token ∈ before.tokens, ¬ Within before token.busyScope scope → token ∈ after.tokens
+  itemsOutside : ∀ item ∈ itemList before.openItems, ¬ Within before item.scope scope → item ∈ itemList after.openItems
+  variablesOutside : ∀ x entries, before.variables[x]? = some entries → ¬ Within before x scope →
+    after.variables[x]? = some entries
+  variablesOwn : ∀ entries, before.variables[scope]? = some entries → after.variables[scope]? = some entries
+  tokensOutside : ∀ token ∈ allQueuedTokens before, ¬ Within before token.busyScope scope → token ∈ allQueuedTokens after
   scopesInside : ∀ inner ∈ after.scopes, StrictlyWithin before inner.id scope →
     ∃ owner ∈ keep, inner.occurrence = some owner
   occurrencesInside : ∀ occurrence ∈ after.occurrences, Within before occurrence.scope scope → occurrence.id ∈ keep
-  itemsInside : ∀ item ∈ after.openItems, Within before item.scope scope → item.occurrence ∈ keep
-  variablesInside : ∀ variables ∈ after.variables, StrictlyWithin before variables.scope scope →
-    ∃ owner ∈ keep, ∃ inner ∈ after.scopes, inner.id = variables.scope ∧ inner.occurrence = some owner
-  tokensInside : ∀ token ∈ after.tokens, ¬ Within before token.busyScope scope
+  itemsInside : ∀ item ∈ itemList after.openItems, Within before item.scope scope → item.id.occurrence ∈ keep
+  variablesInside : ∀ x ∈ after.variables, StrictlyWithin before x scope →
+    ∃ owner ∈ keep, ∃ inner ∈ after.scopes, inner.id = x ∧ inner.occurrence = some owner
+  tokensInside : ∀ token ∈ allQueuedTokens after, ¬ Within before token.busyScope scope
   noNewScopes : ∀ inner ∈ after.scopes, inner ∈ before.scopes
   noNewOccurrences : ∀ occurrence ∈ after.occurrences, occurrence ∈ before.occurrences
-  noNewItems : ∀ item ∈ after.openItems, item ∈ before.openItems
-  noNewVariables : ∀ variables ∈ after.variables, variables ∈ before.variables
-  noIssue : after.nextIssue = before.nextIssue
+  noNewItems : ∀ item ∈ itemList after.openItems, item ∈ itemList before.openItems
+  noNewVariables : ∀ (x : ScopeOccurrenceId) (entries : Variables), after.variables[x]? = some entries →
+    before.variables[x]? = some entries
+  noIssue : ∀ x ∈ scopeIds after, ∀ element, occurrenceCount after x element = occurrenceCount before x element
   instanceKept : after.instanceId = before.instanceId
 
 /-- A transition queued exactly the signals `new` after those already queued, and removed none: what a hook statement
 says of the work it leaves to `Step`. -/
 def Queues (before after : State) (new : List Signal) : Prop :=
-  after.signals = before.signals ++ new
+  allSignals after = allSignals before ++ new
 
 /-- `after`'s draft adds the cancelled facts `begun` and the cancelled end facts `keys`, one each, to `before`'s. -/
 def CancelledWith (before after : State) (begun : List Occurrence) (keys : List OccurrenceKey) : Prop :=
@@ -105,122 +113,155 @@ theorem CancelsWithEnds.ofDraft {before after : State} (same : after.draft = bef
 
 /-! ## Non-vacuity -/
 
+@[simp] theorem mem_clearedOccurrences {x : Occurrence} :
+    x ∈ occurrenceList (ofOccurrences [subProcess, outerTask]) ↔ x = subProcess ∨ x = outerTask := by
+  rw [mem_ofOccurrences (by simp [subProcess, outerTask])]; simp
+
 def cleared (kind : OpenKind) : State :=
-  { sample kind with occurrences := [subProcess, outerTask], openItems := [outerItem kind] }
+  { sample kind with occurrenceMap := ofOccurrences [subProcess, outerTask], openItems := ofItems [outerItem kind] }
 
 theorem sample_clears (kind : OpenKind) : ClearsInside (sample kind) (cleared kind) subScope [] where
-  scopeStays := by simp [sample, cleared]
-  scopesOutside := by simp [sample, cleared]
+  scopeStays := by simp [scopes_eq, sample, cleared]
+  scopesOutside := by simp [scopes_eq, sample, cleared]
   occurrencesOutside := by
-    simp only [sample, List.mem_cons, List.not_mem_nil, or_false]
+    simp only [occurrences_eq, sample, mem_sampleOccurrences]
     rintro occurrence (rfl | rfl | rfl) outside
     · simp [cleared]
     · exact absurd (.refl _) outside
     · simp [cleared]
   itemsOutside := by
-    simp only [sample, List.mem_cons, List.not_mem_nil, or_false]
+    simp only [mem_sample_items]
     rintro item (rfl | rfl) outside
     · exact absurd (.refl _) outside
     · simp [cleared]
-  variablesOutside := fun variables member _ => by simpa [cleared] using member
-  variablesOwn := fun variables member _ => by simpa [cleared] using member
+  variablesOutside := fun _ _ held _ => held
+  variablesOwn := fun _ held => held
   tokensOutside := by simp [sample]
   scopesInside := by
-    simp only [cleared, sample, List.mem_cons, List.not_mem_nil, or_false]
+    simp only [scopes_eq, cleared, sample, mem_sampleScopes, List.not_mem_nil]
     rintro inner (rfl | rfl) ⟨_, distinct⟩
     · exact absurd (Within.parentless (root_parentless rfl) ‹_›) (by simp [processRoot, subScope])
     · exact absurd rfl distinct
   occurrencesInside := by
-    simp only [cleared, List.mem_cons, List.not_mem_nil, or_false]
+    simp only [occurrences_eq, cleared, mem_clearedOccurrences]
     rintro occurrence (rfl | rfl) within <;> exact absurd within (root_outside rfl)
   itemsInside := by
-    simp only [cleared, List.mem_cons, List.not_mem_nil, or_false]
+    simp only [cleared, mem_ofItems_singleton]
     rintro item rfl within
     exact absurd within (root_outside rfl)
   variablesInside := by
-    simp only [cleared, sample, List.mem_cons, List.not_mem_nil, or_false]
-    rintro variables (rfl | rfl) ⟨within, distinct⟩
-    · exact absurd within (root_outside rfl)
+    intro x member ⟨within, distinct⟩
+    simp only [cleared, sample, Std.ExtTreeMap.mem_insert, Std.LawfulEqCmp.compare_eq_iff_eq, Std.ExtTreeMap.not_mem_empty,
+      or_false] at member
+    rcases member with rfl | rfl
     · exact absurd rfl distinct
+    · exact absurd within (root_outside rfl)
   tokensInside := by simp [cleared, sample]
-  noNewScopes := by simp [cleared, sample]
-  noNewOccurrences := by simp [cleared, sample]
+  noNewScopes := by simp [scopes_eq, cleared, sample]
+  noNewOccurrences := by simp [occurrences_eq, cleared, sample]
   noNewItems := by simp [cleared, sample]
-  noNewVariables := fun variables member => by simpa [cleared] using member
-  noIssue := rfl
+  noNewVariables := fun _ _ held => by simpa [cleared] using held
+  noIssue := fun _ _ _ => rfl
   instanceKept := rfl
 
 /-- Keeping the cleared scope's waiting occurrence breaks `ClearsInside`, so the law demands the removal. -/
 theorem survivor_rejected (kind : OpenKind) : ¬ ClearsInside (sample kind) (sample kind) subScope [] := fun clears => by
-  have := clears.occurrencesInside innerTask (by simp [sample]) (.refl _)
+  have := clears.occurrencesInside innerTask (by simp [occurrences_eq, sample]) (.refl _)
   simp at this
 
-/-- A Terminate End occurrence 8 in scope 2 clears it keeping itself, as `Propagation.arriveThrow` does. -/
-def terminateEnd : Occurrence := { id := 8, element := ⟨"End"⟩, scope := subScope, activation := 1 }
+/-- A Terminate End occurrence `endKey` in `Sub#0` clears it keeping itself, as `Propagation.arriveThrow` does. -/
+@[simp] def endKey : OccurrenceId := { scope := subScope, element := ⟨"End"⟩, ordinal := 0 }
+
+def terminateEnd : Occurrence := { id := endKey, element := ⟨"End"⟩, scope := subScope, activation := 1, position := 5 }
+
+@[simp] theorem mem_terminatingOccurrences {x : Occurrence} :
+    x ∈ occurrenceList (ofOccurrences [subProcess, innerTask, outerTask, terminateEnd]) ↔
+      x = subProcess ∨ x = innerTask ∨ x = outerTask ∨ x = terminateEnd := by
+  rw [mem_ofOccurrences (by simp [subProcess, innerTask, outerTask, terminateEnd, processRoot, subScope])]; simp
+
+@[simp] theorem mem_terminatedOccurrences {x : Occurrence} :
+    x ∈ occurrenceList (ofOccurrences [subProcess, outerTask, terminateEnd]) ↔
+      x = subProcess ∨ x = outerTask ∨ x = terminateEnd := by
+  rw [mem_ofOccurrences (by simp [subProcess, outerTask, terminateEnd, processRoot, subScope])]; simp
 
 def terminating (kind : OpenKind) : State :=
-  { sample kind with occurrences := [subProcess, innerTask, outerTask, terminateEnd], nextIssue := 9 }
+  { sample kind with
+    occurrenceMap := ofOccurrences [subProcess, innerTask, outerTask, terminateEnd]
+    occurrenceOrdinals := sampleCounters.insert { parent := subScope, element := ⟨"End"⟩ } 1 }
 
 def terminated (kind : OpenKind) : State :=
-  { terminating kind with occurrences := [subProcess, outerTask, terminateEnd], openItems := [outerItem kind] }
+  { terminating kind with occurrenceMap := ofOccurrences [subProcess, outerTask, terminateEnd]
+                          openItems := ofItems [outerItem kind] }
 
-theorem terminate_clears (kind : OpenKind) : ClearsInside (terminating kind) (terminated kind) subScope [8] where
-  scopeStays := by simp [terminating, terminated, sample]
-  scopesOutside := by simp [terminating, terminated, sample]
+theorem terminate_clears (kind : OpenKind) : ClearsInside (terminating kind) (terminated kind) subScope [endKey] where
+  scopeStays := by simp [scopes_eq, mem_sampleScopes, terminating, terminated, sample]
+  scopesOutside := by simp [scopes_eq, mem_sampleScopes, terminating, terminated, sample]
   occurrencesOutside := by
-    simp only [terminating, List.mem_cons, List.not_mem_nil, or_false]
+    simp only [occurrences_eq, terminating, mem_terminatingOccurrences]
     rintro occurrence (rfl | rfl | rfl | rfl) outside
     · simp [terminated]
     · exact absurd (.refl _) outside
     · simp [terminated]
     · exact absurd (.refl _) outside
   itemsOutside := by
-    simp only [terminating, sample, List.mem_cons, List.not_mem_nil, or_false]
+    simp only [terminating, sample, mem_sample_itemList]
     rintro item (rfl | rfl) outside
     · exact absurd (.refl _) outside
     · simp [terminated]
-  variablesOutside := fun variables member _ => by simpa [terminated, terminating] using member
-  variablesOwn := fun variables member _ => by simpa [terminated, terminating] using member
+  variablesOutside := fun _ _ held _ => by simpa [terminated, terminating] using held
+  variablesOwn := fun _ held => by simpa [terminated, terminating] using held
   tokensOutside := by simp [terminating, sample]
   scopesInside := by
-    simp only [terminated, terminating, sample, List.mem_cons, List.not_mem_nil, or_false]
+    simp only [scopes_eq, mem_sampleScopes, terminated, terminating, sample, List.mem_cons, List.not_mem_nil, or_false]
     rintro inner (rfl | rfl) ⟨_, distinct⟩
     · exact absurd (Within.parentless (root_parentless rfl) ‹_›) (by simp [processRoot, subScope])
     · exact absurd rfl distinct
   occurrencesInside := by
-    simp only [terminated, List.mem_cons, List.not_mem_nil, or_false]
+    simp only [occurrences_eq, terminated, mem_terminatedOccurrences]
     rintro occurrence (rfl | rfl | rfl) within
     · exact absurd within (root_outside rfl)
     · exact absurd within (root_outside rfl)
     · simp [terminateEnd]
   itemsInside := by
-    simp only [terminated, List.mem_cons, List.not_mem_nil, or_false]
+    simp only [terminated, mem_ofItems_singleton]
     rintro item rfl within
     exact absurd within (root_outside rfl)
   variablesInside := by
-    simp only [terminated, terminating, sample, List.mem_cons, List.not_mem_nil, or_false]
-    rintro variables (rfl | rfl) ⟨within, distinct⟩
-    · exact absurd within (root_outside rfl)
+    intro x member ⟨within, distinct⟩
+    simp only [terminated, terminating, sample, Std.ExtTreeMap.mem_insert, Std.LawfulEqCmp.compare_eq_iff_eq,
+      Std.ExtTreeMap.not_mem_empty, or_false] at member
+    rcases member with rfl | rfl
     · exact absurd rfl distinct
+    · exact absurd within (root_outside rfl)
   tokensInside := by simp [terminated, terminating, sample]
-  noNewScopes := by simp [terminated, terminating]
-  noNewOccurrences := by simp [terminated, terminating]
+  noNewScopes := by simp [scopes_eq, terminated, terminating]
+  noNewOccurrences := by simp [occurrences_eq, terminated, terminating]
   noNewItems := by simp [terminated, terminating, sample]
-  noNewVariables := fun variables member => by simpa [terminated, terminating] using member
-  noIssue := rfl
+  noNewVariables := fun _ _ held => by simpa [terminated, terminating] using held
+  noIssue := fun _ _ _ => rfl
   instanceKept := rfl
 
 theorem sample_issues_fresh (kind : OpenKind) : IssuesFresh (sample kind) (cleared kind) where
-  monotone := Nat.le_refl _
-  occurrences := by simp [occurrenceIds, cleared, sample, subProcess, innerTask, outerTask]
+  monotone := .refl _
+  occurrences := by
+    simp [occurrenceIds, occurrences_eq, cleared, sample, subProcess, innerTask, outerTask]
+    rintro _ (rfl | rfl) <;> intros <;> contradiction
   items := by simp [cleared, sample, innerItem, outerItem]
-  scopes := by simp [scopeIds, cleared, sample]
+  scopes := by
+    simp [scopes_eq, mem_sampleScopes, scopeIds, cleared, sample]
+    rintro _ (same | same) <;> intro one two <;> contradiction
 
-/-- An identifier reappearing below the counter breaks `IssuesFresh`: occurrence 3 returns after scope 2 was cleared. -/
+/-- An identifier issued before reappearing breaks `IssuesFresh`: `innerKey` returns after `Sub#0` was cleared. -/
 theorem reuse_rejected (kind : OpenKind) : ¬ IssuesFresh (cleared kind) (sample kind) := fun fresh => by
-  have := fresh.occurrences 3 (by simp [occurrenceIds, sample, subProcess, innerTask, outerTask])
-    (by simp [occurrenceIds, cleared, subProcess, outerTask])
-  simp [cleared, sample] at this
+  refine fresh.occurrences innerKey (by simp [occurrenceIds, occurrences_eq, sample, subProcess, innerTask, outerTask])
+    (by simp [occurrenceIds, occurrences_eq, cleared, subProcess, outerTask])
+    ⟨?_, And.intro (fun _ committed => ?_) <| And.intro (fun _ committed _ => ?_) fun _ _ fresh => ?_⟩
+  · exact (sample_historic kind : Historic (cleared kind)).issued_key (by simp [scopes_eq, sample, mem_sampleScopes]; simp [childScope])
+  · simp [innerKey, subScope]
+  · simp only [innerKey] at committed
+    obtain rfl := Issue.committed.inj committed
+    simp [occurrenceCount, cleared, sample, sampleCounters]
+  · simp [innerKey] at fresh
 
 theorem counts_grow (kind : OpenKind) : CountsGrow (sample kind) (sample kind) := by
   intro count member
@@ -228,19 +269,19 @@ theorem counts_grow (kind : OpenKind) : CountsGrow (sample kind) (sample kind) :
 
 theorem counts_shrink_rejected (kind : OpenKind) :
     ¬ CountsGrow (sample kind) { sample kind with activations := [] } := fun grow => by
-  have := grow { processInstance := "p", element := ⟨"Sub"⟩, role := .element, count := 1 } (by simp [sample])
+  have := grow { processInstance := .named "p", element := ⟨"Sub"⟩, role := .element, count := 1 } (by simp [sample])
   simp at this
 
 /-- A hook that queues one signal `Queues` it; dropping a queued signal does not. -/
 theorem queues_one (kind : OpenKind) :
-    Queues (sample kind) { sample kind with signals := [.armScope processRoot] } [.armScope processRoot] := by
-  simp [Queues, sample]
+    Queues (sample kind) { sample kind with batchSignals := [.armScope processRoot] } [.armScope processRoot] := by
+  simp [Queues, allSignals, sample]
 
 theorem dropped_signal_rejected (kind : OpenKind) :
-    ¬ Queues { sample kind with signals := [.armScope processRoot] } (sample kind) [] := by
-  simp [Queues, sample]
+    ¬ Queues { sample kind with batchSignals := [.armScope processRoot] } (sample kind) [] := by
+  simp [Queues, allSignals, sample]
 
-/-- Cancelling the begun occurrence 3 with its end fact is a `CancelsWithEnds` transition; a cancelled fact without
+/-- Cancelling the begun occurrence `innerKey` with its end fact is a `CancelsWithEnds` transition; a cancelled fact without
 its end is not. -/
 theorem cancels_with_end (kind : OpenKind) :
     CancelsWithEnds (sample kind)
@@ -254,5 +295,37 @@ theorem cancel_without_end_rejected (kind : OpenKind) :
   simp [sample] at cancelled ended
   subst cancelled
   simp [ended] at length
+
+/-- A committed count's activation stands at or below its slot's `activationCount`, the counters keyed: `find?` meets
+the one entry of the slot. -/
+theorem le_activationCount {u : State} {count : ActivationCount} (keyed : ActivationsKeyed u) (member : count ∈ u.activations) :
+    count.count ≤ u.activationCount { processInstance := count.processInstance, element := count.element, role := count.role } := by
+  simp only [State.activationCount]
+  cases found : u.activations.find? (fun other => other.processInstance == count.processInstance &&
+      other.element == count.element && other.role == count.role) with
+  | none =>
+    have := List.find?_eq_none.mp found count member
+    simp at this
+  | some other =>
+    have hit := List.find?_some found
+    simp only [Bool.and_eq_true, beq_iff_eq] at hit
+    have same : other = count := nodup_map_eq keyed.keys (List.mem_of_find?_eq_some found) member
+      (by simp [hit.1.1, hit.1.2, hit.2])
+    simp [same]
+
+/-- Pruning keyed counters lowers every slot's count. -/
+theorem filter_activationCount {u : State} (keyed : ActivationsKeyed u) (p : ActivationCount → Bool) (slot : ActivationSlot) :
+    ({ u with activations := u.activations.filter p } : State).activationCount slot ≤ u.activationCount slot := by
+  simp only [State.activationCount]
+  cases found : (u.activations.filter p).find? (fun other => other.processInstance == slot.processInstance &&
+      other.element == slot.element && other.role == slot.role) with
+  | none => simp
+  | some c =>
+    have hit := List.find?_some found
+    simp only [Bool.and_eq_true, beq_iff_eq] at hit
+    have inside := (List.mem_filter.mp (List.mem_of_find?_eq_some found)).1
+    have := le_activationCount keyed inside
+    simp only [hit.1.1, hit.1.2, hit.2] at this
+    simpa [State.activationCount] using this
 
 end Kernel.Laws.State

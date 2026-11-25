@@ -17,7 +17,7 @@ import {
 } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
 
-const cib = { unhandledError: "endsThrowingPath", errorPathOutputs: "mapped", undeclaredWrite: "atInstanceRoot" };
+const cib = { unhandledError: "endsThrowingPath", branchSchedule: "declarationDepthFirst", errorPathOutputs: "mapped", undeclaredWrite: "atInstanceRoot" };
 
 const stimulus = (json: Json) => {
   const decoded = stimulusFromJson({ commandId: "c", ...json });

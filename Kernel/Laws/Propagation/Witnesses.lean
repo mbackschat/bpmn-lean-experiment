@@ -72,11 +72,11 @@ theorem silent_caught_rejected : ¬ Chosen rank [[silent], [exact]] none := fun 
   have := law [exact] (by simp) exact (by simp)
   simp [rank] at this
 
-def raising : ScopeOccurrenceId := ⟨3⟩
-def handlerContext : ScopeOccurrenceId := ⟨2⟩
-def above : ScopeOccurrenceId := ⟨1⟩
-def recordScope : ScopeOccurrenceId := ⟨0⟩
-def triggerScope : ScopeOccurrenceId := ⟨0⟩
+def raising : ScopeOccurrenceId := .ofSegments [{ element := ⟨"Sub"⟩, ordinal := 0 }]
+def handlerContext : ScopeOccurrenceId := .ofSegments [{ element := ⟨"Handler"⟩, ordinal := 0 }]
+def above : ScopeOccurrenceId := .ofSegments [{ element := ⟨"Above"⟩, ordinal := 0 }]
+def recordScope : ScopeOccurrenceId := .ofSegments []
+def triggerScope : ScopeOccurrenceId := .ofSegments []
 
 theorem stops_at_handler :
     Searched .failsInstance [raising, handlerContext, above] (some 1) [recordScope] [raising, handlerContext] :=
@@ -102,33 +102,37 @@ theorem on_from_context_rejected :
   have := law.2 rfl
   simp [above, recordScope] at this
 
+/- The witnesses read their scopes through the scope map's list view. -/
+attribute [local simp] Laws.State.scopes_eq
+
 def boundaryFlow : FlowId := ⟨"ToRecovery"⟩
-def counter : ActivationCount := { processInstance := "p", element := exact, role := .element, count := 2 }
+def counter : ActivationCount := { processInstance := .named "p", element := exact, role := .element, count := 2 }
 
 def running : State :=
-  { instanceId := "p", scopes := [{ id := triggerScope, element := none, parent := none },
-      { id := raising, element := some ⟨"Sub"⟩, parent := some triggerScope }],
-    tokens := [.flow ⟨"Inner"⟩ raising], activations := [counter] }
+  { instanceId := "p", scopeMap := Laws.State.ofScopes [{ id := triggerScope, element := none, position := 0 },
+      { id := raising, element := some ⟨"Sub"⟩, position := 0 }],
+    batchTokens := [.flow ⟨"Inner"⟩ raising], activations := [counter] }
 
 def recovered : State :=
   { running with
-    scopes := [{ id := triggerScope, element := none, parent := none }]
-    tokens := [.flow boundaryFlow triggerScope] }
+    scopeMap := Laws.State.ofScopes [{ id := triggerScope, element := none, position := 0 }]
+    batchTokens := [.flow boundaryFlow triggerScope] }
 
 theorem catch_interrupts : InterruptingCatch true (· = raising) triggerScope [boundaryFlow] running recovered := fun _ =>
   ⟨by simp [recovered, triggerScope, raising], ⟨[], rfl, by simp⟩, fun counter' mem => ⟨counter', mem, rfl, rfl, rfl, Nat.le_refl _⟩⟩
 
 /-- Keeping the interrupted scope occurrence is rejected. -/
 theorem keeps_inner_scope_rejected :
-    ¬ InterruptingCatch true (· = raising) triggerScope [boundaryFlow] running { recovered with scopes := running.scopes } :=
-  fun law => (law rfl).1 { id := raising, element := some ⟨"Sub"⟩, parent := some triggerScope } (by simp [running]) rfl
+    ¬ InterruptingCatch true (· = raising) triggerScope [boundaryFlow] running { recovered with scopeMap := running.scopeMap } :=
+  fun law => (law rfl).1 { id := raising, element := some ⟨"Sub"⟩, position := 0 }
+    (by simp [running, triggerScope, raising, Laws.State.ScopeOccurrenceId.ofSegments_inj]) rfl
 
 /-- Adding no token on the catcher's flow is rejected. -/
 theorem no_boundary_token_rejected :
-    ¬ InterruptingCatch true (· = raising) triggerScope [boundaryFlow] running { recovered with tokens := [] } := fun law => by
+    ¬ InterruptingCatch true (· = raising) triggerScope [boundaryFlow] running { recovered with batchTokens := [] } := fun law => by
   obtain ⟨_, ⟨kept, split, _⟩, _⟩ := law rfl
   have := congrArg List.length split
-  simp at this
+  simp [Laws.State.allQueuedTokens, recovered, running] at this
 
 /-- Resetting an activation counter is rejected. -/
 theorem counter_reset_rejected :
@@ -160,7 +164,7 @@ theorem uncaught_ends_path : UncaughtError .endsThrowingPath false (.ok recovere
 theorem ends_path_fails_rejected : ¬ UncaughtError .endsThrowingPath false (.ok failed) := fun law =>
   (law rfl).2 rfl failed rfl rfl
 
-def leaveThrower (state : State) : State := { state with tokens := [] }
+def leaveThrower (state : State) : State := { state with batchTokens := [] }
 
 theorem escalation_leaves_only : UncaughtEscalation false leaveThrower running (leaveThrower running) := fun _ => rfl
 

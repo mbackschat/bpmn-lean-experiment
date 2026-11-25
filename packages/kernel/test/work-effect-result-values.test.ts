@@ -11,7 +11,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
+import { decodeProgram, rootScope, step, stimulusFromJson } from "./lean-paired.ts";
 import type { Outcome, State } from "@bpmn-lean/kernel";
 
 import { activity, base, mapping, serviceWork, task, variable, withOptions, wired } from "./admission-refusal-support.ts";
@@ -42,7 +42,7 @@ function resultWithReceipt(envelope: Json, effectResultValues: string): Outcome 
 }
 
 const rootNames = (outcome: Outcome): unknown =>
-  outcome.ok ? outcome.value.variables.find((entry) => entry.scope === 0)?.entries.map(([name]) => name) : outcome;
+  outcome.ok ? new Map(outcome.value.variables).get(rootScope)?.map(([name]) => name) : outcome;
 
 const mapped = { inputs: [mapping("correlationId", variable("order"))] };
 

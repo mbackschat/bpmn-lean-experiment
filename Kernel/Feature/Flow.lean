@@ -24,14 +24,16 @@ An element's own selection (`ownFlows`) is an inclusive choice over its outgoing
 Scope's may condition. A diverging gateway or an Activity that finds no outgoing flow rolls the command back.
 
 A parked Inclusive join also fires when no token arrives at it: Table 13.3 activates it by the state, and `Step.settle`
-offers the parked joins again once the closure is otherwise quiescent (`Step.reoffer?`).
+offers the parked joins again once the closure is otherwise quiescent (`Step.reoffer?`). Under
+`BranchSchedule.orderInvariant` every join, Parallel and Inclusive, fires only there, as the join slot's own unit (DC16):
+an arrival only parks, so which arrivals a firing consumes never depends on the order the closure ran them in.
 -/
 
 public section
 
 namespace Kernel.Feature.Flow
 
-def signalComplete (state : State) (id : Nat) (leave : Leave) : State :=
+def signalComplete (state : State) (id : OccurrenceId) (leave : Leave) : State :=
   state.signal (.complete id leave [] .outward)
 
 /-- A candidate's condition, read from its Sequence Flow; an unconditioned candidate holds. A failing or non-Boolean
@@ -44,8 +46,13 @@ def condition (ctx : Ctx) (context : EvalContext) (candidate : FlowId) : Except 
     | none => .ok true
     | some condition =>
       match ctx.evaluate context condition with
-      | .value (.bool value) => .ok value
-      | .value _ => .error (.rolledBack "condition-not-boolean")
+      | .value result =>
+        match result with
+        | .bool value => .ok value
+        -- dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+        | .double _ | .date _ => .error (.unsupported "value-kind")
+        | .null | .int _ | .decimal _ _ | .string _ | .stringList _ | .list _ | .map _ =>
+          .error (.rolledBack "condition-not-boolean")
       | .failure code => .error (.rolledBack code)
       | .unsupported code => .error (.unsupported code)
 
@@ -133,43 +140,87 @@ def successors (ctx : Ctx) (element : Element) : List FlowId :=
   | some (header, name) => (linkCatches ctx.program header name).flatMap (·.2.outgoing)
   | none => leaving ctx element
 
-/-- Whether a token on one of `start` can reach one of `targets` without passing through `gateway`. -/
+/-- The flows a token on `flow` continues on in the reach query: none past the join `gateway`, and none after a flow
+the program does not declare. -/
+def reachNext (ctx : Ctx) (gateway : ElementId) (flow : FlowId) : List FlowId :=
+  match ctx.program.target? flow with
+  | some target => if target == gateway then [] else ((ctx.program.element? target).map (successors ctx)).getD []
+  | none => []
+
+/-- The search behind `reaches`: the flows of `frontier` in order, each expanded once, `seen` holding those expanded.
+It needs no fuel: an expansion marks a declared flow seen, so fewer declared flows are unseen, and a flow already seen
+or one the program does not declare, which leads nowhere, only shrinks the frontier; a duplicate entry costs one
+membership test. A fuel figure answered "reachable" once exhausted, which kept a join waiting behind enough parked
+duplicates (DC3). -/
+def reachSearch (ctx : Ctx) (gateway : ElementId) (targets : List FlowId) (seen frontier : List FlowId) : Bool :=
+  match frontier with
+  | [] => false
+  | flow :: rest =>
+    if targets.contains flow then true
+    else if _old : seen.contains flow then reachSearch ctx gateway targets seen rest
+    else if _declared : (ctx.program.flows.map (·.id)).contains flow then
+      reachSearch ctx gateway targets (flow :: seen) (rest ++ reachNext ctx gateway flow)
+    else reachSearch ctx gateway targets seen rest
+termination_by ((ctx.program.flows.map (·.id)).countP (fun declared => !seen.contains declared), frontier.length)
+decreasing_by
+  · exact Prod.Lex.right _ (by simp)
+  · apply Prod.Lex.left
+    have declared : flow ∈ ctx.program.flows.map (·.id) := by simpa using _declared
+    generalize ctx.program.flows.map (·.id) = flows at declared ⊢
+    induction flows with
+    | nil => cases declared
+    | cons head tail ih =>
+      rw [List.countP_cons, List.countP_cons]
+      by_cases same : head = flow
+      · subst same
+        have le : tail.countP (fun declared => !(head :: seen).contains declared) ≤
+            tail.countP (fun declared => !seen.contains declared) :=
+          List.countP_mono_left fun x _ unseen => by simp_all
+        simp only [List.contains_cons, beq_self_eq_true, Bool.true_or, Bool.not_true, _old] at le ⊢
+        simp only [Bool.false_eq_true, ite_false, Bool.not_false, ite_true]
+        omega
+      · have inTail : flow ∈ tail := by
+          rcases List.mem_cons.mp declared with first | rest
+          · exact absurd first.symm same
+          · exact rest
+        have step := ih inTail
+        have unchanged : (!(flow :: seen).contains head) = !seen.contains head := by simp [same]
+        rw [unchanged]
+        omega
+  · exact Prod.Lex.right _ (by simp)
+
+/-- Whether a token on one of `start` can reach one of `targets` without passing through `gateway`: the set of flows
+reachable from `start` holds a target, so it answers from the members of `start` alone, and from more members at
+least as much (`Laws.Flow.reaches_mono`). -/
 def reaches (ctx : Ctx) (gateway : ElementId) (targets start : List FlowId) : Bool :=
-  let program := ctx.program
-  let rec go (fuel : Nat) (frontier seen : List FlowId) : Bool :=
-    match fuel, frontier with
-    | _, [] => false
-    -- The fuel bounds every visit of every flow by every edge into it, so it is never exhausted; running out
-    -- answers "reachable", which only keeps the join waiting.
-    | 0, _ :: _ => true
-    | fuel + 1, flow :: rest =>
-      if targets.contains flow then true
-      else if seen.contains flow then go fuel rest seen
-      else
-        let next := match program.target? flow with
-          | some target =>
-            if target == gateway then [] else ((program.element? target).map (successors ctx)).getD []
-          | none => []
-        go fuel (rest ++ next) (flow :: seen)
-  go ((program.flows.length + 1) * (program.flows.length + 1)) start []
+  reachSearch ctx gateway targets [] start
+
+/-- The flows a suspended occurrence leaves on once its wait ends. -/
+def suspendedFlows (ctx : Ctx) (waiting : Suspended) : List FlowId :=
+  match waiting.leave with
+  | .outgoing => ((ctx.program.element? waiting.element).map (successors ctx)).getD []
+  | .flows selected => selected
+  | .raised => []
 
 /-- The flows from which the remaining work of scope occurrence `scope` continues, excluding the tokens parked at
-`gateway`: queued tokens, the elements of open items and child scope occurrences, and tokens parked at other
-joins. A passive item keeps nothing alive and is no position; a boundary item is no element, and its host's
-position covers the boundary's flows as far as `leaving` follows them. -/
+`gateway`: queued tokens, the elements of open items and child scope occurrences, tokens parked at other joins, and
+the suspended occurrences of the slots (`FeatureSlots.suspended`), by the flows each leaves on. A passive item keeps
+nothing alive and is no position; a boundary item is no element, and its host's position covers the boundary's flows
+as far as `leaving` follows them. -/
 def positions (ctx : Ctx) (state : State) (gateway : ElementId) (scope : ScopeOccurrenceId) :
     List FlowId :=
   let program := ctx.program
   let continuing (element : ElementId) := ((program.element? element).map (successors ctx)).getD []
-  let queued := (state.tokens.filter (·.busyScope == scope)).filterMap (·.arrivalFlow?)
-  let items := (state.openItems.filter fun item => item.scope == scope && !item.passive)
+  let queued := (state.allTokens.filter (·.busyScope == scope)).filterMap (·.arrivalFlow?)
+  let items := ((itemList state.openItems).filter fun item => item.scope == scope && !item.passive)
     |>.flatMap (continuing ·.element)
   let children := (state.scopes.filter (·.parent == some scope)).flatMap fun child =>
     (child.element.map continuing).getD []
   let parked := (state.slots.parked.filter fun waiting =>
       waiting.scope == scope && program.target? waiting.flow != some gateway).flatMap fun waiting =>
     ((program.target? waiting.flow).map continuing).getD []
-  queued ++ items ++ children ++ parked
+  let suspended := (state.slots.suspended.filter (·.scope == scope)).flatMap (suspendedFlows ctx)
+  queued ++ items ++ children ++ parked ++ suspended
 
 def park (state : State) (waiting : Parked) : State :=
   { state with slots := { state.slots with parked := state.slots.parked ++ [waiting] } }
@@ -177,31 +228,51 @@ def park (state : State) (waiting : Parked) : State :=
 def filled (state : State) (incoming : List FlowId) (scope : ScopeOccurrenceId) : List FlowId :=
   incoming.filter fun flow => state.slots.parked.any fun waiting => waiting.flow == flow && waiting.scope == scope
 
-/-- The occurrences a firing join consumes: the first parked on each filled flow. -/
-def consumed (state : State) (incoming : List FlowId) (scope : ScopeOccurrenceId) : List Parked :=
-  incoming.filterMap fun flow => state.slots.parked.find? fun waiting => waiting.flow == flow && waiting.scope == scope
+/-- The occurrences a firing join consumes, one on each filled flow: under `declarationDepthFirst` the first parked,
+as CIB takes them; under `orderInvariant` the one of least order position (`Parked.leastBy`, DC15 (b)), since parking order is
+the order the closure ran the arrivals in. -/
+def consumed (ctx : Ctx) (state : State) (incoming : List FlowId) (scope : ScopeOccurrenceId) : List Parked :=
+  let parkedOn (flow : FlowId) (waiting : Parked) : Bool := waiting.flow == flow && waiting.scope == scope
+  match ctx.program.options.branchSchedule with
+  | .declarationDepthFirst => incoming.filterMap fun flow => state.slots.parked.find? (parkedOn flow)
+  | .orderInvariant => incoming.filterMap fun flow => Parked.leastBy ctx.positionLe (state.slots.parked.filter (parkedOn flow))
+
+/-- The consumed occurrence a firing join continues with, the others ending with none: under `declarationDepthFirst`
+the offered `occurrence` when consumed, else the last consumed; under `orderInvariant` the consumed one of greatest
+order position (DC16), which no arrival order decides. -/
+def continuing (ctx : Ctx) (occurrence : OccurrenceId) (consumed : List Parked) : OccurrenceId :=
+  match ctx.program.options.branchSchedule with
+  | .declarationDepthFirst =>
+    if consumed.any (·.occurrence == occurrence) then occurrence else (consumed.getLast?.map (·.occurrence)).getD occurrence
+  | .orderInvariant => ((Parked.leastBy (fun a b => ctx.positionLe b a) consumed).map (·.occurrence)).getD occurrence
 
 def unpark (state : State) (consumed : List Parked) : State :=
   { state with slots := { state.slots with parked := state.slots.parked.filter (!consumed.contains ·) } }
 
-/-- Park the occurrence at a join, unless `Step.reoffer?` offers one already parked, and fire when `ready` holds; a gateway
-with one incoming flow passes it on. When the join fires, the offered occurrence, if consumed, is the one that leaves
-with the flows and the others end with none. -/
-def join (occurrence : Occurrence) (incoming : List FlowId) (state : State) (ready : State → Bool)
+/-- Whether an arrival at a join only parks (DC16): under `orderInvariant` every join fires as its slot's own unit, which
+`Step.reoffer?` runs once the closure is otherwise quiescent; under `declarationDepthFirst` the arrival that makes the
+join ready fires it in place, as CIB continues the arriving execution in its own operation. -/
+def parksOnly (ctx : Ctx) : Bool :=
+  match ctx.program.options.branchSchedule with
+  | .orderInvariant => true
+  | .declarationDepthFirst => false
+
+/-- Park the occurrence at a join, unless `Step.reoffer?` offers one already parked, and fire when `ready` holds and the
+arrival may fire it (`parksOnly`); a gateway with one incoming flow passes it on. When the join fires, the continuing
+occurrence (`continuing`) leaves with the flows and the other consumed ones end with none. -/
+def join (ctx : Ctx) (occurrence : Occurrence) (incoming : List FlowId) (state : State) (ready : State → Bool)
     (flows : State → Except Failure (List FlowId)) : Outcome := do
   let some flow := occurrence.incoming | .error (.semanticFailure .invariant "gateway-without-flow")
   if incoming.length ≤ 1 then .ok (signalComplete state occurrence.id (.flows (← flows state)))
   else
-    let parked := if state.slots.parked.any (·.occurrence == occurrence.id) then state
-      else park state { occurrence := occurrence.id, flow, scope := occurrence.scope }
-    if !ready parked then .ok parked
+    let offered := state.slots.parked.any (·.occurrence == occurrence.id)
+    let parked := if offered then state else park state { occurrence := occurrence.id, flow, scope := occurrence.scope }
+    if !offered && parksOnly ctx || !ready parked then .ok parked
     else
-      let consumed := consumed parked incoming occurrence.scope
+      let consumed := consumed ctx parked incoming occurrence.scope
       let unparked := unpark parked consumed
       let selected ← flows unparked
-      let firing :=
-        if consumed.any (·.occurrence == occurrence.id) then occurrence.id
-        else (consumed.getLast?.map (·.occurrence)).getD occurrence.id
+      let firing := continuing ctx occurrence.id consumed
       let others := (consumed.map (·.occurrence)).filter (· != firing)
       .ok (signalComplete (others.foldl (signalComplete · · (.flows [])) unparked) firing (.flows selected))
 
@@ -211,11 +282,11 @@ def arriveGateway (ctx : Ctx) (header : Header) (payload : GatewayPayload) (occu
   match payload.kind with
   | .exclusive candidates default => exclusive ctx candidates default occurrence state
   | .parallel =>
-    join occurrence payload.incoming state
+    join ctx occurrence payload.incoming state
       (fun parked => (filled parked payload.incoming scope).length == payload.incoming.length)
       (fun _ => .ok payload.outgoing)
   | .inclusive candidates default =>
-    join occurrence payload.incoming state
+    join ctx occurrence payload.incoming state
       (fun parked =>
         let empty := payload.incoming.filter (!(filled parked payload.incoming scope).contains ·)
         !reaches ctx header.id empty (positions ctx parked header.id scope))

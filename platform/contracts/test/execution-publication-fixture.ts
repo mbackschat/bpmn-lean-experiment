@@ -21,9 +21,9 @@ export const startBatch = {
   fromRevision: 0,
   throughRevision: 3,
   transitions: [
-    { revision: 1, role: { kind: "input", input: "start" }, element: "StartEvent_1", sourceType: "startEvent", owner: 0 },
-    { revision: 2, role: { kind: "arrive", flow: "Flow_Start" }, element: "UserTask_Review", sourceType: "userTask", owner: 0 },
-    { revision: 3, role: { kind: "idle", scope: 0 }, element: null, sourceType: null, owner: 0 },
+    { revision: 1, role: { kind: "input", input: "start" }, element: "StartEvent_1", sourceType: "startEvent" },
+    { revision: 2, role: { kind: "arrive", flow: "Flow_Start" }, element: "UserTask_Review", sourceType: "userTask" },
+    { revision: 3, role: { kind: "idle" }, element: null, sourceType: null },
   ],
 } as const satisfies CommittedTransitionBatch;
 
@@ -33,7 +33,7 @@ export const elementFreeBatch = {
   fromRevision: 3,
   throughRevision: 4,
   transitions: [
-    { revision: 4, role: { kind: "input", input: "command" }, element: null, sourceType: null, owner: 0 },
+    { revision: 4, role: { kind: "input", input: "command" }, element: null, sourceType: null },
   ],
 } as const satisfies CommittedTransitionBatch;
 
@@ -43,9 +43,9 @@ export const completeBatch = {
   fromRevision: 4,
   throughRevision: 7,
   transitions: [
-    { revision: 5, role: { kind: "input", input: "command" }, element: "UserTask_Review", sourceType: "userTask", owner: 0 },
-    { revision: 6, role: { kind: "arrive", flow: "Flow_End" }, element: "EndEvent_1", sourceType: "endEvent", owner: 0 },
-    { revision: 7, role: { kind: "signal", signal: "completeProcess" }, element: null, sourceType: null, owner: 0 },
+    { revision: 5, role: { kind: "input", input: "command" }, element: "UserTask_Review", sourceType: "userTask" },
+    { revision: 6, role: { kind: "arrive", flow: "Flow_End" }, element: "EndEvent_1", sourceType: "endEvent" },
+    { revision: 7, role: { kind: "signal", signal: "completeProcess" }, element: null, sourceType: null },
   ],
 } as const satisfies CommittedTransitionBatch;
 

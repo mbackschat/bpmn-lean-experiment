@@ -2,7 +2,6 @@ module
 
 public import Kernel.Laws.Compensation
 public import Kernel.Laws.State.Transitions
-public import Kernel.IL.Paths
 public import Kernel.Laws.Population
 public import Kernel.Proofs.Compensation.Relation
 public import Kernel.Laws.Propagation
@@ -44,10 +43,12 @@ def attachedBoundaries (program : Program) (subject : ElementId) : List ElementI
   (((program.element? subject).bind (·.envelope?)).map fun envelope => envelope.boundaries.map (·.id)).getD []
 
 /-- §13.5.5's dependency between two records of one trigger, `Laws.Compensation.Precedes` over the program's Sequence
-Flow paths (`flowReaches`), the subjects' attached boundary Events and the variable names each subject's run reads
-and writes, `reads` and `writes`. -/
+Flow paths (`flowReaches`), the subjects' attached boundary Events, the order of completion the program's schedule
+reads (`Laws.Compensation.CompletedBefore`) and the variable names each subject's run reads and writes, `reads` and
+`writes`. -/
 def Depends (program : Program) (reads writes : ElementId → List String) : Compensable → Compensable → Prop :=
-  Laws.Compensation.Precedes (flowReaches program) (attachedBoundaries program) reads writes
+  Laws.Compensation.Precedes (flowReaches program) (attachedBoundaries program)
+    (Laws.Compensation.CompletedBefore program) reads writes
 
 /-- `Depends` under the read and write name lists of `Step`'s context for `hooks` and `program`
 (`Step.context`), what the lane relation of an instance of `program` is settled by. -/
@@ -68,10 +69,10 @@ def CompensationsFormedInPopulation (hooks : Hooks) (reads writes : Ctx → Elem
     Population.runStimuli hooks admission stimuli = .ok result →
     ∀ instance_ ∈ result.instances, Formed (DependsIn hooks reads writes instance_.deployment.program) instance_.state
 
-/-- A committed input from `before` to `after`, from a well-formed before-state that keeps the lane relation. -/
+/-- A committed input from `before` to `after`, from a well-formed, committed before-state that keeps the lane relation. -/
 def Commits (hooks : Hooks) (reads writes : Ctx → ElementId → List String) (program : Program) (before after : State) :
     Prop :=
-  WellFormed program before ∧ Formed (DependsIn hooks reads writes program) before ∧
+  WellFormed program before ∧ Laws.State.Committed before ∧ Formed (DependsIn hooks reads writes program) before ∧
     ∃ input, Step.step hooks program (some before) input = .ok after
 
 /-- Single take-out across triggers: no record a run claimed is retained again, so no second trigger compensates it
@@ -98,7 +99,7 @@ def NoFinishedRunLeft (hooks : Hooks) (reads writes : Ctx → ElementId → List
 /-- What `Step` calls `Hooks.compensate` with on a state that keeps the lane relation (`CompensationsFresh`): no run of
 `state` has the key `(scope, trigger)` the new run takes, which `Compensation.advance` finds its run by, and the
 compensation resumes no group's nested run, which only `Compensation.beginHandler` makes. -/
-def FreshCall (state : State) (scope : ScopeOccurrenceId) (trigger : OccurrenceRef) (resume : Option Resume) : Prop :=
+def FreshCall (state : State) (scope : ScopeOccurrenceId) (trigger : OccurrenceName) (resume : Option Resume) : Prop :=
   (∀ run ∈ state.slots.compensation.runs, run.scope = scope → run.trigger ≠ trigger) ∧ resumesGroup resume = false
 
 /-- Every compensation `Step` performs is a `FreshCall`. `Step` runs `Hooks.compensate` only for the signal it takes
@@ -108,10 +109,10 @@ queued compensation's trigger is held apart from every run's and every other que
 resumes no group (`QueuedUngrouped`). -/
 def CompensationsFresh : Prop :=
   ∀ (precedes : Compensable → Compensable → Prop) (program : Program) (queue : State) (scope : ScopeOccurrenceId)
-    (activity : Option ElementId) (trigger : OccurrenceRef) (leave : Option Nat) (resume : Option Resume)
-    (rest : List Signal), WellFormed program queue → Formed precedes queue →
-    queue.signals = .compensate scope activity trigger leave resume :: rest →
-    FreshCall { queue with signals := rest } scope trigger resume
+    (activity : Option ElementId) (trigger : OccurrenceName) (leave : Option OccurrenceId) (resume : Option Resume)
+    (unit : UnitKey), WellFormed program queue → Formed precedes queue →
+    queue.queuedSignals[unit]? = some (.compensate scope activity trigger leave resume) →
+    FreshCall { queue with queuedSignals := queue.queuedSignals.erase unit } scope trigger resume
 
 /-- A trigger takes into one new run exactly the retained records it selects, the named Activity's only when it names
 one, and leaves every other record retained (`Laws.Compensation.TakesOut`); the run, as taken, then advances once
@@ -129,15 +130,15 @@ and a begun handler's children are retained in its context. This statement keeps
 taken and every other one kept, of the run as taken: every record retained in a scope occurrence issued before the call
 stays retained exactly when it was kept (§13.5.5, the #103 account). -/
 def TakesOutOnce (hooks : Hooks) (reads writes : Ctx → ElementId → List String) : Prop :=
-  ∀ (ctx : Ctx) (scope : ScopeOccurrenceId) (activity : Option ElementId) (trigger : OccurrenceRef)
-    (leave : Option Nat) (resume : Option Resume) (state after : State), WellFormed ctx.program state →
+  ∀ (ctx : Ctx) (scope : ScopeOccurrenceId) (activity : Option ElementId) (trigger : OccurrenceName)
+    (leave : Option OccurrenceId) (resume : Option Resume) (state after : State), WellFormed ctx.program state →
     Formed (Depends ctx.program (reads ctx) (writes ctx)) state → FreshCall state scope trigger resume →
     hooks.compensate ctx scope activity trigger leave resume state = .ok after →
     ∃ covered taken kept, taken.trigger = trigger ∧ taken.scope = scope ∧ taken.running = [] ∧
       taken.leave = leave ∧ taken.resume = resume ∧
       TakesOut covered activity state.slots.compensation
-        { retained := kept, runs := state.slots.compensation.runs ++ [taken] } taken ∧
-      (∀ record, record.scope.value < state.nextIssue →
+        { retained := kept, runMap := state.slots.compensation.runMap.put taken } taken ∧
+      (∀ record, Laws.State.ScopeIssued state record.scope →
         (record ∈ after.slots.compensation.retained ↔ record ∈ kept)) ∧
       ((taken.pending = [] ∧ ∀ next ∈ after.slots.compensation.runs, next.scope = scope → next.trigger ≠ trigger) ∨
         ∃ next ∈ after.slots.compensation.runs, next.scope = scope ∧ next.trigger = trigger ∧
@@ -145,15 +146,18 @@ def TakesOutOnce (hooks : Hooks) (reads writes : Ctx → ElementId → List Stri
 
 /-- Handler order: every change a hook makes to a run in progress is one `Advances` of it under `Depends`
 (`Laws.Compensation.Advances`), so no handler starts while one that must complete before it is pending or running.
-Stated of `Hooks.compensate` and `Hooks.handlerCompleted`, the hooks that start handlers, on a well-formed state that
+Stated of `Hooks.compensate`, `Hooks.handlerCompleted` and `Hooks.compensationReady`, the hooks that start handlers
+(the last the readiness work a handler's completion defers, DC30), on a well-formed state that
 keeps the lane relation, as `Step` calls them (root decision D2, 2026-11-15), and for a compensation that is a
 `FreshCall`, as every one `Step` performs is (`compensationsFresh`, root decision on the P5 TakesOutOnce stop,
 2026-11-15); `WellFormed` is `TakesOutOnce`'s premise for the same reason. The new run's first advance is
 `TakesOutOnce`'s.
 P0 stated it with no premise on the hook's state. That was false: over an arbitrary state a run untouched by the hook
-may hold a ready pending handler, and two runs may share one scope occurrence and trigger, where `release` and
-`advance` pick the other run (P5 design report); `FreshCall` is taken for the reason `TakesOutOnce` takes it (P5
+may hold a ready pending handler (P5 design report); `FreshCall` is taken for the reason `TakesOutOnce` takes it (P5
 report F2). The conclusion is P0's, unchanged.
+`Hooks.handlerCompleted` is taken where the completed handler's context stands, as `Step` calls it
+(`Laws.Step.HookContract.handlerCompleted`): the next handler is entered below its run's scope occurrence, whose standing
+the context's gives, and a key below one that does not stand may be stale (KD1).
 `reads` and `writes` name what each subject's run reads and writes; the lane binds them to the kernel's footprint
 `NameSet`s through `Laws.IL.listed` (`Laws.IL.NameSet.meets_iff_listed`, root decision D3, 2026-11-15). -/
 def HandlersInOrder (hooks : Hooks) (reads writes : Ctx → ElementId → List String) : Prop :=
@@ -161,7 +165,9 @@ def HandlersInOrder (hooks : Hooks) (reads writes : Ctx → ElementId → List S
     Formed (Depends ctx.program (reads ctx) (writes ctx)) state →
     ((∃ scope activity trigger leave resume, FreshCall state scope trigger resume ∧
         hooks.compensate ctx scope activity trigger leave resume state = .ok after) ∨
-      ∃ context occurrence, hooks.handlerCompleted ctx context occurrence state = .ok after) →
+      (∃ occurrence, Laws.Step.ScopeStands state occurrence.scope ∧
+        hooks.handlerCompleted ctx occurrence state = .ok after) ∨
+      ∃ scope context, Laws.Step.ScopeStands state scope ∧ hooks.compensationReady ctx scope context state = .ok after) →
     run ∈ state.slots.compensation.runs → next ∈ after.slots.compensation.runs → next.trigger = run.trigger →
     next.scope = run.scope → ∃ released started, Advances (Depends ctx.program (reads ctx) (writes ctx)) released next started ∧
       released.pending = run.pending ∧ released.trigger = run.trigger
@@ -281,12 +287,12 @@ takes the Cancel boundary (`Propagation.leaveOccurrence`). The three refusal cod
 def CancelCompensatesFirst (hooks : Hooks) : Prop :=
   (∀ (ctx : Ctx) (header : Header) (payload : EventPayload) (occurrence : Occurrence) (state after : State),
     hooks.arriveThrow ctx header payload .cancel occurrence state = .ok after →
-    after.tokens = state.tokens ∧ ∃ leave origin,
+    Laws.State.allQueuedTokens after = Laws.State.allQueuedTokens state ∧ ∃ leave origin,
       Queues state after ([.complete occurrence.id leave [] .outward] ++ [.raise .cancel origin]) ∧ origin.host = none ∧
       origin.element = header.id ∧ origin.scope = occurrence.scope ∧ origin.activation = occurrence.activation) ∧
   ∀ (ctx : Ctx) (origin : Origin) (state after : State), StepQueries hooks ctx → CancelCatchers ctx.program →
     origin.host = none → hooks.raise ctx .cancel origin state = .ok after →
-    (∀ token ∈ after.tokens, token ∈ state.tokens) ∧ ∃ scope leave element at_ flows,
+    (∀ token ∈ Laws.State.allQueuedTokens after, token ∈ Laws.State.allQueuedTokens state) ∧ ∃ scope leave element at_ flows,
       Queues state after [.compensate scope none
         { processInstanceId := state.instanceOf origin.scope, element := origin.element, activation := origin.activation }
         leave (some (.occur element at_ flows))] ∧ CancelBoundary ctx.program element flows

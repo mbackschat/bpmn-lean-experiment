@@ -267,8 +267,11 @@ def deploymentResultJson (deployment : Population.DeploymentResult) : Json :=
       Json.mkObj [("key", Json.str key), ("version", toJson version)]).toArray),
     ("outcome", outcome)]
 
-/-- The result document; `observe` renders an instance's state as the canonical result's state observation. -/
-def populationResultJson (observe : Program → State → Json) (scenarioId : String) (result : Population.Result) : Json :=
+/-- The result document; `observe` renders an instance's state as the canonical result's state observation, whose
+failure is the document's. -/
+def populationResultJson (observe : Program → State → Except Failure Json) (scenarioId : String)
+    (result : Population.Result) : Except Failure Json := do
+  let processStates ← result.instances.mapM fun member => observe member.deployment.program member.state
   let inputFailures := if result.inputFailures.isEmpty then [] else
     [("inputFailures", Json.arr (result.inputFailures.map fun (commandId, failure) =>
       Json.mkObj ([("commandId", Json.str commandId)] ++ failureFields failure)).toArray)]
@@ -277,11 +280,10 @@ def populationResultJson (observe : Program → State → Json) (scenarioId : St
     ("steps", Json.arr (result.steps.map fun stepped =>
       Json.mkObj [("commandId", Json.str stepped.commandId), ("ordinal", toJson stepped.ordinal),
         ("at", toJson stepped.atMs), ("resolution", resolutionJson stepped.resolution)]).toArray),
-    ("processStates", Json.arr (result.instances.map fun member =>
-      observe member.deployment.program member.state).toArray)]
+    ("processStates", Json.arr processStates.toArray)]
   let inputCascades := if result.inputCascades.isEmpty then [] else
     [("inputCascades", Json.arr (result.inputCascades.map fun (commandId, entries) =>
       Json.mkObj [("commandId", Json.str commandId), ("entries", Json.arr (entries.map fanOutEntryJson).toArray)]).toArray)]
-  Json.mkObj (inputFailures ++ inputCascades ++ fields)
+  .ok (Json.mkObj (inputFailures ++ inputCascades ++ fields))
 
 end Kernel.Run

@@ -52,13 +52,11 @@ const startBatch = {
     role: { kind: "input", input: "start" },
     element: "StartEvent_1",
     sourceType: "startEvent",
-    owner: 0,
   }, {
     revision: 2,
     role: { kind: "arrive", flow: "Flow_1" },
     element: "Task_1",
     sourceType: "userTask",
-    owner: 0,
   }],
 } as const satisfies CommittedTransitionBatch;
 
@@ -71,7 +69,6 @@ const completeBatch = {
     role: { kind: "input", input: "command" },
     element: "Task_1",
     sourceType: "userTask",
-    owner: 0,
   }],
 } as const satisfies CommittedTransitionBatch;
 

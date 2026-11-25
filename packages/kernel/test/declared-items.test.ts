@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import { decodeProgram, step, stimulusFromJson } from "./lean-paired.ts";
+import { decodeProgram, rootScope, step, stimulusFromJson } from "./lean-paired.ts";
 import type { State } from "@bpmn-lean/kernel";
 
 type Json = Record<string, unknown>;
@@ -25,7 +25,7 @@ function program(target: string, declared: readonly string[]): Json {
     ...slice,
     variables: declared,
     elements: [
-      { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["To_Task"] } } },
+      { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["To_Task"], initiator: null, formRef: null } } },
       {
         activity: {
           header: header("Task", "userTask"),
@@ -34,14 +34,14 @@ function program(target: string, declared: readonly string[]): Json {
               user: {
                 payload: {
                   name: "Decide", assignee: null, candidateUsers: [], candidateGroups: [], formKey: null, formFields: [], dueDate: null,
-                  followUpDate: null, priority: null,
+                  followUpDate: null, priority: null, formRef: null,
                 },
               },
             },
             envelope: {
               incoming: ["To_Task"], outgoing: ["To_End"], inputs: [], boundaries: [], multiInstance: null, compensationHandlers: [], forCompensation: false,
               outputs: [{ target, source: { variable: { name: "Output_Decision" } }, dialect: "dataAssociation" }],
-              defaultFlow: null, asyncBefore: false, asyncAfter: false,
+              defaultFlow: null, asyncBefore: false, asyncAfter: false, exclusive: null, retryCycle: null, structuredInputs: [], structuredOutputs: [],
             },
           },
         },
@@ -79,7 +79,7 @@ function complete(json: Json): unknown {
 
 test("a write to a declared process item lands at the instance root", () => {
   assert.deepEqual(complete(program("Property_Outcome", ["Property_Outcome"])),
-    [{ scope: 0, entries: [["Property_Outcome", { tag: "string", value: "recorded" }]] }]);
+    [[rootScope, [["Property_Outcome", { tag: "string", value: "recorded" }]]]]);
 });
 
 test("a write to an undeclared name is refused under the standards reading", () => {

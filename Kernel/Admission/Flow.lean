@@ -173,20 +173,11 @@ def conditionalOutflow (program : Program) (flow : Flow) : Option String :=
 /-- An element a token waits at for a stimulus: a User, Service or Receive Task, a catch Event or an Event-Based
 Gateway. -/
 def awaitsStimulus (element : Element) : Bool :=
-  (element.activity?.any fun (_, payload) =>
-    payload.work.isUser || payload.work.isService || payload.work.receive?.isSome) ||
-  (element.event?.any fun (_, payload) => payload.catch?.isSome) ||
-  element.gateway?.any fun (_, payload) => (routing payload).waits
+  element.waitsForInput || element.gateway?.any fun (_, payload) => (routing payload).waits
 
 /-- The elements `flows` lead to. -/
 def flowTargets (program : Program) (flows : List FlowId) : List Element :=
   flows.filterMap fun flow => (program.target? flow).bind program.element?
-
-/-- The children an occurrence of the Scope `id` begins on entry: its start Events, or, without one, the children
-that begin implicitly (`Element.beginsImplicitly`), as `Kernel.Feature.Scopes.implicitStart` begins them. -/
-def enteredChildren (program : Program) (id : ElementId) : List Element :=
-  let children := program.children (some id)
-  if children.any (·.start?.isSome) then children.filter (·.start?.isSome) else children.filter (·.beginsImplicitly)
 
 /-- Pinned CIB parses one initial start per process, a None or Timer Start (`BpmnParse#selectInitial`), and one start
 per Sub-Process (`BpmnParse#parseScopeStartEvent`); BPMN 2.0.2 §10.5.2 admits several, which lie outside the target

@@ -18,11 +18,9 @@
  * closed (BPMN 2.0.2 §10.5.6: a gateway takes only its first event).
  */
 import {
-  ExpressionTag,
   MalformedTimer,
   MessageNames,
   SignalNames,
-  SignalPayload,
   TimerScheduleTag,
   TriggerTag,
   ValueSourceTag,
@@ -44,7 +42,6 @@ import {
   type EventPayload,
   type Header,
   type ConditionTrigger,
-  type Mapping,
   type ProfileOptions,
   type Program,
   type SignalTrigger,
@@ -55,11 +52,11 @@ import {
   type ValueSource,
 } from "../il/types.js";
 import {
+  scopeOccurrenceParent,
   FailureTag,
   FiredTag,
   StartTriggerTag,
   OpenKindTag,
-  DeliveryTriggerTag,
   RaisedTag,
   SignalAddressTag,
   SignalTag,
@@ -68,7 +65,6 @@ import {
   closeItem,
   committed,
   completeSignal,
-  disarm,
   failed,
   failedWith,
   initial,
@@ -76,7 +72,7 @@ import {
   leaveOutgoing,
   messageChannelEquals,
   occurrenceOf,
-  openItem,
+  openItemKey,
   openKindView,
   openSubscription,
   ownScope,
@@ -87,7 +83,6 @@ import {
   signalAddressMatches,
   type Binding,
   type CorrelationMatch,
-  type DeliveryTrigger,
   type EvalContext,
   type Fired,
   type Occurrence,
@@ -106,13 +101,15 @@ import {
   visible,
   SemanticCause,
   semanticFailure,
+  itemAt, itemsInOrder, type OccurrenceId,
 } from "../state.js";
 import {
-  EvaluationTag, admitValues, boundaryFire, ctxRequireMappings, deliveryTriggerChannel, evalContext,
-  messageTriggerChannel, withdrawInside, withdrawOccurrence, type Catch, type Ctx,
+  EvaluationTag, admitValues, boundaryFire, deliveryTriggerChannel, evalContext,
+  messageTriggerChannel, ctxPositionLe, disarm, withdrawInside, withdrawOccurrence, type Catch, type Ctx,
 } from "../hooks.js";
 import { ClassifiedTag, TimerKind, armAt as armTimer, classify, dynamicCode, successor } from "../il/timer.js";
 import { armed, conditionOf, evaluateItem, fireAll, predicateHolds, resolveContests } from "./subscriptions/conditions.js";
+import { payloadBindings, signalDelivered, signalVariables } from "./subscriptions/delivery.js";
 
 export { competes, offerWrites } from "./subscriptions/conditions.js";
 
@@ -143,14 +140,28 @@ function resolveName(ctx: Ctx, context: EvalContext, name: ValueSource | null): 
     case ValueSourceTag.Expression: {
       const evaluation = ctx.evaluate(context, name.body);
       switch (evaluation.tag) {
-        case EvaluationTag.Value: {
-          const result = evaluation.result;
-          if (result.tag === ValueTag.Null || (result.tag === ValueTag.String && result.value === "")) {
-            // dynamic-only: the resolved name is the run's data.
-            return failed(FailureTag.Unsupported, "message-name-empty");
+        case EvaluationTag.Value:
+          switch (evaluation.result.tag) {
+            case ValueTag.Null:
+              // dynamic-only: the resolved name is the run's data.
+              return failed(FailureTag.Unsupported, "message-name-empty");
+            case ValueTag.String:
+              if (evaluation.result.value !== "") return committed(evaluation.result.value);
+              // dynamic-only: the resolved name is the run's data.
+              return failed(FailureTag.Unsupported, "message-name-empty");
+            case ValueTag.Double:
+            case ValueTag.Date:
+              // dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+              return failed(FailureTag.Unsupported, "value-kind");
+            case ValueTag.Bool:
+            case ValueTag.Int:
+            case ValueTag.Decimal:
+            case ValueTag.StringList:
+            case ValueTag.List:
+            case ValueTag.Map:
+              return failed(FailureTag.RolledBack, "message-name-type");
           }
-          return result.tag === ValueTag.String ? committed(result.value) : failed(FailureTag.RolledBack, "message-name-type");
-        }
+          return assertNever(evaluation.result);
         case EvaluationTag.Failure:
           return failed(FailureTag.RolledBack, evaluation.code);
         case EvaluationTag.Unsupported:
@@ -185,16 +196,28 @@ function signalAddress(ctx: Ctx, context: EvalContext, trigger: SignalTrigger): 
         case ValueSourceTag.Expression: {
           const evaluation = ctx.evaluate(context, name.body);
           switch (evaluation.tag) {
-            case EvaluationTag.Value: {
-              const result = evaluation.result;
-              if (result.tag === ValueTag.Null || (result.tag === ValueTag.String && result.value === "")) {
-                // dynamic-only: the resolved name is the run's data.
-                return failed(FailureTag.Unsupported, "signal-name-empty");
+            case EvaluationTag.Value:
+              switch (evaluation.result.tag) {
+                case ValueTag.Null:
+                  // dynamic-only: the resolved name is the run's data.
+                  return failed(FailureTag.Unsupported, "signal-name-empty");
+                case ValueTag.String:
+                  if (evaluation.result.value !== "") return committed({ tag: SignalAddressTag.Named, name: evaluation.result.value });
+                  // dynamic-only: the resolved name is the run's data.
+                  return failed(FailureTag.Unsupported, "signal-name-empty");
+                case ValueTag.Double:
+                case ValueTag.Date:
+                  // dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+                  return failed(FailureTag.Unsupported, "value-kind");
+                case ValueTag.Bool:
+                case ValueTag.Int:
+                case ValueTag.Decimal:
+                case ValueTag.StringList:
+                case ValueTag.List:
+                case ValueTag.Map:
+                  return failed(FailureTag.RolledBack, "signal-name-type");
               }
-              return result.tag === ValueTag.String
-                ? committed({ tag: SignalAddressTag.Named, name: result.value })
-                : failed(FailureTag.RolledBack, "signal-name-type");
-            }
+              return assertNever(evaluation.result);
             case EvaluationTag.Failure:
               return failed(FailureTag.RolledBack, evaluation.code);
             case EvaluationTag.Unsupported:
@@ -214,8 +237,8 @@ function signalAddress(ctx: Ctx, context: EvalContext, trigger: SignalTrigger): 
  * start or call variables CIB sets after it subscribes (`PvmExecutionImpl.java:278-286`).
  */
 function enclosingContext(program: Program, state: State, scope: ScopeOccurrenceId): EvalContext {
-  const parent = calledRoot(state, scope) ? null : state.scopes.find((entry) => entry.id === scope)?.parent ?? null;
-  return { variables: parent === null ? [] : visible(state, program, parent), nowMs: state.logicalTimeMs };
+  const parent = calledRoot(state, scope) ? null : scopeOccurrenceParent(state.scopes.find((entry) => entry.id === scope));
+  return { variables: parent === null ? [] : visible(state, program, parent), nowMs: state.logicalTimeMs, bounds: program.options.bounds };
 }
 
 /**
@@ -231,10 +254,24 @@ function timerText(ctx: Ctx, context: EvalContext, value: ValueSource): Result<r
       const evaluation = ctx.evaluate(context, value.body);
       switch (evaluation.tag) {
         case EvaluationTag.Value:
-          // dynamic-only: a value's type is the run's data.
-          return evaluation.result.tag === ValueTag.String
-            ? committed([evaluation.result.value, true])
-            : failed(FailureTag.RolledBack, "timer-value-type");
+          switch (evaluation.result.tag) {
+            case ValueTag.String:
+              return committed([evaluation.result.value, true]);
+            case ValueTag.Double:
+            case ValueTag.Date:
+              // dynamic-only: no admitted run holds a Double or a Date until A3 fills them
+              return failed(FailureTag.Unsupported, "value-kind");
+            case ValueTag.Null:
+            case ValueTag.Bool:
+            case ValueTag.Int:
+            case ValueTag.Decimal:
+            case ValueTag.StringList:
+            case ValueTag.List:
+            case ValueTag.Map:
+              // dynamic-only: a value's type is the run's data.
+              return failed(FailureTag.RolledBack, "timer-value-type");
+          }
+          return assertNever(evaluation.result);
         case EvaluationTag.Failure:
           return failed(FailureTag.RolledBack, evaluation.code);
         case EvaluationTag.Unsupported:
@@ -328,7 +365,7 @@ function subscribe(
   subscription: Subscription,
   element: ElementId,
   scope: ScopeOccurrenceId,
-  host: number | null,
+  host: OccurrenceId | null,
   passive: boolean,
   evaluate = true,
 ): Result<readonly [State, OpenItem | null]> {
@@ -367,7 +404,7 @@ function subscribeAll<T>(
  * activation arms, transcribed from `Kernel.Feature.Subscriptions.enabledWith`: a Sub-Process's own scope or a Call's
  * called root, whose arming evaluates the host's boundaries with those starts as one evaluation.
  */
-function enabledWith(ctx: Ctx, state: State, host: number): ScopeOccurrenceId | null {
+function enabledWith(ctx: Ctx, state: State, host: OccurrenceId): ScopeOccurrenceId | null {
   const opened = state.scopes.find((entry) => {
     if (entry.occurrence !== host) return false;
     const declared = entry.element === null ? null : programElement(ctx.program, entry.element);
@@ -381,7 +418,7 @@ function enabledWith(ctx: Ctx, state: State, host: number): ScopeOccurrenceId | 
  * boundaries are enabled with the starts of a scope it opened leaves their Conditional evaluation to that scope's
  * arming (`enabledWith`).
  */
-export function arm(ctx: Ctx, host: number, element: ElementId, scope: ScopeOccurrenceId, state: State): Outcome {
+export function arm(ctx: Ctx, host: OccurrenceId, element: ElementId, scope: ScopeOccurrenceId, state: State): Outcome {
   const found = programElement(ctx.program, element);
   const envelope = found === null ? null : elementEnvelope(found);
   if (envelope === null) return semanticFailure(SemanticCause.Invariant, "arm-without-envelope");
@@ -403,7 +440,7 @@ function enabledBoundaries(ctx: Ctx, scope: ScopeOccurrenceId, state: State): Re
   if (host === null || enabledWith(ctx, state, host) !== scope) return committed([state, []]);
   let current = state;
   const fired: OpenItem[] = [];
-  for (const item of state.openItems.filter((open) => open.attachedTo === host && programBoundary(ctx.program, open.element) !== null)) {
+  for (const item of itemsInOrder(ctxPositionLe(ctx, state), state.openItems).filter((open) => open.attachedTo === host && programBoundary(ctx.program, open.element) !== null)) {
     const condition = conditionOf(ctx, item);
     if (condition === null) continue;
     const next = evaluateItem(ctx, item, condition, current);
@@ -419,7 +456,7 @@ function enabledBoundaries(ctx: Ctx, scope: ScopeOccurrenceId, state: State): Re
  * the gateway's occurrence. A Receive Task arm would need the work feature's wait and is refused
  * (`gateway.eventBased.receiveArm` at admission).
  */
-export function armGateway(ctx: Ctx, occurrence: number, gateway: ElementId, scope: ScopeOccurrenceId, state: State): Outcome {
+export function armGateway(ctx: Ctx, occurrence: OccurrenceId, gateway: ElementId, scope: ScopeOccurrenceId, state: State): Outcome {
   const found = programElement(ctx.program, gateway);
   const payload = found === null ? null : elementGateway(found);
   if (payload === null) return semanticFailure(SemanticCause.Invariant, "arm-gateway-without-gateway");
@@ -528,52 +565,6 @@ export function fires(ctx: Ctx, input: StartInput, subscription: Subscription | 
 
 // Firing
 
-/** Bind the delivered payload to every data output an output mapping reads, then evaluate the mappings. */
-export function payloadBindings(ctx: Ctx, nowMs: number, outputs: readonly Mapping[], payload: Value): Result<readonly Binding[]> {
-  const outputsRead = outputs.flatMap((mapping): Binding[] => {
-    const source = mapping.source;
-    switch (source.tag) {
-      case ExpressionTag.Variable:
-        return [[source.name, payload]];
-      case ExpressionTag.Literal:
-      case ExpressionTag.SimpleBoolean:
-      case ExpressionTag.Juel:
-      case ExpressionTag.Foreign:
-        return [];
-    }
-    return assertNever(source);
-  });
-  return ctxRequireMappings(ctx, { variables: outputsRead, nowMs }, outputs);
-}
-
-/** The address a delivery names, when it delivers a Signal. */
-function signalDelivered(trigger: DeliveryTrigger): SignalAddress | null {
-  switch (trigger.tag) {
-    case DeliveryTriggerTag.Signal:
-      return trigger.address;
-    case DeliveryTriggerTag.Message:
-      return null;
-  }
-  return assertNever(trigger);
-}
-
-/**
- * What a Signal's variables install in the receiving scope: under `SignalPayload.Variables` all of them, as CIB's
- * `setVariables` on the receiving execution does (CIB-EXT-0043, `EventHandlerImpl.java:56-58`); under `None` a Signal
- * carries no data (BPMN 2.0.2 §10.5.1), so a delivery that brings variables is rejected rather than dropped.
- */
-function signalVariables(ctx: Ctx, variables: readonly Binding[]): Result<readonly Binding[]> {
-  switch (ctx.program.options.signalPayload) {
-    case SignalPayload.Variables: {
-      const admitted = admitValues(variables.map(([, value]) => value));
-      return admitted.ok ? committed(variables) : failedWith(admitted.failure);
-    }
-    case SignalPayload.None:
-      return variables.length === 0 ? committed([]) : failed(FailureTag.Rejected, "signal-variables-not-admitted");
-  }
-  return assertNever(ctx.program.options.signalPayload);
-}
-
 /**
  * The Correlation rule a Message firing rechecks, which `registry.ts` fills with `feature/correlation.ts#correlationAccepts`,
  * since features never import each other.
@@ -602,7 +593,7 @@ function admitFiring(hooks: SubscriptionsHooks, ctx: Ctx, subscription: Subscrip
         : failed(FailureTag.Rejected, "timer-not-due");
     case FiredTag.Message: {
       const delivery = fired.delivery;
-      const admitted = admitValues(delivery.payload === null ? [] : [delivery.payload]);
+      const admitted = admitValues(ctx.program.options.bounds, delivery.payload === null ? [] : [delivery.payload]);
       if (!admitted.ok) return failedWith(admitted.failure);
       if (view.channel === null) return failed(FailureTag.Rejected, "not-a-message-subscription");
       if (!optionalChannelEquals(deliveryTriggerChannel(delivery.trigger), view.channel)) {
@@ -621,16 +612,16 @@ function admitFiring(hooks: SubscriptionsHooks, ctx: Ctx, subscription: Subscrip
       } else if (delivery.payload !== null) {
         return failed(FailureTag.Rejected, "message-payload-not-accepted");
       }
-      const installed = admitValues(delivery.variables.map(([, value]) => value));
+      const installed = admitValues(ctx.program.options.bounds, delivery.variables.map(([, value]) => value));
       return installed.ok ? committed([state, [...mapped, ...delivery.variables]]) : failedWith(installed.failure);
     }
     case FiredTag.Signal: {
-      const delivery = fired.delivery;
-      const address = signalDelivered(delivery.trigger);
+      const firing = fired.firing;
+      const address = signalDelivered(firing.trigger);
       if (view.signal === null || address === null) return failed(FailureTag.Rejected, "not-a-signal-subscription");
       if (!signalAddressMatches(address, view.signal.address)) return failed(FailureTag.Rejected, "unknown-signal-subscription");
-      if (delivery.payload !== null) return failed(FailureTag.Rejected, "signal-payload-not-accepted");
-      const values = signalVariables(ctx, delivery.variables);
+      if (firing.payload !== null) return failed(FailureTag.Rejected, "signal-payload-not-accepted");
+      const values = signalVariables(ctx, firing.variables);
       return values.ok ? committed([state, values.value]) : failedWith(values.failure);
     }
     // Only `fireAll` (conditions module) fires a Conditional item, once its predicate held and its contest is resolved.
@@ -647,19 +638,19 @@ function admitFiring(hooks: SubscriptionsHooks, ctx: Ctx, subscription: Subscrip
  * any other Timer closes. The result is the reservation the firing may begin, `null` when the item stays open, whose
  * identity then remains the subscription's.
  */
-function afterFiring(state: State, item: OpenItem): readonly [State, number | null] {
+function afterFiring(state: State, item: OpenItem): readonly [State, OccurrenceId | null] {
   const view = openKindView(item.kind);
   if (view.deadlineMs === null) return [state, null];
   const closed = closeItem(state, item.id);
   const recurrence = view.recurrence;
-  if (recurrence === null) return [closed, item.occurrence];
+  if (recurrence === null) return [closed, item.id.occurrence];
   const followed = successor(view.deadlineMs, recurrence);
-  if (followed === null) return [closed, item.occurrence];
+  if (followed === null) return [closed, item.id.occurrence];
   const next: OpenKind = {
     tag: OpenKindTag.Timer,
     detail: { deadlineMs: followed[0], recurrence: { ...recurrence, remaining: followed[1].remaining } },
   };
-  return [openSubscription(closed, next, item.element, item.scope, item.attachedTo, item.passive)[0], item.occurrence];
+  return [openSubscription(closed, next, item.element, item.scope, item.attachedTo, item.passive)[0], item.id.occurrence];
 }
 
 /**
@@ -674,7 +665,7 @@ function fireBoundary(hooks: SubscriptionsHooks, ctx: Ctx, boundary: Boundary, i
     if (item.attachedTo === null) return semanticFailure(SemanticCause.Invariant, "boundary-without-host");
     if (occurrenceOf(current, item.attachedTo) === null) return semanticFailure(SemanticCause.Invariant, "boundary-host-gone");
     const withdrawn = withdrawOccurrence(closeItem(current, item.id), item.attachedTo);
-    return committed(boundaryFire(boundary, item.attachedTo, item.occurrence, item.scope, values, withdrawn));
+    return committed(boundaryFire(boundary, item.attachedTo, item.id.occurrence, item.scope, values, withdrawn));
   }
   const [after, reserved] = afterFiring(current, item);
   return committed(boundaryFire(boundary, null, reserved, item.scope, values, after));
@@ -689,7 +680,7 @@ function fireCatch(hooks: SubscriptionsHooks, ctx: Ctx, subscription: Subscripti
   const gateway = item.attachedTo === null
     ? closed
     : signal(disarm(closed, item.attachedTo), completeSignal(item.attachedTo, leaveFlows([]), [], WriteRule.Outward));
-  return committed(signal(gateway, completeSignal(item.occurrence, leaveOutgoing, values, WriteRule.Outward)));
+  return committed(signal(gateway, completeSignal(item.id.occurrence, leaveOutgoing, values, WriteRule.Outward)));
 }
 
 /**
@@ -708,7 +699,7 @@ function fireEventStart(hooks: SubscriptionsHooks, ctx: Ctx, eventSubProcess: El
   if (!admitted.ok) return failedWith(admitted.failure);
   const [current, values] = admitted.value;
   const [after, inner] = interrupting
-    ? [withdrawInside(closeItem(current, item.id), item.scope), item.occurrence] as const
+    ? [withdrawInside(closeItem(current, item.id), item.scope), item.id.occurrence] as const
     : afterFiring(current, item);
   return committed(signal(after, {
     tag: SignalTag.Begin,
@@ -738,8 +729,8 @@ export function arriveCatch(ctx: Ctx, _header: Header, _payload: EventPayload, s
   // Admission refuses every trigger reaching `null` here (`event.catch.error`, `.escalation`, `.compensation`, `.cancel`);
   // the code names the first.
   if (kind.value === null) return failed(FailureTag.Unsupported, "event-catch-error");
-  const opened = openItem(state, kind.value, occurrence);
-  const item = opened.openItems[opened.openItems.length - 1];
+  const [opened, key] = openItemKey(state, kind.value, occurrence);
+  const item = itemAt(opened.openItems, key);
   if (item === undefined) return committed(opened);
   const evaluated = armed(ctx, subscription, item, opened);
   if (!evaluated.ok) return failedWith(evaluated.failure);

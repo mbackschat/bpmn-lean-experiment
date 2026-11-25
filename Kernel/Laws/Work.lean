@@ -4,7 +4,7 @@ public import Kernel.Hooks
 public import Kernel.Feature.Work
 public import Kernel.Laws.Flow.Sources
 import Kernel.Laws.Step.Elements
-import Kernel.Laws.State
+import Kernel.Laws.State.Called
 import all Kernel.Feature.Work
 import all Kernel.Feature.Work.Call
 
@@ -30,14 +30,17 @@ everything, values that violate it.
 
 namespace Kernel.Laws.Work
 
+variable {program : Program}
+
 open Kernel
 
 /-! ## Script Tasks -/
 
 /-- A Script Task's arguments over the bindings visible from its scope occurrence, innermost first (item 3): one entry
-per visible name, in the order the names are first visible, each the first visible binding of its name. -/
+per visible name, in name order, each the first visible binding of its name. -/
 def Snapshot (visible snapshot : List (String × Value)) : Prop :=
-  snapshot.map (·.1) = (visible.map (·.1)).eraseDups ∧ ∀ entry ∈ snapshot, visible.find? (·.1 == entry.1) = some entry
+  (snapshot.map (·.1)).Pairwise (· < ·) ∧ (∀ name, name ∈ snapshot.map (·.1) ↔ name ∈ visible.map (·.1)) ∧
+    ∀ entry ∈ snapshot, visible.find? (·.1 == entry.1) = some entry
 
 /-- A Script Task's result patch (item 5 and the patch rule after it): the empty patch writes nothing, the one-entry
 patch on the result variable is accepted, a name given twice is `duplicate-output`, and among distinct names one that
@@ -75,23 +78,33 @@ def ErrorPathPatch (mapped : Bool) (patch : List (String × Value)) (outcome : E
 
 /-! ## Non-vacuity -/
 
-/-- The witness of `script-effect.test.ts`: the Sub-Process's `b` shadows the root's. -/
+/-- The witness of `script-effect.test.ts`: the Sub-Process's `b` shadows the root's, and `a` comes first by name. -/
 theorem snapshot_nearest_first :
     Snapshot [("b", .string "inner"), ("a", .int 1), ("b", .string "outer")]
-      [("b", .string "inner"), ("a", .int 1)] := by
-  refine ⟨by decide +kernel, fun entry member => ?_⟩
+      [("a", .int 1), ("b", .string "inner")] := by
+  refine ⟨by decide +kernel, fun name => ?_, fun entry member => ?_⟩
+  · simp only [List.map_cons, List.map_nil, List.mem_cons, List.not_mem_nil, or_false]
+    constructor
+    · rintro (h | h) <;> simp [h]
+    · rintro (h | h | h) <;> simp [h]
   simp only [List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl <;> simp [List.find?]
 
 /-- The shadowed value is rejected. -/
 theorem snapshot_shadowed_rejected :
     ¬ Snapshot [("b", .string "inner"), ("a", .int 1), ("b", .string "outer")]
-      [("b", .string "outer"), ("a", .int 1)] :=
-  fun ⟨_, values⟩ => by simpa [List.find?] using values ("b", .string "outer") (by simp)
+      [("a", .int 1), ("b", .string "outer")] :=
+  fun ⟨_, _, values⟩ => by simpa [List.find?] using values ("b", .string "outer") (by simp)
 
 /-- A name given twice is rejected. -/
 theorem snapshot_repeated_rejected : ¬ Snapshot [("a", .int 1)] [("a", .int 1), ("a", .int 1)] :=
-  fun ⟨names, _⟩ => absurd names (by decide +kernel)
+  fun ⟨sorted, _⟩ => absurd sorted (by decide +kernel)
+
+/-- Nearest-owner order, the arguments' order before K0.12, is rejected. -/
+theorem snapshot_visible_order_rejected :
+    ¬ Snapshot [("b", .string "inner"), ("a", .int 1), ("b", .string "outer")]
+      [("b", .string "inner"), ("a", .int 1)] :=
+  fun ⟨sorted, _⟩ => absurd sorted (by decide +kernel)
 
 theorem patch_result : ScriptPatch (some "total") [("total", .int 2)] (.ok [("total", .int 2)]) :=
   ⟨nofun, fun _ _ _ same => by simp at same; simp [same], fun distinct => by simp at distinct,
@@ -155,35 +168,36 @@ instance that runs `program`. -/
 structure WorkOps (program : Program) (inv : State → Prop) : Prop where
   write : ∀ state scope writes rule, inv state → inv (state.signal (.write scope writes rule))
   /-- The completion of the occurrence an open item of an element the program declares no start Event waits for. -/
-  complete : ∀ state item leave writes rule, inv state → item ∈ state.openItems →
+  complete : ∀ state item leave writes rule, inv state → item ∈ itemList state.openItems →
     (program.element? item.element).bind (·.start?) = none → (∀ selected, leave = .flows selected → selected = []) →
-    inv (state.signal (.complete item.occurrence leave writes rule))
+    inv (state.signal (.complete item.id.occurrence leave writes rule))
   /-- The completion of the occurrence that owns a scope occurrence. -/
   completeOwner : ∀ state scope occurrence leave writes rule, inv state → scope ∈ state.scopes →
     occurrence ∈ state.occurrences → scope.occurrence = some occurrence.id →
     (∀ selected, leave = .flows selected → selected = []) → inv (state.signal (.complete occurrence.id leave writes rule))
   /-- A business Error raised from the occurrence an effect item waits for, in the item's scope occurrence and at its
   occurrence's activation. -/
-  raise : ∀ state item code message patch, inv state → item ∈ state.openItems → item.kind.view.effect.isSome = true →
+  raise : ∀ state item (owner : Occurrence) code message patch, inv state → item ∈ itemList state.openItems →
+    item.kind.view.effect.isSome = true → state.occurrence? item.id.occurrence = some owner →
     inv (state.signal (.raise (.error code message)
-      { element := item.element, scope := item.scope, host := some item.occurrence, patch := patch,
-        activation := ((state.occurrence? item.occurrence).map (·.activation)).getD 0 }))
+      { element := item.element, scope := item.scope, thrower := item.id.occurrence, host := some item.id.occurrence,
+        patch := patch, activation := owner.activation }))
   cancel : ∀ state, inv state → inv (state.signal (.endInstance .cancelled none))
   /-- What open items wait for replaced, each keeping everything else, only for an item that waits for an effect or an
   incident. -/
   rekind : ∀ state (change : OpenItem → OpenItem), inv state →
     (∀ item, change item = { item with kind := (change item).kind }) →
-    (∀ item ∈ state.openItems, change item ≠ item →
+    (∀ item ∈ itemList state.openItems, change item ≠ item →
       item.kind.view.effect.isSome = true ∨ item.kind.view.incident.isSome = true) →
-    inv { state with openItems := state.openItems.map change }
+    inv { state with openItems := state.openItems.map fun _ item => change item }
   /-- An item that waits for an effect or an incident, or of an Activity, is no start Event's; open items differ in
   identity. -/
-  workKind : ∀ state item, inv state → item ∈ state.openItems →
+  workKind : ∀ state item, inv state → item ∈ itemList state.openItems →
     (item.kind.view.effect.isSome = true ∨ item.kind.view.incident.isSome = true) →
     (program.element? item.element).bind (·.start?) = none
   activity : ∀ element header payload, (program.element? element).bind (·.activity?) = some (header, payload) →
     (program.element? element).bind (·.start?) = none
-  distinct : ∀ state, inv state → ∀ item ∈ state.openItems, ∀ other ∈ state.openItems, item.id = other.id → item = other
+  distinct : ∀ state, inv state → ∀ item ∈ itemList state.openItems, ∀ other ∈ itemList state.openItems, item.id = other.id → item = other
   /-- Queuing a signal keeps the open items. -/
   queued : ∀ (state : State) signal, (state.signal signal).openItems = state.openItems
   /-- Queuing a signal keeps the occurrences and the scope occurrences. -/
@@ -230,7 +244,7 @@ structure WorkOps (program : Program) (inv : State → Prop) : Prop where
 
 /-- `reopen` replaces only what an open item that waits for an effect or an incident waits for. -/
 theorem reopen_keeps {inv : State → Prop} (ops : WorkOps program inv) {state : State} (holds : inv state)
-    {item : OpenItem} (member : item ∈ state.openItems)
+    {item : OpenItem} (member : item ∈ itemList state.openItems)
     (waits : item.kind.view.effect.isSome = true ∨ item.kind.view.incident.isSome = true)
     (kind : OpenKind) : inv (Feature.Work.reopen state item.id kind) :=
   ops.rekind state _ holds (fun item => by split <;> rfl) fun other inside changed => by
@@ -242,16 +256,16 @@ theorem reopen_keeps {inv : State → Prop} (ops : WorkOps program inv) {state :
 
 /-- A completion of the item's occurrence after a write. -/
 theorem installed_keeps {inv : State → Prop} (ops : WorkOps program inv) {state : State} {item : OpenItem}
-    (holds : inv state) (member : item ∈ state.openItems) (unstarted : (program.element? item.element).bind (·.start?) = none)
+    (holds : inv state) (member : item ∈ itemList state.openItems) (unstarted : (program.element? item.element).bind (·.start?) = none)
     (scope : ScopeOccurrenceId) (values writes : List (String × Value)) (rule : WriteRule) (leave : Leave)
     (completion : WriteRule) (unnamed : ∀ selected, leave = .flows selected → selected = []) :
-    inv ((state.signal (.write scope values rule)).signal (.complete item.occurrence leave writes completion)) :=
-  ops.complete _ _ _ _ _ (ops.write _ _ _ _ holds) (by rw [ops.queued]; exact member) unstarted unnamed
+    inv ((state.signal (.write scope values rule)).signal (.complete item.id.occurrence leave writes completion)) :=
+  ops.complete _ _ _ _ _ (ops.write _ _ _ _ holds) (Laws.State.items_same member (ops.queued _ _).symm) unstarted unnamed
 
 /-- `Hooks.completeUserTask` keeps `inv` for an open item. -/
 theorem completeUserTask_keeps {inv : State → Prop} (ops : WorkOps program inv) {ctx : Ctx} {header : Header}
     {payload : ActivityPayload} {item : OpenItem} {values : List (String × Value)} {state after : State}
-    (holds : inv state) (member : item ∈ state.openItems)
+    (holds : inv state) (member : item ∈ itemList state.openItems)
     (activity : (program.element? item.element).bind (·.activity?) = some (header, payload))
     (ran : Feature.Work.completeUserTask ctx header payload item values state = .ok after) : inv after := by
   have unstarted := ops.activity _ _ _ activity
@@ -265,7 +279,7 @@ theorem completeUserTask_keeps {inv : State → Prop} (ops : WorkOps program inv
 
 /-- `Hooks.effectResult` keeps `inv` for an open item. -/
 theorem effectResult_keeps {inv : State → Prop} (ops : WorkOps program inv) {ctx : Ctx} {item : OpenItem}
-    {outcome : EffectOutcome} {state after : State} (holds : inv state) (member : item ∈ state.openItems)
+    {outcome : EffectOutcome} {state after : State} (holds : inv state) (member : item ∈ itemList state.openItems)
     (effect : item.kind.view.effect.isSome = true)
     (ran : Feature.Work.effectResult ctx item outcome state = .ok after) : inv after := by
   have unstarted := ops.workKind _ _ holds member (.inl effect)
@@ -276,19 +290,30 @@ theorem effectResult_keeps {inv : State → Prop} (ops : WorkOps program inv) {c
   all_goals first
     | exact installed_keeps ops holds member unstarted _ _ _ _ _ _ fun _ same => by cases same
     | exact ops.complete _ _ _ _ _ holds member unstarted fun _ same => by cases same
-    | exact ops.raise _ _ _ _ _ holds member effect
+    | exact ops.raise _ _ _ _ _ _ holds member effect (by assumption)
     | exact reopen_keeps ops holds member (.inl effect) _
 
 /-- `Hooks.retryIncident` keeps `inv`. -/
 theorem retryIncident_keeps {inv : State → Prop} (ops : WorkOps program inv) {ctx : Ctx} {item : OpenItem}
     {incident : IncidentDetail} {generation : Nat} {state after : State} (holds : inv state)
-    (member : item ∈ state.openItems) (waits : item.kind.view.incident = some incident)
+    (member : item ∈ itemList state.openItems) (waits : item.kind.view.incident = some incident)
     (ran : Feature.Work.retryIncident ctx item incident generation state = .ok after) : inv after := by
   unfold Feature.Work.retryIncident Feature.Work.staleIncident at ran
   split at ran
   · cases ran
-  · cases ran
-    exact reopen_keeps ops holds member (.inr (by rw [waits]; rfl)) _
+  · split at ran
+    · cases ran
+      exact reopen_keeps ops holds member (.inr (by rw [waits]; rfl)) _
+    · cases ran
+    · cases ran
+
+/-- A Timer's incident, which no feature opens before the job model's stage (AD8), is refused when retried: the shape is
+carried, its retry is not chosen. -/
+theorem retryIncident_timer (ctx : Ctx) (item : OpenItem) (timer : TimerDetail) (generation : Nat) (cancellable : Bool)
+    (state : State) :
+    Feature.Work.retryIncident ctx item { subject := .job (.timer timer), generation, cancellable } generation state =
+      .error (.unsupported "timer-incident-retry") := by
+  simp [Feature.Work.retryIncident]
 
 /-- `Hooks.cancelIncidentProcess` keeps `inv`. -/
 theorem cancelIncidentProcess_keeps {inv : State → Prop} (ops : WorkOps program inv) {ctx : Ctx} {incident : IncidentDetail}
@@ -322,7 +347,7 @@ theorem mappedErrorOutputs_keeps {motive : State → Prop}
 /-- `Hooks.triggerActivity` keeps `inv` for an open item: a delivery completes the Receive Task its item waits for. -/
 theorem triggerActivity_keeps {inv : State → Prop} (ops : WorkOps program inv) {hooks : Feature.Work.WorkHooks} {ctx : Ctx}
     {header : Header} {payload : ActivityPayload} {item : OpenItem} {fired : Fired} {state after : State}
-    (holds : inv state) (member : item ∈ state.openItems)
+    (holds : inv state) (member : item ∈ itemList state.openItems)
     (activity : (program.element? item.element).bind (·.activity?) = some (header, payload))
     (ran : Feature.Work.triggerActivity hooks ctx header payload item fired state = .ok after) : inv after := by
   unfold Feature.Work.triggerActivity at ran

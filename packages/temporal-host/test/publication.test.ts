@@ -10,6 +10,8 @@ import * as views from "./fixtures/host-views.ts";
 
 const publication = await import(new URL("../dist/publication.js", import.meta.url).href) as
   typeof import("../src/publication.ts");
+const { canonicalBytes, chainCapacity } = await import(new URL("../dist/capacity.js", import.meta.url).href) as
+  typeof import("../src/capacity.ts");
 
 test("a committed input's journal becomes consecutive revisions with role = cause and the started fact's source type", () => {
   const log = publication.appendJournal(publication.openLog(publication.initialCursor), "start", views.effectOpen.journal);
@@ -18,9 +20,9 @@ test("a committed input's journal becomes consecutive revisions with role = caus
     fromRevision: 0,
     throughRevision: 3,
     transitions: [
-      { revision: 1, role: { kind: "input", input: "start" }, element: "StartEvent_1", sourceType: "startEvent", owner: 0 },
-      { revision: 2, role: { kind: "signal", signal: "armScope" }, element: null, sourceType: null, owner: 0 },
-      { revision: 3, role: { kind: "arrive", flow: "Flow_StartToTask" }, element: "Task_Probe", sourceType: "task", owner: 0 },
+      { revision: 1, role: { kind: "input", input: "start" }, element: "StartEvent_1", sourceType: "startEvent" },
+      { revision: 2, role: { kind: "signal", signal: "armScope" }, element: null, sourceType: null },
+      { revision: 3, role: { kind: "arrive", flow: "Flow_StartToTask" }, element: "Task_Probe", sourceType: "task" },
     ],
   }]);
   assert.deepEqual(log.occurrences, [{
@@ -35,10 +37,23 @@ test("a committed input's journal becomes consecutive revisions with role = caus
   assert.equal(log.cursor.revision, 3);
 });
 
+test("a held occurrence's Ready list is carried into its occurrence transition, even on a step that starts nothing (PD2)", () => {
+  const task = { processInstanceId: views.instance, elementId: "Task_Probe", activation: 1, role: "element" };
+  const earlier = { ...task, activation: 2 };
+  const log = publication.appendJournal(publication.openLog(publication.initialCursor), "start", [
+    { cause: { kind: "input", input: "start" }, element: "Task_Probe", started: [{ occurrence: task, sourceType: "userTask" }], ended: [], ready: [task] },
+    { cause: { kind: "signal", signal: "armScope" }, element: null, started: [], ended: [], ready: [earlier] },
+  ]);
+  assert.deepEqual(log.occurrences[0]!.transitions, [
+    { revision: 1, started: [{ occurrence: task, sourceType: "userTask" }], ended: [], ready: [task] },
+    { revision: 2, started: [], ended: [], ready: [earlier] },
+  ]);
+});
+
 test("an element that began in an earlier input keeps the source type its start recorded", () => {
   const started = publication.appendJournal(publication.openLog(publication.initialCursor), "start", views.effectOpen.journal);
   const revisit = publication.appendJournal(started, "again", [
-    { cause: { kind: "arrive", flow: "Flow_Again" }, element: "Task_Probe", owner: 0, started: [], ended: [] },
+    { cause: { kind: "arrive", flow: "Flow_Again" }, element: "Task_Probe", started: [], ended: [] },
   ]);
   assert.equal(revisit.execution[1]!.transitions[0]!.sourceType, "task");
 });
@@ -46,7 +61,7 @@ test("an element that began in an earlier input keeps the source type its start 
 test("every execution batch has its occurrence batch over the same revisions, empty when no occurrence started or ended", () => {
   const started = publication.appendJournal(publication.openLog(publication.initialCursor), "start", views.effectOpen.journal);
   const revisit = publication.appendJournal(started, "again", [
-    { cause: { kind: "arrive", flow: "Flow_Again" }, element: "Task_Probe", owner: 0, started: [], ended: [] },
+    { cause: { kind: "arrive", flow: "Flow_Again" }, element: "Task_Probe", started: [], ended: [] },
   ]);
   const positions = (batches: readonly { commandId: string; fromRevision: number; throughRevision: number }[]) =>
     batches.map(({ commandId, fromRevision, throughRevision }) => [commandId, fromRevision, throughRevision]);
@@ -85,4 +100,17 @@ test("a page holds the batches after the requested revision, at most `limit` of 
 test("an input whose journal is empty publishes nothing", () => {
   const log = publication.appendJournal(publication.openLog(publication.initialCursor), "noop", []);
   assert.deepEqual([log.execution, log.occurrences, log.cursor.revision], [[], [], 0]);
+});
+
+test("an input's batch bytes are exact up to the batch bound and above it once its batches are", () => {
+  const bound = chainCapacity.publicationBatchBytes;
+  const exact = (log: ReturnType<typeof publication.openLog>) =>
+    canonicalBytes(log.execution.at(-1)) + canonicalBytes(log.occurrences.at(-1));
+  const measured = Array.from({ length: 90 }, (_, step) => {
+    const journal = Array.from({ length: 200 + step * 2 }, (_, index) => views.effectOpen.journal[index % 3]!);
+    const log = publication.appendJournal(publication.openLog(publication.initialCursor), "start", journal);
+    return [log.batchBytes[0]!, exact(log)] as const;
+  });
+  assert.ok(measured.some(([, bytes]) => bytes <= bound) && measured.some(([, bytes]) => bytes > bound), "the journals straddle the bound");
+  for (const [bytes, whole] of measured) assert.ok(whole <= bound ? bytes === whole : bytes > bound, `${String(bytes)} for ${String(whole)}`);
 });

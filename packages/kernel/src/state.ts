@@ -8,133 +8,106 @@
  * any other `T.f` as `tF`.
  *
  * Occurrences and activations are created and removed only here, in `state/removal.ts` and in `step.ts`; variables are written only through
- * `setVariable`, whose one caller is `feature/data.ts`; flow tokens are added only by `emit`, whose one caller is
+ * `state/variables.ts`' `setVariable`, whose one caller is `feature/data.ts`; flow tokens are added only by `emit`, whose one caller is
  * `feature/flow.ts`, and deferred begins only by `deferBegins`, whose one caller is `feature/multi-instance.ts`
  * (guard 17).
  */
 import {
-  VariableEvent, assertNever, definitionRefEquals, programChildren, programItemScope, programProcessChildren, programPublicId, utf8ByteSize,
-  type DefinitionRef, type Element, type ElementId, type FlowId, type Program, type Value,
+  VariableEvent, assertNever, compareStrings, definitionRefEquals, programChildren, programItemScope, programProcessChildren,
+  type Element, type ElementId, type FlowId, type Program, type Value,
 } from "./il/types.js";
 import {
   type Binding, type ConditionalWaitDetail, type EffectDetail, type IncidentDetail, InputTag, type MessageChannel,
   messageChannelEquals, type MessageWaitDetail, type OpenKind, OpenKindTag, openKindView, optionalChannelEquals,
   type SendDescriptor, type SignalAddress, SignalAddressTag, signalAddressMatches, type SignalWaitDetail, type TimerDetail,
-  type TimerRecurrence, type UserTaskDetail, type WaitView,
+  type TimerRecurrence, type UserTaskDetail, type WaitView, type IncidentSubject, IncidentSubjectTag, type JobDetail, type JobSubject, JobSubjectTag,
 } from "./state/wait.js";
 export {
   type Binding, type ConditionalWaitDetail, type EffectDetail, type IncidentDetail, InputTag, type MessageChannel,
   messageChannelEquals, type MessageWaitDetail, type OpenKind, OpenKindTag, openKindView, optionalChannelEquals,
   type SendDescriptor, type SignalAddress, SignalAddressTag, signalAddressMatches, type SignalWaitDetail, type TimerDetail,
-  type TimerRecurrence, type UserTaskDetail, type WaitView,
+  type TimerRecurrence, type UserTaskDetail, type WaitView, type IncidentSubject, IncidentSubjectTag, type JobDetail, type JobSubject, JobSubjectTag,
 };
 import {
-  type CommandAction, CommandActionTag, type CommandInput, type ConditionChoice, type CorrelationMatch, type CriterionTarget,
+  type BroadcastIntent, type CommandAction, CommandActionTag, type CommandInput, type ConditionChoice, type CorrelationMatch, type CriterionTarget,
   CriterionTargetTag, type DeliveryInput, type DeliveryTrigger, DeliveryTriggerTag, type EffectInput,
-  type EffectOutcome, EffectOutcomeTag, type EvalContext, type Input, noStartTrigger, type OccurrenceRef,
-  SignalReach, type StartInput, type StartTrigger, StartTriggerTag, type TimerInput,
+  type EffectOutcome, EffectOutcomeTag, type EvalContext, type Input, noStartTrigger, type OccurrenceRef, nameRef,
+  type SignalFiring, SignalReach, type StartInput, type StartTrigger, StartTriggerTag, type TimerInput, type CancelInstanceInput,
 } from "./state/input.js";
 export {
-  type CommandAction, CommandActionTag, type CommandInput, type ConditionChoice, type CorrelationMatch, type CriterionTarget,
+  type BroadcastIntent, type CommandAction, CommandActionTag, type CommandInput, type ConditionChoice, type CorrelationMatch, type CriterionTarget,
   CriterionTargetTag, type DeliveryInput, type DeliveryTrigger, DeliveryTriggerTag, type EffectInput,
-  type EffectOutcome, EffectOutcomeTag, type EvalContext, type Input, noStartTrigger, type OccurrenceRef,
-  SignalReach, type StartInput, type StartTrigger, StartTriggerTag, type TimerInput,
+  type EffectOutcome, EffectOutcomeTag, type EvalContext, type Input, noStartTrigger, type OccurrenceRef, nameRef,
+  type SignalFiring, SignalReach, type StartInput, type StartTrigger, StartTriggerTag, type TimerInput, type CancelInstanceInput,
 };
 import {
-  type Compensable, type CompensationRun, type Compensations, type FeatureSlots, featureSlotsClear,
-  featureSlotsKeptAlive, type InstanceData, type Iteration, IterationTag, type Leave, leaveFlows, leaveOutgoing,
-  leaveRaised, LeaveTag, type MultiInstanceRun, type Parked, parkedEquals, type Held, type Resume, ResumeTag,
-  type ScopeOccurrenceId,
+  type Compensable, type CompensableChild, type CompensationRun, type Compensations, compensationsRestoredIn, type FeatureSlots, featureSlotsClear,
+  featureSlotsKeptAlive, featureSlotsSuspended, type InstanceData, type Iteration, iterationHolds, IterationTag, type Leave,
+  leaveFlows, leaveOutgoing, leaveRaised, LeaveTag, type MultiInstanceRun, type Parked, parkedEquals, parkedLeastBy, type Held,
+  type HeldMap, type Resume, compareRunKey, runAnchor, runHolds,
+  ResumeTag, type ScopeOccurrenceId, type Suspended, type Variables,
 } from "./state/slots.js";
+import { type InstanceFailure, type Origin, type Raised, raisedIsCancel, RaisedTag } from "./state/raise.js";
+export { type InstanceFailure, type Origin, type Raised, raisedIsCancel, RaisedTag };
 import {
-  type InstanceFailure, type Origin, type Raised, raisedIsCancel, RaisedTag,
-} from "./state/raise.js";
-export {
-  type InstanceFailure, type Origin, type Raised, raisedIsCancel, RaisedTag,
-};
-import {
-  ActivationRole, type Cause, CauseTag, marks, type OccurrenceKey, type StartedFact, Terminal, type Transition,
+  type ActivationCount, type Cause, CauseTag, marks, type StartedFact, Terminal, type Transition,
 } from "./state/journal.js";
 export {
-  ActivationRole, type Cause, CauseTag, type OccurrenceKey, type StartedFact, Terminal, type Transition,
+  type ActivationCount, type Cause, CauseTag, type StartedFact, Terminal, type Transition,
 };
 export {
-  type Compensable, type CompensationRun, type Compensations, type FeatureSlots, featureSlotsClear,
-  featureSlotsKeptAlive, type InstanceData, type Iteration, IterationTag, type Leave, leaveFlows, leaveOutgoing,
-  leaveRaised, LeaveTag, type MultiInstanceRun, type Parked, parkedEquals, type Held, type Resume, ResumeTag,
-  type ScopeOccurrenceId,
+  type Compensable, type CompensableChild, type CompensationRun, type Compensations, compensationsRestoredIn, type FeatureSlots, featureSlotsClear,
+  featureSlotsKeptAlive, featureSlotsSuspended, type InstanceData, type Iteration, iterationHolds, IterationTag, type Leave,
+  leaveFlows, leaveOutgoing, leaveRaised, LeaveTag, type MultiInstanceRun, type Parked, parkedEquals, parkedLeastBy, type Held,
+  type HeldMap, type Resume, runAnchor, runHolds,
+  ResumeTag, type ScopeOccurrenceId, type Suspended, type Variables,
 };
 
-/** Guarded type: `step.ts` owns matching on it. Whom `Step` tells when an occurrence completes. */
-export enum ContinuationTag {
-  /** Leave through the outgoing flows. */
-  Flow = "flow",
-  /** One instance of the Multi-Instance body occurrence `body`. */
-  MultiInstance = "multiInstance",
-  /** A compensation handler of the run in that scope occurrence. */
-  Compensation = "compensation",
-}
-
-export type Continuation =
-  | { readonly tag: ContinuationTag.Flow }
-  | { readonly tag: ContinuationTag.MultiInstance; readonly body: number }
-  | { readonly tag: ContinuationTag.Compensation; readonly run: ScopeOccurrenceId };
-
-export const flowContinuation: Continuation = { tag: ContinuationTag.Flow };
-
-/**
- * One flow-node occurrence, from its issue until it ends. `activation` counts the activations of `element` in its
- * process instance under `role`, from 1. `incoming` is the flow the token arrived on, `null` for an occurrence no
- * token began.
- *
- * `begun = false` is a subscription's reservation: a boundary, Event Sub-Process start or Event-Based Gateway arm has a
- * published identity from the moment it is armed, but its flow node runs only when the trigger arrives (CIB declares
- * the subscription on the event scope and starts the activity instance on receipt, `BpmnParse:3288-3298`). A
- * reservation keeps nothing alive and never appears in the journal until it begins.
- */
-export interface Occurrence {
-  readonly id: number;
-  readonly element: ElementId;
-  readonly scope: ScopeOccurrenceId;
-  readonly activation: number;
-  readonly role: ActivationRole;
-  readonly continuation: Continuation;
-  readonly incoming: FlowId | null;
-  readonly begun: boolean;
-}
-
-/**
- * A scope occurrence: the process instance (`element = null`), one activation of a Scope element, the root of a called
- * process instance, whose `element` is the Call Activity and `calledInstance` the instance's identifier, a
- * Multi-Instance body or instance, the occurrence holding a compensation handler's restored context, or an Activity's
- * local variables (CIB-EXT-0015), which live as long as the Activity. `occurrence` is the flow-node occurrence it
- * belongs to, `null` for the process root, a Multi-Instance instance and a handler's context.
- */
-export interface ScopeOccurrence {
-  readonly id: ScopeOccurrenceId;
-  readonly element: ElementId | null;
-  readonly parent: ScopeOccurrenceId | null;
-  readonly occurrence: number | null;
-  readonly calledInstance: string | null;
-}
-
-export interface ScopeVariables { readonly scope: ScopeOccurrenceId; readonly entries: readonly Binding[]; }
-
-/**
- * One open interaction. `occurrence` is the occurrence it waits for, or a subscription's reservation; the public
- * identity is the occurrence's activation of `element`. `attachedTo` is the occurrence the subscription hangs on (the
- * boundary's host, the Event-Based Gateway of an arm). A `passive` item, such as an Event Sub-Process start
- * subscription, keeps no scope occurrence alive and is removed when its scope completes.
- */
-export interface OpenItem {
-  readonly id: number;
-  readonly kind: OpenKind;
-  readonly element: ElementId;
-  readonly scope: ScopeOccurrenceId;
-  readonly occurrence: number;
-  readonly attachedTo: number | null;
-  readonly passive: boolean;
-}
+import {
+  ActivationRole, childScope, compareIssue, compareOccurrenceId, compareScopeOccurrenceId, compareUnitKey, type InstanceName, type Issue, issuerText,
+  occurrenceId, type OccurrenceId, occurrenceIdParts, type OccurrenceKey, type OccurrenceName, rootScope, sameInstanceName, scopeParent, type ScopeSlot,
+  signalUnit, tokenUnit, type UnitKey,
+} from "./state/key.js";
+import {
+  type Continuation, ContinuationTag, flowContinuation, type Occurrence, type OccurrenceMap, type ScopeMap, type ScopeOccurrence,
+  scopeOccurrenceParent,
+} from "./state/occurrence.js";
+export {
+  type Continuation, ContinuationTag, flowContinuation, type Occurrence, type OccurrenceMap, type ScopeMap, type ScopeOccurrence,
+  scopeOccurrenceParent,
+};
+import { type ActivationSlot, type ClaimSlot, ClaimSlotTag, type Issuer, type IssueTable, seedUnit } from "./state/issue.js";
+import {
+  compareItemKey, insertItem, type ItemKey, itemAt, itemKeyText, ItemRole, itemsInOrder, type OpenItem, type OpenItems, sameItemKey,
+} from "./state/items.js";
+export {
+  compareItemKey, insertItem, type ItemKey, itemAt, itemKeyText, ItemRole, itemsInOrder, type OpenItem, type OpenItems, sameItemKey,
+};
+import {
+  keyedGet, keyedInsert, keyedInsertIfNew, type OrderedMap, orderedAny, orderedEntries, orderedInsert, orderedSize, type TreeMap, treeMapGetD, treeMapInsert,
+} from "./state/map.js";
+export { type TreeMap, treeMapInsert };
+// The closure's unit keys and keyed maps reach the step through this hub, as `Kernel.State` re-exports them (guard 15).
+export {
+  breadthUnitKey, childScope, compareIssue, compareOccurrenceId, compareScopeOccurrenceId, compareScopeSlot, compareUnitKey,
+  committedOrdinal, type FreshIssue, freshIssue,
+  type Issue, issueNumber, issuerText, occurrenceId, occurrenceIdParts, sameUnitKey, scopeEncloses, scopeHead, scopeParent, type UnitKey,
+  unitRoot, UnitRootTag, calledBy, type InstanceName, instanceText, instanceTextWith, renameInstanceName, type OccurrenceName,
+  compareOccurrenceName, compareInstanceName, ActivationRole, type OccurrenceId, type OccurrenceKey,
+} from "./state/key.js";
+export {
+  type ActivationSlot, type ClaimSlot, ClaimSlotTag, compareClaimSlot, compareIssuePlace, committedScope, finishUnit, idleUnit, type Issued, type Issuer,
+  type IssueTable, issueNotAfter, occurrenceFresh, positionOutsideIssueTable, offersOccurrence, offerUnit, readyUnit, scopeFresh, seedUnit,
+} from "./state/issue.js";
+export {
+  type OrderedMap, orderedAny, orderedCount, orderedEntries, orderedErase, orderedGet, orderedHas, orderedInsert, orderedSize,
+} from "./state/map.js";
+import {
+  committed, type Failure, failed, failedWith, FailureTag, type RecordedFailure, recorded, type Result, SemanticCause, semanticFailure,
+} from "./state/failure.js";
+export {
+  committed, type Failure, failed, failedWith, FailureTag, type RecordedFailure, recorded, type Result, SemanticCause, semanticFailure,
+};
 
 export enum InstanceStatus { Running = "running", Completed = "completed", Cancelled = "cancelled", Failed = "failed" }
 
@@ -159,7 +132,7 @@ export enum FiredTag { Timer = "timer", Message = "message", Signal = "signal", 
 export type Fired =
   | { readonly tag: FiredTag.Timer; readonly logicalTimeMs: number }
   | { readonly tag: FiredTag.Message; readonly delivery: DeliveryInput }
-  | { readonly tag: FiredTag.Signal; readonly delivery: DeliveryInput }
+  | { readonly tag: FiredTag.Signal; readonly firing: SignalFiring }
   | { readonly tag: FiredTag.Condition; readonly write: WriteEvent | null };
 
 /**
@@ -173,16 +146,16 @@ export interface BeginRequest {
   readonly scope: ScopeOccurrenceId;
   readonly continuation: Continuation;
   readonly incoming: FlowId | null;
-  readonly reserved: number | null;
+  readonly reserved: OccurrenceId | null;
   readonly writes: readonly Binding[];
-  readonly inner: number | null;
+  readonly inner: OccurrenceId | null;
   readonly trigger: StartTrigger;
 }
 
 export enum TokenTag { Flow = "flow", Begin = "begin" }
 
 /**
- * One entry of a closure's work stack, `State.tokens`, which `step.ts` owns matching on: a token on a sequence flow
+ * One entry of a closure's work stack (`State.queuedTokens`, `State.batchTokens`), which `step.ts` owns matching on: a token on a sequence flow
  * inside a scope occurrence, or a deferred begin, the request of a `begin` signal moved onto the stack, which `step.ts`
  * dispatches as that signal, with its journal cause, when the closure reaches it. Both carry the scope occurrence they
  * keep busy, Lean's `Token.busyScope`: a deferred begin's is the one its request begins in, `request.scope`.
@@ -247,17 +220,19 @@ export enum SignalTag {
   Compensate = "compensate",
   /** An Error left the compensation handler context `handler` uncaught. */
   CompensationFailed = "compensationFailed",
+  /** The left handler context `context` released readiness work of the run in `scope`, run as a unit of its own (DC30). */
+  CompensationReady = "compensationReady",
 }
 
 export type Signal =
-  | { readonly tag: SignalTag.Arm; readonly host: number; readonly element: ElementId; readonly scope: ScopeOccurrenceId }
+  | { readonly tag: SignalTag.Arm; readonly host: OccurrenceId; readonly element: ElementId; readonly scope: ScopeOccurrenceId }
   | { readonly tag: SignalTag.ArmScope; readonly scope: ScopeOccurrenceId }
-  | { readonly tag: SignalTag.ArmGateway; readonly occurrence: number; readonly gateway: ElementId; readonly scope: ScopeOccurrenceId }
+  | { readonly tag: SignalTag.ArmGateway; readonly occurrence: OccurrenceId; readonly gateway: ElementId; readonly scope: ScopeOccurrenceId }
   | { readonly tag: SignalTag.Raise; readonly event: Raised; readonly origin: Origin }
   | { readonly tag: SignalTag.Begin; readonly request: BeginRequest }
   | {
       readonly tag: SignalTag.Complete;
-      readonly occurrence: number;
+      readonly occurrence: OccurrenceId;
       readonly leave: Leave;
       readonly writes: readonly Binding[];
       readonly rule: WriteRule;
@@ -272,27 +247,25 @@ export type Signal =
       readonly writes: readonly Binding[];
       readonly rule: WriteRule;
     }
-  | { readonly tag: SignalTag.Cancel; readonly occurrence: number }
-  | { readonly tag: SignalTag.Fire; readonly item: number; readonly fired: Fired }
+  | { readonly tag: SignalTag.Cancel; readonly occurrence: OccurrenceId }
+  | { readonly tag: SignalTag.Fire; readonly item: ItemKey; readonly fired: Fired }
   | { readonly tag: SignalTag.EndInstance; readonly status: InstanceStatus; readonly failure: InstanceFailure | null }
   | {
       readonly tag: SignalTag.Compensate;
       readonly scope: ScopeOccurrenceId;
       readonly activity: ElementId | null;
-      readonly trigger: OccurrenceRef;
-      readonly leave: number | null;
+      readonly trigger: OccurrenceName;
+      readonly leave: OccurrenceId | null;
       readonly resume: Resume | null;
     }
   | {
-      readonly tag: SignalTag.CompensationFailed;
-      readonly handler: ScopeOccurrenceId;
-      readonly code: string;
-      readonly message: string | null;
-      readonly origin: Origin;
-    };
+      readonly tag: SignalTag.CompensationFailed; readonly handler: ScopeOccurrenceId; readonly code: string;
+      readonly message: string | null; readonly origin: Origin;
+    }
+  | { readonly tag: SignalTag.CompensationReady; readonly scope: ScopeOccurrenceId; readonly context: ScopeOccurrenceId };
 
 /** `Signal.complete`. */
-export function completeSignal(occurrence: number, leave: Leave, writes: readonly Binding[], rule: WriteRule): Signal {
+export function completeSignal(occurrence: OccurrenceId, leave: Leave, writes: readonly Binding[], rule: WriteRule): Signal {
   return { tag: SignalTag.Complete, occurrence, leave, writes, rule };
 }
 
@@ -306,117 +279,105 @@ export interface Draft {
   readonly started: readonly StartedFact[];
   readonly ended: readonly (readonly [OccurrenceKey, Terminal])[];
   readonly cancelled: readonly Occurrence[];
+  readonly ready: readonly OccurrenceKey[];
 }
 
-export const emptyDraft: Draft = { started: [], ended: [], cancelled: [] };
-
-/** One activation counter (R8: per process instance, element and role). */
-export interface ActivationCount {
-  readonly processInstance: string;
-  readonly element: ElementId;
-  readonly role: ActivationRole;
-  readonly count: number;
-}
-
-/** A Signal thrown to the population, which the host publishes after the input commits (PC-SIGNAL-01, PC-SIGNAL-04). */
-export interface BroadcastIntent {
-  readonly address: SignalAddress;
-  readonly variables: readonly Binding[];
-  readonly businessKey: string | null;
-  readonly origin: OccurrenceRef;
-}
+export const emptyDraft: Draft = { started: [], ended: [], cancelled: [], ready: [] };
 
 export interface State {
   readonly instanceId: string;
   readonly status: InstanceStatus;
-  readonly scopes: readonly ScopeOccurrence[];
-  readonly occurrences: readonly Occurrence[];
-  /** The closure's work stack (`nextToken` in `step.ts`), empty once a closure settles. */
-  readonly tokens: readonly Token[];
-  readonly variables: readonly ScopeVariables[];
-  readonly openItems: readonly OpenItem[];
+  /** Lean's `scopeMap` through its list view `State.scopes`: in key order, which readers look up or filter, never order by. */
+  readonly scopes: ScopeMap;
+  /** Lean's `occurrenceMap` through its list view `State.occurrences`: in key order, which readers look up or filter, never order by. */
+  readonly occurrences: OccurrenceMap;
+  /**
+   * The running micro-step's batch: the tokens it queued, in order; `queueBatch` moves them into `queuedTokens` (DC4).
+   * Named for the batch, so no read can take it for the closure's queue (`allTokens` reads both).
+   */
+  readonly batchTokens: readonly Token[];
+  /** The closure's queued tokens, each keyed by the unit that queued it and its index in its batch; empty at commit. */
+  readonly queuedTokens: OrderedMap<UnitKey, Token>;
+  /**
+   * Each scope occurrence's own variables, keyed by (scope occurrence, name) (DC25, DC21): content, with no order of
+   * entry, each set written as its list view in name order (`Variables`).
+   */
+  readonly variables: TreeMap<ScopeOccurrenceId, Variables>;
+  readonly openItems: OpenItems;
+  /** The next item ordinal of each occurrence that opened an item, advanced at commit (DC12), pruned with it. */
+  readonly itemOrdinals: TreeMap<OccurrenceId, number>;
+  /** The next ordinal of each element in each scope occurrence that entered one, advanced at commit, pruned with it. */
+  readonly scopeOrdinals: TreeMap<ScopeSlot, number>;
+  /** The next ordinal of each element in each scope occurrence that issued an occurrence of it, likewise. */
+  readonly occurrenceOrdinals: TreeMap<ScopeSlot, number>;
+  /**
+   * The running micro-step's unit, whose issues are its fresh issues, and the index of its next issue (DC12): set when a
+   * micro-step begins (`microStep`; `reoffer` for an offer it computes first) and reset when it concludes. Between
+   * micro-steps Lean's reads the seed's key, which no micro-step runs under; this one reads `null`, which `issue` reads as
+   * the seed's, so a state carries no unit key between micro-steps.
+   */
+  readonly issuing: Issuer | null;
+  readonly issueNext: number;
+  /**
+   * Every identity issued in the closure in progress, with the slot it takes its committed ordinal in and its issuer:
+   * written at issue, emptied by the commit's compaction, which renames each to its ordinal (`step/commit.ts#compact`).
+   * Empty at commit.
+   */
+  readonly issued: IssueTable;
   readonly activations: readonly ActivationCount[];
-  readonly nextIssue: number;
+  /** The next compensation completion number (`takeCompletion`), taken in run order as a record completes. */
+  readonly nextCompletion: number;
+  /**
+   * `nextCompletion` when the closure in progress began (`step.ts`'s `onRunning`), the closure stamp of every record it
+   * completes (`Compensable.closure`): records of one closure share it, and a later closure's is greater whenever an
+   * earlier one completed a record.
+   */
+  readonly completionBase: number;
+  /**
+   * The counter of issued order positions (DC13): an open item's `position` is the running unit's issue in the position
+   * slot (`issuePosition`), numbered from here at commit in the closure's position order, which advances it.
+   */
+  readonly nextOrder: number;
   readonly logicalTimeMs: number;
-  readonly signals: readonly Signal[];
+  /** The running micro-step's batch of signals, in order; moved into `queuedSignals` like `batchTokens`. */
+  readonly batchSignals: readonly Signal[];
+  /** The closure's queued signal batches, each signal keyed like a queued token; empty at commit (DC2, DC4). */
+  readonly queuedSignals: OrderedMap<UnitKey, Signal>;
   /** Every variable write since the last drain, same-value writes included: `Step` hands them to `Hooks.written`. */
   readonly writes: readonly WriteEvent[];
-  /** The intents of the input in progress; `step` empties it first, so a host publishes a committed input's own. */
-  readonly outbox: readonly BroadcastIntent[];
+  /** The running micro-step's broadcast intents, in the order it made them; moved into `outboxes` like `batchTokens`. */
+  readonly batchIntents: readonly BroadcastIntent[];
+  /** The intents of the closure's micro-steps, keyed by the unit that made each batch; empty at commit (DC4). */
+  readonly outboxes: OrderedMap<UnitKey, readonly BroadcastIntent[]>;
   readonly slots: FeatureSlots;
   /** Present exactly when `status` is `failed`. */
   readonly failure: InstanceFailure | null;
-  /** The occurrence facts of the input in progress; `step` empties it first. */
+  /** The occurrence facts of a committed input, in run order (`orderJournal`); empty while the closure runs. */
   readonly journal: readonly Transition[];
+  /**
+   * A committed input's broadcast intents in run order (`orderJournal`), which a host publishes as the input's own; empty
+   * while the closure runs.
+   */
+  readonly intents: readonly BroadcastIntent[];
+  /** The transitions of the closure in progress, each keyed by the unit that ran it; empty at commit (DC4). */
+  readonly transitions: OrderedMap<UnitKey, Transition>;
   readonly draft: Draft;
 }
 
 /**
  * Whether the input in progress has crossed a transaction boundary: begun an occurrence marked `asyncBefore`, or
- * completed one marked `asyncAfter`, in the journal or the micro-step's draft. The kernel's one reader of the marks.
+ * completed one marked `asyncAfter`, in a transition of the closure or the micro-step's draft. The kernel's one reader
+ * of the marks.
  */
 export function crossed(program: Program, state: State): boolean {
-  const facts = [...state.journal.map((transition) => [transition.started, transition.ended] as const),
-    [state.draft.started, state.draft.ended] as const];
-  return facts.some(([started, ended]) =>
+  const marked = (started: readonly StartedFact[], ended: readonly (readonly [OccurrenceKey, Terminal])[]): boolean =>
     started.some((fact) => marks(program, fact.occurrence)[0]) ||
-      ended.some(([key, terminal]) => terminal === Terminal.Completed && marks(program, key)[1]));
+      ended.some(([key, terminal]) => terminal === Terminal.Completed && marks(program, key)[1]);
+  return orderedAny(state.transitions, (_, transition) => marked(transition.started, transition.ended)) ||
+    marked(state.draft.started, state.draft.ended);
 }
-
-/**
- * Why a step does not commit. Harness failures never appear here. `rolledBack` is a command whose closure could not
- * continue (no outgoing flow to take): it ends the run with the state before the command.
- */
-export enum FailureTag {
-  Rejected = "rejected",
-  RolledBack = "rolledBack",
-  SemanticFailure = "semanticFailure",
-  Unsupported = "unsupported",
-}
-
-/**
- * Why a semantic failure happened, which its producer states. `Model`: the model's data reaches it, so CIB's job fails
- * alike (CIB-EXT-0027). `Invariant`: admission or the kernel's own construction excludes it, so reaching it is a kernel
- * defect, which `step/jobs.ts#deferred` passes through every boundary unchanged.
- */
-export enum SemanticCause {
-  Model = "model",
-  Invariant = "invariant",
-}
-
-/** A step's failure (Lean's `Failure`): a semantic failure carries its `SemanticCause`, which only the step reads. */
-export type Failure =
-  | { readonly tag: Exclude<FailureTag, FailureTag.SemanticFailure>; readonly code: string }
-  | { readonly tag: FailureTag.SemanticFailure; readonly code: string; readonly cause: SemanticCause };
-
-/**
- * A failure as a contract records it (`recorded`): without a cause, so no decoder invents one and no equality of records
- * compares one. The wire never carries a cause; `cause?: never` makes passing a step's `Failure` here a type error.
- */
-export interface RecordedFailure { readonly tag: FailureTag; readonly code: string; readonly cause?: never }
-
-/** `failure` without its cause. */
-export function recorded(failure: Failure): RecordedFailure { return { tag: failure.tag, code: failure.code }; }
-
-/** Lean's `Except Failure α`. */
-export type Result<T> =
-  | { readonly ok: true; readonly value: T }
-  | { readonly ok: false; readonly failure: Failure };
 
 export type Outcome = Result<State>;
-
-export function committed<T>(value: T): Result<T> { return { ok: true, value }; }
-
-export function failed<T>(tag: Exclude<FailureTag, FailureTag.SemanticFailure>, code: string): Result<T> {
-  return { ok: false, failure: { tag, code } };
-}
-
-export function semanticFailure<T>(cause: SemanticCause, code: string): Result<T> {
-  return { ok: false, failure: { tag: FailureTag.SemanticFailure, code, cause } };
-}
-
-/** An `Except` failure carried to another result type. */
-export function failedWith<T>(failure: Failure): Result<T> { return { ok: false, failure }; }
 
 // State operations
 
@@ -434,24 +395,60 @@ export function keyed(bindings: readonly Binding[]): readonly Binding[] {
   return kept;
 }
 
-export const root: ScopeOccurrenceId = 0;
+export const root: ScopeOccurrenceId = rootScope;
 
-/** A fresh process instance: one root scope occurrence with the given variables, `keyed`. */
+/**
+ * The issuer of the micro-step of `unit` that starts on `state`: its run ordinal in the closure is the number of
+ * transitions the closure journalled before it, since every unit that ran journalled one (`journalDraft`).
+ */
+export function issuerFor(state: State, unit: UnitKey): Issuer {
+  return { unit, text: issuerText(unit, orderedSize(state.transitions)) };
+}
+
+/** Lean's `TreeMap.insert` on a variable set: `value` under `name`, replacing the value there, kept in name order. */
+export function insertVariable(variables: Variables, name: string, value: Value): Variables {
+  return keyedInsert(variables, [name, value] as const, bindingName, compareStrings);
+}
+
+/** Lean's `TreeMap.insertIfNew` on a variable set: `value` under `name` unless the set binds `name` already. */
+export function insertVariableIfNew(variables: Variables, name: string, value: Value): Variables {
+  return variables.some(([held]) => held === name) ? variables : insertVariable(variables, name, value);
+}
+
+/** Lean's `Variables.ofBindings`: `bindings` as a variable set, a name bound twice keeping the value bound last (#147). */
+export function variablesOfBindings(bindings: readonly Binding[]): Variables {
+  return bindings.reduce<Variables>((set, [name, value]) => insertVariable(set, name, value), []);
+}
+
+const bindingName = (binding: Binding): string => binding[0];
+
+/** A fresh process instance: one root scope occurrence with the given variables (`variablesOfBindings`). */
 export function initial(instanceId: string, variables: readonly Binding[], businessKey: string | null = null): State {
   return {
     instanceId,
     status: InstanceStatus.Running,
-    scopes: [{ id: root, element: null, parent: null, occurrence: null, calledInstance: null }],
+    scopes: [{ id: root, element: null, position: 0, occurrence: null, calledInstance: null }],
     occurrences: [],
-    tokens: [],
-    variables: [{ scope: root, entries: keyed(variables) }],
+    batchTokens: [],
+    queuedTokens: null,
+    variables: [[root, variablesOfBindings(variables)]],
     openItems: [],
+    itemOrdinals: [],
+    scopeOrdinals: [],
+    occurrenceOrdinals: [],
+    issuing: null,
+    issueNext: 0,
+    issued: null,
     activations: [],
-    nextIssue: 1,
+    nextCompletion: 1,
+    completionBase: 1,
+    nextOrder: 1,
     logicalTimeMs: 0,
-    signals: [],
+    batchSignals: [],
+    queuedSignals: null,
     writes: [],
-    outbox: [],
+    batchIntents: [],
+    outboxes: null,
     slots: {
       parked: [],
       held: [],
@@ -461,12 +458,14 @@ export function initial(instanceId: string, variables: readonly Binding[], busin
     },
     failure: null,
     journal: [],
+    intents: [],
+    transitions: null,
     draft: emptyDraft,
   };
 }
 
 export function emit(state: State, flows: readonly FlowId[], scope: ScopeOccurrenceId): State {
-  return { ...state, tokens: [...state.tokens, ...flows.map((flow): Token => ({ tag: TokenTag.Flow, flow, scope }))] };
+  return { ...state, batchTokens: [...state.batchTokens, ...flows.map((flow): Token => ({ tag: TokenTag.Flow, flow, scope }))] };
 }
 
 /**
@@ -475,14 +474,62 @@ export function emit(state: State, flows: readonly FlowId[], scope: ScopeOccurre
  */
 export function deferBegins(state: State, requests: readonly BeginRequest[]): State {
   const deferred = requests.map((request): Token => ({ tag: TokenTag.Begin, request, scope: request.scope }));
-  return { ...state, tokens: [...state.tokens, ...deferred.reverse()] };
+  return { ...state, batchTokens: [...state.batchTokens, ...deferred.reverse()] };
 }
 
-export function issue(state: State): readonly [State, number] {
-  return [{ ...state, nextIssue: state.nextIssue + 1 }, state.nextIssue];
+/** The next compensation completion number (`nextCompletion`), counted up in run order. */
+export function takeCompletion(state: State): readonly [State, number] {
+  return [{ ...state, nextCompletion: state.nextCompletion + 1 }, state.nextCompletion];
 }
 
-export function signal(state: State, next: Signal): State { return { ...state, signals: [...state.signals, next] }; }
+/**
+ * Lean's `State.issue`, the one issuer of every identity inside a closure (DC12): the running unit's next issue, recorded
+ * in the issue table with the slot it takes its committed ordinal in at commit.
+ */
+export function issue(state: State, slot: ClaimSlot): readonly [State, Issue] {
+  const issuer = state.issuing ?? issuerFor(state, seedUnit);
+  const fresh: Issue = { issuer: issuer.text, index: state.issueNext };
+  const issued = orderedInsert(state.issued, fresh, { slot, unit: issuer.unit }, compareIssue);
+  return [{ ...state, issueNext: state.issueNext + 1, issued }, fresh];
+}
+
+/** Lean's `State.issuePosition`: a fresh order position, the running unit's next issue in the position slot (DC13). */
+export function issuePosition(state: State): readonly [State, Issue] {
+  return issue(state, { tag: ClaimSlotTag.Position });
+}
+
+/**
+ * A fresh key for an occurrence of `element` issued in `scope`: the running unit's next issue, which the commit renames
+ * to the next ordinal of its (scope occurrence, element) counter. The one issuer of occurrence keys (KD1, DC12).
+ */
+export function issueOccurrence(state: State, scope: ScopeOccurrenceId, element: ElementId): readonly [State, OccurrenceId] {
+  const [issued, ordinal] = issue(state, { tag: ClaimSlotTag.Occurrence, slot: { parent: scope, element } });
+  return [issued, occurrenceId(scope, element, ordinal)];
+}
+
+export function signal(state: State, next: Signal): State { return { ...state, batchSignals: [...state.batchSignals, next] }; }
+
+/**
+ * Lean's `State.allTokens`: every queued token, the closure's queued content and the running micro-step's batch. A
+ * membership view, read only as a multiset: its order is the map's key order, which is no order of entry (KD7).
+ */
+export function allTokens(state: State): readonly Token[] {
+  return [...orderedEntries(state.queuedTokens).map(([, token]) => token), ...state.batchTokens];
+}
+
+/** Lean's `State.queueBatch`: the running micro-step's batches under its unit key `unit` (DC4), each signal and token keyed
+ * by its batch index unless `grouped` gives the signal a root of its own (`finishKey`, DC30), the intents as one entry. */
+export function queueBatch(state: State, unit: UnitKey, grouped: (index: number) => UnitKey | null = () => null): State {
+  return {
+    ...state,
+    queuedSignals: state.batchSignals.reduce(
+      (queued, next, index) => orderedInsert(queued, grouped(index) ?? signalUnit(unit, index), next, compareUnitKey), state.queuedSignals),
+    queuedTokens: state.batchTokens.reduce((queued, token, index) => orderedInsert(queued, tokenUnit(unit, index), token, compareUnitKey),
+      state.queuedTokens),
+    outboxes: state.batchIntents.length === 0 ? state.outboxes : orderedInsert(state.outboxes, unit, state.batchIntents, compareUnitKey),
+    batchSignals: [], batchTokens: [], batchIntents: [],
+  };
+}
 
 function scopeOf(state: State, id: ScopeOccurrenceId): ScopeOccurrence | null {
   return state.scopes.find((scope) => scope.id === id) ?? null;
@@ -497,7 +544,7 @@ export function calledRoot(state: State, scope: ScopeOccurrenceId): boolean {
  * The local or child scope occurrence an occurrence `host` owns, when its inputs or its Scope gave it one. A called
  * instance's root belongs to the callee and is never the host's own.
  */
-export function localScope(state: State, host: number): ScopeOccurrenceId | null {
+export function localScope(state: State, host: OccurrenceId): ScopeOccurrenceId | null {
   return state.scopes.find((entry) => entry.occurrence === host && entry.calledInstance === null)?.id ?? null;
 }
 
@@ -505,33 +552,39 @@ export function localScope(state: State, host: number): ScopeOccurrenceId | null
  * The scope occurrence an occurrence `host` reads from and writes outward from: its own scope (`localScope`), so its
  * input-mapped locals are visible (`PvmExecutionImpl.java:1304-1318`), otherwise `scope`, the enclosing one.
  */
-export function ownScope(state: State, host: number, scope: ScopeOccurrenceId): ScopeOccurrenceId {
+export function ownScope(state: State, host: OccurrenceId, scope: ScopeOccurrenceId): ScopeOccurrenceId {
   return localScope(state, host) ?? scope;
 }
 
-/** The root of the process instance `scope` belongs to: the nearest called-instance root, else the process root. */
+/** Whether the scope occurrence `scope` stands. */
+export function stands(state: State, scope: ScopeOccurrenceId): boolean {
+  return state.scopes.some((entry) => entry.id === scope);
+}
+
+/**
+ * The root of the process instance `scope` belongs to: the nearest called-instance root, else the process root. The
+ * search climbs `scope`'s key while its scope occurrences stand.
+ */
 export function instanceRoot(state: State, scope: ScopeOccurrenceId): ScopeOccurrenceId {
-  let current = scope;
-  for (let fuel = state.scopes.length; fuel > 0; fuel -= 1) {
+  for (let current = scope; current !== root; current = scopeParent(current) ?? root) {
     if (calledRoot(state, current)) return current;
-    const parent = scopeOf(state, current)?.parent ?? null;
-    if (parent === null) return root;
-    current = parent;
+    if (!stands(state, current)) return root;
   }
   return root;
 }
 
 /**
- * The scope occurrences in which something remains: a token, an open item that keeps it alive, a begun occurrence, a
- * child scope occurrence or a feature slot entry. One pass over the state, so that `Step`'s search for an idle scope
- * occurrence stays linear in a state the closure can grow at every micro-step.
+ * The scope occurrences in which something remains: a queued token, an open item that keeps it alive, a begun
+ * occurrence, a child scope occurrence or a feature slot entry. One pass over the state, so that `Step`'s search for an
+ * idle scope occurrence stays linear in a state the closure can grow at every micro-step. The queued signals that keep a
+ * scope occurrence busy are `idleScope`'s in `step.ts`, which alone builds a signal's work (DC5).
  */
 export function busyScopes(state: State): ReadonlySet<ScopeOccurrenceId> {
   return new Set<ScopeOccurrenceId>([
-    ...state.tokens.map((token) => token.scope),
+    ...allTokens(state).map((token) => token.scope),
     ...state.openItems.flatMap((item) => item.passive ? [] : [item.scope]),
     ...state.occurrences.flatMap((occurrence) => occurrence.begun ? [occurrence.scope] : []),
-    ...state.scopes.flatMap((candidate) => candidate.parent === null ? [] : [candidate.parent]),
+    ...state.scopes.flatMap((candidate) => scopeOccurrenceParent(candidate) ?? []),
     ...featureSlotsKeptAlive(state.slots),
   ]);
 }
@@ -546,48 +599,53 @@ export function idle(state: State, scope: ScopeOccurrenceId): boolean {
  * `Step.closureWorkBound` sums it over a closure's micro-steps.
  */
 export function entryCount(state: State): number {
-  return state.tokens.length + state.occurrences.length + state.openItems.length + state.scopes.length + state.signals.length;
+  return state.batchTokens.length + orderedSize(state.queuedTokens) + state.occurrences.length + state.openItems.length +
+    state.scopes.length + state.batchSignals.length + orderedSize(state.queuedSignals);
 }
 
-/** The process instance identifier of `scope`. */
-export function instanceOf(state: State, scope: ScopeOccurrenceId): string {
+/** The name of the process instance of `scope`. */
+export function instanceOf(state: State, scope: ScopeOccurrenceId): InstanceName {
   return scopeOf(state, instanceRoot(state, scope))?.calledInstance ?? state.instanceId;
 }
 
-/** The next activation of `element` under `role` in `processInstance`, recorded (R8: per process instance). */
-export function activate(
-  state: State,
-  processInstance: string,
-  element: ElementId,
-  role: ActivationRole,
-): readonly [State, number] {
-  const key = (entry: ActivationCount): boolean =>
-    entry.processInstance === processInstance && entry.element === element && entry.role === role;
-  const count = (state.activations.find(key)?.count ?? 0) + 1;
-  return [
-    { ...state, activations: [{ processInstance, element, role, count }, ...state.activations.filter((entry) => !key(entry))] },
-    count,
-  ];
+/** Lean's `State.activationCount`: the last activation `slot`'s counter in `state` issued, 0 if it has none. */
+export function activationCount(state: State, slot: ActivationSlot): number {
+  return state.activations.find((entry) => sameInstanceName(entry.processInstance, slot.processInstance) &&
+    entry.element === slot.element && entry.role === slot.role)?.count ?? 0;
 }
 
-/** A reservation for `element` in `scope`: issued and numbered now, begun only when its trigger arrives. */
+/**
+ * A fresh activation of `element` under `role` in `processInstance`: the running unit's next issue, which the commit
+ * numbers on the (process instance, element, role) counter in the closure's issue order (`compact`, KD5), so no hook
+ * writes a counter and two units' activations commute.
+ */
+export function activate(state: State, processInstance: InstanceName, element: ElementId, role: ActivationRole): readonly [State, Issue] {
+  return issue(state, { tag: ClaimSlotTag.Activation, slot: { processInstance, element, role } });
+}
+
+/**
+ * A reservation for `element` in `scope`: issued and numbered now, begun only when its trigger arrives. Its key is fresh,
+ * so it joins the occurrences without displacing one (`insertIfNew`, so that no state loses a record to it).
+ */
 export function reserve(state: State, element: ElementId, scope: ScopeOccurrenceId): readonly [State, Occurrence] {
-  const [activated, activation] = activate(state, instanceOf(state, scope), element, ActivationRole.Element);
-  const [issued, id] = issue(activated);
+  const [keyed, id] = issueOccurrence(state, scope, element);
+  const [issued, activation] = activate(keyed, instanceOf(state, scope), element, ActivationRole.Element);
   const occurrence: Occurrence = {
     id,
     element,
     scope,
     activation,
     role: ActivationRole.Element,
+    position: occurrenceIdParts(id).ordinal,
     continuation: flowContinuation,
     incoming: null,
     begun: false,
   };
-  return [{ ...issued, occurrences: [...issued.occurrences, occurrence] }, occurrence];
+  const occurrences = keyedInsertIfNew(issued.occurrences, occurrence, occurrenceKey, compareOccurrenceId);
+  return [{ ...issued, occurrences }, occurrence];
 }
 
-export function occurrenceOf(state: State, id: number): Occurrence | null {
+export function occurrenceOf(state: State, id: OccurrenceId): Occurrence | null {
   return state.occurrences.find((occurrence) => occurrence.id === id) ?? null;
 }
 
@@ -614,7 +672,8 @@ export function recordEnd(state: State, key: OccurrenceKey, terminal: Terminal):
 
 /**
  * Begin what `request` names: its reservation, placed in the request's scope, or a fresh occurrence numbered under
- * `role`. A reservation keeps its activation, so an armed subscription's number is its occurrence's number.
+ * `role`. A reservation keeps its activation, so an armed subscription's number is its occurrence's number; one keyed
+ * in another scope occurrence (an Event Sub-Process start, reserved in the parent) takes the unit's next issue there (DC26).
  */
 export function beginOccurrence(
   state: State,
@@ -625,9 +684,14 @@ export function beginOccurrence(
   const reserved = request.reserved === null ? null : occurrenceOf(state, request.reserved);
   let current = state;
   let occurrence: Occurrence;
-  if (reserved !== null) { occurrence = reserved; } else {
-    const [activated, activation] = activate(state, instanceOf(state, request.scope), request.element, role);
-    const [issued, id] = issue(activated);
+  if (reserved !== null && occurrenceIdParts(reserved.id).scope === request.scope) { occurrence = reserved; } else if (reserved !== null) {
+    const occurrences = state.occurrences.filter((other) => other.id !== reserved.id);
+    const itemOrdinals = state.itemOrdinals.filter(([owner]) => owner !== reserved.id);
+    const [issued, id] = issueOccurrence({ ...state, occurrences, itemOrdinals }, request.scope, reserved.element);
+    [current, occurrence] = [issued, { ...reserved, id }];
+  } else {
+    const [keyed, id] = issueOccurrence(state, request.scope, request.element);
+    const [issued, activation] = activate(keyed, instanceOf(state, request.scope), request.element, role);
     current = issued;
     occurrence = {
       id,
@@ -635,6 +699,7 @@ export function beginOccurrence(
       scope: request.scope,
       activation,
       role,
+      position: occurrenceIdParts(id).ordinal,
       continuation: flowContinuation,
       incoming: null,
       begun: true,
@@ -647,31 +712,40 @@ export function beginOccurrence(
     incoming: request.incoming,
     begun: true,
   };
-  const others = current.occurrences.filter((other) => other.id !== begun.id);
-  return [recordStart({ ...current, occurrences: [...others, begun] }, begun, sourceType), begun];
+  return [recordStart({ ...current, occurrences: insertOccurrence(current.occurrences, begun) }, begun, sourceType), begun];
 }
 
 /** Start a reservation's occurrence where it stands: the journal fact only. */
 export function startReserved(state: State, occurrence: Occurrence, sourceType: string): readonly [State, Occurrence] {
   if (occurrence.begun) return [state, occurrence];
   const begun: Occurrence = { ...occurrence, begun: true };
-  const occurrences = state.occurrences.map((other) => (other.id === begun.id ? begun : other));
-  return [recordStart({ ...state, occurrences }, begun, sourceType), begun];
+  return [recordStart({ ...state, occurrences: insertOccurrence(state.occurrences, begun) }, begun, sourceType), begun];
+}
+
+/**
+ * A fresh key for an item of `occurrence` in `role`: the running unit's next issue, which the commit renames to the
+ * occurrence's next item ordinal (DC12).
+ */
+export function issueItem(state: State, occurrence: OccurrenceId, role: ItemRole): readonly [State, ItemKey] {
+  const [issued, ordinal] = issue(state, { tag: ClaimSlotTag.Item, occurrence });
+  return [issued, { occurrence, role, ordinal }];
+}
+
+/** Add `item` under its own key, replacing an item with that key. */
+export function putItem(state: State, item: OpenItem): State {
+  return { ...state, openItems: insertItem(state.openItems, item) };
+}
+
+/** An item waiting for the begun `occurrence`, with its key, which a reader of the item just opened looks it up by. */
+export function openItemKey(state: State, kind: OpenKind, occurrence: Occurrence): readonly [State, ItemKey] {
+  const [positioned, position] = issuePosition(state);
+  const [issued, id] = issueItem(positioned, occurrence.id, ItemRole.Wait);
+  return [putItem(issued, { id, position, kind, element: occurrence.element, scope: occurrence.scope, attachedTo: null, passive: false }), id];
 }
 
 /** An item waiting for the begun `occurrence`. */
 export function openItem(state: State, kind: OpenKind, occurrence: Occurrence): State {
-  const [issued, id] = issue(state);
-  const item: OpenItem = {
-    id,
-    kind,
-    element: occurrence.element,
-    scope: occurrence.scope,
-    occurrence: occurrence.id,
-    attachedTo: null,
-    passive: false,
-  };
-  return { ...issued, openItems: [...issued.openItems, item] };
+  return openItemKey(state, kind, occurrence)[0];
 }
 
 /** A subscription item for `element`, with a fresh reservation; `host` is the occurrence it hangs on. */
@@ -680,37 +754,65 @@ export function openSubscription(
   kind: OpenKind,
   element: ElementId,
   scope: ScopeOccurrenceId,
-  host: number | null,
+  host: OccurrenceId | null,
   passive: boolean,
 ): readonly [State, OpenItem] {
   const [reserved, occurrence] = reserve(state, element, scope);
-  const [issued, id] = issue(reserved);
-  const item: OpenItem = { id, kind, element, scope, occurrence: occurrence.id, attachedTo: host, passive };
-  return [{ ...issued, openItems: [...issued.openItems, item] }, item];
+  const [positioned, position] = issuePosition(reserved);
+  const [issued, id] = issueItem(positioned, occurrence.id, ItemRole.Subscription);
+  const item: OpenItem = { id, position, kind, element, scope, attachedTo: host, passive };
+  return [putItem(issued, item), item];
 }
 
-export function closeItem(state: State, id: number): State {
-  return { ...state, openItems: state.openItems.filter((item) => item.id !== id) };
+export function closeItem(state: State, id: ItemKey): State {
+  return { ...state, openItems: state.openItems.filter((item) => !sameItemKey(item.id, id)) };
 }
 
 /** Remove the items waiting for the occurrence `id`. */
-export function closeOwnItems(state: State, id: number): State {
-  return { ...state, openItems: state.openItems.filter((item) => item.occurrence !== id) };
+export function closeOwnItems(state: State, id: OccurrenceId): State {
+  return { ...state, openItems: state.openItems.filter((item) => item.id.occurrence !== id) };
 }
 
-/** Remove the items attached to the occurrence `host`, with the reservations they hold. */
-export function disarm(state: State, host: number): State {
-  const attached = state.openItems.filter((item) => item.attachedTo === host);
-  return {
-    ...state,
-    openItems: state.openItems.filter((item) => item.attachedTo !== host),
-    occurrences: state.occurrences.filter((occurrence) =>
-      occurrence.begun || !attached.some((item) => item.occurrence === occurrence.id)),
-  };
+/** Lean's `ScopeMap.insert` under the scope occurrence's own key: it replaces the one there and keeps key order. */
+export function insertScope(scopes: ScopeMap, scope: ScopeOccurrence): ScopeMap {
+  return keyedInsert(scopes, scope, scopeKey, compareScopeOccurrenceId);
+}
+
+const scopeKey = (scope: ScopeOccurrence): ScopeOccurrenceId => scope.id;
+
+/** Lean's `OccurrenceMap.insert` under the occurrence's own key: it replaces the one there and keeps key order. */
+export function insertOccurrence(occurrences: OccurrenceMap, occurrence: Occurrence): OccurrenceMap {
+  return keyedInsert(occurrences, occurrence, occurrenceKey, compareOccurrenceId);
+}
+
+const occurrenceKey = (occurrence: Occurrence): OccurrenceId => occurrence.id;
+
+/** Lean's `HeldMap.insert` under the held occurrence's own key: it replaces the one there and keeps key order. */
+export function insertHeld(held: HeldMap, entry: Held): HeldMap {
+  return keyedInsert(held, entry, heldKey, compareOccurrenceId);
+}
+
+const heldKey = (entry: Held): OccurrenceId => entry.occurrence;
+
+/** Lean's `MultiInstanceMap.insert` under the body occurrence's key: it replaces the run there and keeps key order. */
+export function insertRun(runs: readonly MultiInstanceRun[], run: MultiInstanceRun): readonly MultiInstanceRun[] {
+  return keyedInsert(runs, run, runKey, compareOccurrenceId);
+}
+
+const runKey = (run: MultiInstanceRun): OccurrenceId => run.occurrence;
+
+/** Lean's `RunMap.put`: `run` in place of the compensation run under its key, the runs kept in key order. */
+export function putRun(runs: readonly CompensationRun[], run: CompensationRun): readonly CompensationRun[] {
+  return keyedInsert(runs, run, (keyed) => keyed, compareRunKey);
+}
+
+/** Lean's `MultiInstanceMap` lookup `runs[body]?`: the run under the body occurrence's key. */
+export function lookupRun(runs: readonly MultiInstanceRun[], body: OccurrenceId): MultiInstanceRun | null {
+  return keyedGet(runs, body, runKey, compareOccurrenceId);
 }
 
 /**
- * Enter a new scope occurrence of `element` inside `parent`, with the given local variables, `keyed`. The scope belongs
+ * Enter a new scope occurrence of `element` inside `parent`, with the given local variables (`variablesOfBindings`). The scope belongs
  * to `occurrence`, when it has one.
  */
 export function enterScope(
@@ -718,48 +820,16 @@ export function enterScope(
   element: ElementId,
   parent: ScopeOccurrenceId,
   locals: readonly Binding[],
-  occurrence: number | null,
+  occurrence: OccurrenceId | null,
 ): readonly [State, ScopeOccurrenceId] {
-  const [issued, id] = issue(state);
+  const [issued, ordinal] = issue(state, { tag: ClaimSlotTag.Scope, slot: { parent, element } });
+  const id = childScope(parent, element, ordinal);
+  const [positioned, position] = issuePosition(issued);
   return [
     {
-      ...issued,
-      scopes: [...issued.scopes, { id, element, parent, occurrence, calledInstance: null }],
-      variables: [...issued.variables, { scope: id, entries: keyed(locals) }],
-    },
-    id,
-  ];
-}
-
-/**
- * The identifier of the process instance a Call Activity's `activation` calls from the instance `caller`: each part
- * prefixed by its UTF-8 byte length, so that nested identifiers never collide.
- */
-export function calledInstanceId(caller: string, call: ElementId, activation: number): string {
-  return `call:${utf8ByteSize(caller)}:${caller}:${utf8ByteSize(call)}:${call}:${activation}`;
-}
-
-/**
- * Enter the called process instance of the Call occurrence `call`, with the given variables: a scope occurrence that
- * is the called instance's root, recording the definition the Call bound for this instance. The instance is named by the
- * Call's authored identifier (`programPublicId`), so a Call in another deployment's process that a program carries as a
- * renamed copy names its instance as that process's own deployment does (PC-SCOPE-03).
- */
-export function enterCalled(
-  state: State,
-  program: Program,
-  call: Occurrence,
-  variables: readonly Binding[],
-  definition: DefinitionRef,
-): readonly [State, ScopeOccurrenceId] {
-  const caller = instanceOf(state, call.scope);
-  const [entered, id] = enterScope(state, call.element, call.scope, variables, call.id);
-  const calledInstance = calledInstanceId(caller, programPublicId(program, call.element), call.activation);
-  return [
-    {
-      ...entered,
-      scopes: entered.scopes.map((occurrence) => (occurrence.id === id ? { ...occurrence, calledInstance } : occurrence)),
-      slots: { ...entered.slots, instances: [...entered.slots.instances, { root: id, businessKey: null, definition }] },
+      ...positioned,
+      scopes: insertScope(state.scopes, { id, element, position, occurrence, calledInstance: null }),
+      variables: treeMapInsert(state.variables, id, variablesOfBindings(locals), compareScopeOccurrenceId),
     },
     id,
   ];
@@ -780,21 +850,9 @@ export function childrenOf(state: State, program: Program, scope: ScopeOccurrenc
   return programChildren(program, occurrence?.element ?? null);
 }
 
-/** The scope occurrences inside `scope`, transitively, including `scope`, the deepest last. */
-export function subtree(state: State, scope: ScopeOccurrenceId): readonly ScopeOccurrenceId[] {
-  let frontier: ScopeOccurrenceId[] = [scope];
-  const seen: ScopeOccurrenceId[] = [];
-  for (let fuel = state.scopes.length + 1; fuel > 0 && frontier.length > 0; fuel -= 1) {
-    const [next, ...rest] = frontier as [ScopeOccurrenceId, ...ScopeOccurrenceId[]];
-    const children = state.scopes.filter((candidate) => candidate.parent === next).map((candidate) => candidate.id);
-    frontier = [...rest, ...children];
-    seen.push(next);
-  }
-  return seen;
-}
-
-function ownEntries(state: State, scope: ScopeOccurrenceId): readonly Binding[] | null {
-  return state.variables.find((entry) => entry.scope === scope)?.entries ?? null;
+/** Lean's `State.ownVariables`: the variables `scope` itself holds, in name order, none when it holds none. */
+export function ownVariables(state: State, scope: ScopeOccurrenceId): Variables {
+  return treeMapGetD(state.variables, scope, compareScopeOccurrenceId, []);
 }
 
 /**
@@ -810,67 +868,11 @@ export function shows(state: State, program: Program, scope: ScopeOccurrenceId, 
 /** Variables visible from `scope`, innermost first, up to the root of its process instance, each frame's as it `shows` them. */
 export function visible(state: State, program: Program, scope: ScopeOccurrenceId): readonly Binding[] {
   const out: Binding[] = [];
-  let current: ScopeOccurrenceId | null = scope;
-  for (let fuel = state.scopes.length; fuel > 0 && current !== null; fuel -= 1) {
+  for (let current: ScopeOccurrenceId | null = scope; current !== null;) {
     const frame = current;
-    out.push(...(ownEntries(state, frame) ?? []).filter(([name]) => shows(state, program, frame, name)));
-    if (calledRoot(state, current)) break;
-    current = scopeOf(state, current)?.parent ?? null;
+    out.push(...ownVariables(state, frame).filter(([name]) => shows(state, program, frame, name)));
+    if (frame === root || calledRoot(state, frame) || !stands(state, frame)) break;
+    current = scopeParent(frame);
   }
   return out;
-}
-
-/**
- * The nearest occurrence of the Scope `element` from `scope` outward, up to the root of its process instance: the
- * occurrence whose frame holds the items `element` declares for a site in `scope`.
- */
-export function declaring(state: State, scope: ScopeOccurrenceId, element: ElementId): ScopeOccurrenceId | null {
-  let current: ScopeOccurrenceId | null = scope;
-  for (let fuel = state.scopes.length; fuel > 0 && current !== null; fuel -= 1) {
-    const occurrence = scopeOf(state, current);
-    if (occurrence?.element === element) return current;
-    if (calledRoot(state, current)) return null;
-    current = occurrence?.parent ?? null;
-  }
-  return null;
-}
-
-/** The innermost scope visible from `scope` that declares `name`, up to the root of its process instance. */
-export function owner(state: State, scope: ScopeOccurrenceId, name: string): ScopeOccurrenceId | null {
-  const declares = (id: ScopeOccurrenceId): boolean => (ownEntries(state, id) ?? []).some(([key]) => key === name);
-  let current: ScopeOccurrenceId | null = scope;
-  for (let fuel = state.scopes.length; fuel > 0 && current !== null; fuel -= 1) {
-    if (declares(current)) return current;
-    if (calledRoot(state, current)) return null;
-    current = scopeOf(state, current)?.parent ?? null;
-  }
-  return null;
-}
-
-/** Set `name` in `target`'s own variables and log the write. */
-export function setVariable(state: State, target: ScopeOccurrenceId, name: string, value: Value): State {
-  const replace = (entries: readonly Binding[]): readonly Binding[] =>
-    entries.some(([key]) => key === name)
-      ? entries.map((entry) => (entry[0] === name ? ([name, value] as const) : entry))
-      : [...entries, [name, value] as const];
-  const kind = (ownEntries(state, target) ?? []).some(([key]) => key === name) ? VariableEvent.Update : VariableEvent.Create;
-  const written: State = { ...state, writes: [...state.writes, { scope: target, name, kind }] };
-  if (written.variables.some((entry) => entry.scope === target)) {
-    return {
-      ...written,
-      variables: written.variables.map((entry) =>
-        entry.scope === target ? { ...entry, entries: replace(entry.entries) } : entry),
-    };
-  }
-  return { ...written, variables: [...written.variables, { scope: target, entries: [[name, value] as const] }] };
-}
-
-/** Delete `name` from `target`'s own variables and log the deletion. */
-export function removeVariable(state: State, target: ScopeOccurrenceId, name: string): State {
-  return {
-    ...state,
-    writes: [...state.writes, { scope: target, name, kind: VariableEvent.Delete }],
-    variables: state.variables.map((entry) =>
-      entry.scope === target ? { ...entry, entries: entry.entries.filter(([key]) => key !== name) } : entry),
-  };
 }

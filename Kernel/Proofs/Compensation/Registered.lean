@@ -47,15 +47,18 @@ theorem compensationKeeps_formed (hooks : Hooks) (wf : Proofs.Step.CompensationK
         obtain ⟨held, heldHolds, waiting⟩ := pending element at_ resumed named
         exact ⟨held, heldHolds.1, waiting⟩)
       (by
-        obtain ⟨queue, queueHolds, rest⟩ := popped
-        exact ⟨queue, queueHolds.1, rest⟩) ran
+        obtain ⟨queue, unit, queueHolds, rest⟩ := popped
+        exact ⟨queue, unit, queueHolds.1, rest⟩) ran
     exact ⟨kept, compensate_formed hooks holds.1 holds.2 stands popped kept ran⟩
-  handlerCompleted ctx run occurrence state after holds stands ran := by
-    have kept := wf.handlerCompleted ctx run occurrence state after holds.1 stands ran
-    exact ⟨kept, handlerCompleted_formed hooks holds.1 holds.2 kept ran⟩
-  handlerEnded ctx run occurrence state after holds stands ran := by
-    have kept := wf.handlerEnded ctx run occurrence state after holds.1 stands ran
-    exact ⟨kept, handlerEnded_formed hooks holds.1 holds.2 kept ran⟩
+  handlerCompleted ctx occurrence state after holds stands ran := by
+    have kept := wf.handlerCompleted ctx occurrence state after holds.1 stands ran
+    exact ⟨kept, handlerCompleted_formed hooks holds.1 holds.2 stands kept ran⟩
+  ready ctx scope context state after holds stands ran := by
+    have kept := wf.ready ctx scope context state after holds.1 stands ran
+    exact ⟨kept, ready_formed hooks holds.1 holds.2 stands kept ran⟩
+  handlerEnded ctx occurrence state after holds stands ran := by
+    have kept := wf.handlerEnded ctx occurrence state after holds.1 stands ran
+    exact ⟨kept, handlerEnded_formed hooks holds.1 holds.2 stands kept ran⟩
 
 /-- The registered compensation hooks keep `WellFormed` with the lane relation beside it. -/
 theorem registered_compensationKeeps :
@@ -69,7 +72,7 @@ theorem registered_compensationKeeps :
 
 /-- An advance whose first run of its key holds nothing pending or running and resumes no group drops the runs of the
 key and changes no retained record. -/
-theorem advance_ended {ctx : Ctx} {scope : ScopeOccurrenceId} {trigger : OccurrenceRef} {s t : State} {fuel : Nat}
+theorem advance_ended {ctx : Ctx} {scope : ScopeOccurrenceId} {trigger : OccurrenceName} {s t : State} {fuel : Nat}
     (idle : ∀ run, FirstOf (Keyed scope trigger) s.slots.compensation.runs run →
       run.pending = [] ∧ run.running = [] ∧ resumesGroup run.resume = false)
     (ran : Feature.Compensation.advance ctx scope trigger s fuel = .ok t) :
@@ -88,15 +91,15 @@ theorem advance_ended {ctx : Ctx} {scope : ScopeOccurrenceId} {trigger : Occurre
       | some occurrence => exact .inr ⟨_, Laws.Step.untriggered_cancel occurrence, rfl⟩
     subst droppedEq
     have ungrouped := (idle run first).2.2
-    rcases resumed : run.resume with _ | ⟨occurrence, leave⟩ | ⟨element, at_, leave⟩ | ⟨outer, context⟩
+    rcases resumed : run.resume with _ | ⟨occurrence, leave⟩ | ⟨element, at_, leave⟩ | context
     · rw [resumedNone resumed, quieted.slots]
-      exact ⟨rfl, rfl⟩
+      exact ⟨rfl, Laws.Compensation.runList_erase_isRun _ _ _⟩
     · have last : Quieted ended t := .inr ⟨_, Laws.Step.untriggered_complete _ _ _ _, resumedComplete _ _ resumed⟩
       rw [last.slots, quieted.slots]
-      exact ⟨rfl, rfl⟩
+      exact ⟨rfl, Laws.Compensation.runList_erase_isRun _ _ _⟩
     · have last : Quieted ended t := .inr ⟨_, Laws.Step.untriggered_occur _ _ _ _ _, resumedOccur _ _ _ resumed⟩
       rw [last.slots, quieted.slots]
-      exact ⟨rfl, rfl⟩
+      exact ⟨rfl, Laws.Compensation.runList_erase_isRun _ _ _⟩
     · rw [resumed] at ungrouped
       cases ungrouped
   · obtain ⟨later, started, _, rest⟩ := progressed
@@ -114,47 +117,49 @@ records it selects into a new run, which either, holding nothing, ends at once, 
 no run of its key, or advances once, beginning handlers that keep every record retained in an issued scope occurrence
 and leave no run but the state's and freshly scoped ones. -/
 theorem compensate_shape {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : Option ElementId}
-    {trigger : OccurrenceRef} {leave : Option Nat} {resume : Option Resume} {state after : State}
+    {trigger : OccurrenceName} {leave : Option OccurrenceId} {resume : Option Resume} {state after : State}
     (before : WellFormed ctx.program state)
     (formed : Formed (Depends ctx.program (footprintReads ctx) (footprintWrites ctx)) state)
     (fresh : FreshCall state scope trigger resume)
     (ran : Feature.Compensation.compensate ctx scope activity trigger leave resume state = .ok after) :
     ∃ taken others, TakesOut (· ∈ Feature.Compensation.visibleScopes ctx state scope) activity state.slots.compensation
-        { retained := others, runs := state.slots.compensation.runs ++ [{ trigger, scope, pending := taken, leave, resume }] }
-        { trigger, scope, pending := taken, leave, resume } ∧
+        { retained := others, runMap := state.slots.compensation.runMap.put { trigger, scope, pending := taken, leave, resume, joins := Feature.Compensation.joinsOf ctx taken } }
+        { trigger, scope, pending := taken, leave, resume, joins := Feature.Compensation.joinsOf ctx taken } ∧
       ((taken = [] ∧ after.slots.compensation.retained = others ∧ after.slots.compensation.runs =
-          (state.slots.compensation.runs ++ [({ trigger, scope, pending := taken, leave, resume } : CompensationRun)]).filter
+          (runList (state.slots.compensation.runMap.put { trigger, scope, pending := taken, leave, resume, joins := Feature.Compensation.joinsOf ctx taken })).filter
             (!Feature.Compensation.isRun scope trigger ·)) ∨
         ∃ (started : List (ScopeOccurrenceId × Compensable)) (begun : State) (next : CompensationRun),
           Advances (Depends ctx.program (footprintReads ctx) (footprintWrites ctx))
-            ({ trigger, scope, pending := taken, leave, resume } : CompensationRun) next (started.map (·.2)) ∧ next.scope = scope ∧
-          next.trigger = trigger ∧ BegunFormed (Depends ctx.program (footprintReads ctx) (footprintWrites ctx)) (started.map (·.2))
-            (started.map (·.1)) (opened state others { trigger, scope, pending := taken, leave, resume }) begun ∧
-          after = stored begun { begun.slots.compensation with
-            runs := begun.slots.compensation.runs.filter (!Feature.Compensation.isRun scope trigger ·) ++ [next] }) := by
+            ({ trigger, scope, pending := taken, leave, resume, joins := Feature.Compensation.joinsOf ctx taken } : CompensationRun) next (started.map (·.2)) ∧ next.scope = scope ∧
+          next.trigger = trigger ∧ BegunFormed (Depends ctx.program (footprintReads ctx) (footprintWrites ctx)) scope
+            (started.map (·.2))
+            (started.map (·.1)) (opened state others { trigger, scope, pending := taken, leave, resume, joins := Feature.Compensation.joinsOf ctx taken }) begun ∧
+          after = stored begun { begun.slots.compensation with runMap := begun.slots.compensation.runMap.put next }) := by
   obtain ⟨taken, others, rest⟩ := Laws.Compensation.compensate_spec ran
   obtain ⟨takes, perm, advanced⟩ := rest
   rw [store_stored] at advanced
   have firstNew : ∀ run, FirstOf (Keyed scope trigger)
-      (state.slots.compensation.runs ++ [{ trigger, scope, pending := taken, leave, resume }]) run →
-      run = { trigger, scope, pending := taken, leave, resume } := fun run first => by
-    rcases List.mem_append.mp first.mem with old | new
+      (runList (state.slots.compensation.runMap.put { trigger, scope, pending := taken, leave, resume, joins := Feature.Compensation.joinsOf ctx taken })) run →
+      run = { trigger, scope, pending := taken, leave, resume, joins := Feature.Compensation.joinsOf ctx taken } := fun run first => by
+    rcases Laws.State.mem_put_or first.mem with old | new
     · exact absurd first.1.2 (fresh.1 run old first.1.1)
-    · exact List.mem_singleton.mp new
+    · exact new
   refine ⟨taken, others, takes, ?_⟩
   rcases taken with _ | ⟨record, rest⟩
   · have ended := advance_ended (fun run first => by rw [firstNew run first]; exact ⟨rfl, rfl, fresh.2⟩) advanced
     exact .inl ⟨rfl, ended⟩
-  have issued : scope.value < state.nextIssue := by
+  have stands : scope ∈ Laws.State.scopeIds state := by
     obtain ⟨retainedIn, covered, _⟩ := (takes.1 record).1 (List.mem_cons_self ..)
     rcases Laws.Compensation.visibleScopes_mem covered with same | ⟨entry, inside, named⟩
-    · obtain ⟨entry, inside, named⟩ := List.mem_map.mp (formed.retained record retainedIn)
-      rw [← same, ← named]
-      exact before.issued.scopes entry inside
-    · rw [← named]
-      exact before.issued.scopes entry inside
-  have tame := tame_opened (others := others) (run := { trigger, scope, pending := record :: rest, leave, resume })
-    (tame_of before formed.retained formed.keyed formed.runsIssued)
+    · rw [← same]; exact formed.retained record retainedIn
+    · exact List.mem_map.mpr ⟨entry, inside, named⟩
+  have issued : Laws.State.ScopeIssued state scope := by
+    obtain ⟨entry, inside, named⟩ := List.mem_map.mp stands
+    exact named ▸ before.issued.scopes entry inside
+  have tame := tame_opened (others := others)
+    (run := { trigger, scope, pending := record :: rest, leave, resume,
+               joins := Feature.Compensation.joinsOf ctx (record :: rest) })
+    (tame_of before formed.retained formed.keyed formed.runsIssued formed.groupsStanding)
     (fun kept inside => perm.subset (List.mem_append_right _ inside)) fresh.1 issued rfl fresh.2
   obtain ⟨less, run, _, rest'⟩ := Laws.Compensation.advance_spec advanced
   obtain ⟨first, ended | progressed⟩ := rest'
@@ -164,8 +169,8 @@ theorem compensate_shape {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : Opt
   obtain ⟨law, _, _, rest'⟩ := rest'
   obtain ⟨chain, rfl⟩ := rest'
   obtain rfl := firstNew run first
-  have post := chain_formed (runs_form (precedes_depends ctx) less).2.2 chain tame
-    ⟨_, List.mem_append_right _ (List.mem_singleton_self _), rfl⟩
+  have post := chain_formed (runs_form (precedes_depends ctx) less).2.2 chain tame stands
+    ⟨_, Laws.State.mem_put_new _ _, rfl⟩
   rw [store_stored]
   exact .inr ⟨started, begun, _, advances_of (precedes_depends ctx) law, rfl, rfl, post, rfl⟩
 
@@ -176,7 +181,7 @@ theorem advances_settled {precedes : Compensable → Compensable → Prop} {run 
     fun record => ⟨fun pending => ⟨pending, settled record⟩, And.left⟩, (List.append_nil _).symm⟩
 
 theorem compensate_takesOut {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : Option ElementId}
-    {trigger : OccurrenceRef} {leave : Option Nat} {resume : Option Resume} {state after : State}
+    {trigger : OccurrenceName} {leave : Option OccurrenceId} {resume : Option Resume} {state after : State}
     (before : WellFormed ctx.program state)
     (formed : Formed (Depends ctx.program (footprintReads ctx) (footprintWrites ctx)) state)
     (fresh : FreshCall state scope trigger resume)
@@ -184,8 +189,8 @@ theorem compensate_takesOut {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : 
     ∃ covered taken kept, taken.trigger = trigger ∧ taken.scope = scope ∧ taken.running = [] ∧
       taken.leave = leave ∧ taken.resume = resume ∧
       TakesOut covered activity state.slots.compensation
-        { retained := kept, runs := state.slots.compensation.runs ++ [taken] } taken ∧
-      (∀ record, record.scope.value < state.nextIssue →
+        { retained := kept, runMap := state.slots.compensation.runMap.put taken } taken ∧
+      (∀ record, Laws.State.ScopeIssued state record.scope →
         (record ∈ after.slots.compensation.retained ↔ record ∈ kept)) ∧
       ((taken.pending = [] ∧ ∀ next ∈ after.slots.compensation.runs, next.scope = scope → next.trigger ≠ trigger) ∨
         ∃ next ∈ after.slots.compensation.runs, next.scope = scope ∧ next.trigger = trigger ∧
@@ -199,10 +204,10 @@ theorem compensate_takesOut {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : 
   obtain ⟨law, scopeNamed, named, rest⟩ := rest
   obtain ⟨post, rfl⟩ := rest
   exact ⟨fun record below => post.retained record below,
-    .inr ⟨next, List.mem_append_right _ (List.mem_singleton_self _), scopeNamed, named, _, law⟩⟩
+    .inr ⟨next, Laws.State.mem_put_new _ _, scopeNamed, named, _, law⟩⟩
 
 theorem compensate_inOrder {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : Option ElementId}
-    {trigger : OccurrenceRef} {leave : Option Nat} {resume : Option Resume} {state after : State}
+    {trigger : OccurrenceName} {leave : Option OccurrenceId} {resume : Option Resume} {state after : State}
     (before : WellFormed ctx.program state)
     (formed : Formed (Depends ctx.program (footprintReads ctx) (footprintWrites ctx)) state)
     (fresh : FreshCall state scope trigger resume)
@@ -222,50 +227,87 @@ theorem compensate_inOrder {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : O
   obtain ⟨taken, others, _, shape⟩ := compensate_shape before formed fresh ran
   rcases shape with ⟨_, _, runs⟩ | ⟨started, begun, advanced, rest⟩
   · rw [runs, List.mem_filter] at inside
-    rcases List.mem_append.mp inside.1 with older | new
+    rcases Laws.State.mem_put_or inside.1 with older | new
     · exact unique older
     · refine absurd ?_ other
-      rw [List.mem_singleton.mp new]
+      rw [new]
       exact ⟨rfl, rfl⟩
   obtain ⟨_, scopeNamed, named, rest⟩ := rest
   obtain ⟨post, rfl⟩ := rest
-  rcases List.mem_append.mp inside with kept | new
-  · rcases post.plain next (List.mem_filter.mp kept).1 with older | late
-    · rcases List.mem_append.mp older with oldest | new
+  rcases Laws.State.mem_put_or inside with kept | new
+  · rcases post.plain next kept with older | late
+    · rcases Laws.State.mem_put_or older with oldest | new
       · exact unique oldest
       · refine absurd ?_ other
-        rw [List.mem_singleton.mp new]
+        rw [new]
         exact ⟨rfl, rfl⟩
     · have below := formed.runsIssued run member
       rw [← sameScope] at below
-      exact absurd (Nat.lt_of_lt_of_le below late) (Nat.lt_irrefl _)
-  · rw [List.mem_singleton.mp new] at other
+      exact absurd below late
+  · rw [new] at other
     exact absurd ⟨scopeNamed, named⟩ other
 
-theorem handlerCompleted_inOrder {ctx : Ctx} {context : ScopeOccurrenceId} {occurrence : Occurrence}
-    {state after : State} (before : WellFormed ctx.program state)
+/-- A run a release-like step leaves (`ReleaseFormed`) of a run's key is that run or one advance of it. -/
+theorem released_inOrder {ctx : Ctx} {state after : State}
     (formed : Formed (Depends ctx.program (footprintReads ctx) (footprintWrites ctx)) state)
-    (ran : Feature.Compensation.handlerCompleted ctx context occurrence state = .ok after)
+    (post : ReleaseFormed (Depends ctx.program (footprintReads ctx) (footprintWrites ctx)) state after)
     {run next : CompensationRun} (member : run ∈ state.slots.compensation.runs)
     (inside : next ∈ after.slots.compensation.runs) (sameTrigger : next.trigger = run.trigger)
     (sameScope : next.scope = run.scope) :
     ∃ released started, Advances (Depends ctx.program (footprintReads ctx) (footprintWrites ctx)) released next started ∧
       released.pending = run.pending ∧ released.trigger = run.trigger := by
-  rw [Laws.Compensation.handlerCompleted_spec] at ran
-  obtain ⟨less, _, fuel, _⟩ := Laws.Compensation.release_spec ran
-  rw [fuel] at ran
-  have post := (runs_form (precedes_depends ctx) (less + 1)).2.1 _ _ _
-    (tame_of before formed.retained formed.keyed formed.runsIssued) ran
   rcases post.steps next inside with late | ⟨source, sourceIn, rest⟩
   · have below := formed.runsIssued run member
     rw [← sameScope] at below
-    exact absurd (Nat.lt_of_lt_of_le below late) (Nat.lt_irrefl _)
+    exact absurd below late
   obtain ⟨sameSource, named, which⟩ := rest
   obtain rfl : source = run :=
     Laws.State.nodup_map_eq formed.keyed sourceIn member (by rw [sameSource, named, sameScope, sameTrigger])
   rcases which with rfl | found
   · exact ⟨next, [], advances_settled (formed.settled next member), rfl, rfl⟩
   · exact found
+
+theorem handlerCompleted_inOrder {ctx : Ctx} {occurrence : Occurrence}
+    {state after : State} (before : WellFormed ctx.program state)
+    (formed : Formed (Depends ctx.program (footprintReads ctx) (footprintWrites ctx)) state)
+    (stands : Laws.Step.ScopeStands state occurrence.scope)
+    (ran : Feature.Compensation.handlerCompleted ctx occurrence state = .ok after)
+    {run next : CompensationRun} (member : run ∈ state.slots.compensation.runs)
+    (inside : next ∈ after.slots.compensation.runs) (sameTrigger : next.trigger = run.trigger)
+    (sameScope : next.scope = run.scope) :
+    ∃ released started, Advances (Depends ctx.program (footprintReads ctx) (footprintWrites ctx)) released next started ∧
+      released.pending = run.pending ∧ released.trigger = run.trigger := by
+  rcases Laws.Compensation.handlerCompleted_spec ran with ⟨_, _, rfl⟩ | released
+  · have kept : next ∈ state.slots.compensation.runs := by
+      rw [Laws.State.signal_eq] at inside
+      exact (Proofs.Compensation.left_runs state occurrence.scope).subset inside
+    obtain rfl : next = run := Laws.State.nodup_map_eq formed.keyed kept member (by rw [sameScope, sameTrigger])
+    exact ⟨next, [], advances_settled (formed.settled next member), rfl, rfl⟩
+  obtain ⟨less, _, fuel, _⟩ := Laws.Compensation.release_spec released
+  rw [fuel] at released
+  have post := (runs_form (precedes_depends ctx) (less + 1)).2.1 _ _ _
+    (tame_of before formed.retained formed.keyed formed.runsIssued formed.groupsStanding) (List.mem_map.mpr stands)
+    released
+  exact released_inOrder formed post member inside sameTrigger sameScope
+
+theorem ready_inOrder {ctx : Ctx} {scope context : ScopeOccurrenceId}
+    {state after : State} (before : WellFormed ctx.program state)
+    (formed : Formed (Depends ctx.program (footprintReads ctx) (footprintWrites ctx)) state)
+    (stands : Laws.Step.ScopeStands state scope)
+    (ran : Feature.Compensation.ready ctx scope context state = .ok after)
+    {run next : CompensationRun} (member : run ∈ state.slots.compensation.runs)
+    (inside : next ∈ after.slots.compensation.runs) (sameTrigger : next.trigger = run.trigger)
+    (sameScope : next.scope = run.scope) :
+    ∃ released started, Advances (Depends ctx.program (footprintReads ctx) (footprintWrites ctx)) released next started ∧
+      released.pending = run.pending ∧ released.trigger = run.trigger := by
+  rcases Laws.Compensation.ready_spec ran with rfl | ⟨owner, _, rfl, advanced⟩
+  · obtain rfl : next = run := Laws.State.nodup_map_eq formed.keyed inside member (by rw [sameScope, sameTrigger])
+    exact ⟨next, [], advances_settled (formed.settled next member), rfl, rfl⟩
+  rw [store_stored, unhold_mapped] at advanced
+  have post := mapped_formed (u := state) ((runs_form (precedes_depends ctx) _).1)
+    (tame_of before formed.retained formed.keyed formed.runsIssued formed.groupsStanding) (.refl state)
+    (fun _ => Nat.le_refl _) (.refl _) (List.mem_map.mpr stands) advanced
+  exact released_inOrder formed post member inside sameTrigger sameScope
 
 /-- The lane relation read under `hooks`' Step context is the one read under any context of the program. -/
 theorem dependsIn_eq (hooks : Hooks) (ctx : Ctx) :
@@ -282,18 +324,22 @@ theorem registered_takesOutOnce : TakesOutOnce Registry.hooks footprintReads foo
 /-- Under the registered hooks handlers start in order (`HandlersInOrder`). -/
 theorem registered_handlersInOrder : HandlersInOrder Registry.hooks footprintReads footprintWrites := by
   intro ctx state after run next before formed ran member inside sameTrigger sameScope
-  rcases ran with ⟨scope, activity, trigger, rest⟩ | ⟨context, occurrence, ran⟩
+  rcases ran with ⟨scope, activity, trigger, rest⟩ | ⟨occurrence, ran⟩ | ⟨scope, context, ran⟩
   · obtain ⟨leave, resume, fresh, ran⟩ := rest
     rw [Laws.Registry.hooks_compensate] at ran
     exact compensate_inOrder before formed fresh ran member inside sameTrigger sameScope
-  · rw [Laws.Registry.hooks_handlerCompleted] at ran
-    exact handlerCompleted_inOrder before formed ran member inside sameTrigger sameScope
+  · obtain ⟨stands, ran⟩ := ran
+    rw [Laws.Registry.hooks_handlerCompleted] at ran
+    exact handlerCompleted_inOrder before formed stands ran member inside sameTrigger sameScope
+  · obtain ⟨stands, ran⟩ := ran
+    rw [Laws.Registry.hooks_compensationReady] at ran
+    exact ready_inOrder before formed stands ran member inside sameTrigger sameScope
 
 /-- Every compensation `Step` performs takes out once and starts handlers in order: it is taken off a queue that kept
 `WellFormed` and the lane relation (`Laws.State.Popped`, as `CompensationKeeps.compensate` reads it), so it is a
 `FreshCall` (`compensationsFresh`) and `registered_takesOutOnce` and `registered_handlersInOrder` apply to it. -/
 theorem registered_dequeued {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : Option ElementId}
-    {trigger : OccurrenceRef} {leave : Option Nat} {resume : Option Resume} {state after : State}
+    {trigger : OccurrenceName} {leave : Option OccurrenceId} {resume : Option Resume} {state after : State}
     (holds : WellFormed ctx.program state ∧ Formed (DependsIn Registry.hooks footprintReads footprintWrites ctx.program) state)
     (popped : Laws.State.Popped (fun queue => WellFormed ctx.program queue ∧
       Formed (DependsIn Registry.hooks footprintReads footprintWrites ctx.program) queue)
@@ -303,8 +349,8 @@ theorem registered_dequeued {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : 
       (∃ covered taken kept, taken.trigger = trigger ∧ taken.scope = scope ∧ taken.running = [] ∧
         taken.leave = leave ∧ taken.resume = resume ∧
         TakesOut covered activity state.slots.compensation
-          { retained := kept, runs := state.slots.compensation.runs ++ [taken] } taken ∧
-        (∀ record, record.scope.value < state.nextIssue →
+          { retained := kept, runMap := state.slots.compensation.runMap.put taken } taken ∧
+        (∀ record, Laws.State.ScopeIssued state record.scope →
           (record ∈ after.slots.compensation.retained ↔ record ∈ kept)) ∧
         ((taken.pending = [] ∧ ∀ next ∈ after.slots.compensation.runs, next.scope = scope → next.trigger ≠ trigger) ∨
           ∃ next ∈ after.slots.compensation.runs, next.scope = scope ∧ next.trigger = trigger ∧
@@ -313,8 +359,9 @@ theorem registered_dequeued {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : 
         next.scope = run.scope → ∃ released started,
           Advances (Depends ctx.program (footprintReads ctx) (footprintWrites ctx)) released next started ∧
           released.pending = run.pending ∧ released.trigger = run.trigger := by
-  obtain ⟨queue, ⟨queueFormed, queueRelation⟩, queued, shape⟩ := popped
-  have fresh := compensationsFresh _ _ _ _ _ _ _ _ _ queueFormed queueRelation queued
+  obtain ⟨queue, unit, ⟨queueFormed, queueRelation⟩, rest₁⟩ := popped
+  obtain ⟨found, shape⟩ := rest₁
+  have fresh := compensationsFresh _ _ _ _ _ _ _ _ _ queueFormed queueRelation found
   rw [← shape] at fresh
   have formed := dependsIn_eq Registry.hooks ctx ▸ holds.2
   refine ⟨fresh, registered_takesOutOnce ctx scope activity trigger leave resume state after holds.1 formed fresh ran,
@@ -363,20 +410,20 @@ theorem raiseRegistered_of {hooks : Hooks} {propagation : Feature.Propagation.Pr
     rw [call] at ran
     obtain ⟨⟨_, _⟩, _, ran⟩ := Laws.Step.bind_ok ran
     refine Laws.Data.writeOutputs_induction (motive := fun t => Laws.State.Steady state t ∧
-      t.tokens = state.tokens ∧ t.signals = state.signals ∧ t.slots = state.slots) (fun s target name value held => ?_)
+      Laws.State.allQueuedTokens t = Laws.State.allQueuedTokens state ∧ Laws.State.allSignals t = Laws.State.allSignals state ∧ t.slots = state.slots) (fun s target name value held => ?_)
       ⟨.refl _, rfl, rfl, rfl⟩ ran
     have same := Laws.State.setVariable_same s target name value
     exact ⟨held.1.trans (Proofs.Step.steady_of_same same), same.tokens.trans held.2.1,
       same.signals.trans held.2.2.1, same.slots.trans held.2.2.2⟩
   writeCaught ctx scope writes state _ ran :=
-    Laws.Data.writeOutputs_induction (motive := fun t => t.signals = state.signals)
+    Laws.Data.writeOutputs_induction (motive := fun t => Laws.State.allSignals t = Laws.State.allSignals state)
       (fun s target name value held => (Laws.State.setVariable_same s target name value).signals.trans held) rfl
       (caught ctx scope writes ▸ ran)
   mappedErrorOutputs _ _ _ state _ ran := by
     rw [mapped] at ran
     exact Laws.Work.mappedErrorOutputs_keeps (motive := Laws.Propagation.Appends _ state)
       (fun _ _ _ _ held wrote => held.trans (.same (Laws.Data.writeOutputs_induction
-        (motive := fun t => t.signals = _) (fun s target name value same =>
+        (motive := fun t => Laws.State.allSignals t = _) (fun s target name value same =>
           (Laws.State.setVariable_same s target name value).signals.trans same) rfl wrote)))
       (fun _ host _ held => held.signal raiseFacts ⟨host, .raised, [], .outward, rfl⟩) (.refl _) ran
   dropRuns ctx scope state := by
@@ -386,6 +433,7 @@ theorem raiseRegistered_of {hooks : Hooks} {propagation : Feature.Propagation.Pr
         (Proofs.Step.registeredOps_wellFormed.compensation ctx.program).issued, fun _ _ _ => trivial⟩
       ctx scope trivial).2
     rw [made]
+    rfl
 
 /-- The registered hooks register a raise. -/
 theorem raiseRegistered : ∃ propagation, RaiseRegistered Registry.hooks propagation :=
@@ -422,13 +470,16 @@ theorem registeredFormed_contract : Laws.Step.HookContract Registry.hooks Regist
 
 /-- `Step`'s phases keep `RegisteredFormed`. -/
 theorem registeredFormed_phases : Laws.Step.Phases RegisteredFormed :=
-  phases_alongside Proofs.Step.phases fun program =>
-    formed_stepAlongside (DependsIn Registry.hooks footprintReads footprintWrites program) program
+  phases_alongside Proofs.Step.phases
+    (fun program => formed_stepAlongside (DependsIn Registry.hooks footprintReads footprintWrites program) program
+      fun _ _ _ _ _ precede => precede)
+    fun _ => Formed.reissue
 
-/-- Clearing an input's journal, outbox, draft and writes keeps `RegisteredFormed`. -/
-theorem registeredFormed_reset {program : Program} {s : State} (holds : RegisteredFormed program s) :
-    RegisteredFormed program { s with journal := [], outbox := [], draft := {}, writes := [] } :=
-  ⟨Laws.State.reset_wellFormed holds.1, holds.2.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)⟩
+/-- Clearing an input's journal, intents, draft and writes keeps `RegisteredFormed`. -/
+theorem registeredFormed_reset {program : Program} {s : State} (holds : RegisteredFormed program s)
+    (committed : Laws.State.Committed s) :
+    RegisteredFormed program { s with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := s.nextCompletion } :=
+  ⟨Laws.State.reset_wellFormed holds.1 committed, holds.2.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)⟩
 
 /-- A start's fresh instance holds no record, run or trigger. -/
 theorem formed_initial (precedes : Compensable → Compensable → Prop) (instanceId : String)
@@ -436,27 +487,32 @@ theorem formed_initial (precedes : Compensable → Compensable → Prop) (instan
     Formed precedes ((State.initial instanceId variables businessKey).signal (.armScope State.root)) := by
   refine Formed.signal ?_ _
   rw [Laws.State.initial_eq]
-  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ⟨?_, ?_, ?_, ?_, ?_⟩, ?_⟩ <;>
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ⟨?_, ?_, ?_, ?_, ?_⟩, ?_, ?_⟩ <;>
     simp [ClaimsApart, RetainedPresent, RunsUnfinished, CompletionsApart, CompletionsIssued, completions, completionsIn,
-      RunsSettled, RunsKeyed, RunsIssued, heldTriggers, queuedTriggers, QueuedUngrouped, Laws.Step.triggersOf_nil]
+      RunsSettled, RunsKeyed, RunsIssued, GroupsStanding, heldTriggers, queuedTriggers, QueuedUngrouped, Laws.State.allSignals,
+      Laws.Step.triggersOf_nil]
 
 /-- A committed input keeps `RegisteredFormed` under the registered hooks. -/
 theorem registeredFormed_stepKeeps {program : Program} {input : Input} {before after : State}
-    (holds : RegisteredFormed program before)
-    (ran : Step.step Registry.hooks program (some before) input = .ok after) : RegisteredFormed program after :=
-  Laws.Step.running_keeps registeredFormed_contract registeredFormed_phases Proofs.State.stateFacts
-    (Laws.Step.complete_keeps registeredFormed_contract registeredFormed_phases.toClosurePhases
+    (holds : RegisteredFormed program before) (committed : Laws.State.Committed before)
+    (ran : Step.step Registry.hooks program (some before) input = .ok after) :
+    RegisteredFormed program after ∧ Laws.State.Committed after :=
+  Proofs.State.running_keeps registeredFormed_contract registeredFormed_phases
+    (Laws.Step.complete_keeps registeredFormed_contract registeredFormed_phases.toBodyPhases
       (formed_pipelinePhases (fun program => DependsIn Registry.hooks footprintReads footprintWrites program)
         Proofs.Step.pipelinePhases) Proofs.State.stateFacts)
-    (registeredFormed_reset holds) ran
+    Proofs.Step.registered_framing Proofs.Step.registered_keysAux (fun _ _ holds => holds.1) committed
+    (registeredFormed_reset holds committed) ran
 
 /-- A committed start makes a `RegisteredFormed` state under the registered hooks. -/
 theorem registeredFormed_start {program : Program} {input : Input} {after : State}
-    (ran : Step.step Registry.hooks program none input = .ok after) : RegisteredFormed program after :=
-  Laws.Step.step_keeps registeredFormed_contract registeredFormed_phases Proofs.State.stateFacts
-    (Laws.Step.complete_keeps registeredFormed_contract registeredFormed_phases.toClosurePhases
+    (ran : Step.step Registry.hooks program none input = .ok after) :
+    RegisteredFormed program after ∧ Laws.State.Committed after :=
+  Proofs.State.step_keeps registeredFormed_contract registeredFormed_phases
+    (Laws.Step.complete_keeps registeredFormed_contract registeredFormed_phases.toBodyPhases
       (formed_pipelinePhases (fun program => DependsIn Registry.hooks footprintReads footprintWrites program)
         Proofs.Step.pipelinePhases) Proofs.State.stateFacts)
+    Proofs.Step.registered_framing Proofs.Step.registered_keysAux (fun _ _ holds => holds.1)
     (fun _ _ => registeredFormed_reset)
     (fun instanceId variables businessKey => ⟨Proofs.Step.initial_wellFormed program instanceId variables businessKey,
       formed_initial _ instanceId variables businessKey⟩)
@@ -466,8 +522,8 @@ theorem registeredFormed_start {program : Program} {input : Input} {after : Stat
 theorem registered_commits {program : Program} {before after : State}
     (commits : Commits Registry.hooks footprintReads footprintWrites program before after) :
     RegisteredFormed program after :=
-  have ⟨formed, relation, _, ran⟩ := commits
-  registeredFormed_stepKeeps ⟨formed, relation⟩ ran
+  have ⟨formed, committed, relation, ⟨_, ran⟩⟩ := commits
+  (registeredFormed_stepKeeps ⟨formed, relation⟩ committed ran).1
 
 /-- No record a run claimed is retained again under the registered hooks. -/
 theorem registered_claimsStayApart : ClaimsStayApart Registry.hooks footprintReads footprintWrites :=
@@ -484,13 +540,14 @@ theorem registered_noFinishedRunLeft : NoFinishedRunLeft Registry.hooks footprin
 /-- A committed start keeps the lane relation under the registered hooks. -/
 theorem registered_compensationsFormedAtStart :
     CompensationsFormedAtStart Registry.hooks footprintReads footprintWrites :=
-  fun _ _ _ ran => (registeredFormed_start ran).2
+  fun _ _ _ ran => (registeredFormed_start ran).1.2
 
 /-- Every instance a committed population run holds keeps the lane relation under the registered hooks. -/
 theorem registered_compensationsFormedInPopulation :
     CompensationsFormedInPopulation Registry.hooks footprintReads footprintWrites := fun _ _ _ ran member inside =>
-  (Laws.Population.runStimuli_held (good := RegisteredFormed)
-    ⟨fun _ _ _ _ holds stepped => registeredFormed_stepKeeps holds stepped, fun _ _ _ ran => registeredFormed_start ran⟩
-    ran member inside).2
+  (Laws.Population.runStimuli_held (good := fun program s => RegisteredFormed program s ∧ Laws.State.Committed s)
+    ⟨fun _ _ _ _ holds stepped => registeredFormed_stepKeeps holds.1 holds.2 stepped,
+      fun _ _ _ ran => registeredFormed_start ran⟩
+    ran member inside).1.2
 
 end Kernel.Proofs.Compensation

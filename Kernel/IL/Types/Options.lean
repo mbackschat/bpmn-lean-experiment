@@ -399,6 +399,59 @@ inductive MessageThrowForms where
   | cibForms
   deriving DecidableEq, Repr
 
+/-- Which deployment errors admission raises besides BPMN validity (AD7). -/
+inductive DeploymentErrors where
+  /-- BPMN 2.0.2 alone decides what deploys. -/
+  | bpmnValidity
+  /-- CIB also refuses deploying forms BPMN 2.0.2 defines, such as a process without a start Event
+  (`BpmnParse.java:966-968`, CIB-LIM-0056), each classified in the register with its own refusal code. Admission refuses
+  the selection (`profile.deploymentErrors.cibDeployment`) until those codes exist. -/
+  | cibDeployment
+  deriving DecidableEq, Repr
+
+/-- Where the search for an Escalation raised deeper inside an Event Sub-Process that matches that same handler goes.
+Both readings are refused at run time today (`escalation-rethrow-reenters-handler`). -/
+inductive HandlerEscalation where
+  /-- BPMN 2.0.2 §13.5.4: the running handler is passed and the search goes on outward. -/
+  | passesHandler
+  /-- CIB catches it with that handler again and re-enters it without bound (`EscalationEventDefinitionFinder.java:58-61`).
+  Admission refuses the selection (`profile.handlerEscalation.reentersHandler`). -/
+  | reentersHandler
+  deriving DecidableEq, Repr
+
+/-- The value domain's bounds (HD7, `docs/REWRITE-2-PROPOSAL.md`): project policy, not CIB limits (the portable-values
+contract's "Finite limits"). A program carries them with its options, so an instance keeps the bounds it started with;
+the defaults are the ratified rows, the one place their figures are written, and changing one is an owner decision. -/
+structure Bounds where
+  /-- Container levels a value nests at most. -/
+  containerLevels : Nat := 4
+  /-- Members of a List or a Map, and Strings of a String List, at most. -/
+  containerMembers : Nat := 32
+  /-- Tagged value nodes of a value, the root included, at most. -/
+  valueNodes : Nat := 256
+  /-- UTF-8 bytes of a value's canonical JSON at most. -/
+  canonicalBytes : Nat := 16384
+  /-- UTF-8 bytes of a String or a Map key at most. -/
+  textBytes : Nat := 1024
+  /-- UTF-8 bytes of a process instance's identifier at most (OD14): the host reserves room for an instance's identity
+  across instances, so a shared bound, unlike the others, may be lowered only when no registered identity is longer
+  (HD7). -/
+  instanceIdentityBytes : Nat := 1024
+  deriving Repr
+
+/-- An XML QName as the reader resolved it: the namespace its prefix is bound to (the Definitions' `targetNamespace`
+for an unprefixed name), and its local part, which names an element by its id (BPMN 2.0.2 §15.3.2). -/
+structure QName where
+  «namespace» : Option String
+  localName : String
+  deriving DecidableEq, Repr
+
+/-- An extension attribute a profile finds inert (AD1): the BPMN element type it sits on and its expanded name. -/
+structure InertExtension where
+  elementType : String
+  name : QName
+  deriving Repr
+
 structure ProfileOptions where
   relations : List String := []
   evaluator : Evaluator := .simpleBoolean
@@ -406,6 +459,7 @@ structure ProfileOptions where
   /-- When set, a User Task submission may name only variables a scope occurrence on the task's chain declares, each
   once, and its canonical JSON may take at most this many UTF-8 bytes (CIB-EXT-0020, `NSD-TASK-01`). -/
   scopeChainSubmissionBytes : Option Nat := none
+  bounds : Bounds := {}
   undeclaredWrite : UndeclaredWrite := .refused
   errorPathOutputs : ErrorPathOutputs := .none
   raisedCallOutputs : RaisedCallOutputs := .none
@@ -452,6 +506,15 @@ structure ProfileOptions where
   conditionalStart : ConditionalStart := .refused
   calledElementResolution : CalledElementResolution := .qualifiedName
   messageThrowForms : MessageThrowForms := .refused
+  deploymentErrors : DeploymentErrors := .bpmnValidity
+  handlerEscalation : HandlerEscalation := .passesHandler
+  /-- CIB's engine-wide `failedJobRetryTimeCycle` text, the retry cycle of a job whose element states none (AD8);
+  admission refuses one (`profile.defaultRetryCycle`) until the job model's stage reads it. -/
+  defaultRetryCycle : Option String := none
+  /-- AD1's inert table: the retained extension attributes (`Program.retainedExtensions`) admission lets pass; every
+  other is refused (`extension.retained`). Each item needs its register entry, so admission refuses a non-empty table
+  (`profile.inertExtensions`) until the extension stage admits the first. -/
+  inertExtensions : List InertExtension := []
   deriving Repr
 
 end Kernel

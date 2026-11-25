@@ -13,6 +13,14 @@ public section
 
 namespace Kernel
 
+/-- A `camunda:formRef` and the `formRefBinding` and `formRefVersion` beside it, each the attribute's text
+(`BpmnParse.java:2851-2886`); admission refuses every one (`work.user.formRef`, `start.formRef`). -/
+structure FormRef where
+  key : String
+  binding : Option String := none
+  version : Option String := none
+  deriving Repr
+
 structure UserWork where
   name : Option String := none
   assignee : Option ValueSource := none
@@ -23,6 +31,7 @@ structure UserWork where
   dueDate : Option ValueSource := none
   followUpDate : Option ValueSource := none
   priority : Option ValueSource := none
+  formRef : Option FormRef := none
   deriving Repr
 
 /-- `instantiate` marks a Receive Task that instantiates its Process (BPMN 2.0.2 §10.3.3, Table 10.10).
@@ -154,6 +163,21 @@ def Work.receive? : Work → Option MessageTrigger
   | .send _ => Option.none
   | .script _ => Option.none
   | .rule _ => Option.none
+  | .call _ => Option.none
+
+/-- The Script or Business Rule work a record names: the two work kinds whose run reads the instance's variables
+beside their element's mappings, a Script Task every visible variable (its effect opens with all of them,
+`Kernel.Feature.Work.scriptSnapshot`) and a Business Rule Task its decision's inputs
+(`Kernel.Feature.Decision.readInput`). -/
+def Work.reader? : Work → Option (ScriptWork ⊕ RuleWork)
+  | .script work => some (.inl work)
+  | .rule work => some (.inr work)
+  | Work.none => Option.none
+  | .manual => Option.none
+  | .user _ => Option.none
+  | .receive _ => Option.none
+  | .service _ => Option.none
+  | .send _ => Option.none
   | .call _ => Option.none
 
 end Kernel
