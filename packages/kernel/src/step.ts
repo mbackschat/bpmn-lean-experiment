@@ -48,7 +48,7 @@ import { deferred, effectContinuation, timerJob } from "./step/jobs.js";
 import { advanceClock, admitChoicesThen, command, deliverEffectResult } from "./step/inputs.js";
 import { perform, requireScope, queuedNames, type SignalRun } from "./step/stale.js";
 import { reoffer } from "./step/offer.js";
-import { finishKey, finishOf } from "./step/finish.js";
+import { finishOf, groupKey } from "./step/finish.js";
 
 /** The name a transition records for a signal: its tag, which spells the Lean constructor. */
 export function signalName(next: Signal): string {
@@ -209,7 +209,7 @@ const other = (
   run: (state: State) => Outcome, scopes: readonly ScopeOccurrenceId[] = [], occurrences: readonly OccurrenceId[] = [],
   requires: readonly ScopeOccurrenceId[] = [], acts: readonly OccurrenceId[] = [],
   holds: (state: State) => readonly ScopeOccurrenceId[] = () => [],
-): SignalRun => ({ completion: false, run, scopes, occurrences, requires, acts, holds });
+): SignalRun => ({ completion: false, run, scopes, occurrences, requires, acts, holds, ready: null });
 
 /** `Kernel.Step.signalWork`: what a queued signal does and the targets it names (`step/stale.ts`). */
 function signalRun(hooks: Hooks, ctx: Ctx, next: Signal): SignalRun {
@@ -227,7 +227,7 @@ function signalRun(hooks: Hooks, ctx: Ctx, next: Signal): SignalRun {
     case SignalTag.Complete:
       return {
         completion: true, run: (state) => complete(hooks, ctx, next.occurrence, next.leave, next.writes, next.rule, state), scopes: [],
-        occurrences: [], requires: [], acts: [next.occurrence], holds: () => [],
+        occurrences: [], requires: [], acts: [next.occurrence], holds: () => [], ready: null,
       };
     case SignalTag.Write:
       return other((state) => hooks.writeOutputs(ctx, next.scope, next.writes, next.rule, state), [], [], [next.scope]);
@@ -256,6 +256,9 @@ function signalRun(hooks: Hooks, ctx: Ctx, next: Signal): SignalRun {
     case SignalTag.CompensationFailed:
       return other((state) => hooks.failCompensation(ctx, next.handler, next.code, next.message, next.origin, state), [], [],
         [next.handler]);
+    case SignalTag.CompensationReady:
+      return { ...other((state) => hooks.compensationReady(ctx, next.scope, next.context, state), [], [], [next.scope]),
+        ready: [next.scope, next.context] };
   }
   return assertNever(next);
 }
@@ -277,8 +280,8 @@ function absorb(hooks: Hooks, ctx: Ctx, before: number, state: State): Outcome {
 
 /**
  * Turn the draft into the transition of the unit `unit` (`journalDraft`), tell the features what the micro-step removed
- * and wrote, and queue the micro-step's batches under `unit` (`queueBatch`), a body's finish under its finish root
- * (`finishKey`).
+ * and wrote, and queue the micro-step's batches under `unit` (`queueBatch`), a body's finish and a compensation run's
+ * readiness under their group roots (`groupKey`).
  */
 function conclude(hooks: Hooks, ctx: Ctx, unit: UnitKey, cause: Cause, element: ElementId | null, owner: ScopeOccurrenceId, state: State): Outcome {
   let current = journalDraft(unit, cause, element, owner, state);
@@ -289,13 +292,13 @@ function conclude(hooks: Hooks, ctx: Ctx, unit: UnitKey, cause: Cause, element: 
   }
   const written = hooks.written(ctx, state.writes, current);
   if (!written.ok) return written;
-  const finishes: (UnitKey | null)[] = [];
+  const groups: (UnitKey | null)[] = [];
   for (const next of written.value.batchSignals) {
-    const key = finishKey(ctx, written.value, signalRun(hooks, ctx, next));
+    const key = groupKey(ctx, written.value, signalRun(hooks, ctx, next));
     if (!key.ok) return key;
-    finishes.push(key.value);
+    groups.push(key.value);
   }
-  return committed({ ...queueBatch(written.value, unit, (index) => finishes[index] ?? null), issuing: null, issueNext: 0 });
+  return committed({ ...queueBatch(written.value, unit, (index) => groups[index] ?? null), issuing: null, issueNext: 0 });
 }
 
 /**

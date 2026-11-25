@@ -213,7 +213,7 @@ theorem step_keeps {aux : State → Program → State → Prop} (contract : Hook
       (held state rfl).2 (reset _ _ (held state rfl).1 (held state rfl).2) ran
   | none =>
     obtain ⟨start, settled, ⟨kept, related, unbatched⟩, made⟩ := start_relative contract phases.toClosurePhases pipeline
-      relative facts framing based auxBased entry queued (fun _ _ _ => phases.queueBatch _ _ _ _ (groupsCompletions_none _) (initial _ _ _)) fresh ran
+      relative facts framing based auxBased entry queued (fun _ _ _ => phases.queueBatch _ _ _ _ (groupsRoots_none _) (initial _ _ _)) fresh ran
     exact ⟨phases.runOrder _ _ _ settled.2 kept (counted _ _ _ related) unbatched (keyed _ _ _ related unbatched) _ made,
       orderJournal_committed made (keyed _ _ _ related unbatched)⟩
 

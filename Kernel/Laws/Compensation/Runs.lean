@@ -87,6 +87,9 @@ structure RunsOps (program : Program) (inv : State → Prop) (settled : State �
   signalGrows : ∀ (state : State) signal, Laws.State.ScopeGrows state (state.signal signal)
   cancel : ∀ state id, inv state → inv (state.signal (.cancel id)) ∧
     ∀ other, settled state other → settled (state.signal (.cancel id)) other
+  /-- A run's readiness work queued as a unit of its own (DC30). -/
+  ready : ∀ state scope context, inv state → inv (state.signal (.compensationReady scope context)) ∧
+    ∀ other, settled state other → settled (state.signal (.compensationReady scope context)) other
   /-- The completion a run held in a state that kept `inv` resumes by. -/
   complete : ∀ state id leave writes rule, inv state → settled state id →
     (∃ held, inv held ∧ ∃ run ∈ held.slots.compensation.runs, run.resume = some (.complete id leave)) →

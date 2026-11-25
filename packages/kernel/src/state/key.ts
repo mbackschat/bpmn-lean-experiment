@@ -226,7 +226,8 @@ export type UnitRoot =
   | Readonly<{ tag: UnitRootTag.Input }>
   | Readonly<{ tag: UnitRootTag.Idle; scope: ScopeOccurrenceId }>
   | Readonly<{ tag: UnitRootTag.Offer; occurrence: OccurrenceId; round: number }>
-  | Readonly<{ tag: UnitRootTag.Finish; scope: ScopeOccurrenceId; element: ElementId; ordinal: number }>;
+  | Readonly<{ tag: UnitRootTag.Finish; scope: ScopeOccurrenceId; element: ElementId; ordinal: number }>
+  | Readonly<{ tag: UnitRootTag.Ready; scope: ScopeOccurrenceId; trigger: OccurrenceId | null; ordinal: number }>;
 
 /** Lean's `Ord CommittedOccurrence`: the committed path of its scope occurrence, then the element, then the ordinal. */
 function compareCommittedOccurrence(left: OccurrenceId, right: OccurrenceId): number {
@@ -237,7 +238,8 @@ function compareCommittedOccurrence(left: OccurrenceId, right: OccurrenceId): nu
 
 /**
  * Lean's `Ord UnitRoot`: the seed, the input, then idle completions by their committed path, offers by their committed
- * occurrence and round, and finishes by their committed path, element and ordinal.
+ * occurrence and round, finishes by their committed path, element and ordinal, and readinesses by their committed path,
+ * trigger occurrence (none first, as Lean's `Option` order) and ordinal.
  */
 function compareUnitRoot(left: UnitRoot, right: UnitRoot): number {
   if (left.tag !== right.tag) return rootRank(left) - rootRank(right);
@@ -253,8 +255,19 @@ function compareUnitRoot(left: UnitRoot, right: UnitRoot): number {
       return right.tag === UnitRootTag.Finish
         ? compareCommittedPath(left.scope, right.scope) || compareStrings(left.element, right.element) || left.ordinal - right.ordinal
         : 0;
+    case UnitRootTag.Ready:
+      return right.tag === UnitRootTag.Ready
+        ? compareCommittedPath(left.scope, right.scope) || compareOptionalOccurrence(left.trigger, right.trigger) ||
+          left.ordinal - right.ordinal
+        : 0;
   }
   return assertNever(left);
+}
+
+/** Lean's `Ord (Option CommittedOccurrence)`: none first. */
+function compareOptionalOccurrence(left: OccurrenceId | null, right: OccurrenceId | null): number {
+  if (left === null || right === null) return (left === null ? 0 : 1) - (right === null ? 0 : 1);
+  return compareCommittedOccurrence(left, right);
 }
 
 /** A root's text in an issuer's text (`issuerText`): a letter, and a committed key behind its length. */
@@ -270,6 +283,8 @@ function rootText(root: UnitRoot): string {
       return `O${root.round},${root.occurrence.length}:${root.occurrence}`;
     case UnitRootTag.Finish:
       return `F${root.ordinal},${root.element.length}:${root.element}${root.scope}`;
+    case UnitRootTag.Ready:
+      return `R${root.ordinal},${root.trigger === null ? "" : root.trigger.length}:${root.trigger ?? ""}${root.scope}`;
   }
   return assertNever(root);
 }
@@ -332,6 +347,15 @@ function rootOfText(text: string): UnitRoot {
     const colon = text.indexOf(":", comma);
     const end = colon + 1 + Number(text.slice(comma + 1, colon));
     return { tag: UnitRootTag.Finish, ordinal: Number(text.slice(1, comma)), element: text.slice(colon + 1, end), scope: text.slice(end) as ScopeOccurrenceId };
+  }
+  if (kind === "R") {
+    const colon = text.indexOf(":", comma);
+    const length = text.slice(comma + 1, colon);
+    const end = colon + 1 + (length === "" ? 0 : Number(length));
+    return {
+      tag: UnitRootTag.Ready, ordinal: Number(text.slice(1, comma)), scope: text.slice(end) as ScopeOccurrenceId,
+      trigger: length === "" ? null : text.slice(colon + 1, end) as OccurrenceId,
+    };
   }
   return { tag: UnitRootTag.Offer, round: Number(text.slice(1, comma)), occurrence: text.slice(text.indexOf(":", comma) + 1) as OccurrenceId };
 }

@@ -146,7 +146,8 @@ def TakesOutOnce (hooks : Hooks) (reads writes : Ctx → ElementId → List Stri
 
 /-- Handler order: every change a hook makes to a run in progress is one `Advances` of it under `Depends`
 (`Laws.Compensation.Advances`), so no handler starts while one that must complete before it is pending or running.
-Stated of `Hooks.compensate` and `Hooks.handlerCompleted`, the hooks that start handlers, on a well-formed state that
+Stated of `Hooks.compensate`, `Hooks.handlerCompleted` and `Hooks.compensationReady`, the hooks that start handlers
+(the last the readiness work a handler's completion defers, DC30), on a well-formed state that
 keeps the lane relation, as `Step` calls them (root decision D2, 2026-11-15), and for a compensation that is a
 `FreshCall`, as every one `Step` performs is (`compensationsFresh`, root decision on the P5 TakesOutOnce stop,
 2026-11-15); `WellFormed` is `TakesOutOnce`'s premise for the same reason. The new run's first advance is
@@ -165,8 +166,9 @@ def HandlersInOrder (hooks : Hooks) (reads writes : Ctx → ElementId → List S
     Formed (Depends ctx.program (reads ctx) (writes ctx)) state →
     ((∃ scope activity trigger leave resume, FreshCall state scope trigger resume ∧
         hooks.compensate ctx scope activity trigger leave resume state = .ok after) ∨
-      ∃ occurrence, Laws.Step.ScopeStands state occurrence.scope ∧
-        hooks.handlerCompleted ctx occurrence state = .ok after) →
+      (∃ occurrence, Laws.Step.ScopeStands state occurrence.scope ∧
+        hooks.handlerCompleted ctx occurrence state = .ok after) ∨
+      ∃ scope context, Laws.Step.ScopeStands state scope ∧ hooks.compensationReady ctx scope context state = .ok after) →
     run ∈ state.slots.compensation.runs → next ∈ after.slots.compensation.runs → next.trigger = run.trigger →
     next.scope = run.scope → ∃ released started, Advances (Depends ctx.program (reads ctx) (writes ctx)) released next started ∧
       released.pending = run.pending ∧ released.trigger = run.trigger

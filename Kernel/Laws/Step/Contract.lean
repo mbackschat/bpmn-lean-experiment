@@ -6,6 +6,7 @@ public import Kernel.Laws.State.Frames
 public import Kernel.Laws.IL
 public import Kernel.Laws.Flow.Sources
 public import Kernel.Laws.Step.Order
+public import Kernel.Laws.Step.Triggers
 
 /-! # Laws of the step function: the preservation contract
 
@@ -57,7 +58,7 @@ def beginsOf (signals : List Signal) : List BeginRequest :=
     | .begin request => some request
     | .arm _ _ _ | .armScope _ | .armGateway _ _ _ | .raise _ _ | .complete _ _ _ _ | .write _ _ _ | .remove _ _
     | .occur _ _ _ _ _ | .cancel _ | .fire _ _ | .endInstance _ _ | .compensate _ _ _ _ _
-    | .compensationFailed _ _ _ _ => none
+    | .compensationFailed _ _ _ _ | .compensationReady _ _ => none
 
 /-- The requests of the deferred begins of `tokens`, in stack order. -/
 def deferredOf (tokens : List Token) : List BeginRequest :=
@@ -181,7 +182,7 @@ def occursOf (signals : List Signal) : List ElementId :=
     | .compensate _ _ _ _ (some (.occur element _ _)) => some element
     | .compensate _ _ _ _ (some (.complete _ _)) | .compensate _ _ _ _ (some (.group _)) | .compensate _ _ _ _ none
     | .arm _ _ _ | .armScope _ | .armGateway _ _ _ | .raise _ _ | .begin _ | .complete _ _ _ _ | .write _ _ _
-    | .remove _ _ | .cancel _ | .fire _ _ | .endInstance _ _ | .compensationFailed _ _ _ _ => none
+    | .remove _ _ | .cancel _ | .fire _ _ | .endInstance _ _ | .compensationFailed _ _ _ _ | .compensationReady _ _ => none
 
 /-- An element is among the queued reservations exactly when an `occur` signal or a compensation that resumes by
 one reserves it. -/
@@ -229,7 +230,7 @@ def placing : Signal → Bool
   | .arm _ _ _ | .armGateway _ _ _ | .occur _ _ _ _ _ | .raise _ _ => true
   | .complete _ (.flows selected) _ _ => !selected.isEmpty
   | .complete _ .outgoing _ _ | .complete _ .raised _ _ | .armScope _ | .begin _ | .write _ _ _
-  | .remove _ _ | .cancel _ | .fire _ _ | .endInstance _ _ | .compensate _ _ _ _ _ | .compensationFailed _ _ _ _ => false
+  | .remove _ _ | .cancel _ | .fire _ _ | .endInstance _ _ | .compensate _ _ _ _ _ | .compensationFailed _ _ _ _ | .compensationReady _ _ => false
 
 /-- A completion by no named flow places nothing. -/
 theorem placing_complete {occurrence : OccurrenceId} {leave : Leave} {writes : List (String × Value)} {rule : WriteRule}
@@ -264,138 +265,6 @@ theorem mem_flowsOf {tokens : List Token} {flow : FlowId} {scope : ScopeOccurren
 /-- Stacking tokens adds the flow tokens among them. -/
 theorem flowsOf_append (tokens more : List Token) : flowsOf (tokens ++ more) = flowsOf tokens ++ flowsOf more :=
   List.filterMap_append
-
-/-! ## Queued triggers
-
-What the closure reads of the compensation triggers its queue carries: a queued compensation's trigger, and a queued
-Cancel raise's origin, whose thrower the compensation its catch queues takes as trigger
-(`Feature.Propagation.leaveOccurrence`). An invariant that keeps the keys of compensation runs apart reads them. -/
-
-/-- The triggers of the queued compensations of `signals` and the origins of its queued Cancel raises, in queue order;
-a raise is read by `Raised.isCancel`, its owner's query. -/
-def triggersOf (signals : List Signal) : List (OccurrenceRef ⊕ Origin) :=
-  signals.filterMap fun
-    | .compensate _ _ trigger _ _ => some (.inl trigger)
-    | .raise event origin => if event.isCancel then some (.inr origin) else none
-    | .arm _ _ _ | .armScope _ | .armGateway _ _ _ | .begin _ | .complete _ _ _ _ | .write _ _ _ | .remove _ _
-    | .occur _ _ _ _ _ | .cancel _ | .fire _ _ | .endInstance _ _ | .compensationFailed _ _ _ _ => none
-
-/-- An empty queue carries no trigger. -/
-theorem triggersOf_nil : triggersOf [] = [] := rfl
-
-/-- Queuing signals adds the triggers they carry to the queued ones. -/
-theorem triggersOf_append (signals more : List Signal) :
-    triggersOf (signals ++ more) = triggersOf signals ++ triggersOf more :=
-  List.filterMap_append
-
-/-- A queued compensation carries its trigger. -/
-theorem triggersOf_compensate (scope : ScopeOccurrenceId) (activity : Option ElementId) (trigger : OccurrenceRef)
-    (leave : Option OccurrenceId) (resume : Option Resume) :
-    triggersOf [.compensate scope activity trigger leave resume] = [.inl trigger] := rfl
-
-/-- A queued Cancel raise carries its origin, and any other raise nothing. -/
-theorem triggersOf_raise (event : Raised) (origin : Origin) :
-    triggersOf [.raise event origin] = if event.isCancel then [.inr origin] else [] := by
-  cases cancels : event.isCancel <;> simp [triggersOf, cancels]
-
-/-- The resumes of the queued compensations of `signals`, in queue order: what an invariant that reads how a queued
-compensation ends reads, which `triggersOf` drops. -/
-def resumesOf (signals : List Signal) : List (Option Resume) :=
-  signals.filterMap fun
-    | .compensate _ _ _ _ resume => some resume
-    | .raise _ _ | .arm _ _ _ | .armScope _ | .armGateway _ _ _ | .begin _ | .complete _ _ _ _ | .write _ _ _
-    | .remove _ _ | .occur _ _ _ _ _ | .cancel _ | .fire _ _ | .endInstance _ _ | .compensationFailed _ _ _ _ => none
-
-/-- Queuing signals adds the resumes they carry to the queued ones. -/
-theorem resumesOf_append (signals more : List Signal) :
-    resumesOf (signals ++ more) = resumesOf signals ++ resumesOf more :=
-  List.filterMap_append
-
-/-- A sublist of a queue carries a sublist of its triggers. -/
-theorem triggersOf_sublist {signals more : List Signal} (fewer : signals.Sublist more) :
-    (triggersOf signals).Sublist (triggersOf more) :=
-  fewer.filterMap _
-
-/-- A sublist of a queue carries a sublist of its resumes. -/
-theorem resumesOf_sublist {signals more : List Signal} (fewer : signals.Sublist more) :
-    (resumesOf signals).Sublist (resumesOf more) :=
-  fewer.filterMap _
-
-theorem triggersOf_fewer {signals more : List Signal} (fewer : Laws.State.Fewer signals more) :
-    Laws.State.Fewer (triggersOf signals) (triggersOf more) :=
-  fewer.filterMap _
-
-/-- A queue in another order carries its triggers in another order. -/
-theorem triggersOf_perm {signals more : List Signal} (same : signals.Perm more) :
-    (triggersOf signals).Perm (triggersOf more) :=
-  same.filterMap _
-
-/-- The triggers of a queue whose signals are among another's are among that one's. -/
-theorem triggersOf_subset {signals more : List Signal} (among : ∀ signal ∈ signals, signal ∈ more) :
-    ∀ trigger ∈ triggersOf signals, trigger ∈ triggersOf more := fun _ inside =>
-  have ⟨signal, member, carries⟩ := List.mem_filterMap.mp inside
-  List.mem_filterMap.mpr ⟨signal, among _ member, carries⟩
-
-theorem resumesOf_fewer {signals more : List Signal} (fewer : Laws.State.Fewer signals more) :
-    Laws.State.Fewer (resumesOf signals) (resumesOf more) :=
-  fewer.filterMap _
-
-/-- A resume is queued exactly when a queued compensation carries it. -/
-theorem mem_resumesOf {signals : List Signal} {resume : Option Resume} :
-    resume ∈ resumesOf signals ↔
-      ∃ scope activity trigger leave, Signal.compensate scope activity trigger leave resume ∈ signals := by
-  unfold resumesOf
-  constructor
-  · intro member
-    obtain ⟨signal, inside, carried⟩ := List.mem_filterMap.mp member
-    cases signal with
-    | compensate scope activity trigger leave carriedResume =>
-      cases carried
-      exact ⟨scope, activity, trigger, leave, inside⟩
-    | raise | arm | armScope | armGateway | begin | complete | write | remove | occur | cancel | fire | endInstance
-    | compensationFailed => cases carried
-  · intro queued
-    obtain ⟨scope, activity, trigger, rest⟩ := queued
-    obtain ⟨leave, inside⟩ := rest
-    exact List.mem_filterMap.mpr ⟨_, inside, rfl⟩
-
-/-- Signals that carry no trigger (`Laws.State.Untriggered`) carry no resume. -/
-theorem resumesOf_untriggered {signals : List Signal} (quiet : ∀ signal ∈ signals, Laws.State.Untriggered signal) :
-    resumesOf signals = [] := by
-  refine List.filterMap_eq_nil_iff.mpr fun signal inside => ?_
-  cases signal with
-  | compensate scope activity trigger leave resume => exact absurd rfl ((quiet _ inside).1 scope activity trigger leave resume)
-  | raise | arm | armScope | armGateway | begin | complete | write | remove | occur | cancel | fire | endInstance
-  | compensationFailed => rfl
-
-/-- Signals that carry no trigger (`Laws.State.Untriggered`) queue none. -/
-theorem triggersOf_untriggered {signals : List Signal} (quiet : ∀ signal ∈ signals, Laws.State.Untriggered signal) :
-    triggersOf signals = [] := by
-  refine List.filterMap_eq_nil_iff.mpr fun signal inside => ?_
-  obtain ⟨uncompensated, uncancelled⟩ := quiet signal inside
-  cases signal with
-  | compensate scope activity trigger leave resume => exact absurd rfl (uncompensated scope activity trigger leave resume)
-  | raise event origin => simp [uncancelled event origin rfl]
-  | arm | armScope | armGateway | begin | complete | write | remove | occur | cancel | fire | endInstance
-  | compensationFailed => rfl
-
-/-- The signals a compensation run's begin and end queue, and an instance's end, carry no trigger: a handler's begin,
-a cancellation, a completion and an occurrence. -/
-theorem untriggered_begin (request : BeginRequest) : Laws.State.Untriggered (.begin request) :=
-  ⟨fun _ _ _ _ _ => nofun, fun _ _ => nofun⟩
-
-theorem untriggered_cancel (occurrence : OccurrenceId) : Laws.State.Untriggered (.cancel occurrence) :=
-  ⟨fun _ _ _ _ _ => nofun, fun _ _ => nofun⟩
-
-theorem untriggered_complete (occurrence : OccurrenceId) (leave : Leave) (writes : List (String × Value)) (rule : WriteRule) :
-    Laws.State.Untriggered (.complete occurrence leave writes rule) := ⟨fun _ _ _ _ _ => nofun, fun _ _ => nofun⟩
-
-theorem untriggered_occur (element : ElementId) (scope : ScopeOccurrenceId) (leave : Leave)
-    (writes : List (String × Value)) (rule : WriteRule) : Laws.State.Untriggered (.occur element scope leave writes rule) :=
-  ⟨fun _ _ _ _ _ => nofun, fun _ _ => nofun⟩
-
-theorem untriggered_endInstance (status : InstanceStatus) (failure : Option InstanceFailure) :
-    Laws.State.Untriggered (.endInstance status failure) := ⟨fun _ _ _ _ _ => nofun, fun _ _ => nofun⟩
 
 /-- An Event carries its element's header and no envelope. -/
 theorem event?_bare {element : Element} {header : Header} {payload : EventPayload}
@@ -610,6 +479,8 @@ structure HookContract (hooks : Hooks) (inv : Program → State → Prop) (src :
     hooks.compensate ctx scope activity trigger leave resume state = .ok after → inv ctx.program after
   failCompensation : ∀ ctx handler code message origin state after, inv ctx.program state → ScopeStands state handler →
     hooks.failCompensation ctx handler code message origin state = .ok after → inv ctx.program after
+  compensationReady : ∀ ctx scope context state after, inv ctx.program state → ScopeStands state scope →
+    hooks.compensationReady ctx scope context state = .ok after → inv ctx.program after
   leave : ∀ ctx occurrence state after, inv ctx.program state → occurrence ∈ state.occurrences →
     hooks.leave ctx occurrence state = .ok after →
     inv ctx.program after ∧ PipelineFrame state after ∧ ∀ item ∈ itemList after.openItems, item.attachedTo ≠ some occurrence.id
@@ -768,8 +639,9 @@ structure ClosurePhases (inv : Program → State → Prop) : Prop extends BodyPh
   journal : ∀ program state unit (transition : Transition), inv program state → state.transitions[unit]? = none →
     transition.started = state.draft.started → transition.ended = state.draft.ended →
     inv program { state with transitions := state.transitions.insert unit transition, draft := {}, writes := [] }
-  /-- `Step.conclude` moves the micro-step's batches under its unit key, a body's finish under its root (`queueBatch`). -/
-  queueBatch : ∀ program state unit grouped, GroupsCompletions state grouped → inv program state →
+  /-- `Step.conclude` moves the micro-step's batches under its unit key, a body's finish or a run's readiness under its
+  root (`queueBatch`). -/
+  queueBatch : ∀ program state unit grouped, GroupsRoots state grouped → inv program state →
     inv program (state.queueBatch unit grouped)
   /-- `Step.microStep` makes its unit the issuer before the body runs (DC12): a unit the closure has not run and not the
   seed's, while the issue table holds no issue of the issuer it replaces. -/

@@ -66,8 +66,8 @@ theorem cantorPair_inj {i r i' r' : Nat} (same : cantorPair i r = cantorPair i' 
 
 /-- **Distinct unit steps have distinct codes** (`UnitStep.stepCode`). -/
 theorem stepCode_inj {a b : UnitStep} (same : a.stepCode = b.stepCode) : a = b := by
-  have ra : a.stepRank.1 < 5 := by cases a <;> simp [UnitStep.stepRank]
-  have rb : b.stepRank.1 < 5 := by cases b <;> simp [UnitStep.stepRank]
+  have ra : a.stepRank.1 < 6 := by cases a <;> simp [UnitStep.stepRank]
+  have rb : b.stepRank.1 < 6 := by cases b <;> simp [UnitStep.stepRank]
   unfold UnitStep.stepCode at same
   have ranks : a.stepRank.1 = b.stepRank.1 := by omega
   have pairs : cantorPair a.stepRank.2.1 a.stepRank.2.2 = cantorPair b.stepRank.2.1 b.stepRank.2.2 := by omega

@@ -52,7 +52,7 @@ theorem hooks_raise : Registry.hooks.raise = Feature.Propagation.raise
         Feature.Data.writeOutputs ctx scope writes .outward state
       dropRuns := Feature.Compensation.dropWithin
       handlerRecord := Feature.Compensation.runningRecord } := by
-  simp only [Registry.hooks]
+  simp only [Registry.hooks, Registry.propagationHooks]
 
 /-- Scopes arrives at every Scope. -/
 theorem hooks_arriveScope : Registry.hooks.arriveScope = Feature.Scopes.arriveScope := by
@@ -110,6 +110,10 @@ theorem hooks_completed : Registry.hooks.completed = Feature.Compensation.comple
 
 /-- Compensation runs every queued trigger. -/
 theorem hooks_compensate : Registry.hooks.compensate = Feature.Compensation.compensate := by
+  simp only [Registry.hooks]
+
+/-- Compensation runs a run's readiness work (DC30). -/
+theorem hooks_compensationReady : Registry.hooks.compensationReady = Feature.Compensation.ready := by
   simp only [Registry.hooks]
 
 /-- Compensation releases every completed handler's context. -/

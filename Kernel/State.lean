@@ -124,6 +124,10 @@ inductive Signal where
       (resume : Option Resume)
   /-- An Error left the compensation handler context `handler` uncaught. -/
   | compensationFailed (handler : ScopeOccurrenceId) (code : String) (message : Option String) (origin : Origin)
+  /-- The handler context `context`, left, released readiness work of the run in `scope` that still holds it, under
+  `BranchSchedule.orderInvariant`: the run's handlers have all completed or one that waited for two or more of them may
+  start, so the release runs as a unit of its own (DC30). -/
+  | compensationReady (scope : ScopeOccurrenceId) (context : ScopeOccurrenceId)
   deriving Repr
 
 /-! ## The occurrence journal -/

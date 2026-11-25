@@ -275,17 +275,19 @@ theorem issuerOrder_tied (schedule : BranchSchedule) (log : RunLog) (a b : UnitK
     exact Std.LawfulEqOrd.eq_of_compare (compareLex_eq_eq.mp tie).2
 
 /-- The batch signals `Step.conclude` keys under a root of their own rather than under its unit (`State.queueBatch`'s
-`grouped`) are completions only: a Multi-Instance body's finish (DC30). -/
-@[expose] def GroupsCompletions (state : State) (grouped : Nat → Option UnitKey) : Prop :=
-  ∀ index key, grouped index = some key → ∃ occurrence leave writes rule,
-    state.batchSignals[index]? = some (.complete occurrence leave writes rule)
+`grouped`) are completions and compensation readinesses only: a Multi-Instance body's finish and a compensation run's
+readiness work (DC30). -/
+@[expose] def GroupsRoots (state : State) (grouped : Nat → Option UnitKey) : Prop :=
+  ∀ index key, grouped index = some key → (∃ occurrence leave writes rule,
+    state.batchSignals[index]? = some (.complete occurrence leave writes rule)) ∨
+    ∃ scope context, state.batchSignals[index]? = some (.compensationReady scope context)
 
 /-- Keying every batch signal under its unit groups none. -/
-theorem groupsCompletions_none (state : State) : GroupsCompletions state fun _ => none :=
+theorem groupsRoots_none (state : State) : GroupsRoots state fun _ => none :=
   fun _ _ grouped => by cases grouped
 
-/-- A begin in the batch keys under its unit (`GroupsCompletions`). -/
-theorem GroupsCompletions.begin {state : State} {grouped : Nat → Option UnitKey} (groups : GroupsCompletions state grouped)
+/-- A begin in the batch keys under its unit (`GroupsRoots`). -/
+theorem GroupsRoots.begin {state : State} {grouped : Nat → Option UnitKey} (groups : GroupsRoots state grouped)
     {index : Nat} {request : BeginRequest} (found : state.batchSignals[index]? = some (.begin request)) :
     grouped index = none := by
   cases keyed : grouped index with

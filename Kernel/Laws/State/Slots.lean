@@ -47,6 +47,12 @@ theorem featureSlotsClear_eq (slots : FeatureSlots) (inside nested : List ScopeO
       instances := slots.instances.filter (!nested.contains ·.root) } := by
   simp only [FeatureSlots.clear]
 
+/-- A run `CompensationRun.holds` a context in a scope occurrence when it is in that scope occurrence and runs a handler
+there. -/
+theorem holds_iff (scope context : ScopeOccurrenceId) (run : CompensationRun) :
+    run.holds scope context = true ↔ run.scope = scope ∧ context ∈ run.running.map (·.1) := by
+  simp [CompensationRun.holds]
+
 /-- A held occurrence is suspended, leaving by its outgoing flows. -/
 theorem held_suspended {slots : FeatureSlots} {held : Held} (mem : held ∈ slots.held) :
     { element := held.occurrence.element, scope := held.scope, leave := .outgoing : Suspended } ∈ slots.suspended :=

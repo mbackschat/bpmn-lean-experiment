@@ -500,6 +500,7 @@ theorem runsOps : Laws.Compensation.RunsOps program (Laws.State.WellFormed progr
   signalled _ _ := by rw [Laws.State.signal_eq]; exact ⟨rfl, .refl _, rfl⟩
   signalGrows _ _ := by rw [Laws.State.signal_eq]; exact .refl _
   cancel _ _ formed := ⟨queue_wellFormed formed trivial, fun _ settled => settled.signal fun _ same => by simp at same⟩
+  ready _ _ _ formed := ⟨queue_wellFormed formed trivial, fun _ settled => settled.signal fun _ same => by simp at same⟩
   complete _ _ leave writes rule formed settled _ := ⟨settled_wellFormed formed settled leave writes rule,
     fun _ settled => settled.signal fun _ same => by simp at same⟩
   occur _ _ _ _ _ _ formed _ _ := ⟨queue_wellFormed formed trivial, fun _ settled => settled.signal fun _ same => by simp at same⟩

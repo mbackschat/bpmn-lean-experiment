@@ -33,6 +33,18 @@ def startsHooks : Feature.Starts.StartsHooks :=
 def subscriptionsHooks : Feature.Subscriptions.SubscriptionsHooks :=
   { correlationAccepts := Feature.Correlation.correlationAccepts }
 
+/-- What Propagation's catcher search reaches of the others: Work's Error-path leave, Data's outward writes of the catch
+variables and of a Call's raised outputs, Compensation's drop of the runs an interrupting catcher removes and its record
+of the handler running in a context. -/
+def propagationHooks : Feature.Propagation.PropagationHooks :=
+  { mappedErrorOutputs := Feature.Work.mappedErrorOutputs Feature.Data.writeOutputs
+    writeCaught := fun ctx scope writes => Feature.Data.writeOutputs ctx scope writes .outward
+    callOutputs := fun ctx root state => do
+      let (scope, writes) ← Feature.Work.Call.raisedOutputs ctx root state
+      Feature.Data.writeOutputs ctx scope writes .outward state
+    dropRuns := Feature.Compensation.dropWithin
+    handlerRecord := Feature.Compensation.runningRecord }
+
 /-- `Hooks.failJob` until the job model's stage (AD8) fills it with Work's failure. -/
 def jobFailureRefused (_ : Ctx) (_ : OpenItem) (_ : JobDetail) (_ : State) : Outcome :=
   -- dynamic-only: no feature opens a job item before that stage, so no admission sees one
@@ -60,15 +72,9 @@ def hooks : Hooks :=
     arm := Feature.Subscriptions.arm
     armScope := Feature.Subscriptions.armScope
     armGateway := Feature.Subscriptions.armGateway
-    raise := Feature.Propagation.raise
-      { mappedErrorOutputs := Feature.Work.mappedErrorOutputs Feature.Data.writeOutputs
-        writeCaught := fun ctx scope writes => Feature.Data.writeOutputs ctx scope writes .outward
-        callOutputs := fun ctx root state => do
-          let (scope, writes) ← Feature.Work.Call.raisedOutputs ctx root state
-          Feature.Data.writeOutputs ctx scope writes .outward state
-        dropRuns := Feature.Compensation.dropWithin
-        handlerRecord := Feature.Compensation.runningRecord }
+    raise := Feature.Propagation.raise propagationHooks
     compensate := Feature.Compensation.compensate
+    compensationReady := Feature.Compensation.ready
     failCompensation := Feature.Compensation.failCompensation
     leave := Feature.Subscriptions.leave
     written := Feature.Subscriptions.offerWrites

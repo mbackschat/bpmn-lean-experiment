@@ -181,6 +181,8 @@ structure CompensationKeeps (inv : Program → State → Prop) : Prop where
     Feature.Compensation.compensate ctx scope activity trigger leave resume state = .ok after → inv ctx.program after
   handlerCompleted : ∀ ctx occurrence state after, inv ctx.program state → ScopeStands state occurrence.scope →
     Feature.Compensation.handlerCompleted ctx occurrence state = .ok after → inv ctx.program after
+  ready : ∀ ctx scope trigger state after, inv ctx.program state → ScopeStands state scope →
+    Feature.Compensation.ready ctx scope trigger state = .ok after → inv ctx.program after
   handlerEnded : ∀ ctx occurrence state after, inv ctx.program state → ScopeStands state occurrence.scope →
     Feature.Compensation.handlerEnded ctx occurrence state = .ok after → inv ctx.program after
 
@@ -258,8 +260,15 @@ theorem handlerCompleted_keeps {inv : State → Prop} {settled : State → Occur
     {ctx : Ctx} {occurrence : Occurrence} {state after : State} (holds : inv state)
     (stands : occurrence.scope ∈ state.scopes.map (·.id))
     (ran : Feature.Compensation.handlerCompleted ctx occurrence state = .ok after) : inv after :=
-  ((Laws.Compensation.runs_keep ops ctx _).2.1 _ _ _ holds stands
-    (Laws.Compensation.handlerCompleted_spec ctx occurrence state ▸ ran)).1
+  (Laws.Compensation.handlerCompleted_keep ops ctx holds stands ran).1
+
+/-- `Hooks.compensationReady` keeps `inv` for a run whose scope occurrence stands: it advances the run. -/
+theorem ready_keeps {inv : State → Prop} {settled : State → OccurrenceId → Prop} {program : Program}
+    (ops : Laws.Compensation.RunsOps program inv settled)
+    {ctx : Ctx} {scope context : ScopeOccurrenceId} {state after : State} (holds : inv state)
+    (stands : scope ∈ state.scopes.map (·.id))
+    (ran : Feature.Compensation.ready ctx scope context state = .ok after) : inv after :=
+  (Laws.Compensation.ready_keep ops ctx holds stands ran).1
 
 /-- Dropping the runs inside a scope occurrence changes only the compensation slot, keeping only runs it had: the
 membership `Laws.Compensation.CompensationOps.store` is handed, read as an invariant of its own. -/
@@ -294,8 +303,7 @@ theorem handlerEnded_keeps {inv : State → Prop} {settled : State → Occurrenc
     (stands : occurrence.scope ∈ state.scopes.map (·.id))
     (ran : Feature.Compensation.handlerEnded ctx occurrence state = .ok after) : inv after := by
   rcases Laws.Compensation.handlerEnded_spec ran with ⟨-, -, released⟩ | ⟨-, rfl⟩
-  · exact handlerCompleted_keeps ops holds stands
-      ((Laws.Compensation.handlerCompleted_spec ctx occurrence state).trans released)
+  · exact handlerCompleted_keeps ops holds stands released
   · exact holds
 
 /-- `Hooks.compensate` keeps `inv` in a scope occurrence that stands, for a run that may end as it asks: the records it
@@ -353,6 +361,9 @@ theorem compensationKeeps_of (compensation : ∀ program, Laws.Compensation.Comp
   handlerCompleted _ _ _ _ holds stands ran := by
     obtain ⟨entry, inside, named⟩ := stands
     exact handlerCompleted_keeps (runs _) holds (List.mem_map.mpr ⟨entry, inside, named⟩) ran
+  ready _ _ _ _ _ holds stands ran := by
+    obtain ⟨entry, inside, named⟩ := stands
+    exact ready_keeps (runs _) holds (List.mem_map.mpr ⟨entry, inside, named⟩) ran
   handlerEnded _ _ _ _ holds stands ran := by
     obtain ⟨entry, inside, named⟩ := stands
     exact handlerEnded_keeps (runs _) holds (List.mem_map.mpr ⟨entry, inside, named⟩) ran
@@ -525,6 +536,9 @@ theorem registered_contract_of {inv : Program → State → Prop} (ops : Feature
   failCompensation _ _ _ _ _ _ _ holds stands ran := by
     rw [Laws.Registry.hooks_failCompensation] at ran
     exact compensation.failCompensation _ _ _ _ _ _ _ holds stands ran
+  compensationReady _ _ _ _ _ holds stands ran := by
+    rw [Laws.Registry.hooks_compensationReady] at ran
+    exact compensation.ready _ _ _ _ _ holds stands ran
   leave _ occurrence state _ holds _ ran := by
     rw [Laws.Registry.hooks_leave] at ran
     obtain ⟨kept, disarmed⟩ := Laws.Subscriptions.leave_keeps (ops.subscriptions _) holds ran

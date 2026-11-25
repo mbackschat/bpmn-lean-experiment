@@ -672,6 +672,8 @@ export interface Hooks {
     resume: Resume | null,
     state: State,
   ) => Outcome;
+  /** Compensation: `Signal.compensationReady`. */
+  readonly compensationReady: (ctx: Ctx, scope: ScopeOccurrenceId, context: ScopeOccurrenceId, state: State) => Outcome;
   /** Compensation: `Signal.compensationFailed`. */
   readonly failCompensation: (
     ctx: Ctx, handler: ScopeOccurrenceId, code: string, message: string | null, origin: Origin, state: State) => Outcome;
@@ -754,6 +756,7 @@ export const defaultHooks: Hooks = {
   armGateway: () => refuse("armGateway"),
   raise: () => refuse("raise"),
   compensate: () => refuse("compensate"),
+  compensationReady: () => refuse("compensationReady"),
   failCompensation: () => refuse("failCompensation"),
   leave: () => refuse("leave"),
   select: () => semanticFailure(SemanticCause.Invariant, "select"), // a registry without the hook

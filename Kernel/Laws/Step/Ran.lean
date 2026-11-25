@@ -199,6 +199,9 @@ inductive Performed (hooks : Hooks) (ctx : Ctx) : Signal → State → State →
       {state after : State} : ScopeStands state handler →
       hooks.failCompensation ctx handler code message origin state = .ok after →
       Performed hooks ctx (.compensationFailed handler code message origin) state after
+  | onCompensationReady {scope context : ScopeOccurrenceId} {state after : State} :
+      ScopeStands state scope → hooks.compensationReady ctx scope context state = .ok after →
+      Performed hooks ctx (.compensationReady scope context) state after
 
 
 /-- What a committed variable, task or incident command ran (`Step.command`). -/

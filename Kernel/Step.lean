@@ -52,6 +52,7 @@ def signalName : Signal → String
   | .endInstance _ _ => "endInstance"
   | .compensate _ _ _ _ _ => "compensate"
   | .compensationFailed _ _ _ _ => "compensationFailed"
+  | .compensationReady _ _ => "compensationReady"
 
 /-- The loop characteristics of a body occurrence, read from any element's envelope. -/
 def bodyLoop? (element : Element) (occurrence : Occurrence) : Option (Envelope × MultiInstance) :=
@@ -195,6 +196,8 @@ def signalWork (hooks : Hooks) (ctx : Ctx) : Signal → SignalWork
     { requires := [scope], run := hooks.compensate ctx scope activity trigger leave resume }
   | .compensationFailed handler code message origin =>
     { requires := [handler], run := hooks.failCompensation ctx handler code message origin }
+  | .compensationReady scope context =>
+    { requires := [scope], ready := some (scope, context), run := hooks.compensationReady ctx scope context }
 
 /-- Run a queued signal, refused when what it names is gone (`SignalWork.perform`). -/
 def dispatchSignal (hooks : Hooks) (ctx : Ctx) (signal : Signal) (state : State) : Outcome :=
@@ -212,16 +215,16 @@ def absorb (hooks : Hooks) (ctx : Ctx) (before : Nat) (state : State) : Outcome 
   | _ => .ok state
 
 /-- Turn the draft into the transition of the unit `unit` (`journalDraft`), tell the features what the micro-step
-removed and wrote, and queue the micro-step's batches under `unit` (`State.queueBatch`), a body's finish under its
-finish root (`finishKey?`). `microStep` refused a unit key the closure already ran before its body, and nothing the body
+removed and wrote, and queue the micro-step's batches under `unit` (`State.queueBatch`), a body's finish and a
+compensation run's readiness under their group roots (`groupKey?`). `microStep` refused a unit key the closure already ran before its body, and nothing the body
 or the absorbed completion runs writes a transition, so the journalled key is new (DC4). -/
 def conclude (hooks : Hooks) (ctx : Ctx) (unit : UnitKey) (cause : Cause) (element : Option ElementId)
     (owner : ScopeOccurrenceId) (state : State) : Outcome := do
   let journalled := journalDraft unit cause element owner state
   let journalled ← state.draft.cancelled.foldlM (fun state occurrence => hooks.cancelled ctx occurrence state) journalled
   let written ← hooks.written ctx state.writes journalled
-  let finishes ← written.batchSignals.mapM fun signal => finishKey? ctx written (signalWork hooks ctx signal)
-  .ok { written.queueBatch unit (fun index => finishes[index]?.join) with issuing := .ofRoot .seed, issueNext := 0 }
+  let groups ← written.batchSignals.mapM fun signal => groupKey? ctx written (signalWork hooks ctx signal)
+  .ok { written.queueBatch unit (fun index => groups[index]?.join) with issuing := .ofRoot .seed, issueNext := 0 }
 
 /-- One micro-step: run `body`, absorb its sole completion and record the transition. Each stage's failure is
 `deferred` against the state it started from, so a boundary an earlier micro-step or stage crossed counts. Every

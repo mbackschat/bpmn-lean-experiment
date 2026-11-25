@@ -400,7 +400,7 @@ theorem absorb_ok {hooks : Hooks} {ctx : Ctx} {before : Nat} {state after : Stat
 
 /-- A committed transition journalled the draft under its unit, emptied the draft and the write log,
 told `Hooks.cancelled` of each cancelled occurrence in order, then `Hooks.written` of the writes, queued the batches
-under its unit, a body's finish under its finish root (`grouped`, DC30), and reset the issuer to the seed's (DC12). -/
+under its unit, a body's finish and a compensation run's readiness under their group roots (`grouped`, DC30), and reset the issuer to the seed's (DC12). -/
 theorem conclude_ok {hooks : Hooks} {ctx : Ctx} {unit : UnitKey} {cause : Cause} {element : Option ElementId}
     {owner : ScopeOccurrenceId} {state after : State} (ran : conclude hooks ctx unit cause element owner state = .ok after) :
     ∃ (notified written : State) (grouped : Nat → Option UnitKey),
@@ -409,17 +409,18 @@ theorem conclude_ok {hooks : Hooks} {ctx : Ctx} {unit : UnitKey} {cause : Cause}
           transitions := state.transitions.insert unit
             { cause, element, owner, started := state.draft.started, ended := state.draft.ended, ready := state.draft.ready },
           draft := {}, writes := [] } = .ok notified ∧
-      hooks.written ctx state.writes notified = .ok written ∧ GroupsCompletions written grouped ∧
+      hooks.written ctx state.writes notified = .ok written ∧ GroupsRoots written grouped ∧
       after = { written.queueBatch unit grouped with issuing := .ofRoot .seed, issueNext := 0 } := by
   unfold conclude at ran
   rw [journalDraft_eq] at ran
   obtain ⟨notified, folded, ran⟩ := bind_ok ran
   obtain ⟨written, wrote, ran⟩ := bind_ok ran
-  obtain ⟨finishes, keyed, ran⟩ := bind_ok ran
+  obtain ⟨groups, keyed, ran⟩ := bind_ok ran
   refine ⟨notified, written, _, folded, wrote, fun index key found => ?_, (Except.ok.inj ran).symm⟩
-  obtain ⟨signal, queued, completion⟩ := finishKeys_completion keyed index key found
-  cases signal <;> simp only [signalWork, Bool.false_eq_true] at completion
-  exact ⟨_, _, _, _, queued⟩
+  obtain ⟨signal, queued, grouped⟩ := groupKeys_grouped keyed index key found
+  cases signal <;> simp only [signalWork, Bool.false_eq_true, Option.isSome_none, or_self] at grouped
+  · exact .inl ⟨_, _, _, _, queued⟩
+  · exact .inr ⟨_, _, queued⟩
 
 /-- A micro-step runs forward through its body, absorb and conclusion: `microStep_ok` read backwards. -/
 theorem microStep_of {hooks : Hooks} {ctx : Ctx} {unit : UnitKey} {cause : Cause} {element : Option ElementId}
@@ -767,6 +768,8 @@ theorem dispatchSignal_ok {hooks : Hooks} {ctx : Ctx} {signal : Signal} {state a
     exact .onCompensate (scope_of_present present (by simp [signalWork])) ran
   | compensationFailed handler code message origin =>
     exact .onCompensationFailed (scope_of_present present (by simp [signalWork])) ran
+  | compensationReady scope context =>
+    exact .onCompensationReady (scope_of_present present (by simp [signalWork])) ran
 
 /-- A committed deferred begin ran its begin. -/
 theorem dispatchBegin_ok {hooks : Hooks} {ctx : Ctx} {request : BeginRequest} {state after : State}

@@ -207,6 +207,7 @@ def compensationRows : List Field := [
   keyedLater ``Kernel.CompensationRun.running "K0.12 group 3b: running handlers keyed by their context scope occurrence",
   content ``Kernel.CompensationRun.leave,
   content ``Kernel.CompensationRun.resume,
+  keyedLater ``Kernel.CompensationRun.joins "K0.12 group 3b: completion numbers read as a set, in the order of pending",
   -- `CompensableChild`
   content ``Kernel.CompensableChild.subject,
   content ``Kernel.CompensableChild.handler,

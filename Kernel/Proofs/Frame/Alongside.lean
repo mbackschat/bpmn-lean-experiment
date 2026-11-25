@@ -474,7 +474,7 @@ structure ClosureAlongside (program : Program) (rel : State → Prop) : Prop ext
     transition.started = s.draft.started → transition.ended = s.draft.ended →
     rel { s with transitions := s.transitions.insert unit transition, draft := {}, writes := [] }
   /-- A micro-step's batches move under its unit key. -/
-  queueBatch : ∀ s unit grouped, Laws.Step.GroupsCompletions s grouped → WellFormed program s → rel s →
+  queueBatch : ∀ s unit grouped, Laws.Step.GroupsRoots s grouped → WellFormed program s → rel s →
     rel (s.queueBatch unit grouped)
 
 /-- What `Step`'s own phases keep of `rel` (`ClosureAlongside`) and ordering the journal once the closure settles,

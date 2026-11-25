@@ -398,6 +398,9 @@ structure Hooks where
   /-- Compensation: `Signal.compensate`. -/
   compensate : Ctx → ScopeOccurrenceId → Option ElementId → OccurrenceRef → Option OccurrenceId → Option Resume → State → Outcome :=
     fun _ _ _ _ _ _ => refuse "compensate"
+  /-- Compensation: `Signal.compensationReady`. -/
+  compensationReady : Ctx → ScopeOccurrenceId → ScopeOccurrenceId → State → Outcome :=
+    fun _ _ _ => refuse "compensationReady"
   /-- Compensation: `Signal.compensationFailed`. -/
   failCompensation : Ctx → ScopeOccurrenceId → String → Option String → Origin → State → Outcome :=
     fun _ _ _ _ _ => refuse "failCompensation"

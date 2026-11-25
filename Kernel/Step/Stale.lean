@@ -58,6 +58,9 @@ structure SignalWork where
   /-- What else the signal keeps busy while it is queued (DC5): a firing its item's scope occurrence, a raise its
   origin's, the instance's end every one. -/
   holds : State → List ScopeOccurrenceId := fun _ => []
+  /-- The scope occurrence of the compensation run whose readiness work the signal is and the handler context that
+  released it (DC30, `Step.readyKey?`). -/
+  ready : Option (ScopeOccurrenceId × ScopeOccurrenceId) := none
   run : State → Outcome
 
 /-- The scope occurrences a queued signal names, each of which stays busy, with every scope occurrence enclosing it,

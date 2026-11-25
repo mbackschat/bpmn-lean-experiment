@@ -43,6 +43,7 @@ def Queueable (program : Program) (s : State) : Signal → Prop
   | .cancel _ => True
   | .fire _ _ => True
   | .compensationFailed _ _ _ _ => True
+  | .compensationReady _ _ => True
 
 /-- Queuing a signal a well-formed state is ready for keeps it well-formed. -/
 theorem queue_wellFormed {state : State} (formed : Laws.State.WellFormed program state) {signal : Signal}

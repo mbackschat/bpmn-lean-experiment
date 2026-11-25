@@ -59,6 +59,8 @@ export type SignalRun = Readonly<{
   requires: readonly ScopeOccurrenceId[]; acts: readonly OccurrenceId[];
   /** What else the signal keeps busy while it is queued (DC5): a firing its item's scope, a raise its origin's, the end all. */
   holds: (state: State) => readonly ScopeOccurrenceId[];
+  /** The scope occurrence of the compensation run whose readiness work the signal is and the context releasing it (DC30). */
+  ready: readonly [ScopeOccurrenceId, ScopeOccurrenceId] | null;
 }>;
 
 /** Lean's `SignalWork.names`: the scope occurrences a queued signal names, each busy, with every enclosing one (DC5). */

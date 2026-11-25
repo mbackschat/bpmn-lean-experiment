@@ -47,8 +47,9 @@ class SpineStep (α : Type) where
 
 /-- One step down a closure's unit chain (DC4, DC20): the `index`th signal or token the unit above queued, its index in
 that unit's batch, so in-batch order is in the key and no order of entry is kept (DC2, DC10); or the idle check of the
-scope occurrence, the `round`th offer of the parked occurrence, or the `ordinal`th finish of the Multi-Instance body
-holding its instances in the scope occurrence (DC30), that the unit above issued as its `index`th issue (DC12). A unit
+scope occurrence, the `round`th offer of the parked occurrence, the `ordinal`th finish of the Multi-Instance body
+holding its instances in the scope occurrence, or the `ordinal`th readiness of the compensation run the identity names
+(DC30), that the unit above issued as its `index`th issue (DC12). A unit
 that names an identity issued in its own closure hangs below that identity's issuer rather than at a root naming it: an
 issue names its unit, so a root naming a fresh identity would make the key types recursive. -/
 inductive UnitStep where
@@ -57,16 +58,18 @@ inductive UnitStep where
   | idle (index : Nat)
   | offer (index : Nat) (round : Nat)
   | finish (index : Nat) (ordinal : Nat)
+  | ready (index : Nat) (ordinal : Nat)
   deriving DecidableEq, Repr
 
-/-- A step's place in the order of steps: signals, tokens, idle checks, offers, then finishes, each by index, then round
-or ordinal. -/
+/-- A step's place in the order of steps: signals, tokens, idle checks, offers, finishes, then readinesses, each by
+index, then round or ordinal. -/
 def UnitStep.stepRank : UnitStep → Nat × Nat × Nat
   | .signal index => (0, index, 0)
   | .token index => (1, index, 0)
   | .idle index => (2, index, 0)
   | .offer index round => (3, index, round)
   | .finish index ordinal => (4, index, ordinal)
+  | .ready index ordinal => (5, index, ordinal)
 
 instance : Ord UnitStep where
   compare := compareLex (compareOn (·.stepRank.1)) <|
@@ -91,9 +94,9 @@ def UnitStep.batchIndex (step : UnitStep) : Nat := step.stepRank.2.1
 /-- The Cantor pairing of `index` and `round`: a bijection of pairs of naturals onto the naturals. -/
 def cantorPair (index round : Nat) : Nat := (index + round) * (index + round + 1) / 2 + round
 
-/-- A unit step's code: its kind's rank, below 5, beside the Cantor pair of its index and round, so distinct steps have
+/-- A unit step's code: its kind's rank, below 6, beside the Cantor pair of its index and round, so distinct steps have
 distinct codes (`Kernel.Laws.State.UnitStep.stepCode_inj`). -/
-def UnitStep.stepCode (step : UnitStep) : Nat := 5 * cantorPair step.stepRank.2.1 step.stepRank.2.2 + step.stepRank.1
+def UnitStep.stepCode (step : UnitStep) : Nat := 6 * cantorPair step.stepRank.2.1 step.stepRank.2.2 + step.stepRank.1
 
 /-- A unit step's fingerprint code: its `stepCode`, which differs between distinct steps below 2^64. -/
 instance : SpineStep UnitStep where
@@ -136,44 +139,52 @@ closure is a step below its issuer (`UnitStep.idle`, `UnitStep.offer`). A struct
 identifier, so no element can take a root's name (T56). The finish of a Multi-Instance body is its own group root
 (DC30), named by the committed path of the scope occurrence that holds the body's instances, the body's element and the
 number of finishes of that body the closure queued before it, so whichever instance's completion makes the body finish,
-the finish runs under one key. -/
+the finish runs under one key. So is a compensation run's readiness work (DC30), named by the committed path of the run's
+scope occurrence, the committed form of its trigger's occurrence, none for a group's nested run, which its scope names
+alone, and the number of the run's readinesses the closure queued before it. -/
 inductive UnitRoot where
   | seed
   | input
   | idle (scope : List CommittedSegment)
   | offer (occurrence : CommittedOccurrence) (round : Nat)
   | finish (scope : List CommittedSegment) (element : ElementId) (ordinal : Nat)
+  | ready (scope : List CommittedSegment) (trigger : Option CommittedOccurrence) (ordinal : Nat)
   deriving DecidableEq, Repr
 
 /-- A root's place in the order of roots: the seed first, so its batch runs before the input's (`Step.settle`), then
-the input, then idle completions, offers and finishes by their keys. -/
+the input, then idle completions, offers, finishes and readinesses by their keys. -/
 def UnitRoot.rootRank : UnitRoot → Nat
   | .seed => 0
   | .input => 1
   | .idle _ => 2
   | .offer _ _ => 3
   | .finish _ _ _ => 4
+  | .ready _ _ _ => 5
 
-/-- The committed scope occurrence path an idle or a finish root names. -/
+/-- The committed scope occurrence path an idle, a finish or a readiness root names. -/
 def UnitRoot.idleOf? : UnitRoot → Option (List CommittedSegment)
   | .idle scope => some scope
   | .finish scope _ _ => some scope
+  | .ready scope _ _ => some scope
   | .seed | .input | .offer _ _ => none
 
+/-- The committed occurrence an offer or a readiness root names. -/
 def UnitRoot.offerOf? : UnitRoot → Option CommittedOccurrence
   | .offer occurrence _ => some occurrence
+  | .ready _ trigger _ => trigger
   | .seed | .input | .idle _ | .finish _ _ _ => none
 
-/-- An offer root's round, a finish root's ordinal. -/
+/-- An offer root's round, a finish or a readiness root's ordinal. -/
 def UnitRoot.round : UnitRoot → Nat
   | .offer _ round => round
   | .finish _ _ ordinal => ordinal
+  | .ready _ _ ordinal => ordinal
   | .seed | .input | .idle _ => 0
 
 /-- A finish root's element. -/
 def UnitRoot.elementOf? : UnitRoot → Option String
   | .finish _ element _ => some element.value
-  | .seed | .input | .idle _ | .offer _ _ => none
+  | .seed | .input | .idle _ | .offer _ _ | .ready _ _ _ => none
 
 instance : Ord UnitRoot where
   compare := compareLex (compareOn (·.rootRank)) <| compareLex (compareOn (·.idleOf?)) <|

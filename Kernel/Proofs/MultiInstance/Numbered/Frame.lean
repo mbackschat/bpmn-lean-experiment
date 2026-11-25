@@ -293,9 +293,9 @@ theorem batch_entry {β : Type} {batch : List β} {m : TreeMap UnitKey β compar
 
 /-- Moving the running batch under the micro-step's unit key keeps `Numbered`: the batch's begins become siblings under
 that unit, whose index order is their batch order, since only completions key under a root of their own
-(`Laws.Step.GroupsCompletions`), and a body's begins are never both in the batch and keyed. -/
+(`Laws.Step.GroupsRoots`), and a body's begins are never both in the batch and keyed. -/
 theorem Numbered.queueBatch {program : Program} {s : State} (unit : UnitKey) (grouped : Nat → Option UnitKey)
-    (groups : Laws.Step.GroupsCompletions s grouped) (held : Numbered program s) :
+    (groups : Laws.Step.GroupsRoots s grouped) (held : Numbered program s) :
     Numbered program (s.queueBatch unit grouped) := by
   have signalsIn := (Laws.State.allSignals_queueBatch s unit grouped).subset
   have tokensIn := (Laws.State.allQueuedTokens_queueBatch s unit grouped).subset

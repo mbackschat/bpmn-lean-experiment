@@ -73,6 +73,7 @@ import {
   type ScopeOccurrence,
   type ScopeOccurrenceId,
   type State,
+  runHolds,
   SemanticCause,
   semanticFailure, type OccurrenceId, ownVariables, insertVariableIfNew,
 } from "../state.js";
@@ -218,6 +219,30 @@ function isRun(scope: ScopeOccurrenceId, trigger: OccurrenceRef): (run: Compensa
 }
 
 /**
+ * Lean's `joinsOf`: the completion numbers of `records` whose handler waits for two or more of the others (`precedes`),
+ * whose start is readiness work under `orderInvariant` (DC30, `CompensationRun.joins`).
+ */
+function joinsOf(ctx: Ctx, records: readonly Compensable[]): readonly number[] {
+  return records.filter((record) => records.filter((other) => precedes(ctx, record, other)).length >= 2)
+    .map((record) => record.completion);
+}
+
+/** Lean's `unhold`: `state` with the handler context `context` no longer running in `owner`. */
+function unhold(context: ScopeOccurrenceId, owner: CompensationRun, state: State): State {
+  const compensation = state.slots.compensation;
+  const matches = isRun(owner.scope, owner.trigger);
+  const runs = compensation.runs.map((candidate) => matches(candidate)
+    ? { ...candidate, running: candidate.running.filter(([running]) => running !== context) }
+    : candidate);
+  return store(state, { ...compensation, runs });
+}
+
+/** Lean's `leaveContext`: `state` with the handler context `context` left and no longer running in `owner`. */
+function leaveContext(ctx: Ctx, context: ScopeOccurrenceId, owner: CompensationRun, state: State): State {
+  return unhold(context, owner, leaveScope(state, ctxPositionLe(ctx, state), context));
+}
+
+/**
  * Begin `record`'s handler in a new context scope occurrence inside `scope`, where the records of its children become
  * the ones a throw inside the handler compensates. A group (I5) runs its children instead, as a nested run of that
  * context, which resumes the run in `scope` once they all completed (`Resume.group`).
@@ -233,6 +258,7 @@ function beginHandler(
     const compensation = entered.slots.compensation;
     const nested: CompensationRun = {
       trigger, scope: context, pending, running: [], leave: null, resume: { tag: ResumeTag.Group, context },
+      joins: joinsOf(ctx, pending),
     };
     const advanced = advance(ctx, context, trigger, store(entered, { ...compensation, runs: [...compensation.runs, nested] }), fuel - 1);
     return advanced.ok ? committed([advanced.value, context]) : advanced;
@@ -319,13 +345,7 @@ function release(ctx: Ctx, context: ScopeOccurrenceId, state: State, fuel: numbe
   if (fuel === 0) return semanticFailure(SemanticCause.Invariant, "compensation-run-depth");
   const owner = state.slots.compensation.runs.find((candidate) => candidate.running.some(([running]) => running === context));
   if (owner === undefined) return semanticFailure(SemanticCause.Invariant, "compensation-run-missing");
-  const left = leaveScope(state, ctxPositionLe(ctx, state), context);
-  const compensation = left.slots.compensation;
-  const matches = isRun(owner.scope, owner.trigger);
-  const runs = compensation.runs.map((candidate) => matches(candidate)
-    ? { ...candidate, running: candidate.running.filter(([running]) => running !== context) }
-    : candidate);
-  return advance(ctx, owner.scope, owner.trigger, store(left, { ...compensation, runs }), fuel - 1);
+  return advance(ctx, owner.scope, owner.trigger, leaveContext(ctx, context, owner, state), fuel - 1);
 }
 
 /**
@@ -371,16 +391,59 @@ export function compensate(
   const kept = compensation.retained.filter((record) => !selects(record));
   return advance(ctx, scope, trigger, store(state, {
     retained: kept,
-    runs: [...compensation.runs, { trigger, scope, pending: selected, running: [], leave, resume }],
+    runs: [...compensation.runs, { trigger, scope, pending: selected, running: [], leave, resume, joins: joinsOf(ctx, selected) }],
   }), runBound(ctx, state));
+}
+
+/**
+ * Lean's `readied?`: under `orderInvariant`, the run holding the handler context `context` when leaving it releases
+ * readiness work (DC30), its end or the start of a pending handler that waited for two or more others
+ * (`CompensationRun.joins`) and waits for none still running; either lands in whichever of the handlers it waited for
+ * the closure completed last (probe P17 W2, W3), so it runs as a unit of its own (`Signal.compensationReady`). `null`
+ * under `declarationDepthFirst`, where CIB goes on in the operation that ends the last handler
+ * (`PvmExecutionImpl.java:415-426`, `CompensationEventActivityBehavior.java:66-77`).
+ */
+function readied(ctx: Ctx, context: ScopeOccurrenceId, state: State): CompensationRun | null {
+  switch (ctx.program.options.branchSchedule) {
+    case BranchSchedule.DeclarationDepthFirst:
+      return null;
+    case BranchSchedule.OrderInvariant: {
+      const owner = state.slots.compensation.runs.find((candidate) => candidate.running.some(([running]) => running === context));
+      if (owner === undefined) return null;
+      const running = owner.running.filter(([running]) => running !== context);
+      const remaining = [...owner.pending, ...running.map(([, record]) => record)];
+      return (owner.pending.length === 0 && running.length === 0) || owner.pending.some((record) =>
+        owner.joins.includes(record.completion) && !remaining.some((other) => precedes(ctx, record, other)))
+        ? owner : null;
+    }
+  }
+  return assertNever(ctx.program.options.branchSchedule);
 }
 
 /**
  * `Hooks.handlerCompleted`: the handler's context, the scope occurrence it began in, is left and the run holding that
  * context starts what that releases; the context, not a run's scope, names the run, since two runs of one scope share it.
+ * Readiness work (`readied`) is queued as `Signal.compensationReady` instead of run in place, the run holding the left
+ * context as running until then, so between the two it is neither ready nor ended.
  */
 export function handlerCompleted(ctx: Ctx, occurrence: Occurrence, state: State): Outcome {
-  return release(ctx, occurrence.scope, state, runBound(ctx, state));
+  const owner = readied(ctx, occurrence.scope, state);
+  return owner === null
+    ? release(ctx, occurrence.scope, state, runBound(ctx, state))
+    : committed(signal(leaveScope(state, ctxPositionLe(ctx, state), occurrence.scope),
+      { tag: SignalTag.CompensationReady, scope: owner.scope, context: occurrence.scope }));
+}
+
+/**
+ * `Signal.compensationReady`: the run in `scope` that holds the left handler context `context` releases it and starts
+ * what that releases, as `release` would have in place. A run that went meanwhile, dropped by a catcher that interrupts
+ * `scope` (`dropWithin`), begins nothing.
+ */
+export function ready(ctx: Ctx, scope: ScopeOccurrenceId, context: ScopeOccurrenceId, state: State): Outcome {
+  const owner = state.slots.compensation.runs.find(runHolds(scope, context));
+  return owner === undefined
+    ? committed(state)
+    : advance(ctx, scope, owner.trigger, unhold(context, owner, state), runBound(ctx, state));
 }
 
 /**

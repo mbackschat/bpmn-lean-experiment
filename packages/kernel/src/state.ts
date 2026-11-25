@@ -44,7 +44,7 @@ import {
   type Compensable, type CompensableChild, type CompensationRun, type Compensations, compensationsRestoredIn, type FeatureSlots, featureSlotsClear,
   featureSlotsKeptAlive, featureSlotsSuspended, type InstanceData, type Iteration, iterationHolds, IterationTag, type Leave,
   leaveFlows, leaveOutgoing, leaveRaised, LeaveTag, type MultiInstanceRun, type Parked, parkedEquals, parkedLeastBy, type Held,
-  type HeldMap, type Resume,
+  type HeldMap, type Resume, runAnchor, runHolds,
   ResumeTag, type ScopeOccurrenceId, type Suspended, type Variables,
 } from "./state/slots.js";
 import {
@@ -63,7 +63,7 @@ export {
   type Compensable, type CompensableChild, type CompensationRun, type Compensations, compensationsRestoredIn, type FeatureSlots, featureSlotsClear,
   featureSlotsKeptAlive, featureSlotsSuspended, type InstanceData, type Iteration, iterationHolds, IterationTag, type Leave,
   leaveFlows, leaveOutgoing, leaveRaised, LeaveTag, type MultiInstanceRun, type Parked, parkedEquals, parkedLeastBy, type Held,
-  type HeldMap, type Resume,
+  type HeldMap, type Resume, runAnchor, runHolds,
   ResumeTag, type ScopeOccurrenceId, type Suspended, type Variables,
 };
 
@@ -100,7 +100,7 @@ export {
 } from "./state/key.js";
 export {
   type ClaimSlot, ClaimSlotTag, compareClaimSlot, compareIssuePlace, committedScope, finishUnit, idleUnit, type Issued, type Issuer,
-  type IssueTable, issueNotAfter, occurrenceFresh, positionOutsideIssueTable, offersOccurrence, offerUnit, scopeFresh, seedUnit,
+  type IssueTable, issueNotAfter, occurrenceFresh, positionOutsideIssueTable, offersOccurrence, offerUnit, readyUnit, scopeFresh, seedUnit,
 } from "./state/issue.js";
 export {
   type OrderedMap, orderedAny, orderedCount, orderedEntries, orderedErase, orderedGet, orderedHas, orderedInsert, orderedSize,
@@ -223,6 +223,8 @@ export enum SignalTag {
   Compensate = "compensate",
   /** An Error left the compensation handler context `handler` uncaught. */
   CompensationFailed = "compensationFailed",
+  /** The left handler context `context` released readiness work of the run in `scope`, run as a unit of its own (DC30). */
+  CompensationReady = "compensationReady",
 }
 
 export type Signal =
@@ -260,12 +262,10 @@ export type Signal =
       readonly resume: Resume | null;
     }
   | {
-      readonly tag: SignalTag.CompensationFailed;
-      readonly handler: ScopeOccurrenceId;
-      readonly code: string;
-      readonly message: string | null;
-      readonly origin: Origin;
-    };
+      readonly tag: SignalTag.CompensationFailed; readonly handler: ScopeOccurrenceId; readonly code: string;
+      readonly message: string | null; readonly origin: Origin;
+    }
+  | { readonly tag: SignalTag.CompensationReady; readonly scope: ScopeOccurrenceId; readonly context: ScopeOccurrenceId };
 
 /** `Signal.complete`. */
 export function completeSignal(occurrence: OccurrenceId, leave: Leave, writes: readonly Binding[], rule: WriteRule): Signal {

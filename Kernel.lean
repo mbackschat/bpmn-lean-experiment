@@ -149,6 +149,7 @@ public import Kernel.Laws.Step.Ran
 public import Kernel.Laws.Step.ScopeEntry
 public import Kernel.Laws.Step.Signals
 public import Kernel.Laws.Step.Stale
+public import Kernel.Laws.Step.Triggers
 public import Kernel.Laws.Subscriptions
 public import Kernel.Laws.Subscriptions.Rules
 public import Kernel.Laws.Subscriptions.Timers

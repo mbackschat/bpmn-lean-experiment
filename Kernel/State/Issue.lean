@@ -6,7 +6,7 @@ public import Kernel.State.Key
 
 What the closure in progress issues (DC12) reads of a key: its committed form (`ScopeOccurrenceId.committedScope`), whether
 it names an issue of the closure in progress (`fresh`), the unit keys of the idle check and the offer it owns
-(`UnitKey.idleUnit?`, `UnitKey.offerUnit?`, `UnitKey.finishUnit?`), and the slot an issue takes its committed ordinal in at commit
+(`UnitKey.idleUnit?`, `UnitKey.offerUnit?`, `UnitKey.finishUnit?`, `UnitKey.readyUnit?`), and the slot an issue takes its committed ordinal in at commit
 (`ClaimSlot`), the issue table's value (`State.issued`). Part of `Kernel.State`, which re-exports it.
 -/
 
@@ -65,6 +65,28 @@ def UnitKey.finishUnit? (scope : ScopeOccurrenceId) (element : ElementId) (ordin
     match segment.ordinal with
     | .fresh unit index => some (unit.push (.finish index ordinal))
     | .committed _ => scope.committedScope.map fun path => .ofRoot (.finish path element ordinal)
+
+/-- The unit key of the `ordinal`th readiness of a compensation run in the scope occurrence `scope` whose trigger's
+occurrence is `trigger`, none for a group's nested run (DC30, `CompensationRun.anchor?`): a root naming both when they
+are committed; a step below the unit that issued the trigger's occurrence when that was issued in the closure, and for a
+nested run below the unit that issued its scope occurrence, whose run it is alone; `none` for the process root without a
+trigger and for a committed segment above a fresh one. -/
+def UnitKey.readyUnit? (scope : ScopeOccurrenceId) (trigger : Option OccurrenceId) (ordinal : Nat) : Option UnitKey :=
+  match trigger with
+  | some occurrence =>
+    match occurrence.ordinal with
+    | .fresh unit index => some (unit.push (.ready index ordinal))
+    | .committed committed => do
+      let path ← scope.committedScope
+      let at_ ← occurrence.scope.committedScope
+      some (.ofRoot (.ready path (some { scope := at_, element := occurrence.element, ordinal := committed }) ordinal))
+  | none =>
+    match scope.segments with
+    | [] => none
+    | segment :: _ =>
+      match segment.ordinal with
+      | .fresh unit index => some (unit.push (.ready index ordinal))
+      | .committed _ => scope.committedScope.map fun path => .ofRoot (.ready path none ordinal)
 
 /-- The slot a fresh issue takes its committed ordinal in at commit (DC12), one constructor per counter map, so the
 commit's assignment keys exactly what each counter compares (P07 F3): a scope occurrence's (parent, element)

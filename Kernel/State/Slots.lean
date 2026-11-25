@@ -135,7 +135,8 @@ structure Compensable where
 
 /-- One compensation trigger in progress for the records retained in `scope`: handlers still `pending`, and those
 `running` in their own context scope occurrence. Once all completed, the occurrence `leave` is cancelled and
-`resume`'s occurrence completes. -/
+`resume`'s occurrence completes. `joins` holds the completion numbers of the run's records whose handler waits for two
+or more of the run's other handlers, whose start is readiness work under `BranchSchedule.orderInvariant` (DC30). -/
 structure CompensationRun where
   trigger : OccurrenceRef
   scope : ScopeOccurrenceId
@@ -143,7 +144,23 @@ structure CompensationRun where
   running : List (ScopeOccurrenceId × Compensable) := []
   leave : Option OccurrenceId
   resume : Option Resume
+  joins : List Nat := []
   deriving Repr
+
+/-- The occurrence a run's readiness key names beside its scope occurrence (DC30): its trigger's, the Compensation
+throw the run resumes, or for a caught Cancel the Transaction occurrence it leaves, the one occurrence whose rollback the
+Cancel triggered, since the Cancel End's own occurrence is gone; none for a group's nested run, whose context scope
+occurrence its trigger's run holds once. -/
+def CompensationRun.anchor? (run : CompensationRun) : Option OccurrenceId :=
+  match run.resume with
+  | some (.complete occurrence _) => some occurrence
+  | some (.occur _ _ _) => run.leave
+  | some (.group _) => none
+  | none => run.leave
+
+/-- Whether `run` is the one in `scope` that holds the handler context `context` running. -/
+def CompensationRun.holds (scope context : ScopeOccurrenceId) (run : CompensationRun) : Bool :=
+  run.scope == scope && run.running.any (·.1 == context)
 
 /-- `Kernel.Feature.Compensation`'s data: the retained records and the triggers in progress. -/
 structure Compensations where

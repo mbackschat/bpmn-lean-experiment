@@ -142,6 +142,24 @@ there: a nested group run has a context of its own. -/
 def isRun (scope : ScopeOccurrenceId) (trigger : OccurrenceRef) (run : CompensationRun) : Bool :=
   run.scope == scope && run.trigger == trigger
 
+/-- The completion numbers of `records` whose handler waits for two or more of the others (`precedes`): their start is
+readiness work under `BranchSchedule.orderInvariant` (DC30, `CompensationRun.joins`). -/
+def joinsOf (ctx : Ctx) (records : List Compensable) : List Nat :=
+  (records.filter fun record => 2 ≤ (records.filter (precedes ctx record ·)).length).map (·.completion)
+
+/-- `state` with the handler context `context` no longer running in `owner`, the run holding it. -/
+def unhold (context : ScopeOccurrenceId) (owner : CompensationRun) (state : State) : State :=
+  let compensation := state.slots.compensation
+  let runs := compensation.runs.map fun candidate =>
+    if isRun owner.scope owner.trigger candidate then
+      { candidate with running := candidate.running.filter (·.1 != context) }
+    else candidate
+  store state { compensation with runs }
+
+/-- `state` with the handler context `context` left and no longer running in `owner`, the run holding it. -/
+def leaveContext (ctx : Ctx) (context : ScopeOccurrenceId) (owner : CompensationRun) (state : State) : State :=
+  unhold context owner (state.leaveScope ctx.positionLe context)
+
 mutual
 
 /-- Begin `record`'s handler in a new context scope occurrence inside `scope`, where the records of its children become
@@ -157,7 +175,7 @@ def beginHandler (ctx : Ctx) (trigger : OccurrenceRef) (scope : ScopeOccurrenceI
       let pending := begunChildren record context
       let compensation := state.slots.compensation
       let nested : CompensationRun :=
-        { trigger, scope := context, pending, leave := none, resume := some (.group context) }
+        { trigger, scope := context, pending, leave := none, resume := some (.group context), joins := joinsOf ctx pending }
       let state ← advance ctx context trigger (store state { compensation with runs := compensation.runs ++ [nested] }) fuel
       .ok (state, context)
     | some handler =>
@@ -217,14 +235,7 @@ def release (ctx : Ctx) (context : ScopeOccurrenceId) (state : State) : Nat → 
   | fuel + 1 =>
     match state.slots.compensation.runs.find? (·.running.any (·.1 == context)) with
     | none => .error (.semanticFailure .invariant "compensation-run-missing")
-    | some owner =>
-      let left := state.leaveScope ctx.positionLe context
-      let compensation := left.slots.compensation
-      let runs := compensation.runs.map fun candidate =>
-        if isRun owner.scope owner.trigger candidate then
-          { candidate with running := candidate.running.filter (·.1 != context) }
-        else candidate
-      advance ctx owner.scope owner.trigger (store left { compensation with runs }) fuel
+    | some owner => advance ctx owner.scope owner.trigger (leaveContext ctx context owner state) fuel
 
 end
 
@@ -257,13 +268,45 @@ def compensate (ctx : Ctx) (scope : ScopeOccurrenceId) (activity : Option Elemen
   let (selected, kept) := compensation.retained.partition fun record =>
     covered.contains record.scope && activity.all (· == record.subject)
   advance ctx scope trigger (store state
-    { retained := kept, runs := compensation.runs ++ [{ trigger, scope, pending := selected, leave, resume }] })
+    { retained := kept, runs := compensation.runs ++
+        [{ trigger, scope, pending := selected, leave, resume, joins := joinsOf ctx selected }] })
     (runBound ctx state)
 
+/-- Under `BranchSchedule.orderInvariant`, the run holding the handler context `context` when leaving it releases
+readiness work (DC30): the run's end, once nothing else is pending or running, or the start of a pending handler that
+waited for two or more others (`CompensationRun.joins`) and waits for none still running. Either lands in whichever of
+the handlers it waited for the closure completed last (probe P17 W2, W3), so it runs as a unit of its own
+(`Signal.compensationReady`); a start that waited for one handler only follows that handler's completion, which no
+order changes, and stays in place. `none` under `declarationDepthFirst`, where CIB goes on in the operation that ends
+the last handler: it signals the waiting thrower there (`PvmExecutionImpl.java:415-426`), which leaves once no
+compensating execution remains (`CompensationEventActivityBehavior.java:66-77`). -/
+def readied? (ctx : Ctx) (context : ScopeOccurrenceId) (state : State) : Option CompensationRun :=
+  match ctx.program.options.branchSchedule with
+  | .declarationDepthFirst => none
+  | .orderInvariant =>
+    (state.slots.compensation.runs.find? (·.running.any (·.1 == context))).filter fun owner =>
+      let running := owner.running.filter (·.1 != context)
+      let remaining := owner.pending ++ running.map (·.2)
+      (owner.pending.isEmpty && running.isEmpty) || owner.pending.any fun record =>
+        owner.joins.contains record.completion && !remaining.any (precedes ctx record ·)
+
 /-- `Hooks.handlerCompleted`: the handler's context, the scope occurrence it began in, is left and the run holding that
-context starts what that releases; the context, not a run's scope, names the run, since two runs of one scope share it. -/
+context starts what that releases; the context, not a run's scope, names the run, since two runs of one scope share it.
+Readiness work (`readied?`) is queued as `Signal.compensationReady` instead of run in place, the run holding the left
+context as running until then, so between the two it is neither ready nor ended. -/
 def handlerCompleted (ctx : Ctx) (occurrence : Occurrence) (state : State) : Outcome :=
-  release ctx occurrence.scope state (runBound ctx state)
+  match readied? ctx occurrence.scope state with
+  | some owner =>
+    .ok ((state.leaveScope ctx.positionLe occurrence.scope).signal (.compensationReady owner.scope occurrence.scope))
+  | none => release ctx occurrence.scope state (runBound ctx state)
+
+/-- `Signal.compensationReady`: the run in `scope` that holds the left handler context `context` releases it and
+starts what that releases, as `release` would have in place. A run that went meanwhile, dropped by a catcher that
+interrupts `scope` (`dropWithin`), begins nothing. -/
+def ready (ctx : Ctx) (scope context : ScopeOccurrenceId) (state : State) : Outcome :=
+  match state.slots.compensation.runs.find? (·.holds scope context) with
+  | none => .ok state
+  | some owner => advance ctx scope owner.trigger (unhold context owner state) (runBound ctx state)
 
 /-- The runs in `scope` and inside it go at once, when a catcher that interrupts `scope` has decided
 (`Propagation.PropagationHooks.dropRuns`): its interruption is still queued, and a run it would remove must begin no

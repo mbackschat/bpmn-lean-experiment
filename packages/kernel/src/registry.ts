@@ -69,6 +69,7 @@ export const hooks: Hooks = {
   armGateway: Subscriptions.armGateway,
   raise: (ctx, raised, origin, state) => Propagation.raise(propagationHooks, ctx, raised, origin, state),
   compensate: Compensation.compensate,
+  compensationReady: Compensation.ready,
   failCompensation: Compensation.failCompensation,
   leave: Subscriptions.leave,
   written: Subscriptions.offerWrites,

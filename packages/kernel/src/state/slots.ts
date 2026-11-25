@@ -144,6 +144,35 @@ export interface CompensationRun {
   readonly running: readonly (readonly [ScopeOccurrenceId, Compensable])[];
   readonly leave: OccurrenceId | null;
   readonly resume: Resume | null;
+  /**
+   * The completion numbers of the run's records whose handler waits for two or more of the run's other handlers, whose
+   * start is readiness work under `orderInvariant` (DC30).
+   */
+  readonly joins: readonly number[];
+}
+
+/** Lean's `CompensationRun.holds`: whether a run is the one in `scope` that holds the handler context `context` running. */
+export function runHolds(scope: ScopeOccurrenceId, context: ScopeOccurrenceId): (run: CompensationRun) => boolean {
+  return (run) => run.scope === scope && run.running.some(([running]) => running === context);
+}
+
+/**
+ * Lean's `CompensationRun.anchor?`: the occurrence a run's readiness key names beside its scope occurrence (DC30), its
+ * trigger's, the Compensation throw the run resumes, or for a caught Cancel the Transaction occurrence it leaves; `null`
+ * for a group's nested run, whose context scope occurrence its trigger's run holds once.
+ */
+export function runAnchor(run: CompensationRun): OccurrenceId | null {
+  const resume = run.resume;
+  if (resume === null) return run.leave;
+  switch (resume.tag) {
+    case ResumeTag.Complete:
+      return resume.occurrence;
+    case ResumeTag.Occur:
+      return run.leave;
+    case ResumeTag.Group:
+      return null;
+  }
+  return assertNever(resume);
 }
 
 /** `feature/compensation.ts`'s data: the retained records and the triggers in progress. */

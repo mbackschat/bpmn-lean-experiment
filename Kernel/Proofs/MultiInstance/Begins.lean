@@ -763,7 +763,7 @@ theorem logged_start
           (((State.initial payload.instanceId payload.variables payload.businessKey).signal
             (.armScope State.root)).queueBatch (.ofRoot .seed)) := by
       rw [Laws.Step.inputCtx_program]
-      exact ⟨formed.queueBatch _ _ _ _ (Laws.Step.groupsCompletions_none _) (initial _ _ _ _),
+      exact ⟨formed.queueBatch _ _ _ _ (Laws.Step.groupsRoots_none _) (initial _ _ _ _),
         (beginsKept_initial _ _ _ _).queueBatch _⟩
     have done := logged_settles contract phases pipeline wellFormed formed formedPipeline framing facts
       (Laws.Step.advanceClock_keeps (phases ∅) queued clocked) (Laws.Step.advanceClock_between (fresh _ _ _) clocked)

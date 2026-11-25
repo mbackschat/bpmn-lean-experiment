@@ -278,6 +278,7 @@ theorem signal_keeps (contract : HookContract hooks inv) (phases : BodyPhases in
       (same ▸ heads)) (fun _ _ _ same => ⟨queue, holds, .inr (.inl ⟨_, _, _, _, _, _, same ▸ head⟩)⟩)
       ⟨queue, unit, holds, found, rfl⟩ ran
   | onCompensationFailed stands ran => exact contract.failCompensation _ _ _ _ _ _ _ popped stands ran
+  | onCompensationReady stands ran => exact contract.compensationReady _ _ _ _ _ popped stands ran
 
 theorem completeIdleScope_keeps (contract : HookContract hooks inv) (facts : StateFacts) {ctx : Ctx}
     {scope : ScopeOccurrence} {state after : State} (holds : inv ctx.program state) (member : scope ∈ state.scopes)

@@ -1,8 +1,8 @@
 /**
  * Committed key forms and in-closure issue slots, transcribed from `Kernel/State/Issue.lean`: what the closure in
  * progress issues (DC12) reads of a key: whether it holds only committed issues (`committedScope`), whether it names an
- * issue of the closure in progress (`scopeFresh`, `occurrenceFresh`), the unit keys of the idle check, the offer and the
- * finish it owns (`idleUnit`, `offerUnit`, `finishUnit`), and the slot an issue takes its committed ordinal in at commit (`ClaimSlot`), the issue
+ * issue of the closure in progress (`scopeFresh`, `occurrenceFresh`), the unit keys of the idle check, the offer, the
+ * finish and the readiness it owns (`idleUnit`, `offerUnit`, `finishUnit`, `readyUnit`), and the slot an issue takes its committed ordinal in at commit (`ClaimSlot`), the issue
  * table's value (`State.issued`), beside the issuing unit's key, which a fresh issue's text names only by its digest
  * (`IssuerText`). Part of `state.ts`, which re-exports it.
  */
@@ -89,6 +89,31 @@ export function finishUnit(issued: IssueTable, scope: ScopeOccurrenceId, element
   }
   const issuer = issuerOf(issued, fresh);
   return issuer === null ? null : pushUnit(issuer, { tag: UnitStepTag.Finish, index: fresh.index, ordinal });
+}
+
+/**
+ * Lean's `UnitKey.readyUnit?`: the unit key of the `ordinal`th readiness of a compensation run in `scope` whose trigger's
+ * occurrence is `trigger`, `null` for a group's nested run (DC30, `runAnchor`): a root naming both when they are
+ * committed, a step below the unit that issued the trigger's occurrence, or a nested run's scope occurrence, when that was
+ * issued in the closure; `null` for the process root without a trigger, a committed segment above a fresh one, or a fresh
+ * issue the table does not hold.
+ */
+export function readyUnit(issued: IssueTable, scope: ScopeOccurrenceId, trigger: OccurrenceId | null, ordinal: number): UnitKey | null {
+  const fresh = trigger === null ? freshScopeHead(scope) : freshIssue(occurrenceIdParts(trigger).ordinal);
+  if (fresh === undefined) return null;
+  if (fresh === null) {
+    const path = committedScope(scope);
+    if (path === null || (trigger !== null && committedScope(occurrenceIdParts(trigger).scope) === null)) return null;
+    return unitRoot({ tag: UnitRootTag.Ready, scope: path, trigger, ordinal });
+  }
+  const issuer = issuerOf(issued, fresh);
+  return issuer === null ? null : pushUnit(issuer, { tag: UnitStepTag.Ready, index: fresh.index, ordinal });
+}
+
+/** The fresh issue of `scope`'s innermost segment, `null` when it is committed, `undefined` for the process root. */
+function freshScopeHead(scope: ScopeOccurrenceId): FreshIssue | null | undefined {
+  const head = scopeHead(scope);
+  return head === null ? undefined : freshIssue(head[0].ordinal);
 }
 
 /** Lean's `UnitKey.offers`: whether `key` is an offer of the parked occurrence `occurrence`, of any round (`offerUnit`). */

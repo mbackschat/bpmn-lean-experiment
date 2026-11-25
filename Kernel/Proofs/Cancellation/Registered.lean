@@ -312,6 +312,8 @@ theorem runsOps_alongside {program : Program} (side : StoresAlongside program re
   signalled := ops.signalled
   signalGrows := ops.signalGrows
   cancel s id holds := have queued := ops.cancel s id holds.1; ⟨⟨queued.1, side.signal holds.2 _⟩, queued.2⟩
+  ready s scope context holds :=
+    have queued := ops.ready s scope context holds.1; ⟨⟨queued.1, side.signal holds.2 _⟩, queued.2⟩
   complete s id leave writes rule holds settled resumed :=
     have queued := ops.complete s id leave writes rule holds.1 settled (resumed.imp fun _ => And.imp_left And.left)
     ⟨⟨queued.1, side.complete s id leave writes rule (.inr (resumed.imp fun _ held => ⟨held.1.1, held.1.2, held.2⟩))
