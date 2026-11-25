@@ -322,14 +322,15 @@ theorem Formed.clearInside (le : Issue → Issue → Bool) {precedes : Compensab
     (housed : ∀ o ∈ s.occurrences, o.id ∈ keep → ¬ Laws.State.StrictlyWithin s o.scope scope) :
     Formed precedes (s.clearInside le scope keep) := by
   have cleared := Laws.State.clearInside_cleared (le := le) well present keep
-  have slot := Laws.State.clearInside_compensation (le := le) s scope keep
+  have retainedSlot := Laws.State.clearInside_retained (le := le) s scope keep
+  have runsSlot := Laws.State.clearInside_runs (le := le) s scope keep
   have kept : ∀ x ∈ scopeIds (s.clearInside le scope keep), x ∈ scopeIds s := fun x inside => by
     obtain ⟨entry, member, rfl⟩ := List.mem_map.mp inside
     exact List.mem_map.mpr ⟨entry, ((cleared.scopes entry).mp member).1, rfl⟩
   refine formed.shrink (fun x inside _ => ⟨kept x inside, cleared.instances x inside⟩)
     (Nat.le_of_eq (Laws.State.clearInside_shrinks s scope keep).2.symm) cleared.scopeGrows
     (fun _ held => Laws.State.Counted.congr cleared.activations held)
-    (by rw [slot]; exact List.filter_sublist) (by rw [slot]; exact List.filter_sublist) (fun record member => ?_)
+    (by rw [retainedSlot]; exact List.filter_sublist) (by rw [runsSlot]; exact List.filter_sublist) (fun record member => ?_)
     (by rw [cleared.signals]; exact .refl _) (fun _ inside => cleared.signals ▸ inside)
     (.sub (fun o inside => ((cleared.occurrences o).mp inside).1) fun o inside => ?_) (fun run member _ stands => ?_)
   rotate_left
@@ -340,13 +341,13 @@ theorem Formed.clearInside (le : Issue → Issue → Bool) {precedes : Compensab
     rcases outside with away | kept
     · exact away strictly.1
     · exact housed o was kept strictly
-  · rw [slot, List.mem_filter] at member
+  · rw [runsSlot, List.mem_filter] at member
     obtain ⟨entry, inside, named⟩ := List.mem_map.mp stands
     refine List.mem_map.mpr ⟨entry, (cleared.scopes entry).mpr ⟨inside, fun strictly => ?_⟩, named⟩
     have sub := (Laws.State.subtree_iff (le := le) well present _).mpr strictly.1
     rw [← named] at member
     simp [sub] at member
-  rw [slot] at member
+  rw [retainedSlot] at member
   obtain ⟨member, unnested⟩ := List.mem_filter.mp member
   obtain ⟨entry, stands, named⟩ := List.mem_map.mp (formed.retained record member)
   refine List.mem_map.mpr ⟨entry, (cleared.scopes entry).mpr ⟨stands, fun strictly => ?_⟩, named⟩
@@ -658,7 +659,7 @@ theorem formed_compensate (program : Program) (precedes : Compensable → Compen
   have baseSlots : base.slots = queue.slots := by rw [made]
   have runsBack : ∀ run ∈ (before.clearInside le scope).slots.compensation.runs, run ∈ queue.slots.compensation.runs :=
     fun run member => by
-      rw [Laws.State.clearInside_compensation] at member
+      rw [Laws.State.clearInside_runs] at member
       have inside := (List.mem_filter.mp member).1
       rw [frame.2.2.2.1] at inside
       have earlier := steady.runs run inside

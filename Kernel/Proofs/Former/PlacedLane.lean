@@ -518,8 +518,8 @@ def placedRun (thrown : OccurrenceRef) (scope : ScopeOccurrenceId) (pending : Li
 /-- A compensation run resuming a completion by a named flow breaks `PlacedLane.resumes`. -/
 theorem named_resume_rejected (flow : FlowId) (thrown : OccurrenceRef) :
     ¬ PlacedLane program (placedCompensating definition
-        { runs := [placedRun thrown State.root [] (some (.complete (aIn calledKey) (.flows [flow])))] }) := fun lane => by
-  cases lane.resumes _ (List.mem_singleton_self _) (aIn calledKey) (.flows [flow]) rfl _ rfl
+        { runMap := (∅ : RunMap).put (placedRun thrown State.root [] (some (.complete (aIn calledKey) (.flows [flow])))) }) := fun lane => by
+  cases lane.resumes _ (Laws.State.mem_put_new _ _) (aIn calledKey) (.flows [flow]) rfl _ rfl
 
 /-- A retained compensation record of the root process inside a called instance breaks `PlacedLane.records`. -/
 theorem misplaced_record_rejected :
@@ -534,10 +534,10 @@ theorem misplaced_record_rejected :
 /-- A run's pending record of the root process inside a called instance breaks `PlacedLane.pending`. -/
 theorem misplaced_pending_rejected (thrown : OccurrenceRef) :
     ¬ PlacedLane { program with elements := [] } (placedCompensating definition
-        { runs := [placedRun thrown calledKey [{ subject := ⟨"A"⟩, handler := none, scope := calledKey
-                                                 occurrence := { processInstanceId := "I", element := ⟨"A"⟩, activation := 1 } }] none] }) :=
+        { runMap := (∅ : RunMap).put (placedRun thrown calledKey [{ subject := ⟨"A"⟩, handler := none, scope := calledKey
+                                                                    occurrence := { processInstanceId := "I", element := ⟨"A"⟩, activation := 1 } }] none) }) :=
   fun lane => placed_misplaced (definition := definition)
-    (lane.pending _ (List.mem_singleton_self _) (placed_present definition) _ (List.mem_singleton_self _) ⟨"A"⟩
+    (lane.pending _ (Laws.State.mem_put_new _ _) (placed_present definition) _ (List.mem_singleton_self _) ⟨"A"⟩
       (by simp [recordElements]))
     (placed_calledRoot (definition := definition) rfl) (by simp [placedCompensating, placedState])
 

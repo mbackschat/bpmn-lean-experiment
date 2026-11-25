@@ -150,11 +150,9 @@ def joinsOf (ctx : Ctx) (records : List Compensable) : List Nat :=
 /-- `state` with the handler context `context` no longer running in `owner`, the run holding it. -/
 def unhold (context : ScopeOccurrenceId) (owner : CompensationRun) (state : State) : State :=
   let compensation := state.slots.compensation
-  let runs := compensation.runs.map fun candidate =>
-    if isRun owner.scope owner.trigger candidate then
-      { candidate with running := candidate.running.filter (·.1 != context) }
-    else candidate
-  store state { compensation with runs }
+  let runMap := compensation.runMap.map fun key record =>
+    if key == owner.key then { record with running := record.running.filter (·.1 != context) } else record
+  store state { compensation with runMap }
 
 /-- `state` with the handler context `context` left and no longer running in `owner`, the run holding it. -/
 def leaveContext (ctx : Ctx) (context : ScopeOccurrenceId) (owner : CompensationRun) (state : State) : State :=
@@ -176,7 +174,7 @@ def beginHandler (ctx : Ctx) (trigger : OccurrenceRef) (scope : ScopeOccurrenceI
       let compensation := state.slots.compensation
       let nested : CompensationRun :=
         { trigger, scope := context, pending, leave := none, resume := some (.group context), joins := joinsOf ctx pending }
-      let state ← advance ctx context trigger (store state { compensation with runs := compensation.runs ++ [nested] }) fuel
+      let state ← advance ctx context trigger (store state { compensation with runMap := compensation.runMap.put nested }) fuel
       .ok (state, context)
     | some handler =>
       match ctx.program.element? handler with
@@ -205,7 +203,7 @@ def advance (ctx : Ctx) (scope : ScopeOccurrenceId) (trigger : OccurrenceRef) (s
     let remaining := run.pending ++ run.running.map (·.2)
     let (ready, waiting) := run.pending.partition fun record => !remaining.any (precedes ctx record ·)
     if run.pending.isEmpty && run.running.isEmpty then
-      let state := store state { compensation with runs := compensation.runs.filter (!isRun scope trigger ·) }
+      let state := store state { compensation with runMap := compensation.runMap.erase { scope, trigger } }
       let state := match run.leave with
         | some occurrence => state.signal (.cancel occurrence)
         | none => state
@@ -225,8 +223,8 @@ def advance (ctx : Ctx) (scope : ScopeOccurrenceId) (trigger : OccurrenceRef) (s
         .ok (state, started ++ [(context, record)])) (state, [])
       -- A group's nested run joined the runs while its handlers began.
       let compensation := state.slots.compensation
-      .ok (store state { compensation with runs := compensation.runs.filter (!isRun scope trigger ·) ++
-        [{ run with pending := waiting, running := run.running ++ started }] })
+      .ok (store state { compensation with
+        runMap := compensation.runMap.put { run with pending := waiting, running := run.running ++ started } })
 
 /-- The handler or group that ran in `context` is done: the context is left and the run holding it, found by that
 context and never by its scope, which a second run may share (#103), starts what that releases. -/
@@ -268,8 +266,8 @@ def compensate (ctx : Ctx) (scope : ScopeOccurrenceId) (activity : Option Elemen
   let (selected, kept) := compensation.retained.partition fun record =>
     covered.contains record.scope && activity.all (· == record.subject)
   advance ctx scope trigger (store state
-    { retained := kept, runs := compensation.runs ++
-        [{ trigger, scope, pending := selected, leave, resume, joins := joinsOf ctx selected }] })
+    { retained := kept,
+      runMap := compensation.runMap.put { trigger, scope, pending := selected, leave, resume, joins := joinsOf ctx selected } })
     (runBound ctx state)
 
 /-- Under `BranchSchedule.orderInvariant`, the run holding the handler context `context` when leaving it releases
@@ -314,7 +312,7 @@ handler before then. -/
 def dropWithin (_ : Ctx) (scope : ScopeOccurrenceId) (state : State) : State :=
   let inside := state.inside scope
   let compensation := state.slots.compensation
-  store state { compensation with runs := compensation.runs.filter (!inside.contains ·.scope) }
+  store state { compensation with runMap := compensation.runMap.filter fun key _ => !inside.contains key.scope }
 
 /-- The record whose handler or group runs in the context `context`, of the first run holding it as `Step.scopeRole`
 reads it (`Propagation.PropagationHooks.handlerRecord`): its scope is where the record was retained, which a group's

@@ -62,6 +62,7 @@ import {
   closureWalk,
   conditional,
   conditionalCatches,
+  contribution,
   handler,
   handlersOf,
   interruption,
@@ -69,7 +70,6 @@ import {
   reaches,
   removal,
   removesElement,
-  runs,
   signalled,
   startingSubProcesses,
   subjectsOf,
@@ -585,7 +585,7 @@ function writeFanOut(reading: Reading, program: Program, element: Element): stri
   const resumed = (written: NameSet): Array<readonly [Visit, Closure]> =>
     conditionalCatches(program).filter((visit) => mayMakeTrue(program, written, visit))
       .map((visit) => [visit, pathOf(reading, program, [visit])] as const);
-  const written = runs(reading, program, element).footprint.writes;
+  const written = contribution(reading, program, element).footprint.writes;
   const scope = elementScope(element);
   const inside = scope !== null && scopeKindStart(scope[1].kind) !== null ? programEnteredChildren(program, scope[0].id).map(toEnter) : [];
   const own = (): string | null => {
@@ -645,7 +645,7 @@ function compensationFanOut(reading: Reading, program: Program, element: Element
     const begun = closureWalk(reading, program, { stop: (other) => elementHeader(other).id === id || awaitsStimulus(other), ascends: false },
       [toEnter(handlerElement)]);
     if (awaitsStimulus(handlerElement)) return begun;
-    const run = runs(reading, program, handlerElement);
+    const run = contribution(reading, program, handlerElement);
     return { ...begun, footprint: joined(begun.footprint, run.footprint), withdraws: [...run.withdraws, ...begun.withdraws],
       completed: [id, ...begun.completed] };
   };
@@ -821,8 +821,8 @@ export function instanceClosure(reading: Reading, program: Program, element: Ele
     return { races: conflicts(closure) || (woken !== null && conflicts(woken)), completes: closure.ends || (woken?.ends ?? false) };
   }
   if (awaitsStimulus(element)) return { races: false, completes: false };
-  // The instance's run counts as every path counts a run (`runs`), its unhandled Error's withdrawal included.
-  const run = runs(reading, program, element);
+  // The instance's run counts as every path counts a run (`contribution`), its unhandled Error's withdrawal included.
+  const run = contribution(reading, program, element);
   const beside = walk(beyond(reading, program, element, true));
   return { races: races(run.footprint, run.footprint) || meetsSibling({ ...beside, withdraws: [...run.withdraws, ...beside.withdraws] }), completes: true };
 }

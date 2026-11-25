@@ -437,7 +437,7 @@ function unhandled(reading: Reading, program: Program, element: Element): Withdr
  */
 export type Contribution = Readonly<{ footprint: Footprint; locals: readonly string[]; withdraws: readonly Withdrawal[] }>;
 
-export function runs(reading: Reading, program: Program, element: Element): Contribution {
+export function contribution(reading: Reading, program: Program, element: Element): Contribution {
   const own = footprint(program, element);
   return {
     footprint: { reads: own.reads, writes: union(own.writes, reading.writes(element)) },
@@ -716,7 +716,7 @@ export function closureWalk(reading: Reading, program: Program, walk: Walk, begu
       }
       case VisitTag.Completes:
         reached.unshift(elementHeader(visit.element).id);
-        add(runs(reading, program, visit.element));
+        add(contribution(reading, program, visit.element));
         acts(visit.element);
         return [...after(reading, program, walk, visit.element),
           ...(walk.ascends && reading.nextInstance(visit.element) ? [toEnter(visit.element)] : [])];
@@ -733,7 +733,7 @@ export function closureWalk(reading: Reading, program: Program, walk: Walk, begu
         }
         const scope = elementScope(element);
         const onward = [...continuing(program, element), ...(scope === null ? [] : programEnteredChildren(program, scope[0].id))];
-        add(runs(reading, program, element));
+        add(contribution(reading, program, element));
         acts(element);
         ends ||= onward.length === 0;
         return [...entering(reading, program, element), ...after(reading, program, walk, element)];

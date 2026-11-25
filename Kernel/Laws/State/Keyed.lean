@@ -581,6 +581,34 @@ theorem rekey_getElem? {f : κ → κ} {g : β → β} {m : TreeMap κ β compar
   · simp at empty
   · exact ⟨entry.1, entry.2, Std.ExtTreeMap.mem_toList_iff_getElem?_eq_some.mp inside, named, value⟩
 
+/-- Re-keying under a renaming that keeps the map's keys apart keeps each entry, under its renamed key. -/
+theorem rekey_getElem?_of {f : κ → κ} {g : β → β} {m : TreeMap κ β compare} {k : κ} {v : β}
+    (apart : ∀ a b a' b', m[a]? = some a' → m[b]? = some b' → f a = f b → a = b) (found : m[k]? = some v) :
+    (m.foldl (fun (acc : TreeMap κ β compare) k v => acc.insert (f k) (g v)) ∅)[f k]? = some (g v) := by
+  rw [Std.ExtTreeMap.foldl_eq_foldl_toList]
+  have mapped : m.toList.foldl (fun (acc : TreeMap κ β compare) entry => acc.insert (f entry.1) (g entry.2)) ∅ =
+      (m.toList.map fun entry => (f entry.1, g entry.2)).foldl (fun acc entry => acc.insert entry.1 entry.2) ∅ := by
+    rw [List.foldl_map]
+  have distinct : (m.toList.map fun entry => (f entry.1, g entry.2)).Pairwise (fun a b => compare a.1 b.1 ≠ .eq) := by
+    rw [List.pairwise_map]
+    refine Std.ExtTreeMap.distinct_keys_toList.imp_of_mem fun {a b} aIn bIn ne eq => ne ?_
+    have same := apart _ _ _ _ (Std.ExtTreeMap.mem_toList_iff_getElem?_eq_some.mp aIn)
+      (Std.ExtTreeMap.mem_toList_iff_getElem?_eq_some.mp bIn) (Std.LawfulEqCmp.eq_of_compare eq)
+    rw [same]; exact Std.ReflCmp.compare_self
+  rw [mapped, foldl_insert_getElem? (f k) _ _ distinct, Std.ExtTreeMap.getElem?_empty, Option.or_none]
+  have inside : (k, v) ∈ m.toList := Std.ExtTreeMap.mem_toList_iff_getElem?_eq_some.mpr found
+  obtain ⟨entry, hit⟩ : ∃ entry, (m.toList.map fun entry => (f entry.1, g entry.2)).find?
+      (fun entry => compare entry.1 (f k) == .eq) = some entry :=
+    Option.isSome_iff_exists.mp (List.find?_isSome.mpr ⟨_, List.mem_map_of_mem inside, by simp⟩)
+  have matched := List.find?_some hit
+  obtain ⟨old, oldIn, rfl⟩ := List.mem_map.mp (List.mem_of_find?_eq_some hit)
+  simp only [beq_iff_eq] at matched
+  have oldFound : m[old.1]? = some old.2 := Std.ExtTreeMap.mem_toList_iff_getElem?_eq_some.mp oldIn
+  have same := apart _ _ _ _ oldFound found (Std.LawfulEqCmp.eq_of_compare matched)
+  rw [same, found] at oldFound
+  rw [hit]
+  simp [Option.some.inj oldFound]
+
 end Rebuild
 
 /-! ## Inserts under distinct keys -/

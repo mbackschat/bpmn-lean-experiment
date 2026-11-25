@@ -30,8 +30,7 @@ theorem compact_contexts (ran : compact schedule start log s = .ok t) {other : C
     (member : other ∈ t.slots.compensation.runs) :
     ∃ old ∈ s.slots.compensation.runs,
       other.running.map (·.1) = (old.running.map (·.1)).map (renameScope (commitRenaming schedule start log s)) := by
-  rw [compact_slots ran, renameSlots_eq] at member
-  obtain ⟨old, inside, rfl⟩ := List.mem_map.mp member
+  obtain ⟨old, inside, rfl⟩ := compact_runs_of ran member
   exact ⟨old, inside, by simp [List.map_map, Function.comp_def]⟩
 
 end Runs

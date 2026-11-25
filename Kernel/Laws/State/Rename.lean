@@ -265,9 +265,10 @@ theorem renameSlots_id (slots : FeatureSlots) : renameSlots r slots = slots := b
     cases resume <;> simp [renameResume, renameScope_id same, renameId_id same]
   have iteration : renameIteration r = id := funext fun iteration => by
     cases iteration <;> simp [renameIteration, renameScope_id same]
-  cases slots
+  cases slots with | mk parked heldMap multiInstanceMap compensation instances =>
+  cases compensation
   simp [renameSlots, ids, compensable, resume, iteration, renameScope_id same, Keyed.rebuild_self]
-  exact Keyed.rebuild_self _
+  exact ⟨Keyed.rebuild_self _, Keyed.rebuild_self _⟩
 
 end Identity
 
@@ -330,10 +331,11 @@ theorem renameSlots_eq (r : Issue → Issue) (slots : FeatureSlots) : renameSlot
         { record with scope := renameScope r record.scope, instances := record.instances.map (renameIteration r) }) ∅
       compensation := {
         retained := slots.compensation.retained.map (renameCompensable r)
-        runs := slots.compensation.runs.map fun run =>
-          { run with scope := renameScope r run.scope, pending := run.pending.map (renameCompensable r)
-                     running := run.running.map fun (context, record) => (renameScope r context, renameCompensable r record)
-                     leave := run.leave.map (renameId r), resume := run.resume.map (renameResume r) } }
+        runMap := slots.compensation.runMap.foldl (fun renamed key record => renamed.insert
+          { key with scope := renameScope r key.scope }
+          { record with pending := record.pending.map (renameCompensable r)
+                        running := record.running.map fun (context, record) => (renameScope r context, renameCompensable r record)
+                        leave := record.leave.map (renameId r), resume := record.resume.map (renameResume r) }) ∅ }
       instances := slots.instances.map fun data => { data with root := renameScope r data.root } } := by
   unfold renameSlots; rfl
 
@@ -359,6 +361,60 @@ theorem renameSlots_bodies_of {r : Issue → Issue} {slots : FeatureSlots} {run 
   refine ⟨v.toRun k, mem_multiInstanceList.mpr (by simpa using found), ?_⟩
   rw [← run_record run, ← renamed.1, ← renamed.2]
   simp [run_eq]
+
+/-- A compensation run renamed by a commit. -/
+abbrev renamedRun (r : Issue → Issue) (run : CompensationRun) : CompensationRun :=
+  { run with scope := renameScope r run.scope, pending := run.pending.map (renameCompensable r)
+             running := run.running.map fun (context, record) => (renameScope r context, renameCompensable r record)
+             leave := run.leave.map (renameId r), resume := run.resume.map (renameResume r) }
+
+/-- Every compensation run of the renamed slots is one of `slots`, renamed. -/
+theorem renameSlots_runs_of {r : Issue → Issue} {slots : FeatureSlots} {run : CompensationRun}
+    (member : run ∈ (renameSlots r slots).compensation.runs) :
+    ∃ old ∈ slots.compensation.runs, renamedRun r old = run := by
+  rw [runs_eq, renameSlots_eq, mem_runList] at member
+  obtain ⟨k, v, found, renamed⟩ := Keyed.rekey_getElem? member
+  refine ⟨v.toRun k, mem_runList.mpr (by simpa using found), ?_⟩
+  rw [← toRun_toRecord run, ← renamed.1, ← renamed.2]
+  simp [toRun_eq]
+
+/-- The renamed runs are `slots`' runs renamed, up to order, when the renaming keeps their keys apart. -/
+theorem renameSlots_runs_perm {r : Issue → Issue} {slots : FeatureSlots}
+    (apart : ∀ a ∈ slots.compensation.runs, ∀ b ∈ slots.compensation.runs, renameScope r a.scope = renameScope r b.scope →
+      a.trigger = b.trigger → a.scope = b.scope) :
+    (renameSlots r slots).compensation.runs.Perm (slots.compensation.runs.map (renamedRun r)) := by
+  have keysApart : ∀ a ∈ slots.compensation.runs, ∀ b ∈ slots.compensation.runs,
+      renamedRun r a = renamedRun r b → a = b := fun a aIn b bIn same => by
+    have triggers : a.trigger = b.trigger := by simpa using congrArg CompensationRun.trigger same
+    have scopes := apart a aIn b bIn (by simpa using congrArg CompensationRun.scope same) triggers
+    have keyed : a.key = b.key := key_eq_iff.mpr ⟨scopes, triggers⟩
+    rw [runs_eq] at aIn bIn
+    rw [← toRun_toRecord a, ← toRun_toRecord b, ← keyed, Option.some.inj ((mem_runList.mp aIn).symm.trans
+      (keyed ▸ mem_runList.mp bIn))]
+  refine (List.perm_ext_iff_of_nodup (runList_nodup' _) ?_).mpr fun run => ⟨fun member => ?_, fun member => ?_⟩
+  · rw [List.Nodup, List.pairwise_map]
+    exact (runList_nodup' _).imp_of_mem fun aIn bIn ne same => ne (keysApart _ aIn _ bIn same)
+  · obtain ⟨old, inside, rfl⟩ := renameSlots_runs_of member
+    exact List.mem_map_of_mem inside
+  · obtain ⟨old, inside, rfl⟩ := List.mem_map.mp member
+    have found := mem_runList.mp inside
+    rw [renameSlots_eq, mem_runList]
+    have rekeyed := Keyed.rekey_getElem?_of
+      (f := fun key : RunKey => { key with scope := renameScope r key.scope })
+      (g := fun record : RunRecord => { record with pending := record.pending.map (renameCompensable r)
+                                                    running := record.running.map fun (context, record) =>
+                                                      (renameScope r context, renameCompensable r record)
+                                                    leave := record.leave.map (renameId r)
+                                                    resume := record.resume.map (renameResume r) })
+      (fun a b a' b' aFound bFound same => ?_) found
+    · simpa [key_mk, toRecord_mk] using rekeyed
+    · have aIn : a'.toRun a ∈ slots.compensation.runs := mem_runList.mpr (by simpa using aFound)
+      have bIn : b'.toRun b ∈ slots.compensation.runs := mem_runList.mpr (by simpa using bFound)
+      have scopes := apart _ aIn _ bIn (by simpa using congrArg RunKey.scope same) (by simpa using congrArg RunKey.trigger same)
+      simp only [scope_toRun] at scopes
+      cases a; cases b
+      simp only [RunKey.mk.injEq] at same ⊢
+      exact ⟨scopes, same.2⟩
 
 theorem renameId_keep {r : Issue → Issue} (fixes : Fixes r) {id : OccurrenceId} (scope : renameScope r id.scope = id.scope)
     {m : Nat} (ordinal : id.ordinal = .committed m) : renameId r id = id := by

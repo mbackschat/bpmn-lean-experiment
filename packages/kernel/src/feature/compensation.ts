@@ -73,6 +73,7 @@ import {
   type ScopeOccurrence,
   type ScopeOccurrenceId,
   type State,
+  putRun,
   runHolds,
   SemanticCause,
   semanticFailure, type OccurrenceId, ownVariables, insertVariableIfNew,
@@ -260,7 +261,7 @@ function beginHandler(
       trigger, scope: context, pending, running: [], leave: null, resume: { tag: ResumeTag.Group, context },
       joins: joinsOf(ctx, pending),
     };
-    const advanced = advance(ctx, context, trigger, store(entered, { ...compensation, runs: [...compensation.runs, nested] }), fuel - 1);
+    const advanced = advance(ctx, context, trigger, store(entered, { ...compensation, runs: putRun(compensation.runs, nested) }), fuel - 1);
     return advanced.ok ? committed([advanced.value, context]) : advanced;
   }
   const element = programElement(ctx.program, handler);
@@ -333,8 +334,7 @@ function advance(ctx: Ctx, scope: ScopeOccurrenceId, trigger: OccurrenceRef, sta
   }
   // A group's nested run joined the runs while its handlers began.
   const updated: CompensationRun = { ...run, pending: waiting, running: [...run.running, ...started] };
-  const runs = current.slots.compensation.runs.filter((candidate) => !matches(candidate));
-  return committed(store(current, { ...current.slots.compensation, runs: [...runs, updated] }));
+  return committed(store(current, { ...current.slots.compensation, runs: putRun(current.slots.compensation.runs, updated) }));
 }
 
 /**
@@ -391,7 +391,7 @@ export function compensate(
   const kept = compensation.retained.filter((record) => !selects(record));
   return advance(ctx, scope, trigger, store(state, {
     retained: kept,
-    runs: [...compensation.runs, { trigger, scope, pending: selected, running: [], leave, resume, joins: joinsOf(ctx, selected) }],
+    runs: putRun(compensation.runs, { trigger, scope, pending: selected, running: [], leave, resume, joins: joinsOf(ctx, selected) }),
   }), runBound(ctx, state));
 }
 

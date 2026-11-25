@@ -43,7 +43,7 @@ theorem featureSlotsClear_eq (slots : FeatureSlots) (inside nested : List ScopeO
       multiInstanceMap := slots.multiInstanceMap.filter fun _ record => !inside.contains record.scope
       compensation := {
         retained := slots.compensation.retained.filter (!nested.contains ·.scope)
-        runs := slots.compensation.runs.filter (!inside.contains ·.scope) }
+        runMap := slots.compensation.runMap.filter fun key _ => !inside.contains key.scope }
       instances := slots.instances.filter (!nested.contains ·.root) } := by
   simp only [FeatureSlots.clear]
 
@@ -89,6 +89,199 @@ theorem leastBy_mem {le : Issue → Issue → Bool} {entries : List Parked} {lea
       split at picked
       · exact kept _ picked
       · simp only [Option.some.injEq] at picked; exact picked ▸ headIn
+
+/-! ## The compensation run map -/
+
+theorem runs_eq (compensation : Compensations) : compensation.runs = runList compensation.runMap := rfl
+
+@[simp] theorem toRecord_toRun (record : RunRecord) (key : RunKey) : (record.toRun key).toRecord = record := by
+  simp only [RunRecord.toRun, CompensationRun.toRecord]
+
+@[simp] theorem toRun_toRecord (run : CompensationRun) : run.toRecord.toRun run.key = run := by
+  simp only [RunRecord.toRun, CompensationRun.toRecord, CompensationRun.key]
+
+/-- A record's run, field by field. -/
+theorem toRun_eq (record : RunRecord) (key : RunKey) : record.toRun key =
+    { trigger := key.trigger, scope := key.scope, pending := record.pending, running := record.running
+      leave := record.leave, resume := record.resume, joins := record.joins } := by
+  simp only [RunRecord.toRun]
+
+@[simp] theorem key_toRun (record : RunRecord) (key : RunKey) : (record.toRun key).key = key := by
+  simp only [RunRecord.toRun, CompensationRun.key]
+
+@[simp] theorem scope_toRun (record : RunRecord) (key : RunKey) : (record.toRun key).scope = key.scope := by
+  simp only [RunRecord.toRun]
+
+@[simp] theorem trigger_toRun (record : RunRecord) (key : RunKey) : (record.toRun key).trigger = key.trigger := by
+  simp only [RunRecord.toRun]
+
+@[simp] theorem key_scope (run : CompensationRun) : run.key.scope = run.scope := by
+  simp only [CompensationRun.key]
+
+@[simp] theorem key_trigger (run : CompensationRun) : run.key.trigger = run.trigger := by
+  simp only [CompensationRun.key]
+
+theorem key_mk (run : CompensationRun) : run.key = { scope := run.scope, trigger := run.trigger } := by
+  simp only [CompensationRun.key]
+
+theorem toRecord_mk (run : CompensationRun) : run.toRecord =
+    { pending := run.pending, running := run.running, leave := run.leave, resume := run.resume, joins := run.joins } := by
+  simp only [CompensationRun.toRecord]
+
+theorem key_eq_iff {run other : CompensationRun} : run.key = other.key ↔ run.scope = other.scope ∧ run.trigger = other.trigger := by
+  simp only [CompensationRun.key, RunKey.mk.injEq]
+
+/-- The list view of a literal's map. -/
+@[simp] theorem runs_mk (retained : List Compensable) (runMap : RunMap) :
+    ({ retained, runMap } : Compensations).runs = runList runMap := rfl
+
+theorem mem_runList {m : RunMap} {run : CompensationRun} : run ∈ runList m ↔ m[run.key]? = some run.toRecord := by
+  simp only [runList, List.mem_map]
+  constructor
+  · rintro ⟨⟨k, v⟩, inside, rfl⟩
+    simpa using Std.ExtTreeMap.mem_toList_iff_getElem?_eq_some.mp inside
+  · intro found
+    exact ⟨(run.key, run.toRecord), Std.ExtTreeMap.mem_toList_iff_getElem?_eq_some.mpr found, toRun_toRecord run⟩
+
+/-- One run per key: the list view's keys are the map's distinct keys. -/
+theorem runList_nodup (m : RunMap) : ((runList m).map (·.key)).Nodup := by
+  have keys : (runList m).map (·.key) = m.toList.map (·.1) := by
+    simp only [runList, List.map_map]
+    exact List.map_congr_left fun entry _ => key_toRun entry.2 entry.1
+  rw [keys, List.Nodup, List.pairwise_map]
+  exact Std.ExtTreeMap.distinct_keys_toList.imp fun ne eq => ne (by rw [eq]; exact Std.ReflCmp.compare_self)
+
+/-- So no two runs of the list view share a scope occurrence and a trigger (`isRun`'s key). -/
+theorem runList_keyed (m : RunMap) : ((runList m).map fun run => (run.scope, run.trigger)).Nodup := by
+  rw [List.Nodup, List.pairwise_map]
+  exact (List.pairwise_map.mp (runList_nodup m)).imp fun apart same => apart (key_eq_iff.mpr (Prod.mk.inj same))
+
+theorem runList_nodup' (m : RunMap) : (runList m).Nodup :=
+  (List.pairwise_map.mp (runList_nodup m)).imp fun apart same => apart (congrArg CompensationRun.key same)
+
+@[simp] theorem runList_empty : runList (∅ : RunMap) = [] := by simp [runList]
+
+/-- A filter of the map filters the list view, in key order. -/
+theorem runList_filter (m : RunMap) (f : RunKey → RunRecord → Bool) :
+    runList (m.filter f) = (runList m).filter fun run => f run.key run.toRecord := by
+  simp only [runList, Std.ExtTreeMap.toList_filter, List.filter_map]
+  congr 1
+
+/-- A map over the records filters nothing and keeps the keys: the list view maps each run. -/
+theorem runList_map (m : RunMap) (f : RunKey → RunRecord → RunRecord) :
+    runList (m.map f) = (runList m).map fun run => (f run.key run.toRecord).toRun run.key := by
+  simp only [runList, Std.ExtTreeMap.toList_map, List.map_map]
+  exact List.map_congr_left fun entry _ => by simp
+
+/-- Erasing a key filters the list view. -/
+theorem runList_erase (m : RunMap) (k : RunKey) : runList (m.erase k) = (runList m).filter (·.key != k) := by
+  have : m.erase k = m.filter fun key _ => key != k := by
+    ext key value
+    rw [Std.ExtTreeMap.getElem?_erase, Std.ExtTreeMap.getElem?_filter']
+    by_cases same : k = key
+    · subst same; simp
+    · have : compare k key ≠ .eq := fun eq => same (Std.LawfulEqCmp.eq_of_compare eq)
+      simp [this, Ne.symm same]
+  rw [this, runList_filter]
+
+/-- Putting a run puts it in place of the one under its key. -/
+theorem mem_runList_put {m : RunMap} {next run : CompensationRun} :
+    run ∈ runList (m.put next) ↔ run = next ∨ (run ∈ runList m ∧ run.key ≠ next.key) := by
+  rw [RunMap.put, mem_runList, mem_runList, Std.ExtTreeMap.getElem?_insert]
+  constructor
+  · intro found
+    split at found
+    · rename_i same
+      have key := Std.LawfulEqCmp.eq_of_compare same
+      have record := Option.some.inj found
+      rw [← toRun_toRecord run, ← toRun_toRecord next, ← key, record]
+      exact .inl rfl
+    · rename_i apart
+      exact .inr ⟨found, fun eq => apart (by rw [eq]; exact Std.ReflCmp.compare_self)⟩
+  · rintro (rfl | ⟨found, apart⟩)
+    · simp
+    · rw [ite_eq_right fun same => apart (Std.LawfulEqCmp.eq_of_compare same).symm]; exact found
+
+/-- The list view of one run's map is that run. -/
+@[simp] theorem mem_runList_single {next run : CompensationRun} :
+    run ∈ runList ((∅ : RunMap).put next) ↔ run = next := by
+  rw [mem_runList_put]
+  simp
+
+/-- A run of the map a run was put into is one of the map or that run. -/
+theorem mem_put_or {m : RunMap} {next run : CompensationRun} (member : run ∈ runList (m.put next)) :
+    run ∈ runList m ∨ run = next :=
+  (mem_runList_put.mp member).elim .inr fun old => .inl old.1
+
+theorem mem_put_old {m : RunMap} {next run : CompensationRun} (inside : run ∈ runList m) (apart : run.key ≠ next.key) :
+    run ∈ runList (m.put next) :=
+  mem_runList_put.mpr (.inr ⟨inside, apart⟩)
+
+theorem mem_put_new (m : RunMap) (next : CompensationRun) : next ∈ runList (m.put next) :=
+  mem_runList_put.mpr (.inl rfl)
+
+/-- Runs of two scope occurrences have two keys. -/
+theorem key_ne_of_scope {run other : CompensationRun} (apart : run.scope ≠ other.scope) : run.key ≠ other.key :=
+  fun same => apart (key_eq_iff.mp same).1
+
+theorem mem_runList_erase {m : RunMap} {k : RunKey} {run : CompensationRun} :
+    run ∈ runList (m.erase k) ↔ run ∈ runList m ∧ run.key ≠ k := by
+  rw [runList_erase, List.mem_filter, bne_iff_ne]
+
+/-- A filter of the map by the runs' scope occurrences filters the list view. -/
+theorem mem_filter_scope {m : RunMap} {p : ScopeOccurrenceId → Bool} {run : CompensationRun} :
+    run ∈ runList (m.filter fun key _ => p key.scope) ↔ run ∈ runList m ∧ p run.scope = true := by
+  rw [runList_filter, List.mem_filter, key_scope]
+
+/-- Taking a context off what the run under `k` runs maps the list view in place. -/
+theorem runList_unhold (m : RunMap) (k : RunKey) (context : ScopeOccurrenceId) :
+    runList (m.map fun key record =>
+      if key == k then { record with running := record.running.filter (·.1 != context) } else record) =
+      (runList m).map fun run =>
+        if run.key == k then { run with running := run.running.filter (·.1 != context) } else run := by
+  rw [runList_map]
+  refine List.map_congr_left fun run _ => ?_
+  split
+  · cases run; rfl
+  · exact toRun_toRecord run
+
+/-- Up to order, putting a run drops the one under its key and adds it. -/
+theorem runList_put_perm (m : RunMap) (next : CompensationRun) :
+    (runList (m.put next)).Perm ((runList m).filter (·.key != next.key) ++ [next]) := by
+  refine (List.perm_ext_iff_of_nodup (runList_nodup' _) ?_).mpr fun run => ?_
+  · refine List.nodup_append.mpr ⟨(runList_nodup' m).filter _, (by simp), fun a inside b new same => ?_⟩
+    rw [List.mem_singleton.mp new] at same
+    subst same
+    simp at inside
+  · rw [mem_runList_put, List.mem_append, List.mem_filter, List.mem_singleton]
+    constructor
+    · rintro (rfl | ⟨inside, apart⟩)
+      · exact .inr rfl
+      · exact .inl ⟨inside, by simpa using apart⟩
+    · rintro (⟨inside, apart⟩ | rfl)
+      · exact .inr ⟨inside, by simpa using apart⟩
+      · exact .inl rfl
+
+/-- Putting a run the map holds changes nothing. -/
+theorem put_mem {m : RunMap} {run : CompensationRun} (member : run ∈ runList m) : m.put run = m := by
+  apply Std.ExtTreeMap.ext_getElem?
+  intro k
+  rw [RunMap.put, Std.ExtTreeMap.getElem?_insert]
+  split
+  · rename_i same
+    rw [← Std.LawfulEqCmp.eq_of_compare same]
+    exact (mem_runList.mp member).symm
+  · rfl
+
+/-- Putting a run under a key no run holds adds it, up to order. -/
+theorem runList_put_fresh {m : RunMap} {next : CompensationRun} (fresh : ∀ other ∈ runList m, other.key ≠ next.key) :
+    (runList (m.put next)).Perm (runList m ++ [next]) := by
+  refine (runList_put_perm m next).trans (.of_eq ?_)
+  rw [List.filter_eq_self.mpr fun other inside => bne_iff_ne.mpr (fresh other inside)]
+
+/-- The list view of a map of one run. -/
+@[simp] theorem runList_single (run : CompensationRun) : runList ((∅ : RunMap).put run) = [run] :=
+  List.perm_singleton.mp ((runList_put_perm _ run).trans (by simp))
 
 /-! ## The held map -/
 

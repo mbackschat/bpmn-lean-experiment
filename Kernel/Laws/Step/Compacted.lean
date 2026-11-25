@@ -362,18 +362,27 @@ theorem compact_bodies (ran : compact schedule start log s = .ok t) {run : Multi
   rw [compact_slots ran] at member
   exact renameSlots_bodies_of member
 
-/-- The compensation slot a commit leaves: the settled state's, renamed. -/
-theorem compact_compensation (ran : compact schedule start log s = .ok t) :
-    t.slots.compensation =
-      { retained := s.slots.compensation.retained.map (renameCompensable (commitRenaming schedule start log s))
-        runs := s.slots.compensation.runs.map fun run =>
-          { run with scope := renameScope (commitRenaming schedule start log s) run.scope
-                     pending := run.pending.map (renameCompensable (commitRenaming schedule start log s))
-                     running := run.running.map fun (context, record) =>
-                       (renameScope (commitRenaming schedule start log s) context, renameCompensable (commitRenaming schedule start log s) record)
-                     leave := run.leave.map (renameId (commitRenaming schedule start log s))
-                     resume := run.resume.map (renameResume (commitRenaming schedule start log s)) } } := by
+/-- The compensation records a commit leaves retained: the settled state's, renamed. -/
+theorem compact_retained (ran : compact schedule start log s = .ok t) :
+    t.slots.compensation.retained = s.slots.compensation.retained.map (renameCompensable (commitRenaming schedule start log s)) := by
   rw [compact_slots ran, renameSlots_eq]
+
+/-- Every compensation run a commit leaves is one of the settled state's, renamed. -/
+theorem compact_runs_of (ran : compact schedule start log s = .ok t) {run : CompensationRun}
+    (member : run ∈ t.slots.compensation.runs) :
+    ∃ old ∈ s.slots.compensation.runs, renamedRun (commitRenaming schedule start log s) old = run := by
+  rw [compact_slots ran] at member
+  exact renameSlots_runs_of member
+
+/-- The compensation runs a commit leaves are the settled state's renamed, up to order, when the renaming keeps their
+keys apart. -/
+theorem compact_runs_perm (ran : compact schedule start log s = .ok t)
+    (apart : ∀ a ∈ s.slots.compensation.runs, ∀ b ∈ s.slots.compensation.runs,
+      renameScope (commitRenaming schedule start log s) a.scope = renameScope (commitRenaming schedule start log s) b.scope →
+        a.trigger = b.trigger → a.scope = b.scope) :
+    t.slots.compensation.runs.Perm (s.slots.compensation.runs.map (renamedRun (commitRenaming schedule start log s))) := by
+  rw [compact_slots ran]
+  exact renameSlots_runs_perm apart
 
 /-- A renamed slot is active only where the slot was, in its scope occurrence renamed. -/
 theorem renameIteration_activeOf {r : Issue → Issue} {iteration : Iteration} {scope : ScopeOccurrenceId}
@@ -702,8 +711,7 @@ theorem compact_slotsSettled (ran : compact schedule start log s = .ok t) (count
       obtain ⟨old, inside, rfl⟩ := compact_bodies ran member
       exact renamedSettled (settled.bodies old inside)
     resumed := fun run member occurrence leave resume => by
-      rw [slots] at member
-      obtain ⟨old, inside, rfl⟩ := List.mem_map.mp member
+      obtain ⟨old, inside, rfl⟩ := compact_runs_of ran member
       obtain ⟨original, was, same⟩ := Option.map_eq_some_iff.mp resume
       cases original with
       | complete a l =>
@@ -729,8 +737,7 @@ theorem compact_slotsSettled (ran : compact schedule start log s = .ok t) (count
     raised := fun _ _ _ queued => by rw [quiet.1] at queued; cases queued }
   case runsPlaced =>
     intro run member
-    rw [slots] at member
-    obtain ⟨old, inside, rfl⟩ := List.mem_map.mp member
+    obtain ⟨old, inside, rfl⟩ := compact_runs_of ran member
     obtain ⟨groups, running⟩ := settled.runsPlaced old inside
     refine ⟨fun context resume => ?_, fun context active => ?_⟩
     · obtain ⟨original, was, same⟩ := Option.map_eq_some_iff.mp resume

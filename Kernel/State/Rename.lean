@@ -56,10 +56,11 @@ def renameSlots (slots : FeatureSlots) : FeatureSlots :=
       { record with scope := renameScope r record.scope, instances := record.instances.map (renameIteration r) }) ∅
     compensation := {
       retained := slots.compensation.retained.map (renameCompensable r)
-      runs := slots.compensation.runs.map fun run =>
-        { run with scope := renameScope r run.scope, pending := run.pending.map (renameCompensable r)
-                   running := run.running.map fun (context, record) => (renameScope r context, renameCompensable r record)
-                   leave := run.leave.map (renameId r), resume := run.resume.map (renameResume r) } }
+      runMap := slots.compensation.runMap.foldl (fun renamed key record => renamed.insert
+        { key with scope := renameScope r key.scope }
+        { record with pending := record.pending.map (renameCompensable r)
+                      running := record.running.map fun (context, record) => (renameScope r context, renameCompensable r record)
+                      leave := record.leave.map (renameId r), resume := record.resume.map (renameResume r) }) ∅ }
     instances := slots.instances.map fun data => { data with root := renameScope r data.root } }
 
 def renameCause : Cause → Cause

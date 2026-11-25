@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Laws.Compensation.Rules
+public import Kernel.Laws.Compensation.Runs
 public import Kernel.Laws.State.Key
 public import Kernel.Laws.State.Occurrence
 
@@ -122,7 +123,7 @@ theorem keeps_taken_rejected :
     ¬ TakesOut (· = outer) none { retained := [recordA, recordB] } { retained := [recordA] } both := fun law =>
   law.once (record := recordA) (by simp [both]) (by simp)
 
-def begun : State := { instanceId := "p", slots := { compensation := { runs := [both] } } }
+def begun : State := { instanceId := "p", slots := { compensation := { runMap := (∅ : RunMap).put both } } }
 
 /-! A second trigger in `outer` while the first run waits for `B`'s handler and keeps `A`'s pending: `C` completed
 after the first trigger. -/
@@ -135,7 +136,7 @@ def secondTrigger : OccurrenceRef := { trigger with activation := 2 }
 def second : CompensationRun := { trigger := secondTrigger, scope := outer, pending := [recordC], leave := none, resume := none }
 def secondBegun : CompensationRun :=
   { second with pending := [], running := [(.ofSegments [{ element := ⟨"UndoC"⟩, ordinal := 0 }], recordC)] }
-def inProgress : Compensations := { retained := [recordC], runs := [afterFirst] }
+def inProgress : Compensations := { retained := [recordC], runMap := (∅ : RunMap).put afterFirst }
 
 theorem in_progress_apart : ClaimsApart inProgress := by
   intro run mem record held kept

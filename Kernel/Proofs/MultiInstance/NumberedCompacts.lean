@@ -41,8 +41,7 @@ theorem orderJournal_occurPending (formed : WellFormed program state) (counted :
   simp only [OccurPending, quiet, List.not_mem_nil, exists_false, false_or] at pending
   obtain ⟨run, member, resume⟩ := pending
   obtain ⟨at_, leave, resumed⟩ := resume
-  rw [compact_slots ran, renameSlots_eq] at member
-  obtain ⟨run, runIn, rfl⟩ := List.mem_map.mp member
+  obtain ⟨run, runIn, rfl⟩ := compact_runs_of ran member
   rcases was : run.resume with _ | (⟨_, _⟩ | ⟨element', scope', leave'⟩ | _) <;> simp [was] at resumed
   exact .inr (.inr ⟨run, runIn, scope', leave', by rw [was, resumed.1]⟩)
 

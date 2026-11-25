@@ -381,7 +381,7 @@ conservative bound. -/
 def writeFanOut (reading : Reading) (program : Program) (element : Element) : Option String :=
   let resumed (written : NameSet) : List (Visit × Closure) :=
     ((conditionalCatches program).filter (mayMakeTrue program written)).map fun visit => (visit, pathOf reading program [visit])
-  let written := (runs reading program element).footprint.writes
+  let written := (contribution reading program element).footprint.writes
   let inside : List Visit := if ((element.scope?).bind fun (_, payload) => payload.kind.start?).isSome then
       (((element.scope?).map fun (header, _) => program.enteredChildren header.id).getD []).map Visit.enters
     else []
@@ -439,8 +439,8 @@ def instanceClosure (reading : Reading) (program : Program) (element : Element) 
   | none =>
     if awaitsStimulus element then { races := false, completes := false }
     else
-      -- The instance's run counts as every path counts a run (`runs`), its unhandled Error's withdrawal included.
-      let run := runs reading program element
+      -- The instance's run counts as every path counts a run (`contribution`), its unhandled Error's withdrawal included.
+      let run := contribution reading program element
       let beside := walk (beyond reading program element true)
       { races := run.footprint.races run.footprint || meetsSibling { beside with withdraws := run.withdraws ++ beside.withdraws }
         completes := true }
@@ -483,7 +483,7 @@ def compensationFanOut (reading : Reading) (program : Program) (element : Elemen
         [Visit.enters handler]
       if awaitsStimulus handler then begun
       else
-        let run := runs reading program handler
+        let run := contribution reading program handler
         { begun with footprint := begun.footprint.union run.footprint, withdraws := run.withdraws ++ begun.withdraws
                      completed := handler.header.id :: begun.completed }
     let boundariesOf (id : ElementId) : List ElementId :=

@@ -176,8 +176,7 @@ theorem orderJournal_placedLane (formed : WellFormed program state) (counted : C
         renameId (commitRenaming schedule start log (ordered log state)) w.occurrence → old.id = w.occurrence :=
     fun w wIn old oldIn same =>
       (renamed_apart counted' issued owned rooted keys (formed.settled.parked w wIn).1 oldIn same.symm).symm
-  have retainedEq := congrArg Compensations.retained (compact_compensation ran)
-  have runsEq := congrArg Compensations.runs (compact_compensation ran)
+  have retainedEq := compact_retained ran
   refine {
     placed := ⟨?rooted, ?entered, ?occurrences⟩
     rootsApart := ?rootsApart, rootsIssued := ?rootsIssued, rootDefinition := ?rootDefinition, scopes := ?scopes
@@ -241,8 +240,7 @@ theorem orderJournal_placedLane (formed : WellFormed program state) (counted : C
     exact place (held.parked w wIn old oldIn link target targeted) (formed.owned.occurrenceScopes old oldIn)
   case resumes =>
     intro run member id leave resumed
-    rw [runsEq] at member
-    obtain ⟨run, runIn, rfl⟩ := List.mem_map.mp member
+    obtain ⟨run, runIn, rfl⟩ := compact_runs_of ran member
     obtain ⟨old, was, renamed⟩ := resume_renamed resumed
     rcases old with ⟨i, l⟩ | ⟨_, _, _⟩ | _ <;> simp at renamed
     exact renamed.2 ▸ held.resumes run runIn i l was
@@ -252,8 +250,7 @@ theorem orderJournal_placedLane (formed : WellFormed program state) (counted : C
     rintro element scope leave (⟨_, _, signal⟩ | resumed | ⟨run, member, resumed⟩)
     · rw [quiet.1] at signal; cases signal
     · rw [resumes] at resumed; cases resumed
-    rw [runsEq] at member
-    obtain ⟨run, runIn, rfl⟩ := List.mem_map.mp member
+    obtain ⟨run, runIn, rfl⟩ := compact_runs_of ran member
     obtain ⟨old, was, renamed⟩ := resume_renamed resumed
     rcases old with ⟨_, _⟩ | ⟨element', scope', leave'⟩ | _ <;> simp at renamed
     obtain ⟨rfl, rfl, rfl⟩ := renamed
@@ -275,8 +272,7 @@ theorem orderJournal_placedLane (formed : WellFormed program state) (counted : C
     exact place (held.records y yIn yPresent element (by simpa [recordElements] using named)) yPresent
   case pending =>
     intro run member standing record recordIn element named
-    rw [runsEq] at member
-    obtain ⟨run, runIn, rfl⟩ := List.mem_map.mp member
+    obtain ⟨run, runIn, rfl⟩ := compact_runs_of ran member
     obtain ⟨x, xIn, rfl⟩ := List.mem_map.mp recordIn
     rw [renameCompensable_eq] at named
     have runPresent := present
@@ -310,8 +306,7 @@ theorem orderJournal_placedLane (formed : WellFormed program state) (counted : C
     · rcases at' with ⟨_, _, signal⟩ | resumed | ⟨run, member, resumed⟩
       · rw [quiet.1] at signal; cases signal
       · rw [resumes] at resumed; cases resumed
-      rw [runsEq] at member
-      obtain ⟨run, runIn, rfl⟩ := List.mem_map.mp member
+      obtain ⟨run, runIn, rfl⟩ := compact_runs_of ran member
       obtain ⟨old, was, renamed⟩ := resume_renamed resumed
       rcases old with ⟨_, _⟩ | ⟨element', scope', leave'⟩ | _ <;> simp at renamed
       obtain ⟨rfl, rfl, rfl⟩ := renamed
@@ -321,8 +316,7 @@ theorem orderJournal_placedLane (formed : WellFormed program state) (counted : C
       obtain ⟨y, yIn, rfl⟩ := List.mem_map.mp member
       rw [renameCompensable_eq]
       exact compact_scopeIssued ran counted' rooted (held.issued y.scope (.inr (.inr (.inl ⟨y, yIn, rfl⟩))))
-    · rw [runsEq] at member
-      obtain ⟨run, runIn, rfl⟩ := List.mem_map.mp member
+    · obtain ⟨run, runIn, rfl⟩ := compact_runs_of ran member
       exact compact_scopeIssued ran counted' rooted
         (held.issued run.scope (.inr (.inr (.inr (.inl ⟨run, runIn, rfl, by simpa using pending⟩)))))
     · obtain ⟨run, runIn, rfl⟩ := compact_bodies ran member

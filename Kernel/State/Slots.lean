@@ -162,11 +162,84 @@ def CompensationRun.anchor? (run : CompensationRun) : Option OccurrenceId :=
 def CompensationRun.holds (scope context : ScopeOccurrenceId) (run : CompensationRun) : Bool :=
   run.scope == scope && run.running.any (·.1 == context)
 
+/-- A compensation run's key, the scope occurrence it runs in and its trigger, which `Feature.Compensation.isRun`
+finds it by: two runs may share a scope occurrence (#103), never a trigger there, since a group's nested run has a
+context of its own. -/
+structure RunKey where
+  scope : ScopeOccurrenceId
+  trigger : OccurrenceRef
+  deriving DecidableEq, Repr
+
+/-- The scope occurrence's key, then the trigger's process instance, element and activation, oriented (`orientCmp`). -/
+instance : Ord RunKey where
+  compare := compareLex (compareOn (·.scope)) (orientCmp <| compareLex (compareOn (·.trigger.processInstanceId))
+    (compareLex (compareOn (·.trigger.element.value)) (compareOn (·.trigger.activation)))).val
+
+instance : Std.TransOrd RunKey :=
+  inferInstanceAs <| Std.TransCmp (compareLex _ (orientCmp (compareLex _ (compareLex _ _))).val)
+
+instance : Std.LawfulEqOrd RunKey where
+  eq_of_compare {a b} h := by
+    have h : compareLex (compareOn fun key : RunKey => key.scope) (orientCmp <|
+        compareLex (compareOn fun key : RunKey => key.trigger.processInstanceId)
+          (compareLex (compareOn fun key : RunKey => key.trigger.element.value)
+            (compareOn fun key : RunKey => key.trigger.activation))).val a b = .eq := h
+    rw [compareLex_eq_eq] at h
+    have rest := compareLex_eq_eq.mp <| ((orientCmp <|
+        compareLex (compareOn fun key : RunKey => key.trigger.processInstanceId)
+          (compareLex (compareOn fun key : RunKey => key.trigger.element.value)
+            (compareOn fun key : RunKey => key.trigger.activation))).property a b).mp h.2
+    have last := compareLex_eq_eq.mp rest.2
+    obtain ⟨scope, process, ⟨element⟩, activation⟩ := a
+    obtain ⟨scope', process', ⟨element'⟩, activation'⟩ := b
+    have scopes : scope = scope' := Std.LawfulEqOrd.eq_of_compare h.1
+    have processes : process = process' := Std.LawfulEqOrd.eq_of_compare rest.1
+    have same : element = element' := Std.LawfulEqOrd.eq_of_compare last.1
+    have activations : activation = activation' := Std.LawfulEqOrd.eq_of_compare last.2
+    subst scopes processes same activations
+    rfl
+
+/-- A compensation run's record under its key (`RunMap`): the `CompensationRun` without its scope occurrence and
+trigger, which the key holds, so one run per key holds by type. -/
+structure RunRecord where
+  pending : List Compensable
+  running : List (ScopeOccurrenceId × Compensable) := []
+  leave : Option OccurrenceId
+  resume : Option Resume
+  joins : List Nat := []
+  deriving Repr
+
+/-- The run of key `key` whose record is `record`. -/
+def RunRecord.toRun (record : RunRecord) (key : RunKey) : CompensationRun :=
+  { trigger := key.trigger, scope := key.scope, pending := record.pending, running := record.running
+    leave := record.leave, resume := record.resume, joins := record.joins }
+
+/-- A run's key. -/
+def CompensationRun.key (run : CompensationRun) : RunKey := { scope := run.scope, trigger := run.trigger }
+
+/-- A run's record under its key. -/
+def CompensationRun.toRecord (run : CompensationRun) : RunRecord :=
+  { pending := run.pending, running := run.running, leave := run.leave, resume := run.resume, joins := run.joins }
+
+/-- The compensation runs in progress, each its record under its key. Every reader looks a run up by its key
+(`Feature.Compensation.advance`) or by a context it runs, or filters or searches all of them; none takes an order from
+the map. -/
+abbrev RunMap := TreeMap RunKey RunRecord compare
+
+/-- The runs of `runs` in key order, the list view the state codec writes; no reader takes an order from it. -/
+def runList (runs : RunMap) : List CompensationRun := runs.toList.map fun (key, record) => record.toRun key
+
+/-- `runs` with `run` under its key, in place of the run there. -/
+def RunMap.put (runs : RunMap) (run : CompensationRun) : RunMap := runs.insert run.key run.toRecord
+
 /-- `Kernel.Feature.Compensation`'s data: the retained records and the triggers in progress. -/
 structure Compensations where
   retained : List Compensable := []
-  runs : List CompensationRun := []
+  runMap : RunMap := ∅
   deriving Repr
+
+/-- The runs in key order (`runList`). -/
+abbrev Compensations.runs (compensation : Compensations) : List CompensationRun := runList compensation.runMap
 
 /-- The record whose handler or group runs in the context scope occurrence `context`, of the first run holding it: the
 one record a context restores, since a run begins each record it takes in a context of its own. -/
@@ -253,7 +326,7 @@ def FeatureSlots.clear (slots : FeatureSlots) (inside nested : List ScopeOccurre
     multiInstanceMap := slots.multiInstanceMap.filter fun _ record => !inside.contains record.scope
     compensation := {
       retained := slots.compensation.retained.filter (!nested.contains ·.scope)
-      runs := slots.compensation.runs.filter (!inside.contains ·.scope) }
+      runMap := slots.compensation.runMap.filter fun key _ => !inside.contains key.scope }
     instances := slots.instances.filter (!nested.contains ·.root) }
 
 /-- An occurrence a slot holds suspended: neither an open item nor a token, yet it continues in scope occurrence

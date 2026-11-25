@@ -62,9 +62,11 @@ def RunsSettled (precedes : Compensable → Compensable → Prop) (s : State) : 
   ∀ run ∈ s.slots.compensation.runs, ∀ record, ¬ Ready precedes run record
 
 /-- No two runs share a scope occurrence and a trigger, the key `Compensation.advance` and `release` find a run by
-(`isRun`). -/
+(`isRun`). It holds of every state, the runs being a map under that key (`runsKeyed`). -/
 def RunsKeyed (s : State) : Prop :=
   (s.slots.compensation.runs.map fun run => (run.scope, run.trigger)).Nodup
+
+theorem runsKeyed (s : State) : RunsKeyed s := Laws.State.runList_keyed _
 
 /-- Every run's scope occurrence was issued, so a context entered later is no run's and a group's nested run takes a
 key no run has. -/
@@ -81,8 +83,8 @@ def resumesGroup : Option Resume → Bool
 
 /-- A group's nested run stands in its context: `Compensation.beginHandler` enters the context before it adds the
 run, and `Compensation.advance` drops the run before `Compensation.release` leaves the context. The commit keeps two
-runs of one trigger apart only against a standing key (`Laws.Step.renameScope_apart`), which `RunsKeyed` reads across
-it. -/
+runs of one trigger apart only against a standing key (`Laws.Step.renameScope_apart`), which the renamed run map's keys
+need across it (`Laws.Step.compact_runs_perm`). -/
 def GroupsStanding (s : State) : Prop :=
   ∀ run ∈ s.slots.compensation.runs, resumesGroup run.resume = true → run.scope ∈ scopeIds s
 
@@ -201,21 +203,17 @@ theorem unissued_completion_rejected :
   simp [CompletionsIssued, completions, completionsIn, completionsOf, Laws.Compensation.heldCompletions, holdingState, recordA]
 
 /-- A run whose pending record may start breaks `RunsSettled`. -/
-theorem ready_pending_rejected : ¬ RunsSettled (fun _ _ => False) (holdingState { runs := [pendingRun] } []) := fun settled =>
+theorem ready_pending_rejected : ¬ RunsSettled (fun _ _ => False) (holdingState { runMap := (∅ : RunMap).put pendingRun } []) := fun settled =>
   settled pendingRun (by simp [holdingState]) recordA ⟨by simp [pendingRun], fun _ _ none => none⟩
 
-/-- Two runs of one key break `RunsKeyed`. -/
-theorem shared_key_rejected : ¬ RunsKeyed (holdingState { runs := [pendingRun, pendingRun] } []) := by
-  simp [RunsKeyed, holdingState]
-
 /-- A run in a scope occurrence not yet issued breaks `RunsIssued`. -/
-theorem unissued_run_rejected : ¬ RunsIssued (holdingState { runs := [{ pendingRun with scope := unissuedScope }] } []) :=
+theorem unissued_run_rejected : ¬ RunsIssued (holdingState { runMap := (∅ : RunMap).put { pendingRun with scope := unissuedScope } } []) :=
   fun issued => Laws.State.unissued_of_count (parent := rootScope) (element := thrower) (ordinal := 0)
-    (by simp [holdingState]) (by simp [Laws.State.slotCount, holdingState]) (issued _ (List.mem_singleton_self _))
+    (by simp [holdingState]) (by simp [Laws.State.slotCount, holdingState]) (issued _ (Laws.State.mem_put_new _ _))
 
 /-- A queued compensation with a run's trigger breaks `TriggersApart`. -/
 theorem shared_trigger_rejected :
-    ¬ TriggersApart (holdingState { runs := [pendingRun] } [.compensate rootScope none thrownBy none none]) := fun apart => by
+    ¬ TriggersApart (holdingState { runMap := (∅ : RunMap).put pendingRun } [.compensate rootScope none thrownBy none none]) := fun apart => by
   have nodup := apart.apart
   simp [heldTriggers, queuedTriggers, Laws.State.allSignals, holdingState, pendingRun, resumesGroup, Laws.Step.triggersOf_compensate,
     queuedTrigger] at nodup
@@ -226,13 +224,13 @@ def groupRun : CompensationRun := { pendingRun with resume := some (.group rootS
 /-- A group's nested run with a queued compensation's trigger breaks `TriggersApart`, though no run but a group's holds
 the trigger. -/
 theorem queued_group_trigger_rejected :
-    ¬ TriggersApart (holdingState { runs := [groupRun] } [.compensate rootScope none thrownBy none none]) := fun apart => by
+    ¬ TriggersApart (holdingState { runMap := (∅ : RunMap).put groupRun } [.compensate rootScope none thrownBy none none]) := fun apart => by
   refine apart.grouped groupRun (by simp [holdingState]) (by simp [groupRun, resumesGroup]) ?_
   simp [queuedTriggers, Laws.State.allSignals, holdingState, groupRun, pendingRun, Laws.Step.triggersOf_compensate, queuedTrigger]
 
 /-- A trigger whose activation its counter has not issued breaks `TriggersApart`. -/
 theorem uncounted_trigger_rejected :
-    ¬ TriggersApart (holdingState { runs := [{ pendingRun with trigger := { thrownBy with activation := 2 } }] } []) :=
+    ¬ TriggersApart (holdingState { runMap := (∅ : RunMap).put { pendingRun with trigger := { thrownBy with activation := 2 } } } []) :=
   fun apart => by
     obtain ⟨count, member, named⟩ := apart.counted { thrownBy with activation := 2 } (by simp [holdingState])
     obtain ⟨_, _, _, below⟩ := named
@@ -241,7 +239,7 @@ theorem uncounted_trigger_rejected :
 
 /-- So does a group's nested run whose trigger's activation was not issued, though no held trigger names it. -/
 theorem uncounted_group_rejected :
-    ¬ TriggersApart (holdingState { runs := [{ groupRun with trigger := { thrownBy with activation := 2 } }] } []) :=
+    ¬ TriggersApart (holdingState { runMap := (∅ : RunMap).put { groupRun with trigger := { thrownBy with activation := 2 } } } []) :=
   fun apart => by
     obtain ⟨count, member, named⟩ := apart.counted { thrownBy with activation := 2 } (by simp [holdingState])
     obtain ⟨_, _, _, below⟩ := named

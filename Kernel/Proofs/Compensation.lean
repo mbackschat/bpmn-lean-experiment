@@ -137,7 +137,7 @@ def TakesOutOnce (hooks : Hooks) (reads writes : Ctx → ElementId → List Stri
     ∃ covered taken kept, taken.trigger = trigger ∧ taken.scope = scope ∧ taken.running = [] ∧
       taken.leave = leave ∧ taken.resume = resume ∧
       TakesOut covered activity state.slots.compensation
-        { retained := kept, runs := state.slots.compensation.runs ++ [taken] } taken ∧
+        { retained := kept, runMap := state.slots.compensation.runMap.put taken } taken ∧
       (∀ record, Laws.State.ScopeIssued state record.scope →
         (record ∈ after.slots.compensation.retained ↔ record ∈ kept)) ∧
       ((taken.pending = [] ∧ ∀ next ∈ after.slots.compensation.runs, next.scope = scope → next.trigger ≠ trigger) ∨
@@ -153,8 +153,7 @@ keeps the lane relation, as `Step` calls them (root decision D2, 2026-11-15), an
 2026-11-15); `WellFormed` is `TakesOutOnce`'s premise for the same reason. The new run's first advance is
 `TakesOutOnce`'s.
 P0 stated it with no premise on the hook's state. That was false: over an arbitrary state a run untouched by the hook
-may hold a ready pending handler, and two runs may share one scope occurrence and trigger, where `release` and
-`advance` pick the other run (P5 design report); `FreshCall` is taken for the reason `TakesOutOnce` takes it (P5
+may hold a ready pending handler (P5 design report); `FreshCall` is taken for the reason `TakesOutOnce` takes it (P5
 report F2). The conclusion is P0's, unchanged.
 `Hooks.handlerCompleted` is taken where the completed handler's context stands, as `Step` calls it
 (`Laws.Step.HookContract.handlerCompleted`): the next handler is entered below its run's scope occurrence, whose standing

@@ -295,7 +295,7 @@ structure Contribution where
   locals : List String
   withdraws : List Withdrawal
 
-def runs (reading : Reading) (program : Program) (element : Element) : Contribution :=
+def contribution (reading : Reading) (program : Program) (element : Element) : Contribution :=
   { footprint := { reads := (footprint program element).reads
                    writes := (footprint program element).writes.union (reading.writes element) }
     locals := reading.locals element
@@ -470,7 +470,7 @@ def closureWalk (reading : Reading) (program : Program) (walk : Walk) (begun : L
             (add { footprint := { reads := (footprint program element).reads
                                   writes := (footprint program element).writes.union (reading.writes element) }
                    locals := [], withdraws := [] } (reach element.header.id found), [])
-          | .completes element => (acts element (add (runs reading program element) (reach element.header.id found)),
+          | .completes element => (acts element (add (contribution reading program element) (reach element.header.id found)),
               after reading program walk element ++
                 if walk.ascends && reading.nextInstance element then [Visit.enters element] else [])
           | .enters element =>
@@ -484,7 +484,7 @@ def closureWalk (reading : Reading) (program : Program) (walk : Walk) (begun : L
             else
               let onward := continuing program element ++
                 ((element.scope?).map fun (header, _) => program.enteredChildren header.id).getD []
-              ({ acts element (add (runs reading program element) found) with ends := found.ends || onward.isEmpty },
+              ({ acts element (add (contribution reading program element) found) with ends := found.ends || onward.isEmpty },
                 entering reading program element ++ after reading program walk element)
         -- Opening or ending a Conditional subscription, by beginning or completing its carrier or by removing it, reads
         -- its condition's names (`conditionNames`), so a concurrent unit's write in either order is a race.

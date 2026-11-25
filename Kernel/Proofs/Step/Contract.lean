@@ -251,8 +251,11 @@ theorem dropWithin_keeps {inv : State → Prop} {program : Program} (ops : Laws.
     {state : State} (holds : inv state) : inv (Feature.Compensation.dropWithin ctx scope state) ∧
       ∃ compensation, Feature.Compensation.dropWithin ctx scope state = { state with slots := { state.slots with compensation } } :=
   by rw [Laws.Compensation.dropWithin_spec, Laws.Compensation.store_eq]
-     exact ⟨ops.store _ _ holds (fun _ member => (List.mem_filter.mp member).1) (.held (fun _ member => member)
-       fun run member => ⟨run, (List.mem_filter.mp member).1, rfl, rfl, fun _ => id⟩), _, rfl⟩
+     exact ⟨ops.store _ _ holds
+       (fun _ member => ((Laws.State.mem_filter_scope (p := fun x => !(state.inside scope).contains x)).mp member).1)
+       (.held (fun _ member => member)
+       fun run member => ⟨run, (Laws.State.mem_filter_scope (p := fun x => !(state.inside scope).contains x)).mp member |>.1,
+         rfl, rfl, fun _ => id⟩), _, rfl⟩
 
 /-- `Hooks.handlerCompleted` keeps `inv` for a handler whose context stands. -/
 theorem handlerCompleted_keeps {inv : State → Prop} {settled : State → OccurrenceId → Prop} {program : Program}
@@ -323,18 +326,18 @@ theorem compensate_keeps {inv : State → Prop} {settled : State → OccurrenceI
   · exact stands
   apply And.left
   refine ops.store state _ holds (fun run member => ?_) (fun run member context running => ?_)
-    (Laws.Compensation.appended_resumes holds (fun _ old => old) pending) (.append (.held
+    (Laws.Compensation.put_resumes holds (fun _ old => old) pending) (.put (.held
       (fun record kept => ((takes.2 record).mp kept).1) fun run member => ⟨run, member, rfl, rfl, fun _ => id⟩)
       (fun record selected => ?_) fun next same => .inr (queued next same))
-  · rcases List.mem_append.mp member with old | new
+  · rcases Laws.State.mem_put_or member with old | new
     · exact .inl old
-    · rw [List.mem_singleton.mp new]
+    · rw [new]
       refine .inr ⟨fun occurrence leave same => (resumable _ same).1 occurrence leave rfl,
         fun context same => (resumable _ same).2 context rfl, fun _ running => ?_⟩
       simp at running
-  · rcases List.mem_append.mp member with old | new
+  · rcases Laws.State.mem_put_or member with old | new
     · exact .inl ⟨run, old, running⟩
-    · rw [List.mem_singleton.mp new] at running
+    · rw [new] at running
       simp at running
   · obtain ⟨retained, covered, -⟩ := (takes.1 record).mp selected
     exact .inl ⟨record, record.scope, .inl ⟨retained, rfl⟩, Laws.Compensation.visibleScopes_linked covered,

@@ -3,6 +3,7 @@ module
 public import Kernel.Hooks
 public import Kernel.Laws.Step.Contract
 public import Kernel.Laws.Compensation.Rules
+public import Kernel.Laws.State.Slots
 
 /-! # Laws of compensation runs: what preserving an invariant needs
 
@@ -229,13 +230,13 @@ theorem held_resumes {inv : State → Prop} {state : State} {runs : List Compens
 
 /-- Runs `state`, which keeps `inv`, held, followed by one whose resume, if a reservation, is pending, resume only by
 pending reservations. -/
-theorem appended_resumes {inv : State → Prop} {state : State} {runs : List CompensationRun} {run : CompensationRun}
-    (holds : inv state) (held : ∀ other ∈ runs, other ∈ state.slots.compensation.runs)
+theorem put_resumes {inv : State → Prop} {state : State} {runs : RunMap} {run : CompensationRun}
+    (holds : inv state) (held : ∀ other ∈ runList runs, other ∈ state.slots.compensation.runs)
     (pending : ∀ element at_ leave, run.resume = some (.occur element at_ leave) → Laws.Step.PendingIn inv element) :
-    ∀ other ∈ runs ++ [run], ∀ element at_ leave, other.resume = some (.occur element at_ leave) →
+    ∀ other ∈ runList (runs.put run), ∀ element at_ leave, other.resume = some (.occur element at_ leave) →
       Laws.Step.PendingIn inv element := fun other member element at_ leave resumed =>
-  (List.mem_append.mp member).elim (fun old => held_pending holds (held other old) resumed) fun new =>
-    pending element at_ leave (List.mem_singleton.mp new ▸ resumed)
+  (Laws.State.mem_put_or member).elim (fun old => held_pending holds (held other old) resumed) fun new =>
+    pending element at_ leave (new ▸ resumed)
 
 /-- A run that ends by queuing a completion or an occurrence keeps what `Compensation.advance` keeps. -/
 theorem Ended.queue {inv : State → Prop} {settled : State → OccurrenceId → Prop} {program : Program} (ops : RunsOps program inv settled)
@@ -306,19 +307,18 @@ theorem RecordHeld.pending {program : Program} {state : State} {run : Compensati
     RecordHeld program state (recordElements record) run.scope :=
   ⟨record, _, .inr ⟨run, member, pending, rfl⟩, .refl _, fun _ => id⟩
 
-/-- A run appended to a compensation that comes from `state` keeps it coming from there, for records from there and a
+/-- A run put into a compensation that comes from `state` keeps it coming from there, for records from there and a
 resume that is a group's or one `resumed` admits. -/
-theorem StoredFrom.append {program : Program} {state : State} {resumed : Resume → Prop}
-    {retained : List Compensable} {runs : List CompensationRun} {run : CompensationRun}
+theorem StoredFrom.put {program : Program} {state : State} {resumed : Resume → Prop}
+    {retained : List Compensable} {runs : RunMap} {run : CompensationRun}
     (stored : StoredFrom program state resumed ⟨retained, runs⟩)
     (pending : ∀ record ∈ run.pending, RecordFrom program state record run.scope)
     (resumes : ∀ resume, run.resume = some resume → (∃ context, resume = .group context) ∨ resumed resume) :
-    StoredFrom program state resumed ⟨retained, runs ++ [run]⟩ := by
+    StoredFrom program state resumed ⟨retained, runs.put run⟩ := by
   refine ⟨stored.1, fun other member => ?_⟩
-  rcases List.mem_append.mp member with old | new
+  rcases Laws.State.mem_runList_put.mp member with rfl | ⟨old, _⟩
+  · exact ⟨pending, fun resume same => .inr (resumes resume same)⟩
   · exact stored.2 other old
-  · rw [List.mem_singleton.mp new]
-    exact ⟨pending, fun resume same => .inr (resumes resume same)⟩
 
 /-- Where a record comes from reads only the scope occurrences, the occurrences and the compensation slot. -/
 theorem RecordHeld.congr {program : Program} {s t : State} {elements : List ElementId} {scope : ScopeOccurrenceId}

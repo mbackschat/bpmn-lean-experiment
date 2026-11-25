@@ -5,7 +5,7 @@
  * renaming and renames continuations.
  */
 import {
-  CauseTag, childScope, compareItemKey, type Cause, type Compensable, type Continuation, type FeatureSlots, freshIssue,
+  CauseTag, childScope, compareItemKey, type Cause, type Compensable, type CompensationRun, type Continuation, type FeatureSlots, freshIssue, putRun,
   type HeldMap, insertHeld, insertRun, type MultiInstanceRun, insertOccurrence, insertScope, type Issue, type ItemKey, type Iteration, IterationTag, type OccurrenceId,
   occurrenceId, type OccurrenceMap, occurrenceIdParts,
   type Resume, ResumeTag, type ScopeMap, type ScopeOccurrenceId, scopeHead, type State, type Transition,
@@ -78,11 +78,12 @@ function renameSlots(rename: Rename, slots: FeatureSlots): FeatureSlots {
     }), []),
     compensation: {
       retained: slots.compensation.retained.map((record) => renameCompensable(rename, record)),
-      runs: slots.compensation.runs.map((run) => ({
+      // Renamed runs are inserted afresh under their renamed keys, as Lean's fold into an empty map inserts them.
+      runs: slots.compensation.runs.reduce<readonly CompensationRun[]>((renamed, run) => putRun(renamed, {
         ...run, scope: scope(run.scope), pending: run.pending.map((record) => renameCompensable(rename, record)),
         running: run.running.map(([context, record]) => [scope(context), renameCompensable(rename, record)] as const),
         leave: run.leave === null ? null : id(run.leave), resume: run.resume === null ? null : renameResume(rename, run.resume),
-      })),
+      }), []),
     },
     instances: slots.instances.map((data) => ({ ...data, root: scope(data.root) })),
   };

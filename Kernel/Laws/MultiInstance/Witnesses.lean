@@ -162,7 +162,7 @@ def heldFirst : CompensationRun :=
 
 /-- A compensation run whose handler runs in an instance's scope occurrence breaks `InstancesUnheld`. -/
 theorem held_instance_rejected :
-    ¬ InstancesUnheld { entered with slots := { entered.slots with compensation := { runs := [heldFirst] } } } running :=
+    ¬ InstancesUnheld { entered with slots := { entered.slots with compensation := { runMap := (∅ : RunMap).put heldFirst } } } running :=
   fun unheld => unheld firstScope (by simp [running]) heldFirst (by simp) (by simp [heldFirst])
 
 theorem runs_keyed : RunsKeyed entered := runsKeyed entered

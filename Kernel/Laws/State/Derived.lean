@@ -73,9 +73,21 @@ own included, and keeps the others in order. -/
 theorem clearInside_compensation (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
     (s.clearInside le scope keep).slots.compensation =
       { retained := s.slots.compensation.retained.filter (!((s.subtree le scope).filter (· != scope)).contains ·.scope)
-        runs := s.slots.compensation.runs.filter (!(s.subtree le scope).contains ·.scope) } := by
+        runMap := s.slots.compensation.runMap.filter fun key _ => !(s.subtree le scope).contains key.scope } := by
   obtain ⟨_, made⟩ := clearInside_eq s scope keep
   rw [made]
+
+/-- The list view of `clearInside_compensation`'s runs: the runs outside the scope occurrence, in order. -/
+theorem clearInside_runs (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
+    (s.clearInside le scope keep).slots.compensation.runs =
+      s.slots.compensation.runs.filter (!(s.subtree le scope).contains ·.scope) := by
+  rw [clearInside_compensation]
+  simp only [runs_mk, runList_filter, key_scope]
+
+theorem clearInside_retained (s : State) (scope : ScopeOccurrenceId) (keep : List OccurrenceId) :
+    (s.clearInside le scope keep).slots.compensation.retained =
+      s.slots.compensation.retained.filter (!((s.subtree le scope).filter (· != scope)).contains ·.scope) := by
+  rw [clearInside_compensation]
 
 /-- Leaving a scope occurrence keeps the slots its clearing leaves but the retained compensation records. -/
 theorem leaveScope_slots (s : State) (scope : ScopeOccurrenceId) :
@@ -124,7 +136,9 @@ theorem leaveScope_compensation (s : State) (scope : ScopeOccurrenceId) :
     (s.leaveScope le scope).activations = s.activations ∧ (s.leaveScope le scope).nextCompletion = s.nextCompletion := by
   obtain ⟨_, made⟩ := clearInside_eq s scope []
   rw [leaveScope_slots_eq, (leaveScope_eq s scope).1, made]
-  exact ⟨rfl, rfl, by simp only [scopes_eq, scopeList_filter_val], rfl, rfl⟩
+  refine ⟨rfl, ?_, by simp only [scopes_eq, scopeList_filter_val], rfl, rfl⟩
+  show runList (s.slots.compensation.runMap.filter fun key _ => !(s.subtree le scope).contains key.scope) = _
+  simp only [runList_filter, key_scope]
 
 /-! ## The elements a scope occurrence declares -/
 

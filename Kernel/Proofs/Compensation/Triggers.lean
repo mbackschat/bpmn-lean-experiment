@@ -205,9 +205,16 @@ theorem queuedTriggers_pop {s : State} {scope : ScopeOccurrenceId} {activity : O
     Laws.Step.triggersOf_append, Laws.Step.triggersOf_compensate]
   rfl
 
-/-- `s` with `others` retained and `run` added after its runs: what a trigger's new run advances from. -/
+/-- `s` with `others` retained and `run` put under its key: what a trigger's new run advances from. -/
 def opened (s : State) (others : List Compensable) (run : CompensationRun) : State :=
-  stored s { retained := others, runs := s.slots.compensation.runs ++ [run] }
+  stored s { retained := others, runMap := s.slots.compensation.runMap.put run }
+
+/-- A new run keyed apart from every run adds it to the runs, up to order. -/
+theorem opened_runs {s : State} {others : List Compensable} {run : CompensationRun}
+    (fresh : ∀ other ∈ s.slots.compensation.runs, other.scope = run.scope → other.trigger ≠ run.trigger) :
+    (opened s others run).slots.compensation.runs.Perm (s.slots.compensation.runs ++ [run]) :=
+  Laws.State.runList_put_fresh fun other inside same =>
+    fresh other inside (Laws.State.key_eq_iff.mp same).1 (Laws.State.key_eq_iff.mp same).2
 
 /-- A new run that is no group's, in an issued scope occurrence, with no handler running and keyed apart from every run,
 keeps a tame state tame. -/
@@ -220,38 +227,36 @@ theorem tame_opened {s : State} (tame : Tame s) {others : List Compensable} {run
     fun other inside context running => ?_, tame.scopes, fun other inside context resumed => ?_, tame.parents,
     fun other inside context running => ?_, tame.issuer.same rfl rfl rfl rfl, fun other inside grouped => ?_,
     tame.scopesKeyed⟩
-  · simp only [RunsKeyed, opened, stored, List.map_append, List.map_cons, List.map_nil]
-    refine List.nodup_append.mpr ⟨tame.keyed, by simp, fun key old key' new same => ?_⟩
-    obtain ⟨other, member, rfl⟩ := List.mem_map.mp old
-    rw [List.mem_singleton.mp new] at same
-    exact fresh other member (congrArg Prod.fst same) (congrArg Prod.snd same)
-  · simp only [opened, stored, List.mem_append, List.mem_singleton] at inside ⊢
-    rcases inside with old | rfl
+  · exact runsKeyed _
+  · simp only [opened, stored] at inside
+    rcases Laws.State.mem_put_or inside with old | rfl
     · exact tame.runsIssued other old
     · exact issued
-  · simp only [opened, stored, List.mem_append, List.mem_singleton] at inside ⊢
-    rcases inside with old | rfl
+  · simp only [opened, stored] at inside
+    rcases Laws.State.mem_put_or inside with old | rfl
     · exact tame.running other old context running
     · rw [idle] at running; cases running
-  · simp only [opened, stored, List.mem_append, List.mem_singleton] at inside
-    rcases inside with old | rfl
+  · simp only [opened, stored] at inside
+    rcases Laws.State.mem_put_or inside with old | rfl
     · exact tame.grouped other old context resumed
     · rw [resumed] at free; cases free
-  · simp only [opened, stored, List.mem_append, List.mem_singleton] at inside
-    rcases inside with old | rfl
+  · simp only [opened, stored] at inside
+    rcases Laws.State.mem_put_or inside with old | rfl
     · exact tame.runningIn other old context running
     · rw [idle] at running; cases running
-  · simp only [opened, stored, List.mem_append, List.mem_singleton] at inside
-    rcases inside with old | rfl
+  · simp only [opened, stored] at inside
+    rcases Laws.State.mem_put_or inside with old | rfl
     · exact tame.groupsStanding other old grouped
     · rw [free] at grouped; cases grouped
 
 /-- Taking `taken` out of retention into a new run holding them pending and nothing running holds the same completion
 numbers. -/
 theorem count_opened {s : State} {taken others : List Compensable} (perm : (taken ++ others).Perm s.slots.compensation.retained)
-    {run : CompensationRun} (pending : run.pending = taken) (idle : run.running = []) (n : Nat) :
+    {run : CompensationRun} (pending : run.pending = taken) (idle : run.running = [])
+    (fresh : ∀ other ∈ s.slots.compensation.runs, other.scope = run.scope → other.trigger ≠ run.trigger) (n : Nat) :
     (completions (opened s others run).slots.compensation).count n = (completions s.slots.compensation).count n := by
   have same := count_completionsIn_perm n perm
+  rw [count_completions, (((opened_runs (others := others) fresh).flatMap_right runCompletions).count_eq n)]
   simp only [opened, stored, count_completions, List.flatMap_append, List.flatMap_cons, List.flatMap_nil,
     List.append_nil, List.count_append, runCompletions, completionsIn_append, pending, idle, List.map_nil] at same ⊢
   omega
@@ -263,7 +268,8 @@ theorem triggers_opened {queue s : State} {scope : ScopeOccurrenceId} {activity 
     {run : CompensationRun} (apart : TriggersApart queue) (ungrouped : QueuedUngrouped queue)
     {unit : UnitKey} (found : queue.queuedSignals[unit]? = some (.compensate scope activity trigger leave resume))
     (shape : s = { queue with queuedSignals := queue.queuedSignals.erase unit }) (named : run.trigger = trigger)
-    (free : resumesGroup run.resume = false) :
+    (free : resumesGroup run.resume = false)
+    (fresh : ∀ other ∈ s.slots.compensation.runs, other.scope = run.scope → other.trigger ≠ run.trigger) :
     TriggersApart (opened s others run) ∧ QueuedUngrouped (opened s others run) := by
   have slots : s.slots = queue.slots := by rw [shape]
   have scopes : s.scopes = queue.scopes := by rw [shape]
@@ -274,8 +280,9 @@ theorem triggers_opened {queue s : State} {scope : ScopeOccurrenceId} {activity 
     refine (queuedTriggers_pop found).trans ?_
     rw [queuedTriggers, queuedTrigger_congr (t := opened s others run) (s := queue) scopes instance_, shape]
     rfl
-  have ungroupedEq : ungroupedTriggers (opened s others run) = ungroupedTriggers queue ++ [trigger] := by
-    simp only [ungroupedTriggers, opened, stored, List.filter_append, List.map_append, slots]
+  have ungroupedEq : (ungroupedTriggers (opened s others run)).Perm (ungroupedTriggers queue ++ [trigger]) := by
+    refine (((opened_runs fresh).filter _).map _).trans (.of_eq ?_)
+    simp only [ungroupedTriggers, List.filter_append, List.map_append, slots]
     simp [free, named]
   have later : ∀ signal ∈ Laws.State.allSignals s, signal ∈ Laws.State.allSignals queue := fun signal inside => by
     rw [shape] at inside; exact Laws.State.allSignals_unqueue _ inside
@@ -289,15 +296,17 @@ theorem triggers_opened {queue s : State} {scope : ScopeOccurrenceId} {activity 
     fun o inside unbegun held member => ?_⟩,
     fun scope activity trigger leave resume inside => ungrouped scope activity trigger leave resume (later _ inside)⟩
   · have held : (heldTriggers (opened s others run)).Perm (heldTriggers queue) := by
-      rw [heldTriggers_eq, heldTriggers_eq, ungroupedEq, List.append_assoc, List.singleton_append]
+      rw [heldTriggers_eq, heldTriggers_eq]
+      refine (ungroupedEq.append_right _).trans ?_
+      rw [List.append_assoc, List.singleton_append]
       exact (queuedEq.append_left _).symm
     exact held.nodup_iff.mpr apart.apart
-  · simp only [opened, stored, List.mem_append, List.mem_singleton] at inside
-    rcases inside with old | rfl
+  · simp only [opened, stored] at inside
+    rcases Laws.State.mem_put_or inside with old | rfl
     · exact apart.grouped other (runs other old) grouped (queuedEq.mem_iff.mpr (List.mem_cons_of_mem _ queuedIn))
     · rw [free] at grouped; cases grouped
-  · simp only [opened, stored, List.map_append, List.map_cons, List.map_nil, List.mem_append, List.mem_singleton]
-      at inside
+  · replace inside := ((opened_runs fresh).map (·.trigger)).append_right _ |>.mem_iff.mp inside
+    simp only [List.map_append, List.map_cons, List.map_nil, List.mem_append, List.mem_singleton] at inside
     rcases inside with (old | rfl) | queuedIn
     · obtain ⟨other, member, rfl⟩ := List.mem_map.mp old
       exact counted _ (apart.counted _ (List.mem_append_left _ (List.mem_map.mpr ⟨other, runs other member, rfl⟩)))
@@ -315,8 +324,8 @@ theorem triggers_opened {queue s : State} {scope : ScopeOccurrenceId} {activity 
       simp [Laws.State.key, Laws.State.instanceOf_congr (s := queue) (t := opened s others run) scopes instance_]
     rw [keyed]
     refine apart.unreserved o was unbegun held ?_
-    simp only [opened, stored, List.map_append, List.map_cons, List.map_nil, List.mem_append, List.mem_singleton]
-      at member
+    replace member := ((opened_runs fresh).map (·.trigger)).append_right _ |>.mem_iff.mp member
+    simp only [List.map_append, List.map_cons, List.map_nil, List.mem_append, List.mem_singleton] at member
     rcases member with (old | rfl) | queuedIn
     · obtain ⟨other, member, rfl⟩ := List.mem_map.mp old
       exact List.mem_append_left _ (List.mem_map.mpr ⟨other, runs other member, rfl⟩)

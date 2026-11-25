@@ -200,7 +200,7 @@ theorem clearInside_cleared {s : State} (formed : WellFormed program s) {scope :
     exact Within.antisymm formed (List.mem_map.mpr ⟨above, upper, rfl⟩) inner within
   iterate 3
     · simp only [State.clearInside, State.recordCancelled, featureSlotsClear_eq, multiInstances_eq,
-        multiInstanceList_filter_map, record_scope] at member
+        multiInstanceList_filter_map, record_scope, runs_eq, runList_filter] at member
       exact (List.mem_filter.mp member).1
   all_goals simp [State.clearInside, State.recordCancelled, mem, mem_itemList_filter formed.distinct.items,
     allQueuedTokens, Std.ExtTreeMap.toList_filter, or_and_right, occurrences_eq, occurrenceList_filter_val]
@@ -265,7 +265,7 @@ theorem clearInside_eq (s : State) (scope : ScopeOccurrenceId) (keep : List Occu
         multiInstanceMap := s.slots.multiInstanceMap.filter fun _ record => !(s.subtree le scope).contains record.scope
         compensation := {
           retained := s.slots.compensation.retained.filter (!((s.subtree le scope).filter (· != scope)).contains ·.scope)
-          runs := s.slots.compensation.runs.filter (!(s.subtree le scope).contains ·.scope) }
+          runMap := s.slots.compensation.runMap.filter fun key _ => !(s.subtree le scope).contains key.scope }
         instances := s.slots.instances.filter (!((s.subtree le scope).filter (· != scope)).contains ·.root) }
       draft } :=
   ⟨_, by simp only [State.clearInside, State.recordCancelled, featureSlotsClear_eq]; rfl⟩

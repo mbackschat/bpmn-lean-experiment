@@ -2,14 +2,14 @@
  * Feature slots, transcribed from `Kernel/State/Slots.lean`: the feature-owned data of `FeatureSlots`, always present
  * and empty by default, with the records a compensation run resumes by. Part of `state.ts`, which re-exports it.
  */
-import { assertNever, type DefinitionRef, type ElementId, type FlowId, type Value } from "../il/types.js";
+import { assertNever, compareStrings, type DefinitionRef, type ElementId, type FlowId, type Value } from "../il/types.js";
 import { type OccurrenceRef } from "./input.js";
 import { type Binding } from "./wait.js";
 /** Re-exported for `raise.ts`, as Lean's `Kernel.State.Raise` sees `Kernel.State.Wait` only through this module. */
 export { type Binding };
 import {
   ActivationRole, compareIssue, compareOccurrenceId, type Issue, issueText, type OccurrenceId, occurrenceIdParts, type OccurrenceKey,
-  orientKeyOrder, type ScopeOccurrenceId,
+  orientKeyOrder, type ScopeOccurrenceId, compareScopeOccurrenceId,
 } from "./key.js";
 /** Re-exported for `items.ts`, `raise.ts` and `journal.ts`, as Lean's `Kernel.State.Items`, `Kernel.State.Raise` and
  * `Kernel.State.Journal` see `Kernel.State.Key` only through this module. */
@@ -175,7 +175,21 @@ export function runAnchor(run: CompensationRun): OccurrenceId | null {
   return assertNever(resume);
 }
 
-/** `feature/compensation.ts`'s data: the retained records and the triggers in progress. */
+/**
+ * Lean's `Ord RunKey` on two runs' keys: the scope occurrence's key, then the trigger's process instance, element and
+ * activation, oriented (`orientKeyOrder`).
+ */
+export function compareRunKey(left: CompensationRun, right: CompensationRun): number {
+  return compareScopeOccurrenceId(left.scope, right.scope) || orientKeyOrder(
+    compareStrings(left.trigger.processInstanceId, right.trigger.processInstanceId) ||
+      compareStrings(left.trigger.element, right.trigger.element) || left.trigger.activation - right.trigger.activation);
+}
+
+/**
+ * `feature/compensation.ts`'s data: the retained records and the triggers in progress, `runs` Lean's `runMap` through
+ * its list view `Compensations.runs`, in key order (`state.ts`' `putRun`), the form the state codec writes (T75); no reader takes an
+ * order from it.
+ */
 export interface Compensations { readonly retained: readonly Compensable[]; readonly runs: readonly CompensationRun[]; }
 
 /**

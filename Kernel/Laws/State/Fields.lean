@@ -183,7 +183,7 @@ def slotRows : List Field := [
   ordered ``Kernel.MultiInstanceRecord.results "the result names one sequential body's instances left, one instance after another",
   -- `Compensations`
   keyedLater ``Kernel.Compensations.retained "K0.12 group 3b: compensation records keyed",
-  keyedLater ``Kernel.Compensations.runs "K0.12 group 3b: compensation runs keyed, with a keyed index from a running context to its run",
+  content ``Kernel.Compensations.runMap,
   -- `InstanceData`
   content ``Kernel.InstanceData.root,
   content ``Kernel.InstanceData.businessKey,
@@ -200,14 +200,12 @@ def compensationRows : List Field := [
   content ``Kernel.Compensable.closure,
   content ``Kernel.Compensable.snapshot,
   keyedLater ``Kernel.Compensable.children "K0.12 group 3b: compensation records keyed",
-  -- `CompensationRun`
-  content ``Kernel.CompensationRun.trigger,
-  content ``Kernel.CompensationRun.scope,
-  keyedLater ``Kernel.CompensationRun.pending "K0.12 group 3b: compensation records keyed",
-  keyedLater ``Kernel.CompensationRun.running "K0.12 group 3b: running handlers keyed by their context scope occurrence",
-  content ``Kernel.CompensationRun.leave,
-  content ``Kernel.CompensationRun.resume,
-  keyedLater ``Kernel.CompensationRun.joins "K0.12 group 3b: completion numbers read as a set, in the order of pending",
+  -- `RunRecord`
+  keyedLater ``Kernel.RunRecord.pending "K0.12 group 3b: compensation records keyed",
+  keyedLater ``Kernel.RunRecord.running "K0.12 group 3b: running handlers keyed by their context scope occurrence",
+  content ``Kernel.RunRecord.leave,
+  content ``Kernel.RunRecord.resume,
+  keyedLater ``Kernel.RunRecord.joins "K0.12 group 3b: completion numbers read as a set, in the order of pending",
   -- `CompensableChild`
   content ``Kernel.CompensableChild.subject,
   content ``Kernel.CompensableChild.handler,

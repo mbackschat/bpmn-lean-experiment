@@ -44,15 +44,11 @@ import {
   type Compensable, type CompensableChild, type CompensationRun, type Compensations, compensationsRestoredIn, type FeatureSlots, featureSlotsClear,
   featureSlotsKeptAlive, featureSlotsSuspended, type InstanceData, type Iteration, iterationHolds, IterationTag, type Leave,
   leaveFlows, leaveOutgoing, leaveRaised, LeaveTag, type MultiInstanceRun, type Parked, parkedEquals, parkedLeastBy, type Held,
-  type HeldMap, type Resume, runAnchor, runHolds,
+  type HeldMap, type Resume, compareRunKey, runAnchor, runHolds,
   ResumeTag, type ScopeOccurrenceId, type Suspended, type Variables,
 } from "./state/slots.js";
-import {
-  type InstanceFailure, type Origin, type Raised, raisedIsCancel, RaisedTag,
-} from "./state/raise.js";
-export {
-  type InstanceFailure, type Origin, type Raised, raisedIsCancel, RaisedTag,
-};
+import { type InstanceFailure, type Origin, type Raised, raisedIsCancel, RaisedTag } from "./state/raise.js";
+export { type InstanceFailure, type Origin, type Raised, raisedIsCancel, RaisedTag };
 import {
   type ActivationCount, type Cause, CauseTag, marks, type StartedFact, Terminal, type Transition,
 } from "./state/journal.js";
@@ -804,6 +800,11 @@ export function insertRun(runs: readonly MultiInstanceRun[], run: MultiInstanceR
 }
 
 const runKey = (run: MultiInstanceRun): OccurrenceId => run.occurrence;
+
+/** Lean's `RunMap.put`: `run` in place of the compensation run under its key, the runs kept in key order. */
+export function putRun(runs: readonly CompensationRun[], run: CompensationRun): readonly CompensationRun[] {
+  return keyedInsert(runs, run, (keyed) => keyed, compareRunKey);
+}
 
 /** Lean's `MultiInstanceMap` lookup `runs[body]?`: the run under the body occurrence's key. */
 export function lookupRun(runs: readonly MultiInstanceRun[], body: OccurrenceId): MultiInstanceRun | null {

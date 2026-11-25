@@ -4,7 +4,7 @@
 
 Adopted kernel owner document (W0 extraction, 2026-11-09). The kernel modules it cites are the executable authority; where they differ, the difference is a defect of one of them.
 
-`Kernel.Feature.Compensation` ([Lean](../../../Kernel/Feature/Compensation.lean)) owns `FeatureSlots.compensation`: the records of completed compensable work (`Compensable`) and the compensation runs in progress (`CompensationRun`), together with Transaction cancellation's compensation step. It dispatches on no guarded type of its own; [propagation](PROPAGATION-SEMANTICS-SPEC.md) hands it a Compensation throw or a caught Cancel through `Signal.compensate`, and the pipeline reports completions through `Hooks.completed` and `Hooks.handlerCompleted`. Admission is in `Kernel.Admission.Work`, `Kernel.Admission.Propagation`, `Kernel.Admission.Scopes` and `Kernel.Admission.Profile`.
+`Kernel.Feature.Compensation` ([Lean](../../../Kernel/Feature/Compensation.lean)) owns `FeatureSlots.compensation`: the records of completed compensable work (`Compensable`) and the compensation runs in progress (`CompensationRun`), held as a map under each run's scope occurrence and trigger (`RunMap`, read in key order through `Compensations.runs`), together with Transaction cancellation's compensation step. It dispatches on no guarded type of its own; [propagation](PROPAGATION-SEMANTICS-SPEC.md) hands it a Compensation throw or a caught Cancel through `Signal.compensate`, and the pipeline reports completions through `Hooks.completed` and `Hooks.handlerCompleted`. Admission is in `Kernel.Admission.Work`, `Kernel.Admission.Propagation`, `Kernel.Admission.Scopes` and `Kernel.Admission.Profile`.
 
 ## Interpretation
 

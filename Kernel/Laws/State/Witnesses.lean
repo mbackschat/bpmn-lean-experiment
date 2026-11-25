@@ -312,9 +312,9 @@ theorem reserved_body_rejected (kind : OpenKind) :
 
 theorem reserved_resume_rejected (kind : OpenKind) :
     ¬ SlotsSettled { armedState kind with
-      slots := { compensation := { runs := [{ handlerRun processRoot with resume := some (.complete timerKey .outgoing) }] } } } :=
+      slots := { compensation := { runMap := (∅ : RunMap).put { handlerRun processRoot with resume := some (.complete timerKey .outgoing) } } } } :=
   fun settled => by
-    have := (settled.resumed _ (List.mem_singleton.mpr rfl) timerKey .outgoing rfl).2.1 reservation (by simp [armedState]) rfl
+    have := (settled.resumed _ (mem_runList_single.mpr rfl) timerKey .outgoing rfl).2.1 reservation (by simp [armedState]) rfl
     simp [reservation] at this
 
 theorem queued_resume_rejected (kind : OpenKind) :

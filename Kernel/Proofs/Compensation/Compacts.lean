@@ -22,12 +22,6 @@ namespace Kernel.Proofs.Compensation
 open Kernel Kernel.Step Kernel.Laws.State Kernel.Laws.Step
 open Kernel.Laws.Compensation (ClaimsApart Ready claimed)
 
-/-- A compensation run renamed by a commit. -/
-abbrev renamedRun (r : Issue → Issue) (run : CompensationRun) : CompensationRun :=
-  { run with scope := renameScope r run.scope, pending := run.pending.map (renameCompensable r)
-             running := run.running.map fun (context, record) => (renameScope r context, renameCompensable r record)
-             leave := run.leave.map (renameId r), resume := run.resume.map (renameResume r) }
-
 section Compacts
 
 variable {schedule : BranchSchedule} {start : State} {log : RunLog} {s t : State}
@@ -55,11 +49,29 @@ theorem resumesGroup_rename (r : Issue → Issue) (resume : Option Resume) :
     resumesGroup (resume.map (renameResume r)) = resumesGroup resume := by
   rcases resume with _ | (_ | _ | _) <;> simp [resumesGroup]
 
-/-- A commit keeps every completion number a compensation slot holds. -/
-theorem completions_rename (r : Issue → Issue) (compensation : Compensations) :
-    completions { retained := compensation.retained.map (renameCompensable r)
-                  runs := compensation.runs.map (renamedRun r) } = completions compensation := by
-  simp [completions, completionsIn, completionsOf_rename, completion_rename, List.flatMap_map, Function.comp_def]
+/-- A commit keeps every completion number a compensation slot holds, up to order. -/
+theorem completions_rename (r : Issue → Issue) {compensation renamed : Compensations}
+    (retained : renamed.retained = compensation.retained.map (renameCompensable r))
+    (runs : renamed.runs.Perm (compensation.runs.map (renamedRun r))) :
+    (completions renamed).Perm (completions compensation) := by
+  unfold completions
+  rw [retained]
+  refine List.Perm.append (.of_eq (by simp [completionsIn, completionsOf_rename, List.flatMap_map]))
+    ((runs.flatMap_right _).trans (.of_eq ?_))
+  simp [completionsIn, completionsOf_rename, completion_rename, List.flatMap_map, Function.comp_def]
+
+/-- Two members of a list whose images are distinct are one when their images are. -/
+theorem eq_of_nodup_map {α β : Type} {f : α → β} {l : List α} (nodup : (l.map f).Nodup) {a b : α} (aIn : a ∈ l)
+    (bIn : b ∈ l) (same : f a = f b) : a = b := by
+  induction l with
+  | nil => cases aIn
+  | cons x rest ih =>
+    rw [List.map_cons, List.nodup_cons] at nodup
+    rcases List.mem_cons.mp aIn with rfl | aRest <;> rcases List.mem_cons.mp bIn with rfl | bRest
+    · rfl
+    · exact absurd (same ▸ List.mem_map_of_mem bRest) nodup.1
+    · exact absurd (same.symm ▸ List.mem_map_of_mem aRest) nodup.1
+    · exact ih nodup.2 aRest bRest
 
 /-- A record's completion number is among those its slot holds: a retained record's in the retained part, a claimed
 one's in its run's. -/
@@ -87,8 +99,7 @@ theorem orderJournal_groupsStanding (standing : GroupsStanding state)
     (made : orderJournal schedule start (.ok (state, log)) = .ok after) : GroupsStanding after := by
   have ran := orderJournal_of made
   intro run' member grouped
-  rw [compact_compensation ran] at member
-  obtain ⟨run, runIn, rfl⟩ := List.mem_map.mp member
+  obtain ⟨run, runIn, rfl⟩ := compact_runs_of ran member
   rw [resumesGroup_rename] at grouped
   have stands := standing run runIn grouped
   rw [scopeIds, ← standingKeys, compact_scopes ran]
@@ -113,18 +124,31 @@ theorem orderJournal_formed {precedes : Compensable → Compensable → Prop} (f
   have quietSignals := facts.quietSignals
   have quietTokens := facts.quietTokens
   have quiet := (compact_quiet ran ⟨quietSignals, quietTokens⟩).1
-  have slot := compact_compensation ran
-  have same : completions after.slots.compensation = completions state.slots.compensation := by
-    rw [slot]; exact completions_rename _ _
+  have ungrouped := held.triggers.apart.sublist (List.sublist_append_left _ _)
+  -- The renaming keeps the runs' keys apart: a group's nested run stands, and no two other runs share a trigger.
+  have apart : ∀ a ∈ state.slots.compensation.runs, ∀ b ∈ state.slots.compensation.runs,
+      renameScope (commitRenaming schedule start log (ordered log state)) a.scope =
+        renameScope (commitRenaming schedule start log (ordered log state)) b.scope → a.trigger = b.trigger →
+        a.scope = b.scope := by
+    intro a aIn b bIn scopes trigger
+    by_cases aGroup : resumesGroup a.resume = true
+    · exact (renameScope_apart counted' rooted (held.runsIssued b bIn) (held.groupsStanding a aIn aGroup) scopes.symm).symm
+    · by_cases bGroup : resumesGroup b.resume = true
+      · exact renameScope_apart counted' rooted (held.runsIssued a aIn) (held.groupsStanding b bIn bGroup) scopes
+      · rw [eq_of_nodup_map ungrouped (List.mem_filter.mpr ⟨aIn, by simpa using aGroup⟩)
+          (List.mem_filter.mpr ⟨bIn, by simpa using bGroup⟩) trigger]
+  have runsPerm := compact_runs_perm ran apart
+  have same : (completions after.slots.compensation).Perm (completions state.slots.compensation) :=
+    completions_rename (commitRenaming schedule start log (ordered log state)) (compact_retained ran) runsPerm
   have queued : queuedTriggers after = [] := by simp [queuedTriggers, quiet, Laws.Step.triggersOf_nil]
-  have runTriggers : after.slots.compensation.runs.map (·.trigger) = state.slots.compensation.runs.map (·.trigger) := by
-    rw [slot]; simp [List.map_map, Function.comp_def]
+  have runTriggers : (after.slots.compensation.runs.map (·.trigger)).Perm (state.slots.compensation.runs.map (·.trigger)) :=
+    (runsPerm.map _).trans (.of_eq (by simp [List.map_map, Function.comp_def]))
   refine ⟨?claims, ?retained, ?unfinished, ?completions, ?issued, ?settled, ?keyed, ?runsIssued, ?triggers, ?ungrouped,
     orderJournal_groupsStanding held.groupsStanding made⟩
   case claims =>
     intro run' member record' inside retained
-    rw [slot] at member retained
-    obtain ⟨run, runIn, rfl⟩ := List.mem_map.mp member
+    rw [compact_retained ran] at retained
+    obtain ⟨run, runIn, rfl⟩ := compact_runs_of ran member
     obtain ⟨y, yIn, rfl⟩ := List.mem_map.mp retained
     obtain ⟨x, xIn, renamed⟩ : ∃ x ∈ claimed run, renameCompensable (commitRenaming schedule start log (ordered log state)) x =
         renameCompensable (commitRenaming schedule start log (ordered log state)) y := by
@@ -140,25 +164,22 @@ theorem orderJournal_formed {precedes : Compensable → Compensable → Prop} (f
       completion.symm
   case retained =>
     intro record' member
-    rw [slot] at member
+    rw [compact_retained ran] at member
     obtain ⟨y, yIn, rfl⟩ := List.mem_map.mp member
     rw [renameCompensable_eq, scopeIds, ← standingKeys, compact_scopes ran]
     exact List.mem_map_of_mem (held.retained y yIn)
   case unfinished =>
     intro run' member
-    rw [slot] at member
-    obtain ⟨run, runIn, rfl⟩ := List.mem_map.mp member
+    obtain ⟨run, runIn, rfl⟩ := compact_runs_of ran member
     simpa using held.unfinished run runIn
-  case completions => unfold CompletionsApart; rw [same]; exact held.completions
+  case completions => exact same.nodup_iff.mpr held.completions
   case issued =>
     intro completion member
-    rw [same] at member
     rw [compact_nextCompletion ran]
-    exact held.issued completion member
+    exact held.issued completion (same.mem_iff.mp member)
   case settled =>
     rintro run' member record' ⟨pending, ready⟩
-    rw [slot] at member
-    obtain ⟨run, runIn, rfl⟩ := List.mem_map.mp member
+    obtain ⟨run, runIn, rfl⟩ := compact_runs_of ran member
     obtain ⟨x, xIn, rfl⟩ := List.mem_map.mp pending
     refine held.settled run runIn x ⟨xIn, fun other otherIn precede =>
       ready (renameCompensable (commitRenaming schedule start log (ordered log state)) other) ?_ ?_⟩
@@ -168,43 +189,26 @@ theorem orderJournal_formed {precedes : Compensable → Compensable → Prop} (f
         exact List.mem_append_right _ (List.mem_map.mpr ⟨_, List.mem_map_of_mem pairIn, rfl⟩)
     · rw [renameCompensable_eq, renameCompensable_eq]
       exact blind _ _ _ _ precede
-  case keyed =>
-    unfold RunsKeyed
-    rw [slot]
-    simp only [List.map_map]
-    have ungrouped := List.pairwise_filter.mp (List.pairwise_map.mp (held.triggers.apart.sublist
-      (List.sublist_append_left _ _)))
-    refine List.pairwise_map.mpr ((List.pairwise_map.mp held.keyed).and ungrouped |>.imp_of_mem ?_)
-    rintro a b aIn bIn ⟨apart, triggers⟩ renamed
-    simp only [Function.comp_apply, Prod.mk.injEq] at renamed
-    obtain ⟨scopes, trigger⟩ := renamed
-    by_cases aGroup : resumesGroup a.resume = true
-    · have := renameScope_apart counted' rooted (held.runsIssued b bIn) (held.groupsStanding a aIn aGroup) scopes.symm
-      exact apart (by rw [this, trigger])
-    · by_cases bGroup : resumesGroup b.resume = true
-      · have := renameScope_apart counted' rooted (held.runsIssued a aIn) (held.groupsStanding b bIn bGroup) scopes
-        exact apart (by rw [this, trigger])
-      · exact triggers (by simpa using aGroup) (by simpa using bGroup) trigger
+  case keyed => exact runsKeyed _
   case runsIssued =>
     intro run' member
-    rw [slot] at member
-    obtain ⟨run, runIn, rfl⟩ := List.mem_map.mp member
+    obtain ⟨run, runIn, rfl⟩ := compact_runs_of ran member
     exact compact_scopeIssued ran counted' rooted (held.runsIssued run runIn)
   case triggers =>
     refine ⟨?apart, ?grouped, ?counted, ?raised, ?unreserved⟩
     case apart =>
       unfold heldTriggers
       rw [queued, List.append_nil]
-      have kept : (after.slots.compensation.runs.filter (!resumesGroup ·.resume)).map (·.trigger) =
-          (state.slots.compensation.runs.filter (!resumesGroup ·.resume)).map (·.trigger) := by
-        rw [slot]
-        simp [List.filter_map, Function.comp_def, resumesGroup_rename, List.map_map]
-      rw [kept]
-      exact held.triggers.apart.sublist (List.sublist_append_left _ _)
+      have kept : ((after.slots.compensation.runs.filter (!resumesGroup ·.resume)).map (·.trigger)).Perm
+          ((state.slots.compensation.runs.filter (!resumesGroup ·.resume)).map (·.trigger)) :=
+        ((runsPerm.filter _).map _).trans (.of_eq (by
+          simp [List.filter_map, Function.comp_def, resumesGroup_rename, List.map_map]))
+      exact kept.nodup_iff.mpr ungrouped
     case grouped => intro _ _ _; rw [queued]; exact List.not_mem_nil
     case counted =>
       intro trigger member
-      rw [queued, List.append_nil, runTriggers] at member
+      rw [queued, List.append_nil] at member
+      replace member := runTriggers.mem_iff.mp member
       obtain ⟨count, kept, rest⟩ := held.triggers.counted trigger (List.mem_append_left _ member)
       refine Counted.congr (compact_kept ran).activations ⟨count, List.mem_filter.mpr ⟨kept, ?_⟩, rest⟩
       -- The commit keeps the counters a run's trigger names (`Step.countLive`).
@@ -214,7 +218,8 @@ theorem orderJournal_formed {precedes : Compensable → Compensable → Prop} (f
     case raised => intro origin member; rw [quiet, Laws.Step.triggersOf_nil] at member; cases member
     case unreserved =>
       intro occurrence member unbegun trigger inside
-      rw [queued, List.append_nil, runTriggers] at inside
+      rw [queued, List.append_nil] at inside
+      replace inside := runTriggers.mem_iff.mp inside
       obtain ⟨old, oldIn, keyed, begun⟩ :=
         compact_key ran counted' formed rfl rfl issued owned rooted formed.distinct.scopes member
       rw [keyed, key_congr (instanceOf_congr (s := state) (t := ordered log state) rfl rfl _)]
