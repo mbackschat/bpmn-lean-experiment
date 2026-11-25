@@ -52,12 +52,13 @@ theorem sample_wellFormed (kind : OpenKind) {program : Program}
           fun _ => by simp [sample, innerItem, outerItem, Std.ExtTreeMap.getD_insert],
     fun _ member => (sample_historic kind).issued member,
     by simp [sample, rootScope, childScope],
-    by simp [sample, subProcess, innerTask, outerTask]⟩
+    by simp [sample, subProcess, innerTask, outerTask], by simp [sample, rootScope, childScope],
+    by simp [sample]⟩
   distinct := ⟨occurrencesKeyed_ofOccurrences _, keyedBy_ofItems _,
     scopesKeyed_ofScopes _,
     (sampleOccurrences_perm.map _).nodup_iff.mpr (by simp [key, sample, subProcess, innerTask, outerTask])⟩
   startedOnce := by simp [StartedOnce, starts, sample]
-  activations := ⟨by simp [sample], by simp [sample]⟩
+  activations := ⟨by simp [sample], by simp [sample], by simp [sample]⟩
   reservations := by simp [ReservationsUnstarted, sample, subProcess, innerTask, outerTask]
   owned := {
     occurrenceScopes := by simp [sample, scopeIds, subProcess, innerTask, outerTask, rootScope, childScope]

@@ -75,7 +75,8 @@ theorem renameItemKey_eq (r : Issue → Issue) (key : ItemKey) :
 
 /-- A scope occurrence record renamed by a commit. -/
 abbrev renamedScope (r : Issue → Issue) (scope : ScopeOccurrence) : ScopeOccurrence :=
-  { scope with id := renameScope r scope.id, position := r scope.position, occurrence := scope.occurrence.map (renameId r) }
+  { scope with id := renameScope r scope.id, position := r scope.position, occurrence := scope.occurrence.map (renameId r)
+               calledInstance := scope.calledInstance.map (·.rename r) }
 
 /-- The renamed scope map re-keys every record under its renamed key (`Keyed.refold`). -/
 theorem renameState_scopes (r p : Issue → Issue) (c : Continuation → Continuation) (s : State) :
@@ -117,7 +118,7 @@ theorem renameState_scopesKeyed (r p : Issue → Issue) (c : Continuation → Co
 /-- An occurrence record renamed by a commit, its continuation through `c`. -/
 abbrev renamedOccurrence (r p : Issue → Issue) (c : Continuation → Continuation) (occurrence : Occurrence) : Occurrence :=
   { occurrence with id := renameId r occurrence.id, scope := renameScope r occurrence.scope, position := p occurrence.position
-                    continuation := c occurrence.continuation }
+                    continuation := c occurrence.continuation, activation := r occurrence.activation }
 
 /-- The renamed occurrence map re-keys every record under its renamed key (`Keyed.refold`). -/
 theorem renameState_occurrences (r p : Issue → Issue) (c : Continuation → Continuation) (s : State) :
@@ -194,7 +195,7 @@ theorem renameState_journal (r p : Issue → Issue) (c : Continuation → Contin
   unfold renameState; rfl
 
 @[simp] theorem renameTransition_ended (r : Issue → Issue) (transition : Transition) :
-    (renameTransition r transition).ended = transition.ended := by
+    (renameTransition r transition).ended = transition.ended.map fun (key, terminal) => (renameKey r key, terminal) := by
   unfold renameTransition; rfl
 
 /-- The renaming as an equation: every field but the identities it renames is kept. -/
@@ -207,7 +208,9 @@ theorem renameState_eq (r p : Issue → Issue) (c : Continuation → Continuatio
                               attachedTo := item.attachedTo.map (renameId r) }
       renamed.insert item.id item) ∅
     slots := renameSlots r s.slots
-    journal := s.journal.map (renameTransition r) } := by
+    journal := s.journal.map (renameTransition r)
+    intents := s.intents.map fun intent => { intent with origin := renameName r intent.origin }
+    failure := s.failure.map (renameFailure r) } := by
   unfold renameState; rfl
 
 @[simp] theorem renameState_scopeOrdinals (r p : Issue → Issue) (c : Continuation → Continuation) (s : State) :
@@ -226,7 +229,8 @@ theorem renameState_eq (r p : Issue → Issue) (c : Continuation → Continuatio
 theorem renameState_frame (r p : Issue → Issue) (c : Continuation → Continuation) (s : State) : renameState r p c s = { s with
     scopeMap := (renameState r p c s).scopeMap, occurrenceMap := (renameState r p c s).occurrenceMap
     variables := (renameState r p c s).variables, openItems := (renameState r p c s).openItems
-    slots := (renameState r p c s).slots, journal := (renameState r p c s).journal } := by
+    slots := (renameState r p c s).slots, journal := (renameState r p c s).journal
+    intents := (renameState r p c s).intents, failure := (renameState r p c s).failure } := by
   unfold renameState; rfl
 
 theorem renameWalk_id {r : Issue → Issue} (same : ∀ issue, r issue = issue) :
@@ -259,15 +263,17 @@ include same
 theorem renameSlots_id (slots : FeatureSlots) : renameSlots r slots = slots := by
   have ids : renameId r = id := funext (renameId_id same)
   have scopes : renameScope r = id := funext (renameScope_id same)
+  have keys : renameKey r = id := funext fun key => by simp [renameKey, same, rename_id same]
+  have names : renameName r = id := funext fun name => by simp [renameName, same, rename_id same]
   have compensable : renameCompensable r = id := funext fun record => by
-    simp [renameCompensable, renameScope_id same]
+    simp [renameCompensable, renameScope_id same, keys]
   have resume : renameResume r = id := funext fun resume => by
     cases resume <;> simp [renameResume, renameScope_id same, renameId_id same]
   have iteration : renameIteration r = id := funext fun iteration => by
     cases iteration <;> simp [renameIteration, renameScope_id same]
   cases slots with | mk parked heldMap multiInstanceMap compensation instances =>
   cases compensation
-  simp [renameSlots, ids, compensable, resume, iteration, renameScope_id same, Keyed.rebuild_self]
+  simp [renameSlots, ids, compensable, resume, iteration, names, renameScope_id same, Keyed.rebuild_self]
   exact ⟨Keyed.rebuild_self _, Keyed.rebuild_self _⟩
 
 end Identity
@@ -277,8 +283,19 @@ end Identity
 `Kernel.Laws.Step.Compacted` and the Proofs relations' clause modules read the renamed slots, transitions and their
 parts without the bodies of `Kernel.State.Rename`, which only this module opens. -/
 
+theorem renameKey_eq (r : Issue → Issue) (key : OccurrenceKey) :
+    renameKey r key = { key with processInstanceId := key.processInstanceId.rename r, activation := r key.activation } := by
+  unfold renameKey; rfl
+
+theorem renameName_eq (r : Issue → Issue) (name : OccurrenceName) :
+    renameName r name = { name with processInstanceId := name.processInstanceId.rename r, activation := r name.activation } := by
+  unfold renameName; rfl
+
 theorem renameCompensable_eq (r : Issue → Issue) (record : Compensable) :
-    renameCompensable r record = { record with scope := renameScope r record.scope } := by
+    renameCompensable r record =
+      { record with
+        scope := renameScope r record.scope, occurrence := renameKey r record.occurrence
+        children := record.children.map fun child => { child with occurrence := renameKey r child.occurrence } } := by
   unfold renameCompensable; rfl
 
 @[simp] theorem renameResume_complete (r : Issue → Issue) (occurrence : OccurrenceId) (leave : Leave) :
@@ -320,7 +337,10 @@ theorem renameCompensable_eq (r : Issue → Issue) (record : Compensable) :
 theorem renameTransition_eq (r : Issue → Issue) (transition : Transition) :
     renameTransition r transition = { transition with
       cause := renameCause r transition.cause, owner := renameScope r transition.owner
-      started := transition.started.map fun fact => { fact with owner := renameScope r fact.owner } } := by
+      started := transition.started.map fun fact =>
+        { fact with owner := renameScope r fact.owner, occurrence := renameKey r fact.occurrence }
+      ended := transition.ended.map fun (key, terminal) => (renameKey r key, terminal)
+      ready := transition.ready.map (renameKey r) } := by
   unfold renameTransition; rfl
 
 theorem renameSlots_eq (r : Issue → Issue) (slots : FeatureSlots) : renameSlots r slots =
@@ -332,7 +352,7 @@ theorem renameSlots_eq (r : Issue → Issue) (slots : FeatureSlots) : renameSlot
       compensation := {
         retained := slots.compensation.retained.map (renameCompensable r)
         runMap := slots.compensation.runMap.foldl (fun renamed key record => renamed.insert
-          { key with scope := renameScope r key.scope }
+          { scope := renameScope r key.scope, trigger := renameName r key.trigger }
           { record with pending := record.pending.map (renameCompensable r)
                         running := record.running.map fun (context, record) => (renameScope r context, renameCompensable r record)
                         leave := record.leave.map (renameId r), resume := record.resume.map (renameResume r) }) ∅ }
@@ -364,7 +384,7 @@ theorem renameSlots_bodies_of {r : Issue → Issue} {slots : FeatureSlots} {run 
 
 /-- A compensation run renamed by a commit. -/
 abbrev renamedRun (r : Issue → Issue) (run : CompensationRun) : CompensationRun :=
-  { run with scope := renameScope r run.scope, pending := run.pending.map (renameCompensable r)
+  { run with scope := renameScope r run.scope, trigger := renameName r run.trigger, pending := run.pending.map (renameCompensable r)
              running := run.running.map fun (context, record) => (renameScope r context, renameCompensable r record)
              leave := run.leave.map (renameId r), resume := run.resume.map (renameResume r) }
 
@@ -381,12 +401,12 @@ theorem renameSlots_runs_of {r : Issue → Issue} {slots : FeatureSlots} {run : 
 /-- The renamed runs are `slots`' runs renamed, up to order, when the renaming keeps their keys apart. -/
 theorem renameSlots_runs_perm {r : Issue → Issue} {slots : FeatureSlots}
     (apart : ∀ a ∈ slots.compensation.runs, ∀ b ∈ slots.compensation.runs, renameScope r a.scope = renameScope r b.scope →
-      a.trigger = b.trigger → a.scope = b.scope) :
+      renameName r a.trigger = renameName r b.trigger → a.scope = b.scope ∧ a.trigger = b.trigger) :
     (renameSlots r slots).compensation.runs.Perm (slots.compensation.runs.map (renamedRun r)) := by
   have keysApart : ∀ a ∈ slots.compensation.runs, ∀ b ∈ slots.compensation.runs,
       renamedRun r a = renamedRun r b → a = b := fun a aIn b bIn same => by
-    have triggers : a.trigger = b.trigger := by simpa using congrArg CompensationRun.trigger same
-    have scopes := apart a aIn b bIn (by simpa using congrArg CompensationRun.scope same) triggers
+    obtain ⟨scopes, triggers⟩ := apart a aIn b bIn (by simpa using congrArg CompensationRun.scope same)
+      (by simpa using congrArg CompensationRun.trigger same)
     have keyed : a.key = b.key := key_eq_iff.mpr ⟨scopes, triggers⟩
     rw [runs_eq] at aIn bIn
     rw [← toRun_toRecord a, ← toRun_toRecord b, ← keyed, Option.some.inj ((mem_runList.mp aIn).symm.trans
@@ -400,7 +420,7 @@ theorem renameSlots_runs_perm {r : Issue → Issue} {slots : FeatureSlots}
     have found := mem_runList.mp inside
     rw [renameSlots_eq, mem_runList]
     have rekeyed := Keyed.rekey_getElem?_of
-      (f := fun key : RunKey => { key with scope := renameScope r key.scope })
+      (f := fun key : RunKey => { scope := renameScope r key.scope, trigger := renameName r key.trigger })
       (g := fun record : RunRecord => { record with pending := record.pending.map (renameCompensable r)
                                                     running := record.running.map fun (context, record) =>
                                                       (renameScope r context, renameCompensable r record)
@@ -410,11 +430,11 @@ theorem renameSlots_runs_perm {r : Issue → Issue} {slots : FeatureSlots}
     · simpa [key_mk, toRecord_mk] using rekeyed
     · have aIn : a'.toRun a ∈ slots.compensation.runs := mem_runList.mpr (by simpa using aFound)
       have bIn : b'.toRun b ∈ slots.compensation.runs := mem_runList.mpr (by simpa using bFound)
-      have scopes := apart _ aIn _ bIn (by simpa using congrArg RunKey.scope same) (by simpa using congrArg RunKey.trigger same)
-      simp only [scope_toRun] at scopes
+      have keys := apart _ aIn _ bIn (by simpa using congrArg RunKey.scope same) (by simpa using congrArg RunKey.trigger same)
+      simp only [scope_toRun, trigger_toRun] at keys
       cases a; cases b
-      simp only [RunKey.mk.injEq] at same ⊢
-      exact ⟨scopes, same.2⟩
+      simp only [RunKey.mk.injEq]
+      exact keys
 
 theorem renameId_keep {r : Issue → Issue} (fixes : Fixes r) {id : OccurrenceId} (scope : renameScope r id.scope = id.scope)
     {m : Nat} (ordinal : id.ordinal = .committed m) : renameId r id = id := by

@@ -312,7 +312,9 @@ def effectResult (ctx : Ctx) (item : OpenItem) (outcome : EffectOutcome) (state 
     match ctx.program.options.errorPathOutputs with
     | .mapped => .ok ()
     | .none => if !patch.isEmpty then .error (.rejected "error-path-outputs-not-accepted")
-    let activation := ((state.occurrence? item.id.occurrence).map (·.activation)).getD 0
+    let some owner := state.occurrence? item.id.occurrence
+      | .error (.semanticFailure .invariant "effect-result-without-occurrence")
+    let activation := owner.activation
     .ok (state.signal (.raise (.error code message)
       { element := item.element, scope := item.scope, activation, thrower := item.id.occurrence, host := some item.id.occurrence
         patch }))

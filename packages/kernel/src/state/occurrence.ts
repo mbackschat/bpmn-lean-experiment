@@ -25,8 +25,9 @@ export const flowContinuation: Continuation = { tag: ContinuationTag.Flow };
 
 /**
  * One flow-node occurrence, from its issue until it ends. `activation` counts the activations of `element` in its
- * process instance under `role`, from 1. `incoming` is the flow the token arrived on, `null` for an occurrence no
- * token began.
+ * process instance under `role`, from 1: a pending issue of the unit that began it (`activate`) until the commit numbers
+ * it on its counter in the closure's issue order (`compact`). `incoming` is the flow the token arrived on, `null` for an
+ * occurrence no token began.
  *
  * `begun = false` is a subscription's reservation: a boundary, Event Sub-Process start or Event-Based Gateway arm has a
  * published identity from the moment it is armed, but its flow node runs only when the trigger arrives (CIB declares
@@ -37,7 +38,7 @@ export interface Occurrence {
   readonly id: OccurrenceId;
   readonly element: ElementId;
   readonly scope: ScopeOccurrenceId;
-  readonly activation: number;
+  readonly activation: Issue;
   /**
    * Its order position (DC25): its identity's issue while that is pending (`reserve`, or `beginOccurrence` without a
    * reservation), which the commit numbers on the position counter beside its ordinal (`positionsOf` in

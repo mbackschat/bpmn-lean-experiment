@@ -177,11 +177,11 @@ structure WorkOps (program : Program) (inv : State → Prop) : Prop where
     (∀ selected, leave = .flows selected → selected = []) → inv (state.signal (.complete occurrence.id leave writes rule))
   /-- A business Error raised from the occurrence an effect item waits for, in the item's scope occurrence and at its
   occurrence's activation. -/
-  raise : ∀ state item code message patch, inv state → item ∈ itemList state.openItems → item.kind.view.effect.isSome = true →
+  raise : ∀ state item (owner : Occurrence) code message patch, inv state → item ∈ itemList state.openItems →
+    item.kind.view.effect.isSome = true → state.occurrence? item.id.occurrence = some owner →
     inv (state.signal (.raise (.error code message)
       { element := item.element, scope := item.scope, thrower := item.id.occurrence, host := some item.id.occurrence,
-        patch := patch,
-        activation := ((state.occurrence? item.id.occurrence).map (·.activation)).getD 0 }))
+        patch := patch, activation := owner.activation }))
   cancel : ∀ state, inv state → inv (state.signal (.endInstance .cancelled none))
   /-- What open items wait for replaced, each keeping everything else, only for an item that waits for an effect or an
   incident. -/
@@ -290,7 +290,7 @@ theorem effectResult_keeps {inv : State → Prop} (ops : WorkOps program inv) {c
   all_goals first
     | exact installed_keeps ops holds member unstarted _ _ _ _ _ _ fun _ same => by cases same
     | exact ops.complete _ _ _ _ _ holds member unstarted fun _ same => by cases same
-    | exact ops.raise _ _ _ _ _ holds member effect
+    | exact ops.raise _ _ _ _ _ _ holds member effect (by assumption)
     | exact reopen_keeps ops holds member (.inl effect) _
 
 /-- `Hooks.retryIncident` keeps `inv`. -/

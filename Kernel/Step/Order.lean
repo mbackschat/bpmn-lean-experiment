@@ -67,7 +67,7 @@ def least {α : Type} (before : UnitKey → UnitKey → Bool) (entries : List (U
 `Issue.notAfter`): under `orderInvariant` breadth first (`UnitKey.breadth`), which reads no log, so no body's order depends on
 the schedule; under `declarationDepthFirst` the order the units ran (`orderKey`), so positions order as they were taken.
 The key itself breaks ties, so it is a total order. -/
-def issuerOrder (schedule : BranchSchedule) (log : RunLog) : UnitKey → UnitKey → Ordering :=
+@[expose] def issuerOrder (schedule : BranchSchedule) (log : RunLog) : UnitKey → UnitKey → Ordering :=
   match schedule with
   | .orderInvariant => UnitKey.breadth.val
   | .declarationDepthFirst => compareLex (compareOn fun unit => (orderKey log unit 0).1) compare

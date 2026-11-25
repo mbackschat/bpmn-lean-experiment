@@ -1,6 +1,6 @@
 module
 
-public import Kernel.Laws.Step.Commit
+public import Kernel.Laws.Step.Commit.Derived
 public import Kernel.Laws.Step.Assign
 public import Kernel.Laws.State.Transitions
 import Kernel.Laws.Step.Order
@@ -33,7 +33,7 @@ theorem compact_scopeRecord_of {start : State} {log : RunLog} {s t : State} (ran
   · rw [kept] at member
     have same := commitRenaming_empty (schedule := schedule) (start := start) (log := log) empty
     have ids : renameId (commitRenaming schedule start log s) = id := funext (renameId_id same)
-    exact ⟨entry, member, by cases entry; simp [renamedScope, ids, renameScope_id same, same]⟩
+    exact ⟨entry, member, by cases entry; simp [renamedScope, ids, renameScope_id same, same, rename_id same]⟩
   change entry ∈ (advanceCounters _ _ _).scopes at member
   rw [(advance_raised _ _ _).scopes] at member
   exact renameState_scope_of member
@@ -50,7 +50,7 @@ theorem compact_scopeRecord_mem {start : State} {log : RunLog} {s t : State} (ra
     have same := commitRenaming_empty (schedule := schedule) (start := start) (log := log) empty
     have ids : renameId (commitRenaming schedule start log s) = id := funext (renameId_id same)
     have fixed : renamedScope (commitRenaming schedule start log s) old = old := by
-      cases old; simp [renamedScope, ids, renameScope_id same, same]
+      cases old; simp [renamedScope, ids, renameScope_id same, same, rename_id same]
     rwa [fixed]
   change _ ∈ (advanceCounters _ _ _).scopes
   rw [(advance_raised _ _ _).scopes]
@@ -89,7 +89,7 @@ theorem fresh_head (history : ScopeHistory s H) {segment : ScopeSegment} {rest :
     ∃ n next, commitRenaming schedule start log s segment.ordinal = .committed n ∧
       (assign schedule start log s).2[ClaimSlot.scope { parent := .ofSegments rest, element := segment.element }]? = some next ∧
       slotBase start (.scope { parent := .ofSegments rest, element := segment.element }) ≤ n ∧ n < next := by
-  obtain ⟨n, next, parts⟩ := assign_took (schedule := schedule) (start := start) (log := log) (history.tabled segment rest unit index held fresh)
+  obtain ⟨n, next, parts⟩ := assign_took (schedule := schedule) (start := start) (log := log) (history.tabled segment rest unit index held fresh) (fun _ held => nomatch held)
   obtain ⟨got, advanced, low, high⟩ := parts
   refine ⟨n, next, ?_, advanced, low, high⟩
   rw [fresh]
@@ -277,7 +277,7 @@ theorem renamed_issue {start : State} {log : RunLog} {s : State} {issue : Issue}
   | committed n => exact ⟨n, by simp⟩
   | fresh unit index =>
     obtain ⟨slot, held⟩ := tabled unit index rfl
-    obtain ⟨n, _, got, _⟩ := assign_took (schedule := schedule) (start := start) (log := log) held
+    obtain ⟨n, got⟩ := assign_some (schedule := schedule) (start := start) (log := log) held
     exact ⟨n, by simp [commitRenaming, renameBy_fresh, got]⟩
 
 /-- **The occurrence clause across the commit.** -/
@@ -311,7 +311,7 @@ theorem compact_occurrenceIssued {start : State} {log : RunLog} {s t : State} (r
       rw [← kn]
       exact Nat.lt_of_lt_of_le lt (compact_occurrence_counter ran _)
     | fresh unit index =>
-      obtain ⟨m, next, parts⟩ := assign_took (schedule := schedule) (start := start) (log := log) (tabled unit index ho)
+      obtain ⟨m, next, parts⟩ := assign_took (schedule := schedule) (start := start) (log := log) (tabled unit index ho) (fun _ held => nomatch held)
       obtain ⟨got, advanced, _, high⟩ := parts
       have mn : m = n := by
         change commitRenaming schedule start log s id.ordinal = _ at renamed
@@ -363,7 +363,7 @@ theorem compact_itemIssued {start : State} {log : RunLog} {s t : State} (ran : c
       rw [kept, ← kn]
       exact Nat.lt_of_lt_of_le (below ⟨occurrence, present, owner⟩ k ho) (compact_item_counter ran _)
     | fresh unit index =>
-      obtain ⟨m, next, parts⟩ := assign_took (schedule := schedule) (start := start) (log := log) (tabled unit index ho)
+      obtain ⟨m, next, parts⟩ := assign_took (schedule := schedule) (start := start) (log := log) (tabled unit index ho) (fun _ held => nomatch held)
       obtain ⟨got, advanced, _, high⟩ := parts
       rw [ho] at renamed
       have mn : m = n := by simp [commitRenaming, renameBy_fresh, got] at renamed; exact renamed
@@ -407,6 +407,20 @@ theorem compacts_issued {start : State} {log : RunLog} {s t : State} (ran : comp
       obtain ⟨slot, tabled⟩ := issued.occurrencePositions old inside u i pending
       obtain ⟨n, -, renamed, -⟩ := occurrencePosition_renamed (schedule := schedule) (start := start) (log := log) tabled
       simp [pending, renamed] at fresh
+  names scope member name called := by
+    obtain ⟨old, inside, rfl⟩ := compact_scopeRecord_of ran member
+    obtain ⟨pending, carried, rfl⟩ := Option.map_eq_some_iff.mp called
+    refine (issued.names old inside pending carried).rename (fun n => commitRenaming_committed start log s n)
+      fun activation slot held => ?_
+    obtain ⟨n, renamed⟩ := renamed_issue (schedule := schedule) (start := start) (log := log) (s := s) (issue := activation)
+      fun unit index same => ⟨_, same ▸ held⟩
+    rw [renamed]; exact isFresh_committed n
+  slots issue slot held := by
+    have empty : t.issued = ∅ := by
+      rcases compact_cases ran with ⟨empty, rfl⟩ | ⟨_, rfl⟩
+      · exact Std.ExtTreeMap.isEmpty_iff.mp empty
+      · rfl
+    simp [empty] at held
 
 /-! ## The renaming is injective on standing keys -/
 
@@ -489,11 +503,11 @@ theorem rename_inj {start : State} {log : RunLog} {s : State} {H : ScopeOccurren
         | fresh u' i' =>
           have one := history.tabled _ d u i cheld rfl
           have two := history.tabled _ d u' i' zheld rfl
-          obtain ⟨n, _, got, _⟩ := assign_took (schedule := schedule) (start := start) (log := log) one
-          obtain ⟨n', _, got', _⟩ := assign_took (schedule := schedule) (start := start) (log := log) two
+          obtain ⟨n, _, got, _⟩ := assign_took (schedule := schedule) (start := start) (log := log) one (fun _ held => nomatch held)
+          obtain ⟨n', _, got', _⟩ := assign_took (schedule := schedule) (start := start) (log := log) two (fun _ held => nomatch held)
           have equal : n' = n := by
             simpa [commitRenaming, renameBy_committed, renameBy_fresh, got, got'] using ordinals
-          exact assign_apart (schedule := schedule) (start := start) (log := log) one two (by rw [got, got', equal])
+          exact assign_apart (schedule := schedule) (start := start) (log := log) one two (fun _ held => nomatch held) (by rw [got, got', equal])
     rw [zeq, segments]
 
 /-! ## Occurrence keys across the commit -/
@@ -523,7 +537,7 @@ theorem renameId_inj {start : State} {log : RunLog} {s : State} {H : ScopeOccurr
       a.scope ∈ standingKeys s → a.scope = b.scope → a.element = b.element → a.ordinal = .committed k →
       b.ordinal = .fresh u i → commitRenaming schedule start log s a.ordinal = commitRenaming schedule start log s b.ordinal → False := by
     intro a b k u i ai bi as scope element ak bf renamed
-    obtain ⟨m, _, parts⟩ := assign_took (schedule := schedule) (start := start) (log := log) (bi.2.2 u i bf)
+    obtain ⟨m, _, parts⟩ := assign_took (schedule := schedule) (start := start) (log := log) (bi.2.2 u i bf) (fun _ held => nomatch held)
     obtain ⟨got, _, low, _⟩ := parts
     have base : s.occurrenceOrdinals.getD { parent := b.scope, element := b.element } 0 ≤
         slotBase start (.occurrence { parent := b.scope, element := b.element }) := by
@@ -550,10 +564,10 @@ theorem renameId_inj {start : State} {log : RunLog} {s : State} {H : ScopeOccurr
     | fresh u' i' =>
       have one := xi.2.2 u i rfl
       have two := yi.2.2 u' i' rfl
-      obtain ⟨n, _, got, _⟩ := assign_took (schedule := schedule) (start := start) (log := log) one
-      obtain ⟨n', _, got', _⟩ := assign_took (schedule := schedule) (start := start) (log := log) two
+      obtain ⟨n, _, got, _⟩ := assign_took (schedule := schedule) (start := start) (log := log) one (fun _ held => nomatch held)
+      obtain ⟨n', _, got', _⟩ := assign_took (schedule := schedule) (start := start) (log := log) two (fun _ held => nomatch held)
       have equal : n = n' := by simpa [commitRenaming, renameBy_fresh, got, got'] using ordinals
-      exact assign_apart (schedule := schedule) (start := start) (log := log) one two (by rw [got, got', equal])
+      exact assign_apart (schedule := schedule) (start := start) (log := log) one two (fun _ held => nomatch held) (by rw [got, got', equal])
 
 /-! ## Membership clauses across the commit -/
 
@@ -704,7 +718,7 @@ theorem position_renamed {schedule : BranchSchedule} {start : State} {log : RunL
     {index : Nat} (tabled : s.issued[Issue.fresh unit index]? = some .position) :
     ∃ n, (assign schedule start log s).1[Issue.fresh unit index]? = some n ∧
       commitRenaming schedule start log s (.fresh unit index) = .committed n ∧ start.nextOrder ≤ n := by
-  obtain ⟨n, _, parts⟩ := assign_took (schedule := schedule) (start := start) (log := log) tabled
+  obtain ⟨n, _, parts⟩ := assign_took (schedule := schedule) (start := start) (log := log) tabled (fun _ held => nomatch held)
   obtain ⟨found, _, low, _⟩ := parts
   exact ⟨n, found, by simp [commitRenaming, renameBy_fresh, found], by simpa [slotBase_eq] using low⟩
 
@@ -733,12 +747,13 @@ theorem compaction_keepsPositionOrder (schedule : BranchSchedule) (start : State
     · rw [same] at foundP ⊢
       cases foundP.symm.trans foundQ
       exact iff_of_true ((notAfter_total _ _).elim id id) (Nat.le_refl _)
-    have sorted := issueOrder_sorted schedule log s
-    have nodup := issueOrder_nodup schedule log s
-    have memQ := (issueOrder_mem (schedule := schedule) (log := log)).mpr (show s.issued[(Issue.fresh v j, ClaimSlot.position).1]? = some (Issue.fresh v j, ClaimSlot.position).2 from tabledQ)
-    obtain ⟨S, T, split⟩ := List.mem_iff_append.mp
-      ((issueOrder_mem (schedule := schedule) (log := log)).mpr (show s.issued[(Issue.fresh u i, ClaimSlot.position).1]? = some (Issue.fresh u i, ClaimSlot.position).2 from tabledP))
-    rw [assign_eq, split] at foundP foundQ
+    have sorted := (issueOrder_sorted schedule log s).sublist (identityClaims_sublist _)
+    have nodup := (issueOrder_nodup schedule log s).sublist ((identityClaims_sublist (issueOrder schedule log s)).map (·.1))
+    have memQ := identityClaims_mem.mpr ⟨(issueOrder_mem (schedule := schedule) (log := log)).mpr (show s.issued[(Issue.fresh v j, ClaimSlot.position).1]? = some (Issue.fresh v j, ClaimSlot.position).2 from tabledQ), fun _ held => nomatch held⟩
+    obtain ⟨S, T, split⟩ := List.mem_iff_append.mp (identityClaims_mem.mpr
+      ⟨(issueOrder_mem (schedule := schedule) (log := log)).mpr (show s.issued[(Issue.fresh u i, ClaimSlot.position).1]? = some (Issue.fresh u i, ClaimSlot.position).2 from tabledP), fun _ held => nomatch held⟩)
+    rw [assign_identity tabledP (fun _ held => nomatch held), split] at foundP
+    rw [assign_identity tabledQ (fun _ held => nomatch held), split] at foundQ
     rw [split] at sorted nodup memQ
     rcases List.mem_append.mp memQ with inS | inT
     · obtain ⟨P, M, splitS⟩ := List.mem_iff_append.mp inS

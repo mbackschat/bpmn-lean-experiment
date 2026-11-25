@@ -77,6 +77,7 @@ import {
   runHolds,
   SemanticCause,
   semanticFailure, type OccurrenceId, ownVariables, insertVariableIfNew,
+  compareOccurrenceName,
 } from "../state.js";
 import { ScopeRole, ctxPositionLe, ctxRunsAsInstance, inside, leaveScope, type Ctx } from "../hooks.js";
 import { begunChildren, keptRecords } from "./compensation/kept.js";
@@ -215,8 +216,7 @@ function runBound(ctx: Ctx, state: State): number {
  * there: a nested group run has a context of its own.
  */
 function isRun(scope: ScopeOccurrenceId, trigger: OccurrenceName): (run: CompensationRun) => boolean {
-  return (run) => run.scope === scope && run.trigger.processInstanceId === trigger.processInstanceId &&
-    run.trigger.element === trigger.element && run.trigger.activation === trigger.activation;
+  return (run) => run.scope === scope && compareOccurrenceName(run.trigger, trigger) === 0;
 }
 
 /**

@@ -28,9 +28,12 @@ theorem key_congr {before after : State} {occurrence : Occurrence}
     (same : after.instanceOf occurrence.scope = before.instanceOf occurrence.scope) : key after occurrence = key before occurrence := by
   simp [key, same]
 
-theorem Counted.congr {before after : State} (same : after.activations = before.activations) {k : OccurrenceKey}
-    (counted : Counted before k) : Counted after k := by
-  simpa [Counted, same] using counted
+theorem Counted.congr {before after : State} (same : after.activations = before.activations) (table : TableGrows before after)
+    {k : OccurrenceKey} (counted : Counted before k) : Counted after k := by
+  unfold Counted at counted ⊢
+  split at counted
+  · simpa [same] using counted
+  · exact table _ _ counted
 
 /-- The claims stay single through a change that adds no item, occurrence, queued begin or completion, issues
 nothing back and keeps the process instance of what stands. -/
@@ -444,19 +447,23 @@ theorem WellFormed.reshape {before after : State} (formed : WellFormed program b
   have distinct : Distinct after := ⟨narrows.occurrenceMap ▸ formed.distinct.occurrencesKeyed,
     narrows.items.keyed formed.distinct.items, narrows.scopeMap ▸ formed.distinct.scopesKeyed,
     by rw [narrows.occurrences, funext keys]; exact formed.distinct.keys⟩
+  have issuedAfter : IssuedBelow after :=
+    ⟨fun occurrence member => issued _ (formed.issued.occurrences occurrence (narrows.occurrences ▸ member)),
+      fun item member =>
+        let ⟨owner, below, tabled⟩ := formed.issued.items item (items member)
+        ⟨owner, fun present n committed => Nat.lt_of_lt_of_le (below (narrows.occurrences ▸ present) n committed)
+          (narrows.items.ordinals _), fun unit index fresh => narrows.issued ▸ tabled unit index fresh⟩,
+      fun scope member => grows.issued (formed.issued.scopes scope (narrows.scopes ▸ member)), positions,
+      occurrencePositions, formed.issued.namesKept (fun _ member => narrows.scopes ▸ member) (.of_eq narrows.issued),
+      formed.issued.slotsKept narrows.issued⟩
   exact {
-  issued := ⟨fun occurrence member => issued _ (formed.issued.occurrences occurrence (narrows.occurrences ▸ member)),
-    fun item member =>
-      let ⟨owner, below, tabled⟩ := formed.issued.items item (items member)
-      ⟨owner, fun present n committed => Nat.lt_of_lt_of_le (below (narrows.occurrences ▸ present) n committed)
-        (narrows.items.ordinals _), fun unit index fresh => narrows.issued ▸ tabled unit index fresh⟩,
-    fun scope member => grows.issued (formed.issued.scopes scope (narrows.scopes ▸ member)), positions,
-    occurrencePositions⟩
+  issued := issuedAfter
   issuer := issuer
   distinct := distinct
   startedOnce := once
   activations := ⟨by simpa [narrows.activations] using formed.activations.keys,
-    by simpa [narrows.activations] using formed.activations.positive⟩
+    by simpa [narrows.activations] using formed.activations.positive,
+    by simpa [narrows.activations] using formed.activations.resolved⟩
   reservations := fun occurrence member unbegun fact started => by
     rw [keys]
     exact formed.reservations occurrence (narrows.occurrences ▸ member) unbegun fact (narrows.starts fact started)
@@ -475,10 +482,10 @@ theorem WellFormed.reshape {before after : State} (formed : WellFormed program b
   rooted := rooted
   failure := narrows.recorded formed.failure
   queue := queue
-  counted := fun fact started => (formed.counted fact (narrows.starts fact started)).congr narrows.activations
+  counted := fun fact started => (formed.counted fact (narrows.starts fact started)).congr narrows.activations (fun _ _ held => narrows.issued ▸ held)
   occurrencesCounted := fun occurrence member => by
     rw [keys]
-    exact (formed.occurrencesCounted occurrence (narrows.occurrences ▸ member)).congr narrows.activations
+    exact (formed.occurrencesCounted occurrence (narrows.occurrences ▸ member)).congr narrows.activations (fun _ _ held => narrows.issued ▸ held)
   ownedBelow := by simpa [OwnedBelow, narrows.scopes, narrows.occurrences] using formed.ownedBelow
   claimed := formed.claimed.shrink (fun _ member => items member) (fun _ member => narrows.occurrences ▸ member)
     (by simpa [scopeIds, narrows.occurrences, narrows.scopes] using formed.owned.occurrenceScopes)

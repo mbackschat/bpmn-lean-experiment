@@ -88,6 +88,38 @@ def UnitKey.readyUnit? (scope : ScopeOccurrenceId) (trigger : Option OccurrenceI
       | .fresh unit index => some (unit.push (.ready index ordinal))
       | .committed _ => scope.committedScope.map fun path => .ofRoot (.ready path none ordinal)
 
+/-- What an activation counter counts (R8): the activations of `element` under `role` in the process instance
+`processInstance`, whose name is pending when a Call of the closure in progress entered it. -/
+structure ActivationSlot where
+  processInstance : InstanceName
+  element : ElementId
+  role : ActivationRole
+  deriving DecidableEq, Repr
+
+/-- The roles' order, which an activation slot compares them in. -/
+def ActivationRole.slotRank : ActivationRole → Nat
+  | .element => 0
+  | .multiInstanceBody => 1
+
+instance : Ord ActivationSlot where
+  compare := compareLex (compareOn (·.processInstance)) <| compareLex (compareOn (·.element.value)) (compareOn (·.role.slotRank))
+
+instance : Std.TransOrd ActivationSlot := inferInstanceAs <| Std.TransCmp (compareLex _ _)
+
+instance : Std.LawfulEqOrd ActivationSlot where
+  eq_of_compare {a b} h := by
+    have h : compareLex (compareOn fun slot : ActivationSlot => slot.processInstance)
+        (compareLex (compareOn fun slot : ActivationSlot => slot.element.value) (compareOn fun slot : ActivationSlot => slot.role.slotRank))
+        a b = .eq := h
+    rw [compareLex_eq_eq, compareLex_eq_eq] at h
+    obtain ⟨inst, ⟨element⟩, role⟩ := a
+    obtain ⟨inst', ⟨element'⟩, role'⟩ := b
+    have instances : inst = inst' := Std.LawfulEqOrd.eq_of_compare h.1
+    have elements : element = element' := Std.LawfulEqOrd.eq_of_compare h.2.1
+    have ranks : role.slotRank = role'.slotRank := Std.LawfulEqOrd.eq_of_compare h.2.2
+    subst instances elements
+    cases role <;> cases role' <;> simp_all [ActivationRole.slotRank]
+
 /-- The slot a fresh issue takes its committed ordinal in at commit (DC12), one constructor per counter map, so the
 commit's assignment keys exactly what each counter compares (P07 F3): a scope occurrence's (parent, element)
 (`State.scopeOrdinals`), an occurrence's (scope occurrence, element) (`State.occurrenceOrdinals`), an item's occurrence
@@ -98,6 +130,8 @@ inductive ClaimSlot where
   | occurrence (slot : ScopeSlot)
   | item (occurrence : OccurrenceId)
   | position
+  /-- An activation: numbered at commit on its counter (`State.activationCount`), as an ordinal is on its slot's. -/
+  | activation (slot : ActivationSlot)
   deriving DecidableEq, Repr
 
 namespace ClaimSlot
@@ -108,36 +142,45 @@ def claimRank : ClaimSlot → Nat
   | .occurrence _ => 1
   | .item _ => 2
   | .position => 3
+  | .activation _ => 4
 
 def scopeSlot? : ClaimSlot → Option ScopeSlot
   | .scope slot => some slot
   | .occurrence slot => some slot
   | .item _ => none
   | .position => none
+  | .activation _ => none
 
 def claimItem : ClaimSlot → Option OccurrenceId
   | .item owner => some owner
   | .scope _ => none
   | .occurrence _ => none
   | .position => none
+  | .activation _ => none
+
+def claimActivation : ClaimSlot → Option ActivationSlot
+  | .activation slot => some slot
+  | .scope _ | .occurrence _ | .item _ | .position => none
 
 end ClaimSlot
 
 /-- The commit's assignment keys its counters by slot. -/
 instance : Ord ClaimSlot where
-  compare := compareLex (compareOn ClaimSlot.claimRank) <| compareLex (compareOn ClaimSlot.scopeSlot?) (compareOn ClaimSlot.claimItem)
+  compare := compareLex (compareOn ClaimSlot.claimRank) <| compareLex (compareOn ClaimSlot.scopeSlot?) <|
+    compareLex (compareOn ClaimSlot.claimItem) (compareOn ClaimSlot.claimActivation)
 
 instance : Std.TransOrd ClaimSlot := inferInstanceAs <| Std.TransCmp (compareLex _ _)
 
 instance : Std.LawfulEqOrd ClaimSlot where
   eq_of_compare {a b} h := by
-    have h : compareLex (compareOn ClaimSlot.claimRank) (compareLex (compareOn ClaimSlot.scopeSlot?) (compareOn ClaimSlot.claimItem))
-      a b = .eq := h
-    rw [compareLex_eq_eq, compareLex_eq_eq] at h
+    have h : compareLex (compareOn ClaimSlot.claimRank) (compareLex (compareOn ClaimSlot.scopeSlot?)
+      (compareLex (compareOn ClaimSlot.claimItem) (compareOn ClaimSlot.claimActivation))) a b = .eq := h
+    rw [compareLex_eq_eq, compareLex_eq_eq, compareLex_eq_eq] at h
     have ranks : a.claimRank = b.claimRank := Std.LawfulEqOrd.eq_of_compare h.1
     have slots : a.scopeSlot? = b.scopeSlot? := Std.LawfulEqOrd.eq_of_compare h.2.1
-    have items : a.claimItem = b.claimItem := Std.LawfulEqOrd.eq_of_compare h.2.2
-    cases a <;> cases b <;> simp_all [ClaimSlot.claimRank, ClaimSlot.scopeSlot?, ClaimSlot.claimItem]
+    have items : a.claimItem = b.claimItem := Std.LawfulEqOrd.eq_of_compare h.2.2.1
+    have activations : a.claimActivation = b.claimActivation := Std.LawfulEqOrd.eq_of_compare h.2.2.2
+    cases a <;> cases b <;> simp_all [ClaimSlot.claimRank, ClaimSlot.scopeSlot?, ClaimSlot.claimItem, ClaimSlot.claimActivation]
 
 /-- Whether the order position `a` comes no later than `b` (DC13): a committed position by its number, before every pending
 one, which the closure in progress issued; two pending positions by their units under `units`, then by their index in the

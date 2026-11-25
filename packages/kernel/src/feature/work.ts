@@ -484,7 +484,9 @@ export function effectResult(ctx: Ctx, item: OpenItem, outcome: EffectOutcome, s
       if (!admitted.ok) return failedWith(admitted.failure);
       const accepted = errorPatchAccepted(ctx, outcome.outputs);
       if (!accepted.ok) return failedWith(accepted.failure);
-      const activation = occurrenceOf(state, item.id.occurrence)?.activation ?? 0;
+      const owner = occurrenceOf(state, item.id.occurrence);
+      if (owner === null) return semanticFailure(SemanticCause.Invariant, "effect-result-without-occurrence");
+      const activation = owner.activation;
       return committed(signal(state, {
         tag: SignalTag.Raise,
         event: { tag: RaisedTag.Error, code: outcome.code, message: outcome.message },

@@ -23,11 +23,11 @@ structure OccurrenceRef where
 
 /-- The public identity of the occurrence `name` names in a committed state, whose names are its identifiers. -/
 def OccurrenceName.toRef (name : OccurrenceName) : OccurrenceRef :=
-  { processInstanceId := name.processInstanceId.text, element := name.element, activation := name.activation }
+  { processInstanceId := name.processInstanceId.text, element := name.element, activation := name.activation.number }
 
 /-- The name of the occurrence a public identity names in a committed state. -/
 def OccurrenceRef.toName (ref : OccurrenceRef) : OccurrenceName :=
-  { processInstanceId := .named ref.processInstanceId, element := ref.element, activation := ref.activation }
+  { processInstanceId := .named ref.processInstanceId, element := ref.element, activation := .committed ref.activation }
 
 inductive StartTrigger where
   -- guard-exception(3): the start input's own statement of how it fired, not a second dispatch over `Trigger`.
@@ -85,6 +85,15 @@ structure DeliveryInput where
   atMs : Option Nat := none
   /-- The input's ranking of competing Conditional items (`Input.conditionChoices`). -/
   conditionChoices : List ConditionChoice := []
+  deriving Repr
+
+/-- What a Signal firing hands the item it fires: the delivery's trigger, payload and variables. The item is the
+firing's own (`Signal.fire`), so the firing names no occurrence, and a throw within a closure stores no number its commit
+may still change (KD5). -/
+structure SignalFiring where
+  trigger : DeliveryTrigger
+  payload : Option Value := none
+  variables : List (String × Value) := []
   deriving Repr
 
 /-! ## Inputs -/

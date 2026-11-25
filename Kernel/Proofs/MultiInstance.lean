@@ -129,12 +129,13 @@ def RunsGenerated (hooks : Hooks) : Prop :=
       ∀ earlier ∈ before.slots.multiInstances, earlier.occurrence = run.occurrence → SnapshotFixed earlier run
 
 /-- Within the input's journal, the instances of a Multi-Instance element begin in generation order, under a program
-whose identifiers are unique: the IL contract (`Boundary.id`, `Kernel/IL/Types.lean:118`) keeps every reservation off a
-looping element, and a reservation of one keeps its lower activation when it begins after a fresh instance. -/
+whose identifiers are unique and under `declarationDepthFirst`: the IL contract (`Boundary.id`,
+`Kernel/IL/Types.lean:118`) keeps every reservation off a looping element, and the commit numbers pending activations in
+the order their units ran (KD1). It is stated for `declarationDepthFirst` only, whose commit order is run order. -/
 def BeginOrder (hooks : Hooks) : Prop :=
   ∀ (program : Program) (before after : State) (element : ElementId) (loop : MultiInstance) (processInstance : InstanceName),
-    IdsUnique program → Commits hooks program before after → LoopOf program element loop →
-    BeginsInOrder (after.journal.flatMap (·.started)) processInstance element
+    IdsUnique program → program.options.branchSchedule = .declarationDepthFirst → Commits hooks program before after →
+    LoopOf program element loop → BeginsInOrder (after.journal.flatMap (·.started)) processInstance element
 
 /-- Instances stay isolated: the instances of every running body after a committed input lie `Apart`. -/
 def InstancesApart (hooks : Hooks) : Prop :=

@@ -43,6 +43,23 @@ theorem notAfter_total {units : UnitKey → UnitKey → Ordering} [Std.OrientedC
       rw [Std.OrientedCmp.eq_swap (cmp := units) (a := v) (b := u)]
       cases units u v <;> simp [Ordering.swap] <;> omega
 
+/-- Every position is not after itself. -/
+theorem notAfter_refl {units : UnitKey → UnitKey → Ordering} [Std.ReflCmp units] (p : Issue) :
+    Issue.notAfter units p p = true := by
+  cases p with
+  | committed a => simp [Issue.notAfter]
+  | fresh u i => simp [Issue.notAfter, Std.ReflCmp.compare_self]
+
+/-- A position of a unit ordered after another's is after every position of that one. -/
+theorem notAfter_fresh_gt {units : UnitKey → UnitKey → Ordering} {u v : UnitKey} (after : units v u = .gt) (i j : Nat) :
+    Issue.notAfter units (.fresh v j) (.fresh u i) = false := by
+  simp [Issue.notAfter, after]
+
+/-- Two positions of one unit are in index order. -/
+theorem notAfter_fresh_same {units : UnitKey → UnitKey → Ordering} [Std.ReflCmp units] (u : UnitKey) (i j : Nat) :
+    Issue.notAfter units (.fresh u j) (.fresh u i) = decide (j ≤ i) := by
+  simp [Issue.notAfter, Std.ReflCmp.compare_self]
+
 /-- `Issue.notAfter` is transitive under a transitive unit order (DC13): `issueOrder`'s sort is a total preorder. -/
 theorem notAfter_trans {units : UnitKey → UnitKey → Ordering} [Std.TransCmp units] {p q r : Issue}
     (first : Issue.notAfter units p q = true) (second : Issue.notAfter units q r = true) :
@@ -62,6 +79,15 @@ theorem notAfter_trans {units : UnitKey → UnitKey → Ordering} [Std.TransCmp 
       | rw [Std.TransCmp.lt_of_lt_of_eq uv vw]
       | rw [Std.TransCmp.lt_of_eq_of_lt uv vw]
       | (rw [Std.TransCmp.eq_trans uv vw]; simp only [decide_eq_true_eq]; omega)
+
+theorem notAfter_fresh (units : UnitKey → UnitKey → Ordering) (u v : UnitKey) (i j : Nat) :
+    Issue.notAfter units (.fresh u i) (.fresh v j) =
+      match units u v with
+      | .lt => true
+      | .gt => false
+      | .eq => decide (i ≤ j) := by
+  simp only [Issue.notAfter]
+  cases units u v <;> rfl
 
 @[simp] theorem notAfter_committed (units : UnitKey → UnitKey → Ordering) (a b : Nat) :
     Issue.notAfter units (.committed a) (.committed b) = decide (a ≤ b) := by

@@ -51,7 +51,7 @@ inductive Fired where
   -- guard-exception(3): what a firing carried, handed to the one owner of `Trigger`; it adds no dispatch of its own.
   | timer (logicalTimeMs : Nat)
   | message (delivery : DeliveryInput)
-  | signal (delivery : DeliveryInput)
+  | signal (firing : SignalFiring)
   | condition (write : Option WriteEvent)
   deriving Repr
 
@@ -355,18 +355,23 @@ def entryCount (state : State) : Nat :=
 def instanceOf (state : State) (scope : ScopeOccurrenceId) : InstanceName :=
   ((state.scopes.find? (·.id == state.instanceRoot scope)).bind (·.calledInstance)).getD (.named state.instanceId)
 
-/-- The next activation of `element` under `role` in `processInstance`, recorded (R8: per process instance). -/
-def activate (state : State) (processInstance : InstanceName) (element : ElementId) (role : ActivationRole) : State × Nat :=
-  let key (entry : ActivationCount) :=
-    entry.processInstance == processInstance && entry.element == element && entry.role == role
-  let count := ((state.activations.find? key).map (·.count)).getD 0 + 1
-  ({ state with activations := { processInstance, element, role, count } :: state.activations.filter (!key ·) }, count)
+/-- The last activation `slot`'s counter in `state` issued, 0 if it has none. -/
+@[expose] def activationCount (state : State) (slot : ActivationSlot) : Nat :=
+  ((state.activations.find? fun count =>
+    count.processInstance == slot.processInstance && count.element == slot.element && count.role == slot.role).map (·.count)).getD 0
+
+/-- A fresh activation of `element` under `role` in `processInstance`: the running unit's next issue, which the commit
+numbers on the (process instance, element, role) counter in the closure's issue order (`Step.compact`, KD5), so no hook
+writes a counter and two units' activations commute. -/
+def activate (state : State) (processInstance : InstanceName) (element : ElementId) (role : ActivationRole) : State × Issue :=
+  state.issue (.activation { processInstance, element, role })
 
 /-- A reservation for `element` in `scope`: issued and numbered now, begun only when its trigger arrives. Its key is
 fresh, so it joins the occurrences without displacing one (`insertIfNew`, so that no state loses a record to it). -/
 def reserve (state : State) (element : ElementId) (scope : ScopeOccurrenceId) : State × Occurrence :=
-  let (state, activation) := state.activate (state.instanceOf scope) element .element
+  let inst := state.instanceOf scope
   let (state, id) := state.issueOccurrence scope element
+  let (state, activation) := state.activate inst element .element
   let occurrence : Occurrence := { id, element, scope, activation, position := id.ordinal, begun := false }
   ({ state with occurrenceMap := state.occurrenceMap.insertIfNew occurrence.id occurrence }, occurrence)
 
@@ -406,8 +411,9 @@ def beginOccurrence (state : State) (request : BeginRequest) (role : ActivationR
             itemOrdinals := state.itemOrdinals.erase reserved.id }.issueOccurrence request.scope reserved.element
         (state, { reserved with id })
     | none =>
-      let (state, activation) := state.activate (state.instanceOf request.scope) request.element role
+      let inst := state.instanceOf request.scope
       let (state, id) := state.issueOccurrence request.scope request.element
+      let (state, activation) := state.activate inst request.element role
       (state, ({ id, element := request.element, scope := request.scope, activation, position := id.ordinal, role } :
         Occurrence))
   let begun : Occurrence := { occurrence with

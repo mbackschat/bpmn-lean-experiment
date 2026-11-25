@@ -467,7 +467,7 @@ theorem advance_formed {precedes : Compensable → Compensable → Prop} {ctx : 
           rw [named, post.parented context begun', first.1.1]
     · refine post.moves.trans ⟨Nat.le_refl _, .of_same rfl rfl (.of_eq rfl), fun entry inside => .inl inside, rfl, rfl,
         ⟨[], by simp [stored, Laws.State.allSignals], by simp⟩,
-        fun key => ?_, fun other inside => ?_, fun _ inside => inside⟩
+        fun key => ?_, fun other inside => ?_, fun _ inside => inside, .of_eq rfl⟩
       · have same := ((split.filter (!resumesGroup ·.resume)).map (·.trigger)).count_eq key
         unfold ungroupedTriggers
         rw [((runsPerm.filter _).map _).count_eq key]
@@ -722,7 +722,7 @@ theorem failCompensation_formed (hooks : Hooks) {ctx : Ctx} {handler : ScopeOccu
 theorem moves_retained (s : State) (retained : List Compensable) {next : Nat} (issued : s.nextCompletion ≤ next) :
     Moves s (stored { s with nextCompletion := next } { s.slots.compensation with retained }) :=
   ⟨issued, .of_same rfl rfl (.of_eq rfl), fun _ inside => .inl inside, rfl, rfl, ⟨[], by simp [stored, Laws.State.allSignals], by simp⟩, fun _ => Nat.le_refl _,
-    fun run inside => ⟨run, inside, rfl⟩, fun _ inside => inside⟩
+    fun run inside => ⟨run, inside, rfl⟩, fun _ inside => inside, .of_eq rfl⟩
 
 theorem completed_formed (hooks : Hooks) {ctx : Ctx} {occurrence : Occurrence} {s t : State}
     (before : WellFormed ctx.program s) (formed : Formed (DependsIn hooks footprintReads footprintWrites ctx.program) s)

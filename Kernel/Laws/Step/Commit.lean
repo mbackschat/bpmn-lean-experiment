@@ -12,11 +12,13 @@ import all Kernel.Step.Commit
 What `Kernel.Step.Commit` does, read from its bodies: a micro-step's draft is journalled as the transition of its unit
 (`journalDraft_eq`), and a committed closure's journal and intents are put in run order, every unit-keyed family emptied
 (`orderJournal_ok`, `orderJournal_closed`), then compacted (DC12): the assignment gives every entry of the issue table an
-ordinal at or above its slot's base and below its slot's next ordinal (`assign_took`), the counters it leaves only rise
+ordinal at or above its slot's base and below its slot's next ordinal (`assignStep_took`), the counters it leaves only rise
 and reach every advanced slot's next ordinal (`advance_raised`, `advance_scope` of `advanceCounters`), the renaming of a layered key renames
 each segment (`Laws.State.renameScope_eq`), and the committed state is the settled one, or, when it issued anything, the settled
 one renamed and advanced (`compact_cases`). This is the one module that sees `Kernel.Step.Commit`'s bodies ([module table](../../../docs/kernel/ARCHITECTURE-SPEC.md#modules-and-build-shape));
-`Kernel.Laws.Step` composes these facts with `Kernel.Step`'s bodies. Nothing executable imports this module.
+It keeps only what reads those bodies, with the equations its readers need; `Kernel.Laws.Step.Commit.Derived` carries
+these facts further (`assign_took`, `orderJournal_closed`), and `Kernel.Laws.Step` composes them with `Kernel.Step`'s
+bodies. Nothing executable imports this module.
 -/
 
 @[expose] public section
@@ -43,6 +45,18 @@ abbrev ordered (log : RunLog) (state : State) : State :=
   { state with journal := byRun log state.transitions, intents := (byRun log state.outboxes).flatten
                transitions := ∅, outboxes := ∅, queuedTokens := ∅, queuedSignals := ∅, draft := {}
                activations := state.activations.filter (countLive state) }
+
+/-- The identity bound passes a commit on as it is, or refuses it (`Step.boundIdentities`). -/
+theorem bounded_ok {bound : Nat} {committed : Outcome} {after : State}
+    (ran : (boundIdentities bound =<< committed) = .ok after) : committed = .ok after := by
+  cases committed with
+  | error failure => exact nomatch ran
+  | ok state =>
+    change boundIdentities bound state = .ok after at ran
+    unfold boundIdentities at ran
+    split at ran
+    · cases ran
+    · cases ran; rfl
 
 /-- A committed closure: the settled one ordered, then compacted. -/
 theorem orderJournal_ok {start : State} {outcome : Except Failure (State × RunLog)} {after : State} (ran : orderJournal schedule start outcome = .ok after) :
@@ -166,7 +180,7 @@ theorem assignStep_next_of {base : ClaimSlot → Nat} {acc : TreeMap Issue Nat c
       rw [← Option.some.inj found, Std.ExtTreeMap.getD_insert]
       simp [Std.LawfulEqCmp.compare_eq_iff_eq]
     · exact (plain found).elim .inl (.inr ∘ .inr)
-  | scope _ | item _ | position => exact (plain found).elim .inl (.inr ∘ .inr)
+  | scope _ | item _ | position | activation _ => exact (plain found).elim .inl (.inr ∘ .inr)
 
 /-- A step's claim takes its slot's next ordinal and counts the slot past it. -/
 theorem assignStep_claim (base : ClaimSlot → Nat) (acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare)
@@ -178,7 +192,7 @@ theorem assignStep_claim (base : ClaimSlot → Nat) (acc : TreeMap Issue Nat com
     simp only [assignStep]
     rw [Std.ExtTreeMap.getElem?_insert]
     simp [Std.LawfulEqCmp.compare_eq_iff_eq]
-  | scope _ | item _ | position => simp [assignStep]
+  | scope _ | item _ | position | activation _ => simp [assignStep]
 
 /-- No step lowers a next ordinal the fold holds. -/
 theorem assignStep_raises {base : ClaimSlot → Nat} {acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare}
@@ -204,15 +218,7 @@ theorem assignStep_raises {base : ClaimSlot → Nat} {acc : TreeMap Issue Nat co
       rw [Std.ExtTreeMap.getD_insert]
       simpa [Std.LawfulEqCmp.compare_eq_iff_eq] using own _ found
     · exact plain
-  | scope _ | item _ | position => exact plain
-
-theorem assignStep_above {base : ClaimSlot → Nat} {acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare}
-    (above : AboveBase base acc) (claim : Issue × ClaimSlot) : AboveBase base (assignStep base acc claim) := by
-  intro slot m found
-  rcases assignStep_next_of found with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | kept
-  · exact Nat.le_succ_of_le (getD_above above _)
-  · exact Nat.le_succ_of_le (getD_above above _)
-  · exact above slot m kept
+  | scope _ | item _ | position | activation _ => exact plain
 
 theorem assignStep_took {base : ClaimSlot → Nat} {acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare}
     (above : AboveBase base acc) (claim : Issue × ClaimSlot) : Took base (assignStep base acc claim) claim :=
@@ -231,71 +237,192 @@ theorem assignStep_keeps {base : ClaimSlot → Nat} {acc : TreeMap Issue Nat com
   obtain ⟨m', next, raised⟩ := assignStep_raises claim slot
   exact ⟨n, m', kept, next, low, Nat.lt_of_lt_of_le high raised⟩
 
-/-- The fold keeps what it took of a claim whose issue no later claim repeats, and its next ordinals above their bases. -/
-theorem fold_keeps {base : ClaimSlot → Nat} {other : Issue × ClaimSlot} :
-    ∀ (claims : List (Issue × ClaimSlot)) (acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare),
-      other.1 ∉ claims.map (·.1) → AboveBase base acc → Took base acc other →
-      Took base (claims.foldl (assignStep base) acc) other
-  | [], _, _, _, took => took
-  | claim :: rest, acc, absent, above, took => by
-    simp only [List.map_cons, List.mem_cons, not_or] at absent
-    exact fold_keeps rest _ absent.2 (assignStep_above above claim) (assignStep_keeps absent.1 took)
-
-theorem fold_above {base : ClaimSlot → Nat} :
-    ∀ (claims : List (Issue × ClaimSlot)) (acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare),
-      AboveBase base acc → AboveBase base (claims.foldl (assignStep base) acc)
-  | [], _, above => above
-  | claim :: rest, _, above => fold_above rest _ (assignStep_above above claim)
-
-/-- **The assignment takes every claim** of a list whose issues are distinct. -/
-theorem fold_took {base : ClaimSlot → Nat} :
-    ∀ (claims : List (Issue × ClaimSlot)) (acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare),
-      (claims.map (·.1)).Nodup → AboveBase base acc → ∀ claim ∈ claims, Took base (claims.foldl (assignStep base) acc) claim
-  | [], _, _, _, _, member => nomatch member
-  | first :: rest, acc, distinct, above, claim, member => by
-    simp only [List.map_cons, List.nodup_cons] at distinct
-    rcases List.mem_cons.mp member with rfl | later
-    · exact fold_keeps rest _ distinct.1 (assignStep_above above _) (assignStep_took above _)
-    · exact fold_took rest _ distinct.2 (assignStep_above above first) claim later
-
 /-- A step's ordinals: the claim's issue takes its slot's next ordinal. -/
 theorem assignStep_fst (base : ClaimSlot → Nat) (acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare)
     (claim : Issue × ClaimSlot) : (assignStep base acc claim).1 = acc.1.insert claim.1 (acc.2.getD claim.2 (base claim.2)) := by
   simp only [assignStep]
 
 theorem assign_eq (start : State) (log : RunLog) (state : State) :
-    assign schedule start log state = (issueOrder schedule log state).foldl (assignStep (slotBase start)) (∅, ∅) := by
+    assign schedule start log state =
+      (activationOrder (taggedActivations schedule state (issueOrder schedule log state))).foldl
+      (activationStep (slotBase start))
+      ((identityClaims (issueOrder schedule log state)).foldl (assignStep (slotBase start)) (∅, ∅)) := by
   simp only [assign]
 
+/-- The activation claims the tagging lists, in issue order. -/
+theorem taggedActivations_fst (schedule : BranchSchedule) (state : State) (claims : List (Issue × ClaimSlot)) :
+    (taggedActivations schedule state claims).map (·.1) = claims.filterMap activationClaim? := by
+  simp only [taggedActivations, List.map_map, Function.comp_def, List.map_id']
+
+/-- `Step.activationOrder`'s equation, for modules that cannot open `Kernel.Step.Commit`'s bodies. -/
+theorem activationOrder_eq (tagged : List ((Issue × ActivationSlot) × Option (OccurrenceId × Nat))) :
+    activationOrder tagged =
+      ((tagged.zipIdx.map fun entry => (entry.1.1, activationPlace tagged entry.2 entry.1.2)).mergeSort fun a b =>
+        a.1.2.processInstance.callDepth < b.1.2.processInstance.callDepth ||
+          a.1.2.processInstance.callDepth == b.1.2.processInstance.callDepth && a.2 ≤ b.2).map (·.1) := by
+  unfold activationOrder
+  rw [← List.map_mergeSort (r := fun a b : (Issue × ActivationSlot) × Nat =>
+    a.1.2.processInstance.callDepth < b.1.2.processInstance.callDepth ||
+      a.1.2.processInstance.callDepth == b.1.2.processInstance.callDepth && a.2 ≤ b.2) fun _ _ _ _ => rfl, List.map_map]
+  rfl
+
+/-- The activation order lists the tagged claims, reordered. -/
+theorem activationOrder_perm (tagged : List ((Issue × ActivationSlot) × Option (OccurrenceId × Nat))) :
+    (activationOrder tagged).Perm (tagged.map (·.1)) := by
+  rw [activationOrder_eq]
+  refine ((List.mergeSort_perm _ _).map _).trans (.of_eq ?_)
+  rw [List.map_map]
+  conv => rhs; rw [← List.zipIdx_map_fst 0 tagged, List.map_map]
+  rfl
+
+/-- Every activation but an instance keeps its place. -/
+@[simp] theorem activationPlace_none (tagged : List ((Issue × ActivationSlot) × Option (OccurrenceId × Nat)))
+    (place : Nat) : activationPlace tagged place none = place := by
+  simp only [activationPlace]
+
+/-- Under `declarationDepthFirst` no activation is tagged as an instance. -/
+theorem taggedActivations_ddf (state : State) (claims : List (Issue × ClaimSlot)) :
+    taggedActivations .declarationDepthFirst state claims =
+      (claims.filterMap activationClaim?).map fun claim => (claim, (none : Option (OccurrenceId × Nat))) := by
+  simp only [taggedActivations]
+
+/-- An activation claim is one of `activationClaim?`'s. -/
+@[simp] theorem activationClaim?_activation (issue : Issue) (slot : ActivationSlot) :
+    activationClaim? (issue, .activation slot) = some (issue, slot) := by
+  simp only [activationClaim?]
+
+/-- `Step.activationPlace`'s equation for an instance of a body, for modules that cannot open its body. -/
+theorem activationPlace_some (tagged : List ((Issue × ActivationSlot) × Option (OccurrenceId × Nat))) (place : Nat)
+    (body : OccurrenceId) (item : Nat) :
+    activationPlace tagged place (some (body, item)) =
+      (((tagged.zipIdx.filter fun entry => entry.1.2.map (·.1) == some body).map (·.2))[
+        (tagged.zipIdx.filter fun entry => entry.1.2.map (·.1) == some body).countP fun entry => match entry.1.2 with
+          | some (_, other) => other < item || (other == item && entry.2 < place)
+          | none => false]?).getD place := by
+  unfold activationPlace; rfl
+
+/-- The activation order lists each issue once. -/
+theorem activationOrder_nodup (schedule : BranchSchedule) (state : State) (claims : List (Issue × ClaimSlot))
+    (distinct : (claims.map (·.1)).Nodup) :
+    ((activationOrder (taggedActivations schedule state claims)).map (·.1)).Nodup := by
+  refine ((activationOrder_perm _).map _).nodup_iff.mpr ?_
+  rw [taggedActivations_fst]
+  unfold List.Nodup
+  refine List.pairwise_map.mpr ((List.pairwise_map.mp distinct).filterMap _ fun ⟨_, x⟩ ⟨_, y⟩ differ c one d two => ?_)
+  cases x <;> cases y <;> simp only [activationClaim?, Option.some.injEq, reduceCtorEq] at one two
+  subst one two
+  exact differ
+
+/-- An activation step is a plain step on the activation's slot under its resolved name. -/
+theorem activationStep_eq (base : ClaimSlot → Nat) (acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare)
+    (claim : Issue × ActivationSlot) :
+    activationStep base acc claim = assignStep base acc (claim.1, .activation (resolveSlot acc.1 claim.2)) := by
+  simp only [activationStep]
+
+theorem resolveSlot_eq (assigned : TreeMap Issue Nat compare) (slot : ActivationSlot) :
+    resolveSlot assigned slot = { slot with processInstance := slot.processInstance.rename (renameBy assigned) } := by
+  simp only [resolveSlot]
+
+theorem identityClaims_mem {claims : List (Issue × ClaimSlot)} {claim : Issue × ClaimSlot} :
+    claim ∈ identityClaims claims ↔ claim ∈ claims ∧ ∀ slot, claim.2 ≠ .activation slot := by
+  unfold identityClaims
+  rw [List.mem_filter]
+  obtain ⟨issue, claimed⟩ := claim
+  cases claimed <;> simp
+
+theorem identityClaims_sublist (claims : List (Issue × ClaimSlot)) : (identityClaims claims).Sublist claims :=
+  List.filter_sublist
+
+theorem activationOrder_mem {schedule : BranchSchedule} {state : State} {claims : List (Issue × ClaimSlot)}
+    {claim : Issue × ActivationSlot} :
+    claim ∈ activationOrder (taggedActivations schedule state claims) ↔ (claim.1, ClaimSlot.activation claim.2) ∈ claims := by
+  rw [(activationOrder_perm _).mem_iff, taggedActivations_fst, List.mem_filterMap]
+  constructor
+  · rintro ⟨⟨issue, claimed⟩, member, found⟩
+    cases claimed with
+    | activation slot =>
+      simp only [activationClaim?, Option.some.injEq] at found
+      subst found
+      exact member
+    | scope _ | occurrence _ | item _ | position => simp [activationClaim?] at found
+  · intro member
+    exact ⟨_, member, rfl⟩
+
+/-- The index of the one element of a list that meets `p`. -/
+theorem findIdx?_of {α : Type} {p : α → Bool} {l : List α} {k : Nat} {x : α} (at_ : l[k]? = some x) (hit : p x = true)
+    (only : ∀ j y, l[j]? = some y → p y = true → j = k) : l.findIdx? p = some k := by
+  obtain ⟨bound, same⟩ := List.getElem?_eq_some_iff.mp at_
+  refine List.findIdx?_eq_some_iff_getElem.mpr ⟨bound, by rw [same]; exact hit, fun j lower held => ?_⟩
+  have := only j _ (List.getElem?_eq_getElem (by omega)) held
+  omega
+
+/-- An instance's activation names its body and its slot's index (`Step.instanceItem?`): the occurrence carrying it
+continues into the body and stands in the scope occurrence of one active slot. -/
+theorem instanceItem?_of {state : State} {issue : Issue} {slot : ActivationSlot} {o : Occurrence} {body : OccurrenceId}
+    {record : MultiInstanceRecord} {k : Nat} (role : slot.role = .element)
+    (found : state.occurrences.find? (·.activation == issue) = some o) (on : o.continuation = .multiInstance body)
+    (run : state.slots.multiInstanceMap[body]? = some record) (at_ : record.instances[k]? = some (.active o.scope))
+    (own : ∀ j, record.instances[j]? = some (.active o.scope) → j = k) :
+    instanceItem? state (issue, slot) = some (body, k) := by
+  unfold instanceItem?
+  simp only [role, found, Option.bind_some, on, Continuation.body?, run]
+  rw [findIdx?_of at_ (by simp) fun j y held hit => ?_]
+  · rfl
+  · cases y with
+    | waiting => simp at hit
+    | completed _ => simp at hit
+    | active scope =>
+      simp only [beq_iff_eq] at hit
+      subst hit
+      exact own j held
+
+/-- Under `orderInvariant` every activation claim stands in the tagging with its instance item. -/
+theorem taggedActivations_at {state : State} {claims : List (Issue × ClaimSlot)} {claim : Issue × ActivationSlot}
+    (member : (claim.1, ClaimSlot.activation claim.2) ∈ claims) :
+    ∃ p : Nat, (taggedActivations .orderInvariant state claims)[p]? = some (claim, instanceItem? state claim) := by
+  have inside : claim ∈ claims.filterMap activationClaim? := List.mem_filterMap.mpr ⟨_, member, rfl⟩
+  obtain ⟨p, at_⟩ := List.mem_iff_getElem?.mp inside
+  exact ⟨p, by simp only [taggedActivations, List.getElem?_map, at_, Option.map_some]⟩
+
+/-- Ranking an issue first by `issueRank`, then by `tieOrder`, is `issuerOrder`'s order of issues. -/
+theorem issueRank_notAfter (schedule : BranchSchedule) (log : RunLog) (a b : Issue) :
+    Issue.notAfter (issuerOrder schedule log) a b =
+      (issueRank schedule log a < issueRank schedule log b ||
+        issueRank schedule log a == issueRank schedule log b && Issue.notAfter (tieOrder schedule) a b) := by
+  cases a <;> cases b <;> cases schedule <;> simp only [issueRank, tieOrder, issuerOrder] <;> try simp
+  rename_i u i v j
+  simp only [notAfter_fresh, compareLex, compareOn]
+  rcases Nat.lt_trichotomy (orderKey log u 0).1 (orderKey log v 0).1 with lt | eq | gt
+  · simp [Nat.compare_eq_lt.mpr lt, lt]
+  · simp [eq]
+  · simp [Nat.compare_eq_gt.mpr gt, Nat.not_lt.mpr (Nat.le_of_lt gt), Nat.ne_of_gt gt]
+
 theorem issueOrder_eq (log : RunLog) (state : State) : issueOrder schedule log state =
-    state.issued.toList.mergeSort fun a b => Issue.notAfter (issuerOrder schedule log) a.1 b.1 := by simp only [issueOrder]
+    state.issued.toList.mergeSort fun a b => Issue.notAfter (issuerOrder schedule log) a.1 b.1 := by
+  unfold issueOrder
+  rw [← List.map_mergeSort (r := fun a b => Issue.notAfter (issuerOrder schedule log) a.1 b.1) fun a _ b _ =>
+    issueRank_notAfter schedule log a.1 b.1, List.map_map]
+  simp only [Function.comp_def, List.map_id']
 
 /-- The issue order lists the table's entries, each issue once. -/
 theorem issueOrder_mem {log : RunLog} {state : State} {claim : Issue × ClaimSlot} :
     claim ∈ issueOrder schedule log state ↔ state.issued[claim.1]? = some claim.2 := by
-  unfold issueOrder
+  rw [issueOrder_eq]
   rw [(List.mergeSort_perm _ _).mem_iff]
   exact Std.ExtTreeMap.mem_toList_iff_getElem?_eq_some
 
 theorem issueOrder_nodup (schedule : BranchSchedule) (log : RunLog) (state : State) : ((issueOrder schedule log state).map (·.1)).Nodup := by
-  unfold issueOrder
+  rw [issueOrder_eq]
   refine ((List.mergeSort_perm _ _).map _).nodup_iff.mpr ?_
   rw [List.nodup_iff_pairwise_ne, List.pairwise_map]
   exact Std.ExtTreeMap.distinct_keys_toList.imp fun apart same => apart (by rw [same]; exact Std.ReflCmp.compare_self)
-
-/-- **`assign_took`.** Every entry of the issue table takes an ordinal at or above its slot's base and below the slot's
-next ordinal. -/
-theorem assign_took {start : State} {log : RunLog} {state : State} {issue : Issue} {slot : ClaimSlot}
-    (tabled : state.issued[issue]? = some slot) : Took (slotBase start) (assign schedule start log state) (issue, slot) := by
-  unfold assign
-  exact fold_took _ _ (issueOrder_nodup schedule log state) (fun _ _ found => by simp at found) _ (issueOrder_mem.mpr tabled)
 
 /-- The position step's equation (`Step.positionStep`). -/
 theorem positionStep_eq (acc : TreeMap Issue Nat compare × Nat) (claim : Issue × ClaimSlot) :
     positionStep acc claim = match claim.2 with
       | .occurrence _ => (acc.1.insert claim.1 acc.2, acc.2 + 1)
       | .position => (acc.1, acc.2 + 1)
-      | .scope _ | .item _ => acc := by
+      | .scope _ | .item _ | .activation _ => acc := by
   obtain ⟨_, claimed⟩ := claim
   cases claimed <;> rfl
 
@@ -304,7 +431,7 @@ claim keeps it. -/
 theorem assignStep_position (base : ClaimSlot → Nat) (acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare)
     (claim : Issue × ClaimSlot) : (assignStep base acc claim).2.getD .position (base .position) = match claim.2 with
       | .occurrence _ | .position => acc.2.getD .position (base .position) + 1
-      | .scope _ | .item _ => acc.2.getD .position (base .position) := by
+      | .scope _ | .item _ | .activation _ => acc.2.getD .position (base .position) := by
   obtain ⟨_, claimed⟩ := claim
   cases claimed <;> simp [assignStep, Std.ExtTreeMap.getD_insert, Std.LawfulEqCmp.compare_eq_iff_eq]
 
@@ -330,6 +457,40 @@ theorem raiseCounter_self {α : Type} [Ord α] [Std.TransOrd α] [Std.LawfulEqOr
   rw [Std.ExtTreeMap.getD_insert_self]
   exact Nat.le_max_left _ _
 
+theorem find?_filter_of {α : Type} {p q : α → Bool} (implied : ∀ x, p x = true → q x = true) :
+    ∀ l : List α, (l.filter q).find? p = l.find? p
+  | [] => rfl
+  | x :: xs => by
+    have ih := find?_filter_of implied xs
+    by_cases hp : p x = true
+    · simp [implied x hp, hp]
+    · by_cases hq : q x = true <;> simp [hp, hq, ih]
+
+/-- An activation counter's step (K12g) lowers no counter: the slot's own rises to at least its count, every other is
+kept, since the filter drops only the slot's entry. -/
+theorem activation_raise_ge (state : State) (slot key : ActivationSlot) (ordinal : Nat) :
+    state.activationCount key ≤ ({ state with
+        activations := { processInstance := slot.processInstance, element := slot.element, role := slot.role, count := max (ordinal - 1) (state.activationCount slot) } ::
+      state.activations.filter (fun count => !(count.processInstance == slot.processInstance && count.element == slot.element &&
+        count.role == slot.role)) } : State).activationCount key := by
+  by_cases same : key = slot
+  · subst same
+    simp only [State.activationCount, List.find?_cons, beq_self_eq_true, Bool.and_self, Option.map_some, Option.getD_some]
+    exact Nat.le_max_right _ _
+  · have apart : ¬ (slot.processInstance = key.processInstance ∧ slot.element = key.element ∧ slot.role = key.role) :=
+      fun ⟨a, b, c⟩ => same (by cases slot; cases key; simp_all)
+    have miss : (slot.processInstance == key.processInstance && slot.element == key.element && slot.role == key.role) = false := by
+      simp only [Bool.and_eq_false_iff, beq_eq_false_iff_ne]
+      by_cases a : slot.processInstance = key.processInstance <;> by_cases b : slot.element = key.element <;> simp_all
+    simp only [State.activationCount, List.find?_cons, miss]
+    rw [find?_filter_of (fun x hit => by
+      simp only [Bool.and_eq_true, beq_iff_eq] at hit
+      obtain ⟨⟨a, b⟩, c⟩ := hit
+      simp only [Bool.not_eq_true', Bool.and_eq_false_iff, beq_eq_false_iff_ne, a, b, c]
+      by_cases x1 : key.processInstance = slot.processInstance <;> by_cases x2 : key.element = slot.element <;>
+        by_cases x3 : key.role = slot.role <;> simp_all)]
+    exact Nat.le_refl _
+
 /-- One advance step raises: it changes one counter, never lowering it. -/
 theorem advance_step (r : Issue → Issue) (renamed state : State) (slot : ClaimSlot) (ordinal : Nat) :
     Raised state (match slot with
@@ -347,14 +508,24 @@ theorem advance_step (r : Issue → Issue) (renamed state : State) (slot : Claim
         if renamed.occurrences.any (·.id == occurrence) then
           { state with itemOrdinals := raiseCounter state.itemOrdinals occurrence ordinal }
         else state
-      | .position => { state with nextOrder := max ordinal state.nextOrder }) := by
+      | .position => { state with nextOrder := max ordinal state.nextOrder }
+      | .activation slot =>
+        let slot := { slot with processInstance := slot.processInstance.rename r }
+        if instanceLive renamed slot.processInstance then
+          let same (count : ActivationCount) :=
+            count.processInstance == slot.processInstance && count.element == slot.element && count.role == slot.role
+          { state with activations := { processInstance := slot.processInstance, element := slot.element, role := slot.role
+                                        count := max (ordinal - 1) (state.activationCount slot) } ::
+                                      state.activations.filter (!same ·) }
+        else state) := by
   cases slot <;> dsimp only <;> try split
   all_goals first
     | exact .refl state
-    | exact ⟨rfl, rfl, rfl, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _⟩
-    | exact ⟨rfl, rfl, rfl, fun key => raiseCounter_ge _ _ key _, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _⟩
-    | exact ⟨rfl, rfl, rfl, fun _ => Nat.le_refl _, fun key => raiseCounter_ge _ _ key _, fun _ => Nat.le_refl _⟩
-    | exact ⟨rfl, rfl, rfl, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, fun key => raiseCounter_ge _ _ key _⟩
+    | exact ⟨rfl, rfl, rfl, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _⟩
+    | exact ⟨rfl, rfl, rfl, fun key => raiseCounter_ge _ _ key _, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _⟩
+    | exact ⟨rfl, rfl, rfl, fun _ => Nat.le_refl _, fun key => raiseCounter_ge _ _ key _, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _⟩
+    | exact ⟨rfl, rfl, rfl, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, fun key => raiseCounter_ge _ _ key _, fun _ => Nat.le_refl _⟩
+    | exact ⟨rfl, rfl, rfl, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, fun key => activation_raise_ge _ ⟨_, _, _⟩ key _⟩
 
 theorem advance_raised (r : Issue → Issue) (next : TreeMap ClaimSlot Nat compare) (renamed : State) :
     Raised renamed (advanceCounters r next renamed) := by
@@ -386,6 +557,22 @@ theorem advance_scope {r : Issue → Issue} {next : TreeMap ClaimSlot Nat compar
   rw [ite_eq_left stands]
   exact raiseCounter_self _ _ _
 
+/-- An activation slot's counter after advancing keeps the slot's last ordinal (one below its next) under its process
+instance's renamed name, where that instance stays live. -/
+theorem advance_activation {r : Issue → Issue} {next : TreeMap ClaimSlot Nat compare} {renamed : State}
+    {slot : ActivationSlot} {ordinal : Nat} (advanced : next[ClaimSlot.activation slot]? = some ordinal)
+    (live : instanceLive renamed (slot.processInstance.rename r) = true) :
+    ordinal - 1 ≤ (advanceCounters r next renamed).activationCount { slot with processInstance := slot.processInstance.rename r } := by
+  unfold advanceCounters
+  rw [Std.ExtTreeMap.foldl_eq_foldl_toList]
+  refine foldl_reaches (x := (ClaimSlot.activation slot, ordinal)) (fun state x => advance_step r renamed state x.1 x.2)
+    (fun a b raised held => Nat.le_trans held (raised.activations _)) (fun state => ?_) _ _
+    (Std.ExtTreeMap.mem_toList_iff_getElem?_eq_some.mpr advanced)
+  dsimp only
+  rw [ite_eq_left live]
+  simp [State.activationCount]
+  omega
+
 theorem advance_occurrence {r : Issue → Issue} {next : TreeMap ClaimSlot Nat compare} {renamed : State}
     {slot : ScopeSlot} {ordinal : Nat} (advanced : next[ClaimSlot.occurrence slot]? = some ordinal)
     (stands : renamed.scopes.any (·.id == renameScope r slot.parent) = true) :
@@ -412,16 +599,29 @@ theorem advance_item {r : Issue → Issue} {next : TreeMap ClaimSlot Nat compare
   rw [ite_eq_left present]
   exact raiseCounter_self _ _ _
 
+/-- **What advancing writes to the activation counters**: a property of the counter list that each activation slot's
+write keeps holds after the commit; the write puts the slot's counter, at least one below its next ordinal, under the
+renamed name in front of the other slots' counters. -/
+theorem advance_activations {P : List ActivationCount → Prop} (r : Issue → Issue) (next : TreeMap ClaimSlot Nat compare)
+    (renamed : State) (held : P renamed.activations)
+    (write : ∀ (counts : List ActivationCount) (slot : ActivationSlot) (ordinal count : Nat),
+      (ClaimSlot.activation slot, ordinal) ∈ next.toList → ordinal - 1 ≤ count → P counts →
+      P ({ processInstance := slot.processInstance.rename r, element := slot.element, role := slot.role, count } ::
+        counts.filter fun other => !(other.processInstance == slot.processInstance.rename r &&
+          other.element == slot.element && other.role == slot.role))) :
+    P (advanceCounters r next renamed).activations := by
+  unfold advanceCounters
+  rw [Std.ExtTreeMap.foldl_eq_foldl_toList]
+  refine foldl_holds (Q := fun state => P state.activations) _ (fun state x member kept => ?_) renamed held
+  obtain ⟨slot, ordinal⟩ := x
+  cases slot <;> dsimp only <;> try split
+  all_goals first
+    | exact kept
+    | exact write _ _ _ _ member (Nat.le_max_left _ _) kept
+
 /-! ## The renaming -/
 
 theorem renameBy_fixes (assigned : TreeMap Issue Nat compare) : Fixes (renameBy assigned) := fun _ => rfl
-
-theorem fresh_of_committed {segments : List ScopeSegment}
-    (committed : ∀ segment ∈ segments, segment.ordinal.isFresh = false) :
-    (ScopeOccurrenceId.ofSegments segments).fresh = false := by
-  cases segments with
-  | nil => simp
-  | cons segment rest => simpa using committed segment List.mem_cons_self
 
 /-- The renaming an assignment defines, as equations: a committed issue stays, an assigned fresh one takes its
 ordinal. -/
@@ -439,7 +639,8 @@ theorem slotBase_eq (state : State) (slot : ClaimSlot) : slotBase state slot = m
     | .scope slot => if slot.parent.fresh then 0 else state.scopeOrdinals.getD slot 0
     | .occurrence slot => if slot.parent.fresh then 0 else state.occurrenceOrdinals.getD slot 0
     | .item occurrence => if occurrence.fresh then 0 else state.itemOrdinals.getD occurrence 0
-    | .position => state.nextOrder := by
+    | .position => state.nextOrder
+    | .activation slot => state.activationCount slot + 1 := by
   cases slot <;> rfl
 
 /-! ## What a commit leaves -/
@@ -455,10 +656,6 @@ abbrev commitPositioning (schedule : BranchSchedule) (start : State) (log : RunL
 /-- The continuation renaming a commit passes to `renameState`. -/
 abbrev commitRekey (schedule : BranchSchedule) (start : State) (log : RunLog) (s : State) : Continuation → Continuation :=
   Continuation.rekey (renameId (commitRenaming schedule start log s)) (renameScope (commitRenaming schedule start log s))
-
-@[simp] theorem commitRenaming_committed (start : State) (log : RunLog) (s : State) (n : Nat) :
-    commitRenaming schedule start log s (.committed n) = .committed n :=
-  renameBy_committed _ n
 
 /-- The state a commit leaves when the closure issued anything: the settled one renamed and advanced, the issue table
 emptied. -/
@@ -486,11 +683,11 @@ theorem compact_cases {start : State} {log : RunLog} {s t : State} (ran : compac
 
 theorem issueOrder_empty {log : RunLog} {s : State} (empty : s.issued.isEmpty = true) : issueOrder schedule log s = [] := by
   have list : s.issued.toList = [] := by simpa [Std.ExtTreeMap.isEmpty_iff] using empty
-  unfold issueOrder
+  rw [issueOrder_eq]
   simp [list]
 
 theorem assign_empty {start : State} {log : RunLog} {s : State} (empty : s.issued.isEmpty = true) : assign schedule start log s = (∅, ∅) := by
-  simp [assign, issueOrder_empty empty]
+  simp [assign, issueOrder_empty empty, identityClaims, activationOrder, taggedActivations]
 
 /-- A closure that issued nothing renames nothing. -/
 theorem commitRenaming_empty {start : State} {log : RunLog} {s : State} (empty : s.issued.isEmpty = true) (issue : Issue) :
@@ -506,38 +703,10 @@ theorem rekey_id {r : Issue → Issue} (same : ∀ issue, r issue = issue) (cont
     continuation.rekey (renameId r) (renameScope r) = continuation := by
   cases continuation <;> simp [Continuation.rekey, renameId_id same, renameScope_id same]
 
-/-- The keys a commit leaves standing: the settled state's, renamed, whatever the renaming (`renameState_keys`). -/
-theorem compact_scopes {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t)
-    {x : ScopeOccurrenceId} :
-    x ∈ standingKeys t ↔ x ∈ (standingKeys s).map (renameScope (commitRenaming schedule start log s)) := by
-  rcases compact_cases ran with ⟨empty, rfl⟩ | ⟨_, rfl⟩
-  · simp [renameScope_id (commitRenaming_empty empty)]
-  change x ∈ (advanceCounters _ _ _).scopes.map (·.id) ↔ _
-  rw [(advance_raised _ _ _).scopes]
-  exact renameState_keys
-
-theorem compact_counter {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) (slot : ScopeSlot) :
-    s.scopeOrdinals.getD slot 0 ≤ t.scopeOrdinals.getD slot 0 := by
-  rcases compact_cases ran with ⟨_, rfl⟩ | ⟨_, rfl⟩
-  · exact Nat.le_refl _
-  have raised := (advance_raised (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitPositioning schedule start log s) (commitRekey schedule start log s) s)).scopeOrdinals slot
-  rwa [renameState_scopeOrdinals] at raised
-
-theorem compact_reach {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) {slot : ScopeSlot} {ordinal : Nat}
-    (advanced : (assign schedule start log s).2[ClaimSlot.scope slot]? = some ordinal)
-    (stands : renameScope (commitRenaming schedule start log s) slot.parent ∈ standingKeys t) :
-    ordinal ≤ t.scopeOrdinals.getD { slot with parent := renameScope (commitRenaming schedule start log s) slot.parent } 0 := by
-  rcases compact_cases ran with ⟨empty, rfl⟩ | ⟨_, rfl⟩
-  · simp [assign_empty empty] at advanced
-  change _ ∈ (advanceCounters _ _ _).scopes.map (·.id) at stands
-  rw [(advance_raised _ _ _).scopes] at stands
-  obtain ⟨z, member, same⟩ := List.mem_map.mp stands
-  exact advance_scope advanced (List.any_eq_true.mpr ⟨z, member, by simp [same]⟩)
-
 /-- `t` is `s` with its counters alone changed. -/
 def CountersOnly (s t : State) : Prop :=
   t = { s with scopeOrdinals := t.scopeOrdinals, occurrenceOrdinals := t.occurrenceOrdinals,
-               itemOrdinals := t.itemOrdinals, nextOrder := t.nextOrder }
+               itemOrdinals := t.itemOrdinals, nextOrder := t.nextOrder, activations := t.activations }
 
 /-- Advancing changes the counters alone. -/
 theorem advance_frame (r : Issue → Issue) (next : TreeMap ClaimSlot Nat compare) (renamed : State) :
@@ -545,7 +714,8 @@ theorem advance_frame (r : Issue → Issue) (next : TreeMap ClaimSlot Nat compar
       { renamed with scopeOrdinals := (advanceCounters r next renamed).scopeOrdinals,
                      occurrenceOrdinals := (advanceCounters r next renamed).occurrenceOrdinals,
                      itemOrdinals := (advanceCounters r next renamed).itemOrdinals,
-                     nextOrder := (advanceCounters r next renamed).nextOrder } := by
+                     nextOrder := (advanceCounters r next renamed).nextOrder
+                     activations := (advanceCounters r next renamed).activations } := by
   show CountersOnly renamed _
   unfold advanceCounters
   rw [Std.ExtTreeMap.foldl_eq_foldl_toList]
@@ -563,165 +733,6 @@ theorem advance_frame (r : Issue → Issue) (next : TreeMap ClaimSlot Nat compar
   unfold CountersOnly at framed ⊢
   cases slot <;> dsimp only <;> try split
   all_goals (rw [framed])
-
-/-- A commit changes no field but the identities, the counters and the issue table. -/
-theorem compact_frame {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) :
-    t.queuedTokens = s.queuedTokens ∧ t.queuedSignals = s.queuedSignals ∧ t.transitions = s.transitions ∧
-      t.outboxes = s.outboxes ∧ t.journal.flatMap (·.ended) = s.journal.flatMap (·.ended) := by
-  rcases compact_cases ran with ⟨_, rfl⟩ | ⟨_, rfl⟩
-  · exact ⟨rfl, rfl, rfl, rfl, rfl⟩
-  have same := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitPositioning schedule start log s) (commitRekey schedule start log s) s)
-  unfold compacted
-  rw [same, renameState_eq]
-  refine ⟨rfl, rfl, rfl, rfl, ?_⟩
-  change List.flatMap _ (s.journal.map (renameTransition _)) = _
-  simp only [List.flatMap_map, renameTransition_ended]
-
-/-- A committed closure's journal holds its transitions' end facts, in the order its units ran. -/
-theorem orderJournal_ended {start : State} {outcome : Except Failure (State × RunLog)} {after : State} (ran : orderJournal schedule start outcome = .ok after) :
-    ∃ settled, outcome = .ok settled ∧
-      (after.journal.flatMap (·.ended)).Perm ((settled.1.transitions.toList.map (·.2)).flatMap (·.ended)) := by
-  obtain ⟨settled, log, same, made⟩ := orderJournal_ok ran
-  rw [(compact_frame made).2.2.2.2]
-  exact ⟨(settled, log), same, (byRun_perm log settled.transitions).flatMap_right _⟩
-
-/-- No unit key outlives its closure: a committed state holds no queued token, signal, transition or keyed intent. -/
-theorem orderJournal_closed {start : State} {outcome : Except Failure (State × RunLog)} {after : State} (ran : orderJournal schedule start outcome = .ok after) :
-    after.queuedTokens = ∅ ∧ after.queuedSignals = ∅ ∧ after.transitions = ∅ ∧ after.outboxes = ∅ := by
-  obtain ⟨_, _, _, made⟩ := orderJournal_ok ran
-  obtain ⟨tokens, signals, parts⟩ := compact_frame made
-  obtain ⟨transitions, outboxes, _⟩ := parts
-  exact ⟨tokens, signals, transitions, outboxes⟩
-
-/-! ## The occurrences and items a commit leaves -/
-
-/-- Every occurrence a commit leaves is one of the settled state, renamed with its continuation. -/
-theorem compact_occurrenceRecord_of {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t)
-    {occurrence : Occurrence} (member : occurrence ∈ t.occurrences) :
-    ∃ old ∈ s.occurrences, occurrence = renamedOccurrence (commitRenaming schedule start log s) (commitPositioning schedule start log s) (commitRekey schedule start log s) old := by
-  rcases compact_cases ran with ⟨empty, kept⟩ | ⟨_, rfl⟩
-  · rw [kept] at member
-    have same := commitRenaming_empty (schedule := schedule) (start := start) (log := log) empty
-    exact ⟨occurrence, member, by simp [renamedOccurrence, renameId_id same, renameScope_id same, rekey_id same,
-        commitPositioning_empty (schedule := schedule) (start := start) (log := log) empty]⟩
-  change occurrence ∈ (advanceCounters _ _ _).occurrences at member
-  rw [(advance_raised _ _ _).occurrences] at member
-  exact renameState_occurrence_of member
-
-/-- The commit's renaming maps no two occurrences of the settled state onto one key (`Laws.Step.occurrences_apart`). -/
-abbrev OccurrencesApart (schedule : BranchSchedule) (start : State) (log : RunLog) (s : State) : Prop :=
-  ∀ a ∈ s.occurrences, ∀ b ∈ s.occurrences,
-    renameId (commitRenaming schedule start log s) a.id = renameId (commitRenaming schedule start log s) b.id → a = b
-
-/-- A commit that renames no two occurrences of the settled state alike keeps every one of them, renamed: the occurrence
-map re-keys every record, so a record stands only if no other one is renamed onto its key. -/
-theorem compact_occurrenceRecord_mem {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t)
-    (apart : OccurrencesApart schedule start log s) {old : Occurrence} (member : old ∈ s.occurrences) :
-    renamedOccurrence (commitRenaming schedule start log s) (commitPositioning schedule start log s) (commitRekey schedule start log s) old ∈ t.occurrences := by
-  rcases compact_cases ran with ⟨empty, kept⟩ | ⟨_, rfl⟩
-  · rw [kept]
-    have same := commitRenaming_empty (schedule := schedule) (start := start) (log := log) empty
-    have fixed : renamedOccurrence (commitRenaming schedule start log s) (commitPositioning schedule start log s) (commitRekey schedule start log s) old = old := by
-      simp [renamedOccurrence, renameId_id same, renameScope_id same, rekey_id same,
-        commitPositioning_empty (schedule := schedule) (start := start) (log := log) empty]
-    rwa [fixed]
-  change _ ∈ (advanceCounters _ _ _).occurrences
-  rw [(advance_raised _ _ _).occurrences]
-  exact renameState_occurrence_mem apart member
-
-/-- The key of every occurrence of the settled state stands, renamed, after the commit, whatever the renaming; its record
-does too when the renaming keeps the occurrences apart (`compact_occurrenceRecord_mem`). -/
-theorem compact_occurrenceKey_mem {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t)
-    {old : Occurrence} (member : old ∈ s.occurrences) :
-    ∃ occurrence ∈ t.occurrences, occurrence.id = renameId (commitRenaming schedule start log s) old.id := by
-  rcases compact_cases ran with ⟨empty, kept⟩ | ⟨_, rfl⟩
-  · rw [kept]
-    exact ⟨old, member, (renameId_id (commitRenaming_empty (schedule := schedule) (start := start) (log := log) empty) _).symm⟩
-  change ∃ occurrence ∈ (advanceCounters _ _ _).occurrences, _
-  rw [(advance_raised _ _ _).occurrences, occurrences_eq, renameState_occurrences, occurrenceList_eq]
-  rw [occurrences_eq, occurrenceList_eq] at member
-  exact Keyed.key_mem_refold member
-
-/-- The occurrence map a commit leaves is keyed. -/
-theorem compact_occurrencesKeyed {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t)
-    (keyed : OccurrencesKeyed s.occurrenceMap) : OccurrencesKeyed t.occurrenceMap := by
-  rcases compact_cases ran with ⟨_, rfl⟩ | ⟨_, rfl⟩
-  · exact keyed
-  have frame := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitPositioning schedule start log s) (commitRekey schedule start log s) s)
-  unfold compacted
-  rw [frame]
-  exact renameState_occurrencesKeyed _ _ _ _
-
-theorem compact_occurrence_counter {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) (slot : ScopeSlot) :
-    s.occurrenceOrdinals.getD slot 0 ≤ t.occurrenceOrdinals.getD slot 0 := by
-  rcases compact_cases ran with ⟨_, rfl⟩ | ⟨_, rfl⟩
-  · exact Nat.le_refl _
-  have raised := (advance_raised (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitPositioning schedule start log s) (commitRekey schedule start log s) s)).occurrenceOrdinals slot
-  rwa [renameState_occurrenceOrdinals] at raised
-
-theorem compact_item_counter {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) (occurrence : OccurrenceId) :
-    s.itemOrdinals.getD occurrence 0 ≤ t.itemOrdinals.getD occurrence 0 := by
-  rcases compact_cases ran with ⟨_, rfl⟩ | ⟨_, rfl⟩
-  · exact Nat.le_refl _
-  have raised := (advance_raised (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitPositioning schedule start log s) (commitRekey schedule start log s) s)).itemOrdinals occurrence
-  rwa [renameState_itemOrdinals] at raised
-
-theorem compact_reach_occurrence {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) {slot : ScopeSlot}
-    {ordinal : Nat} (advanced : (assign schedule start log s).2[ClaimSlot.occurrence slot]? = some ordinal)
-    (stands : renameScope (commitRenaming schedule start log s) slot.parent ∈ standingKeys t) :
-    ordinal ≤ t.occurrenceOrdinals.getD { slot with parent := renameScope (commitRenaming schedule start log s) slot.parent } 0 := by
-  rcases compact_cases ran with ⟨empty, rfl⟩ | ⟨_, rfl⟩
-  · simp [assign_empty empty] at advanced
-  change _ ∈ (advanceCounters _ _ _).scopes.map (·.id) at stands
-  rw [(advance_raised _ _ _).scopes] at stands
-  obtain ⟨z, member, same⟩ := List.mem_map.mp stands
-  exact advance_occurrence advanced (List.any_eq_true.mpr ⟨z, member, by simp [same]⟩)
-
-theorem compact_reach_item {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) {occurrence : OccurrenceId}
-    {ordinal : Nat} (advanced : (assign schedule start log s).2[ClaimSlot.item occurrence]? = some ordinal)
-    (present : ∃ other ∈ t.occurrences, other.id = renameId (commitRenaming schedule start log s) occurrence) :
-    ordinal ≤ t.itemOrdinals.getD (renameId (commitRenaming schedule start log s) occurrence) 0 := by
-  obtain ⟨other, member, same⟩ := present
-  rcases compact_cases ran with ⟨empty, rfl⟩ | ⟨_, rfl⟩
-  · simp [assign_empty empty] at advanced
-  change other ∈ (advanceCounters _ _ _).occurrences at member
-  rw [(advance_raised _ _ _).occurrences] at member
-  exact advance_item advanced (List.any_eq_true.mpr ⟨other, member, by simp [same]⟩)
-
-/-- An item the commit leaves is an item of the settled state renamed. -/
-theorem compact_items {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) {item : OpenItem}
-    (member : item ∈ itemList t.openItems) :
-    ∃ old ∈ itemList s.openItems, item.id = renameItemKey (commitRenaming schedule start log s) old.id := by
-  rcases compact_cases ran with ⟨empty, rfl⟩ | ⟨_, rfl⟩
-  · exact ⟨item, member, (renameItemKey_id (commitRenaming_empty empty) _).symm⟩
-  change item ∈ itemList (advanceCounters _ _ _).openItems at member
-  rw [(advance_raised _ _ _).items, mem_itemList] at member
-  obtain ⟨k, held⟩ := member
-  rw [renameState_openItems] at held
-  rw [Std.ExtTreeMap.foldl_eq_foldl_toList] at held
-  rcases foldl_from (g := fun (x : ItemKey × OpenItem) =>
-      { x.2 with id := renameItemKey (commitRenaming schedule start log s) x.2.id, position := commitRenaming schedule start log s x.2.position,
-                 scope := renameScope (commitRenaming schedule start log s) x.2.scope
-                 attachedTo := x.2.attachedTo.map (renameId (commitRenaming schedule start log s)) })
-      (fun m x k v found => by
-        simp only [Std.ExtTreeMap.getElem?_insert] at found
-        split at found
-        · exact .inr (Option.some.inj found).symm
-        · exact .inl found) _ _ k item held with empty | ⟨x, entry, same⟩
-  · simp at empty
-  · refine ⟨x.2, mem_itemList.mpr ⟨x.1, Std.ExtTreeMap.mem_toList_iff_getElem?_eq_some.mp entry⟩, ?_⟩
-    rw [same]
-
-/-! ## One shape for both commits -/
-
-/-- The feature slots a commit leaves: the settled state's, renamed. -/
-theorem compact_slots {start : State} {log : RunLog} {s t : State} (ran : compact schedule start log s = .ok t) :
-    t.slots = renameSlots (commitRenaming schedule start log s) s.slots := by
-  rcases compact_cases ran with ⟨empty, rfl⟩ | ⟨_, rfl⟩
-  · exact (renameSlots_id (commitRenaming_empty empty) _).symm
-  have frame := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2 (renameState (commitRenaming schedule start log s) (commitPositioning schedule start log s) (commitRekey schedule start log s) s)
-  unfold compacted
-  rw [frame, renameState_eq]
 
 /-! ## Issuer names -/
 
@@ -882,15 +893,5 @@ theorem compact_issuersNamed {start : State} {log : RunLog} {s t : State} (ran :
     (scope : ScopeOccurrenceId → ScopeOccurrenceId) (run : ScopeOccurrenceId) :
     (Continuation.compensation run).rekey occurrence scope = .compensation (scope run) := by
   simp only [Continuation.rekey]
-
-/-- A renamed continuation into a body is the renaming of a continuation into a body. -/
-theorem _root_.Kernel.Continuation.rekey_eq_multiInstance {continuation : Continuation}
-    {occurrence : OccurrenceId → OccurrenceId} {scope : ScopeOccurrenceId → ScopeOccurrenceId} {body : OccurrenceId}
-    (renamed : continuation.rekey occurrence scope = .multiInstance body) :
-    ∃ earlier, continuation = .multiInstance earlier ∧ occurrence earlier = body := by
-  cases continuation with
-  | flow => simp [Continuation.rekey] at renamed
-  | multiInstance earlier => exact ⟨earlier, rfl, by simpa [Continuation.rekey] using renamed⟩
-  | compensation run => simp [Continuation.rekey] at renamed
 
 end Kernel.Laws.Step

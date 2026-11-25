@@ -488,9 +488,18 @@ export function calledBy(caller: InstanceName, call: ElementId, activation: Issu
     ? calledInstanceId(caller, call, activation) : { caller, call, activation };
 }
 
-/** Lean's `InstanceName.rename`: the name with its activations renamed by `rename`, as the commit renames them. */
+/** Lean's `InstanceName.unresolved`: whether the name holds a pending activation, as every called name `calledBy` builds does. */
+function instanceUnresolved(name: InstanceName): boolean {
+  return typeof name !== "string" && (freshIssue(name.activation) !== null || instanceUnresolved(name.caller));
+}
+
+/**
+ * Lean's `InstanceName.rename`: the name with its pending activations renamed by `rename`, as the commit renames them,
+ * and resolved where they all are committed (`calledBy`); a name without a pending activation is kept as it is.
+ */
 export function renameInstanceName(name: InstanceName, rename: (issue: Issue) => Issue): InstanceName {
-  return typeof name === "string" ? name : calledBy(renameInstanceName(name.caller, rename), name.call, rename(name.activation));
+  return typeof name === "string" || !instanceUnresolved(name) ? name
+    : calledBy(renameInstanceName(name.caller, rename), name.call, rename(name.activation));
 }
 
 /** Lean's `InstanceName.base`: the committed identifier a name starts from. */
@@ -523,7 +532,7 @@ export function sameInstanceName(left: InstanceName, right: InstanceName): boole
 export interface OccurrenceKey {
   readonly processInstanceId: InstanceName;
   readonly element: ElementId;
-  readonly activation: number;
+  readonly activation: Issue;
   readonly role: ActivationRole;
 }
 
@@ -536,11 +545,11 @@ export interface OccurrenceKey {
 export interface OccurrenceName {
   readonly processInstanceId: InstanceName;
   readonly element: ElementId;
-  readonly activation: number;
+  readonly activation: Issue;
 }
 
 /** Lean's `Ord OccurrenceName`: by process instance, element and activation. */
 export function compareOccurrenceName(left: OccurrenceName, right: OccurrenceName): number {
   return compareInstanceName(left.processInstanceId, right.processInstanceId) || compareStrings(left.element, right.element) ||
-    left.activation - right.activation;
+    compareIssue(left.activation, right.activation);
 }

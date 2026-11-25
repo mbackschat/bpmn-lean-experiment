@@ -472,7 +472,7 @@ theorem registeredFormed_contract : Laws.Step.HookContract Registry.hooks Regist
 theorem registeredFormed_phases : Laws.Step.Phases RegisteredFormed :=
   phases_alongside Proofs.Step.phases
     (fun program => formed_stepAlongside (DependsIn Registry.hooks footprintReads footprintWrites program) program
-      fun _ _ _ _ precede => precede)
+      fun _ _ _ _ _ precede => precede)
     fun _ => Formed.reissue
 
 /-- Clearing an input's journal, intents, draft and writes keeps `RegisteredFormed`. -/

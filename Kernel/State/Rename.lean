@@ -36,7 +36,20 @@ def renameId (id : OccurrenceId) : OccurrenceId :=
 
 def renameItemKey (key : ItemKey) : ItemKey := { key with occurrence := renameId r key.occurrence, ordinal := r key.ordinal }
 
-def renameCompensable (record : Compensable) : Compensable := { record with scope := renameScope r record.scope }
+/-- A public key with its process instance's name and its activation committed. -/
+def renameKey (key : OccurrenceKey) : OccurrenceKey :=
+  { key with processInstanceId := key.processInstanceId.rename r, activation := r key.activation }
+
+def renameName (name : OccurrenceName) : OccurrenceName :=
+  { name with processInstanceId := name.processInstanceId.rename r, activation := r name.activation }
+
+def renameFailure (failure : InstanceFailure) : InstanceFailure :=
+  { failure with occurrence := renameName r failure.occurrence
+                 related := failure.related.map fun (role, name) => (role, renameName r name) }
+
+def renameCompensable (record : Compensable) : Compensable :=
+  { record with scope := renameScope r record.scope, occurrence := renameKey r record.occurrence
+                children := record.children.map fun child => { child with occurrence := renameKey r child.occurrence } }
 
 def renameResume : Resume → Resume
   | .complete occurrence leave => .complete (renameId r occurrence) leave
@@ -57,7 +70,7 @@ def renameSlots (slots : FeatureSlots) : FeatureSlots :=
     compensation := {
       retained := slots.compensation.retained.map (renameCompensable r)
       runMap := slots.compensation.runMap.foldl (fun renamed key record => renamed.insert
-        { key with scope := renameScope r key.scope }
+        { scope := renameScope r key.scope, trigger := renameName r key.trigger }
         { record with pending := record.pending.map (renameCompensable r)
                       running := record.running.map fun (context, record) => (renameScope r context, renameCompensable r record)
                       leave := record.leave.map (renameId r), resume := record.resume.map (renameResume r) }) ∅ }
@@ -71,21 +84,28 @@ def renameCause : Cause → Cause
 
 def renameTransition (transition : Transition) : Transition :=
   { transition with cause := renameCause r transition.cause, owner := renameScope r transition.owner
-                    started := transition.started.map fun fact => { fact with owner := renameScope r fact.owner } }
+                    started := transition.started.map fun fact =>
+                      { fact with owner := renameScope r fact.owner, occurrence := renameKey r fact.occurrence }
+                    ended := transition.ended.map fun (key, terminal) => (renameKey r key, terminal)
+                    ready := transition.ready.map (renameKey r) }
 
-/-- `r` applied to every identity a committed state holds: its scope occurrences, occurrences (their continuations
+/-- `r` applied to every identity a committed state holds: its scope occurrences (their called instances' names),
+occurrences (their activations, their continuations
 through `continuation`, which `Kernel.Step` supplies, since only it matches on `Continuation`, and their order
 positions through `position`, since an occurrence's pending position is its identity's issue, which `r` numbers as an
-ordinal), variable sets, open items, slots and journal. The counters are keyed by committed keys already (`Step.assign`
-inserts renamed ones), and the families keyed by unit keys are empty (`Step.orderJournal`). -/
+ordinal), variable sets, open items, slots, journal, intents and failure. The counters are keyed by committed keys
+already (`Step.advanceCounters` inserts renamed ones), and the families keyed by unit keys are empty
+(`Step.orderJournal`). -/
 def renameState (position : Issue → Issue) (continuation : Continuation → Continuation) (state : State) : State :=
   { state with
     scopeMap := state.scopeMap.foldl (fun renamed _ scope =>
-      let scope := { scope with id := renameScope r scope.id, position := r scope.position, occurrence := scope.occurrence.map (renameId r) }
+      let scope := { scope with id := renameScope r scope.id, position := r scope.position, occurrence := scope.occurrence.map (renameId r)
+                                calledInstance := scope.calledInstance.map (·.rename r) }
       renamed.insert scope.id scope) ∅
     occurrenceMap := state.occurrenceMap.foldl (fun renamed _ occurrence =>
       let occurrence := { occurrence with id := renameId r occurrence.id, scope := renameScope r occurrence.scope
-                                          position := position occurrence.position, continuation := continuation occurrence.continuation }
+                                          position := position occurrence.position, continuation := continuation occurrence.continuation
+                                          activation := r occurrence.activation }
       renamed.insert occurrence.id occurrence) ∅
     variables := state.variables.foldl (fun renamed scope entries => renamed.insert (renameScope r scope) entries) ∅
     openItems := state.openItems.foldl (fun renamed _ item =>
@@ -93,7 +113,9 @@ def renameState (position : Issue → Issue) (continuation : Continuation → Co
                               attachedTo := item.attachedTo.map (renameId r) }
       renamed.insert item.id item) ∅
     slots := renameSlots r state.slots
-    journal := state.journal.map (renameTransition r) }
+    journal := state.journal.map (renameTransition r)
+    intents := state.intents.map fun intent => { intent with origin := renameName r intent.origin }
+    failure := state.failure.map (renameFailure r) }
 
 end Rename
 

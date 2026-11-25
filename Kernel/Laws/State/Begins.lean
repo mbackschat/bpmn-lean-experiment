@@ -69,8 +69,7 @@ theorem occurrence_next {before after : State} {scope : ScopeOccurrenceId} {elem
     cases named
     rw [issued, Std.ExtTreeMap.getElem?_insert_self]
 
-/-- Taking the running unit's next issue (`State.issue`), the transitions unchanged, keeps a fresh issuer fresh. -/
-theorem IssuerFresh.issue {s t : State} {slot : ClaimSlot} (fresh : IssuerFresh s)
+/-- Taking the running unit's next issue (`State.issue`), the transitions unchanged, keeps a fresh issuer fresh. -/theorem IssuerFresh.issue {s t : State} {slot : ClaimSlot} (fresh : IssuerFresh s)
     (issued : t.issued = s.issued.insert (.fresh s.issuing s.issueNext) slot) (issuing : t.issuing = s.issuing)
     (issueNext : t.issueNext = s.issueNext + 1) (transitions : t.transitions = s.transitions) : IssuerFresh t := by
   refine ⟨fun issue held found => ?_, fun index held found => ?_, fun unit index held found => ?_⟩
@@ -110,57 +109,89 @@ theorem TableGrows.insert_insert {s t : State} {first second : ClaimSlot} (fresh
 
 /-! ## Counters -/
 
-/-- `after`'s counters are `before`'s with the counter of `inst`, `element` and `role` moved to `n`, above every count
-that counter had: what `State.activate` does. -/
-structure Activated (before after : State) (inst : InstanceName) (element : ElementId) (role : ActivationRole) (n : Nat) :
+/-- `after`'s counters are `before`'s, and `a` is a fresh issue `after`'s table holds under the slot of `inst`,
+`element` and `role`, which `before`'s table, under a well-formed issuer, does not: what `State.activate` does (K12g,
+the commit numbers it). The issue is the running unit's, at or above its next index, so it follows every issue the unit
+made before it and every unit that ran before (`Laws.MultiInstance.RanBefore`). -/
+structure Activated (before after : State) (inst : InstanceName) (element : ElementId) (role : ActivationRole) (a : Issue) :
     Prop where
-  activations : after.activations = { processInstance := inst, element, role, count := n } ::
-    before.activations.filter fun count => !(count.processInstance == inst && count.element == element && count.role == role)
-  above : ∀ count ∈ before.activations, count.processInstance = inst → count.element = element → count.role = role →
-    count.count < n
-  positive : 0 < n
+  activations : after.activations = before.activations
+  tabled : after.issued[a]? = some (.activation { processInstance := inst, element, role })
+  pending : ∃ index, before.issueNext ≤ index ∧ a = .fresh before.issuing index
+  untabled : IssuerFresh before → before.issued[a]? = none
+  grows : IssuerFresh before → TableGrows before after
 
-theorem Activated.keyed {before after : State} {inst : InstanceName} {element : ElementId} {role : ActivationRole} {n : Nat}
-    (activated : Activated before after inst element role n) (keyed : ActivationsKeyed before) : ActivationsKeyed after := by
-  refine ⟨?_, ?_⟩
-  · rw [activated.activations, List.map_cons, List.nodup_cons]
-    refine ⟨fun member => ?_, keyed.keys.sublist (List.filter_sublist.map _)⟩
-    obtain ⟨count, inside, same⟩ := List.mem_map.mp member
-    have kept := (List.mem_filter.mp inside).2
-    simp only [Prod.mk.injEq] at same
-    simp [same] at kept
-  · intro count member
-    rw [activated.activations] at member
-    rcases List.mem_cons.mp member with rfl | old
-    · exact activated.positive
-    · exact keyed.positive count (List.mem_filter.mp old).1
+/-- The first of two issues in a row stays in the table under the second. -/
+theorem double_first (m : TreeMap Issue ClaimSlot compare) (unit : UnitKey) (n : Nat) (x y : ClaimSlot) :
+    ((m.insert (.fresh unit n) x).insert (.fresh unit (n + 1)) y)[Issue.fresh unit n]? = some x := by
+  have apart : compare (Issue.fresh unit (n + 1)) (Issue.fresh unit n) ≠ .eq := fun same => by
+    have := (Issue.fresh.inj (Std.LawfulEqOrd.eq_of_compare same)).2; omega
+  rw [Std.ExtTreeMap.getElem?_insert]
+  simp only [apart, ite_false, Std.ExtTreeMap.getElem?_insert_self]
 
-/-- A counter step keeps every count it does not raise. -/
-theorem Activated.counted {before after : State} {inst : InstanceName} {element : ElementId} {role : ActivationRole} {n : Nat}
-    (activated : Activated before after inst element role n) {k : OccurrenceKey} (counted : Counted before k) :
-    Counted after k := by
-  obtain ⟨count, member, named, rest⟩ := counted
-  obtain ⟨same, roled, below⟩ := rest
-  rw [Counted, activated.activations]
-  by_cases raised : (count.processInstance == inst && count.element == element && count.role == role) = true
-  · simp only [Bool.and_eq_true, beq_iff_eq] at raised
-    obtain ⟨⟨one, two⟩, three⟩ := raised
-    exact ⟨_, List.mem_cons_self .., one ▸ named, two ▸ same, three ▸ roled,
-      Nat.le_of_lt (Nat.lt_of_le_of_lt below (activated.above count member one two three))⟩
-  · refine ⟨count, List.mem_cons_of_mem _ (List.mem_filter.mpr ⟨member, ?_⟩), named, same, roled, below⟩
-    rw [Bool.not_eq_true']
-    exact Bool.eq_false_iff.mpr raised
+/-- `occurrence_next` for an occurrence key issued with one more issue after it (K12g: its activation). -/
+theorem occurrence_next₂ {before after : State} {scope : ScopeOccurrenceId} {element : ElementId} {second : ClaimSlot}
+    (keys : standingKeys after = standingKeys before) (ordinals : after.scopeOrdinals = before.scopeOrdinals)
+    (counters : after.occurrenceOrdinals = before.occurrenceOrdinals)
+    (issued : after.issued = (before.issued.insert (.fresh before.issuing before.issueNext)
+      (.occurrence { parent := scope, element })).insert (.fresh before.issuing (before.issueNext + 1)) second) :
+    (IssuerFresh before → ¬ OccurrenceIssued before { scope, element, ordinal := .fresh before.issuing before.issueNext }) ∧
+      (IssuerFresh before → ScopeIssued before scope →
+        OccurrenceIssued after { scope, element, ordinal := .fresh before.issuing before.issueNext }) ∧
+      (IssuerFresh before → OccurrenceGrows before after) := by
+  have first : (Issue.fresh before.issuing (before.issueNext + 1)) ≠ Issue.fresh before.issuing before.issueNext :=
+    fun same => by have := (Issue.fresh.inj same).2; omega
+  refine ⟨fun fresh => occurrence_unissued fresh.next, fun fresh within => ⟨?_, ?_, ?_, ?_⟩,
+    fun fresh => .of_same keys ordinals counters (TableGrows.insert_insert fresh issued)⟩
+  · exact (ScopeGrows.of_same keys ordinals (TableGrows.insert_insert fresh issued)).issued within
+  · intro _ committed; cases committed
+  · intro _ committed; cases committed
+  · intro unit index named
+    cases named
+    have apart : compare (Issue.fresh before.issuing (before.issueNext + 1)) (Issue.fresh before.issuing before.issueNext) ≠ .eq :=
+      fun same => first (Std.LawfulEqOrd.eq_of_compare same)
+    rw [issued, Std.ExtTreeMap.getElem?_insert]
+    simp only [apart, ite_false, Std.ExtTreeMap.getElem?_insert_self]
 
-/-- The key a counter step numbers is new: no counted key of its counter reaches it. -/
-theorem Activated.fresh {before after : State} {inst : InstanceName} {element : ElementId} {role : ActivationRole} {n : Nat}
-    (activated : Activated before after inst element role n) {k : OccurrenceKey} (counted : Counted before k) :
-    k ≠ { processInstanceId := inst, element, activation := n, role } := fun same => by
-  obtain ⟨count, member, named, rest⟩ := counted
-  obtain ⟨elemented, roled, below⟩ := rest
+
+/-- Two issues in a row whose second is an activation of the slot of `inst`, `element` and `role`, the counters kept:
+`State.reserve` and a fresh `State.beginOccurrence` (an occurrence's key, then its activation). -/
+theorem Activated.of_issue_issue {before after : State} {first : ClaimSlot} {inst : InstanceName} {element : ElementId}
+    {role : ActivationRole}
+    (issued : after.issued = (before.issued.insert (.fresh before.issuing before.issueNext) first).insert
+      (.fresh before.issuing (before.issueNext + 1)) (.activation { processInstance := inst, element, role }))
+    (activations : after.activations = before.activations) :
+    Activated before after inst element role (.fresh before.issuing (before.issueNext + 1)) where
+  activations := activations
+  tabled := by rw [issued, Std.ExtTreeMap.getElem?_insert_self]
+  pending := ⟨_, Nat.le_succ _, rfl⟩
+  untabled := fun fresh => by
+    cases held : before.issued[Issue.fresh before.issuing (before.issueNext + 1)]? with
+    | none => rfl
+    | some slot => exact absurd (fresh.below _ slot held) (by omega)
+  grows := fun fresh => TableGrows.insert_insert fresh issued
+
+theorem Activated.keyed {before after : State} {inst : InstanceName} {element : ElementId} {role : ActivationRole} {a : Issue}
+    (activated : Activated before after inst element role a) (keyed : ActivationsKeyed before) : ActivationsKeyed after := by
+  exact ⟨by rw [activated.activations]; exact keyed.keys, by rw [activated.activations]; exact keyed.positive,
+    by rw [activated.activations]; exact keyed.resolved⟩
+
+/-- A counter step keeps every count. -/
+theorem Activated.counted {before after : State} {inst : InstanceName} {element : ElementId} {role : ActivationRole} {a : Issue}
+    (activated : Activated before after inst element role a) (issuer : IssuerFresh before) {k : OccurrenceKey}
+    (counted : Counted before k) : Counted after k :=
+  Counted.congr activated.activations (activated.grows issuer) counted
+
+/-- The key a counter step numbers is new: no counted key carries its pending activation. -/
+theorem Activated.fresh {before after : State} {inst : InstanceName} {element : ElementId} {role : ActivationRole} {a : Issue}
+    (activated : Activated before after inst element role a) (issuer : IssuerFresh before) {k : OccurrenceKey}
+    (counted : Counted before k) : k ≠ { processInstanceId := inst, element, activation := a, role } := fun same => by
+  obtain ⟨index, -, rfl⟩ := activated.pending
   subst same
-  have := activated.above count member named elemented roled
-  simp at below
-  omega
+  have none := activated.untabled issuer
+  simp only [Counted] at counted
+  rw [none] at counted
+  cases counted
 
 /-! ## Beginning a request -/
 
@@ -244,6 +275,9 @@ structure Begins (before after : State) (request : BeginRequest) (role : Activat
   /-- The issue table only grows under a well-formed issuer, and a well-formed issuer stays one (DC12): a fresh key is
   the running unit's next issue (`State.issue`), which the table does not hold. -/
   table : IssuerFresh before → TableGrows before after
+  /-- A fresh activation it issues names the request's process instance, which is tabled (KD5). -/
+  slotsFrom : IssuerFresh before → IssuedBelow before → ∀ (issue : Issue) (slot : ActivationSlot), after.issued[issue]? = some (.activation slot) →
+    before.issued[issue]? = some (.activation slot) ∨ NameTabled after slot.processInstance
   issuer : IssuerFresh before → IssuerFresh after
   /-- Every begun occurrence is keyed in the scope occurrence it begins in (DC26). -/
   keyed : begun.id.scope = request.scope
@@ -252,6 +286,15 @@ structure Begins (before after : State) (request : BeginRequest) (role : Activat
   positioned : ∀ unit index, begun.position = .fresh unit index →
     (∃ reserved ∈ before.occurrences, reserved.position = begun.position) ∨
       ∃ slot, after.issued[Issue.fresh unit index]? = some (.occurrence slot)
+
+/-- Beginning moves no activation counter: a fresh activation is issued, and only the commit counts it (K12g). -/
+theorem Begins.activations {before after : State} {request : BeginRequest} {role : ActivationRole} {sourceType : String}
+    {begun : Occurrence} (begins : Begins before after request role sourceType begun) :
+    after.activations = before.activations := by
+  rcases begins.source with ⟨_, reserved⟩ | ⟨_, rekeyed⟩ | fresh
+  · exact reserved.activations
+  · exact rekeyed.activations
+  · exact fresh.activated.activations
 
 theorem Begins.scopes {before after : State} {request : BeginRequest} {role : ActivationRole} {sourceType : String}
     {begun : Occurrence} (begins : Begins before after request role sourceType begun) : after.scopes = before.scopes := by
@@ -313,7 +356,7 @@ private theorem Begins.keyNew {before after : State} {request : BeginRequest} {r
       fun fact started => formed.reservations reserved reservation.member unbegun fact started, ?_⟩
     · have := nodup_map_eq formed.distinct.keys inside reservation.member equal
       rw [this, reservation.id]
-    · exact (formed.occurrencesCounted reserved reservation.member).congr reservation.activations
+    · exact (formed.occurrencesCounted reserved reservation.member).congr reservation.activations (begins.table formed.issuer)
   · obtain ⟨_, facts⟩ := (admitted reserved.id (by simp [names, rekeyed.named])).1
     obtain ⟨unbegun, _, instance_⟩ := facts reserved rekeyed.member rfl
     have keyed : key before begun = key before reserved := by
@@ -323,15 +366,18 @@ private theorem Begins.keyNew {before after : State} {request : BeginRequest} {r
       fun fact started => formed.reservations reserved rekeyed.member unbegun fact started, ?_⟩
     · have := nodup_map_eq formed.distinct.keys inside rekeyed.member equal
       rw [this, rekeyed.named]
-    · exact (formed.occurrencesCounted reserved rekeyed.member).congr rekeyed.activations
+    · exact (formed.occurrencesCounted reserved rekeyed.member).congr rekeyed.activations (begins.table formed.issuer)
   · have keyed : key before begun =
         { processInstanceId := before.instanceOf request.scope, element := request.element,
           activation := begun.activation, role } := by
       simp [key, begins.scope, fresh.element, fresh.roled]
     rw [keyed]
-    refine ⟨fun occurrence inside _ _ => fresh.activated.fresh (formed.occurrencesCounted occurrence inside),
-      fun fact started => fresh.activated.fresh (formed.counted fact started), ?_⟩
-    exact ⟨_, fresh.activated.activations ▸ List.mem_cons_self .., rfl, rfl, rfl, Nat.le_refl _⟩
+    refine ⟨fun occurrence inside _ _ => fresh.activated.fresh formed.issuer (formed.occurrencesCounted occurrence inside),
+      fun fact started => fresh.activated.fresh formed.issuer (formed.counted fact started), ?_⟩
+    obtain ⟨index, -, pending⟩ := fresh.activated.pending
+    have tabled := fresh.activated.tabled
+    rw [pending] at tabled ⊢
+    exact tabled
 
 /-- The begun identity is no other standing occurrence's, item's or claim's when it is fresh: a re-keyed reservation's
 (DC26) and a fresh begin's were never issued. -/
@@ -389,9 +435,9 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
   obtain ⟨itemsFree, unbegunOnly, unclaimed, issued⟩ := begins.idNew formed stands admitted
   have counters : ∀ k, Counted before k → Counted after k := fun k counted => by
     rcases begins.source with ⟨_, reservation⟩ | ⟨_, rekeyed⟩ | fresh
-    · exact counted.congr reservation.activations
-    · exact counted.congr rekeyed.activations
-    · exact fresh.activated.counted counted
+    · exact counted.congr reservation.activations (begins.table formed.issuer)
+    · exact counted.congr rekeyed.activations (begins.table formed.issuer)
+    · exact fresh.activated.counted formed.issuer counted
   -- The begun identity was issued: a standing reservation's, or a fresh key.
   have scopeIssued : ScopeIssued before request.scope := by
     obtain ⟨standing, member, named⟩ := List.mem_map.mp stands
@@ -472,7 +518,9 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
             exact ⟨slot, (begins.table formed.issuer) _ _ held⟩
           · exact tabled
         · obtain ⟨slot, held⟩ := formed.issued.occurrencePositions occurrence old unit index fresh
-          exact ⟨slot, (begins.table formed.issuer) _ _ held⟩⟩
+          exact ⟨slot, (begins.table formed.issuer) _ _ held⟩,
+      formed.issued.namesKept (fun _ member => begins.scopes ▸ member) (begins.table formed.issuer),
+      formed.issued.slotsGrow (begins.table formed.issuer) (begins.slotsFrom formed.issuer formed.issued)⟩
   case distinct =>
     refine ⟨begins.occurrencesKeyed formed.distinct.occurrencesKeyed, begins.itemMap.1 ▸ formed.distinct.items,
       begins.scopeMap ▸ formed.distinct.scopesKeyed, ?_⟩
@@ -497,8 +545,10 @@ theorem Begins.wellFormed {before after : State} {request : BeginRequest} {role 
     exact factNew fact inside
   case activations =>
     rcases begins.source with ⟨_, reservation⟩ | ⟨_, rekeyed⟩ | fresh
-    · exact ⟨reservation.activations ▸ formed.activations.keys, reservation.activations ▸ formed.activations.positive⟩
-    · exact ⟨rekeyed.activations ▸ formed.activations.keys, rekeyed.activations ▸ formed.activations.positive⟩
+    · exact ⟨reservation.activations ▸ formed.activations.keys, reservation.activations ▸ formed.activations.positive,
+      reservation.activations ▸ formed.activations.resolved⟩
+    · exact ⟨rekeyed.activations ▸ formed.activations.keys, rekeyed.activations ▸ formed.activations.positive,
+      rekeyed.activations ▸ formed.activations.resolved⟩
     · exact fresh.activated.keyed formed.activations
   case reservations =>
     exact fun occurrence member unbegun fact started => by

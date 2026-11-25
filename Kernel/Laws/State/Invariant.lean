@@ -89,6 +89,100 @@ so counters no longer bound the journal's facts, which stay distinct as the clos
 def starts (s : State) : List StartedFact :=
   (s.transitions.toList.map (·.2)).flatMap (·.started) ++ s.draft.started
 
+/-- Every pending activation a process instance's name carries is in the issue table as an activation of the caller's
+instance, so the commit numbers it, before every activation in the instance it names (`Step.activationOrder`), and the
+name it resolves to carries none (KD5). -/
+def NameTabled (s : State) : InstanceName → Prop
+  | .named _ => True
+  | .called caller _ activation =>
+    (activation.isFresh = true →
+      ∃ slot : ActivationSlot, s.issued[activation]? = some (.activation slot) ∧ slot.processInstance = caller) ∧
+    NameTabled s caller
+
+theorem NameTabled.grow {s t : State} (table : TableGrows s t) : ∀ {name : InstanceName}, NameTabled s name →
+    NameTabled t name
+  | .named _, _ => trivial
+  | .called _ _ _, ⟨pending, caller⟩ =>
+    ⟨fun fresh => let ⟨slot, held, named⟩ := pending fresh; ⟨slot, table _ _ held, named⟩, NameTabled.grow table caller⟩
+
+/-- A name with no pending activation is tabled in any state. -/
+theorem NameTabled.of_resolved {t : State} : ∀ {name : InstanceName}, name.unresolved = false → NameTabled t name
+  | .named _, _ => trivial
+  | .called _ _ _, resolved => by
+    simp only [unresolved_called, Bool.or_eq_false_iff] at resolved
+    exact ⟨fun fresh => by simp [resolved.1] at fresh, NameTabled.of_resolved resolved.2⟩
+
+/-- A called name over a tabled caller and a tabled activation is tabled. -/
+theorem calledBy_tabled {s : State} {caller : InstanceName} {call : ElementId} {activation : Issue}
+    (tabled : NameTabled s caller)
+    (pending : activation.isFresh = true →
+      ∃ slot : ActivationSlot, s.issued[activation]? = some (.activation slot) ∧ slot.processInstance = caller) :
+    NameTabled s (caller.calledBy call activation) := by
+  rcases calledBy_cases caller call activation with ⟨_, _, _, ⟨_, named⟩⟩ | pendingName
+  · rw [named]; exact trivial
+  · rw [pendingName]; exact ⟨pending, tabled⟩
+
+/-- A renaming that keeps committed issues and numbers every tabled activation resolves a tabled name (KD5). -/
+theorem NameTabled.rename_resolved {s : State} {r : Issue → Issue} (committed : ∀ n, r (.committed n) = .committed n)
+    (numbered : ∀ activation slot, s.issued[activation]? = some (.activation slot) → (r activation).isFresh = false) :
+    ∀ {name : InstanceName}, NameTabled s name → (name.rename r).unresolved = false
+  | .named _, _ => by rw [rename_named, unresolved_named]
+  | .called caller call activation, ⟨pending, tabled⟩ => by
+    rw [rename_called]
+    split
+    · rw [unresolved_calledBy, NameTabled.rename_resolved committed numbered tabled, Bool.or_false]
+      cases activation with
+      | committed n => rw [committed]; exact isFresh_committed n
+      | fresh unit index =>
+        obtain ⟨slot, held, -⟩ := pending (isFresh_fresh _ _)
+        exact numbered _ _ held
+    · rename_i resolved
+      simpa [unresolved_called] using resolved
+
+/-- Such a renaming's resolution of a tabled name is tabled in any state, so a commit's empty table holds it. -/
+theorem NameTabled.rename {s t : State} {r : Issue → Issue} (committed : ∀ n, r (.committed n) = .committed n)
+    (numbered : ∀ activation slot, s.issued[activation]? = some (.activation slot) → (r activation).isFresh = false)
+    {name : InstanceName} (tabled : NameTabled s name) : NameTabled t (name.rename r) :=
+  .of_resolved (tabled.rename_resolved committed numbered)
+
+/-- Under an empty issue table a tabled name is resolved: a committed state's names carry no pending activation. -/
+theorem NameTabled.resolved_of_empty {s : State} (empty : s.issued = ∅) :
+    ∀ {name : InstanceName}, NameTabled s name → name.unresolved = false
+  | .named _, _ => unresolved_named _
+  | .called _ _ activation, ⟨pending, tabled⟩ => by
+    rw [unresolved_called, NameTabled.resolved_of_empty empty tabled, Bool.or_false]
+    cases fresh : activation.isFresh
+    · rfl
+    · obtain ⟨_, held, -⟩ := pending fresh
+      simp [empty] at held
+
+/-- An insertion's activation entries are the old table's or the inserted one. -/
+theorem activation_of_insert {m : Std.ExtTreeMap Issue ClaimSlot compare} {k b : Issue} {v : ClaimSlot}
+    {slot : ActivationSlot} (held : (m.insert k v)[b]? = some (.activation slot)) :
+    m[b]? = some (.activation slot) ∨ v = .activation slot := by
+  rw [Std.ExtTreeMap.getElem?_insert] at held
+  split at held
+  · exact .inr (Option.some.inj held)
+  · exact .inl held
+
+/-- An issue of another kind than an activation adds no activation entry. -/
+theorem slots_of_insert {s t : State} {k issue : Issue} {v : ClaimSlot} {slot : ActivationSlot}
+    (other : ∀ activation, v ≠ .activation activation) (shape : t.issued = s.issued.insert k v)
+    (held : t.issued[issue]? = some (.activation slot)) : s.issued[issue]? = some (.activation slot) := by
+  rw [shape] at held
+  exact (activation_of_insert held).resolve_right (other slot)
+
+/-- An occurrence's issue and then its activation's add that one activation entry. -/
+theorem slots_of_activate {s t : State} {k k' issue : Issue} {occurrence : ScopeSlot} {activation slot : ActivationSlot}
+    (shape : t.issued = (s.issued.insert k (.occurrence occurrence)).insert k' (.activation activation))
+    (held : t.issued[issue]? = some (.activation slot)) : s.issued[issue]? = some (.activation slot) ∨ slot = activation := by
+  rw [shape] at held
+  rcases activation_of_insert held with held | same
+  · rcases activation_of_insert held with held | bad
+    · exact .inl held
+    · cases bad
+  · cases same; exact .inr rfl
+
 /-- Every identifier the state holds was issued (`OccurrenceIssued`, `ScopeIssued`), so a counter names only fresh
 identities: an occurrence's identity is never reused ([scopes, SRE-FRESH-01](../../../docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md#concurrent-activations-and-re-entry)). -/
 structure IssuedBelow (s : State) : Prop where
@@ -106,6 +200,28 @@ structure IssuedBelow (s : State) : Prop where
   numbers it (`Step.positionsOf`), as `positions` says of a scope occurrence's. -/
   occurrencePositions : ∀ occurrence ∈ s.occurrences, ∀ unit index, occurrence.position = .fresh unit index →
     ∃ slot, s.issued[Issue.fresh unit index]? = some (.occurrence slot)
+  /-- A called instance's pending name is tabled (`NameTabled`), so a committed state's names are resolved. -/
+  names : ∀ scope ∈ s.scopes, ∀ name, scope.calledInstance = some name → NameTabled s name
+  /-- An activation's slot names a tabled process instance, so the commit counts it under a resolved name. -/
+  slots : ∀ (issue : Issue) (slot : ActivationSlot), s.issued[issue]? = some (.activation slot) → NameTabled s slot.processInstance
+
+/-- `IssuedBelow`'s name clause carries to a state whose scope occurrences are some of `s`'s and whose issue table holds
+`s`'s. -/
+theorem IssuedBelow.namesKept {s t : State} (issued : IssuedBelow s) (scopes : ∀ scope ∈ t.scopes, scope ∈ s.scopes)
+    (table : TableGrows s t) : ∀ scope ∈ t.scopes, ∀ name, scope.calledInstance = some name → NameTabled t name :=
+  fun scope member name called => (issued.names scope (scopes scope member) name called).grow table
+
+/-- `IssuedBelow`'s slot clause carries to a state whose issue table grows only by activations of tabled names. -/
+theorem IssuedBelow.slotsGrow {s t : State} (issued : IssuedBelow s) (table : TableGrows s t)
+    (added : ∀ (issue : Issue) (slot : ActivationSlot), t.issued[issue]? = some (.activation slot) →
+      s.issued[issue]? = some (.activation slot) ∨ NameTabled t slot.processInstance) :
+    ∀ (issue : Issue) (slot : ActivationSlot), t.issued[issue]? = some (.activation slot) → NameTabled t slot.processInstance :=
+  fun issue slot held => (added issue slot held).elim (fun old => (issued.slots issue slot old).grow table) id
+
+/-- `IssuedBelow`'s slot clause carries to a state with the same issue table. -/
+theorem IssuedBelow.slotsKept {s t : State} (issued : IssuedBelow s) (same : t.issued = s.issued) :
+    ∀ (issue : Issue) (slot : ActivationSlot), t.issued[issue]? = some (.activation slot) → NameTabled t slot.processInstance :=
+  issued.slotsGrow (.of_eq same) fun _ _ held => .inl (same ▸ held)
 
 /-- `IssuedBelow`'s position clause carries to a state whose scope occurrences are some of `s`'s and whose issue table
 holds `s`'s. -/
@@ -160,9 +276,12 @@ structure CountersFrom (start s : State) : Prop where
   /-- The issued positions' counter, which nothing inside a closure writes (DC13: positions are issued,
   `State.issuePosition`). -/
   positions : s.nextOrder ≤ start.nextOrder
+  /-- The activation counters, which nothing inside a closure writes (K12g: activations are issued, `State.activate`);
+  the commit's prune only lowers them. -/
+  activations : ∀ slot, s.activationCount slot ≤ start.activationCount slot
 
 theorem CountersFrom.refl (s : State) : CountersFrom s s :=
-  ⟨fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, Nat.le_refl _⟩
+  ⟨fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, Nat.le_refl _, fun _ => Nat.le_refl _⟩
 
 /-- No two occurrences, open items or scope occurrences share an identifier, and no two occurrences a key: each
 activation numbers one occurrence. -/
@@ -189,12 +308,17 @@ def StartedOnce (s : State) : Prop :=
 structure ActivationsKeyed (s : State) : Prop where
   keys : (s.activations.map fun count => (count.processInstance, count.element, count.role)).Nodup
   positive : ∀ count ∈ s.activations, 0 < count.count
+  /-- Only a commit writes a counter, under the name it resolved (KD5). -/
+  resolved : ∀ count ∈ s.activations, count.processInstance.unresolved = false
 
-/-- The activation of `key` was issued by its counter: the counter of its process instance, element and role has
-reached it. -/
+/-- The activation of `key` was issued: a committed one by its counter (the counter of its process instance, element
+and role has reached it), a pending one in the issue table, under its key's slot (K12g). -/
 def Counted (s : State) (key : OccurrenceKey) : Prop :=
-  ∃ count ∈ s.activations, count.processInstance = key.processInstanceId ∧ count.element = key.element ∧
-    count.role = key.role ∧ key.activation ≤ count.count
+  match key.activation with
+  | .committed n => ∃ count ∈ s.activations, count.processInstance = key.processInstanceId ∧ count.element = key.element ∧
+      count.role = key.role ∧ n ≤ count.count
+  | .fresh unit index => s.issued[Issue.fresh unit index]? =
+      some (.activation { processInstance := key.processInstanceId, element := key.element, role := key.role })
 
 /-- An unbegun reservation keeps no start fact: a subscription's flow node runs only when its trigger arrives
 ([scopes, Event Sub-Processes](../../../docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md#event-sub-processes)). The

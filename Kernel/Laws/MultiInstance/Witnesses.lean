@@ -177,7 +177,7 @@ theorem entered_numbered : NumberedInOrder entered running := by
     subst inFirst inSecond
     simp only [entered, Laws.State.occurrences_eq, mem_enteredOccurrences] at earlierMember laterMember
     rcases earlierMember with rfl | rfl | rfl <;> rcases laterMember with rfl | rfl | rfl <;>
-      simp_all [bodyOccurrence, firstInstance, secondInstance, firstScope, secondScope, root]
+      simp_all [bodyOccurrence, firstInstance, secondInstance, firstScope, secondScope, root, CommittedBelow, Laws.State.Issue.ofNat_eq]
   | _ + 2, _ => simp [running] at inFirst
   | _, _ + 2 => simp [running] at inSecond
   | 0, 0 | 1, 0 | 1, 1 => omega
@@ -195,7 +195,7 @@ theorem gapped_numbered :
     subst inFirst inSecond
     simp only [Laws.State.occurrences_eq, mem_gappedOccurrences] at earlierMember laterMember
     rcases earlierMember with rfl | rfl | rfl <;> rcases laterMember with rfl | rfl | rfl <;>
-      simp_all [bodyOccurrence, firstInstance, secondInstance, firstScope, secondScope, root]
+      simp_all [bodyOccurrence, firstInstance, secondInstance, firstScope, secondScope, root, CommittedBelow, Laws.State.Issue.ofNat_eq]
   | _ + 2, _ => simp [running] at inFirst
   | _, _ + 2 => simp [running] at inSecond
   | 0, 0 | 1, 0 | 1, 1 => omega
@@ -205,7 +205,7 @@ theorem reversed_numbering_rejected :
     ¬ NumberedInOrder entered { running with instances := [.active secondScope, .active firstScope] } := fun numbered => by
   have := numbered 0 1 secondScope firstScope (by omega) (by simp) (by simp) secondInstance (by simp [entered])
     firstInstance (by simp [entered]) rfl rfl rfl rfl
-  simp [secondInstance, firstInstance] at this
+  simp [secondInstance, firstInstance, CommittedBelow, Laws.State.Issue.ofNat_eq] at this
 
 theorem instances_placed : InstancesPlaced entered running := by
   intro scope active o member at_ _ _
@@ -291,13 +291,14 @@ theorem other_counter_rejected : ¬ CountersHeld secondLocals bodyLocals running
     simp at this
 
 def startOf (activation : Nat) : StartedFact :=
-  { occurrence := { processInstanceId := .named "p", element := review, activation }, owner := root, sourceType := "userTask" }
+  { occurrence := { processInstanceId := .named "p", element := review, activation := .committed activation }, owner := root
+    sourceType := "userTask" }
 
 theorem begins_in_order : BeginsInOrder [startOf 1, startOf 2] (.named "p") review := by
-  simp [BeginsInOrder, startOf]
+  simp [BeginsInOrder, startOf, Nat.compare_eq_lt]
 
 theorem later_item_first_rejected : ¬ BeginsInOrder [startOf 2, startOf 1] (.named "p") review := by
-  simp [BeginsInOrder, startOf]
+  simp [BeginsInOrder, startOf, Nat.compare_eq_lt]
 
 theorem sequential_shape :
     SequentialSlots { running with instances := [.completed (some (.string "a")), .active secondScope, .waiting] } :=

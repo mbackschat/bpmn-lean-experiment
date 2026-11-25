@@ -24,7 +24,7 @@ def enterCalled (state : State) (program : Program) (call : Occurrence) (variabl
   let (state, id) := state.enterScope call.element call.scope variables (some call.id)
   ({ state with
       scopeMap := state.scopeMap.modify id fun occurrence =>
-        { occurrence with calledInstance := some (caller.calledBy (program.publicId call.element) (.committed call.activation)) }
+        { occurrence with calledInstance := some (caller.calledBy (program.publicId call.element) call.activation) }
       slots := { state.slots with instances := state.slots.instances ++ [{ root := id, definition := some definition }] } }, id)
 
 end State

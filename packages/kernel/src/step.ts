@@ -42,7 +42,7 @@ import {
 import {
   ScopeRole, admitThen, cancelOccurrence, chooseStart, clearInside, ctxPositionLe, itemOf, removeOccurrence, type Ctx, type Hooks, type ScopeEntry,
 } from "./hooks.js";
-import { continuationBody, journalDraft, orderJournal } from "./step/commit.js";
+import { boundIdentities, continuationBody, journalDraft, orderJournal } from "./step/commit.js";
 import { earliest, emptyRunLog, firstBreadth, latest, runRecord, type RunLog, unitCtx } from "./step/order.js";
 import { deferred, effectContinuation, timerJob } from "./step/jobs.js";
 import { advanceClock, admitChoicesThen, command, deliverEffectResult } from "./step/inputs.js";
@@ -494,6 +494,11 @@ function settle(hooks: Hooks, ctx: Ctx, bound: number, opening: State, start: St
   }
 }
 
+/** Lean's `boundIdentities` on a settled closure's commit. */
+function boundedCommit(ctx: Ctx, settled: Outcome): Outcome {
+  return settled.ok ? boundIdentities(ctx.program.options.bounds.instanceIdentityBytes, settled.value) : settled;
+}
+
 /**
  * Run an input's transition on a running instance at its logical time `atMs`, then settle. A Timer firing without its own
  * time happens at the deadline it names; a host that wakes later states the later time. The input starts from an empty
@@ -514,7 +519,7 @@ function onRunning(
   if (!advanced.ok) return advanced;
   const unit = unitRoot({ tag: UnitRootTag.Input });
   const started = admitChoicesThen(hooks, ctx, () => microStep(hooks, ctx, unit, { tag: CauseTag.Input, input: tag }, null, root, transition, advanced.value));
-  return started.ok ? settle(hooks, ctx, closureBound, advanced.value, started.value, unit) : started;
+  return started.ok ? boundedCommit(ctx, settle(hooks, ctx, closureBound, advanced.value, started.value, unit)) : started;
 }
 
 /** `Ctx.scopeRole`: read from the slots, since the occurrences that ended there may be gone when an event arrives. */
@@ -570,7 +575,7 @@ export function step(hooks: Hooks, program: Program, before: State | null, input
       const unit = unitRoot({ tag: UnitRootTag.Input });
       const started = admitChoicesThen(hooks, ctx, () => microStep(hooks, ctx, unit, { tag: CauseTag.Input, input: InputTag.Start }, start.value, root,
         (state) => begin(hooks, ctx, beginRequest({ element: start.value, scope: root, trigger: payload.trigger }), state), fresh.value));
-      return started.ok ? settle(hooks, ctx, closureBound, fresh.value, started.value, unit) : started;
+      return started.ok ? boundedCommit(ctx, settle(hooks, ctx, closureBound, fresh.value, started.value, unit)) : started;
     }
     case InputTag.Command:
       return onRunning(hooks, ctx, input.tag, input.payload.atMs, before, (state) => command(hooks, ctx, input.payload, state));

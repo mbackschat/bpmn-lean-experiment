@@ -826,10 +826,16 @@ def calledBy (caller : InstanceName) (call : ElementId) (activation : Issue) : I
   | .named id, .committed ordinal => .named (State.calledInstanceId id call ordinal)
   | _, _ => .called caller call activation
 
-/-- The name with its activations renamed by `r`, as the commit renames them (`Step.compact`). -/
+/-- Whether the name holds a pending activation, as every `called` name `calledBy` builds does. -/
+def unresolved : InstanceName → Bool
+  | .named _ => false
+  | .called caller _ activation => activation.isFresh || caller.unresolved
+
+/-- The name with its pending activations renamed by `r`, as the commit renames them (`Step.compact`), and resolved
+where they all are committed (`calledBy`); a name without a pending activation is kept as it is. -/
 def rename (r : Issue → Issue) : InstanceName → InstanceName
   | .named id => .named id
-  | .called caller call activation => calledBy (caller.rename r) call (r activation)
+  | name@(.called caller call activation) => if name.unresolved then calledBy (caller.rename r) call (r activation) else name
 
 end InstanceName
 
@@ -868,7 +874,7 @@ process instance, element, activation and the counter that numbered it. -/
 structure OccurrenceKey where
   processInstanceId : InstanceName
   element : ElementId
-  activation : Nat
+  activation : Issue
   role : ActivationRole := .element
   deriving DecidableEq, Repr
 
@@ -878,7 +884,7 @@ committed state publishes as its `OccurrenceRef` (`OccurrenceName.toRef`). -/
 structure OccurrenceName where
   processInstanceId : InstanceName
   element : ElementId
-  activation : Nat
+  activation : Issue
   deriving DecidableEq, Repr
 
 /-- By process instance, element and activation. -/

@@ -56,6 +56,9 @@ structure Reserves (before after : State) (element : ElementId) (scope : ScopeOc
   keyed : reserved.id.scope = scope
   /-- The issue table only grows under a well-formed issuer, and a well-formed issuer stays one (DC12). -/
   table : IssuerFresh before → TableGrows before after
+  /-- The one activation it issues names the reservation's process instance, which is tabled (KD5). -/
+  slotsFrom : IssuerFresh before → IssuedBelow before → ∀ (issue : Issue) (slot : ActivationSlot), after.issued[issue]? = some (.activation slot) →
+    before.issued[issue]? = some (.activation slot) ∨ NameTabled after slot.processInstance
   issuer : IssuerFresh before → IssuerFresh after
   /-- A fresh order position of the reservation is its identity's issue, which the issue table records (DC25). -/
   positioned : ∀ unit index, reserved.position = .fresh unit index →
@@ -154,7 +157,7 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
   have startsAfter : starts after = starts before := by simp [starts, reserves.transitions, reserves.draft]
   have keyFresh : ∀ k, Counted before k → k ≠ key before reserved := fun k counted => by
     rw [keyed]
-    exact activated.fresh counted
+    exact activated.fresh formed.issuer counted
   refine ⟨?_, fun request queued named => ?_⟩
   rotate_left
   · exact fresh ((formed.claimed.named request (queuedBefore request queued)).2 _ named).1
@@ -183,7 +186,9 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
         rcases members occurrence member with rfl | old
         · exact reserves.positioned unit index pending
         · obtain ⟨slot, held⟩ := formed.issued.occurrencePositions occurrence old unit index pending
-          exact ⟨slot, (reserves.table formed.issuer) _ _ held⟩⟩
+          exact ⟨slot, (reserves.table formed.issuer) _ _ held⟩,
+      formed.issued.namesKept (fun _ member => reserves.scopes ▸ member) (reserves.table formed.issuer),
+      formed.issued.slotsGrow (reserves.table formed.issuer) (reserves.slotsFrom formed.issuer formed.issued)⟩
   case distinct =>
     refine ⟨reserves.occurrencesKeyed formed.distinct.occurrencesKeyed, reserves.itemMap.1 ▸ formed.distinct.items,
       reserves.scopeMap ▸ formed.distinct.scopesKeyed, ?_⟩
@@ -245,14 +250,17 @@ theorem Reserves.wellFormed {before after : State} {element : ElementId} {scope 
       · exact absurd (named ▸ occurrenceBelow) fresh
       · exact facts found old named
     · exact occurrenceGrows _ (queue.completes id leave writes rule (reserves.signals ▸ queued))
-  case counted => exact fun fact started => activated.counted (formed.counted fact (startsAfter ▸ started))
+  case counted => exact fun fact started => activated.counted formed.issuer (formed.counted fact (startsAfter ▸ started))
   case occurrencesCounted =>
     exact fun occurrence member => by
       rw [keys]
       rcases members occurrence member with rfl | old
       · rw [keyed]
-        exact ⟨_, activated.activations ▸ List.mem_cons_self .., rfl, rfl, rfl, Nat.le_refl _⟩
-      · exact activated.counted (formed.occurrencesCounted occurrence old)
+        obtain ⟨index, -, pending⟩ := activated.pending
+        have tabled := activated.tabled
+        rw [pending] at tabled ⊢
+        exact tabled
+      · exact activated.counted formed.issuer (formed.occurrencesCounted occurrence old)
   case ownedBelow =>
     exact fun entry member occurrence inside owned => by
       rw [reserves.scopes] at member
@@ -457,7 +465,9 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
         rw [starts_.issued]
         rcases members found inside with rfl | ⟨old, _⟩
         · exact formed.issued.occurrencePositions occurrence member unit index fresh
-        · exact formed.issued.occurrencePositions found old unit index fresh⟩
+        · exact formed.issued.occurrencePositions found old unit index fresh,
+      formed.issued.namesKept (fun _ inside => starts_.scopes ▸ inside) (.of_eq starts_.issued),
+      formed.issued.slotsKept starts_.issued⟩
   case distinct =>
     refine ⟨starts_.occurrencesKeyed formed.distinct.occurrencesKeyed, starts_.itemMap.1 ▸ formed.distinct.items,
       starts_.scopeMap ▸ formed.distinct.scopesKeyed, ?_⟩
@@ -475,7 +485,8 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
     simp at new
     subst named new
     exact formed.reservations occurrence member unbegun fact inside
-  case activations => exact ⟨starts_.activations ▸ formed.activations.keys, starts_.activations ▸ formed.activations.positive⟩
+  case activations => exact ⟨starts_.activations ▸ formed.activations.keys, starts_.activations ▸ formed.activations.positive,
+    starts_.activations ▸ formed.activations.resolved⟩
   case reservations =>
     exact fun found inside unbegunFound fact started => by
       rcases members found inside with rfl | ⟨old, other⟩
@@ -543,16 +554,16 @@ theorem StartsReserved.wellFormed {before after : State} {occurrence : Occurrenc
     exact fun fact started => by
       rw [startsAfter] at started
       rcases List.mem_append.mp started with earlier | new
-      · exact (formed.counted fact earlier).congr starts_.activations
+      · exact (formed.counted fact earlier).congr starts_.activations (fun _ _ held => starts_.issued ▸ held)
       · simp at new
         subst new
-        exact (formed.occurrencesCounted occurrence member).congr starts_.activations
+        exact (formed.occurrencesCounted occurrence member).congr starts_.activations (fun _ _ held => starts_.issued ▸ held)
   case occurrencesCounted =>
     exact fun found inside => by
       rw [keys]
       rcases members found inside with rfl | ⟨old, _⟩
-      · exact (formed.occurrencesCounted occurrence member).congr starts_.activations
-      · exact (formed.occurrencesCounted found old).congr starts_.activations
+      · exact (formed.occurrencesCounted occurrence member).congr starts_.activations (fun _ _ held => starts_.issued ▸ held)
+      · exact (formed.occurrencesCounted found old).congr starts_.activations (fun _ _ held => starts_.issued ▸ held)
   case ownedBelow =>
     exact fun entry inside found held owned => by
       rw [starts_.scopes] at inside

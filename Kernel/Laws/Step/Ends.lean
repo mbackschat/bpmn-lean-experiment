@@ -118,9 +118,9 @@ private theorem advance_common (formed : WellFormed program s) (kept : EndsKept 
       · obtain rfl := Laws.State.nodup_map_eq formed.distinct.keys (within g inGone).1 held (keyed.trans takes.keyed)
         exact absurd (within g inGone).2.2.2 (by simp [takes.unbegun])
   · rcases List.mem_append.mp (perm.mem_iff.mp ended) with old | new
-    · exact counted_grow step.grow (kept.counted k old)
+    · exact counted_grow step.grow step.table (kept.counted k old)
     · obtain ⟨g, inGone, rfl⟩ := List.mem_map.mp new
-      exact counted_grow step.grow (goneCounted g inGone)
+      exact counted_grow step.grow step.table (goneCounted g inGone)
 
 /-- An end fact of `s` stays one of `t`. -/
 private theorem ended_kept {gone : List Occurrence} (perm : (endKeys t).Perm (endKeys s ++ gone.map (key s)))
@@ -151,7 +151,7 @@ theorem EndsKept.step (formed : WellFormed program s) (kept : EndsKept b x s) (s
       removed_advance kept perm complete member begun absent (by simp) exempt, fun y named => ?_⟩
   obtain ⟨issued, absent, unended, ⟨unheld, countedY, keyed⟩⟩ := kept.pending y named
   refine ⟨step.issued _ issued, fun held => ?_, fun ended => ?_, fun o' inside same => ?_,
-    counted_grow step.grow countedY, keyed⟩
+    counted_grow step.grow step.table countedY, keyed⟩
   · obtain ⟨o', inside, same⟩ := List.mem_map.mp held
     rcases step.held o' inside with ⟨o, old, named, ⟨_, _⟩⟩ | ⟨fresh, _⟩ | ⟨_, _, takes⟩
     · exact absent (List.mem_map.mpr ⟨o, old, named.symm.trans same⟩)
@@ -179,7 +179,7 @@ theorem EndsKept.remove (formed : WellFormed program s) (kept : EndsKept b none 
         (by simp), fun y named => ?_⟩
   obtain rfl := Option.some.inj named
   refine ⟨step.issued _ (formed.issued.occurrences occurrence member), gone, fun ended => ?_,
-    fun o' inside same => ?_, counted_grow step.grow (formed.occurrencesCounted occurrence member),
+    fun o' inside same => ?_, counted_grow step.grow step.table (formed.occurrencesCounted occurrence member),
     fun o inB begun named => ?_⟩
   · rcases List.mem_append.mp (perm.mem_iff.mp ended) with old | new
     · exact kept.present occurrence member old
@@ -226,8 +226,8 @@ theorem EndsKept.record {b s : State} {id : OccurrenceId} {k : OccurrenceKey} (k
   · intro k' ended
     rw [ends] at ended
     rcases List.mem_append.mp ended with old | new
-    · exact Laws.State.Counted.congr counters (kept.counted k' old)
-    · exact (List.mem_singleton.mp new) ▸ Laws.State.Counted.congr counters countedK
+    · exact Laws.State.Counted.congr counters (.of_eq (by rw [Laws.State.recordEnd_eq])) (kept.counted k' old)
+    · exact (List.mem_singleton.mp new) ▸ Laws.State.Counted.congr counters (.of_eq (by rw [Laws.State.recordEnd_eq])) countedK
   · intro o member begun absent _
     rw [ends, occurrenceIds, occurrences] at *
     by_cases named : o.id = id
@@ -242,21 +242,22 @@ permute them. -/
 theorem EndsKept.unmoved {b s t : State} {x : Option (OccurrenceId × OccurrenceKey)} (kept : EndsKept b x s)
     (occurrences : t.occurrences = s.occurrences) (counters : t.activations = s.activations)
     (tree : t.scopes = s.scopes ∧ t.instanceId = s.instanceId) (issued : Laws.State.OccurrenceGrows s t)
-    (ends : (endKeys t).Perm (endKeys s)) : EndsKept b x t := by
+    (ends : (endKeys t).Perm (endKeys s)) (table : Laws.State.TableGrows s t := by exact fun _ _ held => held) :
+    EndsKept b x t := by
   have same : ∀ o, key t o = key s o := fun o =>
     Laws.State.key_congr (Laws.State.instanceOf_congr tree.1 tree.2 o.scope)
   have ids : occurrenceIds t = occurrenceIds s := by rw [occurrenceIds, occurrences]; rfl
   refine ⟨kept.below, tree.2.trans kept.instanceId, kept.issued.trans issued, occurrences ▸ kept.records,
     fun o member begun inside => (same o).trans (kept.keys o member begun (occurrences ▸ inside)),
     ends.nodup_iff.mpr kept.nodup, fun o inside => ?_,
-    fun k ended => Laws.State.Counted.congr counters (kept.counted k (ends.mem_iff.mp ended)), ?_, fun y named => ?_⟩
+    fun k ended => Laws.State.Counted.congr counters table (kept.counted k (ends.mem_iff.mp ended)), ?_, fun y named => ?_⟩
   · rw [same, ends.mem_iff]
     exact kept.present o (occurrences ▸ inside)
   · intro o member begun absent exempt
     exact ends.mem_iff.mpr (kept.removed o member begun (ids ▸ absent) exempt)
   · obtain ⟨below, absent, unended, ⟨unheld, countedY, keyed⟩⟩ := kept.pending y named
     exact ⟨issued _ below, ids ▸ absent, fun ended => unended (ends.mem_iff.mp ended),
-      fun o inside => (same o) ▸ unheld o (occurrences ▸ inside), Laws.State.Counted.congr counters countedY, keyed⟩
+      fun o inside => (same o) ▸ unheld o (occurrences ▸ inside), Laws.State.Counted.congr counters table countedY, keyed⟩
 
 /-- Moving the issuer keeps `EndsKept`. -/
 theorem EndsKept.reissue {b : State} {x : Option (OccurrenceId × OccurrenceKey)} (s : State) (unit : UnitKey)

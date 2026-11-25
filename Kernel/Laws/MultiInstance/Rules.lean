@@ -105,8 +105,16 @@ def RunsKeyed (s : State) : Prop :=
 theorem runsKeyed (s : State) : RunsKeyed s :=
   Laws.State.multiInstanceList_nodup _
 
+/-- `earlier` is numbered below `later` once `later` is: a committed `later` has a committed `earlier` below it, and a
+pending `later` (`Issue.fresh`) is still to be numbered, which the commit does above every committed activation of its
+slot, in item order among one body's instances (`Step.activationPlace`, KD5). -/
+def CommittedBelow (earlier later : Issue) : Prop :=
+  ∀ m, later = .committed m → ∃ n, earlier = .committed n ∧ n < m
+
 /-- The instances of one body are numbered in item order: of two active slots, the instance in the earlier slot's scope
-occurrence has the lower activation. An instance is an occurrence carrying the continuation `.multiInstance` of the
+occurrence has the lower activation, once both are committed, and a later slot's instance is committed only after the
+earlier one's (`CommittedBelow`); in a committed state, which holds no pending activation, that is the order of their
+numbers. An instance is an occurrence carrying the continuation `.multiInstance` of the
 body occurrence, which its begin carries (`MultiInstance.beginInstances`); that an occurrence of the Activity in an
 instance's scope occurrence is its instance is `InstancesPlaced`, and the two together number every occurrence of the
 Activity in the slots' scope occurrences (`numbered_of_placed`). The activation counter runs across the whole Process
@@ -119,7 +127,7 @@ def NumberedInOrder (s : State) (run : MultiInstanceRun) : Prop :=
     run.instances[first]? = some (.active firstScope) → run.instances[second]? = some (.active secondScope) →
     ∀ earlier ∈ s.occurrences, ∀ later ∈ s.occurrences, earlier.scope = firstScope → later.scope = secondScope →
       earlier.continuation = .multiInstance run.occurrence → later.continuation = .multiInstance run.occurrence →
-      earlier.activation < later.activation
+      CommittedBelow earlier.activation later.activation
 
 /-- Instance identity: an occurrence of the body's element under the element role in an active instance's scope
 occurrence is that instance, continuing into the body (§13.3.7; CIB runs each instance in an execution of its own below
@@ -137,7 +145,7 @@ theorem numbered_of_placed {s : State} {run : MultiInstanceRun} (numbered : Numb
       run.instances[first]? = some (.active firstScope) → run.instances[second]? = some (.active secondScope) →
       ∀ earlier ∈ s.occurrences, ∀ later ∈ s.occurrences, earlier.scope = firstScope → later.scope = secondScope →
         earlier.element = run.element → later.element = run.element → earlier.role = .element →
-        later.role = .element → earlier.activation < later.activation :=
+        later.role = .element → CommittedBelow earlier.activation later.activation :=
   fun first second firstScope secondScope lower one two earlier earlierIn later laterIn atFirst atSecond earlierElement
       laterElement earlierRole laterRole =>
     numbered first second firstScope secondScope lower one two earlier earlierIn later laterIn atFirst atSecond
@@ -264,7 +272,7 @@ the instance of item `k + 1`, in both modes and under both branch schedules. -/
 def BeginsInOrder (facts : List StartedFact) (processInstance : InstanceName) (element : ElementId) : Prop :=
   ((facts.filter fun fact => fact.occurrence.processInstanceId == processInstance &&
       fact.occurrence.element == element && fact.occurrence.role == .element).map
-    (·.occurrence.activation)).Pairwise (· < ·)
+    (·.occurrence.activation)).Pairwise (compare · · = .lt)
 
 /-! ## Slot shapes -/
 

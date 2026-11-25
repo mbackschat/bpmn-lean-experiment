@@ -393,19 +393,22 @@ theorem CountersFrom.lower {start s t : State} (counted : CountersFrom start s)
     (scopes : ∀ slot, t.scopeOrdinals.getD slot 0 ≤ s.scopeOrdinals.getD slot 0)
     (occurrences : ∀ slot, t.occurrenceOrdinals.getD slot 0 ≤ s.occurrenceOrdinals.getD slot 0)
     (items : ∀ occurrence, t.itemOrdinals.getD occurrence 0 ≤ s.itemOrdinals.getD occurrence 0)
-    (positions : t.nextOrder ≤ s.nextOrder := by exact Nat.le_refl _) : CountersFrom start t :=
+    (positions : t.nextOrder ≤ s.nextOrder := by exact Nat.le_refl _)
+    (activations : ∀ slot, t.activationCount slot ≤ s.activationCount slot := by exact fun _ => Nat.le_refl _) :
+    CountersFrom start t :=
   ⟨fun slot => Nat.le_trans (scopes slot) (counted.scopes slot),
     fun slot => Nat.le_trans (occurrences slot) (counted.occurrences slot),
     fun occurrence => Nat.le_trans (items occurrence) (counted.items occurrence),
-    Nat.le_trans positions counted.positions⟩
+    Nat.le_trans positions counted.positions, fun slot => Nat.le_trans (activations slot) (counted.activations slot)⟩
 
 /-- A change that leaves the three counter maps keeps `CountersFrom start`. -/
 theorem CountersFrom.same {start s t : State} (counted : CountersFrom start s) (scopes : t.scopeOrdinals = s.scopeOrdinals)
     (occurrences : t.occurrenceOrdinals = s.occurrenceOrdinals) (items : t.itemOrdinals = s.itemOrdinals)
-    (positions : t.nextOrder = s.nextOrder := by exact rfl) :
+    (positions : t.nextOrder = s.nextOrder := by exact rfl) (activations : t.activations = s.activations := by exact rfl) :
     CountersFrom start t :=
   counted.lower (fun _ => by rw [scopes]; exact Nat.le_refl _) (fun _ => by rw [occurrences]; exact Nat.le_refl _)
     (fun _ => by rw [items]; exact Nat.le_refl _) (by rw [positions]; exact Nat.le_refl _)
+    (fun _ => by simp only [State.activationCount, activations]; exact Nat.le_refl _)
 
 /-- `State.clearInside` prunes counters only. -/
 theorem clearInside_countersFrom {start s : State} (counted : CountersFrom start s) (scope : ScopeOccurrenceId)
@@ -447,7 +450,7 @@ theorem withdrawOccurrence_countersFrom {start s : State} (counted : CountersFro
     CountersFrom start (s.withdrawOccurrence id) := by
   rw [withdrawOccurrence_eq]
   have disarmed := disarm_countersFrom (s := s.closeOwnItems id)
-    (counted.same (by rw [closeOwnItems_eq]) (by rw [closeOwnItems_eq]) (by rw [closeOwnItems_eq]) (by rw [closeOwnItems_eq])) id
+    (counted.same (by rw [closeOwnItems_eq]) (by rw [closeOwnItems_eq]) (by rw [closeOwnItems_eq]) (by rw [closeOwnItems_eq]) (by rw [closeOwnItems_eq])) id
   generalize (s.closeOwnItems id).disarm id = t at disarmed ⊢
   generalize t.scopes.filter (·.occurrence == some id) = entries
   induction entries generalizing t with

@@ -56,8 +56,8 @@ theorem workOps_alongside {program : Program} (side : FrameAlongside program rel
   completeOwner s scope occurrence leave writes rule holds member owned link unnamed :=
     ⟨ops.completeOwner s scope occurrence leave writes rule holds.1 member owned link unnamed,
       side.signal holds.2 _ (unplacing := Laws.Step.placing_complete unnamed)⟩
-  raise s item code message patch holds member effect :=
-    ⟨ops.raise s item code message patch holds.1 member effect, side.raise s _ _ holds.1
+  raise s item owner code message patch holds member effect found :=
+    ⟨ops.raise s item owner code message patch holds.1 member effect found, side.raise s _ _ holds.1
       (Laws.State.isCancel_error _ _) ((holds.1.owned.itemOccurrences item member).imp fun _ ⟨inside, _, rest⟩ =>
         ⟨inside, rest⟩) holds.2⟩
   cancel s holds := ⟨ops.cancel s holds.1, side.signal holds.2 _⟩
@@ -630,7 +630,7 @@ theorem endsKept_alongside (b : State) (x : Option (OccurrenceId × OccurrenceKe
     Alongside program (Laws.Step.EndsKept b x) srel where
   frame _ _ moved kept := kept.unmoved moved.occurrences moved.activations ⟨moved.scopes, moved.instanceId⟩
     (.of_same (congrArg (List.map ScopeOccurrence.id) moved.scopes) moved.scopeOrdinals moved.occurrenceOrdinals moved.table)
-    (.of_eq (by simp only [Laws.Step.endKeys, moved.transitions, moved.ended]))
+    (.of_eq (by simp only [Laws.Step.endKeys, moved.transitions, moved.ended])) moved.table
   emit s _ _ _ _ _ kept := by
     rw [Laws.State.emit_eq]
     exact kept.unmoved rfl rfl ⟨rfl, rfl⟩ (.refl _) (.refl _)

@@ -71,7 +71,7 @@ def stateRows : List Field := [
   content ``Kernel.State.issuing,
   content ``Kernel.State.issueNext,
   content ``Kernel.State.issued,
-  keyedLater ``Kernel.State.activations "K0.12 group 4: activations numbered at commit, keyed by the called root",
+  ordered ``Kernel.State.activations "only the commit writes a counter, each closure's in its slot order (`Step.advanceCounters`), never an order of entry across units",
   content ``Kernel.State.nextCompletion,
   content ``Kernel.State.completionBase,
   content ``Kernel.State.nextOrder,

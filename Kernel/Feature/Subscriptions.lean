@@ -317,12 +317,12 @@ def admitFiring (hooks : SubscriptionsHooks) (ctx : Ctx) (subscription : Subscri
             | false, none => .ok []
           admitValues ctx.program.options.bounds (delivery.variables.map (·.2))
           .ok (state, mapped ++ delivery.variables)
-  | .signal delivery =>
-    match view.signal, signalDelivered delivery.trigger with
+  | .signal firing =>
+    match view.signal, signalDelivered firing.trigger with
     | some detail, some address =>
       if !address.matches detail.address then .error (.rejected "unknown-signal-subscription")
-      else if delivery.payload.isSome then .error (.rejected "signal-payload-not-accepted")
-      else (state, ·) <$> signalVariables ctx delivery.variables
+      else if firing.payload.isSome then .error (.rejected "signal-payload-not-accepted")
+      else (state, ·) <$> signalVariables ctx firing.variables
     | some _, none | none, _ => .error (.rejected "not-a-signal-subscription")
   -- Only `Conditions.fireAll` fires a Conditional item, once its predicate held and its contest is resolved.
   | .condition _ => if view.conditional.isSome then .ok (state, []) else .error (.rejected "not-a-conditional-subscription")

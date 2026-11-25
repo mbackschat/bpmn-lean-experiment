@@ -112,6 +112,7 @@ variable (start : State) (program : Program)
 
 theorem countersFrom_frame : FrameAlongside program (Laws.State.CountersFrom start) where
   frame _ _ moved held := held.same moved.scopeOrdinals moved.occurrenceOrdinals moved.itemOrdinals moved.nextOrder
+    moved.activations
   emit _ _ _ _ _ _ held := by rw [Laws.State.emit_eq]; exact held.same rfl rfl rfl
   complete _ _ _ _ _ _ held := by rw [Laws.State.signal_eq]; exact held.same rfl rfl rfl
   park _ _ _ _ held := held.same rfl rfl rfl
@@ -121,19 +122,21 @@ theorem countersFrom_frame : FrameAlongside program (Laws.State.CountersFrom sta
   signalBegin _ _ _ _ _ held := by rw [Laws.State.signal_eq]; exact held.same rfl rfl rfl
   takeCompletion _ held := by rw [Laws.State.takeCompletion_eq]; exact held.same rfl rfl rfl
   enterScope _ _ _ _ _ _ _ _ held := by rw [Laws.State.enterScope_eq]; exact held.same rfl rfl rfl
-  reserve s element scope _ _ _ _ held :=
+  reserve s element scope formed _ _ _ held :=
     have reserves := Laws.State.reserve_reserves s element scope
     held.same reserves.scopeOrdinals reserves.occurrenceOrdinals reserves.itemMap.2
-      ((Laws.State.orders_kept s).1 element scope)
+      ((Laws.State.orders_kept s).1 element scope) (reserves.activated formed.activations).activations
   leaveScope le _ scope _ _ _ held := Laws.State.leaveScope_countersFrom held scope
   clearInside le _ scope keep _ _ _ held := Laws.State.clearInside_countersFrom held scope keep
   disarm _ host _ held := Laws.State.disarm_countersFrom held host
   setVariable s target name value _ held :=
     have same := Laws.State.setVariable_same s target name value
     held.same same.scopeOrdinals same.occurrenceOrdinals same.ordinals ((Laws.State.orders_kept s).2.2.2.1 target name value)
+      same.activations
   removeVariable s target name _ held :=
     have same := Laws.State.removeVariable_same s target name
     held.same same.scopeOrdinals same.occurrenceOrdinals same.ordinals ((Laws.State.orders_kept s).2.2.2.2 target name)
+      same.activations
 
 theorem countersFrom_stores : StoresAlongside program (Laws.State.CountersFrom start) :=
   { countersFrom_frame start program with storeRuns := fun _ _ _ _ _ _ held => held.same rfl rfl rfl }
@@ -146,10 +149,10 @@ theorem countersFrom_alongside : Alongside program (Laws.State.CountersFrom star
     runs := fun _ _ _ _ held => held.same rfl rfl rfl }
 
 theorem countersFrom_occurs : OccursAlongside program (Laws.State.CountersFrom start) where
-  reserve s element scope _ _ _ _ held :=
+  reserve s element scope formed _ _ _ held :=
     have reserves := Laws.State.reserve_reserves s element scope
     held.same reserves.scopeOrdinals reserves.occurrenceOrdinals reserves.itemMap.2
-      ((Laws.State.orders_kept s).1 element scope)
+      ((Laws.State.orders_kept s).1 element scope) (reserves.activated formed.activations).activations
   occur _ _ _ _ _ _ _ _ _ held := by rw [Laws.State.signal_eq]; exact held.same rfl rfl rfl
   compensate _ _ _ _ _ _ _ _ _ _ _ held := by rw [Laws.State.signal_eq]; exact held.same rfl rfl rfl
   throwCompensate _ _ _ _ _ _ _ _ _ _ held := by rw [Laws.State.signal_eq]; exact held.same rfl rfl rfl
@@ -166,10 +169,12 @@ theorem countersFrom_closure : ClosureAlongside program (Laws.State.CountersFrom
       have begins := Laws.State.beginOccurrence_begins formed.activations request role sourceType
       rcases begins.itemMap.2 with same | ⟨_, _, _, erased⟩
       · exact held.same begins.scopeOrdinals begins.occurrenceOrdinals same ((Laws.State.orders_kept s).2.1 request role sourceType)
+          begins.activations
       · exact held.lower (fun _ => Nat.le_of_eq (by rw [begins.scopeOrdinals]))
           (fun _ => Nat.le_of_eq (by rw [begins.occurrenceOrdinals]))
           (fun _ => by rw [erased]; exact Laws.State.getD_erase_le _ _ _)
           (Nat.le_of_eq ((Laws.State.orders_kept s).2.1 request role sourceType))
+          (fun _ => Nat.le_of_eq (by simp only [State.activationCount, begins.activations]))
     cancel := fun le _ id _ held => Laws.State.cancelOccurrence_countersFrom held id
     journal := fun _ _ _ _ held _ _ _ => held.same rfl rfl rfl
     queueBatch := fun _ _ _ _ _ held => by rw [Laws.State.queueBatch_grouped_eq]; exact held.same rfl rfl rfl }
@@ -184,7 +189,7 @@ theorem countersFrom_pipelinePhases (pipeline : Laws.Step.PipelinePhases WellFor
       cases begun : occurrence.begun
       · have starts := Laws.State.startReserved_starts s sourceType begun
         exact holds.2.same starts.scopeOrdinals starts.occurrenceOrdinals starts.itemMap.2
-          ((Laws.State.orders_kept s).2.2.1 occurrence sourceType)
+          ((Laws.State.orders_kept s).2.2.1 occurrence sourceType) starts.activations
       · rw [Laws.State.startReserved_begun s sourceType begun]
         exact holds.2
     rw [Laws.State.closeOwnItems_eq]

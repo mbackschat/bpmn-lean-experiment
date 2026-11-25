@@ -90,7 +90,8 @@ import {
   type WriteEvent,
   SemanticCause,
   semanticFailure,
-  insertHeld, issueNotAfter, type Issue, itemsInOrder, type OccurrenceId, type UnitKey,
+  insertHeld, issueNotAfter, type Issue, itemsInOrder, type OccurrenceId, type UnitKey, activationCount, ClaimSlotTag,
+  compareClaimSlot, compareIssue, compareIssuePlace, freshIssue, type InstanceName, instanceTextWith, orderedEntries, orderedGet,
 } from "./state.js";
 // Lean's `Kernel.Hooks` re-exports `Kernel.State.Removal` to the features and `Kernel.Step`; so does this module, which
 // keeps the removal module's direct importers to this hub (guard 15).
@@ -416,6 +417,33 @@ export function ctxPositionLe(ctx: Ctx, state: State): (left: Issue, right: Issu
 }
 
 /**
+ * Lean's `Ctx.provisional`: the number the commit gives `activation` if no unit yet to run issues another of its counter
+ * before it: the counter's count, which no step of a closure writes, plus the issues of its counter the closure made so
+ * far that `ctxPositionLe` places no later, itself included. Exact under `declarationDepthFirst`; under
+ * `orderInvariant` a lower bound. A committed activation is its number; a fresh issue tabled under another slot, which
+ * no well-formed issuer holds as an activation, its index.
+ */
+export function ctxProvisional(ctx: Ctx, state: State): (activation: Issue) => number {
+  return (activation) => {
+    const fresh = freshIssue(activation);
+    if (fresh === null) return activation as number;
+    const own = orderedGet(state.issued, activation, compareIssue);
+    if (own === undefined || own.slot.tag !== ClaimSlotTag.Activation) return fresh.index;
+    let count = activationCount(state, own.slot.slot);
+    for (const [issue, { slot, unit }] of orderedEntries(state.issued)) {
+      const unitOf = (key: unknown) => (key === freshIssue(issue) ? unit : own.unit);
+      if (compareClaimSlot(slot, own.slot) === 0 && compareIssuePlace(ctx.issuerOrder, unitOf, issue, activation) <= 0) count += 1;
+    }
+    return count;
+  };
+}
+
+/** Lean's `Ctx.nameText`: the identifier `name` denotes in the closure in progress, its pending activations numbered `ctxProvisional`ly. */
+export function ctxNameText(ctx: Ctx, state: State, name: InstanceName): string {
+  return instanceTextWith(name, ctxProvisional(ctx, state));
+}
+
+/**
  * Whether `element`, running in the scope occurrence `scope`, is an instance of its own Multi-Instance Activity:
  * `scope` is a Multi-Instance instance's and belongs to `element`. An element inside an instance of an enclosing
  * Multi-Instance Sub-Process, or inside a called instance of a Multi-Instance Call, runs in a scope of another element
@@ -542,7 +570,7 @@ export function itemDetailOf<T>(
 ): readonly [OpenItem, T] | null {
   for (const item of itemsInOrder(ctxPositionLe(ctx, state), state.openItems)) {
     if (programPublicId(ctx.program, item.element) !== occurrence.element ||
-      occurrenceOf(state, item.id.occurrence)?.activation !== occurrence.activation ||
+      occurrenceOf(state, item.id.occurrence)?.activation !== occurrence.activation || // a committed activation is its number
       instanceText(instanceOf(state, item.scope)) !== occurrence.processInstanceId) continue;
     const found = detail(openKindView(item.kind));
     if (found !== null) return [item, found];

@@ -616,12 +616,12 @@ function admitFiring(hooks: SubscriptionsHooks, ctx: Ctx, subscription: Subscrip
       return installed.ok ? committed([state, [...mapped, ...delivery.variables]]) : failedWith(installed.failure);
     }
     case FiredTag.Signal: {
-      const delivery = fired.delivery;
-      const address = signalDelivered(delivery.trigger);
+      const firing = fired.firing;
+      const address = signalDelivered(firing.trigger);
       if (view.signal === null || address === null) return failed(FailureTag.Rejected, "not-a-signal-subscription");
       if (!signalAddressMatches(address, view.signal.address)) return failed(FailureTag.Rejected, "unknown-signal-subscription");
-      if (delivery.payload !== null) return failed(FailureTag.Rejected, "signal-payload-not-accepted");
-      const values = signalVariables(ctx, delivery.variables);
+      if (firing.payload !== null) return failed(FailureTag.Rejected, "signal-payload-not-accepted");
+      const values = signalVariables(ctx, firing.variables);
       return values.ok ? committed([state, values.value]) : failedWith(values.failure);
     }
     // Only `fireAll` (conditions module) fires a Conditional item, once its predicate held and its contest is resolved.

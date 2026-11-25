@@ -24,7 +24,8 @@ inductive Continuation where
   deriving Repr
 
 /-- One flow-node occurrence, from its issue until it ends. `activation` counts the activations of `element` in its
-process instance under `role`, from 1. `incoming` is the flow the token arrived on, `none` for an occurrence no token
+process instance under `role`, from 1: a pending issue of the unit that began it (`State.activate`) until the commit
+numbers it on its counter in the closure's issue order (`Step.compact`). `incoming` is the flow the token arrived on, `none` for an occurrence no token
 began.
 
 `begun = false` is a subscription's reservation: a boundary, Event Sub-Process start or Event-Based Gateway arm has a
@@ -35,7 +36,7 @@ structure Occurrence where
   id : OccurrenceId
   element : ElementId
   scope : ScopeOccurrenceId
-  activation : Nat
+  activation : Issue
   /-- Its order position (DC25): its identity's issue while that is pending (`State.reserve`, or `State.beginOccurrence`
   without a reservation), which the commit numbers on the position counter beside its ordinal (`Step.positionsOf`), so
   an occurrence takes one issue only; a begun reservation keeps its reservation's, as it keeps its activation. The

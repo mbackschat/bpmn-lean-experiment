@@ -250,7 +250,7 @@ def roleName : ActivationRole → String
 
 def keyJson (key : OccurrenceKey) : Json :=
   Json.mkObj [("processInstanceId", Json.str key.processInstanceId.text), ("elementId", Json.str key.element.value),
-    ("activation", toJson key.activation), ("role", Json.str (roleName key.role))]
+    ("activation", toJson key.activation.number), ("role", Json.str (roleName key.role))]
 
 def terminalName : Terminal → String
   | .completed => "completed"

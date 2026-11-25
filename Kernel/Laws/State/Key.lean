@@ -405,6 +405,22 @@ theorem between_fresh {u w : UnitKey} {i : Nat} {b : Issue} (ab : compare (Issue
     obtain ⟨r, _, _⟩ := lex_between ab bc root
     exact ⟨v, rfl, l, p, r⟩
 
+/-- A numeral is a committed ordinal. -/
+theorem ofNat_eq (n : Nat) : (OfNat.ofNat n : Issue) = .committed n := rfl
+
+/-- Two committed issues compare by their ordinals. -/
+@[simp] theorem compare_committed (m n : Nat) : compare (Issue.committed m) (.committed n) = compare m n := by
+  rw [compare_eq]
+  simp only [compareLex, compareOn, Issue.tag, Issue.number, Issue.unit?, Ordering.then]
+  cases compare m n <;> simp
+
+/-- A committed issue comes before every fresh one. -/
+@[simp] theorem compare_committed_fresh (m : Nat) (u : UnitKey) (i : Nat) :
+    compare (Issue.committed m) (.fresh u i) = .lt := by
+  rw [compare_eq]
+  simp only [compareLex, compareOn, Issue.tag, Ordering.then]
+  rfl
+
 end Issue
 
 /-- Breadth order ties only equal keys. -/
@@ -480,5 +496,82 @@ theorem calledBy_inj {caller caller' : InstanceName} {call call' : ElementId} {a
   · exact absurd same (by simp)
   · simp only [InstanceName.called.injEq] at same
     exact same
+
+/-- A renaming that fixes every issue fixes every name. -/
+theorem rename_id {r : Issue → Issue} (same : ∀ issue, r issue = issue) : ∀ name : InstanceName, name.rename r = name
+  | .named _ => by simp [InstanceName.rename]
+  | .called caller call activation => by
+    unfold InstanceName.rename
+    split
+    · rename_i pending
+      rw [rename_id same caller, same]
+      refine calledBy_pending fun id ordinal named committed => ?_
+      subst named committed
+      simp [InstanceName.unresolved, Issue.isFresh] at pending
+    · rfl
+
+@[simp] theorem unresolved_named (id : String) : (InstanceName.named id).unresolved = false := by
+  simp [InstanceName.unresolved]
+
+/-- A called name is pending where its activation or its caller is. -/
+@[simp] theorem unresolved_called (caller : InstanceName) (call : ElementId) (activation : Issue) :
+    (InstanceName.called caller call activation).unresolved = (activation.isFresh || caller.unresolved) := by
+  simp [InstanceName.unresolved]
+
+/-- A called name the commit renames: resolved again from its renamed parts while pending, else kept. -/
+theorem rename_called (r : Issue → Issue) (caller : InstanceName) (call : ElementId) (activation : Issue) :
+    (InstanceName.called caller call activation).rename r =
+      if (activation.isFresh || caller.unresolved) = true then (caller.rename r).calledBy call (r activation)
+      else .called caller call activation := by
+  simp [InstanceName.rename, InstanceName.unresolved]
+
+/-- `calledBy` builds the instance's identifier over committed parts, else a pending name. -/
+theorem calledBy_cases (caller : InstanceName) (call : ElementId) (activation : Issue) :
+    (∃ id ordinal, caller = .named id ∧ activation = .committed ordinal ∧
+      caller.calledBy call activation = .named (State.calledInstanceId id call ordinal)) ∨
+      caller.calledBy call activation = .called caller call activation := by
+  unfold InstanceName.calledBy
+  split
+  · exact .inl ⟨_, _, rfl, rfl, rfl⟩
+  · exact .inr rfl
+
+/-- A name built by `calledBy` is pending where its activation or its caller is. -/
+theorem unresolved_calledBy (caller : InstanceName) (call : ElementId) (activation : Issue) :
+    (caller.calledBy call activation).unresolved = (activation.isFresh || caller.unresolved) := by
+  rcases calledBy_cases caller call activation with ⟨_, _, rfl, ⟨rfl, named⟩⟩ | pending
+  · rw [named]; simp [InstanceName.unresolved]
+  · rw [pending, unresolved_called]
+
+/-- A resolved name is kept. -/
+theorem rename_resolved (r : Issue → Issue) : ∀ {name : InstanceName}, name.unresolved = false → name.rename r = name
+  | .named _, _ => by simp [InstanceName.rename]
+  | .called caller call activation, resolved => by
+    rw [rename_called, ← unresolved_called, resolved]
+    rfl
+
+/-- A renaming that keeps committed issues renames a called name by its parts. -/
+theorem rename_calledBy {r : Issue → Issue} (fixes : ∀ n, r (.committed n) = .committed n) (caller : InstanceName)
+    (call : ElementId) (activation : Issue) :
+    (caller.calledBy call activation).rename r = (caller.rename r).calledBy call (r activation) := by
+  rcases calledBy_cases caller call activation with ⟨id, ordinal, rfl, ⟨rfl, named⟩⟩ | pending
+  · rw [named, fixes, rename_resolved r (unresolved_named id), named, rename_resolved r (unresolved_named _)]
+  · rw [pending, rename_called]
+    split
+    · rfl
+    · rename_i resolved
+      simp only [Bool.or_eq_true, not_or, Bool.not_eq_true] at resolved
+      have committed : r activation = activation := by
+        cases activation with
+        | committed n => exact fixes n
+        | fresh => simp [isFresh_fresh] at resolved
+      rw [rename_resolved r resolved.2, committed, pending]
+
+@[simp] theorem steps_called (caller : InstanceName) (call : ElementId) (activation : Issue) :
+    (InstanceName.called caller call activation).steps.length = caller.steps.length + 1 := by
+  simp [InstanceName.steps]
+
+/-- A named name is kept. -/
+@[simp] theorem rename_named (r : Issue → Issue) (id : String) : (InstanceName.named id).rename r = .named id := by
+  simp [InstanceName.rename]
 
 end Kernel.Laws.State

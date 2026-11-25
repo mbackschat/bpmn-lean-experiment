@@ -3,7 +3,7 @@
  * where its search starts, and how a process instance fails. Part of `state.ts`, which re-exports it.
  */
 import { assertNever, type ElementId } from "../il/types.js";
-import { type Binding, type OccurrenceId, type OccurrenceName, type ScopeOccurrenceId } from "./slots.js";
+import { type Binding, type Issue, type OccurrenceId, type OccurrenceName, type ScopeOccurrenceId } from "./slots.js";
 
 /**
  * Guarded type: `feature/propagation` owns matching on it; `feature/subscriptions`' `catches` is the cross-owner
@@ -33,7 +33,7 @@ export function raisedIsCancel(raised: Raised): boolean {
 export interface Origin {
   readonly element: ElementId;
   readonly scope: ScopeOccurrenceId;
-  readonly activation: number;
+  readonly activation: Issue;
   readonly thrower: OccurrenceId;
   readonly host: OccurrenceId | null;
   /**

@@ -37,7 +37,7 @@ import {
   committed,
   completeSignal,
   failed,
-  instanceOf, calledBy, instanceText,
+  instanceOf, calledBy,
   instanceRoot,
   leaveOutgoing,
   signal,
@@ -53,7 +53,7 @@ import {
   semanticFailure,
 } from "../../state.js";
 import { enterCalled } from "../../state/called.js";
-import { ctxEvaluateMappings, evalContext, type Ctx } from "../../hooks.js";
+import { ctxEvaluateMappings, ctxNameText, evalContext, type Ctx } from "../../hooks.js";
 
 /**
  * Evaluate a Call's mappings against `variables`, each by its dialect (`ctxEvaluateMappings`). A Data Association's
@@ -94,11 +94,13 @@ function calledProcess(ctx: Ctx, header: Header, work: CallWork): Result<CalledP
 /**
  * Start the called instance: enter its root, arm the Call's boundaries and the called process's Event Sub-Process
  * starts (`Signal.armScope`, as `Scopes.enter` arms a Sub-Process), and begin its none start. A called instance's
- * identifier embeds its caller's (`calledInstanceId`), so a deep enough chain of Calls outgrows
- * `Bounds.instanceIdentityBytes` (OD14) and is refused before anything is evaluated.
+ * identifier embeds its caller's and the Call's activation (`calledInstanceId`), so a deep enough chain of Calls
+ * outgrows `Bounds.instanceIdentityBytes` (OD14) and is refused before anything is evaluated, by the identifier its
+ * activation's provisional number gives (`ctxNameText`): exact under `declarationDepthFirst`; under `orderInvariant` the
+ * commit refuses what a higher number adds (`boundIdentities`).
  */
 export function invoke(ctx: Ctx, header: Header, payload: ActivityPayload, work: CallWork, occurrence: Occurrence, state: State): Outcome {
-  const called = instanceText(calledBy(instanceOf(state, occurrence.scope), programPublicId(ctx.program, occurrence.element),
+  const called = ctxNameText(ctx, state, calledBy(instanceOf(state, occurrence.scope), programPublicId(ctx.program, occurrence.element),
     occurrence.activation));
   if (utf8ByteSize(called) > ctx.program.options.bounds.instanceIdentityBytes) {
     return failed(FailureTag.Unsupported, "instance-identity-bound"); // dynamic-only: an identifier grows with its chain of Calls

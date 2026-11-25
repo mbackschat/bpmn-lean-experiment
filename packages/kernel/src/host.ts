@@ -57,6 +57,7 @@ import {
   type Transition,
   type WaitView,
   breadthUnitKey, issueNotAfter, itemsInOrder, ownVariables, type OccurrenceName,
+  issueNumber,
 } from "./state.js";
 import { messageTriggerChannel } from "./hooks.js";
 
@@ -311,7 +312,7 @@ function openWait(program: Program, state: State, item: OpenItem): OpenWait {
     id: publicRef(program, {
       processInstanceId: instanceText(instanceOf(state, item.scope)),
       element: item.element,
-      activation: occurrenceOf(state, item.id.occurrence)?.activation ?? 0,
+      activation: issueNumber(occurrenceOf(state, item.id.occurrence)?.activation ?? 0),
     }),
     definition: state.slots.instances.find((instance) => instance.root === root)?.definition ?? null,
     view: currentInputs(state, item, openKindView(item.kind)),

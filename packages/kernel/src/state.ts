@@ -32,13 +32,13 @@ import {
   type BroadcastIntent, type CommandAction, CommandActionTag, type CommandInput, type ConditionChoice, type CorrelationMatch, type CriterionTarget,
   CriterionTargetTag, type DeliveryInput, type DeliveryTrigger, DeliveryTriggerTag, type EffectInput,
   type EffectOutcome, EffectOutcomeTag, type EvalContext, type Input, noStartTrigger, type OccurrenceRef, nameRef,
-  SignalReach, type StartInput, type StartTrigger, StartTriggerTag, type TimerInput, type CancelInstanceInput,
+  type SignalFiring, SignalReach, type StartInput, type StartTrigger, StartTriggerTag, type TimerInput, type CancelInstanceInput,
 } from "./state/input.js";
 export {
   type BroadcastIntent, type CommandAction, CommandActionTag, type CommandInput, type ConditionChoice, type CorrelationMatch, type CriterionTarget,
   CriterionTargetTag, type DeliveryInput, type DeliveryTrigger, DeliveryTriggerTag, type EffectInput,
   type EffectOutcome, EffectOutcomeTag, type EvalContext, type Input, noStartTrigger, type OccurrenceRef, nameRef,
-  SignalReach, type StartInput, type StartTrigger, StartTriggerTag, type TimerInput, type CancelInstanceInput,
+  type SignalFiring, SignalReach, type StartInput, type StartTrigger, StartTriggerTag, type TimerInput, type CancelInstanceInput,
 };
 import {
   type Compensable, type CompensableChild, type CompensationRun, type Compensations, compensationsRestoredIn, type FeatureSlots, featureSlotsClear,
@@ -76,7 +76,7 @@ export {
   type Continuation, ContinuationTag, flowContinuation, type Occurrence, type OccurrenceMap, type ScopeMap, type ScopeOccurrence,
   scopeOccurrenceParent,
 };
-import { type ClaimSlot, ClaimSlotTag, type Issuer, type IssueTable, seedUnit } from "./state/issue.js";
+import { type ActivationSlot, type ClaimSlot, ClaimSlotTag, type Issuer, type IssueTable, seedUnit } from "./state/issue.js";
 import {
   compareItemKey, insertItem, type ItemKey, itemAt, itemKeyText, ItemRole, itemsInOrder, type OpenItem, type OpenItems, sameItemKey,
 } from "./state/items.js";
@@ -92,10 +92,11 @@ export {
   breadthUnitKey, childScope, compareIssue, compareOccurrenceId, compareScopeOccurrenceId, compareScopeSlot, compareUnitKey,
   committedOrdinal, type FreshIssue, freshIssue,
   type Issue, issueNumber, issuerText, occurrenceId, occurrenceIdParts, sameUnitKey, scopeEncloses, scopeHead, scopeParent, type UnitKey,
-  unitRoot, UnitRootTag, calledBy, type InstanceName, instanceText, type OccurrenceName, ActivationRole, type OccurrenceId, type OccurrenceKey,
+  unitRoot, UnitRootTag, calledBy, type InstanceName, instanceText, instanceTextWith, renameInstanceName, type OccurrenceName,
+  compareOccurrenceName, compareInstanceName, ActivationRole, type OccurrenceId, type OccurrenceKey,
 } from "./state/key.js";
 export {
-  type ClaimSlot, ClaimSlotTag, compareClaimSlot, compareIssuePlace, committedScope, finishUnit, idleUnit, type Issued, type Issuer,
+  type ActivationSlot, type ClaimSlot, ClaimSlotTag, compareClaimSlot, compareIssuePlace, committedScope, finishUnit, idleUnit, type Issued, type Issuer,
   type IssueTable, issueNotAfter, occurrenceFresh, positionOutsideIssueTable, offersOccurrence, offerUnit, readyUnit, scopeFresh, seedUnit,
 } from "./state/issue.js";
 export {
@@ -131,7 +132,7 @@ export enum FiredTag { Timer = "timer", Message = "message", Signal = "signal", 
 export type Fired =
   | { readonly tag: FiredTag.Timer; readonly logicalTimeMs: number }
   | { readonly tag: FiredTag.Message; readonly delivery: DeliveryInput }
-  | { readonly tag: FiredTag.Signal; readonly delivery: DeliveryInput }
+  | { readonly tag: FiredTag.Signal; readonly firing: SignalFiring }
   | { readonly tag: FiredTag.Condition; readonly write: WriteEvent | null };
 
 /**
@@ -607,20 +608,19 @@ export function instanceOf(state: State, scope: ScopeOccurrenceId): InstanceName
   return scopeOf(state, instanceRoot(state, scope))?.calledInstance ?? state.instanceId;
 }
 
-/** The next activation of `element` under `role` in `processInstance`, recorded (R8: per process instance). */
-export function activate(
-  state: State,
-  processInstance: InstanceName,
-  element: ElementId,
-  role: ActivationRole,
-): readonly [State, number] {
-  const key = (entry: ActivationCount): boolean =>
-    sameInstanceName(entry.processInstance, processInstance) && entry.element === element && entry.role === role;
-  const count = (state.activations.find(key)?.count ?? 0) + 1;
-  return [
-    { ...state, activations: [{ processInstance, element, role, count }, ...state.activations.filter((entry) => !key(entry))] },
-    count,
-  ];
+/** Lean's `State.activationCount`: the last activation `slot`'s counter in `state` issued, 0 if it has none. */
+export function activationCount(state: State, slot: ActivationSlot): number {
+  return state.activations.find((entry) => sameInstanceName(entry.processInstance, slot.processInstance) &&
+    entry.element === slot.element && entry.role === slot.role)?.count ?? 0;
+}
+
+/**
+ * A fresh activation of `element` under `role` in `processInstance`: the running unit's next issue, which the commit
+ * numbers on the (process instance, element, role) counter in the closure's issue order (`compact`, KD5), so no hook
+ * writes a counter and two units' activations commute.
+ */
+export function activate(state: State, processInstance: InstanceName, element: ElementId, role: ActivationRole): readonly [State, Issue] {
+  return issue(state, { tag: ClaimSlotTag.Activation, slot: { processInstance, element, role } });
 }
 
 /**
@@ -628,8 +628,8 @@ export function activate(
  * so it joins the occurrences without displacing one (`insertIfNew`, so that no state loses a record to it).
  */
 export function reserve(state: State, element: ElementId, scope: ScopeOccurrenceId): readonly [State, Occurrence] {
-  const [activated, activation] = activate(state, instanceOf(state, scope), element, ActivationRole.Element);
-  const [issued, id] = issueOccurrence(activated, scope, element);
+  const [keyed, id] = issueOccurrence(state, scope, element);
+  const [issued, activation] = activate(keyed, instanceOf(state, scope), element, ActivationRole.Element);
   const occurrence: Occurrence = {
     id,
     element,
@@ -690,8 +690,8 @@ export function beginOccurrence(
     const [issued, id] = issueOccurrence({ ...state, occurrences, itemOrdinals }, request.scope, reserved.element);
     [current, occurrence] = [issued, { ...reserved, id }];
   } else {
-    const [activated, activation] = activate(state, instanceOf(state, request.scope), request.element, role);
-    const [issued, id] = issueOccurrence(activated, request.scope, request.element);
+    const [keyed, id] = issueOccurrence(state, request.scope, request.element);
+    const [issued, activation] = activate(keyed, instanceOf(state, request.scope), request.element, role);
     current = issued;
     occurrence = {
       id,

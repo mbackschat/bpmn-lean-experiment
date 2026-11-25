@@ -8,15 +8,17 @@
  * so it is `state/rename.ts`'s, which takes the continuation renaming from here: `continuationRekey` and
  * `continuationBody` are `step.ts`'s matches on `Continuation`.
  */
-import { assertNever, type BranchSchedule, type ElementId } from "../il/types.js";
+import { assertNever, BranchSchedule, type ElementId, utf8ByteSize } from "../il/types.js";
 import {
   committed, type Continuation, ContinuationTag, compareUnitKey, emptyDraft, type OccurrenceId, orderedAny,
   orderedEntries, orderedGet, orderedInsert, type OrderedMap, type Outcome, sameUnitKey, seedUnit, semanticFailure,
   failed, FailureTag, issuerText, type Issued, type IssueTable, SemanticCause, type BroadcastIntent, type Cause,
-  type InstanceName, type ScopeOccurrenceId, type State, type Transition, type TreeMap, type UnitKey, compareIssue, compareOccurrenceId,
+  type InstanceName, type ActivationSlot, type ScopeOccurrenceId, type State, type Transition, type TreeMap, type UnitKey, compareIssue, compareOccurrenceId,
   compareScopeSlot, type FreshIssue, freshIssue, type Issue, compareIssuePlace, type ClaimSlot, ClaimSlotTag, compareClaimSlot,
-  occurrenceFresh, positionOutsideIssueTable, scopeFresh,
+  occurrenceFresh, positionOutsideIssueTable, scopeFresh, activationCount, instanceText, renameInstanceName,
+  ActivationRole, IterationTag, lookupRun, compareScopeOccurrenceId,
 } from "../state.js";
+import { instanceCallDepth } from "../state/call-depth.js";
 import { treeMapGetD, treeMapInsert } from "../state/map.js";
 import { renameId, type Rename, renameScope, renameState } from "../state/rename.js";
 import { issuerOrder, runPosition, type RunLog } from "./order.js";
@@ -92,6 +94,8 @@ function slotBase(state: State, claim: ClaimSlot): number {
       return occurrenceFresh(claim.occurrence) ? 0 : treeMapGetD(state.itemOrdinals, claim.occurrence, compareOccurrenceId, 0);
     case ClaimSlotTag.Position:
       return state.nextOrder;
+    case ClaimSlotTag.Activation:
+      return activationCount(state, claim.slot) + 1;
   }
   return assertNever(claim);
 }
@@ -115,18 +119,73 @@ function issueOrder(schedule: BranchSchedule, log: RunLog, state: State): (reado
 
 const positionSlot: ClaimSlot = { tag: ClaimSlotTag.Position };
 
+/** Lean's `instanceItem?`: the body and the active slot's index of the instance an activation numbers, else null. */
+function instanceItem(state: State, issue: Issue, slot: ActivationSlot): readonly [OccurrenceId, number] | null {
+  switch (slot.role) {
+    case ActivationRole.MultiInstanceBody:
+      return null;
+    case ActivationRole.Element: {
+      const occurrence = state.occurrences.find((candidate) => compareIssue(candidate.activation, issue) === 0);
+      if (occurrence === undefined) return null;
+      const body = continuationBody(occurrence.continuation);
+      if (body === null) return null;
+      const run = lookupRun(state.slots.multiInstances, body);
+      if (run === null) return null;
+      const item = run.instances.findIndex((iteration) =>
+        iteration.tag === IterationTag.Active && compareScopeOccurrenceId(iteration.scope, occurrence.scope) === 0);
+      return item < 0 ? null : [body, item] as const;
+    }
+  }
+  return assertNever(slot.role);
+}
+
+/**
+ * Lean's `activationPlace` over every activation at once: each activation's place is its issue-order index, but under
+ * `orderInvariant` one body's instances take that body's places in item order (`instanceItem`, KD5).
+ */
+function activationPlaces(schedule: BranchSchedule, state: State, activations: readonly (readonly [Issue, ActivationSlot])[]): number[] {
+  const places = activations.map((_, index) => index);
+  switch (schedule) {
+    case BranchSchedule.DeclarationDepthFirst:
+      return places;
+    case BranchSchedule.OrderInvariant:
+      return instancePlaces(state, activations, places);
+  }
+  return assertNever(schedule);
+}
+
+/** `activationPlaces` under `orderInvariant`: one body's instances take that body's places in item order. */
+function instancePlaces(state: State, activations: readonly (readonly [Issue, ActivationSlot])[], places: number[]): number[] {
+  const groups: { readonly body: OccurrenceId; readonly members: [number, number][] }[] = [];
+  activations.forEach(([issue, slot], index) => {
+    const tag = instanceItem(state, issue, slot);
+    if (tag === null) return;
+    const group = groups.find((candidate) => compareOccurrenceId(candidate.body, tag[0]) === 0);
+    if (group === undefined) groups.push({ body: tag[0], members: [[index, tag[1]]] });
+    else group.members.push([index, tag[1]]);
+  });
+  for (const { members } of groups) {
+    const byItem = [...members].sort(([leftIndex, left], [rightIndex, right]) => left - right || leftIndex - rightIndex);
+    byItem.forEach(([index], rank) => { places[index] = members[rank]![0]; });
+  }
+  return places;
+}
+
 /**
  * Lean's `assign`: every issue's committed ordinal, per slot in issue order above the slot's base, and each advanced
- * slot's next ordinal, keyed by the slot as issued; an occurrence's issue also counts the position slot (`assignStep`).
- * Lean's `positionsOf` beside it: the order position each occurrence issue commits to, the position counter where the
- * same pass counts it, so one walk of the issue order gives both.
+ * slot's next ordinal; an occurrence's issue also counts the position slot (`assignStep`). The identities count on the
+ * slot as issued (`identityClaims`), then the activations on their slot under the instance's resolved name
+ * (`activationStep`), by the call depth of that name (`instanceCallDepth`), by place within one depth (`activationOrder`, `activationPlaces`), so
+ * every activation a name carries is numbered before the name resolves and one body's instances in item order (KD5). Lean's `positionsOf` beside it: the order
+ * position each occurrence issue commits to, the position counter where the same pass counts it, which activations
+ * leave, so one walk of the identities gives both.
  */
 function assign(
   schedule: BranchSchedule, start: State, log: RunLog, state: State,
 ): readonly [OrderedMap<Issue, Assigned>, TreeMap<ClaimSlot, number>] {
   let assigned: OrderedMap<Issue, Assigned> = null;
   let next: TreeMap<ClaimSlot, number> = [];
-  for (const [issue, slot] of issueOrder(schedule, log, state)) {
+  const take = (issue: Issue, slot: ClaimSlot): void => {
     const taken = treeMapGetD(next, slot, compareClaimSlot, slotBase(start, slot));
     next = treeMapInsert(next, slot, taken + 1, compareClaimSlot);
     let position: number | null = null;
@@ -135,6 +194,19 @@ function assign(
       next = treeMapInsert(next, positionSlot, position + 1, compareClaimSlot);
     }
     assigned = orderedInsert(assigned, issue, [taken, position] as const, compareIssue);
+  };
+  const activations: (readonly [Issue, ActivationSlot])[] = [];
+  for (const [issue, slot] of issueOrder(schedule, log, state)) {
+    if (slot.tag === ClaimSlotTag.Activation) activations.push([issue, slot.slot]);
+    else take(issue, slot);
+  }
+  const places = activationPlaces(schedule, state, activations);
+  const ordered = activations.map((activation, index) => [activation, places[index]!] as const);
+  ordered.sort(([[, a], aPlace], [[, b], bPlace]) =>
+    instanceCallDepth(a.processInstance) - instanceCallDepth(b.processInstance) || aPlace - bPlace);
+  for (const [[issue, slot]] of ordered) {
+    const resolve = renameBy(assigned, ([ordinal]) => ordinal);
+    take(issue, { tag: ClaimSlotTag.Activation, slot: { ...slot, processInstance: renameInstanceName(slot.processInstance, resolve) } });
   }
   return [assigned, next];
 }
@@ -144,8 +216,12 @@ function raiseCounter<K>(counters: TreeMap<K, number>, slot: K, ordinal: number,
   return treeMapInsert(counters, slot, Math.max(ordinal, treeMapGetD(counters, slot, compare, 0)), compare);
 }
 
-/** One advanced slot's next ordinal raised into its renamed counter, where its renamed owner stands in `renamed`. */
-function advanceSlot(rename: Rename, renamed: State, state: State, claim: ClaimSlot, ordinal: number): State {
+/**
+ * One advanced slot's next ordinal raised into its renamed counter, where its renamed owner stands in `renamed`, whose
+ * live instances are `live`. An activation counter keeps the last activation numbered, one below the slot's next,
+ * under the instance's committed name; an instance the closure left keeps none (DC24's prune).
+ */
+function advanceSlot(rename: Rename, renamed: State, live: ReadonlySet<string>, state: State, claim: ClaimSlot, ordinal: number): State {
   switch (claim.tag) {
     case ClaimSlotTag.Scope:
     case ClaimSlotTag.Occurrence: {
@@ -162,6 +238,13 @@ function advanceSlot(rename: Rename, renamed: State, state: State, claim: ClaimS
     }
     case ClaimSlotTag.Position:
       return { ...state, nextOrder: Math.max(ordinal, state.nextOrder) };
+    case ClaimSlotTag.Activation: {
+      const slot = { ...claim.slot, processInstance: renameInstanceName(claim.slot.processInstance, rename) };
+      if (typeof slot.processInstance !== "string" || !live.has(slot.processInstance)) return state;
+      const count = Math.max(ordinal - 1, activationCount(state, slot));
+      return { ...state, activations: [{ ...slot, count }, ...state.activations.filter((entry) =>
+        !(entry.processInstance === slot.processInstance && entry.element === slot.element && entry.role === slot.role))] };
+    }
   }
   return assertNever(claim);
 }
@@ -172,7 +255,8 @@ function advanceSlot(rename: Rename, renamed: State, state: State, claim: ClaimS
  * closure removed goes, as it went with its owner.
  */
 function advanceCounters(rename: Rename, next: TreeMap<ClaimSlot, number>, renamed: State): State {
-  return next.reduce((state, [claim, ordinal]) => advanceSlot(rename, renamed, state, claim, ordinal), renamed);
+  const live = liveInstances(renamed);
+  return next.reduce((state, [claim, ordinal]) => advanceSlot(rename, renamed, live, state, claim, ordinal), renamed);
 }
 
 /** Lean's `sameIssuerName`: whether two fresh issues share their index and their units agree on depth, fingerprint and root. */
@@ -214,6 +298,9 @@ export function compact(schedule: BranchSchedule, start: State, log: RunLog, sta
   // dynamic-only: a 64-bit fingerprint collision between two units of one closure, which no model property predicts
   if (issuerCollision(state.issued)) return failed(FailureTag.Unsupported, "unit-fingerprint-collision");
   const [assigned, next] = assign(schedule, start, log, state);
+  // The activations as well as the ordinals (KD5, owner decision 2026-11-25): numbered in issue order on their resolved
+  // name's counter, so under `orderInvariant` same-element activations of one closure take the schedule-free order, and
+  // the names of the instances its Calls entered resolve with them (`renameInstanceName`).
   const rename = renameBy(assigned, ([ordinal]) => ordinal);
   const continuation = (kept: Continuation): Continuation =>
     continuationRekey((id) => renameId(rename, id), (key) => renameScope(rename, key), kept);
@@ -233,6 +320,19 @@ function liveInstances(state: State): ReadonlySet<string> {
   for (const scope of state.scopes) add(scope.calledInstance);
   for (const run of state.slots.compensation.runs) add(run.trigger.processInstanceId);
   return live;
+}
+
+/**
+ * Lean's `boundIdentities`: refuse a committed state that names a called instance past `Bounds.instanceIdentityBytes`
+ * (OD14). A Call refuses such an instance when it invokes it (`invoke`) by the number its activation takes if no unit
+ * yet to run issues another of its counter before it, which under `orderInvariant` the commit may raise
+ * (`ctxProvisional`); this refuses that rest once the commit has resolved the name.
+ */
+export function boundIdentities(bound: number, state: State): Outcome {
+  if (state.scopes.some((scope) => scope.calledInstance !== null && utf8ByteSize(instanceText(scope.calledInstance)) > bound)) {
+    return failed(FailureTag.Unsupported, "instance-identity-bound"); // dynamic-only: a Call's activation number grows with its closure
+  }
+  return committed(state);
 }
 
 /**

@@ -54,7 +54,7 @@ export function delivered(ctx: Ctx, data: DeliveryInput, state: State): Result<r
       const item = itemOf(ctx, state, data.occurrence, (view) => view.signal);
       return item === null
         ? failed(FailureTag.Rejected, "unknown-signal-subscription")
-        : committed([item, { tag: FiredTag.Signal, delivery: data }] as const);
+        : committed([item, { tag: FiredTag.Signal, firing: { trigger: data.trigger, payload: data.payload, variables: data.variables } }] as const);
     }
   }
   return assertNever(data.trigger);

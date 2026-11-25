@@ -390,8 +390,9 @@ def onRunning (hooks : Hooks) (ctx : Ctx) (input : Input) (before : Option State
       let start ← advanceClock at? { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := state.nextCompletion }
       admitChoices hooks ctx
       let unit := UnitKey.ofRoot .input
-      orderJournal ctx.program.options.branchSchedule start (settle hooks ctx closureBound closureWorkBound
-        (RunLog.record {} unit) (← microStep hooks ctx unit (.input tag) none State.root transition start))
+      boundIdentities ctx.program.options.bounds.instanceIdentityBytes =<< orderJournal ctx.program.options.branchSchedule start
+        (settle hooks ctx closureBound closureWorkBound (RunLog.record {} unit) (← microStep hooks ctx unit (.input tag) none
+          State.root transition start))
 
 /-- `Ctx.scopeRole`: read from the slots, since the occurrences that ended there may be gone when an event arrives. -/
 def scopeRole (state : State) (scope : ScopeOccurrenceId) : ScopeRole :=
@@ -430,10 +431,11 @@ def step (hooks : Hooks) (program : Program) (before : Option State) (input : In
           (.ofRoot .seed))
       admitChoices hooks ctx
       let unit := UnitKey.ofRoot .input
-      orderJournal ctx.program.options.branchSchedule initial <| settle hooks ctx closureBound closureWorkBound
+      boundIdentities ctx.program.options.bounds.instanceIdentityBytes =<< orderJournal ctx.program.options.branchSchedule initial
+        (settle hooks ctx closureBound closureWorkBound
         (RunLog.record {} unit) (← microStep hooks ctx unit
         (.input .start) (some start) State.root (begin hooks ctx { element := start, scope := State.root, trigger := payload.trigger })
-        initial)
+        initial))
   | .command data => onRunning hooks ctx input before (command hooks ctx data)
   | .deliver data => onRunning hooks ctx input before fun state => do
     let (item, fired) ← hooks.delivered ctx data state

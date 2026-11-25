@@ -91,6 +91,7 @@ public import Kernel.Laws.Starts
 public import Kernel.Laws.State
 public import Kernel.Laws.State.Begin
 public import Kernel.Laws.State.Begins
+public import Kernel.Laws.State.CallDepth
 public import Kernel.Laws.State.Called
 public import Kernel.Laws.State.Chain
 public import Kernel.Laws.State.Claim
@@ -127,8 +128,10 @@ public import Kernel.Laws.State.Tree
 public import Kernel.Laws.State.Variables
 public import Kernel.Laws.State.Witnesses
 public import Kernel.Laws.Step
+public import Kernel.Laws.Step.Activations
 public import Kernel.Laws.Step.Assign
 public import Kernel.Laws.Step.Commit
+public import Kernel.Laws.Step.Commit.Derived
 public import Kernel.Laws.Step.Commits
 public import Kernel.Laws.Step.Compact
 public import Kernel.Laws.Step.CompactKeyed
@@ -194,6 +197,7 @@ public import Kernel.Proofs.Frame.Both
 public import Kernel.Proofs.Frame.Keys
 public import Kernel.Proofs.MultiInstance
 public import Kernel.Proofs.MultiInstance.Begins
+public import Kernel.Proofs.MultiInstance.BeginsLog
 public import Kernel.Proofs.MultiInstance.Continued
 public import Kernel.Proofs.MultiInstance.Formed
 public import Kernel.Proofs.MultiInstance.Framed
@@ -206,6 +210,7 @@ public import Kernel.Proofs.MultiInstance.NumberedCompacts
 public import Kernel.Proofs.MultiInstance.Occurs
 public import Kernel.Proofs.MultiInstance.Records
 public import Kernel.Proofs.MultiInstance.Registered
+public import Kernel.Proofs.MultiInstance.RunOrder
 public import Kernel.Proofs.MultiInstance.Since
 public import Kernel.Proofs.State
 public import Kernel.Proofs.Step
@@ -217,6 +222,7 @@ public import Kernel.Run.Fixture
 public import Kernel.Run.Population
 public import Kernel.Run.Wire
 public import Kernel.State
+public import Kernel.State.CallDepth
 public import Kernel.State.Called
 public import Kernel.State.Criteria
 public import Kernel.State.Failure

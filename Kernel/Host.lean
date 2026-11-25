@@ -194,7 +194,7 @@ def currentInputs (state : State) (item : OpenItem) (view : WaitView) : WaitView
 
 def openWait (program : Program) (state : State) (item : OpenItem) : OpenWait :=
   { id := publicRef program { processInstanceId := (state.instanceOf item.scope).text, element := item.element
-                              activation := ((state.occurrence? item.id.occurrence).map (·.activation)).getD 0 }
+                              activation := ((state.occurrence? item.id.occurrence).map (·.activation.number)).getD 0 }
     definition := (state.slots.instances.find? (·.root == state.instanceRoot item.scope)).bind (·.definition)
     view := currentInputs state item item.kind.view }
 

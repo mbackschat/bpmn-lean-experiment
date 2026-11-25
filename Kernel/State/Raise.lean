@@ -33,7 +33,7 @@ outputs not yet written (`Propagation.raise`). -/
 structure Origin where
   element : ElementId
   scope : ScopeOccurrenceId
-  activation : Nat
+  activation : Issue
   thrower : OccurrenceId
   host : Option OccurrenceId := none
   patch : List (String × Value) := []

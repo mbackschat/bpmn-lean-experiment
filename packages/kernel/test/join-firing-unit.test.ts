@@ -62,18 +62,19 @@ function joinTransitions(state: State): readonly string[] {
 /** The activations of the occurrences parked at `J`. */
 function parkedAtJ(state: State): readonly number[] {
   return state.slots.parked.map((waiting) => state.occurrences.find((occurrence) => occurrence.id === waiting.occurrence))
-    .map((occurrence) => occurrence?.activation ?? 0);
+    .map((occurrence) => typeof occurrence?.activation === "number" ? occurrence.activation : 0);
 }
 
 test("under orderInvariant a Parallel join fires as its own unit after every arrival parked, keeping the greatest", () => {
   const state = started(forked("orderInvariant", "parallel"));
-  // `J` 1 arrives on `p3`, `J` 2 through `X` and `J` 3 through `T`, each only parking; the slot then fires in an idle
-  // transition of its own, and the consumed occurrences' completions run as its batch, `J` 1 ending with none.
+  // `J` 1 arrives on `p3`, `J` 3 through `X` and `J` 2 through `T`, each only parking, their activations numbered in the
+  // commit order, where the arrival through `T` comes first (KD5); the slot then fires in an idle transition of its
+  // own, and the consumed occurrences' completions run as its batch, `J` 1 ending with none.
   assert.deepEqual(joinTransitions(state), [
-    "arrive began 1 ended ", "arrive began 2 ended ", "arrive began 3 ended ", "idle began  ended ",
-    "signal began  ended 1", "signal began  ended 3",
+    "arrive began 1 ended ", "arrive began 3 ended ", "arrive began 2 ended ", "idle began  ended ",
+    "signal began  ended 1", "signal began  ended 2",
   ]);
-  assert.deepEqual(parkedAtJ(state), [2], "the arrival through X, of greater position on m, stays parked");
+  assert.deepEqual(parkedAtJ(state), [3], "the arrival through X, of greater position on m, stays parked");
 });
 
 test("under declarationDepthFirst the same Parallel join fires in place, in the arrival that completes it", () => {

@@ -21,6 +21,7 @@ import {
   type ScopeOccurrence,
   type ScopeOccurrenceId,
   type State, ownVariables,
+  issueNumber,
 } from "./state.js";
 
 export function statusName(status: InstanceStatus): string {
@@ -167,7 +168,7 @@ function publishedScope(state: State, scope: ScopeOccurrence, entries: readonly 
     return named({
       processInstanceId,
       element: owner.element,
-      activation: owner.activation,
+      activation: issueNumber(owner.activation),
       role: owner.role === ActivationRole.MultiInstanceBody ? ScopeRole.MultiInstanceBody : ScopeRole.Activity,
       variables: entries,
     });
@@ -176,7 +177,7 @@ function publishedScope(state: State, scope: ScopeOccurrence, entries: readonly 
   if (record !== null) {
     const subject = record.occurrence;
     return named({
-      processInstanceId: instanceText(subject.processInstanceId), element: subject.element, activation: subject.activation,
+      processInstanceId: instanceText(subject.processInstanceId), element: subject.element, activation: issueNumber(subject.activation),
       role: contextRole(subject.role), variables: entries,
     });
   }
@@ -184,7 +185,7 @@ function publishedScope(state: State, scope: ScopeOccurrence, entries: readonly 
   if (parent === null || !ownedByBody(state, parent)) return unnamed("published-scope-unnamed");
   const hosted = state.occurrences.find((occurrence) => occurrence.scope === scope.id && occurrence.element === element);
   if (hosted === undefined) return unnamed("published-instance-not-begun");
-  return named({ processInstanceId, element, activation: hosted.activation, role: ScopeRole.MultiInstanceInstance, variables: entries });
+  return named({ processInstanceId, element, activation: issueNumber(hosted.activation), role: ScopeRole.MultiInstanceInstance, variables: entries });
 }
 
 /**

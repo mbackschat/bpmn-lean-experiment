@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Laws.Step.Compact
+public import Kernel.Laws.Step.Activations
 public import Kernel.Laws.State.Frames
 
 /-! # Laws of the step function: `WellFormed` across compaction at commit (DC12)
@@ -24,7 +25,7 @@ open Kernel Kernel.Step Kernel.Laws.State
 structure ScopeRenamed (r : Issue → Issue) (old entry : ScopeOccurrence) : Prop where
   id : entry.id = renameScope r old.id
   occurrence : entry.occurrence = old.occurrence.map (renameId r)
-  calledInstance : entry.calledInstance = old.calledInstance
+  calledInstance : entry.calledInstance = old.calledInstance.map (·.rename r)
 
 /-- `occurrence` is the settled occurrence `old` under the commit's renaming `r`. -/
 structure OccurrenceRenamed (r : Issue → Issue) (old occurrence : Occurrence) : Prop where
@@ -33,13 +34,12 @@ structure OccurrenceRenamed (r : Issue → Issue) (old occurrence : Occurrence) 
   element : occurrence.element = old.element
   begun : occurrence.begun = old.begun
   role : occurrence.role = old.role
-  activation : occurrence.activation = old.activation
+  activation : occurrence.activation = r old.activation
 
 /-- What a commit keeps of the settled state `s` in `t`: every field it neither renames nor advances. -/
 structure CommitKept (s t : State) : Prop where
-  activations : t.activations = s.activations
   status : t.status = s.status
-  failure : t.failure = s.failure
+  failure : t.failure.isSome = s.failure.isSome
   instanceId : t.instanceId = s.instanceId
   batchSignals : t.batchSignals = s.batchSignals
   batchTokens : t.batchTokens = s.batchTokens
@@ -65,12 +65,12 @@ variable {schedule : BranchSchedule} {start : State} {log : RunLog} {s t : State
 /-- A commit keeps every field it neither renames nor advances. -/
 theorem compact_kept (ran : compact schedule start log s = .ok t) : CommitKept s t := by
   rcases compact_cases ran with ⟨_, rfl⟩ | ⟨_, rfl⟩
-  · exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
+  · exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
   have same := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2
     (renameState (commitRenaming schedule start log s) (commitPositioning schedule start log s) (commitRekey schedule start log s) s)
   unfold compacted
   rw [same, renameState_eq]
-  exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
+  exact ⟨rfl, Option.isSome_map, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
 /-- A variable set a commit leaves is one of the settled state's, under its key renamed. -/
 theorem compact_variables (ran : compact schedule start log s = .ok t) {y : ScopeOccurrenceId} {entries : Variables}
@@ -216,10 +216,54 @@ theorem compact_issuerFresh (ran : compact schedule start log s = .ok t) : Issue
   ⟨fun _ _ held => by simp [compact_issued ran] at held, fun _ _ held => by simp [compact_issued ran] at held,
     fun _ _ _ held => by simp [compact_issued ran] at held⟩
 
+/-- **Advancing keeps the activation counters keyed and positive.** -/
+theorem advance_keyed {start : State} {log : RunLog} {s : State} (r : Issue → Issue) (renamed : State)
+    (keyed : ActivationsKeyed renamed)
+    (resolves : ∀ slot m, (assign schedule start log s).2[ClaimSlot.activation slot]? = some m →
+      (slot.processInstance.rename r).unresolved = false) :
+    ActivationsKeyed (advanceCounters r (assign schedule start log s).2 renamed) := by
+  obtain ⟨keys, positive, resolved⟩ := advance_activations
+    (P := fun counts => (counts.map fun count => (count.processInstance, count.element, count.role)).Nodup ∧
+      (∀ count ∈ counts, 0 < count.count) ∧ ∀ count ∈ counts, count.processInstance.unresolved = false)
+    r (assign schedule start log s).2 renamed ⟨keyed.keys, keyed.positive, keyed.resolved⟩
+    fun counts slot ordinal count member low held => by
+      have found := Std.ExtTreeMap.mem_toList_iff_getElem?_eq_some.mp member
+      have two := assign_activation_next found
+      obtain ⟨unique, positive, resolved⟩ := held
+      refine ⟨?_, ?_, ?_⟩
+      · simp only [List.map_cons, List.nodup_cons]
+        refine ⟨fun inside => ?_, (unique.sublist (List.Sublist.map _ List.filter_sublist))⟩
+        obtain ⟨other, kept, same⟩ := List.mem_map.mp inside
+        have apart := (List.mem_filter.mp kept).2
+        simp only [Prod.mk.injEq] at same
+        simp [same.1, same.2.1, same.2.2] at apart
+      · intro other inside
+        rcases List.mem_cons.mp inside with rfl | later
+        · simp only; omega
+        · exact positive other (List.mem_filter.mp later).1
+      · intro other inside
+        rcases List.mem_cons.mp inside with rfl | later
+        · exact resolves _ _ found
+        · exact resolved other (List.mem_filter.mp later).1
+  exact ⟨keys, positive, resolved⟩
+
 /-- **`ActivationsKeyed` across the commit** (`activations`). -/
-theorem compact_activations (ran : compact schedule start log s = .ok t) (keyed : ActivationsKeyed s) : ActivationsKeyed t := by
-  obtain ⟨unique, positive⟩ := keyed
-  exact ⟨by rw [(compact_kept ran).activations]; exact unique, by rw [(compact_kept ran).activations]; exact positive⟩
+theorem compact_activations (ran : compact schedule start log s = .ok t) (keyed : ActivationsKeyed s)
+    (issued : IssuedBelow s) : ActivationsKeyed t := by
+  rcases compact_cases ran with ⟨_, rfl⟩ | ⟨_, rfl⟩
+  · exact keyed
+  have k := advance_keyed (schedule := schedule) (start := start) (log := log) (s := s) (commitRenaming schedule start log s)
+    (renameState (commitRenaming schedule start log s) (commitPositioning schedule start log s) (commitRekey schedule start log s) s)
+    (by rw [renameState_eq]; exact ⟨keyed.1, keyed.2, keyed.3⟩) fun slot m found => by
+      obtain ⟨issue, tabled, held, rfl⟩ := assign_activationSlot issued.slots found
+      have resolved : (tabled.processInstance.rename (commitRenaming schedule start log s)).unresolved = false :=
+        (issued.slots issue tabled held).rename_resolved (fun n => commitRenaming_committed start log s n)
+          fun activation claimed tabled => by
+            obtain ⟨n, renamed⟩ := renamed_issue (schedule := schedule) (start := start) (log := log) (s := s)
+              (issue := activation) fun unit index same => ⟨_, same ▸ tabled⟩
+            rw [renamed]; exact isFresh_committed n
+      simpa [rename_resolved _ resolved] using resolved
+  exact ⟨k.1, k.2, k.3⟩
 
 /-- **`FailureRecorded` across the commit** (`failure`). -/
 theorem compact_failure (ran : compact schedule start log s = .ok t) (recorded : FailureRecorded s) : FailureRecorded t := by
@@ -230,13 +274,11 @@ theorem compact_startedOnce (ran : compact schedule start log s = .ok t) (once :
   rw [StartedOnce, compact_starts ran]; exact once
 
 /-- **`StartsCounted` across the commit** (`counted`). -/
-theorem compact_startsCounted (ran : compact schedule start log s = .ok t) (counted : StartsCounted s) : StartsCounted t := by
+theorem compact_startsCounted (ran : compact schedule start log s = .ok t) (none : starts s = []) : StartsCounted t := by
   intro fact started
   have named : fact.occurrence ∈ (starts s).map (·.occurrence) := by
     rw [← compact_starts ran]; exact List.mem_map_of_mem (f := StartedFact.occurrence) started
-  obtain ⟨old, inside, same⟩ := List.mem_map.mp named
-  obtain ⟨count, member, rest⟩ := counted old inside
-  exact ⟨count, by rw [(compact_kept ran).activations]; exact member, by rw [← same]; exact rest⟩
+  rw [none] at named; cases named
 
 /-! ## The clauses over queued work: an empty queue -/
 
@@ -349,6 +391,7 @@ theorem compact_occurrence_eq (ran : compact schedule start log s = .ok t) {occu
     ∃ old ∈ s.occurrences, occurrence =
       { old with id := renameId (commitRenaming schedule start log s) old.id
                  scope := renameScope (commitRenaming schedule start log s) old.scope
+                 activation := commitRenaming schedule start log s old.activation
                  position := commitPositioning schedule start log s old.position
                  continuation := old.continuation.rekey (renameId (commitRenaming schedule start log s))
                    (renameScope (commitRenaming schedule start log s)) } := by
@@ -379,7 +422,8 @@ keys apart. -/
 theorem compact_runs_perm (ran : compact schedule start log s = .ok t)
     (apart : ∀ a ∈ s.slots.compensation.runs, ∀ b ∈ s.slots.compensation.runs,
       renameScope (commitRenaming schedule start log s) a.scope = renameScope (commitRenaming schedule start log s) b.scope →
-        a.trigger = b.trigger → a.scope = b.scope) :
+        renameName (commitRenaming schedule start log s) a.trigger = renameName (commitRenaming schedule start log s) b.trigger →
+        a.scope = b.scope ∧ a.trigger = b.trigger) :
     t.slots.compensation.runs.Perm (s.slots.compensation.runs.map (renamedRun (commitRenaming schedule start log s))) := by
   rw [compact_slots ran]
   exact renameSlots_runs_perm apart
@@ -760,14 +804,19 @@ theorem compact_scope_eq (ran : compact schedule start log s = .ok t) {entry : S
     ∃ old ∈ s.scopes, entry =
       { old with id := renameScope (commitRenaming schedule start log s) old.id
                  position := commitRenaming schedule start log s old.position
-                 occurrence := old.occurrence.map (renameId (commitRenaming schedule start log s)) } := by
+                 occurrence := old.occurrence.map (renameId (commitRenaming schedule start log s))
+                 calledInstance := old.calledInstance.map (·.rename (commitRenaming schedule start log s)) } := by
   exact compact_scopeRecord_of ran member
 
 /-- The start facts a commit journals: the ordered transitions', each fact's occurrence key kept. -/
 theorem compact_journalStarts (ran : compact schedule start log s = .ok t) :
-    (t.journal.flatMap (·.started)).map (·.occurrence) = (s.journal.flatMap (·.started)).map (·.occurrence) := by
-  rcases compact_cases ran with ⟨_, same⟩ | ⟨_, same⟩
-  · rw [same]
+    (t.journal.flatMap (·.started)).map (·.occurrence) =
+      (s.journal.flatMap (·.started)).map (renameKey (commitRenaming schedule start log s) ·.occurrence) := by
+  rcases compact_cases ran with ⟨empty, same⟩ | ⟨_, same⟩
+  · subst same
+    have keys : ∀ key, renameKey (commitRenaming schedule start log t) key = key := fun key => by
+      simp [renameKey_eq, commitRenaming_empty (schedule := schedule) (start := start) (log := log) empty, rename_id (commitRenaming_empty (schedule := schedule) (start := start) (log := log) empty)]
+    simp [keys]
   have journal : t.journal = s.journal.map (renameTransition (commitRenaming schedule start log s)) := by
     have frame := advance_frame (commitRenaming schedule start log s) (assign schedule start log s).2
       (renameState (commitRenaming schedule start log s) (commitPositioning schedule start log s) (commitRekey schedule start log s) s)
@@ -819,7 +868,9 @@ theorem ordered_facts {program : Program} {start state : State} (log : RunLog) (
     OrderedFacts start (ordered log state) := by
   have quiet : allSignals (ordered log state) = [] ∧ allQueuedTokens (ordered log state) = [] := by
     simp [allSignals, allQueuedTokens, batches.1, batches.2.1]
-  refine ⟨⟨counted.1, counted.2, counted.3, counted.4⟩, ⟨formed.issued.1, formed.issued.2, formed.issued.3, formed.issued.4, formed.issued.5⟩,
+  refine ⟨⟨counted.1, counted.2, counted.3, counted.4,
+      fun slot => Nat.le_trans (filter_activationCount formed.activations _ slot) (counted.5 slot)⟩, ⟨formed.issued.1, formed.issued.2, formed.issued.3, formed.issued.4, formed.issued.5,
+      formed.issued.namesKept (fun _ member => member) (.of_eq rfl), formed.issued.slotsKept rfl⟩,
     { occurrenceScopes := formed.owned.occurrenceScopes, itemScopes := formed.owned.itemScopes
       itemOccurrences := formed.owned.itemOccurrences, attachments := formed.owned.attachments
       scopeOwners := formed.owned.scopeOwners, variableScopes := formed.owned.variableScopes
@@ -827,6 +878,5 @@ theorem ordered_facts {program : Program} {start state : State} (log : RunLog) (
     ⟨formed.rooted.1, formed.rooted.2.1,
       fun entry member => Within.congr (s := state) (t := ordered log state) rfl (formed.rooted.2.2 entry member)⟩,
     quiet.1, quiet.2⟩
-
 
 end Kernel.Laws.Step

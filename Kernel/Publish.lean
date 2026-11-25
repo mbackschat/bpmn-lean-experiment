@@ -105,7 +105,7 @@ def publishedScope (state : State) (scope : ScopeOccurrence) (variables : List (
   | none, some _, some id =>
     match state.occurrence? id with
     | some owner =>
-      .ok (some { processInstanceId, element := some owner.element, activation := owner.activation, variables
+      .ok (some { processInstanceId, element := some owner.element, activation := owner.activation.number, variables
                   role := if owner.role == .multiInstanceBody then .multiInstanceBody else .activity })
     | none => .error "published-scope-owner-gone"
   | none, some element, none =>
@@ -113,12 +113,12 @@ def publishedScope (state : State) (scope : ScopeOccurrence) (variables : List (
     | some record =>
       let subject := record.occurrence
       .ok (some { processInstanceId := subject.processInstanceId.text, element := some subject.element
-                  activation := subject.activation, role := contextRole subject.role, variables })
+                  activation := subject.activation.number, role := contextRole subject.role, variables })
     | none =>
       if !scope.parent.any (ownedByBody state) then .error "published-scope-unnamed"
       else match state.occurrences.find? fun occurrence => occurrence.scope == scope.id && occurrence.element == element with
         | some hosted =>
-          .ok (some { processInstanceId, element := some element, activation := hosted.activation
+          .ok (some { processInstanceId, element := some element, activation := hosted.activation.number
                       role := .multiInstanceInstance, variables })
         | none => .error "published-instance-not-begun"
 

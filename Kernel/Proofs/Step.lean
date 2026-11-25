@@ -189,8 +189,8 @@ theorem workOps : Laws.Work.WorkOps program (Laws.State.WellFormed program) wher
   complete _ _ leave writes rule formed member unstarted _ := waited_wellFormed formed member unstarted leave writes rule
   completeOwner _ _ _ leave writes rule formed member owned link _ :=
     complete_wellFormed formed owned (owner_begun formed member owned link) leave writes rule
-  raise _ _ code message patch formed member effect :=
-    effectRaise_wellFormed formed member effect (.error code message) patch
+  raise _ _ _ code message patch formed member effect found :=
+    effectRaise_wellFormed formed member effect (.error code message) patch found
   cancel _ formed := queue_wellFormed formed (by simp [Queueable])
   rekind _ change formed kept only := by
     have still : ∀ item ∈ _, Laws.State.AwaitsTrigger item.kind → Laws.State.AwaitsTrigger (change item).kind :=

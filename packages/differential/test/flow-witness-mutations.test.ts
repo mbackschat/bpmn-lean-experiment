@@ -138,14 +138,21 @@ test("PC-CF-03: a Parallel join that fires before every incoming flow holds a to
 });
 
 test("PC-CF-03: a join that loses the tokens beyond its arity is noticed", async () => {
-  // A join that takes at most one arrival per incoming flow in its scope and drops every later one, so the excess token
-  // of a flow that delivered twice never waits at the join.
+  // A join that takes at most one arrival per incoming flow and drops every later one, so the excess token of a flow
+  // that delivered twice never waits at the join. An arrival's number is its activation's: one begun in the closure is
+  // pending until the commit numbers it after the counter (KD5), so it counts as the counter and the join's pending
+  // arrivals standing, the witnesses running one process instance.
   const lostMultiplicity: Hooks = {
     ...hooks,
-    arriveGateway: (ctx, header, payload, occurrence, state) =>
-      payload.incoming.length > 1 && occurrence.activation > payload.incoming.length
+    arriveGateway: (ctx, header, payload, occurrence, state) => {
+      const committed = state.activations.find((count) => count.processInstance === state.instanceId &&
+        count.element === occurrence.element && count.role === occurrence.role)?.count ?? 0;
+      const pending = state.occurrences.filter((other) => other.element === occurrence.element && typeof other.activation !== "number");
+      const arrival = typeof occurrence.activation === "number" ? occurrence.activation : committed + pending.length;
+      return payload.incoming.length > 1 && arrival > payload.incoming.length
         ? hooks.arriveGateway(ctx, header, { ...payload, incoming: [], outgoing: [] }, occurrence, state)
-        : hooks.arriveGateway(ctx, header, payload, occurrence, state),
+        : hooks.arriveGateway(ctx, header, payload, occurrence, state);
+    },
   };
   await noticed([["parallel-region-compositions", "duplicate-arrival-join-right-first"]], lostMultiplicity);
 });
@@ -235,9 +242,10 @@ test("PC-CF-08: a delivery to an earlier region's race that settles the current 
     delivered: (ctx, data, state) => {
       const found = hooks.delivered(ctx, data, state);
       if (found.ok) return found;
+      // A delivery runs against the committed state, whose activations are all numbered.
       const activations = state.openItems.filter((item) => item.element === data.occurrence.element)
         .flatMap((item) => state.occurrences.filter((occurrence) => occurrence.id === item.id.occurrence))
-        .map((occurrence) => occurrence.activation);
+        .flatMap((occurrence) => typeof occurrence.activation === "number" ? [occurrence.activation] : []);
       if (activations.length === 0) return found;
       return hooks.delivered(ctx, { ...data, occurrence: { ...data.occurrence, activation: Math.max(...activations) } }, state);
     },

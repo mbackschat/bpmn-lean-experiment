@@ -28,6 +28,7 @@ import {
   committed,
   failedWith,
   itemsInOrder,
+  issueNumber,
 } from "../state.js";
 import { criteriaRefusal, startCriteriaRefusal } from "../state/criteria.js";
 import { context, step } from "../step.js";
@@ -84,7 +85,7 @@ export function occurrence(program: Program, state: State, item: OpenItem): Occu
   return {
     processInstanceId: instanceText(instanceOf(state, item.scope)),
     element: programPublicId(program, item.element),
-    activation: occurrenceOf(state, item.id.occurrence)?.activation ?? 0,
+    activation: issueNumber(occurrenceOf(state, item.id.occurrence)?.activation ?? 0),
   };
 }
 

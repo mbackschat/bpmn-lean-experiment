@@ -27,10 +27,41 @@ open Kernel.Laws.Step (OccurPending)
 
 /-! ## The relation -/
 
+/-- `NumberedInOrder` under the relation `below` of the earlier and the later instance's activations: the law's
+`CommittedBelow`, or with it, under `declarationDepthFirst`, the run order the commit numbers pending ones in
+(`Kernel.Proofs.MultiInstance.RunOrder`). -/
+def InOrderBy (below : Issue → Issue → Prop) (s : State) (run : MultiInstanceRun) : Prop :=
+  ∀ (first second : Nat) (firstScope secondScope : ScopeOccurrenceId), first < second →
+    run.instances[first]? = some (.active firstScope) → run.instances[second]? = some (.active secondScope) →
+    ∀ earlier ∈ s.occurrences, ∀ later ∈ s.occurrences, earlier.scope = firstScope → later.scope = secondScope →
+      earlier.continuation = .multiInstance run.occurrence → later.continuation = .multiInstance run.occurrence →
+      below earlier.activation later.activation
+
+theorem inOrderBy_committed {s : State} {run : MultiInstanceRun} :
+    InOrderBy Laws.MultiInstance.CommittedBelow s run ↔ NumberedInOrder s run := Iff.rfl
+
+/-- Every activation is `CommittedBelow` a pending one. -/
+theorem committedBelow_fresh (a : Issue) (unit : UnitKey) (index : Nat) :
+    Laws.MultiInstance.CommittedBelow a (.fresh unit index) := fun _ committed => by cases committed
+
 /-- The numbering of every running body's instances, their identity, and the order of the instance begins still
 queued. -/
-def Numbered (program : Program) (s : State) : Prop :=
-  (∀ run ∈ s.slots.multiInstances, NumberedInOrder s run ∧ InstancesPlaced s run) ∧ BeginsQueued program s
+def NumberedBy (below : Issue → Issue → Prop) (program : Program) (s : State) : Prop :=
+  (∀ run ∈ s.slots.multiInstances, InOrderBy below s run ∧ InstancesPlaced s run) ∧ BeginsQueued program s
+
+/-- `NumberedBy` under `Laws.MultiInstance.CommittedBelow`, the law's relation: what holds of every state. -/
+abbrev Numbered (program : Program) (s : State) : Prop := NumberedBy Laws.MultiInstance.CommittedBelow program s
+
+/-- `NumberedBy` under a relation that holds wherever `below` does between the activations of the state's
+occurrences. -/
+theorem NumberedBy.imp {below below' : Issue → Issue → Prop} {program : Program} {s : State}
+    (weaker : ∀ earlier ∈ s.occurrences, ∀ later ∈ s.occurrences, below earlier.activation later.activation →
+      below' earlier.activation later.activation)
+    (held : NumberedBy below program s) : NumberedBy below' program s :=
+  ⟨fun run member => ⟨fun first second firstScope secondScope lower firstAt secondAt earlier present later present'
+      firstIn secondIn firstBody secondBody => weaker earlier present later present' ((held.1 run member).1 first second
+        firstScope secondScope lower firstAt secondAt earlier present later present' firstIn secondIn firstBody
+        secondBody), (held.1 run member).2⟩, held.2⟩
 
 /-! ## Taking away -/
 
@@ -126,8 +157,8 @@ structure Shrinks (program : Program) (s t : State) : Prop where
   pending : ∀ element, OccurPending t element → OccurPending s element ∨ ∀ loop, ¬ LoopOf program element loop
 
 /-- What `Shrinks` keeps. -/
-theorem Numbered.shrink {program : Program} {s t : State} (held : Numbered program s) (shrinks : Shrinks program s t) :
-    Numbered program t := by
+theorem NumberedBy.shrink {below : Issue → Issue → Prop} {program : Program} {s t : State} (held : NumberedBy below program s) (shrinks : Shrinks program s t) :
+    NumberedBy below program t := by
   obtain ⟨each, queued⟩ := held
   have runIn : ∀ run ∈ t.slots.multiInstances, run ∈ s.slots.multiInstances := fun _ member =>
     shrinks.runs.subset member
@@ -176,8 +207,8 @@ structure Relabels (s t : State) : Prop where
   compensation : t.slots.compensation.runs = s.slots.compensation.runs
 
 /-- What `Relabels` keeps. -/
-theorem Numbered.relabel {program : Program} {s t : State} (held : Numbered program s) (relabels : Relabels s t) :
-    Numbered program t := by
+theorem NumberedBy.relabel {below : Issue → Issue → Prop} {program : Program} {s t : State} (held : NumberedBy below program s) (relabels : Relabels s t) :
+    NumberedBy below program t := by
   obtain ⟨each, queued⟩ := held
   have runIn : ∀ run ∈ t.slots.multiInstances, run ∈ s.slots.multiInstances := fun _ member => relabels.runs ▸ member
   have queuedIn : ∀ request, Laws.State.Queued t request → Laws.State.Queued s request := fun _ inQueue =>
@@ -244,8 +275,8 @@ structure AddsOne (s t : State) (o : Occurrence) : Prop where
     Iteration.active request.scope ∈ run.instances → o.element = run.element → o.role = .element → False
 
 /-- What `AddsOne` keeps. -/
-theorem Numbered.addOne {program : Program} {s t : State} {o : Occurrence} (held : Numbered program s)
-    (adds : AddsOne s t o) : Numbered program t := by
+theorem NumberedBy.addOne {below : Issue → Issue → Prop} {program : Program} {s t : State} {o : Occurrence} (held : NumberedBy below program s)
+    (adds : AddsOne s t o) : NumberedBy below program t := by
   obtain ⟨each, queued⟩ := held
   have runIn : ∀ run ∈ t.slots.multiInstances, run ∈ s.slots.multiInstances := fun _ member => adds.runs ▸ member
   have queuedIn : ∀ request, Laws.State.Queued t request → Laws.State.Queued s request := fun _ inQueue =>
@@ -291,9 +322,9 @@ theorem Numbered.addOne {program : Program} {s t : State} {o : Occurrence} (held
 
 /-- A reservation of an element that does not loop keeps `Numbered`: it is issued at the counter, above every name a
 queued begin holds. -/
-theorem Numbered.reserve {program other : Program} {s : State} {element : ElementId} {scope : ScopeOccurrenceId}
+theorem NumberedBy.reserve {below : Issue → Issue → Prop} {program other : Program} {s : State} {element : ElementId} {scope : ScopeOccurrenceId}
     (formed : WellFormed other s) (unlooped : ∀ loop, ¬ LoopOf program element loop) (stands : scope ∈ scopeIds s)
-    (held : Numbered program s) : Numbered program (s.reserve element scope).1 := by
+    (held : NumberedBy below program s) : NumberedBy below program (s.reserve element scope).1 := by
   have reserves := Laws.State.reserve_reserves s element scope
   have unnamed : ∀ request, Laws.State.Queued s request → (s.reserve element scope).2.id ∉ Laws.State.names request :=
     fun request queued named => by
@@ -312,9 +343,9 @@ theorem Numbered.reserve {program other : Program} {s : State} {element : Elemen
   · exact unnamed request inQueue (by simp [Laws.State.names, named])
 
 /-- Starting a reservation in place keeps `Numbered`. -/
-theorem Numbered.startReserved {program : Program} {s : State} {occurrence : Occurrence} (sourceType : String)
-    (held : Numbered program s) (member : occurrence ∈ s.occurrences) :
-    Numbered program (s.startReserved occurrence sourceType).1 := by
+theorem NumberedBy.startReserved {below : Issue → Issue → Prop} {program : Program} {s : State} {occurrence : Occurrence} (sourceType : String)
+    (held : NumberedBy below program s) (member : occurrence ∈ s.occurrences) :
+    NumberedBy below program (s.startReserved occurrence sourceType).1 := by
   cases begun : occurrence.begun
   · have starts := Laws.State.startReserved_starts s sourceType begun
     refine held.relabel ⟨fun x inside => ?_, starts.scopes, congrArg (·.multiInstances) starts.slots, starts.queues,
@@ -390,12 +421,12 @@ def ReservedApart (s : State) (request : BeginRequest) : Prop :=
 
 /-- A begin that begins no instance keeps `Numbered`: a fresh one of a body's element is a body, numbered apart, and a
 reserved one is `ReservedApart` and claimed by nothing else queued. -/
-theorem Numbered.beginOther {program : Program} {s : State} {request : BeginRequest} {role : ActivationRole}
+theorem NumberedBy.beginOther {below : Issue → Issue → Prop} {program : Program} {s : State} {request : BeginRequest} {role : ActivationRole}
     {sourceType : String} (formed : WellFormed program s) (stands : request.scope ∈ scopeIds s)
     (admitted : Laws.Step.Admitted s request) (bodied : (((program.element? request.element).bind (·.envelope?)).bind (·.multiInstance)).isSome = true →
       role = .multiInstanceBody) (other : ∀ body, request.continuation ≠ .multiInstance body)
-    (apart : ReservedApart s request) (held : Numbered program s) :
-    Numbered program (s.beginOccurrence request role sourceType).1 := by
+    (apart : ReservedApart s request) (held : NumberedBy below program s) :
+    NumberedBy below program (s.beginOccurrence request role sourceType).1 := by
   have begins := Laws.State.beginOccurrence_begins formed.activations request role sourceType
   refine held.addOne (o := (s.beginOccurrence request role sourceType).2) ⟨fun x inside => ?_, begins.scopes,
     congrArg (·.multiInstances) begins.slots, begins.queues,
@@ -426,13 +457,15 @@ theorem Numbered.beginOther {program : Program} {s : State} {request : BeginRequ
 /-- The begin of an instance taken off a queue that kept `Numbered` keeps it: the begin targets an active slot of its
 body, its occurrence is fresh and numbered above every counted activation of its key, which every instance of the body
 shares, every instance begun before it lies in a lower slot, and every begin still queued after it in a higher one, as
-the closure takes begin signals first in, first out and deferred begins last in, first out. -/
-theorem Numbered.beginInstance {program : Program} {queue s : State} {request : BeginRequest} {role : ActivationRole}
+the closure takes begin signals first in, first out and deferred begins last in, first out. `nextAbove` relates every
+standing activation to the running unit's next issues, which the begun one is. -/
+theorem NumberedBy.beginInstance {below : Issue → Issue → Prop} {program : Program} {queue s : State} {request : BeginRequest} {role : ActivationRole}
     {sourceType : String} {body : OccurrenceId} (formed : WellFormed program s) (owns : SlotsOwned s)
     (stands : request.scope ∈ scopeIds s) (roled : role = .element)
-    (on : request.continuation = .multiInstance body) (held : Numbered program queue)
+    (on : request.continuation = .multiInstance body) (held : NumberedBy below program queue)
+    (nextAbove : ∀ o ∈ s.occurrences, ∀ index, s.issueNext ≤ index → below o.activation (.fresh s.issuing index))
     (dequeued : Laws.Step.Dequeued program queue request s) :
-    Numbered program (s.beginOccurrence request role sourceType).1 := by
+    NumberedBy below program (s.beginOccurrence request role sourceType).1 := by
   -- The closure took the begin off one queue under one key, leaving the other entries.
   obtain ⟨unit, found⟩ : ∃ unit, (queue.queuedSignals[unit]? = some (.begin request) ∧
       s = { queue with queuedSignals := queue.queuedSignals.erase unit }) ∨
@@ -452,7 +485,7 @@ theorem Numbered.beginInstance {program : Program} {queue s : State} {request : 
     · exact .inl (Laws.State.mem_allSignals_of found)
     · exact .inr (Laws.State.mem_allQueuedTokens_of found)
   have runsSame : s.slots.multiInstances = queue.slots.multiInstances := congrArg (·.multiInstances) kept.2.2
-  have heldS : Numbered program s := held.shrink ⟨runsSame ▸ .refl _, fun o inside => kept.1 ▸ inside,
+  have heldS : NumberedBy below program s := held.shrink ⟨runsSame ▸ .refl _, fun o inside => kept.1 ▸ inside,
     fun e inside => .inl (kept.2.1 ▸ inside), fun run member outside => absurd (runsSame ▸ member) outside, fewer,
     fun _ pending => .inl (pending_of_sublist (fun signal inside => by
       rcases found with ⟨_, same⟩ | ⟨_, same⟩ <;> subst same
@@ -547,17 +580,10 @@ theorem Numbered.beginInstance {program : Program} {queue s : State} {request : 
     · rcases occIn earlier earlierIn with eOld | rfl <;> rcases occIn later laterIn with lOld | rfl
       · exact (each r rS).1 first second firstScope secondScope lower one two earlier eOld later lOld earlierAt
           laterAt earlierOn laterOn
-      · obtain rfl := runOf r rS laterOn
-        have atJ : second = j := slotOf second (by rw [two, ← laterAt, begins.scope])
-        obtain ⟨count, counted, inst, rest⟩ := formed.occurrencesCounted earlier eOld
-        obtain ⟨named', roled', below⟩ := rest
-        have continued := qs.continued r rS earlier eOld earlierOn (earlierAt ▸ List.mem_of_getElem? one)
-        refine Nat.lt_of_le_of_lt below (fresh.activated.above count counted ?_ ?_ ?_)
-        · rw [inst]
-          change s.instanceOf earlier.scope = s.instanceOf request.scope
-          rw [earlierAt, slot_instance formed owns qs rS one, slot_instance formed owns qs rS slotj]
-        · exact named'.trans (continued.1.trans element.symm)
-        · exact roled'.trans (continued.2.trans roled.symm)
+      · -- the begun instance is the running unit's next issue
+        obtain ⟨index, above, pending⟩ := fresh.activated.pending
+        rw [pending]
+        exact nextAbove earlier eOld index above
       · obtain rfl := runOf r rS earlierOn
         have atJ : first = j := slotOf first (by rw [one, ← earlierAt, begins.scope])
         have below := held.2.above r runQ request second j secondScope queuedHere forJ two

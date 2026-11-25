@@ -42,11 +42,11 @@ theorem initial_wellFormed (instanceId : String) (variables : List (String × Va
     WellFormed program (State.initial instanceId variables businessKey) where
   issued := ⟨by simp [initial_eq], by simp [initial_eq, itemList_empty],
     fun _ member => (initial_historic instanceId variables businessKey).issued member, by simp [initial_eq],
-    by simp [initial_eq]⟩
+    by simp [initial_eq], by simp [initial_eq], by simp [initial_eq]⟩
   distinct := ⟨by simp only [initial_eq]; exact occurrencesKeyed_empty, by simp [initial_eq, keyedBy_empty],
     by simp only [initial_eq]; exact scopesKeyed_insert_at scopesKeyed_empty rfl, by simp [initial_eq]⟩
   startedOnce := by simp [StartedOnce, starts, initial_eq]
-  activations := ⟨by simp [initial_eq], by simp [initial_eq]⟩
+  activations := ⟨by simp [initial_eq], by simp [initial_eq], by simp [initial_eq]⟩
   reservations := by simp [ReservationsUnstarted, initial_eq]
   owned := ⟨by simp [initial_eq], by simp [initial_eq, itemList_empty], by simp [initial_eq, itemList_empty], by simp [initial_eq, itemList_empty],
     by simp [initial_eq], by simp [scopeIds, initial_eq], by simp [initial_eq]⟩

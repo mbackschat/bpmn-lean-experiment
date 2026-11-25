@@ -123,7 +123,8 @@ theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {k
       fun entry member => cleared.scopeGrows.issued (formed.issued.scopes entry (cleared.scopesSubset member)),
       formed.issued.positionsKept (fun _ member => cleared.scopesSubset member) (.of_eq cleared.issued),
       formed.issued.occurrencePositionsKept (fun _ member => cleared.occurrencesSublist.subset member)
-        (.of_eq cleared.issued)⟩
+        (.of_eq cleared.issued), formed.issued.namesKept (fun _ member => cleared.scopesSubset member) (.of_eq cleared.issued),
+        formed.issued.slotsKept cleared.issued⟩
   · refine ⟨cleared.occurrencesSub.keyed formed.distinct.occurrencesKeyed,
       cleared.openItemsSub.keyed formed.distinct.items,
       cleared.scopesSub.keyed formed.distinct.scopesKeyed, ?_⟩
@@ -133,7 +134,8 @@ theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {k
     unfold StartedOnce at once ⊢
     rw [sameStarts]
     exact once
-  · exact ⟨cleared.activations ▸ formed.activations.keys, cleared.activations ▸ formed.activations.positive⟩
+  · exact ⟨cleared.activations ▸ formed.activations.keys, cleared.activations ▸ formed.activations.positive,
+    cleared.activations ▸ formed.activations.resolved⟩
   · intro occurrence member unbegun fact started
     rw [keys occurrence member]
     exact formed.reservations occurrence (cleared.occurrencesSublist.subset member) unbegun fact
@@ -200,10 +202,10 @@ theorem Cleared.wellFormed {before after : State} {scope : ScopeOccurrenceId} {k
       exact ⟨cleared.occurrenceGrows _ occurrence_, cleared.scopeGrows.issued scope_,
         fun found member => facts found (cleared.occurrencesSublist.subset member)⟩
   · intro fact started
-    exact (formed.counted fact (show fact ∈ starts before from sameStarts ▸ started)).congr cleared.activations
+    exact (formed.counted fact (show fact ∈ starts before from sameStarts ▸ started)).congr cleared.activations (fun _ _ held => cleared.issued ▸ held)
   · intro occurrence member
     rw [keys occurrence member]
-    exact (formed.occurrencesCounted occurrence (cleared.occurrencesSublist.subset member)).congr cleared.activations
+    exact (formed.occurrencesCounted occurrence (cleared.occurrencesSublist.subset member)).congr cleared.activations (fun _ _ held => cleared.issued ▸ held)
   · intro entry member occurrence inside owned
     exact formed.ownedBelow entry (cleared.scopesSubset member) occurrence
       (cleared.occurrencesSublist.subset inside) owned
@@ -287,7 +289,9 @@ theorem Prunes.wellFormed {before after : State} (formed : WellFormed program be
         (.of_eq prunes.issued) formed.issued.items,
       fun scope member => grows.issued (formed.issued.scopes scope (prunes.scopes ▸ member)),
       formed.issued.positionsKept (fun _ member => prunes.scopes ▸ member) (.of_eq prunes.issued),
-      formed.issued.occurrencePositionsKept (fun _ member => kept member) (.of_eq prunes.issued)⟩
+      formed.issued.occurrencePositionsKept (fun _ member => kept member) (.of_eq prunes.issued),
+      formed.issued.namesKept (fun _ member => prunes.scopes ▸ member) (.of_eq prunes.issued),
+      formed.issued.slotsKept prunes.issued⟩
   case distinct =>
     refine ⟨prunes.occurrencesSub.keyed formed.distinct.occurrencesKeyed,
       prunes.items.keyed formed.distinct.items, prunes.scopeMap ▸ formed.distinct.scopesKeyed,
@@ -295,7 +299,8 @@ theorem Prunes.wellFormed {before after : State} (formed : WellFormed program be
     rw [funext keys]
     exact formed.distinct.keys.sublist (prunes.occurrences.map _)
   case startedOnce => simpa [StartedOnce, sameStarts] using formed.startedOnce
-  case activations => exact ⟨prunes.activations ▸ formed.activations.keys, prunes.activations ▸ formed.activations.positive⟩
+  case activations => exact ⟨prunes.activations ▸ formed.activations.keys, prunes.activations ▸ formed.activations.positive,
+    prunes.activations ▸ formed.activations.resolved⟩
   case reservations =>
     intro occurrence member unbegun fact started
     rw [keys]
@@ -330,11 +335,11 @@ theorem Prunes.wellFormed {before after : State} (formed : WellFormed program be
     · obtain ⟨below, scopeBelow, facts⟩ := queue.armGateway occurrence gateway scope (prunes.signals ▸ queued)
       exact ⟨prunes.occurrenceGrows _ below, grows.issued scopeBelow, fun found member => facts found (kept member)⟩
   case counted =>
-    exact fun fact started => (formed.counted fact (sameStarts ▸ started)).congr prunes.activations
+    exact fun fact started => (formed.counted fact (sameStarts ▸ started)).congr prunes.activations (fun _ _ held => prunes.issued ▸ held)
   case occurrencesCounted =>
     intro occurrence member
     rw [keys]
-    exact (formed.occurrencesCounted occurrence (kept member)).congr prunes.activations
+    exact (formed.occurrencesCounted occurrence (kept member)).congr prunes.activations (fun _ _ held => prunes.issued ▸ held)
   case ownedBelow =>
     exact fun entry member occurrence inside owned =>
       formed.ownedBelow entry (prunes.scopes ▸ member) occurrence (kept inside) owned
@@ -442,7 +447,9 @@ theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (form
         (.of_eq left.issued) formed.issued.items,
       fun entry member => grows.issued (formed.issued.scopes entry (left.scopesSubset member)),
       formed.issued.positionsKept (fun _ member => left.scopesSubset member) (.of_eq left.issued),
-      formed.issued.occurrencePositionsKept (fun _ member => kept member) (.of_eq left.issued)⟩
+      formed.issued.occurrencePositionsKept (fun _ member => kept member) (.of_eq left.issued),
+      formed.issued.namesKept (fun _ member => left.scopesSubset member) (.of_eq left.issued),
+      formed.issued.slotsKept left.issued⟩
   case distinct =>
     refine ⟨left.occurrencesSub.keyed formed.distinct.occurrencesKeyed,
       left.openItemsSub.keyed formed.distinct.items,
@@ -450,7 +457,8 @@ theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (form
     rw [List.map_congr_left keys]
     exact formed.distinct.keys.sublist (left.occurrencesSublist.map _)
   case startedOnce => simpa [StartedOnce, sameStarts] using formed.startedOnce
-  case activations => exact ⟨left.activations ▸ formed.activations.keys, left.activations ▸ formed.activations.positive⟩
+  case activations => exact ⟨left.activations ▸ formed.activations.keys, left.activations ▸ formed.activations.positive,
+    left.activations ▸ formed.activations.resolved⟩
   case reservations =>
     intro occurrence member unbegun fact started
     rw [keys occurrence member]
@@ -496,11 +504,11 @@ theorem Left.wellFormed {before after : State} {scope : ScopeOccurrenceId} (form
     · obtain ⟨below, scopeBelow, facts⟩ := queue.armGateway occurrence gateway scope (left.signals ▸ queued)
       exact ⟨left.occurrenceGrows _ below, grows.issued scopeBelow, fun found member => facts found (kept member)⟩
   case counted =>
-    exact fun fact started => (formed.counted fact (sameStarts ▸ started)).congr left.activations
+    exact fun fact started => (formed.counted fact (sameStarts ▸ started)).congr left.activations (fun _ _ held => left.issued ▸ held)
   case occurrencesCounted =>
     intro occurrence member
     rw [keys occurrence member]
-    exact (formed.occurrencesCounted occurrence (kept member)).congr left.activations
+    exact (formed.occurrencesCounted occurrence (kept member)).congr left.activations (fun _ _ held => left.issued ▸ held)
   case ownedBelow =>
     exact fun entry member occurrence inside owned =>
       formed.ownedBelow entry (left.scopesSubset member) occurrence (kept inside) owned

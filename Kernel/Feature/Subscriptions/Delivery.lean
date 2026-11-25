@@ -32,7 +32,7 @@ def delivered (ctx : Ctx) (data : DeliveryInput) (state : State) : Except Failur
       .error (.rejected "signal-delivery-targeted") else
     match item? ctx state data.occurrence (·.signal) with
     | none => .error (.rejected "unknown-signal-subscription")
-    | some item => .ok (item, .signal data)
+    | some item => .ok (item, .signal { trigger := data.trigger, payload := data.payload, variables := data.variables })
 
 /-- Bind the delivered payload to every data output an output mapping reads, then evaluate the mappings. -/
 def payloadBindings (ctx : Ctx) (nowMs : Nat) (outputs : List Mapping) (payload : Value) :

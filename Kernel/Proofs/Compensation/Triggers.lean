@@ -108,8 +108,8 @@ theorem queuedTriggers_sublist {program : Program} {base s t : State} (before : 
     · exact .inr (by simp [queuedTrigger, standing])
 
 theorem counted_moved {s t : State} (moves : Moves s t) {key : OccurrenceKey} (counted : Counted s key) :
-    Counted t key := by
-  unfold Counted; rw [moves.activations]; exact counted
+    Counted t key :=
+  Laws.State.Counted.congr moves.activations moves.table counted
 
 /-- A later state that moved from one keeping its triggers apart keeps them apart. -/
 theorem triggers_moved {program : Program} {base s t : State} (before : WellFormed program base) (twin : Twin base s)
@@ -286,10 +286,9 @@ theorem triggers_opened {queue s : State} {scope : ScopeOccurrenceId} {activity 
     simp [free, named]
   have later : ∀ signal ∈ Laws.State.allSignals s, signal ∈ Laws.State.allSignals queue := fun signal inside => by
     rw [shape] at inside; exact Laws.State.allSignals_unqueue _ inside
-  have counted : ∀ key, Counted queue key → Counted (opened s others run) key := fun key old => by
-    unfold Counted at old ⊢
-    simp only [opened, stored, activations]
-    exact old
+  have counted : ∀ key, Counted queue key → Counted (opened s others run) key := fun key old =>
+    Laws.State.Counted.congr (by simp only [opened, stored, activations]) (fun _ _ held => by
+      simp only [opened, stored]; rw [shape]; exact held) old
   have runs : ∀ other ∈ s.slots.compensation.runs, other ∈ queue.slots.compensation.runs := fun other inside => by
     rw [← slots]; exact inside
   refine ⟨⟨?_, fun other inside grouped queuedIn => ?_, fun key inside => ?_, fun origin inside => ?_,

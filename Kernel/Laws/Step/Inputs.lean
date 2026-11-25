@@ -38,7 +38,7 @@ theorem onRunning_ok {hooks : Hooks} {ctx : Ctx} {input : Input} {before : Optio
       obtain ⟨start, clocked, ran⟩ := bind_ok ran
       obtain ⟨_, _, ran⟩ := bind_ok ran
       obtain ⟨moved, stepped, ran⟩ := bind_ok ran
-      obtain ⟨final, settled, made⟩ := orderJournal_settled ran
+      obtain ⟨final, settled, made⟩ := orderJournal_settled (bounded_ok ran)
       exact ⟨state, start, moved, final, by simp, by simpa using running, by simpa [head] using clocked,
         by simpa [head] using stepped, settled, made⟩
 
@@ -59,7 +59,7 @@ theorem step_ok {hooks : Hooks} {program : Program} {before : Option State} {inp
       obtain ⟨initial, clocked, ran⟩ := bind_ok ran
       obtain ⟨_, _, ran⟩ := bind_ok ran
       obtain ⟨moved, stepped, ran⟩ := bind_ok ran
-      obtain ⟨final, settled, made⟩ := orderJournal_settled ran
+      obtain ⟨final, settled, made⟩ := orderJournal_settled (bounded_ok ran)
       exact ⟨payload, by simp, by simp, ⟨start, initial, moved, final, clocked, stepped, settled, made, fired, admitted,
         chosen⟩⟩
   · exact .inr ⟨_, _, .inl ⟨_, rfl⟩, ran⟩

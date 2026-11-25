@@ -32,7 +32,7 @@ theorem enterCalled_eq (state : State) (program : Program) (call : Occurrence) (
                                        element := some call.element, position := .fresh state.issuing (state.issueNext + 1)
                                        occurrence := some call.id
                                        calledInstance := some ((state.instanceOf call.scope).calledBy
-                                         (program.publicId call.element) (.committed call.activation)) }
+                                         (program.publicId call.element) call.activation) }
           variables := state.variables.insert (call.scope.child call.element (.fresh state.issuing state.issueNext))
             (Variables.ofBindings variables)
           slots := { state.slots with

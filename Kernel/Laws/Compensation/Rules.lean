@@ -325,6 +325,14 @@ theorem recordElements_child {record : Compensable} {child : CompensableChild} {
 theorem recordElements_scope (record : Compensable) (scope : ScopeOccurrenceId) :
     recordElements { record with scope } = recordElements record := rfl
 
+/-- A record whose keys the commit renames names the elements it named. -/
+theorem recordElements_rekey (record : Compensable) (scope : ScopeOccurrenceId) (rekey : OccurrenceKey → OccurrenceKey) :
+    recordElements { record with scope, occurrence := rekey record.occurrence
+                                 children := record.children.map fun child => { child with occurrence := rekey child.occurrence } } =
+      recordElements record := by
+  simp only [recordElements, List.flatMap_map]
+  rfl
+
 /-- A scope occurrence an `InstanceLinked` edge may leave: one that calls no instance, or one of a Scope element or
 owned by an occurrence of one, which the placement lane shows never calls one. -/
 def Uncalled (program : Program) (state : State) (entry : ScopeOccurrence) : Prop :=

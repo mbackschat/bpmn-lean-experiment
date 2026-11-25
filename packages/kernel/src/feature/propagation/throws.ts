@@ -17,9 +17,9 @@ import {
   ValueSourceTag,
   ValueTag,
   assertNever,
+  BranchSchedule,
   compareStrings,
   mergeSort,
-  programPublicId,
   valueSourceLiteral,
   type CompensationThrow,
   type EventPayload,
@@ -39,13 +39,14 @@ import {
   SignalTag,
   WriteRule,
   committed,
+  compareInstanceName,
   completeSignal,
+  type InstanceName,
   failed,
   failedWith,
-  instanceOf, instanceText,
+  instanceOf,
   leaveFlows,
   leaveOutgoing,
-  occurrenceOf,
   openItem,
   openKindView,
   OpenKindTag,
@@ -54,7 +55,7 @@ import {
   visible,
   type Binding,
   type BroadcastIntent,
-  type DeliveryInput,
+  type SignalFiring,
   type EvalContext,
   type Leave,
   type Occurrence,
@@ -68,7 +69,9 @@ import {
   SignalAddressTag,
   type State,
 } from "../../state.js";
-import { EvaluationTag, clearInside, ctxPositionLe, ctxRequireMappings, evalContext, lastWrites, type Ctx } from "../../hooks.js";
+import {
+  EvaluationTag, clearInside, ctxNameText, ctxPositionLe, ctxRequireMappings, evalContext, lastWrites, type Ctx,
+} from "../../hooks.js";
 
 /** How a throw Event leaves once it has done its work. */
 export function throwLeave(payload: EventPayload): Leave {
@@ -224,8 +227,10 @@ function thrownAddress(ctx: Ctx, context: EvalContext, record: SignalThrow): Res
 }
 
 /**
- * The open items of `address` in the thrower's own State, by process instance, then in arming order, the order the
- * linearization of the population fixes for CIB's unordered `HashSet` (`EventSubscriptionManager.java:111-126`).
+ * Lean's `ownReceivers`: the open items of `address` in the thrower's own State, by process instance, then in arming
+ * order, the order the linearization of the population fixes for CIB's unordered `HashSet`
+ * (`EventSubscriptionManager.java:111-126`): under `declarationDepthFirst` by the instance's prospective identifier,
+ * exact there, under `orderInvariant` by its name (KD1's structural key, P09), which no schedule changes.
  */
 function ownReceivers(ctx: Ctx, state: State, address: SignalAddress): readonly OpenItem[] {
   const reached = state.openItems.filter((item) => {
@@ -233,27 +238,27 @@ function ownReceivers(ctx: Ctx, state: State, address: SignalAddress): readonly 
     return detail !== null && signalAddressMatches(address, detail.address);
   });
   const positionLe = ctxPositionLe(ctx, state);
+  const compareInstances = instanceOrder(ctx, state);
   return mergeSort(reached, (left, right) => {
-    const order = compareStrings(instanceText(instanceOf(state, left.scope)), instanceText(instanceOf(state, right.scope)));
+    const order = compareInstances(instanceOf(state, left.scope), instanceOf(state, right.scope));
     return order < 0 || (order === 0 && positionLe(left.position, right.position));
   });
 }
 
-/** The delivery that fires `item` from a throw. */
-function thrownDelivery(ctx: Ctx, state: State, address: SignalAddress, variables: readonly Binding[], item: OpenItem): DeliveryInput {
-  return {
-    occurrence: {
-      processInstanceId: instanceText(instanceOf(state, item.scope)),
-      element: programPublicId(ctx.program, item.element),
-      activation: occurrenceOf(state, item.id.occurrence)?.activation ?? 0,
-    },
-    trigger: { tag: DeliveryTriggerTag.Signal, address, reach: SignalReach.Broadcast },
-    correlation: [],
-    payload: null,
-    variables,
-    atMs: null,
-    conditionChoices: [],
-  };
+/** `ownReceivers`' order of process instances under the schedule. */
+function instanceOrder(ctx: Ctx, state: State): (left: InstanceName, right: InstanceName) => number {
+  switch (ctx.program.options.branchSchedule) {
+    case BranchSchedule.DeclarationDepthFirst:
+      return (left, right) => compareStrings(ctxNameText(ctx, state, left), ctxNameText(ctx, state, right));
+    case BranchSchedule.OrderInvariant:
+      return compareInstanceName;
+  }
+  return assertNever(ctx.program.options.branchSchedule);
+}
+
+/** The firing a throw hands each receiver: a broadcast of `address` with the thrown variables. */
+function thrownFiring(address: SignalAddress, variables: readonly Binding[]): SignalFiring {
+  return { trigger: { tag: DeliveryTriggerTag.Signal, address, reach: SignalReach.Broadcast }, payload: null, variables };
 }
 
 function throwSignal(ctx: Ctx, payload: EventPayload, record: SignalThrow, origin: Origin, occurrence: Occurrence, state: State): Outcome {
@@ -268,7 +273,7 @@ function throwSignal(ctx: Ctx, payload: EventPayload, record: SignalThrow, origi
   for (const item of ownReceivers(ctx, state, address.value)) {
     fired = signal(fired, {
       tag: SignalTag.Fire, item: item.id,
-      fired: { tag: FiredTag.Signal, delivery: thrownDelivery(ctx, fired, address.value, variables.value, item) },
+      fired: { tag: FiredTag.Signal, firing: thrownFiring(address.value, variables.value) },
     });
   }
   const intent: BroadcastIntent = {

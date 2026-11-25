@@ -53,7 +53,7 @@ are the reference's, it is numbered under its element's counter, and it has begu
 role matters because each role numbers under its own counter (R8), so a Multi-Instance body and its first instance
 share element and activation; a reservation no item waits for answers to no reference. -/
 def Designates (program : Program) (state : State) (ref : OccurrenceRef) (occurrence : Occurrence) : Prop :=
-  (program.publicId occurrence.element = ref.element ∧ occurrence.activation = ref.activation ∧
+  (program.publicId occurrence.element = ref.element ∧ occurrence.activation = .committed ref.activation ∧
     (state.instanceOf occurrence.scope).text = ref.processInstanceId) ∧ occurrence.role = .element ∧
     (occurrence.begun = true ∨ ∃ item ∈ itemList state.openItems, item.id.occurrence = occurrence.id)
 
@@ -157,7 +157,7 @@ theorem item_designates {program : Program} {before s : State} {ref : Occurrence
     (formed : WellFormed program before) (occurrences : s.occurrences = before.occurrences)
     (items : itemList s.openItems = itemList before.openItems) (sameInstance : s.instanceOf = before.instanceOf)
     (member : item ∈ itemList s.openItems) (named : program.publicId item.element = ref.element)
-    (activation : (s.occurrence? item.id.occurrence).map (·.activation) = some ref.activation)
+    (activation : (s.occurrence? item.id.occurrence).map (·.activation) = some (.committed ref.activation))
     (instance_ : (s.instanceOf item.scope).text = ref.processInstanceId) :
     ∃ occurrence ∈ before.occurrences, Designates program before ref occurrence := by
   obtain ⟨owner, owned, ownerId, ownerFacts⟩ := formed.owned.itemOccurrences item (items ▸ member)
@@ -471,32 +471,21 @@ theorem microStepsKeep_alongside {hooks : Hooks} {rel : Program → State → Pr
     fun _ _ _ _ _ holds between step => Laws.Step.closureStep_carries contract (closurePhases_alongside phases side reissue)
       facts pipeline framing (fun _ _ holds => holds.1) holds between step⟩
 
-/-- A list whose keys are distinct holds the key `key` once if at all. -/
-theorem once_of_nodup {α β : Type} {facts : List (α × β)} {key : α} (distinct : (facts.map (·.1)).Nodup)
-    (member : key ∈ facts.map (·.1)) :
+/-- A list whose keys hold `key` once holds one fact of it, every other fact apart from it. -/
+theorem once_of_count {α β : Type} [BEq α] [LawfulBEq α] {facts : List (α × β)} {key : α}
+    (once : (facts.map (·.1)).count key = 1) :
     ∃ earlier value later, facts = earlier ++ (key, value) :: later ∧ ∀ fact ∈ earlier ++ later, fact.1 ≠ key := by
-  obtain ⟨⟨_, value⟩, inside, rfl⟩ := List.mem_map.mp member
+  obtain ⟨⟨found, value⟩, inside, named⟩ := List.mem_map.mp (List.count_pos_iff.mp (by omega) : key ∈ facts.map (·.1))
+  simp only at named
+  subst named
   obtain ⟨earlier, later, rfl⟩ := List.append_of_mem inside
   refine ⟨earlier, value, later, rfl, fun fact other same => ?_⟩
-  rw [List.map_append, List.map_cons] at distinct
-  have apart := (List.nodup_append.mp distinct)
-  rcases List.mem_append.mp other with inEarlier | inLater
-  · exact apart.2.2 _ (List.mem_map_of_mem inEarlier) _ (List.mem_cons_self) same
-  · exact (List.nodup_cons.mp apart.2.1).1 (same ▸ List.mem_map_of_mem inLater)
-
-/-- A commit keeps the journal's end facts: its renaming rewrites a transition's cause, owner and started facts only
-(`Laws.State.renameTransition_eq`). -/
-theorem compact_ended {start : State} {log : Step.RunLog} {s t : State} (ran : Step.compact schedule start log s = .ok t) :
-    t.journal.flatMap (·.ended) = s.journal.flatMap (·.ended) := by
-  rcases Laws.Step.compact_cases ran with ⟨_, same⟩ | ⟨_, same⟩
-  · rw [same]
-  have journal : t.journal = s.journal.map (renameTransition (Laws.Step.commitRenaming schedule start log s)) := by
-    have frame := Laws.Step.advance_frame (Laws.Step.commitRenaming schedule start log s) (Step.assign schedule start log s).2
-      (renameState (Laws.Step.commitRenaming schedule start log s) (Laws.Step.commitPositioning schedule start log s) (Laws.Step.commitRekey schedule start log s) s)
-    rw [same]
-    unfold Laws.Step.compacted
-    rw [frame, Laws.State.renameState_eq]
-  simp only [journal, List.flatMap_map, Laws.State.renameTransition_eq]
+  simp only [List.map_append, List.map_cons, List.count_append, List.count_cons_self] at once
+  have none : ∀ l : List (α × β), (l.map (·.1)).count found = 0 → fact ∉ l := fun l zero held =>
+    List.count_eq_zero.mp zero (same ▸ List.mem_map_of_mem held)
+  rcases List.mem_append.mp other with early | late
+  · exact none earlier (by omega) early
+  · exact none later (by omega) late
 
 /-- `RemovedEndOnce` from `MicroStepsKeepEnds`: the input's start is well-formed and has ended nothing, so it keeps its
 own end facts (`Laws.Step.EndsKept.start`); its micro-steps carry them to the settled closure, whose draft is empty, so
@@ -525,7 +514,7 @@ theorem removedEndOnce {hooks : Hooks} (kept : MicroStepsKeepEnds hooks) : Remov
   obtain ⟨movedHolds, movedDraft⟩ :=
     kept.1 _ _ _ _ start start moved runs ⟨startFormed, Laws.Step.EndsKept.start startFormed startEmpty⟩
       (Laws.Step.advanceClock_between (Laws.Step.reset_between committed) clocked) stepped
-  obtain ⟨⟨⟨_, settledKept⟩, _⟩, settledDraft⟩ := Laws.Step.settle_induction
+  obtain ⟨⟨⟨settledFormed, settledKept⟩, _⟩, settledDraft⟩ := Laws.Step.settle_induction
     (fun s => (Laws.Step.EndsInv start none (Laws.Step.inputCtx hooks program input).program s ∧ Laws.Step.Between s) ∧
       s.draft.ended = [])
     (fun log unit s s' holds closure => kept.2 _ log unit start s s' holds.1.1 holds.1.2 closure) _ _ _ moved settled
@@ -541,10 +530,53 @@ theorem removedEndOnce {hooks : Hooks} (kept : MicroStepsKeepEnds hooks) : Remov
   have key : before.keyOf occurrence ∈ Laws.Step.endKeys settled.1 := by
     have ended := settledKept.removed occurrence startMember begun stays fun _ none => by cases none
     rwa [Laws.State.keyOf_eq, Laws.State.key, ← sameInstance]
-  have keys : ((after.journal.flatMap (·.ended)).map (·.1)).Perm (Laws.Step.endKeys settled.1) := by
-    rw [compact_ended compacted]
+  -- The commit renames the end keys (`Laws.Step.compact_frame`); only the removed occurrence's renames onto its key,
+  -- which is committed under a resolved name and at or below the start's counter (`Laws.Step.renameKey_onto_committed`).
+  have startCount : start.activationCount = before.activationCount := by
+    rcases Laws.Step.advanceClock_ok clocked with rfl | ⟨_, rfl⟩ <;> rfl
+  obtain ⟨n, fixedActivation, resolvedName, below⟩ : ∃ n, (before.keyOf occurrence).activation = .committed n ∧
+      (before.keyOf occurrence).processInstanceId.unresolved = false ∧
+      n ≤ start.activationCount (Laws.Step.slotOf (before.keyOf occurrence)) := by
+    have counted := formed.occurrencesCounted occurrence member
+    rw [← Laws.State.keyOf_eq] at counted
+    unfold Laws.State.Counted at counted
+    split at counted
+    · rename_i n activation
+      obtain ⟨count, held, named, more⟩ := counted
+      obtain ⟨elemented, roled, bound⟩ := more
+      have up := Laws.State.le_activationCount formed.activations held
+      rw [named, elemented, roled] at up
+      exact ⟨n, activation, named ▸ formed.activations.resolved count held, by
+        rw [startCount]; exact Nat.le_trans bound up⟩
+    · rw [committed.issued] at counted; simp at counted
+  have onto : ∀ k ∈ Laws.Step.endKeys settled.1, renameKey
+      (Laws.Step.commitRenaming (Laws.Step.inputCtx hooks program input).program.options.branchSchedule start settled.2
+        (Laws.Step.ordered settled.2 settled.1)) k = before.keyOf occurrence → k = before.keyOf occurrence :=
+    fun k inside same => Laws.Step.renameKey_onto_committed (s := Laws.Step.ordered settled.2 settled.1)
+      settledFormed.activations rfl
+      (fun issue slot inside => Laws.State.NameTabled.grow (s := settled.1) (t := Laws.Step.ordered settled.2 settled.1)
+        (fun _ _ found => found) (settledFormed.issued.slots issue slot inside))
+      (settledKept.counted k inside) fixedActivation resolvedName below same
+  have fixed : renameKey
+      (Laws.Step.commitRenaming (Laws.Step.inputCtx hooks program input).program.options.branchSchedule start settled.2
+        (Laws.Step.ordered settled.2 settled.1)) (before.keyOf occurrence) = before.keyOf occurrence := by
+    rw [Laws.State.renameKey_eq, Laws.State.rename_resolved _ resolvedName, fixedActivation]
+    simp only [Laws.Step.commitRenaming, Laws.Step.renameBy_committed]
+    rw [← fixedActivation]
+  have keys : (((Laws.Step.ordered settled.2 settled.1).journal.flatMap (·.ended)).map (·.1)).Perm
+      (Laws.Step.endKeys settled.1) := by
     simp only [Laws.Step.endKeys, show settled.1.draft.ended = [] from settledDraft, List.append_nil]
     exact ((Laws.Step.byRun_perm _ _).flatMap_right _).map _
-  exact once_of_nodup (keys.nodup_iff.mpr settledKept.nodup) (keys.mem_iff.mpr key)
+  have nodup := keys.nodup_iff.mpr settledKept.nodup
+  refine once_of_count ?_
+  rw [(Laws.Step.compact_frame compacted).2.2.2.2]
+  have shape : ∀ (r : OccurrenceKey → OccurrenceKey) (journal : List Transition),
+      (journal.flatMap fun transition => transition.ended.map fun (key, terminal) => (r key, terminal)).map (·.1) =
+        ((journal.flatMap (·.ended)).map (·.1)).map r := fun r journal => by
+    simp only [List.map_flatMap, List.map_map, Function.comp_def]
+  rw [shape, List.count, List.countP_map, ← nodup.count.trans (ite_eq_left_iff.mpr fun absent => absurd (keys.mem_iff.mpr key) absent)]
+  refine List.countP_congr fun k inside => ?_
+  simp only [Function.comp_apply, beq_iff_eq]
+  exact ⟨onto k (keys.mem_iff.mp inside), fun same => same ▸ fixed⟩
 
 end Kernel.Proofs.Cancellation

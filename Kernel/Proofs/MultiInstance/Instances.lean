@@ -111,16 +111,16 @@ theorem withInstances_fields (base : MultiInstanceRun) (instances : List Iterati
 slots active, it opens a slot only while none of its slots is active, and its element loops: an occurrence lies in a
 scope occurrence issued before, so in none of the slots it opens, and every begin queued before targets a slot it does
 not open, so the begins it queues, of the slots it opens in increasing order, follow every other of their body's. -/
-theorem Numbered.beginInstances {inv : State → Prop} {settled : State → OccurrenceId → Prop} {ctx : Ctx} {loop : MultiInstance}
+theorem NumberedBy.beginInstances {below : Issue → Issue → Prop} {inv : State → Prop} {settled : State → OccurrenceId → Prop} {ctx : Ctx} {loop : MultiInstance}
     {state queued : State} {base : MultiInstanceRun} {instances : List Iteration}
-    (formed : WellFormed ctx.program state) (owns : SlotsOwned state) (held : Numbered ctx.program state)
+    (formed : WellFormed ctx.program state) (owns : SlotsOwned state) (held : NumberedBy below ctx.program state)
     (begun : Begun inv settled ctx loop state base queued instances)
     (based : base ∈ state.slots.multiInstances ∨ (∀ run ∈ state.slots.multiInstances, run.occurrence ≠ base.occurrence) ∧
       ∀ scope, Iteration.active scope ∉ base.instances)
     (quiet : Feature.MultiInstance.opening loop.mode base.instances ≠ [] →
       ∀ scope, Iteration.active scope ∉ base.instances)
     (looped : LoopOf ctx.program base.element loop) :
-    Numbered ctx.program (Feature.MultiInstance.setRun queued { base with instances }) := by
+    NumberedBy below ctx.program (Feature.MultiInstance.setRun queued { base with instances }) := by
   obtain ⟨each, qs⟩ := held
   obtain ⟨requests, requested, queuedAs⟩ := begun.queues
   have fields := withInstances_fields base instances
@@ -256,7 +256,7 @@ theorem Numbered.beginInstances {inv : State → Prop} {settled : State → Occu
     exact iSame ▸ jSame ▸ lower
   refine ⟨fun r member => ?_, ?_⟩
   · rcases aRuns r member with mine | same
-    · unfold Laws.MultiInstance.NumberedInOrder Laws.MultiInstance.InstancesPlaced
+    · unfold InOrderBy Laws.MultiInstance.InstancesPlaced
       rw [aOccs]
       exact each r mine.1
     · subst same
@@ -484,11 +484,11 @@ theorem Numbered.beginInstances {inv : State → Prop} {settled : State → Occu
 /-! ## The other operations of the hooks -/
 
 /-- Queuing a signal that is no begin, reservation or compensation keeps `Numbered`. -/
-theorem Numbered.signalOther {program : Program} {s : State} {signal : Signal}
+theorem NumberedBy.signalOther {below : Issue → Issue → Prop} {program : Program} {s : State} {signal : Signal}
     (apart : (∀ request, Signal.begin request ≠ signal) ∧
       (∀ element scope leave writes rule, Signal.occur element scope leave writes rule ≠ signal) ∧
       ∀ scope activity trigger leave resume, Signal.compensate scope activity trigger leave resume ≠ signal)
-    (held : Numbered program s) : Numbered program (s.signal signal) := by
+    (held : NumberedBy below program s) : NumberedBy below program (s.signal signal) := by
   rw [Laws.State.signal_eq]
   have none : Laws.Step.beginsOf [signal] = [] := List.eq_nil_iff_forall_not_mem.mpr fun request inside =>
     apart.1 request (List.mem_singleton.mp (Laws.Step.mem_beginsOf.mp inside))
@@ -508,22 +508,22 @@ theorem Numbered.signalOther {program : Program} {s : State} {signal : Signal}
   · exact .inr (.inr resumed)
 
 /-- Holding an occurrence keeps `Numbered`. -/
-theorem Numbered.hold {program : Program} {s : State} (kept : Occurrence) (held : Numbered program s) :
-    Numbered program (s.hold kept) := by
+theorem NumberedBy.hold {below : Issue → Issue → Prop} {program : Program} {s : State} (kept : Occurrence) (held : NumberedBy below program s) :
+    NumberedBy below program (s.hold kept) := by
   rw [Laws.Hooks.hold_eq]
   exact held.shrink (.same rfl (fun _ inside => inside) rfl (.of_kept (.of_eq rfl rfl rfl rfl)) fun _ pending =>
     .inl pending)
 
 /-- Setting a body's record to one of fewer active slots keeps `Numbered` when every active slot whose scope occurrence
 stands stays active. -/
-theorem Numbered.narrow {program : Program} {t : State} {run next : MultiInstanceRun}
+theorem NumberedBy.narrow {below : Issue → Issue → Prop} {program : Program} {t : State} {run next : MultiInstanceRun}
     (keyed : Laws.MultiInstance.RunsKeyed t) (member : run ∈ t.slots.multiInstances)
     (occurrence : next.occurrence = run.occurrence) (element : next.element = run.element)
     (kept : ∀ (i : Nat) (scope : ScopeOccurrenceId), next.instances[i]? = some (.active scope) →
       run.instances[i]? = some (.active scope))
     (stays : ∀ (i : Nat) (scope : ScopeOccurrenceId), run.instances[i]? = some (.active scope) → scope ∈ scopeIds t →
       next.instances[i]? = some (.active scope))
-    (held : Numbered program t) : Numbered program (Feature.MultiInstance.setRun t next) := by
+    (held : NumberedBy below program t) : NumberedBy below program (Feature.MultiInstance.setRun t next) := by
   obtain ⟨each, qs⟩ := held
   have toOld : ∀ r ∈ (Feature.MultiInstance.setRun t next).slots.multiInstances, ∃ r' ∈ t.slots.multiInstances,
       (∀ (i : Nat) (scope : ScopeOccurrenceId), r.instances[i]? = some (.active scope) →
@@ -615,10 +615,10 @@ theorem leaveScope_keeps_body {program : Program} {s : State} (formed : WellForm
 /-! ## The registered Multi-Instance hooks -/
 
 /-- `Hooks.completeBody` keeps `Numbered`: it queues the body's completion. -/
-theorem numbered_completeBody {ctx : Ctx} {header : Header} {envelope : Envelope} {loop : MultiInstance}
-    {occurrence : Occurrence} {state after : State} (held : Numbered ctx.program state)
+theorem numbered_completeBody {below : Issue → Issue → Prop} {ctx : Ctx} {header : Header} {envelope : Envelope} {loop : MultiInstance}
+    {occurrence : Occurrence} {state after : State} (held : NumberedBy below ctx.program state)
     (ran : Feature.MultiInstance.completeBody ctx header envelope loop occurrence state = .ok after) :
-    Numbered ctx.program after := by
+    NumberedBy below ctx.program after := by
   obtain ⟨run, _, rfl⟩ := Laws.MultiInstance.completeBody_spec ran
   obtain ⟨writes, same, _⟩ := Laws.MultiInstance.finish_spec ctx loop run state
   rw [same]
@@ -627,10 +627,10 @@ theorem numbered_completeBody {ctx : Ctx} {header : Header} {envelope : Envelope
 /-- `Hooks.arriveMultiInstance` keeps `Numbered`: it holds the occurrence, completes it, or enters the body's scope
 occurrence, arms its boundaries or not, and begins the instances of a body no running body is keyed by, every slot
 waiting. -/
-theorem numbered_arrive {ctx : Ctx} {header : Header} {envelope : Envelope} {loop : MultiInstance}
+theorem numbered_arrive {below : Issue → Issue → Prop} {ctx : Ctx} {header : Header} {envelope : Envelope} {loop : MultiInstance}
     {occurrence : Occurrence} {state after : State}
     (ops : Laws.MultiInstance.MultiInstanceOps ctx.program (WellFormed ctx.program) Laws.State.Settled)
-    (formed : WellFormed ctx.program state) (owns : SlotsOwned state) (held : Numbered ctx.program state)
+    (formed : WellFormed ctx.program state) (owns : SlotsOwned state) (held : NumberedBy below ctx.program state)
     (member : occurrence ∈ state.occurrences) (begun : occurrence.begun = true) (named : header.id = occurrence.element)
     (looped : LoopOf ctx.program header.id loop) (ownsEntered : ∀ locals (unarmed : Bool), SlotsOwned (if unarmed then
       (state.enterScope header.id occurrence.scope locals (some occurrence.id)).1
@@ -638,7 +638,7 @@ theorem numbered_arrive {ctx : Ctx} {header : Header} {envelope : Envelope} {loo
         (.arm occurrence.id header.id occurrence.scope)))
     (unrun : ∀ run ∈ state.slots.multiInstances, run.occurrence ≠ occurrence.id)
     (ran : Feature.MultiInstance.arriveMultiInstance ctx header envelope loop occurrence state = .ok after) :
-    Numbered ctx.program after := by
+    NumberedBy below ctx.program after := by
   rcases Laws.MultiInstance.arriveMultiInstance_spec ran with ⟨kept, rfl⟩ | ⟨writes, rfl⟩ | ⟨locals, unarmed, entered⟩
   · exact held.hold kept
   · exact held.signalOther Laws.Step.complete_apart
@@ -648,7 +648,7 @@ theorem numbered_arrive {ctx : Ctx} {header : Header} {envelope : Envelope} {loo
     obtain ⟨entering, slots, _⟩ := enterBody_entering ops formed member begun header.id
       (enterBody_enters ops formed member begun named)
       (fun current kept present => ops.arm current occurrence _ kept present begun named) locals unarmed items strings _ waiting
-    have enteredHeld : Numbered ctx.program (if unarmed then
+    have enteredHeld : NumberedBy below ctx.program (if unarmed then
         (state.enterScope header.id occurrence.scope locals (some occurrence.id)).1
         else (state.enterScope header.id occurrence.scope locals (some occurrence.id)).1.signal
           (.arm occurrence.id header.id occurrence.scope)) := by
@@ -661,15 +661,15 @@ theorem numbered_arrive {ctx : Ctx} {header : Header} {envelope : Envelope} {loo
       cases List.eq_of_mem_replicate active
     obtain ⟨queued, instances, made, begunAt⟩ := Laws.MultiInstance.beginInstances_spec ops entering
     rw [made]
-    exact Numbered.beginInstances entering.1 (ownsEntered locals unarmed) enteredHeld begunAt
+    exact NumberedBy.beginInstances entering.1 (ownsEntered locals unarmed) enteredHeld begunAt
       (.inr ⟨fun run inside => unrun run (slots ▸ inside), idle⟩) (fun _ => idle) looped
 
 /-- `Hooks.instanceCompleted` keeps `Numbered` for an instance in a scope occurrence that stands: it records the
 instance's slot, leaving its scope occurrence, which takes nothing else of the numbering, writes the body's counters or
 not, then completes the body or begins its next instances. -/
-theorem numbered_instanceCompleted {ctx : Ctx} {body : OccurrenceId} {occurrence : Occurrence} {writes : List (String × Value)}
+theorem numbered_instanceCompleted {below : Issue → Issue → Prop} {ctx : Ctx} {body : OccurrenceId} {occurrence : Occurrence} {writes : List (String × Value)}
     {state after : State} (ops : Laws.MultiInstance.MultiInstanceOps ctx.program (WellFormed ctx.program) Laws.State.Settled)
-    (formed : WellFormed ctx.program state) (owns : SlotsOwned state) (held : Numbered ctx.program state)
+    (formed : WellFormed ctx.program state) (owns : SlotsOwned state) (held : NumberedBy below ctx.program state)
     (stands : occurrence.scope ∈ scopeIds state)
     (ownsLeft : ∀ run index output results, run ∈ state.slots.multiInstances →
       run.instances[index]? = some (.active occurrence.scope) → Laws.MultiInstance.OutputFits ctx.program run output →
@@ -677,7 +677,7 @@ theorem numbered_instanceCompleted {ctx : Ctx} {body : OccurrenceId} {occurrence
     (parallel : ∀ run ∈ state.slots.multiInstances, ∀ loop, LoopOf ctx.program run.element loop →
       loop.mode = .parallel → ∀ slot ∈ run.instances, slot ≠ .waiting)
     (ran : Feature.MultiInstance.instanceCompleted ctx body occurrence writes state = .ok after) :
-    Numbered ctx.program after := by
+    NumberedBy below ctx.program after := by
   obtain ⟨run, loop, index, found⟩ := Laws.MultiInstance.instanceCompleted_spec ran
   obtain ⟨output, done⟩ := found
   obtain ⟨results, counted, left, ended⟩ := done.ends
@@ -695,7 +695,7 @@ theorem numbered_instanceCompleted {ctx : Ctx} {body : OccurrenceId} {occurrence
       rw [show (Laws.MultiInstance.recorded run index output results).instances =
         run.instances.set index (.completed output) from rfl, List.getElem?_set_ne (Ne.symm differs)] at slot
       exact slot⟩
-  have leftHeld : Numbered ctx.program
+  have leftHeld : NumberedBy below ctx.program
       (Laws.MultiInstance.leftWith ctx.positionLe state occurrence.scope (Laws.MultiInstance.recorded run index output results)) := by
     have keyedLeft : Laws.MultiInstance.RunsKeyed (state.leaveScope ctx.positionLe occurrence.scope) := by
       unfold Laws.MultiInstance.RunsKeyed
@@ -713,7 +713,7 @@ theorem numbered_instanceCompleted {ctx : Ctx} {body : OccurrenceId} {occurrence
       run.instances.set index (.completed output) from rfl, List.getElem?_set_ne (Ne.symm differs)]
     exact slot
   have leftOwned := ownsLeft run index output results member done.slot done.fits
-  have countedHeld : Numbered ctx.program counted ∧ SlotsOwned counted := by
+  have countedHeld : NumberedBy below ctx.program counted ∧ SlotsOwned counted := by
     rcases left with rfl | ⟨target, counts, rule, rfl⟩
     · exact ⟨leftHeld, leftOwned⟩
     · refine ⟨leftHeld.signalOther Laws.Step.write_apart, ?_⟩
@@ -729,7 +729,7 @@ theorem numbered_instanceCompleted {ctx : Ctx} {body : OccurrenceId} {occurrence
   · obtain ⟨entering, _, present⟩ := counted_entering ops formed stands done left
     obtain ⟨queued, instances, made, begunAt⟩ := Laws.MultiInstance.beginInstances_spec ops entering
     rw [made]
-    refine Numbered.beginInstances entering.1 countedHeld.2 countedHeld.1 begunAt (.inl present)
+    refine NumberedBy.beginInstances entering.1 countedHeld.2 countedHeld.1 begunAt (.inl present)
       (quiet_of_parallel fun mode slot inside => ?_) done.looped
     rw [show (Laws.MultiInstance.recorded run index output results).instances =
       run.instances.set index (.completed output) from rfl] at inside

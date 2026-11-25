@@ -218,6 +218,23 @@ structure Ctx where
 open items or other positions reads this. -/
 def Ctx.positionLe (ctx : Ctx) : Issue → Issue → Bool := Issue.notAfter ctx.issuerOrder
 
+/-- The number the commit gives `activation` if no unit yet to run issues another of its counter before it: the
+counter's count, which no step of a closure writes (`Step.advanceCounters` does at commit), plus the issues of its
+counter the closure made so far that `positionLe` places no later, itself included. Exact under
+`declarationDepthFirst`, whose issue order is the run order; under `orderInvariant` a lower bound, which a unit yet to
+run may raise. A committed activation is its number; a fresh issue tabled under another slot, which no well-formed
+issuer holds as an activation (`Laws.State.IssuerFresh`), its index. -/
+def Ctx.provisional (ctx : Ctx) (state : State) : Issue → Nat
+  | .committed ordinal => ordinal
+  | activation@(.fresh _ index) =>
+    match state.issued[activation]? with
+    | some (.activation slot) => state.activationCount slot + state.issued.foldl (init := 0) fun count issue claimed =>
+        if claimed == .activation slot && ctx.positionLe issue activation then count + 1 else count
+    | some (.scope _) | some (.occurrence _) | some (.item _) | some .position | none => index
+
+/-- The identifier `name` denotes in the closure in progress, its pending activations numbered `provisional`ly. -/
+def Ctx.nameText (ctx : Ctx) (state : State) (name : InstanceName) : String := name.textWith (ctx.provisional state)
+
 /-- Whether `element`, running in the scope occurrence `scope`, is an instance of its own Multi-Instance Activity:
 `scope` is a Multi-Instance instance's and belongs to `element`. An element inside an instance of an enclosing
 Multi-Instance Sub-Process, or inside a called instance of a Multi-Instance Call, runs in a scope of another element
@@ -292,7 +309,7 @@ def itemDetail? {α : Type} (ctx : Ctx) (state : State) (occurrence : Occurrence
     Option (OpenItem × α) :=
   (itemsInOrder ctx.positionLe state.openItems).findSome? fun item =>
     if ctx.program.publicId item.element == occurrence.element &&
-        ((state.occurrence? item.id.occurrence).map (·.activation)) == some occurrence.activation &&
+        ((state.occurrence? item.id.occurrence).map (·.activation)) == some (.committed occurrence.activation) &&
         (state.instanceOf item.scope).text == occurrence.processInstanceId
     then (detail item.kind.view).map (item, ·) else none
 

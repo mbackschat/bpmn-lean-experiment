@@ -296,4 +296,36 @@ theorem cancel_without_end_rejected (kind : OpenKind) :
   subst cancelled
   simp [ended] at length
 
+/-- A committed count's activation stands at or below its slot's `activationCount`, the counters keyed: `find?` meets
+the one entry of the slot. -/
+theorem le_activationCount {u : State} {count : ActivationCount} (keyed : ActivationsKeyed u) (member : count ∈ u.activations) :
+    count.count ≤ u.activationCount { processInstance := count.processInstance, element := count.element, role := count.role } := by
+  simp only [State.activationCount]
+  cases found : u.activations.find? (fun other => other.processInstance == count.processInstance &&
+      other.element == count.element && other.role == count.role) with
+  | none =>
+    have := List.find?_eq_none.mp found count member
+    simp at this
+  | some other =>
+    have hit := List.find?_some found
+    simp only [Bool.and_eq_true, beq_iff_eq] at hit
+    have same : other = count := nodup_map_eq keyed.keys (List.mem_of_find?_eq_some found) member
+      (by simp [hit.1.1, hit.1.2, hit.2])
+    simp [same]
+
+/-- Pruning keyed counters lowers every slot's count. -/
+theorem filter_activationCount {u : State} (keyed : ActivationsKeyed u) (p : ActivationCount → Bool) (slot : ActivationSlot) :
+    ({ u with activations := u.activations.filter p } : State).activationCount slot ≤ u.activationCount slot := by
+  simp only [State.activationCount]
+  cases found : (u.activations.filter p).find? (fun other => other.processInstance == slot.processInstance &&
+      other.element == slot.element && other.role == slot.role) with
+  | none => simp
+  | some c =>
+    have hit := List.find?_some found
+    simp only [Bool.and_eq_true, beq_iff_eq] at hit
+    have inside := (List.mem_filter.mp (List.mem_of_find?_eq_some found)).1
+    have := le_activationCount keyed inside
+    simp only [hit.1.1, hit.1.2, hit.2] at this
+    simpa [State.activationCount] using this
+
 end Kernel.Laws.State

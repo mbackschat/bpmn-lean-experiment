@@ -151,7 +151,7 @@ theorem Formed.unmoved {precedes : Compensable → Compensable → Prop} {s t : 
       Laws.State.instanceOf_congr moved.scopes moved.instanceId x⟩)
     (Nat.le_of_eq moved.nextCompletion.symm)
     (.of_same (congrArg (List.map ScopeOccurrence.id) moved.scopes) moved.scopeOrdinals moved.table)
-    (fun _ held => Laws.State.Counted.congr moved.activations held)
+    (fun _ held => Laws.State.Counted.congr moved.activations moved.table held)
     (by rw [moved.compensation]; exact .refl _) (by rw [moved.compensation]; exact .refl _)
     (fun record member => by
       rw [moved.compensation] at member
@@ -173,7 +173,7 @@ theorem Formed.same {precedes : Compensable → Compensable → Prop} {s t : Sta
   have ids : scopeIds t = scopeIds s := by rw [scopeIds, scopes]; rfl
   refine formed.shrink (fun x present _ => ⟨ids ▸ present, Laws.State.instanceOf_congr scopes instanceId x⟩) issued
     (.of_same (congrArg (List.map ScopeOccurrence.id) scopes) ordinals table)
-    (fun _ held => Laws.State.Counted.congr activations held) (by rw [compensation]; exact .refl _)
+    (fun _ held => Laws.State.Counted.congr activations table held) (by rw [compensation]; exact .refl _)
     (by rw [compensation]; exact .refl _) (fun record member => ?_) (Laws.Step.triggersOf_fewer signals)
     (fun _ inside => (Laws.Step.resumesOf_fewer signals).subset inside) (.same occurrences scopes instanceId)
     (fun _ _ _ stands => ids ▸ stands)
@@ -207,7 +207,8 @@ theorem Formed.enter {precedes : Compensable → Compensable → Prop} {program 
     (placed : entry.parent.isSome)
     (nextCompletion : t.nextCompletion = s.nextCompletion) (activations : t.activations = s.activations)
     (instanceId : t.instanceId = s.instanceId) (compensation : t.slots.compensation = s.slots.compensation)
-    (signals : Laws.State.allSignals t = Laws.State.allSignals s) (occurrences : t.occurrences = s.occurrences) : Formed precedes t := by
+    (signals : Laws.State.allSignals t = Laws.State.allSignals s) (occurrences : t.occurrences = s.occurrences)
+    (table : Laws.State.TableGrows s t := by exact .of_eq rfl) : Formed precedes t := by
   have apart : ∀ old ∈ s.scopes, old.id ≠ entry.id := fun old member same => fresh.1 (same ▸ well.issued.scopes old member)
   have members : ∀ found, found ∈ t.scopes ↔ found ∈ s.scopes ∨ found = entry := fun _ => by
     rw [Laws.State.scopes_eq t, scopeMap]
@@ -232,7 +233,7 @@ theorem Formed.enter {precedes : Compensable → Compensable → Prop} {program 
   have keptIn : ∀ x ∈ scopeIds s, t.instanceOf x = s.instanceOf x := fun x old =>
     Laws.State.instanceOf_kept well nodup parentless instanceId old fun other member _ => (members other).mpr (.inl member)
   refine formed.shrink (fun x present below => ?_) (Nat.le_of_eq nextCompletion.symm) fresh.2.2
-    (fun _ held => Laws.State.Counted.congr activations held)
+    (fun _ held => Laws.State.Counted.congr activations table held)
     (by rw [compensation]; exact .refl _) (by rw [compensation]; exact .refl _) (fun record member => ?_)
     (by rw [signals]; exact .refl _) (fun _ inside => signals ▸ inside)
     (.sub (fun _ inside => occurrences ▸ inside) fun o inside =>
@@ -254,7 +255,7 @@ theorem Formed.reserve {precedes : Compensable → Compensable → Prop} {progra
   have made := Laws.State.reserve_reserves s element scope
   refine formed.shrink (fun x present _ => ⟨by rwa [scopeIds, made.scopes] at present, made.instances x⟩) (Nat.le_of_eq ((Laws.State.positions_kept s).1 element scope).symm)
     (.of_same (congrArg (List.map ScopeOccurrence.id) made.scopes) made.scopeOrdinals (made.table well.issuer))
-    (fun _ held => (made.activated well.activations).counted held) (by rw [made.slots]; exact .refl _)
+    (fun _ held => (made.activated well.activations).counted well.issuer held) (by rw [made.slots]; exact .refl _)
     (by rw [made.slots]; exact .refl _) (fun record member => ?_) (by rw [made.signals]; exact .refl _)
     (fun _ inside => made.signals ▸ inside) (fun o inside unbegun => ?_)
     (fun _ _ _ stands => by rw [scopeIds, made.scopes]; exact stands)
@@ -263,7 +264,7 @@ theorem Formed.reserve {precedes : Compensable → Compensable → Prop} {progra
     · exact .inl ⟨o, old, unbegun, by simp [Laws.State.key, made.instances]⟩
     · subst fresh
       refine .inr fun key counted => ?_
-      have apart := (made.activated well.activations).fresh counted
+      have apart := (made.activated well.activations).fresh well.issuer counted
       rwa [Laws.State.key, made.instances, made.placed, made.kind, made.role]
   rw [made.slots] at member
   have stands := formed.retained record member
@@ -288,7 +289,7 @@ theorem Formed.leaveScope (le : Issue → Issue → Bool) {precedes : Compensabl
     obtain ⟨entry, member, rfl⟩ := List.mem_map.mp inside
     exact List.mem_map.mpr ⟨entry, ((left.scopes entry).mp member).1, rfl⟩
   refine formed.shrink (fun x inside _ => ⟨kept x inside, left.instances x inside⟩) (Nat.le_of_eq (Laws.State.leaveScope_compensation s scope).2.2.2.2.symm) left.scopeGrows
-    (fun _ held => Laws.State.Counted.congr left.activations held)
+    (fun _ held => Laws.State.Counted.congr left.activations (.of_eq left.issued) held)
     (by rw [retained]; exact List.filter_sublist.trans List.filter_sublist) (by rw [runs]; exact List.filter_sublist)
     (fun record member => ?_) (by rw [left.signals]; exact .refl _) (fun _ inside => left.signals ▸ inside)
     (.sub (fun o inside => ((left.occurrences o).mp inside).1) fun o inside => ?_) (fun run member _ stands => ?_)
@@ -329,7 +330,7 @@ theorem Formed.clearInside (le : Issue → Issue → Bool) {precedes : Compensab
     exact List.mem_map.mpr ⟨entry, ((cleared.scopes entry).mp member).1, rfl⟩
   refine formed.shrink (fun x inside _ => ⟨kept x inside, cleared.instances x inside⟩)
     (Nat.le_of_eq (Laws.State.clearInside_shrinks s scope keep).2.symm) cleared.scopeGrows
-    (fun _ held => Laws.State.Counted.congr cleared.activations held)
+    (fun _ held => Laws.State.Counted.congr cleared.activations (.of_eq cleared.issued) held)
     (by rw [retainedSlot]; exact List.filter_sublist) (by rw [runsSlot]; exact List.filter_sublist) (fun record member => ?_)
     (by rw [cleared.signals]; exact .refl _) (fun _ inside => cleared.signals ▸ inside)
     (.sub (fun o inside => ((cleared.occurrences o).mp inside).1) fun o inside => ?_) (fun run member _ stands => ?_)
@@ -377,7 +378,7 @@ theorem formed_frameAlongside (precedes : Compensable → Compensable → Prop) 
     have fresh := Laws.State.enterScope_fresh well.historic well.issuer element stands locals owner
     rw [Laws.State.enterScope_eq] at fresh ⊢
     exact kept.enter (entry := { id := _, element := _, position := _, occurrence := _, calledInstance := _ }) well rfl fresh
-      rfl rfl rfl rfl rfl rfl rfl
+      rfl rfl rfl rfl rfl rfl rfl (.insert_insert well.issuer rfl)
   reserve s element scope well _ _ _ kept := kept.reserve well element scope
   leaveScope le _ _ well present _ kept := kept.leaveScope le well present
   clearInside le _ _ keep well present housed kept := kept.clearInside le well present keep housed
@@ -405,8 +406,11 @@ theorem Formed.withoutRecord {precedes : Compensable → Compensable → Prop} {
 /-- `Step`'s own phases keep `Formed`: journalling, taking signals and tokens off, beginning, cancelling and ordering
 the journal change nothing it reads but the queue, which they shorten, and a begin's counters, which grow. -/
 theorem formed_stepAlongside (precedes : Compensable → Compensable → Prop) (program : Program)
-    (blind : ∀ record other (x y : ScopeOccurrenceId), precedes record other →
-      precedes { record with scope := x } { other with scope := y }) :
+    (blind : ∀ record other (x y : ScopeOccurrenceId) (rekey : OccurrenceKey → OccurrenceKey), precedes record other →
+      precedes { record with scope := x, occurrence := rekey record.occurrence
+                             children := record.children.map fun child => { child with occurrence := rekey child.occurrence } }
+        { other with scope := y, occurrence := rekey other.occurrence
+                     children := other.children.map fun child => { child with occurrence := rekey child.occurrence } }) :
     StepAlongside program (Formed precedes) where
   toFrameAlongside := formed_frameAlongside precedes program
   journal _ _ _ _ kept _ _ _ := kept.same rfl rfl (Nat.le_refl _) rfl rfl (.refl _)
@@ -422,9 +426,9 @@ theorem formed_stepAlongside (precedes : Compensable → Compensable → Prop) (
     have begins := Laws.State.beginOccurrence_begins well.activations request role sourceType
     have counters : ∀ key, Counted s key → Counted (s.beginOccurrence request role sourceType).1 key := by
       rcases begins.source with ⟨_, reserved⟩ | ⟨_, reserved⟩ | issued
-      · exact fun _ held => Laws.State.Counted.congr reserved.activations held
-      · exact fun _ held => Laws.State.Counted.congr reserved.activations held
-      · exact fun _ held => issued.activated.counted held
+      · exact fun _ held => Laws.State.Counted.congr reserved.activations (begins.table well.issuer) held
+      · exact fun _ held => Laws.State.Counted.congr reserved.activations (begins.table well.issuer) held
+      · exact fun _ held => issued.activated.counted well.issuer held
     refine kept.shrink (fun x present _ => ⟨by rwa [scopeIds, begins.scopes] at present, begins.instances x⟩)
       (Nat.le_of_eq ((Laws.State.positions_kept s).2.1 request role sourceType).symm)
       (.of_same (congrArg (List.map ScopeOccurrence.id) begins.scopes) begins.scopeOrdinals (begins.table well.issuer))
@@ -469,7 +473,7 @@ theorem formed_pipelinePhases (precedes : Program → Compensable → Compensabl
         refine holds.2.shrink (fun x present _ => ⟨by rwa [scopeIds, starts.scopes] at present, starts.instances x⟩)
           (Nat.le_of_eq ((Laws.State.positions_kept s).2.2.1 occurrence sourceType).symm)
           (.of_same (congrArg (List.map ScopeOccurrence.id) starts.scopes) starts.scopeOrdinals (.of_eq starts.issued))
-          (fun _ held => Laws.State.Counted.congr starts.activations held)
+          (fun _ held => Laws.State.Counted.congr starts.activations (.of_eq starts.issued) held)
           (by rw [starts.slots]; exact .refl _) (by rw [starts.slots]; exact .refl _) (fun record inside => ?_)
           (by rw [starts.signals]; exact .refl _) (fun _ inside => starts.signals ▸ inside) (fun o inside unbegun => ?_)
           (fun _ _ _ stands => by rw [scopeIds, starts.scopes]; exact stands)
@@ -704,8 +708,12 @@ theorem formed_compensate (program : Program) (precedes : Compensable → Compen
       exact notLater (List.mem_filterMap.mpr ⟨held, inside, queuedTrigger_back chain carried⟩)
   · exact formedQueue.triggers.grouped run (runsBack run member) grouped (same ▸ headed)
   · have counted := formedQueue.triggers.counted trigger (List.mem_append_right _ headed)
-    refine Laws.State.Counted.congr ?_ counted
-    rw [cleared.activations, frame.2.2.1, steady.activations, made]
+    refine Laws.State.Counted.congr ?_ (fun issue slot held => ?_) counted
+    · rw [cleared.activations, frame.2.2.1, steady.activations, made]
+    · have before : before.issued = searched.issued := by
+        rcases terminated with rfl | ⟨host, rfl⟩ <;> first | rfl | rw [Laws.State.disarm_eq]
+      rw [cleared.issued, before]
+      exact steady.table issue slot (by rw [made]; exact held)
 
 /-- The trigger a queued compensation or Cancel raise names reads only the scope occurrences and the instance. -/
 theorem queuedTrigger_congr {s t : State} (scopes : t.scopes = s.scopes) (named : t.instanceId = s.instanceId) :
@@ -770,7 +778,7 @@ theorem thrower_fresh {program : Program} {precedes : Compensable → Compensabl
         rw [instances, begins.scope, placed began.scope, taken.element, taken.activation, ← taken.role, began.role]
       rw [same]
       exact holds.2.triggers.unreserved reserved taken.member unbegun trigger inside
-    · have apart := issued.activated.fresh (holds.2.triggers.counted trigger inside)
+    · have apart := issued.activated.fresh holds.1.issuer (holds.2.triggers.counted trigger inside)
       have roleIs : role = .element := issued.roled ▸ began.role
       rw [roleIs] at apart
       intro same
@@ -830,6 +838,6 @@ theorem formed_occursAlongside (program : Program) (precedes : Compensable → C
       definition
     rw [Laws.State.enterCalled_eq s program call variables definition] at fresh ⊢
     exact kept.enter (entry := { id := _, element := _, position := _, occurrence := _, calledInstance := _ }) well rfl fresh
-      rfl rfl rfl rfl rfl rfl rfl
+      rfl rfl rfl rfl rfl rfl rfl (.insert_insert well.issuer rfl)
 
 end Kernel.Proofs.Compensation

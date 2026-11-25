@@ -158,18 +158,15 @@ theorem raiseFrom_wellFormed {state : State} (formed : Laws.State.WellFormed pro
 occurrence has begun (`Laws.State.Worked`), and the item lies in its occurrence's scope occurrence. -/
 theorem effectRaise_wellFormed {state : State} (formed : Laws.State.WellFormed program state) {item : OpenItem}
     (member : item ∈ itemList state.openItems) (effect : item.kind.view.effect.isSome = true) (event : Raised)
-    (patch : List (String × Value)) : Laws.State.WellFormed program (state.signal (.raise event
+    (patch : List (String × Value)) {owner : Occurrence} (found : state.occurrence? item.id.occurrence = some owner) :
+    Laws.State.WellFormed program (state.signal (.raise event
       { element := item.element, scope := item.scope, thrower := item.id.occurrence, host := some item.id.occurrence,
-        patch := patch, activation := ((state.occurrence? item.id.occurrence).map (·.activation)).getD 0 })) := by
+        patch := patch, activation := owner.activation })) := by
   obtain ⟨occurrence, present, named, placed⟩ := formed.owned.itemOccurrences item member
   have begun := formed.worked item member (fun waits => by rw [waits.1] at effect; cases effect) occurrence present named
-  have activation : ((state.occurrence? item.id.occurrence).map (·.activation)).getD 0 = occurrence.activation := by
-    cases found : state.occurrence? item.id.occurrence with
-    | none => exact absurd named (Laws.State.occurrence?_none found occurrence present)
-    | some other =>
-      obtain ⟨inside, same⟩ := Laws.State.occurrence?_some found
-      rw [Laws.State.nodup_map_eq formed.distinct.occurrences inside present (same.trans named.symm)]
-      rfl
+  have activation : owner.activation = occurrence.activation := by
+    obtain ⟨inside, same⟩ := Laws.State.occurrence?_some found
+    rw [Laws.State.nodup_map_eq formed.distinct.occurrences inside present (same.trans named.symm)]
   rw [activation, ← placed.1, ← placed.2, ← named]
   exact raiseFrom_wellFormed formed present begun event (fun _ same => (Option.some.inj same).symm) patch
 

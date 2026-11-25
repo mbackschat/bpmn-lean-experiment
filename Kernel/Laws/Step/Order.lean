@@ -33,6 +33,12 @@ theorem runPosition_record (log : RunLog) (unit other : UnitKey) (logged : other
     obtain ⟨n, found⟩ := Option.isSome_iff_exists.mp (Std.ExtTreeMap.mem_iff_isSome_getElem?.mp inside)
     simp [same, this, found]
 
+/-- A unit the log has not recorded reads the log's size. -/
+theorem runPosition_unlogged {log : RunLog} {unit : UnitKey} (unlogged : unit ∉ log.positions) :
+    log.runPosition unit = log.positions.size := by
+  simp only [RunLog.runPosition, Std.ExtTreeMap.get?_eq_getElem?, Std.ExtTreeMap.getElem?_eq_none unlogged,
+    Option.getD_none]
+
 /-- A run log records, after `record unit`, `unit` and the units it recorded before. -/
 theorem mem_record {log : RunLog} {unit other : UnitKey} :
     other ∈ (log.record unit).positions ↔ other = unit ∨ other ∈ log.positions := by
@@ -264,6 +270,12 @@ instance issuerOrder_transCmp (schedule : BranchSchedule) (log : RunLog) : Std.T
   | declarationDepthFirst =>
     show Std.TransCmp (compareLex (compareOn fun unit => (orderKey log unit 0).1) compare)
     exact inferInstanceAs <| Std.TransCmp (compareLex _ _)
+
+/-- Under `declarationDepthFirst` a unit that ran later comes after one that ran earlier. -/
+theorem issuerOrder_ran {log : RunLog} {a b : UnitKey} (earlier : log.runPosition a < log.runPosition b) :
+    issuerOrder .declarationDepthFirst log b a = .gt := by
+  simp only [issuerOrder, compareLex, compareOn, orderKey, Ordering.then]
+  rw [Nat.compare_eq_gt.mpr earlier]
 
 /-- The closure's order of units ties only equal keys under either schedule. -/
 theorem issuerOrder_tied (schedule : BranchSchedule) (log : RunLog) (a b : UnitKey)

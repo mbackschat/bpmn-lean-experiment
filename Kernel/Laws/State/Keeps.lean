@@ -167,7 +167,7 @@ theorem rekind_wellFormed {s : State} (formed : WellFormed program s) {change : 
   have ids : (fun item => (change item).id) = (·.id) := funext fun item => by rw [kept item]
   have keeps : ∀ x, (change x).id.occurrence = x.id.occurrence ∧ (change x).element = x.element ∧
       (change x).scope = x.scope ∧ (change x).attachedTo = x.attachedTo := fun x => by rw [kept x]; simp
-  refine ⟨?issued, ?distinct, formed.startedOnce, ⟨formed.activations.keys, formed.activations.positive⟩, ?reservations,
+  refine ⟨?issued, ?distinct, formed.startedOnce, ⟨formed.activations.keys, formed.activations.positive, formed.activations.resolved⟩, ?reservations,
     ?owned, ?rooted, formed.failure,
     ⟨formed.queue.arm, formed.queue.armScope, formed.queue.armGateway, formed.queue.ends, formed.queue.completes⟩, formed.counted,
     ?occurrencesCounted, formed.ownedBelow, ?claimed,
@@ -202,7 +202,8 @@ theorem rekind_wellFormed {s : State} (formed : WellFormed program s) {change : 
     rw [alone oldOther otherInside named]
   case issued =>
     refine ⟨formed.issued.occurrences, fun item member => ?_, formed.issued.scopes, formed.issued.positions,
-    formed.issued.occurrencePositions⟩
+    formed.issued.occurrencePositions,
+      formed.issued.namesKept (fun _ member => member) (.of_eq rfl), formed.issued.slotsKept rfl⟩
     obtain ⟨old, inside, rfl⟩ := back item member
     rw [kept old]
     exact formed.issued.items old inside
@@ -257,10 +258,11 @@ theorem takeCompletion_wellFormed {s : State} (formed : WellFormed program s) : 
   exact {
   issued := ⟨formed.issued.occurrences, fun item member => formed.issued.items item (items_same member rfl),
     formed.issued.scopes, formed.issued.positions,
-    formed.issued.occurrencePositions⟩
+    formed.issued.occurrencePositions,
+      formed.issued.namesKept (fun _ member => member) (.of_eq rfl), formed.issued.slotsKept rfl⟩
   distinct := ⟨formed.distinct.occurrencesKeyed, formed.distinct.items, formed.distinct.scopesKeyed, keys ▸ formed.distinct.keys⟩
   startedOnce := formed.startedOnce
-  activations := ⟨formed.activations.keys, formed.activations.positive⟩
+  activations := ⟨formed.activations.keys, formed.activations.positive, formed.activations.resolved⟩
   reservations := by unfold ReservationsUnstarted; rw [keys]; exact formed.reservations
   owned := ⟨formed.owned.occurrenceScopes, fun item member => formed.owned.itemScopes item (items_same member rfl),
     fun item member => formed.owned.itemOccurrences item (items_same member rfl),
@@ -314,10 +316,11 @@ theorem signal_wellFormed {s : State} {signal : Signal} (formed : WellFormed pro
   exact {
   issued := ⟨formed.issued.occurrences, fun item member => formed.issued.items item (items_same member rfl),
     formed.issued.scopes, formed.issued.positions,
-    formed.issued.occurrencePositions⟩
+    formed.issued.occurrencePositions,
+      formed.issued.namesKept (fun _ member => member) (.of_eq rfl), formed.issued.slotsKept rfl⟩
   distinct := ⟨formed.distinct.occurrencesKeyed, formed.distinct.items, formed.distinct.scopesKeyed, keys ▸ formed.distinct.keys⟩
   startedOnce := formed.startedOnce
-  activations := ⟨formed.activations.keys, formed.activations.positive⟩
+  activations := ⟨formed.activations.keys, formed.activations.positive, formed.activations.resolved⟩
   reservations := by unfold ReservationsUnstarted; rw [keys]; exact formed.reservations
   owned := ⟨formed.owned.occurrenceScopes, fun item member => formed.owned.itemScopes item (items_same member rfl),
     fun item member => formed.owned.itemOccurrences item (items_same member rfl),
@@ -523,7 +526,7 @@ theorem addItem_wellFormed {s : State} (formed : WellFormed program s) {item : O
     · simp [apart first firstOld same occurrence present (named.trans same)] at unbegun
     · simp [apart second secondOld same.symm occurrence present named] at unbegun
     · exact differ rfl
-  refine ⟨?issued, ?distinct, formed.startedOnce, ⟨formed.activations.keys, formed.activations.positive⟩,
+  refine ⟨?issued, ?distinct, formed.startedOnce, ⟨formed.activations.keys, formed.activations.positive, formed.activations.resolved⟩,
     by unfold ReservationsUnstarted; rw [keys]; exact formed.reservations, ?owned, ?rooted,
     formed.failure,
     ⟨formed.queue.arm, formed.queue.armScope, formed.queue.armGateway, formed.queue.ends, formed.queue.completes⟩, formed.counted,
@@ -567,7 +570,8 @@ theorem addItem_wellFormed {s : State} (formed : WellFormed program s) {item : O
       · rfl
   case issued =>
     refine ⟨formed.issued.occurrences, fun found inside => ?_, formed.issued.scopes, formed.issued.positions,
-    formed.issued.occurrencePositions⟩
+    formed.issued.occurrencePositions,
+      formed.issued.namesKept (fun _ member => member) (.of_eq rfl), formed.issued.slotsKept rfl⟩
     rcases members found inside with old | rfl
     · exact formed.issued.items found old
     · exact issued
@@ -635,8 +639,8 @@ theorem openItem_wellFormed {s : State} (formed : WellFormed program s) (kind : 
     (unstarted : (program.element? occurrence.element).bind (·.start?) = none) (role : occurrence.role = .element) :
     WellFormed program (s.openItem kind occurrence) := by
   rw [openItem_eq]
-  have positioned := issue_wellFormed formed .position
-  have counted := issue_wellFormed positioned (.item occurrence.id)
+  have positioned := issue_wellFormed formed .position nofun
+  have counted := issue_wellFormed positioned (.item occurrence.id) nofun
   have next := nextItem_issued positioned occurrence.id .wait
   refine addItem_wellFormed (item :=
       { id := ⟨occurrence.id, .wait, .fresh s.issuing (s.issueNext + 1)⟩, position := .fresh s.issuing s.issueNext, kind,
@@ -661,8 +665,8 @@ theorem openSubscription_wellFormed {s : State} (formed : WellFormed program s) 
   generalize s.reserve element scope = pair at reserves reserved unnamed
   obtain ⟨t, reservation⟩ := pair
   dsimp only at reserves reserved unnamed ⊢
-  have positioned := issue_wellFormed reserved .position
-  have counted := issue_wellFormed positioned (.item reservation.id)
+  have positioned := issue_wellFormed reserved .position nofun
+  have counted := issue_wellFormed positioned (.item reservation.id) nofun
   have next := nextItem_issued positioned reservation.id .subscription
   have fresh : ¬ OccurrenceIssued s reservation.id := reserves.fresh formed.issuer (reserves.placed ▸ stands)
   have above : ∀ other ∈ itemList t.openItems, other.id.occurrence ≠ reservation.id := fun other inside same => by
@@ -713,10 +717,11 @@ theorem slots_wellFormed {s : State} (formed : WellFormed program s) {slots : Fe
   exact {
   issued := ⟨formed.issued.occurrences, fun item member => formed.issued.items item (items_same member rfl),
     formed.issued.scopes, formed.issued.positions,
-    formed.issued.occurrencePositions⟩
+    formed.issued.occurrencePositions,
+      formed.issued.namesKept (fun _ member => member) (.of_eq rfl), formed.issued.slotsKept rfl⟩
   distinct := ⟨formed.distinct.occurrencesKeyed, formed.distinct.items, formed.distinct.scopesKeyed, keys ▸ formed.distinct.keys⟩
   startedOnce := formed.startedOnce
-  activations := ⟨formed.activations.keys, formed.activations.positive⟩
+  activations := ⟨formed.activations.keys, formed.activations.positive, formed.activations.resolved⟩
   reservations := by unfold ReservationsUnstarted; rw [keys]; exact formed.reservations
   owned := ⟨formed.owned.occurrenceScopes, fun item member => formed.owned.itemScopes item (items_same member rfl),
     fun item member => formed.owned.itemOccurrences item (items_same member rfl),
@@ -767,9 +772,10 @@ theorem emit_wellFormed {s : State} (formed : WellFormed program s) (flows : Lis
   have keys : key { s with batchTokens := s.batchTokens ++ flows.map (Token.flow · scope) } = key s :=
     funext fun _ => key_congr (by apply instanceOf_congr <;> rfl)
   refine ⟨⟨formed.issued.occurrences, (fun item member => formed.issued.items item (items_same member rfl)), formed.issued.scopes,
-    formed.issued.positions, formed.issued.occurrencePositions⟩,
+    formed.issued.positions, formed.issued.occurrencePositions,
+      formed.issued.namesKept (fun _ member => member) (.of_eq rfl), formed.issued.slotsKept rfl⟩,
     ⟨formed.distinct.occurrencesKeyed, formed.distinct.items, formed.distinct.scopesKeyed, keys ▸ formed.distinct.keys⟩,
-    formed.startedOnce, ⟨formed.activations.keys, formed.activations.positive⟩,
+    formed.startedOnce, ⟨formed.activations.keys, formed.activations.positive, formed.activations.resolved⟩,
     by unfold ReservationsUnstarted; rw [keys]; exact formed.reservations,
     ⟨formed.owned.occurrenceScopes, (fun item member => formed.owned.itemScopes item (items_same member rfl)), (fun item member => formed.owned.itemOccurrences item (items_same member rfl)), (fun item member => formed.owned.attachments item (items_same member rfl)),
       formed.owned.scopeOwners, formed.owned.variableScopes, fun token member => ?_⟩,

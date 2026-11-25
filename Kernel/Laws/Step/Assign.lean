@@ -1,6 +1,6 @@
 module
 
-public import Kernel.Laws.Step.Commit
+public import Kernel.Laws.Step.Commit.Derived
 
 /-! # Laws of the step function: what the commit's assignment numbers (DC12, DC25)
 
@@ -35,7 +35,7 @@ theorem positionStep_other (acc : TreeMap Issue Nat compare × Nat) (claim : Iss
     split
     · rename_i same; exact absurd (Std.LawfulEqOrd.eq_of_compare same) apart
     · rfl
-  | scope _ | item _ | position => rfl
+  | scope _ | item _ | position | activation _ => rfl
 
 /-- No step lowers the position counter. -/
 theorem positionStep_counter (acc : TreeMap Issue Nat compare × Nat) (claim : Issue × ClaimSlot) :
@@ -93,7 +93,7 @@ theorem positions_above {low : Nat} : ∀ (claims : List (Issue × ClaimSlot)) (
       | occurrence _ =>
         simp only [Std.ExtTreeMap.getElem?_insert_self, Option.some.injEq] at found
         exact found ▸ above.1
-      | scope _ | item _ | position => exact above.2 _ n found
+      | scope _ | item _ | position | activation _ => exact above.2 _ n found
     · rw [positionStep_other _ _ same] at found
       exact above.2 issue n found
 
@@ -207,14 +207,42 @@ theorem fold_apart {base : ClaimSlot → Nat} :
       (by simpa using distinct) (kept.step (base := base) fresh)
     simpa using next
 
-/-- **Two entries of one slot take different ordinals.** -/
+theorem Apart.mono {processed processed' : List (Issue × ClaimSlot)}
+    {acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare} (within : ∀ c ∈ processed', c ∈ processed)
+    (kept : Apart processed acc) : Apart processed' acc :=
+  ⟨fun c member => kept.took c (within c member), fun c cm d dm => kept.apart c (within c cm) d (within d dm)⟩
+
+/-- The activation fold keeps the identities' ordinals apart: each activation step is a plain step on a claim of its
+own issue. -/
+theorem activationFold_apart {base : ClaimSlot → Nat} :
+    ∀ (claims : List (Issue × ActivationSlot)) (processed : List (Issue × ClaimSlot))
+      (acc : TreeMap Issue Nat compare × TreeMap ClaimSlot Nat compare),
+      (∀ c ∈ claims, c.1 ∉ processed.map (·.1)) → Apart processed acc →
+      Apart processed (claims.foldl (activationStep base) acc)
+  | [], _, _, _, kept => kept
+  | c :: rest, processed, acc, fresh, kept => by
+    rw [List.foldl_cons, activationStep_eq]
+    exact activationFold_apart rest processed _ (fun x member => fresh x (List.mem_cons_of_mem _ member))
+      ((kept.step (base := base) (claim := (c.1, .activation (resolveSlot acc.1 c.2))) (fresh c List.mem_cons_self)).mono
+        fun _ member => List.mem_append_left _ member)
+
+/-- **Two entries of one slot but an activation's take different ordinals** (an activation's: `assign_apartActivation`). -/
 theorem assign_apart {start : State} {log : RunLog} {state : State} {first second : Issue} {slot : ClaimSlot}
     (one : state.issued[first]? = some slot) (two : state.issued[second]? = some slot)
+    (plain : ∀ activation, slot ≠ .activation activation)
     (same : (assign schedule start log state).1[first]? = (assign schedule start log state).1[second]?) : first = second := by
-  have kept := fold_apart (base := slotBase start) (issueOrder schedule log state) [] (∅, ∅)
-    (by simpa using issueOrder_nodup schedule log state) ⟨fun _ member => (nomatch member), fun _ member => (nomatch member)⟩
+  have kept := fold_apart (base := slotBase start) (identityClaims (issueOrder schedule log state)) [] (∅, ∅)
+    (by simpa using (issueOrder_nodup schedule log state).sublist ((identityClaims_sublist _).map (·.1)))
+    ⟨fun _ member => (nomatch member), fun _ member => (nomatch member)⟩
+  have all := activationFold_apart (base := slotBase start) (activationOrder (taggedActivations schedule state (issueOrder schedule log state))) _ _
+    (fun c member inside => by
+      obtain ⟨d, dIn, same⟩ := List.mem_map.mp inside
+      have identity := identityClaims_mem.mp (by simpa using dIn)
+      have held := issueOrder_mem.mp identity.1
+      rw [same, issueOrder_mem.mp (activationOrder_mem.mp member)] at held
+      exact identity.2 _ (Option.some.inj held).symm) kept
   rw [assign_eq] at same
-  exact kept.apart (first, slot) (by simpa using issueOrder_mem.mpr one) (second, slot)
-    (by simpa using issueOrder_mem.mpr two) rfl same
+  exact all.apart (first, slot) (by simpa using identityClaims_mem.mpr ⟨issueOrder_mem.mpr one, plain⟩) (second, slot)
+    (by simpa using identityClaims_mem.mpr ⟨issueOrder_mem.mpr two, plain⟩) rfl same
 
 end Kernel.Laws.Step

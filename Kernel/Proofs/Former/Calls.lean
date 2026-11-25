@@ -88,7 +88,7 @@ stands, so that removing an occurrence keeps it; `Laws.State.Owned.scopeOwners` 
 def Named (program : Program) (s : State) : Prop :=
   ∀ root ∈ s.scopes, root.calledInstance.isSome → root.occurrence.isSome ∧ ∀ call ∈ s.occurrences,
     root.occurrence = some call.id →
-      root.calledInstance = some ((s.instanceOf call.scope).calledBy (program.publicId call.element) (.committed call.activation))
+      root.calledInstance = some ((s.instanceOf call.scope).calledBy (program.publicId call.element) call.activation)
 
 /-- An occurrence that owns a called root numbers under its element's own counter, never as a Multi-Instance body: a
 looping Call's body and its first instance share their element and activation, each role numbering apart, so a body
@@ -131,7 +131,7 @@ theorem Named.owner {program : Program} {s : State} (formed : WellFormed program
     {root : ScopeOccurrence} (member : root ∈ s.scopes) (called : root.calledInstance.isSome) :
     ∃ call ∈ s.occurrences, root.occurrence = some call.id ∧
       root.calledInstance = some ((s.instanceOf call.scope).calledBy (program.publicId call.element)
-        (.committed call.activation)) := by
+        call.activation) := by
   obtain ⟨owned, names⟩ := named root member called
   obtain ⟨id, link⟩ := Option.isSome_iff_exists.mp owned
   obtain ⟨call, present, same, _⟩ := formed.owned.scopeOwners root member id link
@@ -195,7 +195,7 @@ theorem instanceId_shorter {program : Program} {s : State} (formed : WellFormed 
     obtain ⟨call, _, _, names⟩ := named.owner formed member (by simp [carried])
     rw [carried] at names
     have longer := Laws.State.calledBy_longer (s.instanceOf call.scope) (program.publicId call.element)
-      (.committed call.activation)
+      call.activation
     rw [← Option.some.inj names] at longer
     omega
   | succ bound ih =>
@@ -203,7 +203,7 @@ theorem instanceId_shorter {program : Program} {s : State} (formed : WellFormed 
     obtain ⟨call, present, _, names⟩ := named.owner formed member (by simp [carried])
     rw [carried] at names
     have longer := Laws.State.calledBy_longer (s.instanceOf call.scope) (program.publicId call.element)
-      (.committed call.activation)
+      call.activation
     rw [← Option.some.inj names] at longer
     rcases instanceOf_home formed (formed.owned.occurrenceScopes call present) with ⟨own, _⟩ | ⟨caller, inside, _, calls⟩
     · rw [own, Laws.State.text_named] at longer; exact longer
@@ -233,9 +233,8 @@ theorem identitiesApart_of {program : Program} {s : State} (formed : WellFormed 
     rw [carried'] at names'
     obtain ⟨caller, element, activation⟩ := Laws.State.calledBy_injective ((Option.some.inj names).symm.trans
       (Option.some.inj names'))
-    have activation := Issue.committed.inj activation
     have longer := Laws.State.calledBy_longer (s.instanceOf call.scope) (program.publicId call.element)
-      (.committed call.activation)
+      call.activation
     rw [← Option.some.inj names] at longer
     have rooted : s.instanceRoot call.scope = s.instanceRoot call'.scope := by
       rcases instanceOf_home formed (formed.owned.occurrenceScopes call present) with ⟨own, home⟩ |
@@ -380,7 +379,7 @@ def CalledIdentityUnique (hooks : Hooks) : Prop :=
     CallsFormed program before → PlacedLane program before → Step.step hooks program (some before) input = .ok after →
     (∀ root ∈ after.scopes, root ∉ before.scopes → root.calledInstance.isSome →
       ∃ call ∈ after.occurrences, root.occurrence = some call.id ∧ root.calledInstance =
-        some ((after.instanceOf call.scope).calledBy (program.publicId call.element) (.committed call.activation))) ∧
+        some ((after.instanceOf call.scope).calledBy (program.publicId call.element) call.activation)) ∧
     CallsFormed program after ∧ PlacedLane program after ∧ IdentitiesApart after
 
 /-! ## A Call's own hooks
@@ -452,7 +451,7 @@ theorem callInstallsSnapshot {hooks : Hooks} {workHooks : Feature.Work.WorkHooks
            ((Feature.Work.enterLocal header inputs occurrence state).issueNext + 1)
          occurrence := some occurrence.id
          calledInstance := some (((Feature.Work.enterLocal header inputs occurrence state).instanceOf occurrence.scope).calledBy
-           (ctx.program.publicId occurrence.element) (.committed occurrence.activation)) } ∧
+           (ctx.program.publicId occurrence.element) occurrence.activation) } ∧
       armed.variables = (Feature.Work.enterLocal header inputs occurrence state).variables.insert
         (occurrence.scope.child occurrence.element
           (.fresh (Feature.Work.enterLocal header inputs occurrence state).issuing
@@ -492,8 +491,8 @@ open Kernel.Proofs.Frame (Alongside StoresAlongside OccursAlongside ClosureAlong
 /-- `call` of `t` names the called roots it owns as a record of `s` with its identity, role and element named them. -/
 def NamesAlike (program : Program) (s t : State) (call : Occurrence) : Prop :=
   ∃ old ∈ s.occurrences, old.id = call.id ∧ old.role = call.role ∧ old.element = call.element ∧
-    (t.instanceOf call.scope).calledBy (program.publicId call.element) (.committed call.activation) =
-      (s.instanceOf old.scope).calledBy (program.publicId old.element) (.committed old.activation)
+    (t.instanceOf call.scope).calledBy (program.publicId call.element) call.activation =
+      (s.instanceOf old.scope).calledBy (program.publicId old.element) old.activation
 
 /-- A record of `s` that stays in its process instance names alike. -/
 theorem NamesAlike.same {program : Program} {s t : State} {call : Occurrence} (member : call ∈ s.occurrences)
@@ -674,7 +673,7 @@ theorem CallsFormed.enterCalled (formed : WellFormed under s) (holds : CallsForm
         { id := call.scope.child call.element (.fresh s.issuing s.issueNext)
           element := some call.element, position := .fresh s.issuing (s.issueNext + 1)
           occurrence := some call.id
-          calledInstance := some ((s.instanceOf call.scope).calledBy (program.publicId call.element) (.committed call.activation)) }
+          calledInstance := some ((s.instanceOf call.scope).calledBy (program.publicId call.element) call.activation) }
       variables := s.variables.insert (call.scope.child call.element (.fresh s.issuing s.issueNext)) (Variables.ofBindings variables)
       slots := { s.slots with
         instances := s.slots.instances ++

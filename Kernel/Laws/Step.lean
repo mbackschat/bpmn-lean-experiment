@@ -3,7 +3,7 @@ module
 public import Kernel.Step
 public import Kernel.Laws.Hooks
 public import Kernel.Laws.Step.Ran
-public import Kernel.Laws.Step.Commit
+public import Kernel.Laws.Step.Commit.Derived
 public import Kernel.Laws.Step.Order
 public import Kernel.Laws.Step.Jobs
 public import Kernel.Laws.Step.Stale
@@ -278,9 +278,10 @@ theorem step_eq {hooks : Hooks} {program : Program} {before : Option State} {inp
               (.ofRoot .seed))
           admitChoices hooks ctx
           let unit := UnitKey.ofRoot .input
-          orderJournal ctx.program.options.branchSchedule initial <| settle hooks ctx closureBound closureWorkBound (RunLog.record {} unit) (← microStep hooks ctx unit
+          boundIdentities ctx.program.options.bounds.instanceIdentityBytes =<< orderJournal ctx.program.options.branchSchedule initial
+            (settle hooks ctx closureBound closureWorkBound (RunLog.record {} unit) (← microStep hooks ctx unit
             (.input .start) (some start) State.root (begin hooks ctx { element := start, scope := State.root, trigger := payload.trigger })
-            initial)
+            initial))
       | .command data => onRunning hooks ctx input before (command hooks ctx data)
       | .deliver data => onRunning hooks ctx input before fun state => do
         let (item, fired) ← hooks.delivered ctx data state
@@ -313,7 +314,8 @@ theorem onRunning_eq {hooks : Hooks} {ctx : Ctx} {input : Input} {before : Optio
           let start ← advanceClock at? { state with journal := [], intents := [], transitions := ∅, outboxes := ∅, draft := {}, writes := [], completionBase := state.nextCompletion }
           admitChoices hooks ctx
           let unit := UnitKey.ofRoot .input
-          orderJournal ctx.program.options.branchSchedule start (settle hooks ctx closureBound closureWorkBound (RunLog.record {} unit)
+          boundIdentities ctx.program.options.bounds.instanceIdentityBytes =<< orderJournal ctx.program.options.branchSchedule start
+            (settle hooks ctx closureBound closureWorkBound (RunLog.record {} unit)
             (← microStep hooks ctx unit (.input tag) none State.root transition start))) := by
   unfold onRunning; rfl
 
@@ -592,7 +594,7 @@ effect result pass a rejection through is `Kernel.Laws.Step.Jobs`'. -/
 instance, numbered under its element's counter, and begun or waited for by an open item. -/
 theorem occurrenceOf?_some {ctx : Ctx} {state : State} {ref : OccurrenceRef} {occurrence : Occurrence}
     (found : occurrenceOf? ctx state ref = some occurrence) : occurrence ∈ state.occurrences ∧
-      (ctx.program.publicId occurrence.element = ref.element ∧ occurrence.activation = ref.activation ∧
+      (ctx.program.publicId occurrence.element = ref.element ∧ occurrence.activation = .committed ref.activation ∧
         (state.instanceOf occurrence.scope).text = ref.processInstanceId) ∧ occurrence.role = .element ∧
       (occurrence.begun = true ∨ ∃ item ∈ itemList state.openItems, item.id.occurrence = occurrence.id) := by
   unfold occurrenceOf? at found

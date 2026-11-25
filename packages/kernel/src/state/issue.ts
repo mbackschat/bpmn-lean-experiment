@@ -6,9 +6,9 @@
  * table's value (`State.issued`), beside the issuing unit's key, which a fresh issue's text names only by its digest
  * (`IssuerText`). Part of `state.ts`, which re-exports it.
  */
-import { assertNever, type ElementId } from "../il/types.js";
+import { assertNever, compareStrings, type ElementId } from "../il/types.js";
 import {
-  compareIssue, compareOccurrenceId, compareScopeSlot, type FreshIssue, freshIssue, type Issue, occurrenceIdParts, type OccurrenceId, pushUnit,
+  ActivationRole, compareInstanceName, compareIssue, compareOccurrenceId, compareScopeSlot, type InstanceName, type FreshIssue, freshIssue, type Issue, occurrenceIdParts, type OccurrenceId, pushUnit,
   type IssuerText, rootScope, sameUnitKey, scopeHead, type ScopeOccurrenceId, type ScopeSlot, type UnitKey, unitRoot, UnitRootTag,
   UnitStepTag,
 } from "./key.js";
@@ -133,13 +133,42 @@ export function offersOccurrence(issued: IssueTable, occurrence: OccurrenceId, k
  * so the commit's assignment keys exactly what each counter compares: a scope occurrence's (parent, element)
  * (`State.scopeOrdinals`), an occurrence's (scope occurrence, element) (`State.occurrenceOrdinals`), an item's
  * occurrence (`State.itemOrdinals`), and an order position's one slot (`State.nextOrder`, DC13), which has no owner;
- * an occurrence's issue counts on it too, for the order position it is (DC25, `assignStep`).
+ * an occurrence's issue counts on it too, for the order position it is (DC25, `assignStep`); and an activation's counter
+ * (`State.activations`), keyed by its `ActivationSlot`.
  */
-export enum ClaimSlotTag { Scope = "scope", Occurrence = "occurrence", Item = "item", Position = "position" }
+export enum ClaimSlotTag { Scope = "scope", Occurrence = "occurrence", Item = "item", Position = "position", Activation = "activation" }
 export type ClaimSlot =
   | Readonly<{ tag: ClaimSlotTag.Scope | ClaimSlotTag.Occurrence; slot: ScopeSlot }>
   | Readonly<{ tag: ClaimSlotTag.Item; occurrence: OccurrenceId }>
-  | Readonly<{ tag: ClaimSlotTag.Position }>;
+  | Readonly<{ tag: ClaimSlotTag.Position }>
+  | Readonly<{ tag: ClaimSlotTag.Activation; slot: ActivationSlot }>;
+
+/**
+ * Lean's `ActivationSlot`: what an activation counter counts (R8), the activations of `element` under `role` in the
+ * process instance `processInstance`, whose name is pending when a Call of the closure in progress entered it.
+ */
+export interface ActivationSlot {
+  readonly processInstance: InstanceName;
+  readonly element: ElementId;
+  readonly role: ActivationRole;
+}
+
+/** Lean's `ActivationRole.rank`: the roles' order, which an activation slot compares them in. */
+function roleRank(role: ActivationRole): number {
+  switch (role) {
+    case ActivationRole.Element:
+      return 0;
+    case ActivationRole.MultiInstanceBody:
+      return 1;
+  }
+  return assertNever(role);
+}
+
+/** Lean's `Ord ActivationSlot`: by process instance, element, then role. */
+function compareActivationSlot(left: ActivationSlot, right: ActivationSlot): number {
+  return compareInstanceName(left.processInstance, right.processInstance) ||
+    compareStrings(left.element, right.element) || roleRank(left.role) - roleRank(right.role);
+}
 
 /** Lean's `ClaimSlot.rank`: the counter map a slot counts in. */
 function claimRank(slot: ClaimSlot): number {
@@ -152,6 +181,8 @@ function claimRank(slot: ClaimSlot): number {
       return 2;
     case ClaimSlotTag.Position:
       return 3;
+    case ClaimSlotTag.Activation:
+      return 4;
   }
   return assertNever(slot);
 }
@@ -164,6 +195,7 @@ function claimScopeSlot(slot: ClaimSlot): ScopeSlot | null {
       return slot.slot;
     case ClaimSlotTag.Item:
     case ClaimSlotTag.Position:
+    case ClaimSlotTag.Activation:
       return null;
   }
   return assertNever(slot);
@@ -178,9 +210,15 @@ function claimItem(slot: ClaimSlot): OccurrenceId | null {
     case ClaimSlotTag.Item:
       return slot.occurrence;
     case ClaimSlotTag.Position:
+    case ClaimSlotTag.Activation:
       return null;
   }
   return assertNever(slot);
+}
+
+/** Lean's `ClaimSlot.claimActivation`. */
+function claimActivation(slot: ClaimSlot): ActivationSlot | null {
+  return slot.tag === ClaimSlotTag.Activation ? slot.slot : null;
 }
 
 /** Lean's `Option` order: `none` first. */
@@ -188,10 +226,11 @@ function compareOption<T>(left: T | null, right: T | null, compare: (a: T, b: T)
   return left === null || right === null ? (left === null ? 0 : 1) - (right === null ? 0 : 1) : compare(left, right);
 }
 
-/** Lean's `Ord ClaimSlot`: the counter map, then the scope slot, then the item's occurrence. */
+/** Lean's `Ord ClaimSlot`: the counter map, then the scope slot, the item's occurrence, then the activation slot. */
 export function compareClaimSlot(left: ClaimSlot, right: ClaimSlot): number {
   return claimRank(left) - claimRank(right) || compareOption(claimScopeSlot(left), claimScopeSlot(right), compareScopeSlot) ||
-    compareOption(claimItem(left), claimItem(right), compareOccurrenceId);
+    compareOption(claimItem(left), claimItem(right), compareOccurrenceId) ||
+    compareOption(claimActivation(left), claimActivation(right), compareActivationSlot);
 }
 
 /**

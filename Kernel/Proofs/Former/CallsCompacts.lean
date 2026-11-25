@@ -42,11 +42,11 @@ structure OwnerRenamed (state : State) (r : Issue → Issue) (old : ScopeOccurre
     (root : ScopeOccurrence) (call : Occurrence) : Prop where
   scopeIn : old ∈ state.scopes
   ownerIn : owner ∈ state.occurrences
-  calledInstance : old.calledInstance = root.calledInstance
+  calledInstance : old.calledInstance.map (·.rename r) = root.calledInstance
   link : old.occurrence = some owner.id
   element : call.element = owner.element
   role : call.role = owner.role
-  activation : call.activation = owner.activation
+  activation : call.activation = r owner.activation
   scope : call.scope = renameScope r owner.scope
 
 /-- A called root the commit leaves, with an owner it leaves: the settled state's, renamed, with its owner's. -/
@@ -74,11 +74,11 @@ theorem orderJournal_named (formed : WellFormed program state) (counted : Counte
     (keys : ∀ occurrence ∈ state.occurrences, occurrence.id.scope = occurrence.scope)
     (named : ∀ root ∈ state.scopes, root.calledInstance.isSome → root.occurrence.isSome ∧ ∀ call ∈ state.occurrences,
       root.occurrence = some call.id → root.calledInstance =
-        some ((state.instanceOf call.scope).calledBy (program.publicId call.element) (.committed call.activation)))
+        some ((state.instanceOf call.scope).calledBy (program.publicId call.element) call.activation))
     (made : orderJournal schedule start (.ok (state, log)) = .ok after) :
     ∀ root ∈ after.scopes, root.calledInstance.isSome → root.occurrence.isSome ∧ ∀ call ∈ after.occurrences,
       root.occurrence = some call.id → root.calledInstance =
-        some ((after.instanceOf call.scope).calledBy (program.publicId call.element) (.committed call.activation)) := by
+        some ((after.instanceOf call.scope).calledBy (program.publicId call.element) call.activation) := by
   have ran := orderJournal_of made
   have facts := ordered_facts log formed counted batches
   have counted' := facts.counted
@@ -88,13 +88,15 @@ theorem orderJournal_named (formed : WellFormed program state) (counted : Counte
   intro root member called
   refine ⟨?_, fun call present link => ?_⟩
   · obtain ⟨old, inside, rfl⟩ := compact_scope_eq ran member
-    simpa using (named old inside called).1
+    simpa using (named old inside (by simpa using called)).1
   · obtain ⟨old, owner, renamed⟩ := compact_owner formed counted batches keys made member present link
-    rw [← renamed.calledInstance, (named old renamed.scopeIn (renamed.calledInstance ▸ called)).2 owner renamed.ownerIn
+    have oldCalled : old.calledInstance.isSome := by simpa [← renamed.calledInstance] using called
+    rw [← renamed.calledInstance, (named old renamed.scopeIn oldCalled).2 owner renamed.ownerIn
       renamed.link, renamed.element, renamed.activation, renamed.scope,
       compact_instanceOf ran counted' formed rfl rfl issued rooted formed.distinct.scopes
         (formed.owned.occurrenceScopes owner renamed.ownerIn),
-      instanceOf_congr (s := state) (t := ordered log state) rfl rfl]
+      instanceOf_congr (s := state) (t := ordered log state) rfl rfl, Option.map_some,
+      rename_calledBy (fun n => commitRenaming_committed start log _ n)]
 
 /-- **`CallsFormed.roled` across the commit** (`Roled`, stated over its body). -/
 theorem orderJournal_roled (formed : WellFormed program state) (counted : CountersFrom start state)
@@ -108,7 +110,7 @@ theorem orderJournal_roled (formed : WellFormed program state) (counted : Counte
   intro root member called call present link
   obtain ⟨old, owner, renamed⟩ := compact_owner formed counted batches keys made member present link
   rw [renamed.role]
-  exact roled old renamed.scopeIn (renamed.calledInstance ▸ called) owner renamed.ownerIn renamed.link
+  exact roled old renamed.scopeIn (by simpa [← renamed.calledInstance] using called) owner renamed.ownerIn renamed.link
 
 /-- **`CallsFormed.activities` across the commit** (`ActivityOwners`, stated over its body). -/
 theorem orderJournal_activities (formed : WellFormed program state) (counted : CountersFrom start state)
@@ -122,7 +124,7 @@ theorem orderJournal_activities (formed : WellFormed program state) (counted : C
   intro root member called call present link
   obtain ⟨old, owner, renamed⟩ := compact_owner formed counted batches keys made member present link
   rw [renamed.element]
-  exact activities old renamed.scopeIn (renamed.calledInstance ▸ called) owner renamed.ownerIn renamed.link
+  exact activities old renamed.scopeIn (by simpa [← renamed.calledInstance] using called) owner renamed.ownerIn renamed.link
 
 /-- **`CallsFormed.ownersApart` across the commit** (`OwnersApart`, stated over its body): two called roots' owners the
 renaming would merge are one, so the roots were one. -/
@@ -153,7 +155,7 @@ theorem orderJournal_ownersApart (formed : WellFormed program state) (counted : 
         rw [← named] at same ⊢
         rw [owner_apart formed counted batches keys oneIn oneLink holderIn same]
   change renameScope _ one.id = renameScope _ two.id
-  rw [apart one oneIn two twoIn firstCalled secondCalled owners]
+  rw [apart one oneIn two twoIn (by simpa using firstCalled) (by simpa using secondCalled) owners]
 
 end Calls
 

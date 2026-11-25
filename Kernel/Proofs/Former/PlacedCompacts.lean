@@ -193,7 +193,7 @@ theorem orderJournal_placedLane (formed : WellFormed program state) (counted : C
   case entered =>
     intro root member called
     obtain ⟨old, inside, rfl⟩ := compact_scope_eq ran member
-    obtain ⟨entry, entryIn, same⟩ := held.placed.entered old inside called
+    obtain ⟨entry, entryIn, same⟩ := held.placed.entered old inside (by simpa using called)
     refine ⟨_, by rw [compact_instances ran]; exact List.mem_map_of_mem entryIn, ?_⟩
     simp [same]
   case occurrences =>
@@ -268,20 +268,21 @@ theorem orderJournal_placedLane (formed : WellFormed program state) (counted : C
     rw [retainedEq] at member
     obtain ⟨y, yIn, rfl⟩ := List.mem_map.mp member
     rw [renameCompensable_eq] at standing named ⊢
+    rw [Laws.Compensation.recordElements_rekey] at named
     have yPresent := present (held.issued y.scope (.inr (.inr (.inl ⟨y, yIn, rfl⟩)))) standing
-    exact place (held.records y yIn yPresent element (by simpa [recordElements] using named)) yPresent
+    exact place (held.records y yIn yPresent element named) yPresent
   case pending =>
     intro run member standing record recordIn element named
     obtain ⟨run, runIn, rfl⟩ := compact_runs_of ran member
     obtain ⟨x, xIn, rfl⟩ := List.mem_map.mp recordIn
-    rw [renameCompensable_eq] at named
+    rw [renameCompensable_eq, Laws.Compensation.recordElements_rekey] at named
     have runPresent := present
       (held.issued run.scope (.inr (.inr (.inr (.inl ⟨run, runIn, rfl, List.ne_nil_of_mem xIn⟩))))) standing
-    exact place (held.pending run runIn runPresent x xIn element (by simpa [recordElements] using named)) runPresent
+    exact place (held.pending run runIn runPresent x xIn element named) runPresent
   case calledApart =>
     intro entry member called
     obtain ⟨old, inside, rfl⟩ := compact_scope_eq ran member
-    obtain ⟨elements, owners⟩ := held.calledApart old inside called
+    obtain ⟨elements, owners⟩ := held.calledApart old inside (by simpa using called)
     refine ⟨elements, fun owner ownerIn link => ?_⟩
     obtain ⟨o, oIn, rfl⟩ := compact_occurrence_eq ran ownerIn
     obtain ⟨a, was, same⟩ := Option.map_eq_some_iff.mp link

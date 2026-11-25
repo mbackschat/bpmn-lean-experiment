@@ -14,6 +14,24 @@ key is its record, renamed onto itself.
 
 @[expose] public section
 
+namespace Kernel.Laws.State
+
+/-- **A committed state holds no pending activation** (KD5): the commit numbered every activation and resolved every
+called instance's name, so publication reads committed numbers only. Its issue table is empty, which a pending
+occurrence activation (`OccurrencesCounted`) or name (`IssuedBelow.names`) would have to be in. -/
+theorem Committed.resolved {program : Program} {s : State} (committed : Committed s) (formed : WellFormed program s) :
+    (∀ occurrence ∈ s.occurrences, occurrence.activation.isFresh = false) ∧
+      ∀ scope ∈ s.scopes, ∀ name, scope.calledInstance = some name → name.unresolved = false := by
+  refine ⟨fun occurrence member => ?_, fun scope member name called =>
+    (formed.issued.names scope member name called).resolved_of_empty committed.issued⟩
+  have counted := formed.occurrencesCounted occurrence member
+  unfold Counted at counted
+  split at counted
+  · rename_i activation; simp [key] at activation; rw [activation]; exact isFresh_committed _
+  · simp [committed.issued] at counted
+
+end Kernel.Laws.State
+
 namespace Kernel.Proofs.Cancellation
 
 variable {schedule : BranchSchedule}
@@ -61,7 +79,13 @@ theorem orderJournal_scopesKept {programBefore program : Program} {before start 
         have tabled := formedBefore.issued.positions settled held unit index standing
         rw [committed.issued] at tabled
         simp at tabled
-    rw [← same, fixed old oldIn, same, owner, position]
+    have called : settled.calledInstance.map (·.rename (commitRenaming schedule start log (ordered log state))) =
+        settled.calledInstance := by
+      cases carried : settled.calledInstance with
+      | none => rfl
+      | some name =>
+        rw [Option.map_some, rename_resolved _ ((committed.resolved formedBefore).2 settled held name carried)]
+    rw [← same, fixed old oldIn, same, owner, position, called]
     exact held
 
 end Kernel.Proofs.Cancellation

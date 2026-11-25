@@ -128,8 +128,9 @@ structure Activations (state : State) (rename : OccurrenceKey → OccurrenceKey)
   surjective : ∀ target, ∃ source, rename source = target
   keeps : ∀ key, (rename key).processInstanceId = key.processInstanceId ∧ (rename key).element = key.element ∧
     (rename key).role = key.role
-  fixed : ∀ key, (∃ count ∈ state.activations, count.processInstance = key.processInstanceId ∧
-    count.element = key.element ∧ count.role = key.role ∧ key.activation ≤ count.count) → rename key = key
+  fixed : ∀ key n, key.activation = .committed n → (∃ count ∈ state.activations,
+    count.processInstance = key.processInstanceId ∧ count.element = key.element ∧ count.role = key.role ∧
+    n ≤ count.count) → rename key = key
 
 /-- The open items of a state at the observation boundary: the public key of the occurrence each waits for, and its
 kind. -/
