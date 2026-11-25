@@ -13,11 +13,13 @@ import {
   instanceOf,
   occurrenceOf,
   root,
+  scopeOccurrenceParent,
   SemanticCause,
   semanticFailure,
   type Binding,
   type Result,
   type ScopeOccurrence,
+  type ScopeOccurrenceId,
   type State, ownVariables,
 } from "./state.js";
 
@@ -134,23 +136,35 @@ function sameIdentity(a: PublishedScope, b: PublishedScope): boolean {
     scopeRoleRank(a.role) === scopeRoleRank(b.role);
 }
 
+function ownedByBody(state: State, scope: ScopeOccurrenceId): boolean {
+  const owner = state.scopes.find((candidate) => candidate.id === scope)?.occurrence ?? null;
+  return owner !== null && occurrenceOf(state, owner)?.role === ActivationRole.MultiInstanceBody;
+}
+
+/** A scope's published name, or the invariant code that says it is not there (Lean's `Except String`). */
+type Named = Readonly<{ ok: true; value: PublishedScope | null }> | Readonly<{ ok: false; code: string }>;
+
+const named = (value: PublishedScope | null): Named => ({ ok: true, value });
+const unnamed = (code: string): Named => ({ ok: false, code });
+
 /**
- * `scope` as published, `null` for the instance root, which `variables` publishes. A scope occurrence with an element
- * and no occurrence of its own is a restored compensation context while a run holds it (`compensationsRestoredIn`), and
- * otherwise a Multi-Instance instance's, which hosts its instance occurrence once begun. A name that is not there is an
- * invariant failure, never an activation 0, which names no occurrence.
+ * `scope` as published, `null` for the instance root, which `variables` publishes, or the invariant code that says its
+ * name is not there. A scope occurrence with an element and no occurrence of its own is a restored compensation context
+ * while a run holds it (`compensationsRestoredIn`), and otherwise a Multi-Instance instance's, whose parent belongs to
+ * the body occurrence and which hosts its instance occurrence once begun. A name that is not there is never published
+ * as an activation 0, which names no occurrence, nor as another role.
  */
-function publishedScope(state: State, scope: ScopeOccurrence, entries: readonly Binding[]): Result<PublishedScope | null> {
+function publishedScope(state: State, scope: ScopeOccurrence, entries: readonly Binding[]): Named {
   const processInstanceId = instanceOf(state, scope.id);
   if (scope.calledInstance !== null) {
-    return committed({ processInstanceId, element: null, activation: 0, role: ScopeRole.ProcessInstance, variables: entries });
+    return named({ processInstanceId, element: null, activation: 0, role: ScopeRole.ProcessInstance, variables: entries });
   }
   const element = scope.element;
-  if (element === null) return committed(null);
+  if (element === null) return named(null);
   if (scope.occurrence !== null) {
     const owner = occurrenceOf(state, scope.occurrence);
-    if (owner === null) return semanticFailure(SemanticCause.Invariant, "published-scope-owner-gone");
-    return committed({
+    if (owner === null) return unnamed("published-scope-owner-gone");
+    return named({
       processInstanceId,
       element: owner.element,
       activation: owner.activation,
@@ -161,29 +175,37 @@ function publishedScope(state: State, scope: ScopeOccurrence, entries: readonly 
   const record = compensationsRestoredIn(state.slots.compensation, scope.id);
   if (record !== null) {
     const subject = record.occurrence;
-    if (subject === null) return semanticFailure(SemanticCause.Invariant, "published-context-without-subject");
-    return committed({
+    if (subject === null) return unnamed("published-context-without-subject");
+    return named({
       processInstanceId: subject.processInstanceId, element: subject.element, activation: subject.activation,
       role: contextRole(subject.role), variables: entries,
     });
   }
+  const parent = scopeOccurrenceParent(scope);
+  if (parent === null || !ownedByBody(state, parent)) return unnamed("published-scope-unnamed");
   const hosted = state.occurrences.find((occurrence) => occurrence.scope === scope.id && occurrence.element === element);
-  if (hosted === undefined) return semanticFailure(SemanticCause.Invariant, "published-instance-not-begun");
-  return committed({ processInstanceId, element, activation: hosted.activation, role: ScopeRole.MultiInstanceInstance, variables: entries });
+  if (hosted === undefined) return unnamed("published-instance-not-begun");
+  return named({ processInstanceId, element, activation: hosted.activation, role: ScopeRole.MultiInstanceInstance, variables: entries });
 }
 
-/** Every variable scope other than the instance root that holds a variable, by public element identifiers, in
- * canonical order; an invariant failure when a scope's name is not there or two scopes publish one identity. */
+/**
+ * Every variable scope other than the instance root that holds a variable, by public element identifiers, in canonical
+ * order. When a scope's name is not there the least of the invariant codes is the failure, and otherwise two scopes
+ * publishing one identity is, so a failure too reads no storage order (KD7).
+ */
 export function publishedScopes(program: Program, state: State): Result<readonly PublishedScope[]> {
-  const published: PublishedScope[] = [];
-  for (const scope of state.scopes) {
+  const names = state.scopes.flatMap((scope): Named[] => {
     const entries = ownVariables(state, scope.id);
-    if (entries.length === 0) continue;
-    const found = publishedScope(state, scope, entries);
-    if (!found.ok) return found;
-    if (found.value === null) continue;
-    published.push({ ...found.value, element: found.value.element === null ? null : programPublicId(program, found.value.element) });
+    return entries.length === 0 ? [] : [publishedScope(state, scope, entries)];
+  });
+  const codes = names.flatMap((name) => (name.ok ? [] : [name.code]));
+  const [first, ...rest] = codes;
+  if (first !== undefined) {
+    return semanticFailure(SemanticCause.Invariant, rest.reduce((least, code) => (compareStrings(code, least) < 0 ? code : least), first));
   }
+  const published = names.flatMap((name): PublishedScope[] => (!name.ok || name.value === null ? [] : [{
+    ...name.value, element: name.value.element === null ? null : programPublicId(program, name.value.element),
+  }]));
   const ordered = mergeSort(published, publishedScopeLe);
   if (ordered.some((scope, index) => index > 0 && sameIdentity(ordered[index - 1] as PublishedScope, scope))) {
     return semanticFailure(SemanticCause.Invariant, "published-scope-identity-twice");

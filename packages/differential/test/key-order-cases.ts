@@ -81,19 +81,35 @@ export type KeyOrderDigests = Readonly<{
 /**
  * The published scope identities `answer` breaks (PUBLICATION-AND-OBSERVATION-SEMANTICS-SPEC.md, "State
  * observation"): in each state observation it holds, at any depth, a scope key published twice, or a scope other than a
- * called instance's root whose activation names no occurrence, being below 1.
+ * called instance's root whose activation names no occurrence, being below 1; and in each list of state observations, a
+ * trace, a restored compensation context's key that reappears after it left, which would reissue it. Only contexts are
+ * followed across observations: a live scope also leaves the list while it holds no variable.
  */
 export function scopeIdentityBreaches(answer: unknown): string[] {
   const breaches: string[] = [];
+  const keysOf = (state: Record<string, unknown>): Array<Record<string, unknown>> =>
+    (state["scopes"] as ReadonlyArray<Record<string, unknown>>).map((entry) => entry["scope"] as Record<string, unknown>);
+  const isState = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === "object" &&
+    (value as Record<string, unknown>)["kind"] === "state" && Array.isArray((value as Record<string, unknown>)["scopes"]);
+  const contextRoles = new Set(["compensationContext", "multiInstanceBodyCompensationContext"]);
+  const isContext = (key: Record<string, unknown>): boolean => contextRoles.has(String(key["role"]));
   const visit = (value: unknown): void => {
     if (Array.isArray(value)) {
+      const left = new Set<string>();
+      let present = new Set<string>();
+      for (const state of value.filter(isState)) {
+        const current = new Set(keysOf(state).filter(isContext).map((key) => JSON.stringify(key)));
+        for (const text of present) if (!current.has(text)) left.add(text);
+        for (const text of current) if (left.has(text)) breaches.push(`reissued: ${text}`);
+        present = current;
+      }
       for (const item of value) visit(item);
       return;
     }
     if (value === null || typeof value !== "object") return;
     const record = value as Record<string, unknown>;
-    if (record["kind"] === "state" && Array.isArray(record["scopes"])) {
-      const keys = (record["scopes"] as ReadonlyArray<Record<string, unknown>>).map((entry) => entry["scope"] as Record<string, unknown>);
+    if (isState(record)) {
+      const keys = keysOf(record);
       const texts = keys.map((key) => JSON.stringify(key));
       for (const [index, text] of texts.entries()) {
         if (texts.indexOf(text) !== index) breaches.push(`published twice: ${text}`);

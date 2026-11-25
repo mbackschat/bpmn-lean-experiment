@@ -85,12 +85,19 @@ def PublishedScope.sameIdentity (a b : PublishedScope) : Bool :=
   a.processInstanceId == b.processInstanceId && a.element == b.element && a.activation == b.activation &&
     scopeRoleRank a.role == scopeRoleRank b.role
 
-/-- `scope` as published, `none` for the instance root, which `variables` publishes. A scope occurrence with an element
-and no occurrence of its own is a restored compensation context while a run holds it (`Compensations.restoredIn?`), and
-otherwise a Multi-Instance instance's, which hosts its instance occurrence once begun. A name that is not there is an
-invariant failure, never an activation 0, which names no occurrence. -/
+/-- Whether the scope occurrence `scope` belongs to a Multi-Instance body occurrence, as a Multi-Instance instance's
+parent does. -/
+def ownedByBody (state : State) (scope : ScopeOccurrenceId) : Bool :=
+  (((state.scopes.find? (·.id == scope)).bind (·.occurrence)).bind state.occurrence?).any
+    (·.role == .multiInstanceBody)
+
+/-- `scope` as published, `none` for the instance root, which `variables` publishes, or the invariant code that says its
+name is not there. A scope occurrence with an element and no occurrence of its own is a restored compensation context
+while a run holds it (`Compensations.restoredIn?`), and otherwise a Multi-Instance instance's, whose parent belongs to
+the body occurrence and which hosts its instance occurrence once begun. A name that is not there is never published as
+an activation 0, which names no occurrence, nor as another role. -/
 def publishedScope (state : State) (scope : ScopeOccurrence) (variables : List (String × Value)) :
-    Except Failure (Option PublishedScope) :=
+    Except String (Option PublishedScope) :=
   let processInstanceId := state.instanceOf scope.id
   match scope.calledInstance, scope.element, scope.occurrence with
   | some _, _, _ => .ok (some { processInstanceId, element := none, activation := 0, role := .processInstance, variables })
@@ -100,7 +107,7 @@ def publishedScope (state : State) (scope : ScopeOccurrence) (variables : List (
     | some owner =>
       .ok (some { processInstanceId, element := some owner.element, activation := owner.activation, variables
                   role := if owner.role == .multiInstanceBody then .multiInstanceBody else .activity })
-    | none => .error (.semanticFailure .invariant "published-scope-owner-gone")
+    | none => .error "published-scope-owner-gone"
   | none, some element, none =>
     match state.slots.compensation.restoredIn? scope.id with
     | some record =>
@@ -108,25 +115,33 @@ def publishedScope (state : State) (scope : ScopeOccurrence) (variables : List (
       | some subject =>
         .ok (some { processInstanceId := subject.processInstanceId, element := some subject.element
                     activation := subject.activation, role := contextRole subject.role, variables })
-      | none => .error (.semanticFailure .invariant "published-context-without-subject")
+      | none => .error "published-context-without-subject"
     | none =>
-      match state.occurrences.find? fun occurrence => occurrence.scope == scope.id && occurrence.element == element with
-      | some hosted =>
-        .ok (some { processInstanceId, element := some element, activation := hosted.activation
-                    role := .multiInstanceInstance, variables })
-      | none => .error (.semanticFailure .invariant "published-instance-not-begun")
+      if !scope.parent.any (ownedByBody state) then .error "published-scope-unnamed"
+      else match state.occurrences.find? fun occurrence => occurrence.scope == scope.id && occurrence.element == element with
+        | some hosted =>
+          .ok (some { processInstanceId, element := some element, activation := hosted.activation
+                      role := .multiInstanceInstance, variables })
+        | none => .error "published-instance-not-begun"
 
 /-- Every variable scope other than the instance root that holds a variable, by public element identifiers, in
-canonical order; an invariant failure when a scope's name is not there or two scopes publish one identity. -/
-def publishedScopes (program : Program) (state : State) : Except Failure (List PublishedScope) := do
-  let published ← state.scopes.filterMapM fun scope =>
+canonical order. When a scope's name is not there the least of the invariant codes is the failure, and otherwise two
+scopes publishing one identity is, so a failure too reads no storage order (KD7). -/
+def publishedScopes (program : Program) (state : State) : Except Failure (List PublishedScope) :=
+  let named := state.scopes.filterMap fun scope =>
     match state.ownVariables scope.id with
-    | [] => .ok none
-    | entries => return (← publishedScope state scope entries).map fun published =>
-      { published with element := published.element.map program.publicId }
-  let ordered := published.mergeSort PublishedScope.le
-  if (ordered.zip (ordered.drop 1)).any fun (a, b) => a.sameIdentity b then
-    .error (.semanticFailure .invariant "published-scope-identity-twice")
-  else .ok ordered
+    | [] => none
+    | entries => some (publishedScope state scope entries)
+  match named.filterMap fun | .error code => some code | .ok _ => none with
+  | first :: rest =>
+    .error (.semanticFailure .invariant (rest.foldl (fun least code => if code < least then code else least) first))
+  | [] =>
+    let published := named.filterMap fun
+      | .ok found => found.map fun published => { published with element := published.element.map program.publicId }
+      | .error _ => none
+    let ordered := published.mergeSort PublishedScope.le
+    if (ordered.zip (ordered.drop 1)).any fun (a, b) => a.sameIdentity b then
+      .error (.semanticFailure .invariant "published-scope-identity-twice")
+    else .ok ordered
 
 end Kernel.Publish

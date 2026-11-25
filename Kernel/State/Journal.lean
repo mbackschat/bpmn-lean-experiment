@@ -4,9 +4,9 @@ public import Kernel.State.Raise
 
 /-! # The occurrence journal
 
-The facts each micro-step records about the occurrences it began and ended, the
-transaction-boundary marks an occurrence carries and the activation counter its key's number comes from. Part of
-`Kernel.State`, which re-exports it.
+The facts each micro-step records about the occurrences it began and ended, each named by its public key
+(`Kernel.State.Key`'s `OccurrenceKey`), the transaction-boundary marks an occurrence carries and the activation counter
+that numbers a key's activation. Part of `Kernel.State`, which re-exports it.
 -/
 
 public section

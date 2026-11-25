@@ -10,10 +10,11 @@
  * Each step is its own process (`key-order-cases.ts`), so this one holds only digests. The Lean kernel's build is
  * `opposite-key-order.integration-test.ts`.
  *
- * The same pass checks every answer's published scopes in both builds: within one state observation no scope identity
- * is published twice, and each but a called instance's root names an occurrence (PUBLICATION-AND-OBSERVATION-SEMANTICS-SPEC.md,
- * "State observation"; the hand-built witnesses are `packages/kernel/test/scope-publication-identity.test.ts`). The behavior
- * oracle holds the Lean kernel's answers to the TypeScript kernel's.
+ * The same pass checks every answer's published scopes in both builds (PUBLICATION-AND-OBSERVATION-SEMANTICS-SPEC.md,
+ * "State observation"): within one state observation no scope identity is published twice and each but a called
+ * instance's root names an occurrence, and along a trace no restored compensation context's identity is reissued after it
+ * left (`scopeIdentityBreaches`; the hand-built witnesses are `packages/kernel/test/scope-publication-identity.test.ts`).
+ * The behavior oracle holds the Lean kernel's answers to the TypeScript kernel's.
  */
 import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm } from "node:fs/promises";

@@ -473,15 +473,19 @@ export function hostViewJson(view: View): JsonValue {
   };
 }
 
-/** Every committed input's host view, up to the first input that neither commits nor is rejected. */
+/**
+ * Every committed input's host view, up to where `execute`'s trace stops: the first input that neither commits nor is
+ * rejected, an input whose committed state's observation fails included (`observedStep`).
+ */
 function hostViews(program: Program, stimuli: readonly RunStimulus[]): readonly View[] {
   const views: View[] = [];
   let state: State | null = null;
   for (const [, input, firing] of stimuli) {
-    const outcome = runStep(program, state, input, firing);
+    const outcome = observedStep(program, state, input, firing);
     if (outcome.ok) {
-      views.push(hostView(program, outcome.value));
-      state = outcome.value;
+      const [next] = outcome.value;
+      views.push(hostView(program, next));
+      state = next;
     } else if (outcome.failure.tag !== FailureTag.Rejected) {
       return views;
     }

@@ -305,3 +305,18 @@ test("PC-TERMINATE-02: a Terminate in an Event Sub-Process instance that ends it
   await noticed("terminate-event-subprocess-instances",
     ["first-handler-instance-terminates", "second-handler-instance-ordinary-first"], { hooks: host });
 });
+
+test("a restored compensation context that no run holds fails the observation rather than passing for a Multi-Instance instance", async () => {
+  // The Event Sub-Process handler's context hosts the handler occurrence of its own element, which is all an instance
+  // scope hosts; only its parent, which belongs to no Multi-Instance body occurrence, tells them apart (PUBLICATION
+  // semantics, "State observation").
+  const subject = await witness("compensation-context-live-outer", "esp-handler-reads-and-writes-outer");
+  assert.equal(agrees(subject, {}), true);
+  const unheld: Surgery = (_, __, after) => {
+    const compensation = after.slots.compensation;
+    return { ...after, slots: { ...after.slots, compensation: { ...compensation, runs: compensation.runs.filter((one) => one.running.length === 0) } } };
+  };
+  const result = run(subject, { surgery: unheld });
+  assert.deepEqual(result.outcome, { kind: "semantic", outcome: "semanticFailure" });
+  assert.equal((result.trace.findLast((entry) => (entry as Json)["kind"] === "command") as Json)["code"], "published-scope-unnamed");
+});

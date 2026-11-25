@@ -1,6 +1,8 @@
 /**
- * The occurrence journal, transcribed from `Kernel/State/Journal.lean`: the facts each micro-step records about the occurrences it began and ended, the transaction-boundary marks an occurrence carries and
- * the activation counter its key's number comes from. Part of `state.ts`, which re-exports it.
+ * The occurrence journal, transcribed from `Kernel/State/Journal.lean`: the facts each micro-step records about the
+ * occurrences it began and ended, each named by its public key (`key.ts`'s `OccurrenceKey`), the transaction-boundary
+ * marks an occurrence carries and the activation counter that numbers a key's activation. Part of `state.ts`, which
+ * re-exports it.
  */
 import { elementEnvelope, programElement, type ElementId, type FlowId, type Program } from "../il/types.js";
 import { ActivationRole, type OccurrenceKey, type ScopeOccurrenceId } from "./slots.js";

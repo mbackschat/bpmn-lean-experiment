@@ -17,7 +17,8 @@ the committed forms and the issue slots are `Kernel.State.Issue`'s). A scope occ
 cached fields and the order meets two keys in O(log depth), and both decide on the full path. Each key has a lawful order, so
 maps may key on it, and an order that reads only the key's value: no site may read it as an order of entry. Scope
 occurrence keys order outermost first, so a subtree is one key range (KD1). An occurrence's public key (`OccurrenceKey`)
-is its activation, numbered apart per role (`ActivationRole`), not a structural key. A closure's unit key (DC4) is a structured
+is not structural: its process instance, element, activation and role (`ActivationRole`), the activation counted per
+role. A closure's unit key (DC4) is a structured
 root and a path of unit steps (`Kernel.State.Root`) on the same spine, ordered by depth, fingerprint, root and path, with the breadth-first
 order the closure runs signals in beside it. `scripts/kernel-effects.lean` holds the spine to `Spine.push` and the
 comparators to the key-order contract (KD7). Part of `Kernel.State`, which re-exports it.

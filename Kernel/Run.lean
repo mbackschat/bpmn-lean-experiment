@@ -314,12 +314,13 @@ def hostViewJson (view : Host.View) : Json :=
     (view.failure.map fun failure => ("failure", failureViewJson failure)).toList ++ broadcastsJson view.broadcasts ++
     (if view.addresses.isEmpty then [] else [("addresses", Json.arr (view.addresses.map addressJson).toArray)]))
 
-/-- Every committed input's host view. -/
+/-- Every committed input's host view, up to where `execute`'s trace stops: the first input that neither commits nor is
+rejected, an input whose committed state's observation fails included (`observedStep`). -/
 def hostViews (program : Program) : Option State → List RunStimulus → List Host.View
   | _, [] => []
   | state, (_, input, firing) :: rest =>
-    match runStep program state input firing with
-    | .ok next => Host.hostView program next :: hostViews program (some next) rest
+    match observedStep program state input firing with
+    | .ok (next, _) => Host.hostView program next :: hostViews program (some next) rest
     | .error (.rejected _ _) => hostViews program state rest
     | .error _ => []
 
