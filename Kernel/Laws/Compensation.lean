@@ -125,8 +125,9 @@ theorem compensate_spec {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : Opti
         (Feature.Compensation.runBound ctx state) = .ok after := by
   unfold Feature.Compensation.compensate at ran
   simp only [List.partition_eq_filter_filter] at ran
-  refine ⟨_, _, ⟨fun record => ?_, fun record => ?_⟩, List.filter_append_perm _ _, ran⟩ <;>
-    rcases activity with _ | named <;> simp [List.mem_filter]
+  refine ⟨_, _, ⟨fun record => ?_, fun record => ?_⟩,
+    ((List.mergeSort_perm _ _).append_right _).trans (List.filter_append_perm _ _), ran⟩ <;>
+    rcases activity with _ | named <;> simp [List.mem_filter, (List.mergeSort_perm _ _).mem_iff]
   · exact fun _ _ => eq_comm
   · intro _
     by_cases inside : record.scope ∈ Feature.Compensation.visibleScopes ctx state scope
@@ -477,13 +478,14 @@ theorem completed_spec {ctx : Ctx} {occurrence : Occurrence} {state after : Stat
   · rename_i handler target placed
     simp only [List.partition_eq_filter_filter] at ran
     refine .inr ⟨handler, target,
-      state.slots.compensation.retained.filter fun record =>
-        (Feature.Compensation.ownedScope? ctx occurrence state).any (·.id == record.scope),
+      (state.slots.compensation.retained.filter fun record =>
+        (Feature.Compensation.ownedScope? ctx occurrence state).any (·.id == record.scope)).mergeSort
+        (Feature.Compensation.retainedBefore ctx),
       state.slots.compensation.retained.filter fun record =>
         !(Feature.Compensation.ownedScope? ctx occurrence state).any (·.id == record.scope),
-      placed, List.filter_append_perm _ _,
+      placed, ((List.mergeSort_perm _ _).append_right _).trans (List.filter_append_perm _ _),
       fun record inside => ?_, fun record outside owned found same => ?_, ?_⟩
-    · have chosen := (List.mem_filter.mp inside).2
+    · have chosen := (List.mem_filter.mp ((List.mergeSort_perm _ _).mem_iff.mp inside)).2
       cases found : Feature.Compensation.ownedScope? ctx occurrence state with
       | none => simp [found] at chosen
       | some owned => exact ⟨owned, rfl, by simpa [found] using chosen⟩

@@ -77,6 +77,7 @@ import {
   runHolds,
   SemanticCause,
   semanticFailure, type OccurrenceId, ownVariables, insertVariableIfNew,
+  ActivationRole,
   compareOccurrenceName,
 } from "../state.js";
 import { ScopeRole, ctxPositionLe, ctxRunsAsInstance, inside, leaveScope, type Ctx } from "../hooks.js";
@@ -134,6 +135,20 @@ function placement(ctx: Ctx, occurrence: Occurrence, state: State): readonly [El
  * (§13.5.5: "for each instance the dedicated snapshot is restored"; §10.3.8 assigns both to each inner instance); a
  * boundary handler restores none (§13.5.5: it "can only perform black-box compensation"), so it reads the item live.
  */
+/** Lean's `retainedBefore`: the order the readers of the retained records take them in, never their storage order. */
+function retainedBefore(ctx: Ctx): (record: Compensable, other: Compensable) => boolean {
+  switch (ctx.program.options.branchSchedule) {
+    case BranchSchedule.DeclarationDepthFirst:
+      return (record, other) => record.completion <= other.completion;
+    case BranchSchedule.OrderInvariant:
+      return (record, other) => {
+        const order = compareOccurrenceName(record.occurrence, other.occurrence);
+        return order < 0 || (order === 0 && (record.occurrence.role === ActivationRole.Element || other.occurrence.role === ActivationRole.MultiInstanceBody));
+      };
+  }
+  return assertNever(ctx.program.options.branchSchedule);
+}
+
 export function completed(ctx: Ctx, occurrence: Occurrence, state: State): Outcome {
   const placed = placement(ctx, occurrence, state);
   if (placed === null) return committed(state);
@@ -141,7 +156,7 @@ export function completed(ctx: Ctx, occurrence: Occurrence, state: State): Outco
   const owned = ownedScope(ctx, occurrence, state);
   const compensation = state.slots.compensation;
   const isInner = (record: Compensable): boolean => owned !== null && owned.id === record.scope;
-  const inner = compensation.retained.filter(isInner);
+  const inner = mergeSort(compensation.retained.filter(isInner), retainedBefore(ctx));
   const outer = compensation.retained.filter((record) => !isInner(record));
   const element = programElement(ctx.program, occurrence.element);
   const body = ((element === null ? null : elementEnvelope(element))?.multiInstance ?? null) !== null;
@@ -387,7 +402,7 @@ export function compensate(
   const compensation = state.slots.compensation;
   const covered = visibleScopes(ctx, state, scope);
   const selects = (record: Compensable): boolean => covered.includes(record.scope) && (activity === null || activity === record.subject);
-  const selected = compensation.retained.filter(selects);
+  const selected = mergeSort(compensation.retained.filter(selects), retainedBefore(ctx));
   const kept = compensation.retained.filter((record) => !selects(record));
   return advance(ctx, scope, trigger, store(state, {
     retained: kept,

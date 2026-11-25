@@ -72,6 +72,20 @@ def placement (ctx : Ctx) (occurrence : Occurrence) (state : State) : Option (Op
   else if looping && isScope then some (none, occurrence.scope)
   else some (handler, occurrence.scope)
 
+/-- The order the readers of the retained records take them in, never their storage order (K12w census, KD1): under
+`declarationDepthFirst` by completion, the order §13.5.5 reads (I1), under `orderInvariant` by the subject's key, which
+no schedule changes. -/
+def retainedBefore (ctx : Ctx) (record other : Compensable) : Bool :=
+  match ctx.program.options.branchSchedule with
+  | .declarationDepthFirst => record.completion ≤ other.completion
+  | .orderInvariant =>
+    let name (key : OccurrenceKey) : OccurrenceName :=
+      { processInstanceId := key.processInstanceId, element := key.element, activation := key.activation }
+    match compare (name record.occurrence) (name other.occurrence) with
+    | .lt => true
+    | .gt => false
+    | .eq => record.occurrence.role == .element || other.occurrence.role == .multiInstanceBody
+
 /-- `Hooks.completed`, before the pipeline disposes of the owned scope: a completed Scope's inner records stay
 compensable (BPMN 2.0.2 §13.5.5). A Scope with a handler keeps them as the children its handler may trigger; one
 without keeps them as a group under `ImplicitCompensation.everySubProcess` (I5) or as a Multi-Instance body (I9), else
@@ -87,6 +101,7 @@ def completed (ctx : Ctx) (occurrence : Occurrence) (state : State) : Outcome :=
     let owned := ownedScope? ctx occurrence state
     let compensation := state.slots.compensation
     let (inner, outer) := compensation.retained.partition fun record => owned.any (·.id == record.scope)
+    let inner := inner.mergeSort (retainedBefore ctx)
     let body := ((ctx.program.element? occurrence.element).bind (·.envelope?)).any (·.multiInstance.isSome)
     let grouped := (ctx.program.options.implicitCompensation == .everySubProcess || body) && !inner.isEmpty
     if handler.isNone && !grouped then
@@ -265,6 +280,7 @@ def compensate (ctx : Ctx) (scope : ScopeOccurrenceId) (activity : Option Elemen
   let covered := visibleScopes ctx state scope
   let (selected, kept) := compensation.retained.partition fun record =>
     covered.contains record.scope && activity.all (· == record.subject)
+  let selected := selected.mergeSort (retainedBefore ctx)
   advance ctx scope trigger (store state
     { retained := kept,
       runMap := compensation.runMap.put { trigger, scope, pending := selected, leave, resume, joins := joinsOf ctx selected } })
