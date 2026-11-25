@@ -47,7 +47,7 @@ theorem itemDetail?_some {α : Type} {ctx : Ctx} {state : State} {ref : Occurren
     {item : OpenItem} {value : α} (found : itemDetail? ctx state ref detail = some (item, value)) :
     item ∈ itemList state.openItems ∧ ctx.program.publicId item.element = ref.element ∧
       (state.occurrence? item.id.occurrence).map (·.activation) = some ref.activation ∧
-      state.instanceOf item.scope = ref.processInstanceId := by
+      (state.instanceOf item.scope).text = ref.processInstanceId := by
   unfold itemDetail? at found
   obtain ⟨candidate, member, made⟩ := List.exists_of_findSome?_eq_some found
   split at made

@@ -642,6 +642,18 @@ theorem calledInstanceId_longer (caller : String) (call : ElementId) (activation
   have : ("call:" : String).toList.length = 5 := by decide +kernel
   omega
 
+/-- One called name names one caller, Call and activation. -/
+theorem calledBy_injective {caller caller' : InstanceName} {call call' : ElementId} {activation activation' : Issue}
+    (same : caller.calledBy call activation = caller'.calledBy call' activation') :
+    caller = caller' ∧ call = call' ∧ activation = activation' :=
+  calledBy_inj same calledInstanceId_inj
+
+/-- A called name's identifier is longer than its caller's. -/
+theorem calledBy_longer (caller : InstanceName) (call : ElementId) (activation : Issue) :
+    caller.text.length < (caller.calledBy call activation).text.length := by
+  rw [calledBy_text]
+  exact calledInstanceId_longer _ _ _
+
 end Called
 
 end Kernel.Laws.State

@@ -42,7 +42,7 @@ import {
   completeSignal,
   failed,
   failedWith,
-  instanceOf,
+  instanceOf, instanceText,
   leaveFlows,
   leaveOutgoing,
   occurrenceOf,
@@ -58,7 +58,7 @@ import {
   type EvalContext,
   type Leave,
   type Occurrence,
-  type OccurrenceRef,
+  type OccurrenceName,
   type OpenItem,
   type Origin,
   type Outcome,
@@ -82,7 +82,7 @@ export function throwLeave(payload: EventPayload): Leave {
 }
 
 /** The public identity of a trigger: the thrower's occurrence, as `origin` names it. */
-export function throwerRef(state: State, origin: Origin): OccurrenceRef {
+export function throwerRef(state: State, origin: Origin): OccurrenceName {
   return { processInstanceId: instanceOf(state, origin.scope), element: origin.element, activation: origin.activation };
 }
 
@@ -234,7 +234,7 @@ function ownReceivers(ctx: Ctx, state: State, address: SignalAddress): readonly 
   });
   const positionLe = ctxPositionLe(ctx, state);
   return mergeSort(reached, (left, right) => {
-    const order = compareStrings(instanceOf(state, left.scope), instanceOf(state, right.scope));
+    const order = compareStrings(instanceText(instanceOf(state, left.scope)), instanceText(instanceOf(state, right.scope)));
     return order < 0 || (order === 0 && positionLe(left.position, right.position));
   });
 }
@@ -243,7 +243,7 @@ function ownReceivers(ctx: Ctx, state: State, address: SignalAddress): readonly 
 function thrownDelivery(ctx: Ctx, state: State, address: SignalAddress, variables: readonly Binding[], item: OpenItem): DeliveryInput {
   return {
     occurrence: {
-      processInstanceId: instanceOf(state, item.scope),
+      processInstanceId: instanceText(instanceOf(state, item.scope)),
       element: programPublicId(ctx.program, item.element),
       activation: occurrenceOf(state, item.id.occurrence)?.activation ?? 0,
     },

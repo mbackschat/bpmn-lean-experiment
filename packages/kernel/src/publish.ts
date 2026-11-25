@@ -10,7 +10,7 @@ import {
   committed,
   compensationsRestoredIn,
   InstanceStatus,
-  instanceOf,
+  instanceOf, instanceText,
   occurrenceOf,
   root,
   scopeOccurrenceParent,
@@ -155,7 +155,7 @@ const unnamed = (code: string): Named => ({ ok: false, code });
  * as an activation 0, which names no occurrence, nor as another role.
  */
 function publishedScope(state: State, scope: ScopeOccurrence, entries: readonly Binding[]): Named {
-  const processInstanceId = instanceOf(state, scope.id);
+  const processInstanceId = instanceText(instanceOf(state, scope.id));
   if (scope.calledInstance !== null) {
     return named({ processInstanceId, element: null, activation: 0, role: ScopeRole.ProcessInstance, variables: entries });
   }
@@ -176,7 +176,7 @@ function publishedScope(state: State, scope: ScopeOccurrence, entries: readonly 
   if (record !== null) {
     const subject = record.occurrence;
     return named({
-      processInstanceId: subject.processInstanceId, element: subject.element, activation: subject.activation,
+      processInstanceId: instanceText(subject.processInstanceId), element: subject.element, activation: subject.activation,
       role: contextRole(subject.role), variables: entries,
     });
   }

@@ -9,7 +9,7 @@ import {
   DeliveryTriggerTag,
   InputTag,
   StartTriggerTag,
-  instanceOf,
+  instanceOf, instanceText,
   instanceRoot,
   messageChannelEquals,
   occurrenceOf,
@@ -82,7 +82,7 @@ export {
 
 export function occurrence(program: Program, state: State, item: OpenItem): OccurrenceRef {
   return {
-    processInstanceId: instanceOf(state, item.scope),
+    processInstanceId: instanceText(instanceOf(state, item.scope)),
     element: programPublicId(program, item.element),
     activation: occurrenceOf(state, item.id.occurrence)?.activation ?? 0,
   };

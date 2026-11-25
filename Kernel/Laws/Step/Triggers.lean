@@ -23,7 +23,7 @@ Cancel raise's origin, whose thrower the compensation its catch queues takes as 
 
 /-- The triggers of the queued compensations of `signals` and the origins of its queued Cancel raises, in queue order;
 a raise is read by `Raised.isCancel`, its owner's query. -/
-def triggersOf (signals : List Signal) : List (OccurrenceRef ⊕ Origin) :=
+def triggersOf (signals : List Signal) : List (OccurrenceName ⊕ Origin) :=
   signals.filterMap fun
     | .compensate _ _ trigger _ _ => some (.inl trigger)
     | .raise event origin => if event.isCancel then some (.inr origin) else none
@@ -39,7 +39,7 @@ theorem triggersOf_append (signals more : List Signal) :
   List.filterMap_append
 
 /-- A queued compensation carries its trigger. -/
-theorem triggersOf_compensate (scope : ScopeOccurrenceId) (activity : Option ElementId) (trigger : OccurrenceRef)
+theorem triggersOf_compensate (scope : ScopeOccurrenceId) (activity : Option ElementId) (trigger : OccurrenceName)
     (leave : Option OccurrenceId) (resume : Option Resume) :
     triggersOf [.compensate scope activity trigger leave resume] = [.inl trigger] := rfl
 

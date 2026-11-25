@@ -3,8 +3,7 @@
  * where its search starts, and how a process instance fails. Part of `state.ts`, which re-exports it.
  */
 import { assertNever, type ElementId } from "../il/types.js";
-import { type OccurrenceRef } from "./input.js";
-import { type Binding, type OccurrenceId, type ScopeOccurrenceId } from "./slots.js";
+import { type Binding, type OccurrenceId, type OccurrenceName, type ScopeOccurrenceId } from "./slots.js";
 
 /**
  * Guarded type: `feature/propagation` owns matching on it; `feature/subscriptions`' `catches` is the cross-owner
@@ -51,6 +50,6 @@ export interface Origin {
 export interface InstanceFailure {
   readonly code: string;
   readonly message: string | null;
-  readonly occurrence: OccurrenceRef;
-  readonly related: readonly (readonly [string, OccurrenceRef])[];
+  readonly occurrence: OccurrenceName;
+  readonly related: readonly (readonly [string, OccurrenceName])[];
 }

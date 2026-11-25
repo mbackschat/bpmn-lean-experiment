@@ -168,7 +168,7 @@ or the thrower's of a compensation run in progress, whose key the counter keeps 
 last clause keeps no counter the first two drop; the lane does not prove that relation, which would tie a caught
 Cancel's trigger to its Transaction's instance (`Feature.Propagation.leaveOccurrence`). -/
 @[expose] def countLive (state : State) (count : ActivationCount) : Bool :=
-  count.processInstance == state.instanceId || state.scopes.any (·.calledInstance == some count.processInstance) ||
+  count.processInstance == .named state.instanceId || state.scopes.any (·.calledInstance == some count.processInstance) ||
     state.slots.compensation.runs.any (·.trigger.processInstanceId == count.processInstance)
 
 /-- Commit a settled closure: its transitions as the journal and its batches' intents as the input's intents, each in the

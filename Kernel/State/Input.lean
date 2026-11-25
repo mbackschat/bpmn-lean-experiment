@@ -1,5 +1,6 @@
 module
 
+public import Kernel.State.Key
 public import Kernel.State.Wait
 
 /-! # Kernel inputs
@@ -19,6 +20,14 @@ structure OccurrenceRef where
   element : ElementId
   activation : Nat
   deriving DecidableEq, Repr
+
+/-- The public identity of the occurrence `name` names in a committed state, whose names are its identifiers. -/
+def OccurrenceName.toRef (name : OccurrenceName) : OccurrenceRef :=
+  { processInstanceId := name.processInstanceId.text, element := name.element, activation := name.activation }
+
+/-- The name of the occurrence a public identity names in a committed state. -/
+def OccurrenceRef.toName (ref : OccurrenceRef) : OccurrenceName :=
+  { processInstanceId := .named ref.processInstanceId, element := ref.element, activation := ref.activation }
 
 inductive StartTrigger where
   -- guard-exception(3): the start input's own statement of how it fired, not a second dispatch over `Trigger`.
@@ -184,7 +193,7 @@ structure BroadcastIntent where
   address : SignalAddress
   variables : List (String × Value) := []
   businessKey : Option String := none
-  origin : OccurrenceRef
+  origin : OccurrenceName
   deriving Repr
 
 end Kernel

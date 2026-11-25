@@ -293,7 +293,7 @@ def itemDetail? {α : Type} (ctx : Ctx) (state : State) (occurrence : Occurrence
   (itemsInOrder ctx.positionLe state.openItems).findSome? fun item =>
     if ctx.program.publicId item.element == occurrence.element &&
         ((state.occurrence? item.id.occurrence).map (·.activation)) == some occurrence.activation &&
-        state.instanceOf item.scope == occurrence.processInstanceId
+        (state.instanceOf item.scope).text == occurrence.processInstanceId
     then (detail item.kind.view).map (item, ·) else none
 
 /-- The open item with the public identity `occurrence` whose view has the detail `detail` reads. -/
@@ -396,7 +396,7 @@ structure Hooks where
   /-- Propagation: `Signal.raise`. -/
   raise : Ctx → Raised → Origin → State → Outcome := fun _ _ _ => refuse "raise"
   /-- Compensation: `Signal.compensate`. -/
-  compensate : Ctx → ScopeOccurrenceId → Option ElementId → OccurrenceRef → Option OccurrenceId → Option Resume → State → Outcome :=
+  compensate : Ctx → ScopeOccurrenceId → Option ElementId → OccurrenceName → Option OccurrenceId → Option Resume → State → Outcome :=
     fun _ _ _ _ _ _ => refuse "compensate"
   /-- Compensation: `Signal.compensationReady`. -/
   compensationReady : Ctx → ScopeOccurrenceId → ScopeOccurrenceId → State → Outcome :=

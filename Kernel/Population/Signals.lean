@@ -55,7 +55,7 @@ def Emission.startedId (emission : Emission) (commandId : String) (deploymentId 
 /-- The emission of an intent a committed step of the instance `emitter` left, its origin by public identifier. -/
 def intentEmission (emitter : String) (intent : BroadcastIntent) : Emission :=
   { address := intent.address, variables := intent.variables, businessKey := intent.businessKey
-    origin := some intent.origin, emitter := some emitter }
+    origin := some intent.origin.toRef, emitter := some emitter }
 
 /-- The open Signal items of `address` in one instance's `state` of `program`, by process instance identifier (a called
 instance's own), then arming order: none unless the instance is running, and none for the `emitter`'s own State. A
@@ -64,7 +64,7 @@ def signalReceiversOf (program : Program) (state : State) (address : SignalAddre
     (emitter : Option String) : List OccurrenceRef :=
   if state.status != .running || emitter == some state.instanceId then [] else
     let waiting := ((itemList state.openItems).filter fun item => item.kind.view.signal.any (address.matches ·.address)).map
-      fun item => (state.instanceOf item.scope, item.position, occurrence program state item)
+      fun item => ((state.instanceOf item.scope).text, item.position, occurrence program state item)
     let ordered := waiting.mergeSort fun (leftInstance, leftItem, _) (rightInstance, rightItem, _) =>
       -- A committed state holds committed positions only, which every unit order orders alike.
       decide (leftInstance < rightInstance) || (leftInstance == rightInstance && Issue.notAfter UnitKey.breadth.val leftItem rightItem)

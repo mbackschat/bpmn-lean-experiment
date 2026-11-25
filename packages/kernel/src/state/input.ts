@@ -4,6 +4,7 @@
  * the population. Part of `state.ts`, which re-exports it.
  */
 import { type Bounds, type ElementId, type Value } from "../il/types.js";
+import { instanceText, type OccurrenceName } from "./key.js";
 import { type Binding, InputTag, type MessageChannel, type SignalAddress } from "./wait.js";
 
 /** The public identity of an occurrence: its process instance, the element and its activation number. */
@@ -11,6 +12,11 @@ export interface OccurrenceRef {
   readonly processInstanceId: string;
   readonly element: ElementId;
   readonly activation: number;
+}
+
+/** Lean's `OccurrenceName.toRef`: the public identity of the occurrence `name` names in a committed state. */
+export function nameRef(name: OccurrenceName): OccurrenceRef {
+  return { processInstanceId: instanceText(name.processInstanceId), element: name.element, activation: name.activation };
 }
 
 // guard-exception(3): the start input's own statement of how it fired, not a second dispatch over `Trigger`.
@@ -213,5 +219,5 @@ export interface BroadcastIntent {
   readonly address: SignalAddress;
   readonly variables: readonly Binding[];
   readonly businessKey: string | null;
-  readonly origin: OccurrenceRef;
+  readonly origin: OccurrenceName;
 }

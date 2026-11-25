@@ -44,7 +44,7 @@ def armedOccurrences : OccurrenceMap := ofOccurrences [subProcess, innerTask, ou
   simp
 
 def startFact (occurrence : Occurrence) : StartedFact :=
-  { occurrence := { processInstanceId := "p", element := occurrence.element, activation := occurrence.activation }
+  { occurrence := { processInstanceId := .named "p", element := occurrence.element, activation := occurrence.activation }
     owner := occurrence.scope, sourceType := "task" }
 
 def armedState (kind : OpenKind) : State :=
@@ -278,13 +278,13 @@ theorem misplaced_instance_rejected (kind : OpenKind) : ¬ Placed (sample kind) 
   simp [childScope, subScope, instanceRun] at this
 
 /-- The Sub-Process occurrence's public identity, a compensation's trigger. -/
-def subTrigger : OccurrenceRef := { processInstanceId := "p", element := ⟨"Sub"⟩, activation := 1 }
+def subTrigger : OccurrenceName := { processInstanceId := .named "p", element := ⟨"Sub"⟩, activation := 1 }
 
 /-- A compensation run in `scope` whose one handler runs in the context `subScope`. -/
 def handlerRun (scope : ScopeOccurrenceId) : CompensationRun :=
   { trigger := subTrigger, scope, pending := [], leave := none, resume := none,
     running := [(subScope, { subject := ⟨"Sub"⟩, handler := some ⟨"Undo"⟩, scope := processRoot
-                             occurrence := { processInstanceId := "I", element := ⟨"Sub"⟩, activation := 1 } })] }
+                             occurrence := { processInstanceId := .named "I", element := ⟨"Sub"⟩, activation := 1 } })] }
 
 /-- A handler context standing below another scope occurrence than its run's breaks `RunPlaced`. -/
 theorem misplaced_handler_rejected (kind : OpenKind) : ¬ RunPlaced (sample kind) (handlerRun subScope) := fun placed => by

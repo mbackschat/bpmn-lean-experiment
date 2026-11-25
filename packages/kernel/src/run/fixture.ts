@@ -11,7 +11,7 @@ import { assertNever, type Program } from "../il/types.js";
 import { bindingsToJson, isObject, type JsonValue } from "../il/codec.js";
 import { channelToJson, decodeBindings, decodeSignalAddress, occurrenceFromJson, signalAddressToJson } from "../il/codec/stimulus.js";
 import type { Hooks } from "../hooks.js";
-import { FailureTag, StartTriggerTag, type BroadcastIntent, type OccurrenceRef, type RecordedFailure, type SignalAddress, type State } from "../state.js";
+import { FailureTag, StartTriggerTag, type BroadcastIntent, type OccurrenceRef, type RecordedFailure, type SignalAddress, type State, nameRef } from "../state.js";
 import { FanOutEntryTag, cascadeInstanceId, startedInstanceId, type FanOutEntry } from "../population/contract.js";
 import {
   FanOutNextTag, PendingTag, fanOutBegin, fanOutNext, fanOutPass, fanOutRecord, fanOutSnapshot, linearizeReceivers, reachOccurrence,
@@ -72,7 +72,7 @@ export function intentFromJson(json: unknown): BroadcastIntent {
 export function intentJson(intent: BroadcastIntent): JsonValue {
   return {
     address: signalAddressJson(intent.address), variables: bindingsToJson(intent.variables), businessKey: intent.businessKey,
-    origin: referenceJson(intent.origin),
+    origin: referenceJson(nameRef(intent.origin)),
   };
 }
 

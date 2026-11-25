@@ -54,7 +54,7 @@ role matters because each role numbers under its own counter (R8), so a Multi-In
 share element and activation; a reservation no item waits for answers to no reference. -/
 def Designates (program : Program) (state : State) (ref : OccurrenceRef) (occurrence : Occurrence) : Prop :=
   (program.publicId occurrence.element = ref.element ∧ occurrence.activation = ref.activation ∧
-    state.instanceOf occurrence.scope = ref.processInstanceId) ∧ occurrence.role = .element ∧
+    (state.instanceOf occurrence.scope).text = ref.processInstanceId) ∧ occurrence.role = .element ∧
     (occurrence.begun = true ∨ ∃ item ∈ itemList state.openItems, item.id.occurrence = occurrence.id)
 
 /-- The input addresses the occurrence with public identity `ref`: a command, a timer firing or an effect result. -/
@@ -158,7 +158,7 @@ theorem item_designates {program : Program} {before s : State} {ref : Occurrence
     (items : itemList s.openItems = itemList before.openItems) (sameInstance : s.instanceOf = before.instanceOf)
     (member : item ∈ itemList s.openItems) (named : program.publicId item.element = ref.element)
     (activation : (s.occurrence? item.id.occurrence).map (·.activation) = some ref.activation)
-    (instance_ : s.instanceOf item.scope = ref.processInstanceId) :
+    (instance_ : (s.instanceOf item.scope).text = ref.processInstanceId) :
     ∃ occurrence ∈ before.occurrences, Designates program before ref occurrence := by
   obtain ⟨owner, owned, ownerId, ownerFacts⟩ := formed.owned.itemOccurrences item (items ▸ member)
   obtain ⟨ownerElement, ownerScope⟩ := ownerFacts

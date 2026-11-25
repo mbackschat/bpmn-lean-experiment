@@ -120,7 +120,7 @@ inductive Signal where
   | endInstance (status : InstanceStatus) (failure : Option InstanceFailure)
   /-- Run the compensation handlers retained in `scope` for `trigger`, those of `activity` when one is named; once all
   have completed, cancel the occurrence `leave` if any and go on as `resume` says. -/
-  | compensate (scope : ScopeOccurrenceId) (activity : Option ElementId) (trigger : OccurrenceRef) (leave : Option OccurrenceId)
+  | compensate (scope : ScopeOccurrenceId) (activity : Option ElementId) (trigger : OccurrenceName) (leave : Option OccurrenceId)
       (resume : Option Resume)
   /-- An Error left the compensation handler context `handler` uncaught. -/
   | compensationFailed (handler : ScopeOccurrenceId) (code : String) (message : Option String) (origin : Origin)
@@ -351,12 +351,12 @@ def entryCount (state : State) : Nat :=
   state.batchTokens.length + state.queuedTokens.size + state.occurrences.length + state.openItems.size + state.scopes.length +
     state.batchSignals.length + state.queuedSignals.size
 
-/-- The process instance identifier of `scope`. -/
-def instanceOf (state : State) (scope : ScopeOccurrenceId) : String :=
-  ((state.scopes.find? (·.id == state.instanceRoot scope)).bind (·.calledInstance)).getD state.instanceId
+/-- The name of the process instance of `scope`. -/
+def instanceOf (state : State) (scope : ScopeOccurrenceId) : InstanceName :=
+  ((state.scopes.find? (·.id == state.instanceRoot scope)).bind (·.calledInstance)).getD (.named state.instanceId)
 
 /-- The next activation of `element` under `role` in `processInstance`, recorded (R8: per process instance). -/
-def activate (state : State) (processInstance : String) (element : ElementId) (role : ActivationRole) : State × Nat :=
+def activate (state : State) (processInstance : InstanceName) (element : ElementId) (role : ActivationRole) : State × Nat :=
   let key (entry : ActivationCount) :=
     entry.processInstance == processInstance && entry.element == element && entry.role == role
   let count := ((state.activations.find? key).map (·.count)).getD 0 + 1

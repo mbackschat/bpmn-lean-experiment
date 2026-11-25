@@ -30,10 +30,10 @@ def inner : ScopeOccurrenceId := .ofSegments [{ element := ⟨"UndoB"⟩, ordina
 
 def recordA : Compensable :=
   { subject := subjectA, handler := some ⟨"UndoA"⟩, scope := outer, completion := 1
-    occurrence := { processInstanceId := "I", element := subjectA, activation := 1 } }
+    occurrence := { processInstanceId := .named "I", element := subjectA, activation := 1 } }
 def recordB : Compensable :=
   { subject := subjectB, handler := some ⟨"UndoB"⟩, scope := outer, completion := 2
-    occurrence := { processInstanceId := "I", element := subjectB, activation := 1 } }
+    occurrence := { processInstanceId := .named "I", element := subjectB, activation := 1 } }
 def innerRecord : Compensable := { recordB with scope := inner }
 
 def flowAB (sources : List ElementId) (target : ElementId) : Bool := sources.contains subjectA && target == subjectB
@@ -43,7 +43,7 @@ def nothing (_ : ElementId) : List String := []
 def precedesAB : Compensable → Compensable → Prop :=
   Precedes flowAB noBoundaries (fun record other => record.completion < other.completion) nothing nothing
 
-def trigger : OccurrenceRef := { processInstanceId := "p", element := ⟨"Throw"⟩, activation := 1 }
+def trigger : OccurrenceName := { processInstanceId := .named "p", element := ⟨"Throw"⟩, activation := 1 }
 def both : CompensationRun := { trigger, scope := outer, pending := [recordA, recordB], leave := none, resume := none }
 def afterFirst : CompensationRun := { both with pending := [recordA], running := [(inner, recordB)] }
 
@@ -131,8 +131,8 @@ after the first trigger. -/
 def subjectC : ElementId := ⟨"C"⟩
 def recordC : Compensable :=
   { subject := subjectC, handler := some ⟨"UndoC"⟩, scope := outer, completion := 3
-    occurrence := { processInstanceId := "I", element := subjectC, activation := 1 } }
-def secondTrigger : OccurrenceRef := { trigger with activation := 2 }
+    occurrence := { processInstanceId := .named "I", element := subjectC, activation := 1 } }
+def secondTrigger : OccurrenceName := { trigger with activation := 2 }
 def second : CompensationRun := { trigger := secondTrigger, scope := outer, pending := [recordC], leave := none, resume := none }
 def secondBegun : CompensationRun :=
   { second with pending := [], running := [(.ofSegments [{ element := ⟨"UndoC"⟩, ordinal := 0 }], recordC)] }

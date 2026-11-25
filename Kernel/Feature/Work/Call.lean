@@ -47,8 +47,8 @@ identifier embeds its caller's (`State.calledInstanceId`), so a deep enough chai
 `Bounds.instanceIdentityBytes` (OD14) and is refused before anything is evaluated. -/
 def invoke (ctx : Ctx) (header : Header) (payload : ActivityPayload) (work : CallWork) (occurrence : Occurrence)
     (state : State) : Outcome := do
-  let called := State.calledInstanceId (state.instanceOf occurrence.scope) (ctx.program.publicId occurrence.element)
-    occurrence.activation
+  let called := ((state.instanceOf occurrence.scope).calledBy (ctx.program.publicId occurrence.element)
+    (.committed occurrence.activation)).text
   if called.utf8ByteSize > ctx.program.options.bounds.instanceIdentityBytes then
     .error (.unsupported "instance-identity-bound") -- dynamic-only: an identifier grows with its chain of Calls
   let process ← calledProcess ctx header work

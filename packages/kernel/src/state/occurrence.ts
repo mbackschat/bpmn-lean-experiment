@@ -4,7 +4,7 @@
  * re-exports it.
  */
 import { type ElementId, type FlowId } from "../il/types.js";
-import { type ActivationRole, type Issue, type OccurrenceId, type ScopeOccurrenceId, scopeParent } from "./key.js";
+import { type ActivationRole, type InstanceName, type Issue, type OccurrenceId, type ScopeOccurrenceId, scopeParent } from "./key.js";
 
 /** Guarded type: `step.ts` owns matching on it. Whom `Step` tells when an occurrence completes. */
 export enum ContinuationTag {
@@ -69,7 +69,7 @@ export interface ScopeOccurrence {
    */
   readonly position: Issue;
   readonly occurrence: OccurrenceId | null;
-  readonly calledInstance: string | null;
+  readonly calledInstance: InstanceName | null;
 }
 
 /**

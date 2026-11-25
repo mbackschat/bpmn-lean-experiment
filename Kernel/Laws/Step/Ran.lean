@@ -191,7 +191,7 @@ inductive Performed (hooks : Hooks) (ctx : Ctx) : Signal → State → State →
       Performed hooks ctx (.fire item fired) state after
   | onEndInstance {status : InstanceStatus} {failure : Option InstanceFailure} {state : State} :
       Performed hooks ctx (.endInstance status failure) state (endInstance ctx.positionLe status failure state)
-  | onCompensate {scope : ScopeOccurrenceId} {activity : Option ElementId} {trigger : OccurrenceRef} {leave : Option OccurrenceId}
+  | onCompensate {scope : ScopeOccurrenceId} {activity : Option ElementId} {trigger : OccurrenceName} {leave : Option OccurrenceId}
       {resume : Option Resume} {state after : State} : ScopeStands state scope →
       hooks.compensate ctx scope activity trigger leave resume state = .ok after →
       Performed hooks ctx (.compensate scope activity trigger leave resume) state after

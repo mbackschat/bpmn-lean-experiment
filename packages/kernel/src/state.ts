@@ -31,13 +31,13 @@ export {
 import {
   type BroadcastIntent, type CommandAction, CommandActionTag, type CommandInput, type ConditionChoice, type CorrelationMatch, type CriterionTarget,
   CriterionTargetTag, type DeliveryInput, type DeliveryTrigger, DeliveryTriggerTag, type EffectInput,
-  type EffectOutcome, EffectOutcomeTag, type EvalContext, type Input, noStartTrigger, type OccurrenceRef,
+  type EffectOutcome, EffectOutcomeTag, type EvalContext, type Input, noStartTrigger, type OccurrenceRef, nameRef,
   SignalReach, type StartInput, type StartTrigger, StartTriggerTag, type TimerInput, type CancelInstanceInput,
 } from "./state/input.js";
 export {
   type BroadcastIntent, type CommandAction, CommandActionTag, type CommandInput, type ConditionChoice, type CorrelationMatch, type CriterionTarget,
   CriterionTargetTag, type DeliveryInput, type DeliveryTrigger, DeliveryTriggerTag, type EffectInput,
-  type EffectOutcome, EffectOutcomeTag, type EvalContext, type Input, noStartTrigger, type OccurrenceRef,
+  type EffectOutcome, EffectOutcomeTag, type EvalContext, type Input, noStartTrigger, type OccurrenceRef, nameRef,
   SignalReach, type StartInput, type StartTrigger, StartTriggerTag, type TimerInput, type CancelInstanceInput,
 };
 import {
@@ -64,10 +64,10 @@ export {
 };
 
 import {
-  ActivationRole, childScope, compareIssue, compareOccurrenceId, compareScopeOccurrenceId, compareUnitKey, type Issue, occurrenceId, type OccurrenceId,
-  occurrenceIdParts, type OccurrenceKey, rootScope, scopeParent, issuerText, type ScopeSlot, signalUnit, tokenUnit, type UnitKey,
+  ActivationRole, childScope, compareIssue, compareOccurrenceId, compareScopeOccurrenceId, compareUnitKey, type InstanceName, type Issue, issuerText,
+  occurrenceId, type OccurrenceId, occurrenceIdParts, type OccurrenceKey, type OccurrenceName, rootScope, sameInstanceName, scopeParent, type ScopeSlot,
+  signalUnit, tokenUnit, type UnitKey,
 } from "./state/key.js";
-export { ActivationRole, type OccurrenceId, type OccurrenceKey };
 import {
   type Continuation, ContinuationTag, flowContinuation, type Occurrence, type OccurrenceMap, type ScopeMap, type ScopeOccurrence,
   scopeOccurrenceParent,
@@ -92,7 +92,7 @@ export {
   breadthUnitKey, childScope, compareIssue, compareOccurrenceId, compareScopeOccurrenceId, compareScopeSlot, compareUnitKey,
   committedOrdinal, type FreshIssue, freshIssue,
   type Issue, issueNumber, issuerText, occurrenceId, occurrenceIdParts, sameUnitKey, scopeEncloses, scopeHead, scopeParent, type UnitKey,
-  unitRoot, UnitRootTag,
+  unitRoot, UnitRootTag, calledBy, type InstanceName, instanceText, type OccurrenceName, ActivationRole, type OccurrenceId, type OccurrenceKey,
 } from "./state/key.js";
 export {
   type ClaimSlot, ClaimSlotTag, compareClaimSlot, compareIssuePlace, committedScope, finishUnit, idleUnit, type Issued, type Issuer,
@@ -253,7 +253,7 @@ export type Signal =
       readonly tag: SignalTag.Compensate;
       readonly scope: ScopeOccurrenceId;
       readonly activity: ElementId | null;
-      readonly trigger: OccurrenceRef;
+      readonly trigger: OccurrenceName;
       readonly leave: OccurrenceId | null;
       readonly resume: Resume | null;
     }
@@ -602,20 +602,20 @@ export function entryCount(state: State): number {
     state.scopes.length + state.batchSignals.length + orderedSize(state.queuedSignals);
 }
 
-/** The process instance identifier of `scope`. */
-export function instanceOf(state: State, scope: ScopeOccurrenceId): string {
+/** The name of the process instance of `scope`. */
+export function instanceOf(state: State, scope: ScopeOccurrenceId): InstanceName {
   return scopeOf(state, instanceRoot(state, scope))?.calledInstance ?? state.instanceId;
 }
 
 /** The next activation of `element` under `role` in `processInstance`, recorded (R8: per process instance). */
 export function activate(
   state: State,
-  processInstance: string,
+  processInstance: InstanceName,
   element: ElementId,
   role: ActivationRole,
 ): readonly [State, number] {
   const key = (entry: ActivationCount): boolean =>
-    entry.processInstance === processInstance && entry.element === element && entry.role === role;
+    sameInstanceName(entry.processInstance, processInstance) && entry.element === element && entry.role === role;
   const count = (state.activations.find(key)?.count ?? 0) + 1;
   return [
     { ...state, activations: [{ processInstance, element, role, count }, ...state.activations.filter((entry) => !key(entry))] },

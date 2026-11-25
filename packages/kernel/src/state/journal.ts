@@ -5,7 +5,7 @@
  * re-exports it.
  */
 import { elementEnvelope, programElement, type ElementId, type FlowId, type Program } from "../il/types.js";
-import { ActivationRole, type OccurrenceKey, type ScopeOccurrenceId } from "./slots.js";
+import { ActivationRole, type InstanceName, type OccurrenceKey, type ScopeOccurrenceId } from "./slots.js";
 import { type InputTag } from "./wait.js";
 
 export enum Terminal { Completed = "completed", Cancelled = "cancelled" }
@@ -54,7 +54,7 @@ export function marks(program: Program, key: OccurrenceKey): readonly [boolean, 
 
 /** One activation counter (R8: per process instance, element and role). */
 export interface ActivationCount {
-  readonly processInstance: string;
+  readonly processInstance: InstanceName;
   readonly element: ElementId;
   readonly role: ActivationRole;
   readonly count: number;

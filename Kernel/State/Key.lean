@@ -759,13 +759,146 @@ inductive ActivationRole where
   | multiInstanceBody
   deriving DecidableEq, Repr
 
+/-- The identifier of the process instance a Call Activity's `activation` calls from the instance `caller`: each
+part prefixed by its UTF-8 byte length, so that nested identifiers never collide. -/
+def State.calledInstanceId (caller : String) (call : ElementId) (activation : Nat) : String :=
+  s!"call:{caller.utf8ByteSize}:{caller}:{call.value.utf8ByteSize}:{call.value}:{activation}"
+
+/-- A process instance's name. Committed, it is the instance's identifier (`named`). A called instance entered in the
+closure in progress by a Call whose activation is still pending (`Step.compact` numbers it) is named by its caller's
+name, the Call's public element and that activation (`called`) until the commit resolves it (`rename`). Every called
+name is built by `calledBy`, which names an instance whose parts are all committed by its identifier, so an instance
+has one name, and a name is `named` exactly when it holds no pending activation. -/
+inductive InstanceName where
+  | named (id : String)
+  | called (caller : InstanceName) (call : ElementId) (activation : Issue)
+  deriving DecidableEq, Repr
+
+instance : Inhabited InstanceName := ⟨.named ""⟩
+
+/-- One Call of a pending name, as its order reads it. -/
+structure CallStep where
+  call : String
+  activation : Issue
+  deriving DecidableEq
+
+instance : Ord CallStep where
+  compare := compareLex (compareOn (·.call)) (compareOn (·.activation))
+
+instance : Std.TransOrd CallStep := inferInstanceAs <| Std.TransCmp (compareLex _ _)
+
+instance : Std.LawfulEqOrd CallStep where
+  eq_of_compare {a b} h := by
+    have h : compareLex (compareOn fun step : CallStep => step.call) (compareOn fun step : CallStep => step.activation)
+        a b = .eq := h
+    rw [compareLex_eq_eq] at h
+    obtain ⟨call, activation⟩ := a
+    obtain ⟨call', activation'⟩ := b
+    have calls : call = call' := Std.LawfulEqOrd.eq_of_compare h.1
+    have activations : activation = activation' := Std.LawfulEqOrd.eq_of_compare h.2
+    subst calls activations
+    rfl
+
+namespace InstanceName
+
+/-- The committed identifier a name starts from: its own, or its outermost caller's. -/
+def base : InstanceName → String
+  | .named id => id
+  | .called caller _ _ => caller.base
+
+/-- The Calls a name adds to its `base`, innermost first. -/
+def steps : InstanceName → List CallStep
+  | .named _ => []
+  | .called caller call activation => { call := call.value, activation } :: caller.steps
+
+/-- The identifier the name denotes with each pending activation numbered by `number`. -/
+def textWith (number : Issue → Nat) : InstanceName → String
+  | .named id => id
+  | .called caller call activation => State.calledInstanceId (caller.textWith number) call (number activation)
+
+/-- The identifier: a `named` name's own, the only name a committed state holds, which every reader of a
+committed state takes. -/
+abbrev text (name : InstanceName) : String := name.textWith Issue.number
+
+/-- The name of the instance the Call `call`'s `activation` calls from `caller`: its identifier once both are committed. -/
+def calledBy (caller : InstanceName) (call : ElementId) (activation : Issue) : InstanceName :=
+  match caller, activation with
+  | .named id, .committed ordinal => .named (State.calledInstanceId id call ordinal)
+  | _, _ => .called caller call activation
+
+/-- The name with its activations renamed by `r`, as the commit renames them (`Step.compact`). -/
+def rename (r : Issue → Issue) : InstanceName → InstanceName
+  | .named id => .named id
+  | .called caller call activation => calledBy (caller.rename r) call (r activation)
+
+end InstanceName
+
+/-- By the base identifier, then by the Calls, innermost first: committed names in `String` order. -/
+instance : Ord InstanceName where
+  compare := compareLex (compareOn InstanceName.base) (compareOn InstanceName.steps)
+
+instance : Std.TransOrd InstanceName := inferInstanceAs <| Std.TransCmp (compareLex _ _)
+
+instance : Std.LawfulEqOrd InstanceName where
+  eq_of_compare {a b} h := by
+    have h : compareLex (compareOn InstanceName.base) (compareOn InstanceName.steps) a b = .eq := h
+    rw [compareLex_eq_eq] at h
+    have parts : ∀ a b : InstanceName, a.base = b.base → a.steps = b.steps → a = b := by
+      intro a
+      induction a with
+      | named id =>
+        intro b bases steps
+        cases b with
+        | named id' => simp_all [InstanceName.base]
+        | called => simp [InstanceName.steps] at steps
+      | called caller call activation ih =>
+        intro b bases steps
+        cases b with
+        | named => simp [InstanceName.steps] at steps
+        | called caller' call' activation' =>
+          simp only [InstanceName.steps, List.cons.injEq, CallStep.mk.injEq] at steps
+          obtain ⟨⟨calls, activations⟩, rest⟩ := steps
+          have callers := ih caller' bases rest
+          cases call; cases call'
+          simp_all
+    exact parts a b (Std.LawfulEqOrd.eq_of_compare h.1) (Std.LawfulEqOrd.eq_of_compare h.2)
+
 /-- An occurrence's public key, which the journal and the observation publish, unlike its structural `OccurrenceId`: its
 process instance, element, activation and the counter that numbered it. -/
 structure OccurrenceKey where
-  processInstanceId : String
+  processInstanceId : InstanceName
   element : ElementId
   activation : Nat
   role : ActivationRole := .element
   deriving DecidableEq, Repr
+
+/-- The occurrence a stored record names (a compensation run's trigger, an instance failure's occurrences, a broadcast's
+origin): its process instance, element and activation, which the commit renames with the state and a reader of a
+committed state publishes as its `OccurrenceRef` (`OccurrenceName.toRef`). -/
+structure OccurrenceName where
+  processInstanceId : InstanceName
+  element : ElementId
+  activation : Nat
+  deriving DecidableEq, Repr
+
+/-- By process instance, element and activation. -/
+instance : Ord OccurrenceName where
+  compare := compareLex (compareOn (·.processInstanceId)) <| compareLex (compareOn (·.element.value)) (compareOn (·.activation))
+
+instance : Std.TransOrd OccurrenceName := inferInstanceAs <| Std.TransCmp (compareLex _ (compareLex _ _))
+
+instance : Std.LawfulEqOrd OccurrenceName where
+  eq_of_compare {a b} h := by
+    have h : compareLex (compareOn fun name : OccurrenceName => name.processInstanceId) (compareLex
+        (compareOn fun name : OccurrenceName => name.element.value) (compareOn fun name : OccurrenceName => name.activation))
+        a b = .eq := h
+    rw [compareLex_eq_eq, compareLex_eq_eq] at h
+    obtain ⟨process, ⟨element⟩, activation⟩ := a
+    obtain ⟨process', ⟨element'⟩, activation'⟩ := b
+    have processes : process = process' := Std.LawfulEqOrd.eq_of_compare h.1
+    have same : element = element' := Std.LawfulEqOrd.eq_of_compare h.2.1
+    have activations : activation = activation' := Std.LawfulEqOrd.eq_of_compare h.2.2
+    subst processes same activations
+    rfl
 
 end Kernel

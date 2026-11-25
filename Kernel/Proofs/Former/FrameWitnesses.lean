@@ -113,7 +113,7 @@ theorem issued_of_count {s : State} (historic : Laws.State.Historic s) {parent :
 /-- The process root is its own instance root in every state holding only it. -/
 theorem rootOnly_root {s : State} (scopes : s.scopes = [{ id := State.root, element := none, position := 0 }]) :
     s.instanceRoot State.root = State.root := by
-  have reading : Laws.State.InstanceIn s State.root s.instanceId [{ id := State.root, element := none, position := 0 }] :=
+  have reading : Laws.State.InstanceIn s State.root (.named s.instanceId) [{ id := State.root, element := none, position := 0 }] :=
     .root { id := State.root, element := none, position := 0 } (by simp [scopes]) rfl (by simp [Laws.State.root_eq])
   rw [instanceRoot_chain reading (by simp [Laws.State.scopeIds, scopes]) reading.mem]
   simp [chainRoot]
@@ -197,7 +197,7 @@ theorem unissued_enter_rejected :
   have placed := (lane.occurs ⟨"T"⟩ freshKey .outgoing (.inl ⟨[], .outward, by rw [entered]; simp [Laws.State.allSignals, pendingFresh]⟩)).1
     (List.mem_map.mpr ⟨freshEntry, freshHeld, rfl⟩)
   have reading : Laws.State.InstanceIn (pendingFresh.enterScope ⟨"Y"⟩ State.root [] none).1 freshKey
-      (pendingFresh.enterScope ⟨"Y"⟩ State.root [] none).1.instanceId
+      (.named (pendingFresh.enterScope ⟨"Y"⟩ State.root [] none).1.instanceId)
       [freshEntry, { id := State.root, element := none, position := 0 }] :=
     .up freshEntry State.root _ _ freshHeld rfl (by simp [freshEntry])
       (.root { id := State.root, element := none, position := 0 } rootHeld rfl (by simp [Laws.State.root_eq]))

@@ -478,7 +478,7 @@ theorem declaring?_go (state : State) (element : ElementId) :
 
 /-- `State.instanceOf`: the identifier its instance root's record calls, else the instance's own. -/
 theorem instanceOf_root (state : State) (scope : ScopeOccurrenceId) : state.instanceOf scope =
-    ((state.scopes.find? (·.id == state.instanceRoot scope)).bind (·.calledInstance)).getD state.instanceId := by
+    ((state.scopes.find? (·.id == state.instanceRoot scope)).bind (·.calledInstance)).getD (.named state.instanceId) := by
   simp only [State.instanceOf]
 
 /-- `State.instanceRoot`: the first called root, else the process root. -/
@@ -518,7 +518,7 @@ and whose parentless scope occurrences are the root: its search takes one step p
 the chain climbs one segment per step. -/
 theorem instanceOf_eq {s : State} (nodup : (scopeIds s).Nodup)
     (parentless : ∀ entry ∈ s.scopes, entry.parent = none → entry.id = State.root) {x : ScopeOccurrenceId}
-    {name : String} {chain : List ScopeOccurrence} (reading : InstanceIn s x name chain)
+    {name : InstanceName} {chain : List ScopeOccurrence} (reading : InstanceIn s x name chain)
     (_distinct : (chain.map (·.id)).Nodup) : s.instanceOf x = name := by
   have bound : ∀ {x name chain}, InstanceIn s x name chain → chain.length ≤ x.segments.length + 1 := by
     intro x name chain reading
@@ -529,7 +529,7 @@ theorem instanceOf_eq {s : State} (nodup : (scopeIds s).Nodup)
       simp [keyed]; omega
     | root => simp
   have go : ∀ fuel, chain.length ≤ fuel →
-      ((s.scopes.find? (·.id == rootWalk s fuel x)).bind (·.calledInstance)).getD s.instanceId = name := by
+      ((s.scopes.find? (·.id == rootWalk s fuel x)).bind (·.calledInstance)).getD (.named s.instanceId) = name := by
     clear _distinct
     induction reading with
     | called entry name member called =>
@@ -571,7 +571,7 @@ theorem instanceOf_kept {s t : State} (formed : WellFormed program s) (nodup : (
 /-! ## Issuing and beginning occurrences -/
 
 /-- `State.activate` steps the counter of its key above every count that counter had. -/
-theorem activate_activated {state : State} (keyed : ActivationsKeyed state) (inst : String) (element : ElementId)
+theorem activate_activated {state : State} (keyed : ActivationsKeyed state) (inst : InstanceName) (element : ElementId)
     (role : ActivationRole) :
     Activated state (state.activate inst element role).1 inst element role (state.activate inst element role).2 := by
   refine ⟨by simp [State.activate], fun count member named same roled => ?_, by simp [State.activate]⟩

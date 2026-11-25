@@ -1,18 +1,10 @@
 /**
  * Entering a called process instance, transcribed from `Kernel/State/Called.lean`: the scope occurrence a Call
- * Activity's called process instance roots in, and the identifier that names the instance. Part of the State layer,
+ * Activity's called process instance roots in, and the name it takes (`calledBy`). Part of the State layer,
  * above `state.ts`; its one caller, `feature/work/call.ts`, imports it directly.
  */
-import { type DefinitionRef, type ElementId, type Program, programPublicId, utf8ByteSize } from "../il/types.js";
-import { type Binding, enterScope, instanceOf, type Occurrence, type ScopeOccurrenceId, type State } from "../state.js";
-
-/**
- * The identifier of the process instance a Call Activity's `activation` calls from the instance `caller`: each part
- * prefixed by its UTF-8 byte length, so that nested identifiers never collide.
- */
-export function calledInstanceId(caller: string, call: ElementId, activation: number): string {
-  return `call:${utf8ByteSize(caller)}:${caller}:${utf8ByteSize(call)}:${call}:${activation}`;
-}
+import { type DefinitionRef, type Program, programPublicId } from "../il/types.js";
+import { type Binding, calledBy, enterScope, instanceOf, type Occurrence, type ScopeOccurrenceId, type State } from "../state.js";
 
 /**
  * Enter the called process instance of the Call occurrence `call`, with the given variables: a scope occurrence that
@@ -29,7 +21,7 @@ export function enterCalled(
 ): readonly [State, ScopeOccurrenceId] {
   const caller = instanceOf(state, call.scope);
   const [entered, id] = enterScope(state, call.element, call.scope, variables, call.id);
-  const calledInstance = calledInstanceId(caller, programPublicId(program, call.element), call.activation);
+  const calledInstance = calledBy(caller, programPublicId(program, call.element), call.activation);
   return [
     {
       ...entered,

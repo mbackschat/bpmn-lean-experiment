@@ -70,7 +70,7 @@ theorem countsGrow_same (same : t.activations = s.activations) : CountsGrow s t 
   fun count member => ⟨count, same ▸ member, rfl, rfl, rfl, Nat.le_refl _⟩
 
 /-- A counter step raises one counter and keeps the others. -/
-theorem countsGrow_activated {inst : String} {element : ElementId} {role : ActivationRole} {n : Nat}
+theorem countsGrow_activated {inst : InstanceName} {element : ElementId} {role : ActivationRole} {n : Nat}
     (activated : Laws.State.Activated s t inst element role n) : CountsGrow s t := fun count member => by
   rw [activated.activations]
   by_cases raised : (count.processInstance == inst && count.element == element && count.role == role) = true

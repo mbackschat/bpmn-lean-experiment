@@ -26,7 +26,7 @@ def throwLeave (payload : EventPayload) : Leave :=
   | .intermediate => .outgoing
 
 /-- The public identity of a trigger: the thrower's occurrence, as `origin` names it. -/
-def throwerRef (state : State) (origin : Origin) : OccurrenceRef :=
+def throwerRef (state : State) (origin : Origin) : OccurrenceName :=
   { processInstanceId := state.instanceOf origin.scope, element := origin.element, activation := origin.activation }
 
 /-- A Compensation throw compensates the Activities retained in its scope occurrence, or only its `activityRef`'s, and
@@ -106,12 +106,12 @@ linearization of the population fixes for CIB's unordered `HashSet` (`EventSubsc
 def ownReceivers (ctx : Ctx) (state : State) (address : SignalAddress) : List OpenItem :=
   ((itemList state.openItems).filter fun item => item.kind.view.signal.any (address.matches ·.address)).mergeSort fun left right =>
     let (l, r) := (state.instanceOf left.scope, state.instanceOf right.scope)
-    decide (l < r) || (l == r && ctx.positionLe left.position right.position)
+    decide (l.text < r.text) || (l == r && ctx.positionLe left.position right.position)
 
 /-- The delivery that fires `item` from a throw. -/
 def thrownDelivery (ctx : Ctx) (state : State) (address : SignalAddress) (variables : List (String × Value))
     (item : OpenItem) : DeliveryInput :=
-  { occurrence := { processInstanceId := state.instanceOf item.scope, element := ctx.program.publicId item.element
+  { occurrence := { processInstanceId := (state.instanceOf item.scope).text, element := ctx.program.publicId item.element
                     activation := ((state.occurrence? item.id.occurrence).map (·.activation)).getD 0 }
     trigger := .signal address .broadcast, variables }
 

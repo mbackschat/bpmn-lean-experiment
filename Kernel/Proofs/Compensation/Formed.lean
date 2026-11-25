@@ -501,14 +501,14 @@ theorem key_signals (s : State) (more : List Signal) (o : Occurrence) :
 
 /-- `trigger` may be held next to what `s` holds: it is held nowhere yet, is no group's nested run's, was counted, and
 names no unbegun reservation. -/
-def FreshTrigger (s : State) (trigger : OccurrenceRef) : Prop :=
+def FreshTrigger (s : State) (trigger : OccurrenceName) : Prop :=
   trigger ∉ heldTriggers s ∧ (∀ run ∈ s.slots.compensation.runs, resumesGroup run.resume = true → run.trigger ≠ trigger) ∧
     Counted s (triggerKey trigger) ∧ ∀ o ∈ s.occurrences, o.begun = false → triggerKey trigger ≠ Laws.State.key s o
 
 /-- Queuing a signal that carries one trigger, a compensation's or a Cancel raise's, keeps `Formed` when the trigger it
 names in `s` is fresh (`FreshTrigger`), a raise's scope occurrence was issued, and it resumes no group. -/
 theorem Formed.append {precedes : Compensable → Compensable → Prop} {s : State} (formed : Formed precedes s)
-    (signal : Signal) {held : OccurrenceRef ⊕ Origin} (carries : Laws.Step.triggersOf [signal] = [held])
+    (signal : Signal) {held : OccurrenceName ⊕ Origin} (carries : Laws.Step.triggersOf [signal] = [held])
     (resumes : ∀ resume ∈ Laws.Step.resumesOf [signal], resumesGroup resume = false)
     (issued : ∀ origin, held = .inr origin → Laws.State.ScopeIssued s origin.scope)
     (fresh : ∀ trigger, queuedTrigger s held = some trigger → FreshTrigger s trigger) :
@@ -566,7 +566,7 @@ theorem Formed.append {precedes : Compensable → Compensable → Prop} {s : Sta
 /-- Queuing a compensation keeps `Formed` when its trigger is held nowhere yet, is no group's nested run's, was
 counted, names no unbegun reservation, and its resume resumes no group. -/
 theorem Formed.queue {precedes : Compensable → Compensable → Prop} {s : State} (formed : Formed precedes s)
-    {scope : ScopeOccurrenceId} {activity : Option ElementId} {trigger : OccurrenceRef} {leave : Option OccurrenceId}
+    {scope : ScopeOccurrenceId} {activity : Option ElementId} {trigger : OccurrenceName} {leave : Option OccurrenceId}
     {resume : Option Resume} (fresh : trigger ∉ heldTriggers s)
     (ungrouped : ∀ run ∈ s.slots.compensation.runs, resumesGroup run.resume = true → run.trigger ≠ trigger)
     (counted : Counted s (triggerKey trigger)) (unresumed : resumesGroup resume = false)
@@ -581,8 +581,8 @@ theorem Formed.queue {precedes : Compensable → Compensable → Prop} {s : Stat
 /-- A state whose issued scope occurrences that stand stood in `queue` in the same process instance names only
 triggers `queue` names from the same queued compensations and Cancel raises. -/
 theorem queuedTrigger_back {s queue : State}
-    (chain : ∀ x ∈ scopeIds s, x ∈ scopeIds queue ∧ s.instanceOf x = queue.instanceOf x) {held : OccurrenceRef ⊕ Origin}
-    {trigger : OccurrenceRef} (named : queuedTrigger s held = some trigger) : queuedTrigger queue held = some trigger := by
+    (chain : ∀ x ∈ scopeIds s, x ∈ scopeIds queue ∧ s.instanceOf x = queue.instanceOf x) {held : OccurrenceName ⊕ Origin}
+    {trigger : OccurrenceName} (named : queuedTrigger s held = some trigger) : queuedTrigger queue held = some trigger := by
   rcases held with _ | origin
   · exact named
   · unfold queuedTrigger at named ⊢
@@ -610,7 +610,7 @@ theorem rolledBack_frame {before searched : State}
 it; the search, the disarming and the clearing since hold no trigger the queue did not (`queuedTrigger_back`) and no
 run it did not, and keep its counts. -/
 theorem formed_compensate (program : Program) (precedes : Compensable → Compensable → Prop) (s : State)
-    (scope : ScopeOccurrenceId) (activity : Option ElementId) (trigger : OccurrenceRef) (leave : Option OccurrenceId)
+    (scope : ScopeOccurrenceId) (activity : Option ElementId) (trigger : OccurrenceName) (leave : Option OccurrenceId)
     (element : ElementId) (at_ : ScopeOccurrenceId) (resumed : Leave)
     (source : ∃ before le, s = before.clearInside le scope ∧ WellFormed program before ∧ scope ∈ scopeIds before ∧
       Laws.State.RollsBack (fun t => WellFormed program t ∧ Formed precedes t) trigger before)

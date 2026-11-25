@@ -29,7 +29,7 @@ private theorem popped_mono {signal : Signal} {state : State} (popped : Laws.Sta
   let ⟨queue, unit, held, ⟨found, same⟩⟩ := popped
   ⟨queue, unit, implies queue held, found, same⟩
 
-private theorem rollsBack_mono {trigger : OccurrenceRef} {state : State} (back : Laws.State.RollsBack inv trigger state) :
+private theorem rollsBack_mono {trigger : OccurrenceName} {state : State} (back : Laws.State.RollsBack inv trigger state) :
     Laws.State.RollsBack weaker trigger state :=
   let ⟨base, raised, origin, ⟨searched, popped, rest⟩⟩ := back
   ⟨base, raised, origin, searched, popped_mono implies popped, rest⟩

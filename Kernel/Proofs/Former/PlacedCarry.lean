@@ -574,7 +574,7 @@ theorem SignalPlaced.ofOccur {element : ElementId} {scope : ScopeOccurrenceId} {
     fun _ _ same => Signal.noConfusion same⟩
 
 /-- A queued compensation whose resume is placed. -/
-theorem SignalPlaced.ofCompensate {scope : ScopeOccurrenceId} {activity : Option ElementId} {trigger : OccurrenceRef}
+theorem SignalPlaced.ofCompensate {scope : ScopeOccurrenceId} {activity : Option ElementId} {trigger : OccurrenceName}
     {leave : Option OccurrenceId} {resume : Option Resume} (placed : ResumePlaced program s resume) :
     SignalPlaced program s (.compensate scope activity trigger leave resume) :=
   ⟨fun _ same => Signal.noConfusion same, fun _ _ _ _ _ same => Signal.noConfusion same,

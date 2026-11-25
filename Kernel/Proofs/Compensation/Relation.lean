@@ -91,7 +91,7 @@ def GroupsStanding (s : State) : Prop :=
 /-- The trigger a queued compensation or Cancel raise (`Laws.Step.triggersOf`) names in `s`: a compensation's own, and
 for a Cancel raise its thrower while the raise's scope occurrence stands, the trigger of the compensation its catch
 queues (`Feature.Propagation.leaveOccurrence`). -/
-def queuedTrigger (s : State) : OccurrenceRef ⊕ Origin → Option OccurrenceRef
+def queuedTrigger (s : State) : OccurrenceName ⊕ Origin → Option OccurrenceName
   | .inl trigger => some trigger
   | .inr origin =>
     if origin.scope ∈ scopeIds s then
@@ -99,16 +99,16 @@ def queuedTrigger (s : State) : OccurrenceRef ⊕ Origin → Option OccurrenceRe
     else none
 
 /-- The triggers `s`'s queued compensations and Cancel raises name (`queuedTrigger`). -/
-def queuedTriggers (s : State) : List OccurrenceRef :=
+def queuedTriggers (s : State) : List OccurrenceName :=
   (Laws.Step.triggersOf (Laws.State.allSignals s)).filterMap (queuedTrigger s)
 
 /-- The triggers `s` keeps apart: its runs' but a group's nested runs', which share their outer run's, and the queued
 ones. -/
-def heldTriggers (s : State) : List OccurrenceRef :=
+def heldTriggers (s : State) : List OccurrenceName :=
   (s.slots.compensation.runs.filter (!resumesGroup ·.resume)).map (·.trigger) ++ queuedTriggers s
 
 /-- The key of the occurrence a trigger names, which numbers under its element's own counter. -/
-def triggerKey (trigger : OccurrenceRef) : OccurrenceKey :=
+def triggerKey (trigger : OccurrenceName) : OccurrenceKey :=
   { processInstanceId := trigger.processInstanceId, element := trigger.element, activation := trigger.activation }
 
 /-- Every compensation trigger the state holds is held once and was counted, so a compensation `Step` performs takes a
@@ -179,8 +179,8 @@ def throwerIn (scope : ScopeOccurrenceId) : OccurrenceId := { scope, element := 
 
 def recordA : Compensable :=
   { subject := subjectA, handler := some ⟨"UndoA"⟩, scope := rootScope, completion := 1
-    occurrence := { processInstanceId := "I", element := subjectA, activation := 1 } }
-def thrownBy : OccurrenceRef := { processInstanceId := "p", element := thrower, activation := 1 }
+    occurrence := { processInstanceId := .named "I", element := subjectA, activation := 1 } }
+def thrownBy : OccurrenceName := { processInstanceId := .named "p", element := thrower, activation := 1 }
 def pendingRun : CompensationRun := { trigger := thrownBy, scope := rootScope, pending := [recordA], leave := none, resume := none }
 
 /- The witnesses read their scopes through the scope map's list view. -/
@@ -189,7 +189,7 @@ attribute [local simp] Laws.State.scopes_eq
 /-- A state holding `compensation` and queuing `signals`, its root scope occurrence and the counter of `T` at 1. -/
 def holdingState (compensation : Compensations) (signals : List Signal) : State :=
   { instanceId := "p", scopeMap := Laws.State.ofScopes [{ id := rootScope, element := none, position := 0 }], nextCompletion := 8, batchSignals := signals,
-    activations := [{ processInstance := "p", element := thrower, role := .element, count := 1 }],
+    activations := [{ processInstance := .named "p", element := thrower, role := .element, count := 1 }],
     slots := { compensation } }
 
 /-- Two records of one completion number break `CompletionsApart`. -/

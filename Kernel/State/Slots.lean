@@ -138,7 +138,7 @@ structure Compensable where
 `resume`'s occurrence completes. `joins` holds the completion numbers of the run's records whose handler waits for two
 or more of the run's other handlers, whose start is readiness work under `BranchSchedule.orderInvariant` (DC30). -/
 structure CompensationRun where
-  trigger : OccurrenceRef
+  trigger : OccurrenceName
   scope : ScopeOccurrenceId
   pending : List Compensable
   running : List (ScopeOccurrenceId × Compensable) := []
@@ -167,36 +167,26 @@ finds it by: two runs may share a scope occurrence (#103), never a trigger there
 context of its own. -/
 structure RunKey where
   scope : ScopeOccurrenceId
-  trigger : OccurrenceRef
+  trigger : OccurrenceName
   deriving DecidableEq, Repr
 
-/-- The scope occurrence's key, then the trigger's process instance, element and activation, oriented (`orientCmp`). -/
+/-- The scope occurrence's key, then the trigger's key, oriented (`orientCmp`). -/
 instance : Ord RunKey where
-  compare := compareLex (compareOn (·.scope)) (orientCmp <| compareLex (compareOn (·.trigger.processInstanceId))
-    (compareLex (compareOn (·.trigger.element.value)) (compareOn (·.trigger.activation)))).val
+  compare := compareLex (compareOn (·.scope)) (orientCmp (compareOn (·.trigger))).val
 
-instance : Std.TransOrd RunKey :=
-  inferInstanceAs <| Std.TransCmp (compareLex _ (orientCmp (compareLex _ (compareLex _ _))).val)
+instance : Std.TransOrd RunKey := inferInstanceAs <| Std.TransCmp (compareLex _ (orientCmp _).val)
 
 instance : Std.LawfulEqOrd RunKey where
   eq_of_compare {a b} h := by
-    have h : compareLex (compareOn fun key : RunKey => key.scope) (orientCmp <|
-        compareLex (compareOn fun key : RunKey => key.trigger.processInstanceId)
-          (compareLex (compareOn fun key : RunKey => key.trigger.element.value)
-            (compareOn fun key : RunKey => key.trigger.activation))).val a b = .eq := h
+    have h : compareLex (compareOn fun key : RunKey => key.scope)
+        (orientCmp (compareOn fun key : RunKey => key.trigger)).val a b = .eq := h
     rw [compareLex_eq_eq] at h
-    have rest := compareLex_eq_eq.mp <| ((orientCmp <|
-        compareLex (compareOn fun key : RunKey => key.trigger.processInstanceId)
-          (compareLex (compareOn fun key : RunKey => key.trigger.element.value)
-            (compareOn fun key : RunKey => key.trigger.activation))).property a b).mp h.2
-    have last := compareLex_eq_eq.mp rest.2
-    obtain ⟨scope, process, ⟨element⟩, activation⟩ := a
-    obtain ⟨scope', process', ⟨element'⟩, activation'⟩ := b
+    have triggers := ((orientCmp (compareOn fun key : RunKey => key.trigger)).property a b).mp h.2
+    obtain ⟨scope, trigger⟩ := a
+    obtain ⟨scope', trigger'⟩ := b
     have scopes : scope = scope' := Std.LawfulEqOrd.eq_of_compare h.1
-    have processes : process = process' := Std.LawfulEqOrd.eq_of_compare rest.1
-    have same : element = element' := Std.LawfulEqOrd.eq_of_compare last.1
-    have activations : activation = activation' := Std.LawfulEqOrd.eq_of_compare last.2
-    subst scopes processes same activations
+    have same : trigger = trigger' := Std.LawfulEqOrd.eq_of_compare triggers
+    subst scopes same
     rfl
 
 /-- A compensation run's record under its key (`RunMap`): the `CompensationRun` without its scope occurrence and

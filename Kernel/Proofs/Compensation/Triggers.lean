@@ -191,7 +191,7 @@ theorem apart_of_fresh {s t : State}
 
 /-- The queued triggers of a queue holding a compensation under `unit`: its trigger, and those the rest names. -/
 theorem queuedTriggers_pop {s : State} {scope : ScopeOccurrenceId} {activity : Option ElementId}
-    {trigger : OccurrenceRef} {leave : Option OccurrenceId} {resume : Option Resume} {unit : UnitKey}
+    {trigger : OccurrenceName} {leave : Option OccurrenceId} {resume : Option Resume} {unit : UnitKey}
     (found : s.queuedSignals[unit]? = some (.compensate scope activity trigger leave resume)) :
     (queuedTriggers s).Perm (trigger :: (Laws.Step.triggersOf (Laws.State.allSignals { s with queuedSignals := s.queuedSignals.erase unit })).filterMap
       (queuedTrigger s)) := by
@@ -264,7 +264,7 @@ theorem count_opened {s : State} {taken others : List Compensable} (perm : (take
 /-- A new run of the trigger of the compensation taken off a queue's head, no group's, keeps the queue's held triggers
 apart: the trigger moves from the queued ones to the runs'. -/
 theorem triggers_opened {queue s : State} {scope : ScopeOccurrenceId} {activity : Option ElementId}
-    {trigger : OccurrenceRef} {leave : Option OccurrenceId} {resume : Option Resume} {others : List Compensable}
+    {trigger : OccurrenceName} {leave : Option OccurrenceId} {resume : Option Resume} {others : List Compensable}
     {run : CompensationRun} (apart : TriggersApart queue) (ungrouped : QueuedUngrouped queue)
     {unit : UnitKey} (found : queue.queuedSignals[unit]? = some (.compensate scope activity trigger leave resume))
     (shape : s = { queue with queuedSignals := queue.queuedSignals.erase unit }) (named : run.trigger = trigger)

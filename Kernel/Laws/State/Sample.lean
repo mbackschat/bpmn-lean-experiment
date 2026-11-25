@@ -22,13 +22,13 @@ attribute [local simp] allSignals allQueuedTokens scopes_eq occurrences_eq
 
 /-- The sample's scope occurrences read the instance `p`. -/
 private theorem sample_instance (kind : OpenKind) :
-    (sample kind).instanceOf processRoot = "p" ∧ (sample kind).instanceOf subScope = "p" := by
+    (sample kind).instanceOf processRoot = .named "p" ∧ (sample kind).instanceOf subScope = .named "p" := by
   have nodup : (scopeIds (sample kind)).Nodup := by rw [scopeIds, scopes_eq]; exact scopeList_nodup (scopesKeyed_ofScopes _)
   have parentless : ∀ entry ∈ (sample kind).scopes, entry.parent = none → entry.id = State.root := by
     simp [sample, rootScope, childScope, processRoot, subScope, root_eq]
-  have root : InstanceIn (sample kind) processRoot (sample kind).instanceId [rootScope] :=
+  have root : InstanceIn (sample kind) processRoot (.named (sample kind).instanceId) [rootScope] :=
     .root rootScope (by simp [sample]) (by simp [rootScope, processRoot]) (by simp [rootScope, processRoot])
-  have sub : InstanceIn (sample kind) subScope (sample kind).instanceId [childScope, rootScope] :=
+  have sub : InstanceIn (sample kind) subScope (.named (sample kind).instanceId) [childScope, rootScope] :=
     .up childScope processRoot _ [rootScope] (by simp [sample]) rfl (by simp [childScope, subScope, processRoot]) root
   exact ⟨instanceOf_eq nodup parentless root (by simp), instanceOf_eq nodup parentless sub
     (by simp [rootScope, childScope, processRoot, subScope])⟩
@@ -113,7 +113,7 @@ theorem early_start_rejected (kind : OpenKind) :
   have := unstarted reservation (by simp [armedState]) rfl (startFact reservation) (by simp [starts])
   simp [key, startFact, reservation] at this
   have same : ∀ t : State, t.scopes = (sample kind).scopes → t.instanceId = (sample kind).instanceId →
-      t.instanceOf processRoot = "p" := fun _ scopes named => (instanceOf_congr scopes named processRoot).trans (sample_instance kind).1
+      t.instanceOf processRoot = .named "p" := fun _ scopes named => (instanceOf_congr scopes named processRoot).trans (sample_instance kind).1
   exact this (same { armedState kind with draft := { started := [startFact reservation] } } rfl rfl).symm
 
 /-- A second parentless scope occurrence is unrepresentable: a key's parent is its tail (KD1), so only the root's key

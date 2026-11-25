@@ -62,7 +62,7 @@ structure ScopeOccurrence where
   (`Step.idleScope?`), the cancellation order (`State.subtree`) and an owner's removal (`State.removeOccurrence`). -/
   position : Issue
   occurrence : Option OccurrenceId := none
-  calledInstance : Option String := none
+  calledInstance : Option InstanceName := none
   deriving Repr
 
 /-- The occurrences issued and not yet removed, keyed by their structural key (DC21); a value's `id` is its key

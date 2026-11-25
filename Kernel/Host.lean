@@ -167,6 +167,9 @@ def publicRef (program : Program) (ref : OccurrenceRef) : OccurrenceRef :=
 def publicKey (program : Program) (key : OccurrenceKey) : OccurrenceKey :=
   { key with element := program.publicId key.element }
 
+def publicName (program : Program) (name : OccurrenceName) : OccurrenceName :=
+  { name with element := program.publicId name.element }
+
 def publicTransition (program : Program) (transition : Transition) : Transition :=
   { transition with
     element := transition.element.map program.publicId
@@ -176,8 +179,8 @@ def publicTransition (program : Program) (transition : Transition) : Transition 
 
 def publicFailure (program : Program) (failure : InstanceFailure) : InstanceFailure :=
   { failure with
-    occurrence := publicRef program failure.occurrence
-    related := failure.related.map fun (name, ref) => (name, publicRef program ref) }
+    occurrence := publicName program failure.occurrence
+    related := failure.related.map fun (role, name) => (role, publicName program name) }
 
 /-- An open User Task's inputs are its occurrence's input-mapped locals as they stand now, which a variable command can
 rewrite or remove while it waits (CIB projects `RuntimeService#getVariablesLocal`); an effect's arguments stay the
@@ -190,7 +193,7 @@ def currentInputs (state : State) (item : OpenItem) (view : WaitView) : WaitView
     { view with userTask := some { task with inputs := task.inputs.flatMap fun (name, _) => own.filter (·.1 == name) } }
 
 def openWait (program : Program) (state : State) (item : OpenItem) : OpenWait :=
-  { id := publicRef program { processInstanceId := state.instanceOf item.scope, element := item.element
+  { id := publicRef program { processInstanceId := (state.instanceOf item.scope).text, element := item.element
                               activation := ((state.occurrence? item.id.occurrence).map (·.activation)).getD 0 }
     definition := (state.slots.instances.find? (·.root == state.instanceRoot item.scope)).bind (·.definition)
     view := currentInputs state item item.kind.view }
@@ -212,6 +215,6 @@ def hostView (program : Program) (state : State) : View :=
   { status := state.status, failure := state.failure.map (publicFailure program), openWaits
     addresses := addressesOf openWaits
     journal := publicJournal program state.journal
-    broadcasts := state.intents.map fun intent => { intent with origin := publicRef program intent.origin } }
+    broadcasts := state.intents.map fun intent => { intent with origin := publicName program intent.origin } }
 
 end Kernel.Host

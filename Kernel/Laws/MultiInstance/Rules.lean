@@ -261,7 +261,7 @@ def CountersHeld (instanceLocals bodyLocals : List (String × Value)) (run : Mul
 /-- Instances begin in generation order: within one input's journal the start facts of `element` in the process
 instance `processInstance` carry increasing activations, so with `NumberedInOrder` the instance of item `k` begins before
 the instance of item `k + 1`, in both modes and under both branch schedules. -/
-def BeginsInOrder (facts : List StartedFact) (processInstance : String) (element : ElementId) : Prop :=
+def BeginsInOrder (facts : List StartedFact) (processInstance : InstanceName) (element : ElementId) : Prop :=
   ((facts.filter fun fact => fact.occurrence.processInstanceId == processInstance &&
       fact.occurrence.element == element && fact.occurrence.role == .element).map
     (·.occurrence.activation)).Pairwise (· < ·)

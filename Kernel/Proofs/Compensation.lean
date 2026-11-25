@@ -99,7 +99,7 @@ def NoFinishedRunLeft (hooks : Hooks) (reads writes : Ctx → ElementId → List
 /-- What `Step` calls `Hooks.compensate` with on a state that keeps the lane relation (`CompensationsFresh`): no run of
 `state` has the key `(scope, trigger)` the new run takes, which `Compensation.advance` finds its run by, and the
 compensation resumes no group's nested run, which only `Compensation.beginHandler` makes. -/
-def FreshCall (state : State) (scope : ScopeOccurrenceId) (trigger : OccurrenceRef) (resume : Option Resume) : Prop :=
+def FreshCall (state : State) (scope : ScopeOccurrenceId) (trigger : OccurrenceName) (resume : Option Resume) : Prop :=
   (∀ run ∈ state.slots.compensation.runs, run.scope = scope → run.trigger ≠ trigger) ∧ resumesGroup resume = false
 
 /-- Every compensation `Step` performs is a `FreshCall`. `Step` runs `Hooks.compensate` only for the signal it takes
@@ -109,7 +109,7 @@ queued compensation's trigger is held apart from every run's and every other que
 resumes no group (`QueuedUngrouped`). -/
 def CompensationsFresh : Prop :=
   ∀ (precedes : Compensable → Compensable → Prop) (program : Program) (queue : State) (scope : ScopeOccurrenceId)
-    (activity : Option ElementId) (trigger : OccurrenceRef) (leave : Option OccurrenceId) (resume : Option Resume)
+    (activity : Option ElementId) (trigger : OccurrenceName) (leave : Option OccurrenceId) (resume : Option Resume)
     (unit : UnitKey), WellFormed program queue → Formed precedes queue →
     queue.queuedSignals[unit]? = some (.compensate scope activity trigger leave resume) →
     FreshCall { queue with queuedSignals := queue.queuedSignals.erase unit } scope trigger resume
@@ -130,7 +130,7 @@ and a begun handler's children are retained in its context. This statement keeps
 taken and every other one kept, of the run as taken: every record retained in a scope occurrence issued before the call
 stays retained exactly when it was kept (§13.5.5, the #103 account). -/
 def TakesOutOnce (hooks : Hooks) (reads writes : Ctx → ElementId → List String) : Prop :=
-  ∀ (ctx : Ctx) (scope : ScopeOccurrenceId) (activity : Option ElementId) (trigger : OccurrenceRef)
+  ∀ (ctx : Ctx) (scope : ScopeOccurrenceId) (activity : Option ElementId) (trigger : OccurrenceName)
     (leave : Option OccurrenceId) (resume : Option Resume) (state after : State), WellFormed ctx.program state →
     Formed (Depends ctx.program (reads ctx) (writes ctx)) state → FreshCall state scope trigger resume →
     hooks.compensate ctx scope activity trigger leave resume state = .ok after →

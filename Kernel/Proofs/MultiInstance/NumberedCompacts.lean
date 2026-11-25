@@ -169,7 +169,7 @@ theorem orderJournal_unbegunUnlooped (unbegun : UnbegunUnlooped program state)
 
 /-- Facts whose occurrence keys are another list's list their begins in its order. -/
 theorem beginsInOrder_of_keys {first second : List StartedFact}
-    (keys : first.map (·.occurrence) = second.map (·.occurrence)) {processInstance : String} {element : ElementId}
+    (keys : first.map (·.occurrence) = second.map (·.occurrence)) {processInstance : InstanceName} {element : ElementId}
     (ordered : BeginsInOrder second processInstance element) : BeginsInOrder first processInstance element := by
   unfold BeginsInOrder at ordered ⊢
   have read : ∀ facts : List StartedFact,
@@ -186,7 +186,7 @@ theorem beginsInOrder_of_keys {first second : List StartedFact}
 
 /-- **`LogOrder.byRun` across the commit** (what `beginsInOrder_of` reads of `Logged` after the commit): the committed
 journal lists the start facts of the settled transitions in run order, each fact's occurrence key kept. -/
-theorem orderJournal_beginsInOrder {processInstance : String} {element : ElementId}
+theorem orderJournal_beginsInOrder {processInstance : InstanceName} {element : ElementId}
     (ordered : BeginsInOrder ((byRun log state.transitions).flatMap (·.started)) processInstance element)
     (made : orderJournal schedule start (.ok (state, log)) = .ok after) :
     BeginsInOrder (after.journal.flatMap (·.started)) processInstance element :=

@@ -7,7 +7,7 @@
  * canonical text, so keys compare by value, never by object reference, and serve as set members and map keys as they
  * are. Modules that read keys import it; `state.ts` re-exports only the key type.
  */
-import { assertNever, compareStrings, type ElementId } from "../il/types.js";
+import { assertNever, compareStrings, type ElementId, utf8ByteSize } from "../il/types.js";
 import { keyOrderOpposite } from "./key-order.js";
 import { UnitRootTag, UnitStepTag, compareUnitStep, rootRank, unitStepCode, type UnitStep } from "./root.js";
 
@@ -449,12 +449,98 @@ export function breadthUnitKey(left: UnitKey, right: UnitKey): number {
 export enum ActivationRole { Element = "element", MultiInstanceBody = "multiInstanceBody" }
 
 /**
+ * Lean's `State.calledInstanceId`: the identifier of the process instance a Call Activity's `activation` calls from the
+ * instance `caller`, each part prefixed by its UTF-8 byte length, so that nested identifiers never collide.
+ */
+export function calledInstanceId(caller: string, call: ElementId, activation: number): string {
+  return `call:${utf8ByteSize(caller)}:${caller}:${utf8ByteSize(call)}:${call}:${activation}`;
+}
+
+/**
+ * Lean's `InstanceName`: a process instance's name. Committed, it is the instance's identifier, a string (`named`); a
+ * called instance entered in the closure in progress by a Call whose activation is still pending is named by its
+ * caller's name, the Call's public element and that activation (`called`) until the commit resolves it
+ * (`renameInstanceName`). Every called name is built by `calledBy`, so a name is a string exactly when it holds no
+ * pending activation, and an instance has one name.
+ */
+export type InstanceName = string | CalledName;
+
+/** Lean's `InstanceName.called`. */
+export interface CalledName {
+  readonly caller: InstanceName;
+  readonly call: ElementId;
+  readonly activation: Issue;
+}
+
+/** Lean's `InstanceName.textWith`: the identifier the name denotes with each pending activation numbered by `number`. */
+export function instanceTextWith(name: InstanceName, number: (issue: Issue) => number): string {
+  return typeof name === "string" ? name : calledInstanceId(instanceTextWith(name.caller, number), name.call, number(name.activation));
+}
+
+/** Lean's `InstanceName.text`: the identifier, a committed name's own, which every reader of a committed state takes. */
+export function instanceText(name: InstanceName): string {
+  return instanceTextWith(name, issueNumber);
+}
+
+/** Lean's `InstanceName.calledBy`: the name of the instance the Call `call`'s `activation` calls from `caller`. */
+export function calledBy(caller: InstanceName, call: ElementId, activation: Issue): InstanceName {
+  return typeof caller === "string" && typeof activation === "number"
+    ? calledInstanceId(caller, call, activation) : { caller, call, activation };
+}
+
+/** Lean's `InstanceName.rename`: the name with its activations renamed by `rename`, as the commit renames them. */
+export function renameInstanceName(name: InstanceName, rename: (issue: Issue) => Issue): InstanceName {
+  return typeof name === "string" ? name : calledBy(renameInstanceName(name.caller, rename), name.call, rename(name.activation));
+}
+
+/** Lean's `InstanceName.base`: the committed identifier a name starts from. */
+function instanceBase(name: InstanceName): string {
+  return typeof name === "string" ? name : instanceBase(name.caller);
+}
+
+/** Lean's `Ord InstanceName`: by the base identifier, then by the Calls, innermost first; committed names by string. */
+export function compareInstanceName(left: InstanceName, right: InstanceName): number {
+  const base = compareStrings(instanceBase(left), instanceBase(right));
+  if (base !== 0) return base;
+  let [a, b] = [left, right];
+  for (;;) {
+    if (typeof a === "string" || typeof b === "string") return (typeof a === "string" ? 0 : 1) - (typeof b === "string" ? 0 : 1);
+    const step = compareStrings(a.call, b.call) || compareIssue(a.activation, b.activation);
+    if (step !== 0) return step;
+    [a, b] = [a.caller, b.caller];
+  }
+}
+
+/** Lean's derived equality on `InstanceName`. */
+export function sameInstanceName(left: InstanceName, right: InstanceName): boolean {
+  return compareInstanceName(left, right) === 0;
+}
+
+/**
  * An occurrence's public key, which the journal and the observation publish, unlike its structural `OccurrenceId`: its
  * process instance, element, activation and the counter that numbered it.
  */
 export interface OccurrenceKey {
-  readonly processInstanceId: string;
+  readonly processInstanceId: InstanceName;
   readonly element: ElementId;
   readonly activation: number;
   readonly role: ActivationRole;
+}
+
+/**
+ * Lean's `OccurrenceName`: the occurrence a stored record names (a compensation run's trigger, an instance failure's
+ * occurrences, a broadcast's origin), which the commit renames with the state and a reader of a committed state publishes
+ * as its `OccurrenceRef` (`nameRef`). Its fields' committed forms are a public reference's, so a committed state's
+ * wire form is unchanged.
+ */
+export interface OccurrenceName {
+  readonly processInstanceId: InstanceName;
+  readonly element: ElementId;
+  readonly activation: number;
+}
+
+/** Lean's `Ord OccurrenceName`: by process instance, element and activation. */
+export function compareOccurrenceName(left: OccurrenceName, right: OccurrenceName): number {
+  return compareInstanceName(left.processInstanceId, right.processInstanceId) || compareStrings(left.element, right.element) ||
+    left.activation - right.activation;
 }

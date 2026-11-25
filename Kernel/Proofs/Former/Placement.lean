@@ -51,12 +51,12 @@ def chainRoot (chain : List ScopeOccurrence) : ScopeOccurrenceId :=
   | none => State.root
 
 /-- A chain is never empty. -/
-theorem chain_ne_nil {s : State} {x : ScopeOccurrenceId} {name : String} {chain : List ScopeOccurrence}
+theorem chain_ne_nil {s : State} {x : ScopeOccurrenceId} {name : InstanceName} {chain : List ScopeOccurrence}
     (reading : InstanceIn s x name chain) : chain ≠ [] := by
   cases reading <;> simp
 
 /-- A record below a chain ends where the chain does. -/
-theorem chainRoot_cons {s : State} {x : ScopeOccurrenceId} {name : String} {chain : List ScopeOccurrence}
+theorem chainRoot_cons {s : State} {x : ScopeOccurrenceId} {name : InstanceName} {chain : List ScopeOccurrence}
     (reading : InstanceIn s x name chain) (entry : ScopeOccurrence) : chainRoot (entry :: chain) = chainRoot chain := by
   obtain ⟨last, rest, rfl⟩ : ∃ last rest, chain = last :: rest := by
     cases chain with
@@ -66,7 +66,7 @@ theorem chainRoot_cons {s : State} {x : ScopeOccurrenceId} {name : String} {chai
 
 /-- An instance chain is at most one record longer than the key it starts at has segments: each record but the last
 lies directly in the next. -/
-theorem chain_length_le {s : State} {x : ScopeOccurrenceId} {name : String} {chain : List ScopeOccurrence}
+theorem chain_length_le {s : State} {x : ScopeOccurrenceId} {name : InstanceName} {chain : List ScopeOccurrence}
     (reading : InstanceIn s x name chain) : chain.length ≤ x.segments.length + 1 := by
   induction reading with
   | called => simp
@@ -79,7 +79,7 @@ theorem chain_length_le {s : State} {x : ScopeOccurrenceId} {name : String} {cha
 
 /-- `State.instanceRoot` of any state holding a chain, with distinct scope identifiers, is where the chain ends: the
 search follows the chain's records, since a search by an identifier finds its own record. -/
-theorem instanceRoot_chain {s : State} {x : ScopeOccurrenceId} {name : String} {chain : List ScopeOccurrence}
+theorem instanceRoot_chain {s : State} {x : ScopeOccurrenceId} {name : InstanceName} {chain : List ScopeOccurrence}
     (reading : InstanceIn s x name chain) {u : State} (nodup : (scopeIds u).Nodup)
     (held : ∀ entry ∈ chain, entry ∈ u.scopes) : u.instanceRoot x = chainRoot chain := by
   obtain ⟨go, start, _, step⟩ := Laws.State.instanceRoot_go u

@@ -77,24 +77,24 @@ theorem store_eq (state : State) (compensation : Compensations) :
   unfold Feature.Compensation.store; rfl
 
 /-- `isRun` picks the run `Keyed` by the scope occurrence and the trigger. -/
-theorem isRun_iff (scope : ScopeOccurrenceId) (trigger : OccurrenceRef) (run : CompensationRun) :
+theorem isRun_iff (scope : ScopeOccurrenceId) (trigger : OccurrenceName) (run : CompensationRun) :
     Feature.Compensation.isRun scope trigger run = true ↔ Keyed scope trigger run := by
   simp [Feature.Compensation.isRun, Keyed]
 
 /-- A run is `isRun` of a key exactly when it is the key's: the search `advance` runs over the list view. -/
-theorem isRun_key (scope : ScopeOccurrenceId) (trigger : OccurrenceRef) (run : CompensationRun) :
+theorem isRun_key (scope : ScopeOccurrenceId) (trigger : OccurrenceName) (run : CompensationRun) :
     Feature.Compensation.isRun scope trigger run = (run.key == { scope, trigger }) := by
   rw [Bool.eq_iff_iff, isRun_iff, beq_iff_eq, Laws.State.key_mk]
   simp [Keyed]
 
 /-- Erasing a key's run leaves the list view's other runs, in order. -/
-theorem runList_erase_isRun (m : RunMap) (scope : ScopeOccurrenceId) (trigger : OccurrenceRef) :
+theorem runList_erase_isRun (m : RunMap) (scope : ScopeOccurrenceId) (trigger : OccurrenceName) :
     runList (m.erase { scope, trigger }) = (runList m).filter (!Feature.Compensation.isRun scope trigger ·) := by
   rw [Laws.State.runList_erase]
   exact List.filter_congr fun run _ => by rw [isRun_key]; rfl
 
 /-- Putting a run of a key leaves the key's other runs and adds it, up to order. -/
-theorem runList_put_isRun (m : RunMap) {scope : ScopeOccurrenceId} {trigger : OccurrenceRef} {next : CompensationRun}
+theorem runList_put_isRun (m : RunMap) {scope : ScopeOccurrenceId} {trigger : OccurrenceName} {next : CompensationRun}
     (keyed : Keyed scope trigger next) :
     (runList (m.put next)).Perm ((runList m).filter (!Feature.Compensation.isRun scope trigger ·) ++ [next]) := by
   refine (Laws.State.runList_put_perm m next).trans (.of_eq ?_)
@@ -103,7 +103,7 @@ theorem runList_put_isRun (m : RunMap) {scope : ScopeOccurrenceId} {trigger : Oc
   exact List.filter_congr fun run _ => by rw [isRun_key, key]; rfl
 
 /-- So the runs are, up to order, the others and a run of the key they hold. -/
-theorem runList_mem_isRun (m : RunMap) {scope : ScopeOccurrenceId} {trigger : OccurrenceRef} {run : CompensationRun}
+theorem runList_mem_isRun (m : RunMap) {scope : ScopeOccurrenceId} {trigger : OccurrenceName} {run : CompensationRun}
     (member : run ∈ runList m) (keyed : Keyed scope trigger run) :
     (runList m).Perm ((runList m).filter (!Feature.Compensation.isRun scope trigger ·) ++ [run]) := by
   have perm := runList_put_isRun m keyed
@@ -113,7 +113,7 @@ theorem runList_mem_isRun (m : RunMap) {scope : ScopeOccurrenceId} {trigger : Oc
 handler running (`TakesOut`, over the scope occurrences `visibleScopes` sees), kept every other record, put the run
 under its key and advanced it. -/
 theorem compensate_spec {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : Option ElementId}
-    {trigger : OccurrenceRef} {leave : Option OccurrenceId} {resume : Option Resume} {state after : State}
+    {trigger : OccurrenceName} {leave : Option OccurrenceId} {resume : Option Resume} {state after : State}
     (ran : Feature.Compensation.compensate ctx scope activity trigger leave resume state = .ok after) :
     ∃ taken others,
       TakesOut (· ∈ Feature.Compensation.visibleScopes ctx state scope) activity state.slots.compensation
@@ -137,7 +137,7 @@ theorem compensate_spec {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : Opti
 handler pending or running: it dropped the run, queued the cancellation of the occurrence it leaves, if any, and then
 resumed as the run asks, a group's by releasing its context; or advanced it once (`Advances` under the kernel's
 dependency), beginning the handlers it starts one after another (`BeginsEach`), and put it under its key. -/
-theorem advance_spec {ctx : Ctx} {scope : ScopeOccurrenceId} {trigger : OccurrenceRef} {state : State} {fuel : Nat}
+theorem advance_spec {ctx : Ctx} {scope : ScopeOccurrenceId} {trigger : OccurrenceName} {state : State} {fuel : Nat}
     {after : State} (ran : Feature.Compensation.advance ctx scope trigger state fuel = .ok after) :
     ∃ less run, fuel = less + 1 ∧ FirstOf (Keyed scope trigger) state.slots.compensation.runs run ∧
       ((run.pending = [] ∧ run.running = [] ∧ ∃ dropped ended,
@@ -218,7 +218,7 @@ theorem advance_spec {ctx : Ctx} {scope : ScopeOccurrenceId} {trigger : Occurren
 for a group, of its subject, holding a nested run of its children moved into the context, which resumes the run in
 `scope` once done, and advanced it; for a handler, an Activity or Scope element, of the handler, retained the children
 moved into the context and queued the handler's begin there. -/
-theorem beginHandler_spec {ctx : Ctx} {trigger : OccurrenceRef} {scope : ScopeOccurrenceId} {state : State}
+theorem beginHandler_spec {ctx : Ctx} {trigger : OccurrenceName} {scope : ScopeOccurrenceId} {state : State}
     {record : Compensable} {fuel : Nat} {after : State} {context : ScopeOccurrenceId}
     (ran : Feature.Compensation.beginHandler ctx trigger scope state record fuel = .ok (after, context)) :
     ∃ less entered, fuel = less + 1 ∧

@@ -715,9 +715,9 @@ def sample (kind : OpenKind) : State :=
     itemOrdinals := ((∅ : Std.ExtTreeMap OccurrenceId Nat compare).insert innerKey 1).insert outerKey 1
     occurrenceOrdinals := sampleCounters
     scopeOrdinals := (∅ : Std.ExtTreeMap ScopeSlot Nat compare).insert { parent := processRoot, element := ⟨"Sub"⟩ } 1
-    activations := [{ processInstance := "p", element := ⟨"Sub"⟩, role := .element, count := 1 },
-      { processInstance := "p", element := ⟨"Inner"⟩, role := .element, count := 1 },
-      { processInstance := "p", element := ⟨"Outer"⟩, role := .element, count := 1 }] }
+    activations := [{ processInstance := .named "p", element := ⟨"Sub"⟩, role := .element, count := 1 },
+      { processInstance := .named "p", element := ⟨"Inner"⟩, role := .element, count := 1 },
+      { processInstance := .named "p", element := ⟨"Outer"⟩, role := .element, count := 1 }] }
 
 /-- The sample's standing keys are its history. -/
 theorem sample_historic (kind : OpenKind) : Historic (sample kind) :=

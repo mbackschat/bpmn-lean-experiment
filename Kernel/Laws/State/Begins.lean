@@ -112,7 +112,7 @@ theorem TableGrows.insert_insert {s t : State} {first second : ClaimSlot} (fresh
 
 /-- `after`'s counters are `before`'s with the counter of `inst`, `element` and `role` moved to `n`, above every count
 that counter had: what `State.activate` does. -/
-structure Activated (before after : State) (inst : String) (element : ElementId) (role : ActivationRole) (n : Nat) :
+structure Activated (before after : State) (inst : InstanceName) (element : ElementId) (role : ActivationRole) (n : Nat) :
     Prop where
   activations : after.activations = { processInstance := inst, element, role, count := n } ::
     before.activations.filter fun count => !(count.processInstance == inst && count.element == element && count.role == role)
@@ -120,7 +120,7 @@ structure Activated (before after : State) (inst : String) (element : ElementId)
     count.count < n
   positive : 0 < n
 
-theorem Activated.keyed {before after : State} {inst : String} {element : ElementId} {role : ActivationRole} {n : Nat}
+theorem Activated.keyed {before after : State} {inst : InstanceName} {element : ElementId} {role : ActivationRole} {n : Nat}
     (activated : Activated before after inst element role n) (keyed : ActivationsKeyed before) : ActivationsKeyed after := by
   refine ⟨?_, ?_⟩
   · rw [activated.activations, List.map_cons, List.nodup_cons]
@@ -136,7 +136,7 @@ theorem Activated.keyed {before after : State} {inst : String} {element : Elemen
     · exact keyed.positive count (List.mem_filter.mp old).1
 
 /-- A counter step keeps every count it does not raise. -/
-theorem Activated.counted {before after : State} {inst : String} {element : ElementId} {role : ActivationRole} {n : Nat}
+theorem Activated.counted {before after : State} {inst : InstanceName} {element : ElementId} {role : ActivationRole} {n : Nat}
     (activated : Activated before after inst element role n) {k : OccurrenceKey} (counted : Counted before k) :
     Counted after k := by
   obtain ⟨count, member, named, rest⟩ := counted
@@ -152,7 +152,7 @@ theorem Activated.counted {before after : State} {inst : String} {element : Elem
     exact Bool.eq_false_iff.mpr raised
 
 /-- The key a counter step numbers is new: no counted key of its counter reaches it. -/
-theorem Activated.fresh {before after : State} {inst : String} {element : ElementId} {role : ActivationRole} {n : Nat}
+theorem Activated.fresh {before after : State} {inst : InstanceName} {element : ElementId} {role : ActivationRole} {n : Nat}
     (activated : Activated before after inst element role n) {k : OccurrenceKey} (counted : Counted before k) :
     k ≠ { processInstanceId := inst, element, activation := n, role } := fun same => by
   obtain ⟨count, member, named, rest⟩ := counted

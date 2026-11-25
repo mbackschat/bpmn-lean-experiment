@@ -156,9 +156,9 @@ theorem owned_instance_rejected :
 theorem instances_unheld : InstancesUnheld entered running := fun _ _ _ member => by simp [entered] at member
 
 def heldFirst : CompensationRun :=
-  { trigger := ⟨"p", review, 1⟩, scope := bodyScope, pending := [], leave := none, resume := none
+  { trigger := ⟨.named "p", review, 1⟩, scope := bodyScope, pending := [], leave := none, resume := none
     running := [(firstScope, { subject := review, handler := none, scope := bodyScope
-                               occurrence := { processInstanceId := "I", element := review, activation := 1 } })] }
+                               occurrence := { processInstanceId := .named "I", element := review, activation := 1 } })] }
 
 /-- A compensation run whose handler runs in an instance's scope occurrence breaks `InstancesUnheld`. -/
 theorem held_instance_rejected :
@@ -291,12 +291,12 @@ theorem other_counter_rejected : ¬ CountersHeld secondLocals bodyLocals running
     simp at this
 
 def startOf (activation : Nat) : StartedFact :=
-  { occurrence := { processInstanceId := "p", element := review, activation }, owner := root, sourceType := "userTask" }
+  { occurrence := { processInstanceId := .named "p", element := review, activation }, owner := root, sourceType := "userTask" }
 
-theorem begins_in_order : BeginsInOrder [startOf 1, startOf 2] "p" review := by
+theorem begins_in_order : BeginsInOrder [startOf 1, startOf 2] (.named "p") review := by
   simp [BeginsInOrder, startOf]
 
-theorem later_item_first_rejected : ¬ BeginsInOrder [startOf 2, startOf 1] "p" review := by
+theorem later_item_first_rejected : ¬ BeginsInOrder [startOf 2, startOf 1] (.named "p") review := by
   simp [BeginsInOrder, startOf]
 
 theorem sequential_shape :

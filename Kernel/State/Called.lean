@@ -4,7 +4,7 @@ public import Kernel.State
 
 /-! # Entering a called process instance
 
-The scope occurrence a Call Activity's called process instance roots in, and the identifier that names the instance.
+The scope occurrence a Call Activity's called process instance roots in, and the name it takes (`InstanceName.calledBy`).
 Part of the State layer, above `Kernel.State`; its one caller, `Kernel.Feature.Work.Call`, imports it directly.
 -/
 
@@ -13,11 +13,6 @@ public section
 namespace Kernel
 
 namespace State
-
-/-- The identifier of the process instance a Call Activity's `activation` calls from the instance `caller`: each
-part prefixed by its UTF-8 byte length, so that nested identifiers never collide. -/
-def calledInstanceId (caller : String) (call : ElementId) (activation : Nat) : String :=
-  s!"call:{caller.utf8ByteSize}:{caller}:{call.value.utf8ByteSize}:{call.value}:{activation}"
 
 /-- Enter the called process instance of the Call occurrence `call`, with the given variables: a scope occurrence
 that is the called instance's root, recording the definition the Call bound for this instance. The instance is named by
@@ -29,7 +24,7 @@ def enterCalled (state : State) (program : Program) (call : Occurrence) (variabl
   let (state, id) := state.enterScope call.element call.scope variables (some call.id)
   ({ state with
       scopeMap := state.scopeMap.modify id fun occurrence =>
-        { occurrence with calledInstance := some (calledInstanceId caller (program.publicId call.element) call.activation) }
+        { occurrence with calledInstance := some (caller.calledBy (program.publicId call.element) (.committed call.activation)) }
       slots := { state.slots with instances := state.slots.instances ++ [{ root := id, definition := some definition }] } }, id)
 
 end State

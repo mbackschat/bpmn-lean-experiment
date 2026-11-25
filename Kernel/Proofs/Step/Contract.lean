@@ -313,7 +313,7 @@ theorem handlerEnded_keeps {inv : State → Prop} {settled : State → Occurrenc
 takes lie in scope occurrences the throw sees, all of its process instance (`Laws.Compensation.visibleScopes_linked`). -/
 theorem compensate_keeps {inv : State → Prop} {settled : State → OccurrenceId → Prop} {ctx : Ctx}
     (ops : Laws.Compensation.RunsOps ctx.program inv settled) {scope : ScopeOccurrenceId} {activity : Option ElementId}
-    {trigger : OccurrenceRef} {leave : Option OccurrenceId} {resume : Option Resume} {state after : State} (holds : inv state)
+    {trigger : OccurrenceName} {leave : Option OccurrenceId} {resume : Option Resume} {state after : State} (holds : inv state)
     (stands : scope ∈ state.scopes.map (·.id))
     (resumable : ∀ next, resume = some next → (∀ occurrence leave, next = .complete occurrence leave →
       settled state occurrence) ∧ ∀ context, next = .group context → context = scope)

@@ -106,7 +106,7 @@ theorem on_from_context_rejected :
 attribute [local simp] Laws.State.scopes_eq
 
 def boundaryFlow : FlowId := ⟨"ToRecovery"⟩
-def counter : ActivationCount := { processInstance := "p", element := exact, role := .element, count := 2 }
+def counter : ActivationCount := { processInstance := .named "p", element := exact, role := .element, count := 2 }
 
 def running : State :=
   { instanceId := "p", scopeMap := Laws.State.ofScopes [{ id := triggerScope, element := none, position := 0 },

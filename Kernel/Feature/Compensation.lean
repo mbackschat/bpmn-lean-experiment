@@ -139,7 +139,7 @@ def runBound (ctx : Ctx) (state : State) : Nat :=
 
 /-- Whether `run` is the one `trigger` started in `scope`. Two runs may share a scope occurrence (#103), never a trigger
 there: a nested group run has a context of its own. -/
-def isRun (scope : ScopeOccurrenceId) (trigger : OccurrenceRef) (run : CompensationRun) : Bool :=
+def isRun (scope : ScopeOccurrenceId) (trigger : OccurrenceName) (run : CompensationRun) : Bool :=
   run.scope == scope && run.trigger == trigger
 
 /-- The completion numbers of `records` whose handler waits for two or more of the others (`precedes`): their start is
@@ -163,7 +163,7 @@ mutual
 /-- Begin `record`'s handler in a new context scope occurrence inside `scope`, where the records of its children become
 the ones a throw inside the handler compensates. A group (I5) runs its children instead, as a nested run of that
 context, which resumes the run in `scope` once they all completed (`Resume.group`). -/
-def beginHandler (ctx : Ctx) (trigger : OccurrenceRef) (scope : ScopeOccurrenceId) (state : State)
+def beginHandler (ctx : Ctx) (trigger : OccurrenceName) (scope : ScopeOccurrenceId) (state : State)
     (record : Compensable) : Nat → Except Failure (State × ScopeOccurrenceId)
   | 0 => .error (.semanticFailure .invariant "compensation-run-depth")
   | fuel + 1 =>
@@ -193,7 +193,7 @@ def beginHandler (ctx : Ctx) (trigger : OccurrenceRef) (scope : ScopeOccurrenceI
 /-- Start every pending handler of the run `trigger` started in `scope` that no pending or running handler of that run
 succeeds; once none is pending or running, end the run: cancel the occurrence it leaves, if any, then complete its
 `resume`. Another run in the same scope neither delays nor ends it. -/
-def advance (ctx : Ctx) (scope : ScopeOccurrenceId) (trigger : OccurrenceRef) (state : State) : Nat → Outcome
+def advance (ctx : Ctx) (scope : ScopeOccurrenceId) (trigger : OccurrenceName) (state : State) : Nat → Outcome
   | 0 => .error (.semanticFailure .invariant "compensation-run-depth")
   | fuel + 1 => do
     let compensation := state.slots.compensation
@@ -259,7 +259,7 @@ def visibleScopes (ctx : Ctx) (state : State) (scope : ScopeOccurrenceId) : List
 `activity`'s when one is named (I3). A run in progress does not hold it back: the records that run claimed, pending ones
 included, are Compensating from its trigger (BPMN 2.0.2 §13.5.5, Figure 13.2) and no longer retained, so the new run
 takes only what is left, an empty set included (COMPH-EXCLUSIVE-01, #103). -/
-def compensate (ctx : Ctx) (scope : ScopeOccurrenceId) (activity : Option ElementId) (trigger : OccurrenceRef)
+def compensate (ctx : Ctx) (scope : ScopeOccurrenceId) (activity : Option ElementId) (trigger : OccurrenceName)
     (leave : Option OccurrenceId) (resume : Option Resume) (state : State) : Outcome :=
   let compensation := state.slots.compensation
   let covered := visibleScopes ctx state scope

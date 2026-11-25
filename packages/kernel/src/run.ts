@@ -59,7 +59,7 @@ import {
   type State,
   type Transition,
   type UserTaskDetail,
-  type WaitView,
+  type WaitView, instanceText, nameRef,
 } from "./state.js";
 import { step } from "./step.js";
 import { publishedScopes, scopeRoleName, statusName, variables, type PublishedScope } from "./publish.js";
@@ -235,8 +235,8 @@ function failureJson(failure: InstanceFailure): JsonValue {
   return {
     code: failure.code,
     message: nullable(failure.message, jsonString),
-    occurrence: referenceJson(failure.occurrence),
-    related: failure.related.map(([name, ref]) => ({ name, occurrence: referenceJson(ref) })),
+    occurrence: referenceJson(nameRef(failure.occurrence)),
+    related: failure.related.map(([name, held]) => ({ name, occurrence: referenceJson(nameRef(held)) })),
   };
 }
 
@@ -258,7 +258,7 @@ function broadcastJson(intent: BroadcastIntent): JsonValue {
     ...signalAddressToJson(intent.address),
     variables: bindingsToJson(intent.variables),
     ...(intent.businessKey === null ? {} : { businessKey: intent.businessKey }),
-    origin: referenceJson(intent.origin),
+    origin: referenceJson(nameRef(intent.origin)),
   };
 }
 
@@ -386,7 +386,7 @@ export function runScenario(programJson: unknown, scenarioJson: unknown): unknow
 // Host-view mode
 
 function keyJson(key: OccurrenceKey): JsonValue {
-  return { processInstanceId: key.processInstanceId, elementId: key.element, activation: key.activation, role: key.role };
+  return { processInstanceId: instanceText(key.processInstanceId), elementId: key.element, activation: key.activation, role: key.role };
 }
 
 /**
@@ -446,8 +446,8 @@ function failureViewJson(failure: InstanceFailure): JsonValue {
   return {
     code: failure.code,
     message: failure.message,
-    occurrence: referenceJson(failure.occurrence),
-    related: Object.fromEntries(failure.related.map(([name, ref]) => [name, referenceJson(ref)])),
+    occurrence: referenceJson(nameRef(failure.occurrence)),
+    related: Object.fromEntries(failure.related.map(([name, held]) => [name, referenceJson(nameRef(held))])),
   };
 }
 

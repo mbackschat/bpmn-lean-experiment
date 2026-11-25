@@ -27,7 +27,7 @@ import {
   committed,
   failed,
   failedWith,
-  instanceOf,
+  instanceOf, instanceText,
   instanceRoot,
   messageChannelEquals,
   openKindView,
@@ -163,7 +163,7 @@ function criterionHolds(state: State, scope: ScopeOccurrenceId, criterion: Corre
     case CriterionTargetTag.BusinessKey:
       return names(state.slots.instances.find((entry) => entry.root === instance)?.businessKey ?? null);
     case CriterionTargetTag.ProcessInstance:
-      return names(instanceOf(state, scope));
+      return names(instanceText(instanceOf(state, scope)));
   }
   return assertNever(target);
 }

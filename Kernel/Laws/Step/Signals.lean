@@ -22,7 +22,7 @@ theorem occur_ne_begin {element : ElementId} {scope : ScopeOccurrenceId} {leave 
     Signal.occur element scope leave writes rule ≠ .begin request := nofun
 
 /-- A queued compensation is no begin. -/
-theorem compensate_ne_begin {scope : ScopeOccurrenceId} {activity : Option ElementId} {trigger : OccurrenceRef}
+theorem compensate_ne_begin {scope : ScopeOccurrenceId} {activity : Option ElementId} {trigger : OccurrenceName}
     {leave : Option OccurrenceId} {resume : Option Resume} {request : BeginRequest} :
     Signal.compensate scope activity trigger leave resume ≠ .begin request := nofun
 

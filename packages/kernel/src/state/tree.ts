@@ -4,8 +4,7 @@
  * membership readers ask; `subtree` the same scope occurrences in the order a clearing journals them, by their order
  * positions (DC25). Part of the State layer, above `state.ts`; `hooks.ts` re-exports it to the features.
  */
-import { root, type ScopeOccurrenceId, type State } from "../state.js";
-import { type Issue, scopeParent } from "./key.js";
+import { type Issue, root, type ScopeOccurrenceId, scopeParent, type State } from "../state.js";
 
 /** Whether the key `inner` lies strictly below the key `outer`: `outer` is a proper tail of it. */
 export function below(outer: ScopeOccurrenceId, inner: ScopeOccurrenceId): boolean {

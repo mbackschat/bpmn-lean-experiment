@@ -138,7 +138,7 @@ def PublishedWait.canonicalLe (left right : PublishedWait) : Bool :=
 receivers (PC-SIGNAL-01). -/
 def broadcastJson (intent : BroadcastIntent) : Json :=
   Json.mkObj (Codec.signalAddressToJson intent.address ++ [("variables", Codec.bindingsToJson intent.variables)] ++
-    (intent.businessKey.map fun key => ("businessKey", Json.str key)).toList ++ [("origin", referenceJson intent.origin)])
+    (intent.businessKey.map fun key => ("businessKey", Json.str key)).toList ++ [("origin", referenceJson intent.origin.toRef)])
 
 /-- `broadcasts` when the input threw a Signal to the population, else nothing. -/
 def broadcastsJson (intents : List BroadcastIntent) : List (String × Json) :=
@@ -146,9 +146,9 @@ def broadcastsJson (intents : List BroadcastIntent) : List (String × Json) :=
 
 def failureJson (failure : InstanceFailure) : Json :=
   Json.mkObj [("code", Json.str failure.code), ("message", nullable failure.message Json.str),
-    ("occurrence", referenceJson failure.occurrence),
-    ("related", Json.arr (failure.related.map fun (name, ref) =>
-      Json.mkObj [("name", Json.str name), ("occurrence", referenceJson ref)]).toArray)]
+    ("occurrence", referenceJson failure.occurrence.toRef),
+    ("related", Json.arr (failure.related.map fun (role, name) =>
+      Json.mkObj [("name", Json.str role), ("occurrence", referenceJson name.toRef)]).toArray)]
 
 def scopeJson (scope : Publish.PublishedScope) : Json :=
   let place : List (String × Json) := match scope.element with
@@ -249,7 +249,7 @@ def roleName : ActivationRole → String
   | .multiInstanceBody => "multiInstanceBody"
 
 def keyJson (key : OccurrenceKey) : Json :=
-  Json.mkObj [("processInstanceId", Json.str key.processInstanceId), ("elementId", Json.str key.element.value),
+  Json.mkObj [("processInstanceId", Json.str key.processInstanceId.text), ("elementId", Json.str key.element.value),
     ("activation", toJson key.activation), ("role", Json.str (roleName key.role))]
 
 def terminalName : Terminal → String
@@ -297,8 +297,8 @@ def waitJson (wait : Host.OpenWait) : Json :=
 def failureViewJson (failure : InstanceFailure) : Json :=
   Json.mkObj [("code", Json.str failure.code),
     ("message", match failure.message with | some message => Json.str message | none => Json.null),
-    ("occurrence", referenceJson failure.occurrence),
-    ("related", Json.mkObj (failure.related.map fun (name, ref) => (name, referenceJson ref)))]
+    ("occurrence", referenceJson failure.occurrence.toRef),
+    ("related", Json.mkObj (failure.related.map fun (role, name) => (role, referenceJson name.toRef)))]
 
 def addressJson (address : Host.WaitAddress) : Json :=
   Json.mkObj ([("occurrence", referenceJson address.occurrence)] ++

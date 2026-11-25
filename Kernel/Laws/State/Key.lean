@@ -419,4 +419,66 @@ theorem breadth_tied {a b : UnitKey} (tie : UnitKey.breadth.val a b = .eq) : a =
   subst roots paths ok ok'
   rfl
 
+/-! ## Process instance names -/
+
+/-- A called instance's identifier spells its caller's instance, then the Call's authored identifier, each after its
+UTF-8 byte length, then the activation. -/
+theorem calledInstanceId_eq (caller : String) (call : ElementId) (activation : Nat) :
+    State.calledInstanceId caller call activation =
+      s!"call:{caller.utf8ByteSize}:{caller}:{call.value.utf8ByteSize}:{call.value}:{activation}" := by
+  simp only [State.calledInstanceId]
+
+theorem text_named (id : String) : (InstanceName.named id).text = id := by
+  simp [InstanceName.textWith]
+
+theorem textWith_called (number : Issue → Nat) (caller : InstanceName) (call : ElementId) (activation : Issue) :
+    (InstanceName.called caller call activation).textWith number =
+      State.calledInstanceId (caller.textWith number) call (number activation) := by
+  simp [InstanceName.textWith]
+
+/-- A called name over committed parts is the instance's identifier. -/
+theorem calledBy_committed (id : String) (call : ElementId) (ordinal : Nat) :
+    (InstanceName.named id).calledBy call (.committed ordinal) = .named (State.calledInstanceId id call ordinal) := by
+  simp [InstanceName.calledBy]
+
+/-- A called name whose caller or activation is pending stays pending. -/
+theorem calledBy_pending {caller : InstanceName} {call : ElementId} {activation : Issue}
+    (pending : ∀ id ordinal, caller = .named id → activation = .committed ordinal → False) :
+    caller.calledBy call activation = .called caller call activation := by
+  unfold InstanceName.calledBy
+  split
+  · exact (pending _ _ rfl rfl).elim
+  · rfl
+
+/-- A called name spells its caller's identifier after the Call's prefix, read with any numbering that numbers a
+committed activation by its ordinal. -/
+theorem calledBy_textWith {number : Issue → Nat} (committed : ∀ ordinal, number (.committed ordinal) = ordinal)
+    (caller : InstanceName) (call : ElementId) (activation : Issue) :
+    (caller.calledBy call activation).textWith number =
+      State.calledInstanceId (caller.textWith number) call (number activation) := by
+  unfold InstanceName.calledBy
+  split
+  · simp [InstanceName.textWith, committed]
+  · rfl
+
+/-- A called name's identifier spells its caller's after the Call's prefix. -/
+theorem calledBy_text (caller : InstanceName) (call : ElementId) (activation : Issue) :
+    (caller.calledBy call activation).text = State.calledInstanceId caller.text call activation.number :=
+  calledBy_textWith (fun _ => rfl) caller call activation
+
+/-- `calledBy` is injective: one caller, Call and activation name one instance. -/
+theorem calledBy_inj {caller caller' : InstanceName} {call call' : ElementId} {activation activation' : Issue}
+    (same : caller.calledBy call activation = caller'.calledBy call' activation')
+    (spelled : ∀ {id id' : String} {call call' : ElementId} {n n' : Nat},
+      State.calledInstanceId id call n = State.calledInstanceId id' call' n' → id = id' ∧ call = call' ∧ n = n') :
+    caller = caller' ∧ call = call' ∧ activation = activation' := by
+  unfold InstanceName.calledBy at same
+  split at same <;> split at same
+  · obtain ⟨rfl, rfl, rfl⟩ := spelled (InstanceName.named.inj same)
+    exact ⟨rfl, rfl, rfl⟩
+  · exact absurd same (by simp)
+  · exact absurd same (by simp)
+  · simp only [InstanceName.called.injEq] at same
+    exact same
+
 end Kernel.Laws.State

@@ -46,11 +46,11 @@ def blockFacts (transitions : TreeMap UnitKey Transition compare) : List Started
   (transitions.toList.map (·.2)).flatMap (·.started)
 
 /-- A start fact of `element` under the element role in the process instance `processInstance`. -/
-def Matches (processInstance : String) (element : ElementId) (fact : StartedFact) : Prop :=
+def Matches (processInstance : InstanceName) (element : ElementId) (fact : StartedFact) : Prop :=
   fact.occurrence.processInstanceId = processInstance ∧ fact.occurrence.element = element ∧ fact.occurrence.role = .element
 
 /-- Every start fact of `element` in `later` carries an activation above every one in `earlier`. -/
-def Above (earlier later : List StartedFact) (processInstance : String) (element : ElementId) : Prop :=
+def Above (earlier later : List StartedFact) (processInstance : InstanceName) (element : ElementId) : Prop :=
   ∀ first ∈ earlier, ∀ second ∈ later, Matches processInstance element first → Matches processInstance element second →
     first.occurrence.activation < second.occurrence.activation
 
@@ -241,14 +241,14 @@ theorem starts_mem {s : State} {fact : StartedFact} (inside : fact ∈ blockFact
   · exact List.mem_append_right _ drafted
 
 /-- The order of `element`'s start facts holds of a sublist. -/
-theorem BeginsInOrder.sublist {facts fewer : List StartedFact} {processInstance : String} {element : ElementId}
+theorem BeginsInOrder.sublist {facts fewer : List StartedFact} {processInstance : InstanceName} {element : ElementId}
     (ordered : BeginsInOrder facts processInstance element) (sub : fewer.Sublist facts) :
     BeginsInOrder fewer processInstance element :=
   List.Pairwise.sublist ((sub.filter _).map _) ordered
 
 /-- A fact made last keeps the order of `element`'s start facts when, if it is one of them, its activation lies above
 every earlier one's. -/
-theorem BeginsInOrder.append {facts : List StartedFact} {fact : StartedFact} {processInstance : String}
+theorem BeginsInOrder.append {facts : List StartedFact} {fact : StartedFact} {processInstance : InstanceName}
     {element : ElementId} (ordered : BeginsInOrder facts processInstance element)
     (above : fact.occurrence.processInstanceId = processInstance → fact.occurrence.element = element →
       fact.occurrence.role = .element → ∀ earlier ∈ facts, earlier.occurrence.processInstanceId = processInstance →
@@ -515,7 +515,7 @@ def Logged (program : Program) (log : Step.RunLog) (s : State) : Prop :=
   WellFormed program s ∧ (IdsUnique program → Unlooped program s.transitions s ∧ LogOrder program log s.transitions)
 
 /-- Facts in order that each lie above the ones before keep their order when joined. -/
-theorem BeginsInOrder.append_of {earlier later : List StartedFact} {processInstance : String} {element : ElementId}
+theorem BeginsInOrder.append_of {earlier later : List StartedFact} {processInstance : InstanceName} {element : ElementId}
     (first : BeginsInOrder earlier processInstance element) (second : BeginsInOrder later processInstance element)
     (above : Above earlier later processInstance element) : BeginsInOrder (earlier ++ later) processInstance element := by
   unfold BeginsInOrder at first second ⊢
@@ -529,7 +529,7 @@ theorem BeginsInOrder.append_of {earlier later : List StartedFact} {processInsta
   exact above one oneMember two twoMember ⟨oneKept.1.1, oneKept.1.2, oneKept.2⟩ ⟨twoKept.1.1, twoKept.1.2, twoKept.2⟩
 
 /-- Transitions each in order, each lying above the ones listed before it, list their start facts in order. -/
-theorem BeginsInOrder.flatMap {blocks : List (UnitKey × Transition)} {processInstance : String} {element : ElementId}
+theorem BeginsInOrder.flatMap {blocks : List (UnitKey × Transition)} {processInstance : InstanceName} {element : ElementId}
     (ordered : ∀ block ∈ blocks, BeginsInOrder block.2.started processInstance element)
     (above : blocks.Pairwise fun one two => Above one.2.started two.2.started processInstance element) :
     BeginsInOrder ((blocks.map (·.2)).flatMap (·.started)) processInstance element := by
@@ -547,7 +547,7 @@ theorem BeginsInOrder.flatMap {blocks : List (UnitKey × Transition)} {processIn
 /-- The transitions of a closure in the order its units ran (`Step.byRun`) list a looping element's start facts in
 order, under `LogOrder`. -/
 theorem LogOrder.byRun {program : Program} {log : Step.RunLog} {element : ElementId} {loop : MultiInstance}
-    (order : LogOrder program log T) (processInstance : String) (looped : LoopOf program element loop) :
+    (order : LogOrder program log T) (processInstance : InstanceName) (looped : LoopOf program element loop) :
     BeginsInOrder ((Step.byRun log T).flatMap (·.started)) processInstance element := by
   obtain ⟨sorted, made, perm, positions⟩ := Laws.Step.byRun_sorted log T
   have found : ∀ entry ∈ sorted, T[entry.1]? = some entry.2 := fun entry inside =>
@@ -800,7 +800,7 @@ reservations, made or still to be made, name no looping element: the settled clo
 order their units ran (`Step.byRun`), which `LogOrder` orders, and the commit keeps every fact's occurrence key
 (`orderJournal_beginsInOrder`). -/
 theorem beginsInOrder_of {program : Program} {before after : State} {input : Input} {element : ElementId}
-    {loop : MultiInstance} (processInstance : String) (apart : IdsUnique program) (formedBefore : WellFormed program before)
+    {loop : MultiInstance} (processInstance : InstanceName) (apart : IdsUnique program) (formedBefore : WellFormed program before)
     (committed : Laws.State.Committed before) (unbegun : UnbegunUnlooped program before)
     (occurs : ∀ element, OccurPending before element → ∀ loop, ¬ LoopOf program element loop)
     (ran : Step.step hooks program (some before) input = .ok after) (looped : LoopOf program element loop) :

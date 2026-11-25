@@ -225,7 +225,7 @@ theorem complete_unnamed {state : State} (formed : WellFormed program state) {id
 
 /-- A queued compensation may end as it asks once it leaves the queue. -/
 theorem resumable_signal {state : State} (formed : WellFormed program state) {scope : ScopeOccurrenceId}
-    {activity : Option ElementId} {trigger : OccurrenceRef} {leave : Option OccurrenceId} {resume : Resume} {unit : UnitKey}
+    {activity : Option ElementId} {trigger : OccurrenceName} {leave : Option OccurrenceId} {resume : Resume} {unit : UnitKey}
     (found : state.queuedSignals[unit]? = some (.compensate scope activity trigger leave (some resume))) :
     Resumable { state with queuedSignals := state.queuedSignals.erase unit } scope resume :=
   ⟨fun occurrence _ same => by

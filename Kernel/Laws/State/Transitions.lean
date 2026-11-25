@@ -269,7 +269,7 @@ theorem counts_grow (kind : OpenKind) : CountsGrow (sample kind) (sample kind) :
 
 theorem counts_shrink_rejected (kind : OpenKind) :
     ¬ CountsGrow (sample kind) { sample kind with activations := [] } := fun grow => by
-  have := grow { processInstance := "p", element := ⟨"Sub"⟩, role := .element, count := 1 } (by simp [sample])
+  have := grow { processInstance := .named "p", element := ⟨"Sub"⟩, role := .element, count := 1 } (by simp [sample])
   simp at this
 
 /-- A hook that queues one signal `Queues` it; dropping a queued signal does not. -/

@@ -50,7 +50,7 @@ import {
   committed,
   failed,
   failedWith,
-  instanceOf,
+  instanceOf, instanceText,
   keyOf,
   keyed,
   leaveFlows,
@@ -73,6 +73,7 @@ import {
   type MessageChannel,
   type MultiInstanceRun,
   type Occurrence,
+  type OccurrenceName,
   type OccurrenceRef,
   type OpenItem,
   type Origin,
@@ -542,7 +543,7 @@ export function itemDetailOf<T>(
   for (const item of itemsInOrder(ctxPositionLe(ctx, state), state.openItems)) {
     if (programPublicId(ctx.program, item.element) !== occurrence.element ||
       occurrenceOf(state, item.id.occurrence)?.activation !== occurrence.activation ||
-      instanceOf(state, item.scope) !== occurrence.processInstanceId) continue;
+      instanceText(instanceOf(state, item.scope)) !== occurrence.processInstanceId) continue;
     const found = detail(openKindView(item.kind));
     if (found !== null) return [item, found];
   }
@@ -667,7 +668,7 @@ export interface Hooks {
     ctx: Ctx,
     scope: ScopeOccurrenceId,
     activity: ElementId | null,
-    trigger: OccurrenceRef,
+    trigger: OccurrenceName,
     leave: OccurrenceId | null,
     resume: Resume | null,
     state: State,

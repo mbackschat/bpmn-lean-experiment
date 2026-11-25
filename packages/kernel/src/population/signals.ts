@@ -13,7 +13,7 @@ import {
   InstanceStatus,
   SignalReach,
   StartTriggerTag,
-  instanceOf,
+  instanceOf, instanceText,
   openKindView,
   recorded,
   signalAddressMatches,
@@ -25,7 +25,7 @@ import {
   type SignalAddress,
   type StartInput,
   type State,
-  breadthUnitKey, issueNotAfter,
+  breadthUnitKey, issueNotAfter, nameRef,
 } from "../state.js";
 import { closureBound, context, step } from "../step.js";
 import {
@@ -118,7 +118,7 @@ export function emissionStartedId(emission: Emission, commandId: string, deploym
 
 /** The emission of an intent a committed step of the instance `emitter` left, its origin by public identifier. */
 export function intentEmission(emitter: string, intent: BroadcastIntent): Emission {
-  return { address: intent.address, variables: intent.variables, businessKey: intent.businessKey, origin: intent.origin, emitter };
+  return { address: intent.address, variables: intent.variables, businessKey: intent.businessKey, origin: nameRef(intent.origin), emitter };
 }
 
 /**
@@ -136,7 +136,7 @@ export function signalReceiversOf(
   const waiting = state.openItems.flatMap((item) => {
     const signal = openKindView(item.kind).signal;
     if (signal === null || !signalAddressMatches(address, signal.address)) return [];
-    return [[instanceOf(state, item.scope), item.position, occurrence(program, state, item)] as const];
+    return [[instanceText(instanceOf(state, item.scope)), item.position, occurrence(program, state, item)] as const];
   });
   const ordered = mergeSort(waiting, ([leftInstance, leftItem], [rightInstance, rightItem]) =>
     // A committed state holds committed positions only, which every unit order orders alike.
@@ -340,7 +340,7 @@ export function fanOutNext(start: FanOutMachine): FanOutNext {
   const next = machine.pending?.head;
   if (machine.stopped || next === undefined) return { tag: FanOutNextTag.Done, entries: machineEntries(machine) };
   if (next.tag === PendingTag.Receiver) return { tag: FanOutNextTag.Reach, receiver: next.receiver, emission: next.emission };
-  return { tag: FanOutNextTag.Snapshot, intent: next.intent, emitter: next.intent.origin, emission: intentEmission(next.emitter, next.intent) };
+  return { tag: FanOutNextTag.Snapshot, intent: next.intent, emitter: nameRef(next.intent.origin), emission: intentEmission(next.emitter, next.intent) };
 }
 
 /**

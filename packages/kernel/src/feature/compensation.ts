@@ -65,7 +65,7 @@ import {
   type Compensations,
   type InstanceFailure,
   type Occurrence,
-  type OccurrenceRef,
+  type OccurrenceName,
   type Origin,
   type Outcome,
   type Result,
@@ -214,7 +214,7 @@ function runBound(ctx: Ctx, state: State): number {
  * Whether `run` is the one `trigger` started in `scope`. Two runs may share a scope occurrence (#103), never a trigger
  * there: a nested group run has a context of its own.
  */
-function isRun(scope: ScopeOccurrenceId, trigger: OccurrenceRef): (run: CompensationRun) => boolean {
+function isRun(scope: ScopeOccurrenceId, trigger: OccurrenceName): (run: CompensationRun) => boolean {
   return (run) => run.scope === scope && run.trigger.processInstanceId === trigger.processInstanceId &&
     run.trigger.element === trigger.element && run.trigger.activation === trigger.activation;
 }
@@ -249,7 +249,7 @@ function leaveContext(ctx: Ctx, context: ScopeOccurrenceId, owner: CompensationR
  * context, which resumes the run in `scope` once they all completed (`Resume.group`).
  */
 function beginHandler(
-  ctx: Ctx, trigger: OccurrenceRef, scope: ScopeOccurrenceId, state: State, record: Compensable, fuel: number,
+  ctx: Ctx, trigger: OccurrenceName, scope: ScopeOccurrenceId, state: State, record: Compensable, fuel: number,
 ): Result<readonly [State, ScopeOccurrenceId]> {
   if (fuel === 0) return semanticFailure(SemanticCause.Invariant, "compensation-run-depth");
   const handler = record.handler;
@@ -304,7 +304,7 @@ function resumeRun(ctx: Ctx, state: State, resume: Resume | null, fuel: number):
  * succeeds; once none is pending or running, end the run: cancel the occurrence it leaves, if any, then complete its
  * `resume`. Another run in the same scope neither delays nor ends it.
  */
-function advance(ctx: Ctx, scope: ScopeOccurrenceId, trigger: OccurrenceRef, state: State, fuel: number): Outcome {
+function advance(ctx: Ctx, scope: ScopeOccurrenceId, trigger: OccurrenceName, state: State, fuel: number): Outcome {
   if (fuel === 0) return semanticFailure(SemanticCause.Invariant, "compensation-run-depth");
   const compensation = state.slots.compensation;
   const matches = isRun(scope, trigger);
@@ -379,7 +379,7 @@ export function compensate(
   ctx: Ctx,
   scope: ScopeOccurrenceId,
   activity: ElementId | null,
-  trigger: OccurrenceRef,
+  trigger: OccurrenceName,
   leave: OccurrenceId | null,
   resume: Resume | null,
   state: State,

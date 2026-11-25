@@ -27,7 +27,7 @@ variable {start : State} {log : RunLog} {s t : State}
 
 /-- A process instance reading of the settled state, renamed, is one of the committed state. -/
 theorem compact_instanceIn (ran : compact schedule start log s = .ok t) (counted : CountersFrom start s)
-    (issued : IssuedBelow s) (rooted : Rooted s) (distinct : (scopeIds s).Nodup) {x : ScopeOccurrenceId} {name : String} {chain : List ScopeOccurrence} (reading : InstanceIn s x name chain) :
+    (issued : IssuedBelow s) (rooted : Rooted s) (distinct : (scopeIds s).Nodup) {x : ScopeOccurrenceId} {name : InstanceName} {chain : List ScopeOccurrence} (reading : InstanceIn s x name chain) :
     InstanceIn t (renameScope (commitRenaming schedule start log s) x) name (chain.map (renamedScope (commitRenaming schedule start log s))) := by
   obtain ⟨H, history⟩ := historic_of issued rooted
   have fixes : Fixes (commitRenaming schedule start log s) := renameBy_fixes _

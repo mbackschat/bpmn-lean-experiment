@@ -48,7 +48,7 @@ def Enters (isScope : Bool) (arriving : Occurrence) (inputs : List (String × Va
 
 /-- An element's next activation in an instance (`SRE-FRESH-01`): one greater than the count of its earlier
 occurrences there, the first being 1, so no identity is reused. -/
-def NextActivation (processInstance : String) (element : ElementId) (counts : List ActivationCount) (activation : Nat) : Prop :=
+def NextActivation (processInstance : InstanceName) (element : ElementId) (counts : List ActivationCount) (activation : Nat) : Prop :=
   (∀ counter ∈ counts, counter.processInstance = processInstance → counter.element = element → counter.role = .element →
     activation = counter.count + 1) ∧
   ((∀ counter ∈ counts, ¬ (counter.processInstance = processInstance ∧ counter.element = element ∧ counter.role = .element)) →
@@ -499,19 +499,19 @@ theorem stale_local_rejected :
   · have := congrArg (·["old"]?) (inputs staleLocals Std.ExtTreeMap.getElem?_insert_self)
     simp [staleLocals, Laws.State.ofBindings_eq] at this
 
-def firstCount : ActivationCount := { processInstance := "p", element := ⟨"Sub"⟩, role := .element, count := 1 }
+def firstCount : ActivationCount := { processInstance := .named "p", element := ⟨"Sub"⟩, role := .element, count := 1 }
 
 def counts : List ActivationCount := [firstCount]
 
-theorem second_traversal : NextActivation "p" ⟨"Sub"⟩ counts 2 :=
+theorem second_traversal : NextActivation (.named "p") ⟨"Sub"⟩ counts 2 :=
   ⟨by simp [counts, firstCount], fun none => absurd ⟨rfl, rfl, rfl⟩ (none firstCount (by simp [counts]))⟩
 
 /-- Reusing the first traversal's activation is rejected. -/
-theorem reused_activation_rejected : ¬ NextActivation "p" ⟨"Sub"⟩ counts 1 := fun law => by
+theorem reused_activation_rejected : ¬ NextActivation (.named "p") ⟨"Sub"⟩ counts 1 := fun law => by
   have := law.1 firstCount (by simp [counts]) rfl rfl rfl
   simp [firstCount] at this
 
-theorem first_traversal : NextActivation "p" ⟨"Sub"⟩ [] 1 := ⟨by simp, fun _ => rfl⟩
+theorem first_traversal : NextActivation (.named "p") ⟨"Sub"⟩ [] 1 := ⟨by simp, fun _ => rfl⟩
 
 theorem cleared_idle (kind : OpenKind) : Idle (cleared kind) subScope := by
   simp [Idle, Laws.State.allQueuedTokens, cleared, sample, outerTask, subProcess, outerItem, rootScope, childScope, processRoot, subScope]

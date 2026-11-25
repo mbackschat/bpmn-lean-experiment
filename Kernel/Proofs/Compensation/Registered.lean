@@ -72,7 +72,7 @@ theorem registered_compensationKeeps :
 
 /-- An advance whose first run of its key holds nothing pending or running and resumes no group drops the runs of the
 key and changes no retained record. -/
-theorem advance_ended {ctx : Ctx} {scope : ScopeOccurrenceId} {trigger : OccurrenceRef} {s t : State} {fuel : Nat}
+theorem advance_ended {ctx : Ctx} {scope : ScopeOccurrenceId} {trigger : OccurrenceName} {s t : State} {fuel : Nat}
     (idle : ∀ run, FirstOf (Keyed scope trigger) s.slots.compensation.runs run →
       run.pending = [] ∧ run.running = [] ∧ resumesGroup run.resume = false)
     (ran : Feature.Compensation.advance ctx scope trigger s fuel = .ok t) :
@@ -117,7 +117,7 @@ records it selects into a new run, which either, holding nothing, ends at once, 
 no run of its key, or advances once, beginning handlers that keep every record retained in an issued scope occurrence
 and leave no run but the state's and freshly scoped ones. -/
 theorem compensate_shape {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : Option ElementId}
-    {trigger : OccurrenceRef} {leave : Option OccurrenceId} {resume : Option Resume} {state after : State}
+    {trigger : OccurrenceName} {leave : Option OccurrenceId} {resume : Option Resume} {state after : State}
     (before : WellFormed ctx.program state)
     (formed : Formed (Depends ctx.program (footprintReads ctx) (footprintWrites ctx)) state)
     (fresh : FreshCall state scope trigger resume)
@@ -181,7 +181,7 @@ theorem advances_settled {precedes : Compensable → Compensable → Prop} {run 
     fun record => ⟨fun pending => ⟨pending, settled record⟩, And.left⟩, (List.append_nil _).symm⟩
 
 theorem compensate_takesOut {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : Option ElementId}
-    {trigger : OccurrenceRef} {leave : Option OccurrenceId} {resume : Option Resume} {state after : State}
+    {trigger : OccurrenceName} {leave : Option OccurrenceId} {resume : Option Resume} {state after : State}
     (before : WellFormed ctx.program state)
     (formed : Formed (Depends ctx.program (footprintReads ctx) (footprintWrites ctx)) state)
     (fresh : FreshCall state scope trigger resume)
@@ -207,7 +207,7 @@ theorem compensate_takesOut {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : 
     .inr ⟨next, Laws.State.mem_put_new _ _, scopeNamed, named, _, law⟩⟩
 
 theorem compensate_inOrder {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : Option ElementId}
-    {trigger : OccurrenceRef} {leave : Option OccurrenceId} {resume : Option Resume} {state after : State}
+    {trigger : OccurrenceName} {leave : Option OccurrenceId} {resume : Option Resume} {state after : State}
     (before : WellFormed ctx.program state)
     (formed : Formed (Depends ctx.program (footprintReads ctx) (footprintWrites ctx)) state)
     (fresh : FreshCall state scope trigger resume)
@@ -339,7 +339,7 @@ theorem registered_handlersInOrder : HandlersInOrder Registry.hooks footprintRea
 `WellFormed` and the lane relation (`Laws.State.Popped`, as `CompensationKeeps.compensate` reads it), so it is a
 `FreshCall` (`compensationsFresh`) and `registered_takesOutOnce` and `registered_handlersInOrder` apply to it. -/
 theorem registered_dequeued {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : Option ElementId}
-    {trigger : OccurrenceRef} {leave : Option OccurrenceId} {resume : Option Resume} {state after : State}
+    {trigger : OccurrenceName} {leave : Option OccurrenceId} {resume : Option Resume} {state after : State}
     (holds : WellFormed ctx.program state ∧ Formed (DependsIn Registry.hooks footprintReads footprintWrites ctx.program) state)
     (popped : Laws.State.Popped (fun queue => WellFormed ctx.program queue ∧
       Formed (DependsIn Registry.hooks footprintReads footprintWrites ctx.program) queue)

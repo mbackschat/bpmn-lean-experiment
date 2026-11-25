@@ -5,7 +5,7 @@
  */
 import { assertNever, elementActivity, programElement, programPublicId } from "../il/types.js";
 import {
-  ActivationRole, CommandActionTag, FailureTag, SignalTag, WriteRule, committed, failed, instanceOf, ownScope,
+  ActivationRole, CommandActionTag, FailureTag, SignalTag, WriteRule, committed, failed, instanceOf, instanceText, ownScope,
   semanticFailure, SemanticCause, signal as enqueue, type CommandInput, type EffectInput, type Occurrence, type OccurrenceRef,
   type OpenItem, type IncidentDetail, type Outcome, type ScopeOccurrenceId, type Signal, type State,
 } from "../state.js";
@@ -15,7 +15,7 @@ function occurrenceOfRef(ctx: Ctx, state: State, ref: OccurrenceRef): Occurrence
   return state.occurrences.find((occurrence) =>
     (occurrence.begun || state.openItems.some((item) => item.id.occurrence === occurrence.id)) && occurrence.role === ActivationRole.Element && occurrence.activation === ref.activation &&
     programPublicId(ctx.program, occurrence.element) === ref.element &&
-    instanceOf(state, occurrence.scope) === ref.processInstanceId) ?? null;
+    instanceText(instanceOf(state, occurrence.scope)) === ref.processInstanceId) ?? null;
 }
 
 export function command(hooks: Hooks, ctx: Ctx, input: CommandInput, state: State): Outcome {

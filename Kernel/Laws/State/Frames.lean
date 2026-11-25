@@ -150,16 +150,16 @@ theorem Within.trans {s : State} {a b c : ScopeOccurrenceId} (first : Within s a
   | refl => exact second
   | parent child parent _ member link _ ih => exact .parent child parent c member link (ih second)
 
-inductive InstanceIn (s : State) : ScopeOccurrenceId → String → List ScopeOccurrence → Prop where
-  | called (entry : ScopeOccurrence) (name : String) : entry ∈ s.scopes → entry.calledInstance = some name →
+inductive InstanceIn (s : State) : ScopeOccurrenceId → InstanceName → List ScopeOccurrence → Prop where
+  | called (entry : ScopeOccurrence) (name : InstanceName) : entry ∈ s.scopes → entry.calledInstance = some name →
       InstanceIn s entry.id name [entry]
-  | up (entry : ScopeOccurrence) (parent : ScopeOccurrenceId) (name : String) (chain : List ScopeOccurrence) :
+  | up (entry : ScopeOccurrence) (parent : ScopeOccurrenceId) (name : InstanceName) (chain : List ScopeOccurrence) :
       entry ∈ s.scopes → entry.calledInstance = none → entry.parent = some parent → InstanceIn s parent name chain →
       InstanceIn s entry.id name (entry :: chain)
   | root (entry : ScopeOccurrence) : entry ∈ s.scopes → entry.calledInstance = none → entry.parent = none →
-      InstanceIn s entry.id s.instanceId [entry]
+      InstanceIn s entry.id (.named s.instanceId) [entry]
 
-theorem InstanceIn.mem {s : State} {x : ScopeOccurrenceId} {name : String} {chain : List ScopeOccurrence}
+theorem InstanceIn.mem {s : State} {x : ScopeOccurrenceId} {name : InstanceName} {chain : List ScopeOccurrence}
     (reading : InstanceIn s x name chain) : ∀ entry ∈ chain, entry ∈ s.scopes := by
   induction reading with
   | called entry _ member _ => simpa using member
@@ -171,7 +171,7 @@ theorem InstanceIn.mem {s : State} {x : ScopeOccurrenceId} {name : String} {chai
   | root entry member _ _ => simpa using member
 
 /-- A state holding the chain, of the same instance, reads the same process instance. -/
-theorem InstanceIn.transport {s t : State} {x : ScopeOccurrenceId} {name : String} {chain : List ScopeOccurrence}
+theorem InstanceIn.transport {s t : State} {x : ScopeOccurrenceId} {name : InstanceName} {chain : List ScopeOccurrence}
     (reading : InstanceIn s x name chain) (held : ∀ entry ∈ chain, entry ∈ t.scopes) (same : t.instanceId = s.instanceId) :
     InstanceIn t x name chain := by
   induction reading with
@@ -642,7 +642,7 @@ def Popped (inv : State → Prop) (signal : Signal) (state : State) : Prop :=
 `state`, or `state` with a host disarmed, by `Steady` steps: the trigger a caught Cancel's compensation takes
 (`Feature.Propagation.leaveOccurrence`). The raise's scope occurrence stood when it was taken off, since a search from
 a scope occurrence that is gone fails (`Feature.Propagation.searchScopes`, #121). -/
-def RollsBack (inv : State → Prop) (trigger : OccurrenceRef) (state : State) : Prop :=
+def RollsBack (inv : State → Prop) (trigger : OccurrenceName) (state : State) : Prop :=
   ∃ base raised origin searched, Popped inv (.raise raised origin) base ∧ origin.scope ∈ scopeIds base ∧
     raised.isCancel = true ∧
     Steady base searched ∧ (state = searched ∨ ∃ host, state = searched.disarm host) ∧
@@ -670,7 +670,7 @@ theorem Popped.imp {signal : Signal} {state : State} (popped : Popped inv signal
   obtain ⟨found, same⟩ := rest₁
   exact ⟨queue, unit, weakens _ holds, found, same⟩
 
-theorem RollsBack.imp {trigger : OccurrenceRef} {state : State} (rolls : RollsBack inv trigger state) :
+theorem RollsBack.imp {trigger : OccurrenceName} {state : State} (rolls : RollsBack inv trigger state) :
     RollsBack weaker trigger state := by
   obtain ⟨base, raised, origin, rest⟩ := rolls
   obtain ⟨searched, popped, rest⟩ := rest

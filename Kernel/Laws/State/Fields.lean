@@ -148,10 +148,6 @@ def journalRows : List Field := [
   ordered ``Kernel.Draft.ended "the running unit's facts in the order it produces them",
   ordered ``Kernel.Draft.cancelled "the running unit's cancellations in its cancellation order, which `Hooks.cancelled` runs in (DC25)",
   ordered ``Kernel.Draft.ready "the running unit's facts in the order it produces them",
-  -- `OccurrenceRef`
-  content ``Kernel.OccurrenceRef.processInstanceId,
-  content ``Kernel.OccurrenceRef.element,
-  content ``Kernel.OccurrenceRef.activation,
   -- `StartedFact`
   content ``Kernel.StartedFact.occurrence,
   content ``Kernel.StartedFact.owner,

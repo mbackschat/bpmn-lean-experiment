@@ -39,7 +39,7 @@ import {
 } from "./il/types.js";
 import { resolve, type Resolved } from "./il/timer.js";
 import {
-  instanceOf,
+  instanceOf, instanceText,
   instanceRoot,
   messageChannelEquals,
   occurrenceOf,
@@ -56,7 +56,7 @@ import {
   type State,
   type Transition,
   type WaitView,
-  breadthUnitKey, issueNotAfter, itemsInOrder, ownVariables,
+  breadthUnitKey, issueNotAfter, itemsInOrder, ownVariables, type OccurrenceName,
 } from "./state.js";
 import { messageTriggerChannel } from "./hooks.js";
 
@@ -266,6 +266,11 @@ function publicRef(program: Program, ref: OccurrenceRef): OccurrenceRef {
   return { ...ref, element: programPublicId(program, ref.element) };
 }
 
+/** Lean's `Host.publicName`. */
+function publicName(program: Program, name: OccurrenceName): OccurrenceName {
+  return { ...name, element: programPublicId(program, name.element) };
+}
+
 function publicKey(program: Program, key: OccurrenceKey): OccurrenceKey {
   return { ...key, element: programPublicId(program, key.element) };
 }
@@ -283,8 +288,8 @@ function publicTransition(program: Program, transition: Transition): Transition 
 function publicFailure(program: Program, failure: InstanceFailure): InstanceFailure {
   return {
     ...failure,
-    occurrence: publicRef(program, failure.occurrence),
-    related: failure.related.map(([name, ref]) => [name, publicRef(program, ref)] as const),
+    occurrence: publicName(program, failure.occurrence),
+    related: failure.related.map(([role, name]) => [role, publicName(program, name)] as const),
   };
 }
 
@@ -304,7 +309,7 @@ function openWait(program: Program, state: State, item: OpenItem): OpenWait {
   const root = instanceRoot(state, item.scope);
   return {
     id: publicRef(program, {
-      processInstanceId: instanceOf(state, item.scope),
+      processInstanceId: instanceText(instanceOf(state, item.scope)),
       element: item.element,
       activation: occurrenceOf(state, item.id.occurrence)?.activation ?? 0,
     }),
@@ -338,6 +343,6 @@ export function hostView(program: Program, state: State): View {
     openWaits,
     addresses: addressesOf(openWaits),
     journal: publicJournal(program, state.journal),
-    broadcasts: state.intents.map((intent) => ({ ...intent, origin: publicRef(program, intent.origin) })),
+    broadcasts: state.intents.map((intent) => ({ ...intent, origin: publicName(program, intent.origin) })),
   };
 }

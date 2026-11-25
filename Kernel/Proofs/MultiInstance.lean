@@ -132,7 +132,7 @@ def RunsGenerated (hooks : Hooks) : Prop :=
 whose identifiers are unique: the IL contract (`Boundary.id`, `Kernel/IL/Types.lean:118`) keeps every reservation off a
 looping element, and a reservation of one keeps its lower activation when it begins after a fresh instance. -/
 def BeginOrder (hooks : Hooks) : Prop :=
-  ∀ (program : Program) (before after : State) (element : ElementId) (loop : MultiInstance) (processInstance : String),
+  ∀ (program : Program) (before after : State) (element : ElementId) (loop : MultiInstance) (processInstance : InstanceName),
     IdsUnique program → Commits hooks program before after → LoopOf program element loop →
     BeginsInOrder (after.journal.flatMap (·.started)) processInstance element
 

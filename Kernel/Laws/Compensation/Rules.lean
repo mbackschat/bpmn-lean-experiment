@@ -190,7 +190,7 @@ theorem Ready.any_iff {test : Compensable → Compensable → Bool} {run : Compe
   rfl
 
 /-- The run that `trigger` started in `scope`: two runs never share both. -/
-def Keyed (scope : ScopeOccurrenceId) (trigger : OccurrenceRef) (run : CompensationRun) : Prop :=
+def Keyed (scope : ScopeOccurrenceId) (trigger : OccurrenceName) (run : CompensationRun) : Prop :=
   run.scope = scope ∧ run.trigger = trigger
 
 /-- The run holds a handler running in the context scope occurrence `context`. -/

@@ -74,11 +74,11 @@ theorem orderJournal_named (formed : WellFormed program state) (counted : Counte
     (keys : ∀ occurrence ∈ state.occurrences, occurrence.id.scope = occurrence.scope)
     (named : ∀ root ∈ state.scopes, root.calledInstance.isSome → root.occurrence.isSome ∧ ∀ call ∈ state.occurrences,
       root.occurrence = some call.id → root.calledInstance =
-        some (State.calledInstanceId (state.instanceOf call.scope) (program.publicId call.element) call.activation))
+        some ((state.instanceOf call.scope).calledBy (program.publicId call.element) (.committed call.activation)))
     (made : orderJournal schedule start (.ok (state, log)) = .ok after) :
     ∀ root ∈ after.scopes, root.calledInstance.isSome → root.occurrence.isSome ∧ ∀ call ∈ after.occurrences,
       root.occurrence = some call.id → root.calledInstance =
-        some (State.calledInstanceId (after.instanceOf call.scope) (program.publicId call.element) call.activation) := by
+        some ((after.instanceOf call.scope).calledBy (program.publicId call.element) (.committed call.activation)) := by
   have ran := orderJournal_of made
   have facts := ordered_facts log formed counted batches
   have counted' := facts.counted

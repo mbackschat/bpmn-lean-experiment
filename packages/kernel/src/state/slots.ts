@@ -8,14 +8,14 @@ import { type Binding } from "./wait.js";
 /** Re-exported for `raise.ts`, as Lean's `Kernel.State.Raise` sees `Kernel.State.Wait` only through this module. */
 export { type Binding };
 import {
-  ActivationRole, compareIssue, compareOccurrenceId, type Issue, issueText, type OccurrenceId, occurrenceIdParts, type OccurrenceKey,
-  orientKeyOrder, type ScopeOccurrenceId, compareScopeOccurrenceId,
+  ActivationRole, compareIssue, compareOccurrenceId, compareOccurrenceName, type InstanceName, type Issue, issueText, type OccurrenceId,
+  occurrenceIdParts, type OccurrenceKey, type OccurrenceName, orientKeyOrder, type ScopeOccurrenceId, compareScopeOccurrenceId,
 } from "./key.js";
 /** Re-exported for `items.ts`, `raise.ts` and `journal.ts`, as Lean's `Kernel.State.Items`, `Kernel.State.Raise` and
  * `Kernel.State.Journal` see `Kernel.State.Key` only through this module. */
 export {
-  ActivationRole, compareIssue, compareOccurrenceId, type Issue, issueText, type OccurrenceId, type OccurrenceKey, orientKeyOrder,
-  type ScopeOccurrenceId,
+  ActivationRole, compareIssue, compareOccurrenceId, type InstanceName, type Issue, issueText, type OccurrenceId, type OccurrenceKey,
+  type OccurrenceName, orientKeyOrder, type ScopeOccurrenceId,
 };
 
 /**
@@ -138,7 +138,7 @@ export interface Compensable {
  * `resume`'s occurrence completes.
  */
 export interface CompensationRun {
-  readonly trigger: OccurrenceRef;
+  readonly trigger: OccurrenceName;
   readonly scope: ScopeOccurrenceId;
   readonly pending: readonly Compensable[];
   readonly running: readonly (readonly [ScopeOccurrenceId, Compensable])[];
@@ -176,13 +176,11 @@ export function runAnchor(run: CompensationRun): OccurrenceId | null {
 }
 
 /**
- * Lean's `Ord RunKey` on two runs' keys: the scope occurrence's key, then the trigger's process instance, element and
- * activation, oriented (`orientKeyOrder`).
+ * Lean's `Ord RunKey` on two runs' keys: the scope occurrence's key, then the trigger's (`compareOccurrenceName`),
+ * oriented (`orientKeyOrder`).
  */
 export function compareRunKey(left: CompensationRun, right: CompensationRun): number {
-  return compareScopeOccurrenceId(left.scope, right.scope) || orientKeyOrder(
-    compareStrings(left.trigger.processInstanceId, right.trigger.processInstanceId) ||
-      compareStrings(left.trigger.element, right.trigger.element) || left.trigger.activation - right.trigger.activation);
+  return compareScopeOccurrenceId(left.scope, right.scope) || orientKeyOrder(compareOccurrenceName(left.trigger, right.trigger));
 }
 
 /**

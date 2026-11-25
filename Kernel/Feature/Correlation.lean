@@ -68,7 +68,7 @@ def criterionHolds (state : State) (scope : ScopeOccurrenceId) (criterion : Corr
   | .processVariable name => holds root name
   | .localVariable name => holds scope name
   | .businessKey => names ((state.slots.instances.find? (·.root == root)).bind (·.businessKey))
-  | .processInstance => names (some (state.instanceOf scope))
+  | .processInstance => names (some (state.instanceOf scope).text)
 
 /-- Whether every one of a delivery's API `criteria` holds for an item waiting in `scope` (`criterionHolds`), the empty
 list included, unless `criteriaRefusal` refuses the criteria under `apiCriteria`. -/

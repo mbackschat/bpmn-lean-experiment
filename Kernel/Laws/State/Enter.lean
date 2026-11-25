@@ -392,7 +392,7 @@ theorem enterCalled_wellFormed {s : State} (formed : WellFormed program s) (call
       (by simp [enterCalled_eq _ _ _ _ _]))
     (by rw [enterCalled_eq _ _ _ _ _]; exact getElem?_insert_insert_first _ _ _ _ _)
   rw [enterCalled_eq _ _ _ _ _] at grows entered ⊢
-  exact Enters.wellFormed (entry := { id := call.scope.child call.element (.fresh s.issuing s.issueNext), element := some call.element, position := .fresh s.issuing (s.issueNext + 1), occurrence := some call.id, calledInstance := some (State.calledInstanceId (s.instanceOf call.scope) (called.publicId call.element) call.activation) }) formed {
+  exact Enters.wellFormed (entry := { id := call.scope.child call.element (.fresh s.issuing s.issueNext), element := some call.element, position := .fresh s.issuing (s.issueNext + 1), occurrence := some call.id, calledInstance := some ((s.instanceOf call.scope).calledBy (called.publicId call.element) (.committed call.activation)) }) formed {
       unissued := entered_unissued call.scope call.element formed.issuer.next, scopeGrows := grows, entered,
       table := .insert_insert formed.issuer rfl, issuer := fun fresh => fresh.issue_issue rfl rfl rfl rfl,
       positionTabled := fun _ _ fresh => by obtain ⟨rfl, rfl⟩ := Issue.fresh.inj fresh; simp, occurrenceOrdinals := rfl,

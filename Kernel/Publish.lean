@@ -98,7 +98,7 @@ the body occurrence and which hosts its instance occurrence once begun. A name t
 an activation 0, which names no occurrence, nor as another role. -/
 def publishedScope (state : State) (scope : ScopeOccurrence) (variables : List (String × Value)) :
     Except String (Option PublishedScope) :=
-  let processInstanceId := state.instanceOf scope.id
+  let processInstanceId := (state.instanceOf scope.id).text
   match scope.calledInstance, scope.element, scope.occurrence with
   | some _, _, _ => .ok (some { processInstanceId, element := none, activation := 0, role := .processInstance, variables })
   | none, none, _ => .ok none
@@ -112,7 +112,7 @@ def publishedScope (state : State) (scope : ScopeOccurrence) (variables : List (
     match state.slots.compensation.restoredIn? scope.id with
     | some record =>
       let subject := record.occurrence
-      .ok (some { processInstanceId := subject.processInstanceId, element := some subject.element
+      .ok (some { processInstanceId := subject.processInstanceId.text, element := some subject.element
                   activation := subject.activation, role := contextRole subject.role, variables })
     | none =>
       if !scope.parent.any (ownedByBody state) then .error "published-scope-unnamed"

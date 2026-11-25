@@ -44,8 +44,8 @@ it (a compensation failure names its trigger and handler). -/
 structure InstanceFailure where
   code : String
   message : Option String
-  occurrence : OccurrenceRef
-  related : List (String × OccurrenceRef) := []
+  occurrence : OccurrenceName
+  related : List (String × OccurrenceName) := []
   deriving Repr
 
 end Kernel

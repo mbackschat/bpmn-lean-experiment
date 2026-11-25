@@ -86,7 +86,7 @@ theorem instanceLinked_present {program : Program} {s : State} (formed : WellFor
 
 /-- A called root is its own instance root. -/
 theorem instanceRoot_called {program : Program} {s : State} (formed : WellFormed program s) {root : ScopeOccurrence}
-    (member : root ∈ s.scopes) {name : String} (called : root.calledInstance = some name) :
+    (member : root ∈ s.scopes) {name : InstanceName} (called : root.calledInstance = some name) :
     s.instanceRoot root.id = root.id := by
   have reading := InstanceIn.called root name member called
   rw [instanceRoot_chain reading formed.distinct.scopes reading.mem]
@@ -125,7 +125,7 @@ theorem element?_member {program : Program} (ids : Laws.MultiInstance.IdsUnique 
 
 /-- An element of the process an instance entry of a called root records is placed in that called root. -/
 theorem placed_called {program : Program} {s : State} (formed : WellFormed program s) (lane : PlacedLane program s)
-    {root : ScopeOccurrence} (member : root ∈ s.scopes) {name : String} (called : root.calledInstance = some name)
+    {root : ScopeOccurrence} (member : root ∈ s.scopes) {name : InstanceName} (called : root.calledInstance = some name)
     {entry : InstanceData} (inside : entry ∈ s.slots.instances) (rooted : entry.root = root.id) {element : ElementId}
     (same : definitionAt program element = entry.definition) : PlacedIn program s element root.id :=
   fun other otherIn otherRoot => by

@@ -61,7 +61,7 @@ def marks (program : Program) (key : OccurrenceKey) : Bool × Bool :=
 
 /-- One activation counter (R8: per process instance, element and role). -/
 structure ActivationCount where
-  processInstance : String
+  processInstance : InstanceName
   element : ElementId
   role : ActivationRole
   count : Nat

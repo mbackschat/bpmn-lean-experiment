@@ -50,7 +50,7 @@ one, or a reservation an open item holds, as a Conditional arm of an Event-Based
 def occurrenceOf? (ctx : Ctx) (state : State) (ref : OccurrenceRef) : Option Occurrence :=
   state.occurrences.find? fun occurrence =>
     (occurrence.begun || (itemList state.openItems).any (·.id.occurrence == occurrence.id)) && occurrence.role == .element && occurrence.activation == ref.activation &&
-      ctx.program.publicId occurrence.element == ref.element && state.instanceOf occurrence.scope == ref.processInstanceId
+      ctx.program.publicId occurrence.element == ref.element && (state.instanceOf occurrence.scope).text == ref.processInstanceId
 
 /-- Run `onActivity` on the Activity an open item belongs to. -/
 def atActivity (ctx : Ctx) (item : OpenItem) (onActivity : Header → ActivityPayload → Outcome) : Outcome :=

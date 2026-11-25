@@ -89,7 +89,7 @@ accepts; while no run holds `scope` as a running context, it keeps every run of 
 one advance of the first run of `s` of that key, every other run `Steps` from `s`, and while no run of the key resumes
 a group or no run holds `scope`, it releases nothing: every record retained in a scope occurrence `s` had issued stays
 as it was, and every run it leaves is of the key, one of `s`'s or freshly scoped. -/
-structure AdvanceFormed (precedes : Compensable → Compensable → Prop) (scope : ScopeOccurrenceId) (trigger : OccurrenceRef)
+structure AdvanceFormed (precedes : Compensable → Compensable → Prop) (scope : ScopeOccurrenceId) (trigger : OccurrenceName)
     (s t : State) : Prop where
   tame : Tame t
   moves : Moves s t
@@ -140,7 +140,7 @@ theorem store_stored (s : State) (compensation : Compensations) :
 
 /-- `Compensation.beginHandler` keeps what `BeginKept` says, given what the advance of a group's nested run keeps. -/
 theorem begin_formed {precedes : Compensable → Compensable → Prop} {ctx : Ctx} {less : Nat}
-    (advances : AdvanceKept precedes ctx less) {trigger : OccurrenceRef} {scope : ScopeOccurrenceId} {s : State}
+    (advances : AdvanceKept precedes ctx less) {trigger : OccurrenceName} {scope : ScopeOccurrenceId} {s : State}
     {record : Compensable} {t : State} {context : ScopeOccurrenceId} (tame : Tame s) (stands : scope ∈ scopeIds s)
     (source : ∃ run ∈ s.slots.compensation.runs, run.trigger = trigger)
     (ran : Feature.Compensation.beginHandler ctx trigger scope s record (less + 1) = .ok (t, context)) :
@@ -265,7 +265,7 @@ theorem begin_formed {precedes : Compensable → Compensable → Prop} {ctx : Ct
 
 /-- Beginning the handlers of `started` one after another keeps what each begin keeps. -/
 theorem chain_formed {precedes : Compensable → Compensable → Prop} {ctx : Ctx} {less : Nat}
-    (begins : BeginKept precedes ctx less) {trigger : OccurrenceRef} {scope : ScopeOccurrenceId} {s t : State}
+    (begins : BeginKept precedes ctx less) {trigger : OccurrenceName} {scope : ScopeOccurrenceId} {s t : State}
     {started : List (ScopeOccurrenceId × Compensable)}
     (chain : BeginsEach (fun current record => Feature.Compensation.beginHandler ctx trigger scope current record less)
       s started t) (tame : Tame s) (stands : scope ∈ scopeIds s)
@@ -310,14 +310,14 @@ theorem chain_formed {precedes : Compensable → Compensable → Prop} {ctx : Ct
       · exact later.parented _ rest
 
 /-- A run of another key is no `isRun` of that key. -/
-theorem isRun_false {scope : ScopeOccurrenceId} {trigger : OccurrenceRef} {run : CompensationRun} :
+theorem isRun_false {scope : ScopeOccurrenceId} {trigger : OccurrenceName} {run : CompensationRun} :
     Feature.Compensation.isRun scope trigger run = false ↔ ¬ Keyed scope trigger run := by
   rw [← Laws.Compensation.isRun_iff]
   simp
 
 /-- An advance whose result holds the runs of `s` but those of its key keeps what `AdvanceKept` says. -/
 theorem advanceFormed_filtered {precedes : Compensable → Compensable → Prop} {scope : ScopeOccurrenceId}
-    {trigger : OccurrenceRef} {s t : State} (tame : Tame t) (moves : Moves s t)
+    {trigger : OccurrenceName} {s t : State} (tame : Tame t) (moves : Moves s t)
     (counted : ∀ n, (completions t.slots.compensation).count n ≤ (completions s.slots.compensation).count n)
     (runs : t.slots.compensation.runs = s.slots.compensation.runs.filter (!Feature.Compensation.isRun scope trigger ·))
     (retained : t.slots.compensation.retained = s.slots.compensation.retained) (scopes : t.scopes = s.scopes) :
@@ -345,7 +345,7 @@ theorem advances_of {ctx : Ctx} {precedes : Compensable → Compensable → Prop
 theorem advance_formed {precedes : Compensable → Compensable → Prop} {ctx : Ctx} {less : Nat}
     (orders : ∀ record other, Feature.Compensation.precedes ctx record other = true ↔ precedes record other)
     (begins : BeginKept precedes ctx less) (releases : ReleaseKept precedes ctx less) {scope : ScopeOccurrenceId}
-    {trigger : OccurrenceRef} {s t : State} (tame : Tame s) (stands : scope ∈ scopeIds s)
+    {trigger : OccurrenceName} {s t : State} (tame : Tame s) (stands : scope ∈ scopeIds s)
     (ran : Feature.Compensation.advance ctx scope trigger s (less + 1) = .ok t) :
     AdvanceFormed precedes scope trigger s t := by
   obtain ⟨less', run, same, rest⟩ := Laws.Compensation.advance_spec ran
@@ -793,7 +793,7 @@ theorem compensationsFresh : CompensationsFresh := by
   · exact formed.triggers.grouped run inside grouped (by rw [same]; exact head)
 
 theorem compensate_formed (hooks : Hooks) {ctx : Ctx} {scope : ScopeOccurrenceId} {activity : Option ElementId}
-    {trigger : OccurrenceRef} {leave : Option OccurrenceId} {resume : Option Resume} {s t : State}
+    {trigger : OccurrenceName} {leave : Option OccurrenceId} {resume : Option Resume} {s t : State}
     (before : WellFormed ctx.program s) (formed : Formed (DependsIn hooks footprintReads footprintWrites ctx.program) s)
     (stands : Laws.Step.ScopeStands s scope)
     (popped : Laws.State.Popped (fun queue => WellFormed ctx.program queue ∧

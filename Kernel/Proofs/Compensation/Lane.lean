@@ -102,7 +102,7 @@ structure Tame (s : State) : Prop where
   scopesKeyed : Laws.State.ScopesKeyed s.scopeMap
 
 /-- The triggers of the runs that are no group's nested run. -/
-def ungroupedTriggers (s : State) : List OccurrenceRef :=
+def ungroupedTriggers (s : State) : List OccurrenceName :=
   (s.slots.compensation.runs.filter (!resumesGroup ·.resume)).map (·.trigger)
 
 theorem heldTriggers_eq (s : State) : heldTriggers s = ungroupedTriggers s ++ queuedTriggers s := rfl
@@ -165,7 +165,7 @@ theorem flatMap_sublist_of {α β : Type} {f g : α → List β} {l : List α} (
 
 /-- Fewer runs hold no trigger of a run that is no group's more often. -/
 theorem ungrouped_sublist {s t : State} (sub : t.slots.compensation.runs.Sublist s.slots.compensation.runs)
-    (trigger : OccurrenceRef) : (ungroupedTriggers t).count trigger ≤ (ungroupedTriggers s).count trigger :=
+    (trigger : OccurrenceName) : (ungroupedTriggers t).count trigger ≤ (ungroupedTriggers s).count trigger :=
   ((sub.filter _).map _).count_le _
 
 /-- Fewer retained records and runs hold no completion number more often. -/

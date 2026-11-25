@@ -37,7 +37,7 @@ import {
   committed,
   completeSignal,
   failed,
-  instanceOf,
+  instanceOf, calledBy, instanceText,
   instanceRoot,
   leaveOutgoing,
   signal,
@@ -52,7 +52,7 @@ import {
   SemanticCause,
   semanticFailure,
 } from "../../state.js";
-import { calledInstanceId, enterCalled } from "../../state/called.js";
+import { enterCalled } from "../../state/called.js";
 import { ctxEvaluateMappings, evalContext, type Ctx } from "../../hooks.js";
 
 /**
@@ -98,8 +98,8 @@ function calledProcess(ctx: Ctx, header: Header, work: CallWork): Result<CalledP
  * `Bounds.instanceIdentityBytes` (OD14) and is refused before anything is evaluated.
  */
 export function invoke(ctx: Ctx, header: Header, payload: ActivityPayload, work: CallWork, occurrence: Occurrence, state: State): Outcome {
-  const called = calledInstanceId(instanceOf(state, occurrence.scope), programPublicId(ctx.program, occurrence.element),
-    occurrence.activation);
+  const called = instanceText(calledBy(instanceOf(state, occurrence.scope), programPublicId(ctx.program, occurrence.element),
+    occurrence.activation));
   if (utf8ByteSize(called) > ctx.program.options.bounds.instanceIdentityBytes) {
     return failed(FailureTag.Unsupported, "instance-identity-bound"); // dynamic-only: an identifier grows with its chain of Calls
   }

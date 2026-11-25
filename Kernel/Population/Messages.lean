@@ -15,7 +15,7 @@ public section
 namespace Kernel.Population
 
 def occurrence (program : Program) (state : State) (item : OpenItem) : OccurrenceRef :=
-  { processInstanceId := state.instanceOf item.scope, element := program.publicId item.element
+  { processInstanceId := (state.instanceOf item.scope).text, element := program.publicId item.element
     activation := ((state.occurrence? item.id.occurrence).map (·.activation)).getD 0 }
 
 /-- The code a refusal carries. -/

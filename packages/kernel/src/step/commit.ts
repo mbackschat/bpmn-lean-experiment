@@ -13,7 +13,7 @@ import {
   committed, type Continuation, ContinuationTag, compareUnitKey, emptyDraft, type OccurrenceId, orderedAny,
   orderedEntries, orderedGet, orderedInsert, type OrderedMap, type Outcome, sameUnitKey, seedUnit, semanticFailure,
   failed, FailureTag, issuerText, type Issued, type IssueTable, SemanticCause, type BroadcastIntent, type Cause,
-  type ScopeOccurrenceId, type State, type Transition, type TreeMap, type UnitKey, compareIssue, compareOccurrenceId,
+  type InstanceName, type ScopeOccurrenceId, type State, type Transition, type TreeMap, type UnitKey, compareIssue, compareOccurrenceId,
   compareScopeSlot, type FreshIssue, freshIssue, type Issue, compareIssuePlace, type ClaimSlot, ClaimSlotTag, compareClaimSlot,
   occurrenceFresh, positionOutsideIssueTable, scopeFresh,
 } from "../state.js";
@@ -224,12 +224,14 @@ export function compact(schedule: BranchSchedule, start: State, log: RunLog, sta
 /**
  * The process instances Lean's `countLive` keeps the activation counters of: the process instance itself, every one a
  * standing scope occurrence calls, and the thrower's of every compensation run in progress, which in an admitted model
- * is the run's own instance and so adds none.
+ * is the run's own instance and so adds none. A counter's instance is committed, so only committed names can be its: a
+ * pending name equals no committed one (Lean's `InstanceName` equality), and the set holds identifiers.
  */
 function liveInstances(state: State): ReadonlySet<string> {
   const live = new Set<string>([state.instanceId]);
-  for (const scope of state.scopes) if (scope.calledInstance !== null) live.add(scope.calledInstance);
-  for (const run of state.slots.compensation.runs) live.add(run.trigger.processInstanceId);
+  const add = (name: InstanceName | null): void => { if (typeof name === "string") live.add(name); };
+  for (const scope of state.scopes) add(scope.calledInstance);
+  for (const run of state.slots.compensation.runs) add(run.trigger.processInstanceId);
   return live;
 }
 
@@ -245,6 +247,6 @@ export function orderJournal(schedule: BranchSchedule, start: State, state: Stat
   return compact(schedule, start, log, {
     ...state, journal: byRun(log, state.transitions), intents: byRun<readonly BroadcastIntent[]>(log, state.outboxes).flat(),
     transitions: null, outboxes: null, queuedTokens: null, queuedSignals: null, draft: emptyDraft,
-    activations: state.activations.filter((count) => live.has(count.processInstance)),
+    activations: state.activations.filter((count) => typeof count.processInstance === "string" && live.has(count.processInstance)),
   });
 }

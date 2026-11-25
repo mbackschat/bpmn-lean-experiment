@@ -593,7 +593,7 @@ instance, numbered under its element's counter, and begun or waited for by an op
 theorem occurrenceOf?_some {ctx : Ctx} {state : State} {ref : OccurrenceRef} {occurrence : Occurrence}
     (found : occurrenceOf? ctx state ref = some occurrence) : occurrence ∈ state.occurrences ∧
       (ctx.program.publicId occurrence.element = ref.element ∧ occurrence.activation = ref.activation ∧
-        state.instanceOf occurrence.scope = ref.processInstanceId) ∧ occurrence.role = .element ∧
+        (state.instanceOf occurrence.scope).text = ref.processInstanceId) ∧ occurrence.role = .element ∧
       (occurrence.begun = true ∨ ∃ item ∈ itemList state.openItems, item.id.occurrence = occurrence.id) := by
   unfold occurrenceOf? at found
   have holds := List.find?_some found
