@@ -699,9 +699,11 @@ theorem commitPositioning_empty {start : State} {log : RunLog} {s : State} (empt
     (issue : Issue) : commitPositioning schedule start log s issue = issue := by
   cases issue <;> simp [commitPositioning, renameBy, positionsOf, issueOrder_empty empty]
 
-theorem rekey_id {r : Issue → Issue} (same : ∀ issue, r issue = issue) (continuation : Continuation) :
-    continuation.rekey (renameId r) (renameScope r) = continuation := by
-  cases continuation <;> simp [Continuation.rekey, renameId_id same, renameScope_id same]
+/-- Under `orderInvariant` the assignment reads no run log, and only the end state's issues, occurrences and slots. -/
+theorem assign_orderInvariant_congr (start : State) (log log' : RunLog) {s t : State} (issued : s.issued = t.issued)
+    (occurrences : s.occurrenceMap = t.occurrenceMap) (slots : s.slots = t.slots) : assign .orderInvariant start log s = assign .orderInvariant start log' t := by
+  have rank : issueRank .orderInvariant log = issueRank .orderInvariant log' := funext fun issue => by cases issue <;> rfl
+  simp only [assign, issueOrder, rank, taggedActivations, instanceItem?, State.occurrences, issued, occurrences, slots]
 
 /-- `t` is `s` with its counters alone changed. -/
 def CountersOnly (s t : State) : Prop :=

@@ -133,6 +133,15 @@ theorem occurrence?_none {state : State} {id : OccurrenceId} (absent : state.occ
   unfold State.occurrence? at absent
   simpa [same] using List.find?_eq_none.mp absent occurrence member
 
+/-- A fresh begin issues its occurrence's key, then its activation, as the running unit's next two issues (KD5): what it
+begins and what it tables read the issuer and the request alone (`Laws.Step.begins_commute`). -/
+theorem beginOccurrence_issues {s : State} {request : BeginRequest} (fresh : request.reserved = none) (role : ActivationRole)
+    (sourceType : String) : (s.beginOccurrence request role sourceType).2 = ⟨⟨request.scope, request.element, .fresh s.issuing s.issueNext⟩,
+      request.element, request.scope, .fresh s.issuing (s.issueNext + 1), .fresh s.issuing s.issueNext, role, request.continuation, request.incoming, true⟩ ∧
+    (s.beginOccurrence request role sourceType).1.issued = (s.issued.insert (.fresh s.issuing s.issueNext) (.occurrence ⟨request.scope, request.element⟩)).insert
+      (.fresh s.issuing (s.issueNext + 1)) (.activation ⟨s.instanceOf request.scope, request.element, role⟩) := by
+  simp [State.beginOccurrence, fresh, State.activate, State.issueOccurrence, State.issue, State.recordStart]
+
 /-- `beginOccurrence` holds the occurrence it begins, begun. -/
 theorem beginOccurrence_mem (state : State) (request : BeginRequest) (role : ActivationRole) (sourceType : String) :
     (state.beginOccurrence request role sourceType).2 ∈ (state.beginOccurrence request role sourceType).1.occurrences ∧

@@ -147,6 +147,7 @@ public import Kernel.Laws.Step.Jobs
 public import Kernel.Laws.Step.Keeps
 public import Kernel.Laws.Step.Offer
 public import Kernel.Laws.Step.Order
+public import Kernel.Laws.Step.Pair
 public import Kernel.Laws.Step.Raised
 public import Kernel.Laws.Step.Ran
 public import Kernel.Laws.Step.ScopeEntry

@@ -19,6 +19,10 @@ variable {schedule : BranchSchedule}
 
 open Kernel Kernel.Step Kernel.Laws.State
 
+theorem rekey_id {r : Issue → Issue} (same : ∀ issue, r issue = issue) (continuation : Continuation) :
+    continuation.rekey (renameId r) (renameScope r) = continuation := by
+  cases continuation <;> simp [renameId_id same, renameScope_id same]
+
 /-- The activation order runs by the depth of the instance's name. -/
 theorem activationOrder_sorted (tagged : List ((Issue × ActivationSlot) × Option (OccurrenceId × Nat))) :
     (activationOrder tagged).Pairwise fun a b => a.2.processInstance.callDepth ≤ b.2.processInstance.callDepth := by
