@@ -135,7 +135,7 @@ Scratch clones, builds and evidence live in the session scratchpad, which stays 
 - Delete a scratch clone as soon as its work is verified, after pushing its branches into one bare archive repository in the scratchpad and checking that every ref arrived; save its uncommitted work as a patch first.
 - Give a new clone its `node_modules` by APFS clone (`cp -c`) from one installed checkout instead of installing, so no clone keeps its own pnpm store.
 - Never copy `kernelRun` or other build outputs into evidence folders; record the commit and the command that rebuilds them. Delete replay, scan, pair and sample outputs once their results are in the report.
-- Do not start a heavy lane with less than 40 GiB of free disk.
+- Do not start a heavy lane with less than 40 GiB of free disk, as macOS reports it available for important usage (`NSURLVolumeAvailableCapacityForImportantUsageKey`, which counts purgeable space such as local Time Machine snapshots); `df` and `diskutil` show only the non-purgeable part and understate it.
 
 ## Git and delivery
 
