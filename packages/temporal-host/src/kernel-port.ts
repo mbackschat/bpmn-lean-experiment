@@ -155,7 +155,12 @@ export const kernelPort: KernelPort<Program, State, HostInput> = {
   },
   // The rendering is `Kernel.Run.hostViewJson`'s, which `HostView` types field by field.
   hostView: (program, state) => hostViewJson(hostView(program, state)) as unknown as HostView,
-  observation: (program, state) => observationJson(program, state) as JsonValue,
+  // Only a kernel defect fails an observation (an invariant failure); the host cannot publish such a state.
+  observation: (program, state) => {
+    const observed = observationJson(program, state);
+    if (!observed.ok) throw new Error(`observation-invariant: ${failureCode(observed.failure)}`);
+    return observed.value as JsonValue;
+  },
   // Without the last input's journal and intents: the host published them when it committed the input, and `step` empties
   // both before every input (`onRunning`, `initial`), so no later input reads them; carried, they would charge the state
   // and continuation bounds with a second copy of the publication (2,066,022 of long-burst's 2,067,466 bytes, 2026-11-13).

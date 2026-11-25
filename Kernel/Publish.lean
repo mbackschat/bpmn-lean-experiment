@@ -26,13 +26,17 @@ def variables (state : State) : List (String × Value) :=
 
 /-- What a published variable scope is. A scope is named by the occurrence it belongs to: `activity` is an Activity
 occurrence's own scope (a Sub-Process's, or an Activity's local variables), `multiInstanceBody` a Multi-Instance body's;
-a `multiInstanceInstance` and a `compensationContext` (the restored context a compensation handler runs in) have no
-occurrence of their own and are named by the one they host. A called instance's root is a `processInstance`. -/
+a `multiInstanceInstance` has no occurrence of its own and is named by the instance occurrence it hosts. A restored
+compensation context, a handler's or a group's, is named by the subject occurrence whose snapshot it restores (its
+record's `Compensable.occurrence`): `compensationContext` for an Activity's or a Multi-Instance instance's,
+`multiInstanceBodyCompensationContext` for a Multi-Instance body's, whose first instance shares its element and
+activation. A called instance's root is a `processInstance`. -/
 inductive ScopeRole where
   | processInstance
   | activity
   | multiInstanceBody
   | multiInstanceInstance
+  | multiInstanceBodyCompensationContext
   | compensationContext
   deriving DecidableEq, Repr
 
@@ -41,6 +45,7 @@ def scopeRoleName : ScopeRole → String
   | .activity => "activity"
   | .multiInstanceBody => "multiInstanceBody"
   | .multiInstanceInstance => "multiInstanceInstance"
+  | .multiInstanceBodyCompensationContext => "multiInstanceBodyCompensationContext"
   | .compensationContext => "compensationContext"
 
 def scopeRoleRank : ScopeRole → Nat
@@ -48,7 +53,13 @@ def scopeRoleRank : ScopeRole → Nat
   | .activity => 1
   | .multiInstanceBody => 2
   | .multiInstanceInstance => 3
-  | .compensationContext => 4
+  | .multiInstanceBodyCompensationContext => 4
+  | .compensationContext => 5
+
+/-- The role of a restored context whose subject occurrence the counter `role` numbered. -/
+def contextRole : ActivationRole → ScopeRole
+  | .element => .compensationContext
+  | .multiInstanceBody => .multiInstanceBodyCompensationContext
 
 /-- A variable scope other than the instance root, by its process instance, the element and activation of the
 occurrence that names it (none for a `processInstance`) and its role, with its variables in name order. -/
@@ -59,55 +70,63 @@ structure PublishedScope where
   role : ScopeRole
   variables : List (String × Value)
 
-/-- A published scope with the scope occurrence it was read from, whose depth and order position break a tie. -/
-structure RankedScope where
-  published : PublishedScope
-  depth : Nat
-  position : Issue
-
-/-- Canonical order: process instance, element (none first), activation, role. Two scope occurrences may publish one
-identity (a compensated Multi-Instance body's restored context and its instance's), so a tie is broken by the scope
-tree, the enclosing one first, then by order position (DC25), as `Host.hostView` orders open waits; never by the order
-the state stores them in (KD7). -/
-def PublishedScope.le (left right : RankedScope) : Bool :=
-  let (a, b) := (left.published, right.published)
+/-- Canonical order: process instance, element (none first), activation, role. The four are the scope's identity, which
+no two published scopes share (`publishedScopes` fails otherwise), so the order is total and never reads the order the
+state stores scopes in (KD7). -/
+def PublishedScope.le (a b : PublishedScope) : Bool :=
   let name (scope : PublishedScope) := (scope.element.map (·.value)).getD ""
   if a.processInstanceId != b.processInstanceId then decide (a.processInstanceId < b.processInstanceId)
   else if name a != name b then decide (name a < name b)
   else if a.activation != b.activation then decide (a.activation < b.activation)
-  else if scopeRoleRank a.role != scopeRoleRank b.role then decide (scopeRoleRank a.role < scopeRoleRank b.role)
-  else if left.depth != right.depth then decide (left.depth < right.depth)
-  else Issue.notAfter UnitKey.breadth.val left.position right.position
+  else decide (scopeRoleRank a.role ≤ scopeRoleRank b.role)
 
-def ownedByBody (state : State) (scope : ScopeOccurrenceId) : Bool :=
-  (((state.scopes.find? (·.id == scope)).bind (·.occurrence)).bind state.occurrence?).any
-    (·.role == .multiInstanceBody)
+/-- Whether `a` and `b` publish one identity. -/
+def PublishedScope.sameIdentity (a b : PublishedScope) : Bool :=
+  a.processInstanceId == b.processInstanceId && a.element == b.element && a.activation == b.activation &&
+    scopeRoleRank a.role == scopeRoleRank b.role
 
-/-- `scope` as published, `none` for the instance root, which `variables` publishes. -/
+/-- `scope` as published, `none` for the instance root, which `variables` publishes. A scope occurrence with an element
+and no occurrence of its own is a restored compensation context while a run holds it (`Compensations.restoredIn?`), and
+otherwise a Multi-Instance instance's, which hosts its instance occurrence once begun. A name that is not there is an
+invariant failure, never an activation 0, which names no occurrence. -/
 def publishedScope (state : State) (scope : ScopeOccurrence) (variables : List (String × Value)) :
-    Option PublishedScope :=
+    Except Failure (Option PublishedScope) :=
   let processInstanceId := state.instanceOf scope.id
   match scope.calledInstance, scope.element, scope.occurrence with
-  | some _, _, _ => some { processInstanceId, element := none, activation := 0, role := .processInstance, variables }
-  | none, none, _ => none
-  | none, some element, some id =>
-    let owner := state.occurrence? id
-    some { processInstanceId, element := some ((owner.map (·.element)).getD element)
-           activation := (owner.map (·.activation)).getD 0, variables
-           role := if owner.any (·.role == .multiInstanceBody) then .multiInstanceBody else .activity }
+  | some _, _, _ => .ok (some { processInstanceId, element := none, activation := 0, role := .processInstance, variables })
+  | none, none, _ => .ok none
+  | none, some _, some id =>
+    match state.occurrence? id with
+    | some owner =>
+      .ok (some { processInstanceId, element := some owner.element, activation := owner.activation, variables
+                  role := if owner.role == .multiInstanceBody then .multiInstanceBody else .activity })
+    | none => .error (.semanticFailure .invariant "published-scope-owner-gone")
   | none, some element, none =>
-    let hosted := state.occurrences.find? fun occurrence => occurrence.scope == scope.id && occurrence.element == element
-    some { processInstanceId, element := some element, activation := (hosted.map (·.activation)).getD 0, variables
-           role := if scope.parent.any (ownedByBody state) then .multiInstanceInstance else .compensationContext }
+    match state.slots.compensation.restoredIn? scope.id with
+    | some record =>
+      match record.occurrence with
+      | some subject =>
+        .ok (some { processInstanceId := subject.processInstanceId, element := some subject.element
+                    activation := subject.activation, role := contextRole subject.role, variables })
+      | none => .error (.semanticFailure .invariant "published-context-without-subject")
+    | none =>
+      match state.occurrences.find? fun occurrence => occurrence.scope == scope.id && occurrence.element == element with
+      | some hosted =>
+        .ok (some { processInstanceId, element := some element, activation := hosted.activation
+                    role := .multiInstanceInstance, variables })
+      | none => .error (.semanticFailure .invariant "published-instance-not-begun")
 
 /-- Every variable scope other than the instance root that holds a variable, by public element identifiers, in
-canonical order. -/
-def publishedScopes (program : Program) (state : State) : List PublishedScope :=
-  ((state.scopes.filterMap fun scope =>
+canonical order; an invariant failure when a scope's name is not there or two scopes publish one identity. -/
+def publishedScopes (program : Program) (state : State) : Except Failure (List PublishedScope) := do
+  let published ← state.scopes.filterMapM fun scope =>
     match state.ownVariables scope.id with
-    | [] => none
-    | entries => (publishedScope state scope entries).map fun published =>
-      { published := { published with element := published.element.map program.publicId }
-        depth := scope.id.segments.length, position := scope.position }).mergeSort PublishedScope.le).map (·.published)
+    | [] => .ok none
+    | entries => return (← publishedScope state scope entries).map fun published =>
+      { published with element := published.element.map program.publicId }
+  let ordered := published.mergeSort PublishedScope.le
+  if (ordered.zip (ordered.drop 1)).any fun (a, b) => a.sameIdentity b then
+    .error (.semanticFailure .invariant "published-scope-identity-twice")
+  else .ok ordered
 
 end Kernel.Publish

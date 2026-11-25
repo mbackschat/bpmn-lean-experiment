@@ -159,17 +159,19 @@ def scopeJson (scope : Publish.PublishedScope) : Json :=
     ("variables", Codec.bindingsToJson scope.variables)]
 
 /-- The state observation; `failure` appears only in a failed state, `broadcasts` only after an input that threw a
-Signal to the population. -/
-def observationJson (program : Program) (state : State) : Json :=
+Signal to the population. A state whose scopes cannot be published (`Publish.publishedScopes`) has none: its invariant
+failure is the answer. -/
+def observationJson (program : Program) (state : State) : Except Failure Json := do
+  let scopes ← Publish.publishedScopes program state
   let view := Host.hostView program state
   let waits := (view.openWaits.map renderWait).mergeSort PublishedWait.canonicalLe
   let fields : List (String × Json) := [("kind", "state"), ("instanceId", Json.str state.instanceId),
     ("status", Json.str (Publish.statusName view.status)), ("logicalTimeMs", toJson state.logicalTimeMs),
     ("variables", Codec.bindingsToJson (Publish.variables state)),
-    ("scopes", Json.arr ((Publish.publishedScopes program state).map scopeJson).toArray),
+    ("scopes", Json.arr (scopes.map scopeJson).toArray),
     ("openWaits", Json.arr (waits.map (·.json)).toArray)]
-  Json.mkObj (fields ++
-    (view.failure.map fun failure => ("failure", failureJson failure)).toList ++ broadcastsJson view.broadcasts)
+  .ok (Json.mkObj (fields ++
+    (view.failure.map fun failure => ("failure", failureJson failure)).toList ++ broadcastsJson view.broadcasts))
 
 /-- `code` appears only on an input that did not commit. -/
 def commandJson (commandId outcome : String) (code : Option String) : Json :=
@@ -177,9 +179,6 @@ def commandJson (commandId outcome : String) (code : Option String) : Json :=
     ("outcome", Json.str outcome)]
   Json.mkObj (fields ++
     code.toList.map fun code => ("code", Json.str code))
-
-def snapshot (program : Program) (state : Option State) : List Json :=
-  state.toList.map (observationJson program)
 
 /-- The step of a single-instance run: a stimulus stating a Timer firing (`Codec.firingStimulusFromJson`) is refused
 before the step unless it is on time in the degenerate population (`Population.onTimeRefusal`). A host that serves one
@@ -194,20 +193,28 @@ def runStep (program : Program) (state : Option State) (input : Input) (firing :
 /-- A scenario stimulus: its command identifier, its input and the Timer firing it states. -/
 abbrev RunStimulus := String × Input × Option Codec.TimerFiring
 
-/-- The trace after deployment and the scenario outcome. -/
-def execute (program : Program) : Option State → List RunStimulus → List Json × String
-  | _, [] => ([], "committed")
-  | state, (commandId, input, firing) :: rest =>
-    match runStep program state input firing with
-    | .ok next =>
-      let (trace, outcome) := execute program (some next) rest
-      (commandJson commandId "committed" none :: snapshot program (some next) ++ trace, outcome)
+/-- `runStep`, then the committed state's observation, whose failure (`observationJson`) fails the input as the step's
+would. -/
+def observedStep (program : Program) (state : Option State) (input : Input) (firing : Option Codec.TimerFiring) :
+    Except Failure (State × Json) := do
+  let next ← runStep program state input firing
+  .ok (next, ← observationJson program next)
+
+/-- The trace after deployment and the scenario outcome; `shown` is the observation of the state reached so far, which a
+rejected input repeats. -/
+def execute (program : Program) : Option State → List Json → List RunStimulus → List Json × String
+  | _, _, [] => ([], "committed")
+  | state, shown, (commandId, input, firing) :: rest =>
+    match observedStep program state input firing with
+    | .ok (next, observed) =>
+      let (trace, outcome) := execute program (some next) [observed] rest
+      (commandJson commandId "committed" none :: observed :: trace, outcome)
     | .error failure =>
       let name := Codec.failureName failure
-      let observed := commandJson commandId name (some (Codec.failureCode failure)) :: snapshot program state
+      let observed := commandJson commandId name (some (Codec.failureCode failure)) :: shown
       match failure, rest with
       | .rejected _ _, _ :: _ =>
-        let (trace, outcome) := execute program state rest
+        let (trace, outcome) := execute program state shown rest
         (observed ++ trace, outcome)
       | _, _ => (observed, name)
 
@@ -222,7 +229,7 @@ def result (program : Program) (stimuli : List RunStimulus) : Json :=
   | some code =>
     Json.mkObj [("outcome", semantic "unsupported"), ("trace", Json.arr #[deploymentJson "unsupported" (some code)])]
   | none =>
-    let (trace, outcome) := execute program none stimuli
+    let (trace, outcome) := execute program none [] stimuli
     Json.mkObj [("outcome", semantic outcome), ("trace", Json.arr (deploymentJson "committed" none :: trace).toArray)]
 
 /-- A scenario's stimuli, decoded by the stimulus codec with the Timer firing each states. -/
@@ -379,7 +386,9 @@ def populationRun (scenario : Json) (sources : List DeploymentSource) (digests :
             ref := ← definitionRefFromJson (← resource.getObjVal? "bpmn") profile } : Declared)
   let stimuli ← stimuliOfPopulation declared sources (← scenario.getObjValAs? (Array Json) "steps").toList digests
   let result ← Population.runStimuli Registry.hooks AdmissionRegistry.admit stimuli
-  pure (populationResultJson observationJson scenarioId result)
+  match populationResultJson observationJson scenarioId result with
+  | .ok rendered => pure rendered
+  | .error failure => throw s!"population scenario: {Codec.failureCode failure}"
 
 /-- `kernelRun --population <digests.json> <source.json>... <population-scenario.json>`: one deployment source per
 deployment, in deploy order, and one digest per step. A program the admission registry refuses is a refused
@@ -516,7 +525,7 @@ def runFixtures (paths : List String) : IO Json := do
 only to pair the TypeScript kernel's unit cases that step a program admission refuses (a profile option admission does
 not admit yet); no product path runs a refused program. It steps through the one `runStep`. -/
 def ungatedRun (program : Program) (stimuli : List RunStimulus) : Json :=
-  let (trace, outcome) := execute program none stimuli
+  let (trace, outcome) := execute program none [] stimuli
   Json.mkObj [("admission", nullable (AdmissionRegistry.admit program) Json.str), ("outcome", Json.str outcome),
     ("trace", Json.arr trace.toArray),
     ("hostViews", Json.arr ((hostViews program none stimuli).map hostViewJson).toArray)]

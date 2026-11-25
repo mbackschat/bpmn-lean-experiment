@@ -9,7 +9,8 @@
  * - `key-order-cases.ts cases <cases.json>` writes the cases;
  * - `[node --import ./opposite-key-order.ts] key-order-cases.ts digests <cases.json> <digests.json>` writes the sha256 of
  *   each answer of the kernel it loads, releasing each answer once hashed, with whether that kernel's scope order is
- *   reversed (`scopeOrderReversed`), so a substitution that did not take is never read as agreement;
+ *   reversed (`scopeOrderReversed`), so a substitution that did not take is never read as agreement, and the published
+ *   scope identities the answers break (`scopeIdentityBreaches`), read here because this step reads every answer once;
  * - `[...] key-order-cases.ts answers <cases.json> <answers.json> <index>...` writes the whole answers of the named cases,
  *   which a comparison reads only for a case whose digests differ.
  */
@@ -69,8 +70,42 @@ export function typeScriptAnswer(batch: KeyOrderCase["batch"]): string {
   }
 }
 
-/** What the `digests` step writes: each case's scenario and its answer's sha256, in case order. */
-export type KeyOrderDigests = Readonly<{ scopeOrderReversed: boolean; scenarios: readonly string[]; digests: readonly string[] }>;
+/**
+ * What the `digests` step writes: each case's scenario and its answer's sha256, in case order, and the published scope
+ * identities the answers break.
+ */
+export type KeyOrderDigests = Readonly<{
+  scopeOrderReversed: boolean; scenarios: readonly string[]; digests: readonly string[]; scopeIdentityBreaches: readonly string[];
+}>;
+
+/**
+ * The published scope identities `answer` breaks (PUBLICATION-AND-OBSERVATION-SEMANTICS-SPEC.md, "State
+ * observation"): in each state observation it holds, at any depth, a scope key published twice, or a scope other than a
+ * called instance's root whose activation names no occurrence, being below 1.
+ */
+export function scopeIdentityBreaches(answer: unknown): string[] {
+  const breaches: string[] = [];
+  const visit = (value: unknown): void => {
+    if (Array.isArray(value)) {
+      for (const item of value) visit(item);
+      return;
+    }
+    if (value === null || typeof value !== "object") return;
+    const record = value as Record<string, unknown>;
+    if (record["kind"] === "state" && Array.isArray(record["scopes"])) {
+      const keys = (record["scopes"] as ReadonlyArray<Record<string, unknown>>).map((entry) => entry["scope"] as Record<string, unknown>);
+      const texts = keys.map((key) => JSON.stringify(key));
+      for (const [index, text] of texts.entries()) {
+        if (texts.indexOf(text) !== index) breaches.push(`published twice: ${text}`);
+        const key = keys[index] as Record<string, unknown>;
+        if (key["role"] !== "processInstance" && !(Number(key["activation"]) >= 1)) breaches.push(`no occurrence: ${text}`);
+      }
+    }
+    for (const field of Object.values(record)) visit(field);
+  };
+  visit(answer);
+  return breaches;
+}
 
 /**
  * Whether the loaded kernel orders a scope occurrence before the root: never in the normal order, which puts an ancestor
@@ -95,10 +130,14 @@ if (import.meta.main) {
     case "digests": {
       if (outPath === undefined) throw new TypeError("digests needs <digests.json>");
       const cases = await readCases(casesPath);
+      const breaches: string[] = [];
+      const digests = cases.map((one) => {
+        const answer = typeScriptAnswer(one.batch);
+        breaches.push(...scopeIdentityBreaches(JSON.parse(answer)).map((breach) => `${one.scenario}: ${breach}`));
+        return createHash("sha256").update(answer).digest("hex");
+      });
       const written: KeyOrderDigests = {
-        scopeOrderReversed: scopeOrderReversed(),
-        scenarios: cases.map((one) => one.scenario),
-        digests: cases.map((one) => createHash("sha256").update(typeScriptAnswer(one.batch)).digest("hex")),
+        scopeOrderReversed: scopeOrderReversed(), scenarios: cases.map((one) => one.scenario), digests, scopeIdentityBreaches: breaches,
       };
       await writeFile(outPath, JSON.stringify(written), "utf8");
       break;

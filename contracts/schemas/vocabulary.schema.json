@@ -157,6 +157,7 @@
         "activity",
         "multiInstanceBody",
         "multiInstanceInstance",
+        "multiInstanceBodyCompensationContext",
         "compensationContext"
       ]
     },

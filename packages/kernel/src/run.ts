@@ -54,6 +54,8 @@ import {
   type BroadcastIntent,
   type OccurrenceRef,
   type Outcome,
+  type Result,
+  committed,
   type State,
   type Transition,
   type UserTaskDetail,
@@ -265,30 +267,32 @@ function broadcastsJson(intents: readonly BroadcastIntent[]): Record<string, Jso
   return intents.length === 0 ? {} : { broadcasts: intents.map(broadcastJson) };
 }
 
-/** The state observation; `failure` appears only in a failed state, `broadcasts` only after an input that threw a Signal to the population. */
-export function observationJson(program: Program, state: State): JsonValue {
+/**
+ * The state observation; `failure` appears only in a failed state, `broadcasts` only after an input that threw a Signal
+ * to the population. A state whose scopes cannot be published (`publishedScopes`) has none: its invariant failure is the
+ * answer.
+ */
+export function observationJson(program: Program, state: State): Result<JsonValue> {
+  const scopes = publishedScopes(program, state);
+  if (!scopes.ok) return scopes;
   const view = hostView(program, state);
   const waits = mergeSort(view.openWaits.map(renderWait), publishedWaitLe);
-  return {
+  return committed({
     kind: "state",
     instanceId: state.instanceId,
     status: statusName(view.status),
     logicalTimeMs: state.logicalTimeMs,
     variables: bindingsToJson(variables(state)),
-    scopes: publishedScopes(program, state).map(scopeJson),
+    scopes: scopes.value.map(scopeJson),
     openWaits: waits.map((wait) => wait.json),
     ...(view.failure === null ? {} : { failure: failureJson(view.failure) }),
     ...broadcastsJson(view.broadcasts),
-  };
+  });
 }
 
 /** `code` appears only on an input that did not commit. */
 function commandJson(commandId: string, outcome: string, code: string | null): JsonValue {
   return code === null ? { kind: "command", commandId, outcome } : { kind: "command", commandId, outcome, code };
-}
-
-function snapshot(program: Program, state: State | null): JsonValue[] {
-  return state === null ? [] : [observationJson(program, state)];
 }
 
 /**
@@ -305,19 +309,33 @@ export function runStep(program: Program, state: State | null, input: Input, fir
 /** A scenario stimulus: its command identifier, its input and the Timer firing it states. */
 type RunStimulus = readonly [string, Input, TimerFiring | null];
 
-/** The trace after deployment and the scenario outcome. */
+/** `runStep`, then the committed state's observation, whose failure (`observationJson`) fails the input as the step's would. */
+function observedStep(program: Program, state: State | null, input: Input, firing: TimerFiring | null): Result<readonly [State, JsonValue]> {
+  const stepped = runStep(program, state, input, firing);
+  if (!stepped.ok) return stepped;
+  const observed = observationJson(program, stepped.value);
+  return observed.ok ? committed([stepped.value, observed.value] as const) : observed;
+}
+
+/**
+ * The trace after deployment and the scenario outcome; `shown` is the observation of the state reached so far, which a
+ * rejected input repeats.
+ */
 function execute(program: Program, stimuli: readonly RunStimulus[]): readonly [JsonValue[], string] {
   const trace: JsonValue[] = [];
   let state: State | null = null;
+  let shown: JsonValue[] = [];
   for (const [index, [commandId, input, firing]] of stimuli.entries()) {
-    const outcome = runStep(program, state, input, firing);
+    const outcome = observedStep(program, state, input, firing);
     if (outcome.ok) {
-      trace.push(commandJson(commandId, "committed", null), ...snapshot(program, outcome.value));
-      state = outcome.value;
+      const [next, observed] = outcome.value;
+      trace.push(commandJson(commandId, "committed", null), observed);
+      state = next;
+      shown = [observed];
       continue;
     }
     const name = failureName(outcome.failure);
-    trace.push(commandJson(commandId, name, failureCode(outcome.failure)), ...snapshot(program, state));
+    trace.push(commandJson(commandId, name, failureCode(outcome.failure)), ...shown);
     const continues = outcome.failure.tag === FailureTag.Rejected && index < stimuli.length - 1;
     if (!continues) return [trace, name];
   }
@@ -568,7 +586,9 @@ function populationRun(scenarioJson: unknown, sources: readonly DeploymentSource
   const stimuli = stimuliOfPopulation(declared, sources, arrayField(scenarioJson, "steps", where), digests, where);
   const population = runInstances(hooks, admit, stimuli);
   if (!population.ok) throw new Error(`${where}: ${population.error}`);
-  return populationResultJson(observationJson, scenarioId, population.value);
+  const rendered = populationResultJson(observationJson, scenarioId, population.value);
+  if (!rendered.ok) throw new Error(`${where}: ${failureCode(rendered.failure)}`);
+  return rendered.value;
 }
 
 // Fixture mode

@@ -166,7 +166,7 @@
           "description": "The instance root's variables, in name order."
         },
         "scopes": {
-          "description": "Every other variable scope of the instance and its called instances that holds a variable, so that variables keep their scope; producers emit them in canonical order: by scope.processInstanceId, scope.elementId (absent first, Unicode scalar order), scope.activation, then scope.role in enumeration order. Optional because an observation boundary may not reach local scopes: the CIB Seven projection publishes the root scope only, and comparisons against it leave scopes out.",
+          "description": "Every other variable scope of the instance and its called instances that holds a variable, so that variables keep their scope. A scope's identity, its processInstanceId, elementId, activation and role, is unique within one observation and never reissued, so the canonical order is total: producers emit them by scope.processInstanceId, scope.elementId (absent first, Unicode scalar order), scope.activation, then scope.role in enumeration order. Optional because an observation boundary may not reach local scopes: the CIB Seven projection publishes the root scope only, and comparisons against it leave scopes out.",
           "type": "array",
           "items": {
             "$ref": "#/$defs/scopeVariables"
@@ -1113,7 +1113,7 @@
       }
     },
     "variableScope": {
-      "description": "A variable scope, named by the occurrence it belongs to: an Activity's own scope (a Sub-Process's or its local variables), a Multi-Instance body's, a Multi-Instance instance or a compensation handler's restored context by the occurrence it hosts; a called process instance's root by that instance alone.",
+      "description": "A variable scope, named by the occurrence it belongs to: an Activity's own scope (a Sub-Process's or its local variables), a Multi-Instance body's, a Multi-Instance instance by the instance occurrence it hosts, a restored compensation context (a handler's or a group's) by the subject occurrence whose snapshot it restores, multiInstanceBodyCompensationContext for a Multi-Instance body's, whose first instance shares its element and activation; a called process instance's root by that instance alone.",
       "oneOf": [
         {
           "type": "object",
@@ -1149,6 +1149,7 @@
                 "activity",
                 "multiInstanceBody",
                 "multiInstanceInstance",
+                "multiInstanceBodyCompensationContext",
                 "compensationContext"
               ]
             },
@@ -1156,7 +1157,7 @@
               "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
             },
             "activation": {
-              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/positiveSafeInteger"
             }
           }
         }

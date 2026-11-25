@@ -9,6 +9,11 @@
  * opposite run must report its scope order reversed, so a substitution that did not take fails instead of agreeing.
  * Each step is its own process (`key-order-cases.ts`), so this one holds only digests. The Lean kernel's build is
  * `opposite-key-order.integration-test.ts`.
+ *
+ * The same pass checks every answer's published scopes in both builds: within one state observation no scope identity
+ * is published twice, and each but a called instance's root names an occurrence (PUBLICATION-AND-OBSERVATION-SEMANTICS-SPEC.md,
+ * "State observation"; the hand-built witnesses are `packages/kernel/test/scope-publication-identity.test.ts`). The behavior
+ * oracle holds the Lean kernel's answers to the TypeScript kernel's.
  */
 import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
@@ -36,7 +41,7 @@ async function step(opposite: boolean, args: readonly string[]): Promise<void> {
   });
 }
 
-test("the TypeScript kernel's answers are byte-identical with every scope-led key order reversed", {
+test("the TypeScript kernel's answers are byte-identical with every scope-led key order reversed and name each scope once", {
   timeout: pipelineTestTimeoutMs(),
 }, async () => {
   const directory = await mkdtemp(path.join(tmpdir(), "bpmn-opposite-key-order-"));
@@ -49,6 +54,7 @@ test("the TypeScript kernel's answers are byte-identical with every scope-led ke
     const [normal, opposite] = [await read<KeyOrderDigests>("normal.json"), await read<KeyOrderDigests>("opposite.json")];
     assert.equal(normal.scopeOrderReversed, false, "the normal build orders an ancestor first");
     assert.equal(opposite.scopeOrderReversed, true, "the opposite-key-order build did not take: its scope order is the normal one");
+    assert.deepEqual([normal.scopeIdentityBreaches, opposite.scopeIdentityBreaches], [[], []], "a published scope identity is broken");
     assert.ok(normal.digests.length > 0 && opposite.digests.length === normal.digests.length, "the builds ran different case lists");
     const differing = normal.digests.flatMap((digest, index) => digest === opposite.digests[index] ? [] : [index]);
     const named = differing.slice(0, namedDifferences).map(String);

@@ -27,7 +27,7 @@ import {
   FailureTag, LeaveTag, decodeProgram, elementActivity, failureCode, failureName, hooks, leaveFlows, observationJson,
   programElement, step, stimulusFromJson,
 } from "@bpmn-lean/kernel";
-import type { Program, State } from "@bpmn-lean/kernel";
+import type { Failure, Program, State } from "@bpmn-lean/kernel";
 
 import { projectRoot } from "./pipeline-target-support.ts";
 import { readSourceFor } from "./scenario-discovery.ts";
@@ -74,18 +74,25 @@ async function witness(directory: string, name: string): Promise<Witness> {
 function run(subject: Witness, mutant: Hooks): CanonicalResult {
   const trace: Json[] = [{ kind: "deployment", outcome: "committed" }];
   let state: State | null = null;
+  let shown: Json[] = [];
   let outcome = "committed";
   for (const [index, [commandId, input]] of subject.stimuli.entries()) {
     const stepped = step(mutant, subject.program, state, input as Parameters<typeof step>[3]);
+    let failure: Failure;
     if (stepped.ok) {
-      state = stepped.value;
-      trace.push({ kind: "command", commandId, outcome: "committed" }, observationJson(subject.program, state) as Json);
-      continue;
-    }
-    trace.push({ kind: "command", commandId, outcome: failureName(stepped.failure), code: failureCode(stepped.failure) });
-    if (state !== null) trace.push(observationJson(subject.program, state) as Json);
-    if (stepped.failure.tag !== FailureTag.Rejected || index === subject.stimuli.length - 1) {
-      outcome = failureName(stepped.failure);
+      // As the runner does, a committed state whose observation fails fails its input.
+      const observed = observationJson(subject.program, stepped.value);
+      if (observed.ok) {
+        state = stepped.value;
+        shown = [observed.value as Json];
+        trace.push({ kind: "command", commandId, outcome: "committed" }, ...shown);
+        continue;
+      }
+      failure = observed.failure;
+    } else failure = stepped.failure;
+    trace.push({ kind: "command", commandId, outcome: failureName(failure), code: failureCode(failure) }, ...shown);
+    if (failure.tag !== FailureTag.Rejected || index === subject.stimuli.length - 1) {
+      outcome = failureName(failure);
       break;
     }
   }
