@@ -8,7 +8,8 @@
  */
 import { BranchSchedule, assertNever } from "../il/types.js";
 import {
-  SemanticCause, committed, compareUnitKey, finishUnit, orderedHas, semanticFailure, type MultiInstanceRun, type Result, type State,
+  SemanticCause, committed, compareUnitKey, finishUnit, lookupRun, orderedHas, semanticFailure, type MultiInstanceRun, type Result,
+  type State,
   type UnitKey,
 } from "../state.js";
 import type { Ctx } from "../hooks.js";
@@ -26,7 +27,7 @@ export function finishOf(ctx: Ctx, state: State, work: SignalRun): MultiInstance
     case BranchSchedule.OrderInvariant: {
       const [body, ...rest] = work.acts;
       return work.completion && body !== undefined && rest.length === 0
-        ? state.slots.multiInstances.find((run) => run.occurrence === body) ?? null : null;
+        ? lookupRun(state.slots.multiInstances, body) : null;
     }
   }
   return assertNever(ctx.program.options.branchSchedule);

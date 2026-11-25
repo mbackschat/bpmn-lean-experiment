@@ -88,7 +88,7 @@ export {
   compareItemKey, insertItem, type ItemKey, itemAt, itemKeyText, ItemRole, itemsInOrder, type OpenItem, type OpenItems, sameItemKey,
 };
 import {
-  keyedInsert, keyedInsertIfNew, type OrderedMap, orderedAny, orderedEntries, orderedInsert, orderedSize, type TreeMap, treeMapGetD, treeMapInsert,
+  keyedGet, keyedInsert, keyedInsertIfNew, type OrderedMap, orderedAny, orderedEntries, orderedInsert, orderedSize, type TreeMap, treeMapGetD, treeMapInsert,
 } from "./state/map.js";
 export { type TreeMap, treeMapInsert };
 // The closure's unit keys and keyed maps reach the step through this hub, as `Kernel.State` re-exports them (guard 15).
@@ -520,11 +520,8 @@ export function allTokens(state: State): readonly Token[] {
   return [...orderedEntries(state.queuedTokens).map(([, token]) => token), ...state.batchTokens];
 }
 
-/**
- * Lean's `State.queueBatch`: move the running micro-step's batches under its unit key `unit` (DC4), each signal and token
- * keyed by its index in the batch, but the signal at an index `grouped` keys under that key, a group root of its own
- * (`finishKey` in `step.ts`, DC30), the micro-step's intents as one entry.
- */
+/** Lean's `State.queueBatch`: the running micro-step's batches under its unit key `unit` (DC4), each signal and token keyed
+ * by its batch index unless `grouped` gives the signal a root of its own (`finishKey`, DC30), the intents as one entry. */
 export function queueBatch(state: State, unit: UnitKey, grouped: (index: number) => UnitKey | null = () => null): State {
   return {
     ...state,
@@ -807,6 +804,11 @@ export function insertRun(runs: readonly MultiInstanceRun[], run: MultiInstanceR
 }
 
 const runKey = (run: MultiInstanceRun): OccurrenceId => run.occurrence;
+
+/** Lean's `MultiInstanceMap` lookup `runs[body]?`: the run under the body occurrence's key. */
+export function lookupRun(runs: readonly MultiInstanceRun[], body: OccurrenceId): MultiInstanceRun | null {
+  return keyedGet(runs, body, runKey, compareOccurrenceId);
+}
 
 /**
  * Enter a new scope occurrence of `element` inside `parent`, with the given local variables (`variablesOfBindings`). The scope belongs

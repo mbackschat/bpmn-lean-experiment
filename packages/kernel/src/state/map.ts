@@ -48,6 +48,12 @@ export function keyedInsert<K, V>(values: readonly V[], value: V, keyOf: (value:
   return [...values.slice(0, index), value, ...values.slice(replaces ? index + 1 : index)];
 }
 
+/** Lean's `TreeMap.get?` on a map written as its values in key order (`keyedInsert`): the value carrying `key`. */
+export function keyedGet<K, V>(values: readonly V[], key: K, keyOf: (value: V) => K, cmp: (left: K, right: K) => number): V | null {
+  const index = lowerBound(values, keyOf, key, cmp);
+  return index < values.length && cmp(keyOf(values[index]!), key) === 0 ? values[index]! : null;
+}
+
 /**
  * Lean's `TreeMap.insertIfNew` on a map written as its values in key order (`keyedInsert`): `values` unchanged when one
  * carries `keyOf(value)` already.

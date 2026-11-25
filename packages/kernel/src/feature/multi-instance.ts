@@ -69,7 +69,7 @@ import {
   type ScopeOccurrenceId,
   type State,
   SemanticCause,
-  semanticFailure, type OccurrenceId, ownVariables, insertRun,
+  semanticFailure, type OccurrenceId, ownVariables, insertRun, lookupRun,
 } from "../state.js";
 import {
   EvaluationTag, collectionItems, ctxPositionLe, evalContext, hold, leaveScope, type Ctx,
@@ -137,7 +137,7 @@ function itemName(ctx: Ctx, loop: MultiInstance): string | null {
 
 /** Lean's `runOf?`: the run of the body occurrence `body`, under its key. */
 function runOf(state: State, body: OccurrenceId): MultiInstanceRun | null {
-  return state.slots.multiInstances.find((run) => run.occurrence === body) ?? null;
+  return lookupRun(state.slots.multiInstances, body);
 }
 
 /** Lean's `setRun`: a body's run in place of the one under its body occurrence's key. */
