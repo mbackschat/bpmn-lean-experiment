@@ -41,7 +41,7 @@ export {
   SignalReach, type StartInput, type StartTrigger, StartTriggerTag, type TimerInput, type CancelInstanceInput,
 };
 import {
-  type Compensable, type CompensableChild, type CompensationRun, type Compensations, type FeatureSlots, featureSlotsClear,
+  type Compensable, type CompensableChild, type CompensationRun, type Compensations, compensationsRestoredIn, type FeatureSlots, featureSlotsClear,
   featureSlotsKeptAlive, featureSlotsSuspended, type InstanceData, type Iteration, iterationHolds, IterationTag, type Leave,
   leaveFlows, leaveOutgoing, leaveRaised, LeaveTag, type MultiInstanceRun, type Parked, parkedEquals, parkedLeastBy, type Held,
   type HeldMap, type Resume,
@@ -54,13 +54,13 @@ export {
   type InstanceFailure, type Origin, type Raised, raisedIsCancel, RaisedTag,
 };
 import {
-  type ActivationCount, ActivationRole, type Cause, CauseTag, marks, type OccurrenceKey, type StartedFact, Terminal, type Transition,
+  type ActivationCount, type Cause, CauseTag, marks, type StartedFact, Terminal, type Transition,
 } from "./state/journal.js";
 export {
-  type ActivationCount, ActivationRole, type Cause, CauseTag, type OccurrenceKey, type StartedFact, Terminal, type Transition,
+  type ActivationCount, type Cause, CauseTag, type StartedFact, Terminal, type Transition,
 };
 export {
-  type Compensable, type CompensableChild, type CompensationRun, type Compensations, type FeatureSlots, featureSlotsClear,
+  type Compensable, type CompensableChild, type CompensationRun, type Compensations, compensationsRestoredIn, type FeatureSlots, featureSlotsClear,
   featureSlotsKeptAlive, featureSlotsSuspended, type InstanceData, type Iteration, iterationHolds, IterationTag, type Leave,
   leaveFlows, leaveOutgoing, leaveRaised, LeaveTag, type MultiInstanceRun, type Parked, parkedEquals, parkedLeastBy, type Held,
   type HeldMap, type Resume,
@@ -68,10 +68,10 @@ export {
 };
 
 import {
-  childScope, compareIssue, compareOccurrenceId, compareScopeOccurrenceId, compareUnitKey, type Issue, occurrenceId, type OccurrenceId, occurrenceIdParts,
-  rootScope, scopeParent, issuerText, type ScopeSlot, signalUnit, tokenUnit, type UnitKey,
+  ActivationRole, childScope, compareIssue, compareOccurrenceId, compareScopeOccurrenceId, compareUnitKey, type Issue, occurrenceId, type OccurrenceId,
+  occurrenceIdParts, type OccurrenceKey, rootScope, scopeParent, issuerText, type ScopeSlot, signalUnit, tokenUnit, type UnitKey,
 } from "./state/key.js";
-export { type OccurrenceId };
+export { ActivationRole, type OccurrenceId, type OccurrenceKey };
 import {
   type Continuation, ContinuationTag, flowContinuation, type Occurrence, type OccurrenceMap, type ScopeMap, type ScopeOccurrence,
   scopeOccurrenceParent,

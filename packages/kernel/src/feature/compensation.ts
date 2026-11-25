@@ -52,10 +52,12 @@ import {
   WriteRule,
   beginRequest,
   committed,
+  compensationsRestoredIn,
   completeSignal,
   enterScope,
   failed,
   instanceOf,
+  keyOf,
   takeCompletion,
   signal,
   type Compensable,
@@ -152,13 +154,8 @@ export function completed(ctx: Ctx, occurrence: Occurrence, state: State): Outco
   const own = owned === null ? [] : locals(owned.id);
   const iteration = isInstance(ctx, occurrence, issued) ? locals(occurrence.scope) : [];
   const snapshot = !inside ? [] : iteration.reduce((kept, [name, value]) => insertVariableIfNew(kept, name, value), own);
-  const reference: OccurrenceRef = {
-    processInstanceId: instanceOf(issued, occurrence.scope),
-    element: occurrence.element,
-    activation: occurrence.activation,
-  };
   const record: Compensable = {
-    subject: occurrence.element, handler, scope: target, occurrence: reference, completion, closure: issued.completionBase, snapshot,
+    subject: occurrence.element, handler, scope: target, occurrence: keyOf(issued, occurrence), completion, closure: issued.completionBase, snapshot,
     children: inner.flatMap(keptRecords),
   };
   return committed(store(issued, { ...compensation, retained: [...outer, record] }));
@@ -403,11 +400,7 @@ export function dropWithin(_ctx: Ctx, scope: ScopeOccurrenceId, state: State): S
  * as the group's context.
  */
 export function runningRecord(_ctx: Ctx, context: ScopeOccurrenceId, state: State): Compensable | null {
-  for (const run of state.slots.compensation.runs) {
-    const running = run.running.find(([held]) => held === context);
-    if (running !== undefined) return running[1];
-  }
-  return null;
+  return compensationsRestoredIn(state.slots.compensation, context);
 }
 
 /**

@@ -1,25 +1,10 @@
 /**
- * The occurrence journal, transcribed from `Kernel/State/Journal.lean`: an occurrence's public key, the facts each
- * micro-step records about the occurrences it began and ended, the transaction-boundary marks an occurrence carries and
+ * The occurrence journal, transcribed from `Kernel/State/Journal.lean`: the facts each micro-step records about the occurrences it began and ended, the transaction-boundary marks an occurrence carries and
  * the activation counter its key's number comes from. Part of `state.ts`, which re-exports it.
  */
 import { elementEnvelope, programElement, type ElementId, type FlowId, type Program } from "../il/types.js";
-import { type ScopeOccurrenceId } from "./slots.js";
+import { ActivationRole, type OccurrenceKey, type ScopeOccurrenceId } from "./slots.js";
 import { type InputTag } from "./wait.js";
-
-/**
- * Which counter numbers an occurrence: a Multi-Instance body and its instances number apart, as CIB gives the body an
- * activity id of its own (`BpmnParse:185`).
- */
-export enum ActivationRole { Element = "element", MultiInstanceBody = "multiInstanceBody" }
-
-/** An occurrence's public key in the journal. */
-export interface OccurrenceKey {
-  readonly processInstanceId: string;
-  readonly element: ElementId;
-  readonly activation: number;
-  readonly role: ActivationRole;
-}
 
 export enum Terminal { Completed = "completed", Cancelled = "cancelled" }
 

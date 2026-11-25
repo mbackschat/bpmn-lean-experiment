@@ -16,7 +16,8 @@ the committed forms and the issue slots are `Kernel.State.Issue`'s). A scope occ
 `Spine` (DC20), whose cached depth and fingerprint and whose jump pointers only accelerate: equality rejects on the
 cached fields and the order meets two keys in O(log depth), and both decide on the full path. Each key has a lawful order, so
 maps may key on it, and an order that reads only the key's value: no site may read it as an order of entry. Scope
-occurrence keys order outermost first, so a subtree is one key range (KD1). A closure's unit key (DC4) is a structured
+occurrence keys order outermost first, so a subtree is one key range (KD1). An occurrence's public key (`OccurrenceKey`)
+is its activation, numbered apart per role (`ActivationRole`), not a structural key. A closure's unit key (DC4) is a structured
 root and a path of unit steps (`Kernel.State.Root`) on the same spine, ordered by depth, fingerprint, root and path, with the breadth-first
 order the closure runs signals in beside it. `scripts/kernel-effects.lean` holds the spine to `Spine.push` and the
 comparators to the key-order contract (KD7). Part of `Kernel.State`, which re-exports it.
@@ -749,5 +750,21 @@ instance : Std.LawfulEqOrd OccurrenceId where
     have ordinals : ordinal = ordinal' := Std.LawfulEqOrd.eq_of_compare rest.2
     subst scopes same ordinals
     rfl
+
+/-- Which counter numbers an occurrence: a Multi-Instance body and its instances number apart, as CIB gives the body
+an activity id of its own (`BpmnParse:185`). -/
+inductive ActivationRole where
+  | element
+  | multiInstanceBody
+  deriving DecidableEq, Repr
+
+/-- An occurrence's public key, which the journal and the observation publish, unlike its structural `OccurrenceId`: its
+process instance, element, activation and the counter that numbered it. -/
+structure OccurrenceKey where
+  processInstanceId : String
+  element : ElementId
+  activation : Nat
+  role : ActivationRole := .element
+  deriving DecidableEq, Repr
 
 end Kernel

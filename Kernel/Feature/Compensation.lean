@@ -99,11 +99,8 @@ def completed (ctx : Ctx) (occurrence : Occurrence) (state : State) : Outcome :=
       let own := (owned.map (locals ·.id)).getD ∅
       let iteration := if isInstance ctx occurrence state then locals occurrence.scope else ∅
       let snapshot := if inside then iteration.foldl (fun kept name value => kept.insertIfNew name value) own else ∅
-      let reference : OccurrenceRef :=
-        { processInstanceId := state.instanceOf occurrence.scope, element := occurrence.element
-          activation := occurrence.activation }
       let record : Compensable :=
-        { subject := occurrence.element, handler, scope := target, occurrence := some reference, completion,
+        { subject := occurrence.element, handler, scope := target, occurrence := some (state.keyOf occurrence), completion,
           closure := state.completionBase, snapshot, children := inner.flatMap keptRecords }
       .ok (store state { compensation with retained := outer ++ [record] })
 
@@ -280,7 +277,7 @@ def dropWithin (_ : Ctx) (scope : ScopeOccurrenceId) (state : State) : State :=
 reads it (`Propagation.PropagationHooks.handlerRecord`): its scope is where the record was retained, which a group's
 children name as the group's context. -/
 def runningRecord (_ : Ctx) (context : ScopeOccurrenceId) (state : State) : Option Compensable :=
-  state.slots.compensation.runs.findSome? fun run => (run.running.find? (·.1 == context)).map (·.2)
+  state.slots.compensation.restoredIn? context
 
 /-- `Hooks.handlerEnded`: a handler left without completing, raised away by an event. Under `propagatesFromHandler`
 (I11) the run goes on as `handlerCompleted` does unless the catcher interrupts a scope occurrence holding it, which drops

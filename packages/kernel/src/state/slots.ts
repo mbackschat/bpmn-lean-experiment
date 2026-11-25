@@ -8,11 +8,15 @@ import { type Binding } from "./wait.js";
 /** Re-exported for `raise.ts`, as Lean's `Kernel.State.Raise` sees `Kernel.State.Wait` only through this module. */
 export { type Binding };
 import {
-  compareIssue, compareOccurrenceId, type Issue, issueText, type OccurrenceId, occurrenceIdParts, orientKeyOrder, type ScopeOccurrenceId,
+  ActivationRole, compareIssue, compareOccurrenceId, type Issue, issueText, type OccurrenceId, occurrenceIdParts, type OccurrenceKey,
+  orientKeyOrder, type ScopeOccurrenceId,
 } from "./key.js";
-/** Re-exported for `items.ts` and `raise.ts`, as Lean's `Kernel.State.Items` and `Kernel.State.Raise` see `Kernel.State.Key`
- * only through this module. */
-export { compareIssue, compareOccurrenceId, type Issue, issueText, type OccurrenceId, orientKeyOrder, type ScopeOccurrenceId };
+/** Re-exported for `items.ts`, `raise.ts` and `journal.ts`, as Lean's `Kernel.State.Items`, `Kernel.State.Raise` and
+ * `Kernel.State.Journal` see `Kernel.State.Key` only through this module. */
+export {
+  ActivationRole, compareIssue, compareOccurrenceId, type Issue, issueText, type OccurrenceId, type OccurrenceKey, orientKeyOrder,
+  type ScopeOccurrenceId,
+};
 
 /**
  * Lean's `Variables`, one variable set keyed by name (DC21), written as its list view: its bindings in name order
@@ -99,7 +103,7 @@ export interface MultiInstanceRun {
 export interface CompensableChild {
   readonly subject: ElementId;
   readonly handler: ElementId | null;
-  readonly occurrence: OccurrenceRef | null;
+  readonly occurrence: OccurrenceKey | null;
   readonly completion: number;
   readonly closure: number;
   readonly snapshot: Variables;
@@ -113,13 +117,15 @@ export interface CompensableChild {
  * the closure it completed in (`State.completionBase`), which under `OrderInvariant` orders records of different
  * closures (`feature/compensation.ts`'s `completedBefore`). `children` keeps the records
  * of a completed Sub-Process at every depth, each under its group key, for its handler to trigger recursively
- * (§13.5.5). A record without a `handler` is a group whose compensation runs its children.
+ * (§13.5.5). A record without a `handler` is a group whose compensation runs its children. `occurrence` is the subject
+ * occurrence's complete key, its role included, since a Multi-Instance body and its first instance share element and
+ * activation: the context its handler or group restores publishes it (`publish.ts`'s `publishedScopes`).
  */
 export interface Compensable {
   readonly subject: ElementId;
   readonly handler: ElementId | null;
   readonly scope: ScopeOccurrenceId;
-  readonly occurrence: OccurrenceRef | null;
+  readonly occurrence: OccurrenceKey | null;
   readonly completion: number;
   readonly closure: number;
   readonly snapshot: Variables;
@@ -142,6 +148,18 @@ export interface CompensationRun {
 
 /** `feature/compensation.ts`'s data: the retained records and the triggers in progress. */
 export interface Compensations { readonly retained: readonly Compensable[]; readonly runs: readonly CompensationRun[]; }
+
+/**
+ * The record whose handler or group runs in the context scope occurrence `context`, of the first run holding it: the
+ * one record a context restores, since a run begins each record it takes in a context of its own.
+ */
+export function compensationsRestoredIn(compensation: Compensations, context: ScopeOccurrenceId): Compensable | null {
+  for (const run of compensation.runs) {
+    const running = run.running.find(([held]) => held === context);
+    if (running !== undefined) return running[1];
+  }
+  return null;
+}
 
 /** An occurrence waiting at a join, with the flow its token arrived on. */
 export interface Parked { readonly occurrence: OccurrenceId; readonly flow: FlowId; readonly scope: ScopeOccurrenceId; }

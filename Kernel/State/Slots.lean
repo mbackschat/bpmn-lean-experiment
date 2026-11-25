@@ -105,7 +105,7 @@ key, not a nested list, says which records a begun record keeps in turn, so no s
 structure CompensableChild where
   subject : ElementId
   handler : Option ElementId
-  occurrence : Option OccurrenceRef := none
+  occurrence : Option OccurrenceKey := none
   completion : Nat := 0
   closure : Nat := 0
   snapshot : Variables := ∅
@@ -119,12 +119,14 @@ records in the order they completed, a kept record's key (`CompensableChild.grou
 under `orderInvariant` orders records of different closures (`Feature.Compensation.completedBefore`). `children` keeps the records of a completed Sub-Process at every depth, each under its group key,
 for its handler to trigger recursively (§13.5.5; CIB moves them into an event-scope tree,
 `CompensationUtil.createEventScopeExecution`). A record without a `handler` is a group whose compensation runs its
-children. -/
+children. `occurrence` is the subject occurrence's complete key, its role included, since a Multi-Instance body and its
+first instance share element and activation: the context its handler or group restores publishes it
+(`Publish.publishedScopes`). -/
 structure Compensable where
   subject : ElementId
   handler : Option ElementId
   scope : ScopeOccurrenceId
-  occurrence : Option OccurrenceRef := none
+  occurrence : Option OccurrenceKey := none
   completion : Nat := 0
   closure : Nat := 0
   snapshot : Variables := ∅
@@ -148,6 +150,11 @@ structure Compensations where
   retained : List Compensable := []
   runs : List CompensationRun := []
   deriving Repr
+
+/-- The record whose handler or group runs in the context scope occurrence `context`, of the first run holding it: the
+one record a context restores, since a run begins each record it takes in a context of its own. -/
+def Compensations.restoredIn? (compensation : Compensations) (context : ScopeOccurrenceId) : Option Compensable :=
+  compensation.runs.findSome? fun run => (run.running.find? (·.1 == context)).map (·.2)
 
 /-- An occurrence waiting at a join, with the flow its token arrived on. -/
 structure Parked where

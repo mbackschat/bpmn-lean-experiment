@@ -4,7 +4,7 @@ public import Kernel.State.Raise
 
 /-! # The occurrence journal
 
-An occurrence's public key, the facts each micro-step records about the occurrences it began and ended, the
+The facts each micro-step records about the occurrences it began and ended, the
 transaction-boundary marks an occurrence carries and the activation counter its key's number comes from. Part of
 `Kernel.State`, which re-exports it.
 -/
@@ -12,21 +12,6 @@ transaction-boundary marks an occurrence carries and the activation counter its 
 public section
 
 namespace Kernel
-
-/-- Which counter numbers an occurrence: a Multi-Instance body and its instances number apart, as CIB gives the body
-an activity id of its own (`BpmnParse:185`). -/
-inductive ActivationRole where
-  | element
-  | multiInstanceBody
-  deriving DecidableEq, Repr
-
-/-- An occurrence's public key in the journal. -/
-structure OccurrenceKey where
-  processInstanceId : String
-  element : ElementId
-  activation : Nat
-  role : ActivationRole := .element
-  deriving DecidableEq, Repr
 
 inductive Terminal where
   | completed

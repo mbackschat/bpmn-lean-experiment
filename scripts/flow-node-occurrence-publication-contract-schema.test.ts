@@ -83,14 +83,15 @@ test("validates the strict request, page, and five closed result arms", async ()
 });
 
 test("covers safe integers, terminal kinds, the kernel's occurrence roles, and forbids position identities", async () => {
-  const [schema, kernelJournal] = await Promise.all([
+  const [schema, kernelJournal, kernelKey] = await Promise.all([
     readSchema("flow-node-occurrence-publication.schema.json"),
     readFile(`${projectRoot}/packages/kernel/src/state/journal.ts`, "utf8"),
+    readFile(`${projectRoot}/packages/kernel/src/state/key.ts`, "utf8"),
   ]);
   const text = JSON.stringify(schema);
   for (const expected of [
     ...inlineEnumValues(kernelJournal, "Terminal"),
-    ...inlineEnumValues(kernelJournal, "ActivationRole"),
+    ...inlineEnumValues(kernelKey, "ActivationRole"),
     "available",
     "notFound",
     "unavailable",

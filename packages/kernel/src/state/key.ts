@@ -417,3 +417,20 @@ export function breadthUnitKey(left: UnitKey, right: UnitKey): number {
   const [a, b] = meet(left, right);
   return a.step === null || b.step === null ? 0 : compareUnitStep(a.step, b.step);
 }
+
+/**
+ * Which counter numbers an occurrence: a Multi-Instance body and its instances number apart, as CIB gives the body an
+ * activity id of its own (`BpmnParse:185`).
+ */
+export enum ActivationRole { Element = "element", MultiInstanceBody = "multiInstanceBody" }
+
+/**
+ * An occurrence's public key, which the journal and the observation publish, unlike its structural `OccurrenceId`: its
+ * process instance, element, activation and the counter that numbered it.
+ */
+export interface OccurrenceKey {
+  readonly processInstanceId: string;
+  readonly element: ElementId;
+  readonly activation: number;
+  readonly role: ActivationRole;
+}
