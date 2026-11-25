@@ -8,7 +8,8 @@ passed guards 1 and 2 (hence guard 17), so this scan reads calls and writes rath
 
 - One writer per effect (17): one writer per `Token` case, flow tokens emitted only by `Feature.Flow` and deferred begins
   stacked only by `Feature.MultiInstance`; variables are written only by `Feature.Data`; occurrences and activations are created and removed only by `Step` and `State`; the completion pipeline's hooks are
-  called only by `Step`. A rule that sees no permitted caller fails, so a renamed primitive cannot read as clean.
+  called only by `Step`; a called instance's identifier is spelled only by the commit, publication and the readers of
+  committed names (KD5). A rule that sees no permitted caller fails, so a renamed primitive cannot read as clean.
 - Field liveness (19): every field of a structure in `Kernel.IL.Types` is read by a non-codec declaration or refused by
   `Kernel.Admission`, which reads it. A matcher over a structure counts as reading all of its fields, because the
   binder cap of guard 9 keeps such patterns exhaustive.
@@ -49,6 +50,11 @@ def callRules : List CallRule :=
   let tokens := "flow tokens are emitted only by Flow"
   let variables := "variables are written only by Data"
   let occurrences := "occurrences are created and removed only by Step and State"
+  -- KD5: a pending name is spelled only where its activations are numbered (the commit) or once they are: publication
+  -- and the readers of an input's committed names; `Hooks` also spells the prospective identifier (`Ctx.nameText`).
+  let spellers := [`Kernel.Step.Commit, `Kernel.Publish, `Kernel.Host, `Kernel.Run, `Kernel.Population, `Kernel.Hooks,
+    `Kernel.Step.Inputs, `Kernel.Feature.Correlation, `Kernel.State]
+  let spelling := "a called instance's identifier is spelled only at commit, in publication and by readers of committed names"
   [ ⟨`Kernel.State.emit, flow, tokens⟩,
     ⟨`Kernel.State.deferBegins, [`Kernel.Feature.MultiInstance], "deferred begins are stacked only by MultiInstance"⟩,
     ⟨`Kernel.State.setVariable, data, variables⟩,
@@ -58,7 +64,10 @@ def callRules : List CallRule :=
     ⟨`Kernel.State.removeOccurrence, lifecycle, occurrences⟩,
     ⟨`Kernel.State.cancelOccurrence, lifecycle, occurrences⟩,
     ⟨`Kernel.State.activate, lifecycle, occurrences⟩,
-    ⟨`Kernel.Step.complete, [`Kernel.Step], "an Activity completes only through Step's one pipeline"⟩ ]
+    ⟨`Kernel.Step.complete, [`Kernel.Step], "an Activity completes only through Step's one pipeline"⟩,
+    ⟨`Kernel.InstanceName.textWith, spellers, spelling⟩,
+    ⟨`Kernel.InstanceName.text, spellers, spelling⟩,
+    ⟨`Kernel.State.calledInstanceId, spellers, spelling⟩ ]
 
 /-- The completion pipeline's hooks, idle completion and the lifecycle notifications, which only `Kernel.Step` calls
 (guard 17). Each must have a caller there, so a renamed hook fails rather than leaving its rule empty. -/
@@ -545,7 +554,14 @@ end Feature.Data
 namespace Feature.MultiInstance
 def good (state : State) : State := state.deferBegins
 end Feature.MultiInstance
+namespace InstanceName
+def textWith (number : Nat) : Nat := number
+def text (number : Nat) : Nat := textWith number
+end InstanceName
+def State.calledInstanceId (number : Nat) : Nat := number
+def Hooks.spelled (number : Nat) : Nat := InstanceName.textWith (InstanceName.text (State.calledInstanceId number))
 namespace Feature.Work
+def seededSpell (number : Nat) : Nat := InstanceName.textWith number
 def seededEmit (state : State) : State := state.emit
 def seededDefer (state : State) : State := state.deferBegins
 def seededWrite (state : State) : State := { state with batchTokens := [] }
@@ -632,6 +648,7 @@ def expectedInFixture : List String := [
   "calls Kernel.State.deferBegins (deferred begins are stacked only by MultiInstance)",
   "writes State.batchTokens through a structure update",
   "calls pipeline hook Kernel.Hooks.outflow outside Step",
+  "calls Kernel.InstanceName.textWith (a called instance's identifier is spelled only at commit",
   "Kernel.Used.unread: read by no non-codec declaration",
   "2 match sites on Kernel.Element, above its budget of 1",
   "Kernel.Spine.seededNode: builds a Kernel.Spine.node outside Kernel.Spine.push",

@@ -4,6 +4,7 @@
  * tests read the real repository and are the guards themselves. Guard 21's decoders need the built kernels and run in
  * packages/differential/test/row-fixtures.integration-test.ts; its fast half runs here.
  */
+// size-exception: every guard's clean, seeded and empty-tree tests share this file's fixture tree and its builders (cleanFiles, fixture, seeded, holdsItsGround), which no other test file can reach
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -525,6 +526,12 @@ test("guard 17 gives each Token case one writer: deferred begins are stacked onl
     "packages/kernel/src/feature/flow.ts": `import { emit, deferBegins } from "../state.js";\nexport function gateway(state, flows) { return deferBegins(emit(state, flows), []); }\n`,
   }, /deferBegins called outside its writer \(deferred begins are stacked only by MultiInstance\)/u);
 });
+
+test("guard 17 spells a called instance's identifier only at commit, in publication and in readers of committed names", () => seeded(
+  effectWriterFindings, {
+    "packages/kernel/src/state/key.ts": "export function instanceText(name) { return name; }\n",
+    "packages/kernel/src/feature/work.ts": `import { instanceText } from "../state.js";\nexport function id(name) { return instanceText(name); }\n`,
+  }, /instanceText called outside its writer \(a called instance's identifier is spelled only at commit/u));
 
 // The Lean twin admits a writer's sub-modules by name prefix (`allowedFor` in scripts/kernel-effects.lean), so a State
 // sub-module such as `state/removal.ts` is State here too, while a feature stays outside.

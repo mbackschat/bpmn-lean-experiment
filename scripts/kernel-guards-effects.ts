@@ -24,6 +24,10 @@ const kernelPrefix = "packages/kernel/src/";
 /** An effect primitive and the modules that may call it (`state` always may, because it defines them). */
 type CallRule = Readonly<{ name: string; callers: readonly string[]; label: string }>;
 
+/** KD5: the modules that spell a called instance's identifier, as `spellers` in scripts/kernel-effects.lean, State included. */
+const spellers = ["state", "step/commit", "publish", "host", "run", "population", "hooks", "step/inputs", "feature/correlation"];
+const spelling = "a called instance's identifier is spelled only at commit, in publication and by readers of committed names";
+
 const callRules: readonly CallRule[] = [
   { name: "emit", callers: ["feature/flow"], label: "flow tokens are emitted only by Flow" },
   { name: "deferBegins", callers: ["feature/multi-instance"], label: "deferred begins are stacked only by MultiInstance" },
@@ -36,6 +40,7 @@ const callRules: readonly CallRule[] = [
   // `Kernel.State.activate` lists State among its callers too (scripts/kernel-effects.lean): only State's own
   // `reserve` and `beginOccurrence` count activations, so a State call is what keeps the rule from reading nothing.
   { name: "activate", callers: ["step", "state"], label: "activations are counted only by Step and State" },
+  ...["instanceTextWith", "instanceText", "calledInstanceId"].map((name) => ({ name, callers: spellers, label: spelling })),
 ];
 
 /** The completion pipeline, idle completion and the lifecycle notifications: only `Step` calls these hooks. */
